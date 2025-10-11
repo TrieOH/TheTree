@@ -1,0 +1,5 @@
+internal/repository/
+internal/repository/*
+docs/
+docs/*
+**/.git
