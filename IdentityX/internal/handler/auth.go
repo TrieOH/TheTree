@@ -51,10 +51,34 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rs := h.AuthService.Login(r.Context(), req); rs != nil {
+	tokens, rs := h.AuthService.Login(r, r.Context(), req)
+	if rs != nil {
 		rs.Send(w)
 		return
 	}
+
+	accessCookie := http.Cookie{
+		Name:     "AccessToken",
+		Value:    tokens.AccessTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	refreshCookie := http.Cookie{
+		Name:     "RefreshToken",
+		Value:    tokens.AccessTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &accessCookie)
+	http.SetCookie(w, &refreshCookie)
 
 	resp.Created("Logged in").Send(w)
 }
