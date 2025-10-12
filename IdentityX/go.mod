@@ -6,6 +6,7 @@ require (
 	github.com/MintzyG/GoResponse v0.3.4
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-playground/validator/v10 v10.27.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/lib/pq v1.10.9
@@ -14,6 +15,8 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/spf13/viper v1.21.0
 	github.com/swaggo/http-swagger v1.3.4
+	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.41.0
 )
 
 require (
@@ -75,10 +78,8 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
