@@ -1,5 +1,5 @@
 services:
-  GoAuth:
+  go_auth:
     container_name: GoAuth
     build:
       context: .
@@ -9,11 +9,11 @@ services:
     networks:
       - internal
     depends_on:
-      - GoAuth-database
+      - go_auth_database
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
 
-  GoAuth-database:
+  go_auth_database:
     image: postgres:16
     container_name: GoAuth-database
     restart: unless-stopped
