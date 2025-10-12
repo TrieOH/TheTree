@@ -23,8 +23,10 @@ func WaitForDB(timeout time.Duration) (*sql.DB, error) {
 		db, err := sql.Open("postgres", dsn)
 		if err == nil {
 			if pingErr := db.Ping(); pingErr == nil {
-				log.Printf("DB connected on attempt %d", attempt)
+				log.Printf("DB connected on attempt %d\n", attempt)
 				return db, nil
+			} else {
+				log.Printf("Ping err: %v\n", pingErr)
 			}
 			db.Close()
 		}
@@ -33,7 +35,8 @@ func WaitForDB(timeout time.Duration) (*sql.DB, error) {
 			return nil, errors.New("DB connection timeout")
 		}
 
-		log.Printf("Waiting for DB... attempt %d", attempt)
+		log.Printf("Waiting for DB... attempt %d\n", attempt)
+		log.Printf("%v\n", err)
 		time.Sleep(2 * time.Second)
 		attempt++
 	}

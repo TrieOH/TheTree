@@ -1,6 +1,6 @@
--- name: CreateUsers :one
-INSERT INTO users (email, password, created_at, updated_at)
-VALUES ($1, $2, NOW(), NOW())
+-- name: RegisterUser :one
+INSERT INTO users (email, password)
+VALUES ($1, $2)
 RETURNING *;
 
 -- name: GetUsersById :one
