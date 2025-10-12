@@ -7,5 +7,5 @@ import (
 )
 
 func (h *AuthHandler) Hello(w http.ResponseWriter, r *http.Request) {
-  resp.OK("Hello").Send(w)
+	resp.OK("Hello").Send(w)
 }
