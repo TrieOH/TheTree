@@ -4,10 +4,10 @@ import (
 	"GoAuth/internal/service"
 )
 
-type GreetHandler struct {
-	GreetService *service.GreetService
+type AuthHandler struct {
+	AuthService *service.AuthService
 }
 
-func NewGreetHandler(service *service.GreetService) *GreetHandler {
-	return &GreetHandler{GreetService: service}
+func NewAuthHandler(service *service.AuthService) *AuthHandler {
+	return &AuthHandler{AuthService: service}
 }

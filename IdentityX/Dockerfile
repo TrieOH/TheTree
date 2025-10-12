@@ -19,7 +19,7 @@ FROM alpine:3.20
 
 WORKDIR /app
 
-COPY --from=builder /app/greet-me .
+COPY --from=builder /app/GoAuth .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/migrations ./migrations
 

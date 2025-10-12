@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"net/http"
-	"strings"
 )
 
 func normalizePath(r *http.Request) string {
