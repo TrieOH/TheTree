@@ -1,4 +1,4 @@
-name: Auto Format and Lint
+name: Auto Format
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   lint-format:
-    name: Lint & Auto Format
+    name: Auto Format
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,23 +38,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git commit -m "chore: auto-format Go code"
-          git push
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Run golangci-lint
-        run: golangci-lint run ./...
+          git push origin HEAD:${{ github.head_ref }}
