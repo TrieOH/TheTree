@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/repository"
 	"GoAuth/internal/utils"
 	resp "github.com/MintzyG/GoResponse/response"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -64,4 +65,27 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 	tokens.RefreshTokenString = refreshToken
 
 	return &tokens, nil
+}
+
+func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Response {
+	access_token_cookie, err := r.Cookie("access_token")
+	if err != nil {
+		return resp.Unauthorized("missing access_token cookie")
+	}
+
+	refresh_token_cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		return resp.Unauthorized("missing refresh_token cookie")
+	}
+
+	_, rs := parseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil && !strings.Contains(rs.Message, "invalid token") {
+		return rs
+	}
+	_, rs = parseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil {
+		return rs
+	}
+
+	return nil
 }

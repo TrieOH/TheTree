@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"time"
 )
@@ -23,9 +24,23 @@ type LoginUserRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type UserSubJWT struct {
+type AccessSubJWT struct {
 	ID    uuid.UUID `json:"id"`
 	Email string    `json:"email"`
+}
+
+type AccessClaims struct {
+	Sub AccessSubJWT `json:"sub"`
+	jwt.RegisteredClaims
+}
+
+type RefreshSubJWT struct {
+	MetaData string `json:"meta_data"`
+}
+
+type RefreshClaims struct {
+	Sub RefreshSubJWT `json:"sub"`
+	jwt.RegisteredClaims
 }
 
 type UserTokens struct {

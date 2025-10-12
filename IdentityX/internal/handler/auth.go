@@ -41,7 +41,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param loginInfo body models.LoginUserRequest true "login request data"
-// @Success 201 {string} string "Logged in"
+// @Success 200 {string} string "Logged in"
+// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
+// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
+// @Success 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +61,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessCookie := http.Cookie{
-		Name:     "AccessToken",
+		Name:     "access_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   0,
@@ -68,7 +71,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	refreshCookie := http.Cookie{
-		Name:     "RefreshToken",
+		Name:     "refresh_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   0,
@@ -80,5 +83,51 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.Created("Logged in").Send(w)
+	resp.OK("Logged in").Send(w)
+}
+
+// Logout godoc
+// @Summary Logs out a customer
+// @Description Logs out an authenticated customer of the system
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {string} string "Logged out"
+// @Header 200 {string} Set-Cookie "clears the access_token cookie"
+// @Header 200 {string} Set-Cookie "clears the refresh_token cookie"
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/logout [post]
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	rs := h.AuthService.Logout(r, r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	accessCookie := http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	refreshCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &accessCookie)
+	http.SetCookie(w, &refreshCookie)
+
+	resp.Created("Logged out").Send(w)
 }
