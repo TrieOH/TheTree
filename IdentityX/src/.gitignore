@@ -1,7 +1,0 @@
-keys/
-keys/*
-internal/repository/
-internal/repository/*
-docs/
-docs/*
-.env
