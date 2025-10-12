@@ -32,3 +32,23 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterUserReque
 
 	return nil
 }
+
+func (s *AuthService) Login(ctx context.Context, req models.LoginUserRequest) *resp.Response {
+  req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+
+	dbUser, err := s.queries.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		readable := utils.ParseDBError(err)
+		if strings.Contains(readable.Error(), "record not found") {
+      return resp.Unauthorized("invalid email or password")
+		}
+		return resp.InternalServerError("error retrieving user").WithTracePrefix("database-error").AddTrace(readable)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(req.Password))
+	if err != nil {
+		return resp.Unauthorized("invalid email or password")
+	}
+
+	return nil
+}
