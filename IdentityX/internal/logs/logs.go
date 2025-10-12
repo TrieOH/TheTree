@@ -1,9 +1,9 @@
 package logs
 
 import (
-	"go.uber.org/zap"
 	"github.com/spf13/viper"
-  "log"
+	"go.uber.org/zap"
+	"log"
 	"sync"
 )
 

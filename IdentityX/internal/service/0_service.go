@@ -11,4 +11,3 @@ type GreetService struct {
 func NewGreetService(queries *repository.Queries) *GreetService {
 	return &GreetService{queries: queries}
 }
-

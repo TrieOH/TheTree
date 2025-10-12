@@ -1,37 +1,34 @@
-//go:build !test
-// +build !test
-
 package router
 
 import (
 	"log"
 	"net/http"
 
-	"GoAuth/internal/metrics"
-	"GoAuth/internal/logs"
+	"GreetService/internal/handler"
+	"GreetService/internal/logs"
+	"GreetService/internal/metrics"
+	"GreetService/internal/repository"
+	"GreetService/internal/service"
 	"database/sql"
 
-	_ "GoAuth/docs"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/swaggo/http-swagger"
 )
 
-// @title        Greet Service API
-// @version      0.1
-// @description  This is the GreetService API that handles user greetings.
+func CreateTestRouter(db *sql.DB) http.Handler {
+	queries := repository.New(db)
+	service := service.NewGreetService(queries)
+	handler := handler.NewGreetHandler(service)
 
-// @contact.name   TrieOH Support
-// @contact.url    https://github.com/TrieOH
-
-// @host      localhost:8080
-// @BasePath  /
-func CreateRouter(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/swagger/", httpSwagger.WrapHandler)
-
-	registerRoutes(db, &mux)
+	sgsu := viper.GetString("SPECIAL_GREETING_SERVICE_URL")
+	if sgsu != "" {
+		mux.HandleFunc("POST /greet/{id}/{greeting_id}", handler.SpecialGreetById)
+	} else {
+		log.Println("SPECIAL_GREETING_SERVICE_URL -> Unavailable")
+		log.Println("Not serving special greet routes")
+	}
 
 	mux.Handle("GET /metrics", metrics.Handler())
 	withMetrics := metrics.MetricsMW(mux)

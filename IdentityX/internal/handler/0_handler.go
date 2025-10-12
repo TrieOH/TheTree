@@ -11,4 +11,3 @@ type GreetHandler struct {
 func NewGreetHandler(service *service.GreetService) *GreetHandler {
 	return &GreetHandler{GreetService: service}
 }
-
