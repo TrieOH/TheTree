@@ -4,7 +4,6 @@
 package router
 
 import (
-	"log"
 	"net/http"
 
 	"GoAuth/internal/logs"
@@ -14,7 +13,6 @@ import (
 	_ "GoAuth/docs"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
-	"github.com/spf13/viper"
 	"github.com/swaggo/http-swagger"
 )
 
@@ -31,7 +29,7 @@ func CreateRouter(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
-	registerRoutes(db, &mux)
+	mux = registerRoutes(db, mux)
 
 	mux.Handle("GET /metrics", metrics.Handler())
 	withMetrics := metrics.MetricsMW(mux)

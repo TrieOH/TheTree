@@ -4,10 +4,10 @@ import (
 	"GoAuth/internal/repository"
 )
 
-type GreetService struct {
+type AuthService struct {
 	queries *repository.Queries
 }
 
-func NewGreetService(queries *repository.Queries) *GreetService {
-	return &GreetService{queries: queries}
+func NewAuthService(queries *repository.Queries) *AuthService {
+	return &AuthService{queries: queries}
 }
