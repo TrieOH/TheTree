@@ -2,7 +2,7 @@ name: Docker Compose Build
 
 on:
   pull_request:
-    branches: [ staging, prod ]
+    branches: [ staging, production ]
 
 jobs:
   build:
