@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"GoAuth/internal/metrics"
 	"GoAuth/internal/logs"
+	"GoAuth/internal/metrics"
 	"database/sql"
 
 	_ "GoAuth/docs"

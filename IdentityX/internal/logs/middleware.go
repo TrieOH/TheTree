@@ -1,10 +1,10 @@
 package logs
 
 import (
-	"go.uber.org/zap"
-	"net/http"
 	"context"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
+	"net/http"
 	"time"
 )
 
@@ -21,8 +21,8 @@ func LogsMW(next http.Handler) http.Handler {
 		userID := GetUserID(r.Context())
 
 		L().Info("http_request",
-      zap.String("request_id", reqID),
-      zap.String("user_id", userID),
+			zap.String("request_id", reqID),
+			zap.String("user_id", userID),
 			zap.String("method", r.Method),
 			zap.String("path", normalizePath(r)),
 			zap.Int("status", ww.status),

@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"GreetService/internal/handler"
-	"GreetService/internal/metrics"
 	"GreetService/internal/logs"
+	"GreetService/internal/metrics"
 	"GreetService/internal/repository"
 	"GreetService/internal/service"
 	"database/sql"
