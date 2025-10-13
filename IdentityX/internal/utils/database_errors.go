@@ -9,7 +9,6 @@ var (
 	ErrDuplicate  = errors.New("duplicate value")
 	ErrForeignKey = errors.New("foreign key constraint failed")
 	ErrNotFound   = errors.New("record not found")
-	ErrUnknown    = errors.New("unknown database error")
 )
 
 var FieldMessages = map[string]string{
@@ -46,7 +45,7 @@ func ParseDBError(err error) error {
 		return ErrNotFound
 
 	default:
-		return ErrUnknown
+		return errors.New(msg)
 	}
 }
 

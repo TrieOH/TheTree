@@ -10,6 +10,7 @@ import (
 	"GoAuth/internal/utils"
 	resp "github.com/MintzyG/GoResponse/response"
 	"github.com/spf13/viper"
+  "github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -82,9 +83,24 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 	if rs != nil && !strings.Contains(rs.Message, "invalid token") {
 		return rs
 	}
-	_, rs = parseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+
+	refreshClaims, rs := parseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
 		return rs
+	}
+
+	jti, err := uuid.Parse(refreshClaims.ID)
+	if err != nil {
+		return resp.Unauthorized("invalid token ID")
+	}
+
+	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
+		TokenID: jti,
+		ExpiresAt: refreshClaims.ExpiresAt.Time,
+	})
+	if err != nil {
+		readable := utils.ParseDBError(err)
+		return resp.InternalServerError("error blacklisting token").WithTracePrefix("database-error").AddTrace(readable)
 	}
 
 	return nil
