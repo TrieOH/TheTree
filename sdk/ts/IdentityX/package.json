@@ -2,32 +2,37 @@
   "name": "@trie-oh/node-auth-sdk",
   "version": "0.0.1",
   "description": "SDK to consume GOAuth",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    "./client": {
+      "types": "./dist/esm/client.d.mts",
+      "import": "./dist/esm/client.js",
+      "require": "./dist/cjs/client.js"
+    }
+  },
+  "main": "./dist/cjs/client.js",
+  "module": "./dist/esm/client.js",
+  "types": "./dist/esm/client.d.mts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p .",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsup",
     "typecheck": "tsc -p . --notEmit",
-    "test": "bun test",
     "prepare": "npm run build"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.1"
-  },
-  "peerDependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsup": "^8.5.0",
     "typescript": "^5"
   },
-  "dependencies": {
-    "dotenv": "^17.2.3"
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

@@ -7,9 +7,11 @@ class Api {
   constructor(baseURL?: string) {
     this.baseURL = baseURL || env.BASE_URL;
     this.apiKey = env.API_KEY;
-
-    if (!this.apiKey)
-      console.warn("[SDK Warning] API_KEY not found, verify your .env file");
+    console.log(this.apiKey);
+    if (!this.apiKey) {
+      console.warn("[TRIEOH SDK] API_KEY not found, verify your .env file");
+      throw new Error("[TRIEOH SDK] API_KEY not found, verify your .env file");
+    }
   }
 
   private get headers() {
