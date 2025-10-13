@@ -79,12 +79,12 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 		return resp.Unauthorized("missing refresh_token cookie")
 	}
 
-	_, rs := parseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
-	if rs != nil && !strings.Contains(rs.Message, "invalid token") {
+	_, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil && !strings.Contains(rs.Message, "token expired"){
 		return rs
 	}
 
-	refreshClaims, rs := parseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
 		return rs
 	}
