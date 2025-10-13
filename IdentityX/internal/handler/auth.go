@@ -2,10 +2,13 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/validation"
+	"GoAuth/internal/utils"
 
+	"github.com/spf13/viper"
 	resp "github.com/MintzyG/GoResponse/response"
 )
 
@@ -129,5 +132,46 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.Created("Logged out").Send(w)
+	resp.OK("Logged out").Send(w)
+}
+
+// Me godoc
+// @Summary Prints cookie contents
+// @Description This route prints info from both accessCookie and refreshCookie
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {string} string
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /me [post]
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	access_token_cookie, err := r.Cookie("access_token")
+	if err != nil {
+		resp.Unauthorized("missing access_token cookie")
+		return
+	}
+
+	refresh_token_cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		resp.Unauthorized("missing refresh_token cookie")
+		return
+	}
+
+	accessClaims, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil && !strings.Contains(rs.Message, "token expired"){
+	  rs.Send(w)
+		return
+	}
+
+	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil {
+	  rs.Send(w)
+		return
+	}
+
+	hi := accessClaims.Sub.Email + ": " + accessClaims.Sub.ID.String() + "\nrefreshID: " + refreshClaims.ID
+
+	resp.OK(hi).Send(w)
 }
