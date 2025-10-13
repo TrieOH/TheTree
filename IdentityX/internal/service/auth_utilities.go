@@ -8,6 +8,7 @@ import (
 
 	resp "github.com/MintzyG/GoResponse/response"
 	"github.com/golang-jwt/jwt/v5"
+  "github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -20,6 +21,7 @@ func newAccessToken(dbUser repository.User) (string, *resp.Response) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Issuer:    "GoAuth",
+			ID: uuid.NewString(),
 		},
 	}
 
@@ -39,6 +41,7 @@ func newRefreshToken() (string, *resp.Response) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			Issuer:    "GoAuth",
+			ID: uuid.NewString(),
 		},
 	}
 

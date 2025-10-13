@@ -1,0 +1,11 @@
+-- name: BlacklistToken :exec
+INSERT INTO refresh_blacklist (token_id, expires_at, created_at, updated_at)
+VALUES ($1, $2, NOW(), NOW());
+
+-- name: GetRefreshBlacklistById :one
+SELECT * FROM refresh_blacklist
+WHERE token_id = $1;
+
+-- name: DeleteRefreshBlacklist :exec
+DELETE FROM refresh_blacklist
+WHERE token_id = $1;
