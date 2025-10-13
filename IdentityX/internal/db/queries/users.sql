@@ -1,16 +1,20 @@
--- name: CreateUsers :one
-INSERT INTO users (email, password, created_at, updated_at)
-VALUES ($1, $2, NOW(), NOW())
+-- name: RegisterUser :one
+INSERT INTO users (email, password)
+VALUES ($1, $2)
 RETURNING *;
 
--- name: GetUsersById :one
+-- name: GetUserById :one
 SELECT * FROM users
 WHERE id = $1;
+
+-- name: GetUserByEmail :one
+SELECT * FROM users
+WHERE email = $1;
 
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY created_at DESC;
 
--- name: UpdateUsers :one
+-- name: UpdateUser :one
 UPDATE users
 SET
     email = $2,
@@ -19,6 +23,6 @@ SET
 WHERE id = $1
 RETURNING *;
 
--- name: DeleteUsers :exec
+-- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;

@@ -1,6 +1,5 @@
 services:
   go_auth:
-    container_name: GoAuth
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,10 +11,10 @@ services:
       - go_auth_database
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+      JWT_SECRET: ${JWT_SECRET}
 
   go_auth_database:
     image: postgres:16
-    container_name: GoAuth-database
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
