@@ -1,5 +1,11 @@
 export function resolveEnv() {
-  const viteEnv = (typeof import.meta !== "undefined" && import.meta.env) || {};
+  let viteEnv: ImportMetaEnv = {};
+  try {
+    viteEnv = (typeof import.meta !== "undefined" && import.meta.env) || {};
+  } catch {
+    viteEnv = { VITE_TRIEOH_AUTH_API_KEY: undefined };
+  }
+
   return {
     API_KEY:
       // Vite (import.meta.env.VITE_*)
@@ -13,7 +19,7 @@ export function resolveEnv() {
         ? process.env.PUBLIC_TRIEOH_AUTH_API_KEY
         : undefined) ??
       "",
-    BASE_URL: "https://api.default.com", // i need to change later
+    BASE_URL: "https://api.default.com",
   };
 }
 
