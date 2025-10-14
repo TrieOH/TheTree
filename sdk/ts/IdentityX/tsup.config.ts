@@ -9,6 +9,7 @@ export default defineConfig((options) => {
     sourcemap: true,
     bundle: true,
     clean: true,
+    injectStyle: true,
     external: ["react", "react-dom"],
     outExtension({ format }) {
       return format === "esm" ? { js: ".js" } : { js: ".js" };

@@ -2,7 +2,6 @@
   "name": "@trie-oh/node-auth-sdk",
   "version": "0.0.1",
   "description": "SDK to consume GOAuth",
-  "sideEffects": false,
   "exports": {
     "./next": {
       "types": "./dist/esm/next.d.mts",
