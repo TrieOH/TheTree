@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { Api } from "../core/api";
-import { AuthService } from "../core/services";
+import { createAuthService } from "../core/services";
 
 type AuthContextType = {
-  auth: typeof AuthService;
+  auth: ReturnType<typeof createAuthService>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -16,16 +16,7 @@ export function AuthProvider({
   baseURL?: string;
 }) {
   const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
-  const auth = useMemo(
-    () => ({
-      login: (email: string, password: string) =>
-        apiInstance.post("/auth/login", { email, password }),
-      register: (email: string, password: string) =>
-        apiInstance.post("/auth/register", { email, password }),
-    }),
-    [apiInstance]
-  );
-
+  const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
   return (
     <AuthContext.Provider value={{ auth }}>{children}</AuthContext.Provider>
   );
