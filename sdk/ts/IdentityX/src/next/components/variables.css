@@ -1,7 +1,11 @@
 :root {
-  --trieoh-primary: #4f46e5;
+  --trieoh-primary: #4F46e5;
+  --trieoh-secondary: #9ABDFF;
+  --trieoh-neutral1: #F5F5F5;
   --trieoh-neutral2: #131517;
   --trieoh-radius-md: 8px;
   --trieoh-text-sm: 0.75rem; /* 12px */
   --trieoh-text-xl: 1.25rem; /* 20px */
+  --trieoh-text-3xl: 1.875rem; /* 30px */
+  --trieoh-text-6xl: 3.75rem; /* 60px */
 }

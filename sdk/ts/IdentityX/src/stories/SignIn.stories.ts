@@ -10,9 +10,6 @@ const meta = {
     layout: 'centered',
   },
   tags: ['autodocs'],
-  // argTypes: {
-  //   backgroundColor: { control: 'color' },
-  // },
   args: { onSubmit: fn() },
 } satisfies Meta<typeof SignIn>;
 

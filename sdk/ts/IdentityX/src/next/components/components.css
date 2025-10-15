@@ -27,7 +27,9 @@
 }
 
 .trieoh-input__container-field {
+  flex: 1;
   -webkit-appearance: none;
+  background: none;
   outline: none;
   border: none;
   box-shadow: none !important;
@@ -47,17 +49,76 @@
   width: 100%;
   height: 5rem;
   min-width: 320px;
+  flex-shrink: 0;
   border: 0.1875rem solid var(--trieoh-neutral2);
-  border-radius: 0.9375rem 1.875rem 0.9375rem 1.875rem; 
+  border-radius: 0.9375rem 1.875rem;
   color: var(--trieoh-neutral2);
   cursor: pointer;
 
-  font-size: 2rem;
+  font-size: var(--trieoh-text-3xl);
   font-weight: 600;
   box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
   text-shadow: 0 0.25rem 0.25rem rgba(0, 0, 0, 0.25);
 }
 
-/* .trieoh-card {
+/* Card/Form */
+
+.trieoh-card {
+  display: flex;
+  width: 45rem;
+  min-width: 20rem;
+  max-height: 100vh;
+  flex-direction: column;
+  gap: 2.5rem;
+  align-items: center;
+  background-color: var(--trieoh-neutral1);
+  color: var(--trieoh-neutral2);
+  padding: 3.75rem 2.5rem;
+}
+
+.trieoh-card--full-rounded {
+  border-radius: 1.25rem;
+}
+
+/* .trieoh-card--left-rounded {
 
 } */
+
+.trieoh-card__title {
+  font-size: var(--trieoh-text-6xl);
+  font-weight: 500;
+  margin: 0;
+}
+
+.trieoh-card__fields {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.875rem;
+  flex: 1;
+  margin-bottom: 2rem;
+}
+
+.trieoh-card__divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.625rem;
+  opacity: 0.6;
+  font-size: var(--trieoh-text-xl);
+  font-weight: 600;
+}
+
+.trieoh-card__divider hr {
+  flex: 1;
+}
+
+.trieoh-card__other {
+  font-size: var(--trieoh-text-xl);
+  font-weight: 600;
+}
+
+.trieoh-card__other span {
+  cursor: pointer;
+  color: var(--trieoh-secondary);
+}
