@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { BasicInputField } from '../next/components/Form/BasicInputField'; 
+import BasicInputField from '../next/components/Form/BasicInputField';
 
 const meta = {
   title: "Example/BasicInputField",
@@ -11,7 +11,7 @@ const meta = {
   argTypes: {
     type: { 
       control: "select",
-      options: ['text', 'number', 'email']
+      options: ['text', 'number', 'email', 'password']
     },
   },
   args: {
@@ -22,10 +22,22 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
 export const NameInput: Story = {
   args: {
     name: "name",
     label: "Nome",
-    placeholder: "Your Name..."
+    placeholder: "Your Name...",
+    autoComplete: "Nome"
+  }
+};
+
+export const PasswordInput: Story = {
+  args: {
+    name: "password",
+    label: "Senha",
+    placeholder: "**********",
+    autoComplete: "password",
+    type: "password",
   }
 };

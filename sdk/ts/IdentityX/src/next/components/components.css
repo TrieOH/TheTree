@@ -4,6 +4,7 @@
 
 .trieoh-input {
   width: 100%;
+  min-width: 320px;
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -17,8 +18,8 @@
 
 .trieoh-input__container {
   display: flex;
-  padding: 0.125rem 0;
-  padding-left: 0.625rem;
+  justify-content: space-between;
+  padding: 0.125rem 0.625rem;
   gap: 0.625rem;
   border-bottom: solid 0.125rem var(--trieoh-neutral2);
 }
@@ -32,9 +33,9 @@
   font-weight: 300;
 }
 
-/* .trieoh-input__container-icon {
-  
-} */
+.trieoh-input__container-icon {
+  cursor: pointer;
+}
 
 
 /* .trieoh-card {
