@@ -2,6 +2,8 @@
   font-family: 'Inter', sans-serif;
 }
 
+/* Basic Input Field */
+
 .trieoh-input {
   width: 100%;
   min-width: 320px;
@@ -37,6 +39,24 @@
   cursor: pointer;
 }
 
+/* Basic Submit Button */
+
+.trieoh-button {
+  outline: none;
+  background: none;
+  width: 100%;
+  height: 5rem;
+  min-width: 320px;
+  border: 0.1875rem solid var(--trieoh-neutral2);
+  border-radius: 0.9375rem 1.875rem 0.9375rem 1.875rem; 
+  color: var(--trieoh-neutral2);
+  cursor: pointer;
+
+  font-size: 2rem;
+  font-weight: 600;
+  box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
+  text-shadow: 0 0.25rem 0.25rem rgba(0, 0, 0, 0.25);
+}
 
 /* .trieoh-card {
 
