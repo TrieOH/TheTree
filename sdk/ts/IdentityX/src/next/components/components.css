@@ -1,0 +1,42 @@
+.trieoh {
+  font-family: 'Inter', sans-serif;
+}
+
+.trieoh-input {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  color: var(--trieoh-neutral2);
+}
+
+.trieoh-input__label {
+  font-size: var(--trieoh-text-xl);
+  font-weight: 600;
+}
+
+.trieoh-input__container {
+  display: flex;
+  padding: 0.125rem 0;
+  padding-left: 0.625rem;
+  gap: 0.625rem;
+  border-bottom: solid 0.125rem var(--trieoh-neutral2);
+}
+
+.trieoh-input__container-field {
+  -webkit-appearance: none;
+  outline: none;
+  border: none;
+  box-shadow: none !important;
+  font-size: var(--trieoh-text-xl);
+  font-weight: 300;
+}
+
+/* .trieoh-input__container-icon {
+  
+} */
+
+
+/* .trieoh-card {
+
+} */
