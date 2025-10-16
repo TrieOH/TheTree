@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import BasicSubmitButton from '../next/components/Form/BasicSubmitButton';
+import { fn } from 'storybook/internal/test';
 
 const meta = {
   title: "Example/BasicSubmitButton",
   component: BasicSubmitButton,
-  parameters: {
-    // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
-    layout: 'centered',
-  },
+  parameters: { layout: 'centered' },
   tags: ['autodocs'],
+  args: { onSubmit: fn() },
 } satisfies Meta<typeof BasicSubmitButton>;
 
 export default meta;

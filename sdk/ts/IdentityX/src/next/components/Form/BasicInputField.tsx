@@ -13,6 +13,8 @@ interface BasicInputFieldProps {
   type?: "text" | "email" | "number" | "password";
   /** Current Input Value */
   value?: string;
+  /** Current Input Value On Change */
+  onValueChange?: (value: string) => void;
   /** Hint/AutoComplete */
   autoComplete?: string;
 }
@@ -22,6 +24,7 @@ export default function BasicInputField({
   placeholder,
   type = "text",
   value,
+  onValueChange,
   autoComplete
 }: BasicInputFieldProps) {
   const [isSecretVisible, setIsSecretVisible] = useState(false);
@@ -36,6 +39,7 @@ export default function BasicInputField({
           name={name} 
           id={name} 
           placeholder={placeholder}
+          onChange={(e) => onValueChange && onValueChange(e.target.value)}
           value={value}
           autoComplete={autoComplete}
           className="trieoh-input__container-field" 

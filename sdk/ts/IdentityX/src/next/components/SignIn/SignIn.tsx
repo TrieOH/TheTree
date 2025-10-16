@@ -1,14 +1,15 @@
+import { useState } from "react";
+import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
 
-export interface SignInProps {
-  /** Click Handler - Perform Login */
-  onSubmit: () => void;
-}
-
-export function SignIn({
-
-}: SignInProps) {
+export function SignIn() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { auth } = useAuth();
+  const handleSubmit = async () => {
+    const res = await auth.login(email, password);
+  }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
       <h3 className="trieoh-card__title">Faça seu Login!</h3>
@@ -19,6 +20,8 @@ export function SignIn({
           placeholder="teste@gmail.com"
           autoComplete="email"
           type="email"
+          value={email}
+          onValueChange={setEmail}
         />
         <BasicInputField 
           label="Senha" 
@@ -26,9 +29,11 @@ export function SignIn({
           placeholder="**********"
           autoComplete="current-password"
           type="password"
+          value={password}
+          onValueChange={setPassword}
         />
       </div>
-      <BasicSubmitButton label="Entrar"/>
+      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit}/>
       <div className="trieoh-card__divider">
         <hr />
         OU
