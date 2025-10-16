@@ -1,4 +1,4 @@
-import { Activity, useState } from "react";
+import { useState } from "react";
 import EyeIcon from "../Icons/EyeIcon";
 import EyeClosedIcon from "../Icons/EyeClosedIcon";
 
@@ -40,19 +40,19 @@ export default function BasicInputField({
           autoComplete={autoComplete}
           className="trieoh-input__container-field" 
         />
-        <Activity mode={type === "password" ? "visible" : "hidden"}>
-          { isSecretVisible ?
+        {type === "password" && (
+          isSecretVisible ?
             <EyeClosedIcon 
               className="trieoh-input__container-icon" 
               onClick={() => setIsSecretVisible(false)} 
             />
-            :
+          :
             <EyeIcon 
               className="trieoh-input__container-icon"
               onClick={() => setIsSecretVisible(true)} 
             />
-          }
-        </Activity>
+          )
+        }
       </div>
     </div>
   )
