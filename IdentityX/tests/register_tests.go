@@ -336,7 +336,7 @@ func accountAlreadyExists(user *rllCtx) func(t *testing.T) {
 			WithHeader("Content-Type", "application/json").
 			WithJSON(user).
 			Expect().
-			Status(http.StatusInternalServerError).
+			Status(http.StatusConflict).
 			JSON().Object()
 
 		obj.Value("module").String().Equal("go-auth-test")
@@ -344,8 +344,8 @@ func accountAlreadyExists(user *rllCtx) func(t *testing.T) {
 
 		trace := obj.Value("trace").Array()
 		trace.Length().Equal(1)
-		trace.Element(0).String().Contains("email is already in use")
+		trace.Element(0).String().Contains("email already in use")
 
-		obj.Value("code").Number().Equal(500)
+		obj.Value("code").Number().Equal(409)
 	}
 }

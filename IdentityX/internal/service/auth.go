@@ -32,6 +32,9 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterUserReque
 
 	if err != nil {
 		readable := utils.ParseDBError(err)
+		if strings.Contains(readable.Error(), "email is already in use") {
+			return resp.Conflict("error registering user").WithTracePrefix("error").AddTrace("email already in use")
+		}
 		return resp.InternalServerError("error registering user").WithTracePrefix("database-error").AddTrace(readable)
 	}
 
