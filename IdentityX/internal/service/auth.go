@@ -19,6 +19,9 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterUserReque
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		if strings.Contains(err.Error(), "password length exceeds 72 bytes") {
+			return resp.BadRequest("error registering user").WithTracePrefix("error").AddTrace("password exceeds 72 char limit")
+		}
 		return resp.InternalServerError("error hashing user password").WithTracePrefix("error").AddTrace(err)
 	}
 

@@ -289,17 +289,17 @@ func registerBigEmail() func(t *testing.T) {
 				"password":  "B1g&mailMan",
 			}).
 			Expect().
-			Status(http.StatusInternalServerError).
+			Status(http.StatusBadRequest).
 			JSON().Object()
 
-		obj.Value("module").String().Equal("go-auth-test")
-		obj.Value("message").String().Equal("error registering user")
+		obj.Value("module").String().Equal("validation")
+		obj.Value("message").String().Equal("Validation failed")
 
 		trace := obj.Value("trace").Array()
 		trace.Length().Equal(1)
-		trace.Element(0).String().Contains("database-error: pq: value too long for type character varying(255)")
+		trace.Element(0).String().Contains("(email) must be at most 255 characters long:")
 
-		obj.Value("code").Number().Equal(500)
+		obj.Value("code").Number().Equal(400)
 	}
 }
 
@@ -314,17 +314,17 @@ func registerBigPassword() func(t *testing.T) {
 				"password":  "1#Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			}).
 			Expect().
-			Status(http.StatusInternalServerError).
+			Status(http.StatusBadRequest).
 			JSON().Object()
 
-		obj.Value("module").String().Equal("go-auth-test")
-		obj.Value("message").String().Equal("error hashing user password")
+		obj.Value("module").String().Equal("validation")
+		obj.Value("message").String().Equal("Validation failed")
 
 		trace := obj.Value("trace").Array()
 		trace.Length().Equal(1)
-		trace.Element(0).String().Contains("error: bcrypt: password length exceeds 72 bytes")
+		trace.Element(0).String().Contains("(password) must be at most 72 characters long")
 
-		obj.Value("code").Number().Equal(500)
+		obj.Value("code").Number().Equal(400)
 	}
 }
 
