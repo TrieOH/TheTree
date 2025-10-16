@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
@@ -7,8 +7,10 @@ export function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { auth } = useAuth();
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     const res = await auth.login(email, password);
+    console.log(res)
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
