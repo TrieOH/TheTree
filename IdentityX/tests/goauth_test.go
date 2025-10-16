@@ -33,7 +33,7 @@ func init() {
 		MaxInterceptorAmount: 20,
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
-		DefaultModule:        "greet-test",
+		DefaultModule:        "go-auth-test",
 	})
 
 	var err error
@@ -62,12 +62,12 @@ func createExpect(t *testing.T) *httpexpect.Expect {
 	})
 }
 
-func TestGreetService(t *testing.T) {
+func TestGoAuthService(t *testing.T) {
 	runServer()
 	defer Db.Close()
 
-	t.Run("CreateUsers", func(t *testing.T) {
-		runCreateUsers(t)
+	t.Run("RegisterTests", func(t *testing.T) {
+		runRegisterTests(t)
 	})
 }
 
@@ -75,63 +75,104 @@ type createUserContext struct {
 	id string
 }
 
-func runCreateUsers(t *testing.T) {
-	var ctx createUserContext
-
-	completeUser := map[string]interface{}{
-		"first_name": "Complete",
-		"last_name":  "User",
+func runRegisterTests(t *testing.T) {
+	// var ctx createUserContext
+	success := map[string]interface{}{
+		"email": "success@mail.com",
+		"password":  "Str0ngP4ass!",
 	}
 
-	t.Run("CreateCompleteUser", createUserSuccess(&ctx, completeUser))
-	t.Run("GetCompleteUser", getUserAndVerify(&ctx, nil))
-	t.Run("GetAndVerifyCompleteUser", getUserAndVerify(&ctx, &completeUser))
-
-	incompleteUser := map[string]interface{}{
-		"first_name": "IncompleteUser",
+  noEmail := map[string]interface{}{
+		"email": "",
+		"password":  "N0Email#S4d",
 	}
 
-	t.Run("CreateIncompleteUser", createUserSuccess(&ctx, incompleteUser))
-	t.Run("GetIncompleteUser", getUserAndVerify(&ctx, nil))
-	t.Run("GetAndVerifyIncompleteUser", getUserAndVerify(&ctx, &incompleteUser))
+  noPassword := map[string]interface{}{
+		"email": "nopass@mail.com",
+		"password":  "",
+	}
+
+	t.Run("RegisterSuccess", registerSuccess(&success))
+	t.Run("RegisterNoEmail", registerNoEmail(&noEmail))
+	t.Run("RegisterNoPassword", registerNoPassword(&noPassword))
 }
 
-func getUserAndVerify(ctx *createUserContext, expected *map[string]interface{}) func(t *testing.T) {
+// func getUserAndVerify(ctx *createUserContext, expected *map[string]interface{}) func(t *testing.T) {
+// 	return func(t *testing.T) {
+// 		e := createExpect(t)
+//
+// 		userObj := e.GET("/users/{id}", ctx.id).
+// 			WithHeader("Content-Type", "application/json").
+// 			Expect().
+// 			Status(http.StatusOK).
+// 			JSON().Object().Value("data").Object()
+//
+// 		userObj.Value("id").NotNull()
+// 		userObj.Value("first_name").NotNull()
+//
+// 		if expected != nil {
+// 			for key, val := range *expected {
+// 				userObj.Value(key).Equal(val)
+// 			}
+// 		}
+// 	}
+// }
+
+func registerSuccess(user *map[string]interface{}) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
-		userObj := e.GET("/users/{id}", ctx.id).
-			WithHeader("Content-Type", "application/json").
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object().Value("data").Object()
-
-		userObj.Value("id").NotNull()
-		userObj.Value("first_name").NotNull()
-
-		if expected != nil {
-			for key, val := range *expected {
-				userObj.Value(key).Equal(val)
-			}
-		}
-	}
-}
-
-func createUserSuccess(ctx *createUserContext, user map[string]interface{}) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		r := e.POST("/users").
+		r := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(user).
 			Expect().
 			Status(http.StatusCreated).
-			JSON().Object().Value("data").Object()
+			JSON().Object().Value("message")
 
-		for key, _ := range user {
-			r.Value(key).NotNull()
-		}
+		r.String().Equal("Registered user")
+	}
+}
 
-		ctx.id = r.Value("id").Raw().(string)
+func registerNoEmail(user *map[string]interface{}) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.POST("/auth/register").
+			WithHeader("Content-Type", "application/json").
+			WithJSON(user).
+			Expect().
+			Status(http.StatusBadRequest).
+			JSON().Object()
+
+		obj.Value("module").String().Equal("validation")
+		obj.Value("message").String().Equal("Validation failed")
+
+		trace := obj.Value("trace").Array()
+		trace.Length().Equal(1)
+		trace.Element(0).String().Contains("(email) is required")
+
+		obj.Value("code").Number().Equal(400)
+	}
+}
+
+func registerNoPassword(user *map[string]interface{}) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.POST("/auth/register").
+			WithHeader("Content-Type", "application/json").
+			WithJSON(user).
+			Expect().
+			Status(http.StatusBadRequest).
+			JSON().Object()
+
+		obj.Value("module").String().Equal("validation")
+		obj.Value("message").String().Equal("Validation failed")
+
+		trace := obj.Value("trace").Array()
+		trace.Length().Equal(1)
+		trace.Element(0).String().Contains("(password) is required")
+
+		obj.Value("code").Number().Equal(400)
 	}
 }
