@@ -79,12 +79,14 @@
   width: 45rem;
   min-width: 20rem;
   max-height: 100vh;
+  overflow: auto;
   flex-direction: column;
   gap: 2.5rem;
   align-items: center;
   background-color: var(--trieoh-neutral1);
   color: var(--trieoh-neutral2);
   padding: 3.75rem 2.5rem;
+  box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
 }
 
 .trieoh-card--full-rounded {
