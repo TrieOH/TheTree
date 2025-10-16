@@ -9,14 +9,17 @@ func registerSuccess(user *rllCtx) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
-		r := e.POST("/auth/register").
+		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(user).
 			Expect().
 			Status(http.StatusCreated).
-			JSON().Object().Value("message")
+			JSON().Object()
 
-		r.String().Equal("Registered user")
+		obj.Value("module").String().Equal("go-auth-test")
+		obj.Value("message").String().Equal("Registered user")
+
+		obj.Value("code").Number().Equal(201)
 	}
 }
 
