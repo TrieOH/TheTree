@@ -9,3 +9,7 @@ WHERE token_id = $1;
 -- name: DeleteRefreshBlacklist :exec
 DELETE FROM refresh_blacklist
 WHERE token_id = $1;
+
+-- name: DeleteExpiredTokens :exec
+DELETE FROM refresh_blacklist
+WHERE expires_at < NOW();
