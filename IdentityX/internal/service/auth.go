@@ -4,11 +4,14 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"log"
+	"time"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/repository"
 	"GoAuth/internal/utils"
+	"GoAuth/internal/logs"
+
+	"go.uber.org/zap"
 	resp "github.com/MintzyG/GoResponse/response"
 	"github.com/spf13/viper"
   "github.com/google/uuid"
@@ -68,15 +71,36 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
-
-	refreshToken, rs := newRefreshToken(accessJTI, agent, ip)
+  expires_at := time.Now().Add(7 * 24 * time.Hour)
+	refresh_jti := uuid.New()
+	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at)
 	if rs != nil {
 		return nil, rs
 	}
 	tokens.RefreshTokenString = refreshToken
 
-	log.Println(tokens.AccessTokenString)
-	log.Println(tokens.RefreshTokenString)
+	_, err = s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
+		TokenID: refresh_jti,
+		IssuedAt: time.Now(),
+		UserAgent: agent,
+		UserIp: ip,
+		ExpiresAt: expires_at,
+	})
+
+	if err != nil {
+		reqID := r.Header.Get("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		logs.L().Error("Create User Session Failed",
+			zap.String("error_value", err.Error()),
+			zap.String("request_id", reqID),
+			zap.String("user_id", dbUser.ID.String()),
+			zap.String("method", r.Method),
+			zap.String("path", logs.NormalizePath(r)),
+			zap.String("remote_addr", r.RemoteAddr),
+		)
+	}
 
 	return &tokens, nil
 }
@@ -95,6 +119,23 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 	jti, err := uuid.Parse(refreshClaims.ID)
 	if err != nil {
 		return resp.Unauthorized("invalid token ID")
+	}
+
+  err = s.queries.DeleteUserSessionByTokenId(ctx, jti)
+	if err != nil {
+		userID := r.Header.Get("X-User-ID")
+		reqID := r.Header.Get("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		logs.L().Error("Delete User Session Failed",
+			zap.String("error_value", err.Error()),
+			zap.String("request_id", reqID),
+			zap.String("user_id", userID),
+			zap.String("method", r.Method),
+			zap.String("path", logs.NormalizePath(r)),
+			zap.String("remote_addr", r.RemoteAddr),
+		)
 	}
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{

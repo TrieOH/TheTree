@@ -26,7 +26,7 @@ func LogsMW(next http.Handler) http.Handler {
 			zap.String("request_id", reqID),
 			zap.String("user_id", userID),
 			zap.String("method", r.Method),
-			zap.String("path", normalizePath(r)),
+			zap.String("path", NormalizePath(r)),
 			zap.Int("status", ww.status),
 			zap.Duration("duration", duration),
 			zap.String("remote_addr", r.RemoteAddr),
