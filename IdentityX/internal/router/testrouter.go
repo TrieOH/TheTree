@@ -2,11 +2,9 @@ package router
 
 import (
 	"net/http"
-
 	"database/sql"
 
 	_ "github.com/lib/pq"
-	"github.com/rs/cors"
 )
 
 func CreateTestRouter(db *sql.DB) http.Handler {
