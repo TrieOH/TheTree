@@ -7,19 +7,21 @@ import {
   type Rule,
 } from "../../../utils/field-validator";
 
-export interface SignInProps {
+export interface SignUpProps {
   onSuccess?: () => void;
   onFailed?: (message: string) => void;
-  signUpRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
+  passwordRules?: Rule[];
 }
 
-export function SignIn({
+export function SignUp({
   onSuccess,
   onFailed,
-  signUpRedirect,
+  loginRedirect,
   emailRules,
-}: SignInProps) {
+  passwordRules
+}: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -31,7 +33,15 @@ export function SignIn({
     email: emailRules || [
       { message: "Digite um e-mail válido, ex: exemplo@dominio.com", test: v => /\S+@\S+\.\S+/.test(v) },
     ],
-    password: [],
+    password: passwordRules || [
+      { message: "Mínimo de 6 caracteres.", test: v => v.length >= 6 },
+      { message: "Deve conter uma letra maiúscula.", test: v => /[A-Z]/.test(v) },
+      { 
+        message: "Inclua pelo menos um caractere especial, ex: ! @ # $ % & * . ,", 
+        test: v => /[!@#$%^&*(),.?":{}|<>_\-+=~`;/\\[\]]/.test(v) 
+      },
+      { message: "Deve conter um número.", test: v => /\d/.test(v) },
+    ],
   };
 
   const emailValidation = evaluateRules(rules.email, email);
@@ -53,14 +63,14 @@ export function SignIn({
       return;
     }
 
-    const res = await auth.login(email, password);
+    const res = await auth.register(email, password);
     console.log(res)
-    if(res.code === 200 && onSuccess) onSuccess();
+    if(res.code === 201 && onSuccess) onSuccess();
     else if(onFailed) onFailed(res.message);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
-      <h3 className="trieoh-card__title">Faça seu Login!</h3>
+      <h3 className="trieoh-card__title">Crie uma Conta!</h3>
       <div className="trieoh-card__fields">
         <BasicInputField 
           label="Email" 
@@ -87,7 +97,7 @@ export function SignIn({
           submitted={submitted}
         />
       </div>
-      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit}/>
+      <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit}/>
       <div className="trieoh-card__divider">
         <hr />
         OU
@@ -95,7 +105,7 @@ export function SignIn({
       </div>
       <span className="trieoh-card__other">
         {"Ainda não possui uma conta? "}
-        <span onClick={signUpRedirect}>Cadastra-se</span>
+        <span onClick={loginRedirect}>Entre</span>
       </span>
     </form>
   );

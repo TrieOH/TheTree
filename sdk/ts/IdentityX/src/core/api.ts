@@ -41,6 +41,7 @@ export class Api {
       const res = await fetch(this.buildUrl(path), {
         ...options,
         headers: { ...this.headers, ...(options?.headers ?? {}) },
+        credentials: "include"
       });
 
       const data = await res.json();
