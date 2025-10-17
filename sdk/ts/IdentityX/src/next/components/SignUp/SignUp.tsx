@@ -104,7 +104,7 @@ export function SignUp({
         <hr />
       </div>
       <span className="trieoh-card__other">
-        {"Ainda não possui uma conta? "}
+        {"Já possui uma conta? "}
         <span onClick={loginRedirect}>Entre</span>
       </span>
     </form>
