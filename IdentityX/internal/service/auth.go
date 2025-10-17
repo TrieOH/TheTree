@@ -66,7 +66,10 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 	}
 	tokens.AccessTokenString = accessToken
 
-	refreshToken, rs := newRefreshToken(accessJTI)
+	agent := r.UserAgent()
+	ip := utils.GetClientIP(r)
+
+	refreshToken, rs := newRefreshToken(accessJTI, agent, ip)
 	if rs != nil {
 		return nil, rs
 	}

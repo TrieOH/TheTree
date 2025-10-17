@@ -23,6 +23,7 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Issuer:    "GoAuth",
 			ID: accessJTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
@@ -35,15 +36,18 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken(accessJTI uuid.UUID) (string, *resp.Response) {
+func newRefreshToken(accessJTI uuid.UUID, agent, ip string) (string, *resp.Response) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
 			AccessJTI: accessJTI,
+			UserAgent: agent,
+			UserIP: ip,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			Issuer:    "GoAuth",
 			ID: uuid.NewString(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 

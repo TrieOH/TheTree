@@ -17,6 +17,8 @@ type AccessClaims struct {
 
 type RefreshSubJWT struct {
 	AccessJTI uuid.UUID `json:"access_jti"`
+	UserAgent string `json:"user_agent"`
+	UserIP string `json:"user_ip"`
 }
 
 type RefreshClaims struct {
