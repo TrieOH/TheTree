@@ -37,9 +37,9 @@ func CreateRouter(db *sql.DB) http.Handler {
 	withID := logs.RequestIDMW(withLogging)
 
 	withCors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization", "Refresh"},
+		AllowedOrigins:   strings.Split(viper.GetString("CORS_ALLOWED_ORIGINS"), ","),
+		AllowedMethods:   strings.Split(viper.GetString("CORS_ALLOWED_METHODS"), ","),
+		AllowedHeaders:   strings.Split(viper.GetString("CORS_ALLOWED_HEADERS"), ","),
 		AllowCredentials: true,
 	}).Handler(withID)
 
