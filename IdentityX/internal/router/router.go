@@ -5,15 +5,17 @@ package router
 
 import (
 	"net/http"
+	"strings"
+	"database/sql"
 
 	"GoAuth/internal/logs"
 	"GoAuth/internal/metrics"
-	"database/sql"
 
 	_ "GoAuth/docs"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 	"github.com/swaggo/http-swagger"
+	"github.com/spf13/viper"
 )
 
 // @title        Greet Service API
