@@ -75,7 +75,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	refreshCookie := http.Cookie{
 		Name:     "refresh_token",
-		Value:    tokens.AccessTokenString,
+		Value:    tokens.RefreshTokenString,
 		Path:     "/",
 		MaxAge:   0,
 		HttpOnly: true,

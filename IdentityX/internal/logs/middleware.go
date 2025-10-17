@@ -3,6 +3,8 @@ package logs
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
+	"GoAuth/internal/utils"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
@@ -54,17 +56,20 @@ func RequestIDMW(next http.Handler) http.Handler {
 			reqID = uuid.New().String()
 		}
 
-		ctx := r.Context()
-		ctx = context.WithValue(r.Context(), requestIDKey, reqID)
-
+		ctx := context.WithValue(r.Context(), requestIDKey, reqID)
 		w.Header().Set("X-Request-ID", reqID)
 
 		userID := r.Header.Get("X-User-ID")
-		if reqID == "" {
-			// grab userID from a jwt if available
+		if userID == "" {
+			if access_token_cookie, err := r.Cookie("access_token"); err == nil {
+				if uid := utils.ParseAccessTokenUserIDUnsafe(access_token_cookie.Value, viper.GetString("JWT_SECRET")); uid != nil {
+					userID = *uid
+				}
+			}
 		}
 
 		ctx = context.WithValue(ctx, userIDKey, userID)
+		w.Header().Set("X-User-ID", userID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

@@ -1,5 +1,5 @@
 services:
-  go_auth:
+  go-auth:
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,12 +8,12 @@ services:
     networks:
       - internal
     depends_on:
-      - go_auth_database
+      - go-auth-database
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
       JWT_SECRET: ${JWT_SECRET}
 
-  go_auth_database:
+  go-auth-database:
     image: postgres:16
     restart: unless-stopped
     environment:
@@ -23,12 +23,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - database_data:/var/lib/postgresql/data
+      - database-data:/var/lib/postgresql/data
     networks:
       - internal
 
 volumes:
-  database_data:
+  database-data:
 
 networks:
   internal:

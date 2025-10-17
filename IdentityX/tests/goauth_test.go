@@ -1,9 +1,8 @@
-package integration_test
+package testing
 
 import (
 	"database/sql"
 	"log"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -33,7 +32,7 @@ func init() {
 		MaxInterceptorAmount: 20,
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
-		DefaultModule:        "greet-test",
+		DefaultModule:        "go-auth-test",
 	})
 
 	var err error
@@ -62,76 +61,67 @@ func createExpect(t *testing.T) *httpexpect.Expect {
 	})
 }
 
-func TestGreetService(t *testing.T) {
+type rllCtx struct {
+	SuccessEmail string `json:"email"`
+	SuccessPasword string `json:"password"`
+	accessToken string `json:"-"`
+	refreshToken string `json:"-"`
+}
+
+func TestGoAuthService(t *testing.T) {
 	runServer()
 	defer Db.Close()
 
-	t.Run("CreateUsers", func(t *testing.T) {
-		runCreateUsers(t)
+	ctx := &rllCtx{
+		SuccessEmail: "success@mail.com",
+		SuccessPasword: "Str0ngP4ass!",
+	}
+
+	t.Run("RegisterTests", func(t *testing.T) {
+		runRegisterTests(t, ctx)
 	})
+
+	t.Run("LoginTests", func(t *testing.T) {
+    runLoginTests(t, ctx)
+	})
+
+	t.Run("LogoutTests", func(t *testing.T) {
+    runLogoutTests(t, ctx)
+	})
+
+	t.Logf("rllCtx: %v", ctx)
 }
 
-type createUserContext struct {
-	id string
+func runRegisterTests(t *testing.T, ctx *rllCtx) {
+	t.Run("RegisterNoEmail", registerNoEmail())
+	t.Run("RegisterInvalidEmail", registerInvalidEmail())
+	t.Run("RegisterBigEmail", registerBigEmail())
+	t.Run("RegisterNoPassword", registerNoPassword())
+	t.Run("RegisterBigPassword", registerBigPassword())
+	t.Run("RegisterWeakPasswordLetters", registerWeakPasswordLetters())
+	t.Run("RegisterWeakPasswordLettersNumber", registerWeakPasswordLettersNumber())
+	t.Run("RegisterWeakPasswordLettersSymbol", registerWeakPasswordLettersSymbol())
+	t.Run("RegisterWeakPasswordLettersUppercase", registerWeakPasswordLettersUppercase())
+	t.Run("RegisterWeakPasswordLettersSymbolUppercase", registerWeakPasswordLettersSymbolUppercase())
+	t.Run("RegisterWeakPasswordLettersNumberUppercase", registerWeakPasswordLettersNumberUppercase())
+	t.Run("RegisterWeakPasswordLettersNumberSymbolUppercase", registerWeakPasswordLettersNumberSymbolUppercase())
+
+	t.Run("RegisterSuccess", registerSuccess(ctx))
+	t.Run("AccountAlreadyExists", accountAlreadyExists(ctx))
 }
 
-func runCreateUsers(t *testing.T) {
-	var ctx createUserContext
+func runLoginTests(t *testing.T, ctx *rllCtx) {
+	t.Run("LoginWrongPassword", loginWrongPassword(ctx))
+	t.Run("LoginWrongEmail", loginWrongEmail(ctx))
+	t.Run("LoginWrongEmailAndPasword", LoginWrongEmailAndPasword())
 
-	completeUser := map[string]interface{}{
-		"first_name": "Complete",
-		"last_name":  "User",
-	}
-
-	t.Run("CreateCompleteUser", createUserSuccess(&ctx, completeUser))
-	t.Run("GetCompleteUser", getUserAndVerify(&ctx, nil))
-	t.Run("GetAndVerifyCompleteUser", getUserAndVerify(&ctx, &completeUser))
-
-	incompleteUser := map[string]interface{}{
-		"first_name": "IncompleteUser",
-	}
-
-	t.Run("CreateIncompleteUser", createUserSuccess(&ctx, incompleteUser))
-	t.Run("GetIncompleteUser", getUserAndVerify(&ctx, nil))
-	t.Run("GetAndVerifyIncompleteUser", getUserAndVerify(&ctx, &incompleteUser))
+	t.Run("LoginSuccess", loginSuccess(ctx))
 }
 
-func getUserAndVerify(ctx *createUserContext, expected *map[string]interface{}) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		userObj := e.GET("/users/{id}", ctx.id).
-			WithHeader("Content-Type", "application/json").
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object().Value("data").Object()
-
-		userObj.Value("id").NotNull()
-		userObj.Value("first_name").NotNull()
-
-		if expected != nil {
-			for key, val := range *expected {
-				userObj.Value(key).Equal(val)
-			}
-		}
-	}
+func runLogoutTests(t *testing.T, ctx *rllCtx) {
+	t.Run("LogoutNoTokens", logoutNoTokens())
+	t.Run("LogoutNoRefresh", logoutNoRefresh(ctx))
+	t.Run("LogoutSuccess", logoutSuccess(ctx))
+	t.Run("LoggedOutAlready", loggedOutAlready(ctx))
 }
 
-func createUserSuccess(ctx *createUserContext, user map[string]interface{}) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		r := e.POST("/users").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(user).
-			Expect().
-			Status(http.StatusCreated).
-			JSON().Object().Value("data").Object()
-
-		for key, _ := range user {
-			r.Value(key).NotNull()
-		}
-
-		ctx.id = r.Value("id").Raw().(string)
-	}
-}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"log"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/repository"
@@ -19,6 +20,9 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterUserReque
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		if strings.Contains(err.Error(), "password length exceeds 72 bytes") {
+			return resp.BadRequest("error registering user").WithTracePrefix("error").AddTrace("password exceeds 72 char limit")
+		}
 		return resp.InternalServerError("error hashing user password").WithTracePrefix("error").AddTrace(err)
 	}
 
@@ -29,6 +33,9 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterUserReque
 
 	if err != nil {
 		readable := utils.ParseDBError(err)
+		if strings.Contains(readable.Error(), "email is already in use") {
+			return resp.Conflict("error registering user").WithTracePrefix("error").AddTrace("email already in use")
+		}
 		return resp.InternalServerError("error registering user").WithTracePrefix("database-error").AddTrace(readable)
 	}
 
@@ -53,35 +60,28 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 	}
 
 	var tokens models.UserTokens
-	accessToken, rs := newAccessToken(dbUser)
+	accessToken, accessJTI, rs := newAccessToken(dbUser)
 	if rs != nil {
 		return nil, rs
 	}
 	tokens.AccessTokenString = accessToken
 
-	refreshToken, rs := newRefreshToken()
+	refreshToken, rs := newRefreshToken(accessJTI)
 	if rs != nil {
 		return nil, rs
 	}
 	tokens.RefreshTokenString = refreshToken
 
+	log.Println(tokens.AccessTokenString)
+	log.Println(tokens.RefreshTokenString)
+
 	return &tokens, nil
 }
 
 func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Response {
-	access_token_cookie, err := r.Cookie("access_token")
-	if err != nil {
-		return resp.Unauthorized("missing access_token cookie")
-	}
-
 	refresh_token_cookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		return resp.Unauthorized("missing refresh_token cookie")
-	}
-
-	_, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
-	if rs != nil && !strings.Contains(rs.Message, "token expired"){
-		return rs
 	}
 
 	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
@@ -96,10 +96,14 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
 		TokenID: jti,
+		AccessJti: refreshClaims.Sub.AccessJTI,
 		ExpiresAt: refreshClaims.ExpiresAt.Time,
 	})
 	if err != nil {
 		readable := utils.ParseDBError(err)
+		if strings.Contains(readable.Error(), "duplicate value") {
+			return resp.BadRequest("user already logged out").WithTracePrefix("error").AddTrace("token already blacklisted")
+		}
 		return resp.InternalServerError("error blacklisting token").WithTracePrefix("database-error").AddTrace(readable)
 	}
 

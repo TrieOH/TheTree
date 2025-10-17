@@ -16,7 +16,7 @@ type AccessClaims struct {
 }
 
 type RefreshSubJWT struct {
-	MetaData string `json:"meta_data"`
+	AccessJTI uuid.UUID `json:"access_jti"`
 }
 
 type RefreshClaims struct {
