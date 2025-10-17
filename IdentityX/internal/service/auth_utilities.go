@@ -12,7 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-func newAccessToken(dbUser repository.User) (string, *resp.Response) {
+func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) {
+	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
 			ID:    dbUser.ID,
@@ -21,22 +22,23 @@ func newAccessToken(dbUser repository.User) (string, *resp.Response) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Issuer:    "GoAuth",
-			ID: uuid.NewString(),
+			ID: accessJTI,
 		},
 	}
 
+	accessJTIID, _ := uuid.Parse(accessJTI)
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := accessToken.SignedString([]byte(viper.GetString("JWT_SECRET")))
 	if err != nil {
-		return "", resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
+		return "", uuid.Nil, resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
 	}
-	return tokenStr, nil
+	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken() (string, *resp.Response) {
+func newRefreshToken(accessJTI uuid.UUID) (string, *resp.Response) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
-			MetaData: "Refresh Metadata",
+			AccessJTI: accessJTI,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
