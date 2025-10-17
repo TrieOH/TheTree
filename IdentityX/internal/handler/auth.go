@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/validation"
@@ -135,9 +134,23 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Logged out").Send(w)
 }
 
-// Me godoc
-// @Summary Prints cookie contents
-// @Description This route prints info from both accessCookie and refreshCookie
+// PublicPing godoc
+// @Summary Just replies "pong"
+// @Description This route replies pong to any request to test connectivity
+// @Description This is not meant to be used as a health check but it can be trusted
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {string} string
+// @Router /ping/public [post]
+func (h *AuthHandler) PublicPing(w http.ResponseWriter, r *http.Request) {
+	resp.OK("pong").Send(w)
+}
+
+// PrivatePing godoc
+// @Summary Just replies "pong to you {EMAIL}"
+// @Description This route replies pong with the authenticated user email
+// @Description You must be authenticated to use this route
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -145,33 +158,19 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
-// @Router /me [post]
-func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	access_token_cookie, err := r.Cookie("access_token")
+// @Router /ping/private [post]
+func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
+	access_token, err := r.Cookie("access_token")
 	if err != nil {
-		resp.Unauthorized("missing access_token cookie")
+		resp.Unauthorized("missing access_token cookie").Send(w)
 		return
 	}
 
-	refresh_token_cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		resp.Unauthorized("missing refresh_token cookie")
-		return
-	}
-
-	accessClaims, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
-	if rs != nil && !strings.Contains(rs.Message, "token expired"){
-	  rs.Send(w)
-		return
-	}
-
-	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	accessClaims, rs := utils.ParseAccessToken(access_token.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
-	  rs.Send(w)
+		rs.Send(w)
 		return
 	}
 
-	hi := accessClaims.Sub.Email + ": " + accessClaims.Sub.ID.String() + "\nrefreshID: " + refreshClaims.ID
-
-	resp.OK(hi).Send(w)
+	resp.OK("pong to you " + accessClaims.Sub.Email).Send(w)
 }
