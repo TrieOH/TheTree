@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"GoAuth/internal/models"
@@ -182,11 +181,16 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string
+// @Success 200 {array} repository.UserSession
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions [get]
 func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	accessClaims, ok := models.GetAccessClaims(r)
-	resp.OK(fmt.Sprintf("%v: %v", ok, accessClaims.Sub.Email)).Send(w)
+	sessions, rs := h.AuthService.ListUserSessions(r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	resp.OK().WithData(sessions).Send(w)
 }
