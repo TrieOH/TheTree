@@ -1,4 +1,4 @@
-import { AuthProvider, SignIn } from "../next";
+import { AuthProvider, SignIn } from "../../next";
 
 export default function SignInWithProvider() {
   return (

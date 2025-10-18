@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import SignUpWithProvider from './SignUpWithProvider';
+import SignUpWithProvider from './components/SignUpWithProvider';
 
 const meta = {
   title: "Example/SignUp",
@@ -10,4 +10,4 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Primary: Story = {};
+export const Default: Story = {};
