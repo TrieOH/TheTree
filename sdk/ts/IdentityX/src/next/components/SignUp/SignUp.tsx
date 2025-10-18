@@ -2,6 +2,7 @@ import { type MouseEvent, useRef, useState } from "react";
 import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
+import CardAvatar from "../Form/CardAvatar";
 import { 
   evaluateRules, 
   type Rule,
@@ -64,13 +65,12 @@ export function SignUp({
     }
 
     const res = await auth.register(email, password);
-    console.log(res)
     if(res.code === 201 && onSuccess) onSuccess();
     else if(onFailed) onFailed(res.message);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
-      <h3 className="trieoh-card__title">Crie uma Conta!</h3>
+      <CardAvatar mainText="Crie sua conta" subText="Insira seus dados para começar" />
       <div className="trieoh-card__fields">
         <BasicInputField 
           label="Email" 

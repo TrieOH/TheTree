@@ -78,6 +78,7 @@
   background: none;
   width: 100%;
   height: 5rem;
+  min-width: 10rem;
   flex-shrink: 0;
   border: 0.1875rem solid var(--trieoh-neutral2);
   border-radius: 0.9375rem 1.875rem;
@@ -95,15 +96,56 @@
   transform: scale(102%);
 }
 
-
 .trieoh-button:active {
   transform: scale(99%);
+}
+
+/* Card/Form Avatar */
+
+.trieoh-avacard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.trieoh-avacard__container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 7rem;
+  height: 7rem;
+  padding: 0.5rem;
+  background-color: oklch(0.8853 0 0 / 30%);
+  border-radius: var(--trieoh-radius-full);
+  margin-bottom: 0.625rem;
+}
+
+.trieoh-avacard__content {
+  padding: 1rem;
+  background-color: var(--trieoh-neutral1);
+  border-radius: var(--trieoh-radius-full);
+  box-shadow: 0 0.25rem 1.5625rem 0 rgba(0, 0, 0, 0.25);
+}
+
+.trieoh-avacard__title {
+  text-align: center;
+  font-size: var(--trieoh-text-2xl);
+  font-weight: 500;
+  margin: 0;
+}
+
+.trieoh-avacard__sub-title {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 300;
+  opacity: 0.5;
 }
 
 /* Card/Form */
 
 .trieoh-card {
   display: flex;
+  width: 100%;
   max-width: 42rem;
   min-width: 20rem;
   max-height: 100vh;
@@ -119,12 +161,6 @@
 
 .trieoh-card--full-rounded {
   border-radius: 1.25rem;
-}
-
-.trieoh-card__title {
-  font-size: var(--trieoh-text-6xl);
-  font-weight: 500;
-  margin: 0;
 }
 
 .trieoh-card__fields {
