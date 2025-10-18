@@ -200,3 +200,8 @@
 .trieoh-card__other span:hover {
   color: var(--trieoh-primary);
 }
+
+.trieoh-copyright {
+  font-size: 2rem;
+  font-weight: 500;
+}
