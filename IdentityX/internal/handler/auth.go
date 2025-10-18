@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"GoAuth/internal/models"
@@ -173,4 +174,19 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK("pong to you " + accessClaims.Sub.Email).Send(w)
+}
+
+// ListUserSessions godoc
+// @Summary Lists all active user sessions
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {string} string
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /sessions [get]
+func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
+	accessClaims, ok := models.GetAccessClaims(r)
+	resp.OK(fmt.Sprintf("%v: %v", ok, accessClaims.Sub.Email)).Send(w)
 }

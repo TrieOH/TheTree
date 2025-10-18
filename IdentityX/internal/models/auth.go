@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/http"
 	"github.com/google/uuid"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -29,4 +30,21 @@ type RefreshClaims struct {
 type UserTokens struct {
 	AccessTokenString  string `json:"access_token"`
 	RefreshTokenString string `json:"refresh_token"`
+}
+
+type ctxKey string
+
+const (
+	AccessClaimsKey  ctxKey = "accessClaims"
+	RefreshClaimsKey ctxKey = "refreshClaims"
+)
+
+func GetAccessClaims(r *http.Request) (*AccessClaims, bool) {
+	claims, ok := r.Context().Value(AccessClaimsKey).(*AccessClaims)
+	return claims, ok
+}
+
+func GetRefreshClaims(r *http.Request) (*RefreshClaims, bool) {
+	claims, ok := r.Context().Value(RefreshClaimsKey).(*RefreshClaims)
+	return claims, ok
 }

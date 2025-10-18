@@ -3,8 +3,10 @@ package middleware
 import (
 	"strings"
 	"net/http"
+	"context"
 	"GoAuth/internal/utils"
 	"GoAuth/internal/repository"
+	"GoAuth/internal/models"
   "github.com/google/uuid"
 	"github.com/spf13/viper"
 	resp "github.com/MintzyG/GoResponse/response"
@@ -65,6 +67,9 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			resp.Unauthorized("refresh token is invalidated").WithModule("AuthWM").Send(w)
 			return
 		}
+
+		ctx := context.WithValue(r.Context(), models.AccessClaimsKey, access_token)
+		ctx = context.WithValue(ctx, models.RefreshClaimsKey, refresh_token)
 
 		h.ServeHTTP(w, r)
 	}
