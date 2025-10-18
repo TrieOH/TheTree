@@ -71,7 +71,7 @@
   opacity: 1;
 }
 
-/* Basic Submit Button */
+/* Basic Button */
 
 .trieoh-button {
   outline: none;
@@ -92,12 +92,34 @@
   transition: transform 200ms;
 }
 
+.trieoh-button--all-rounded {
+  border-radius: 0.9375rem;
+}
+
 .trieoh-button:hover {
   transform: scale(102%);
 }
 
 .trieoh-button:active {
   transform: scale(99%);
+}
+
+/* Basic Logout Button */
+
+.trieoh-button--logout {
+  min-width: 14rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-color: oklch(0.628 0.2577 29.23);
+  color: oklch(0.628 0.2577 29.23);
+}
+
+.trieoh-button--logout svg {
+  padding: 0.675rem;
+  border: solid 0.125rem oklch(0.628 0.2577 29.23);
+  border-radius: var(--trieoh-radius-full);
 }
 
 /* Card/Form Avatar */
