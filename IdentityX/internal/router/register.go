@@ -22,6 +22,7 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("POST /auth/logout", handler.Logout)
 	mux.HandleFunc("POST /ping/public", handler.PublicPing)
 	mux.HandleFunc("POST /ping/private", authMW.Auth(handler.PrivatePing))
+	mux.HandleFunc("POST /sessions", authMW.Auth(handler.ListUserSessions))
 
 	return mux
 }

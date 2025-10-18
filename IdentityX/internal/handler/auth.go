@@ -174,3 +174,23 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK("pong to you " + accessClaims.Sub.Email).Send(w)
 }
+
+// ListUserSessions godoc
+// @Summary Lists all active user sessions
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {array} repository.UserSession
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /sessions [get]
+func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
+	sessions, rs := h.AuthService.ListUserSessions(r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	resp.OK().WithData(sessions).Send(w)
+}

@@ -153,3 +153,11 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 
 	return nil
 }
+
+func (s *AuthService) ListUserSessions(ctx context.Context) ([]repository.UserSession, *resp.Response) {
+	sessions, err := s.queries.ListUserSessions(ctx)
+	if err != nil {
+		return nil, resp.InternalServerError("error listing user sessions").WithTracePrefix("database-error").AddTrace(err)
+	}
+	return sessions, nil
+}
