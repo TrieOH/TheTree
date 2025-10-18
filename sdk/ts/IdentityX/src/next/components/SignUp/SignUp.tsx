@@ -10,7 +10,7 @@ import {
 
 export interface SignUpProps {
   onSuccess?: () => void;
-  onFailed?: (message: string) => void;
+  onFailed?: (message: string, trace?: string[]) => void;
   loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
   passwordRules?: Rule[];
@@ -66,7 +66,7 @@ export function SignUp({
 
     const res = await auth.register(email, password);
     if(res.code === 201 && onSuccess) onSuccess();
-    else if(onFailed) onFailed(res.message);
+    else if(onFailed) onFailed(res.message, res.trace);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
