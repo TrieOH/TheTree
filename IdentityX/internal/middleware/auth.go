@@ -71,6 +71,6 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 		ctx := context.WithValue(r.Context(), models.AccessClaimsKey, access_token)
 		ctx = context.WithValue(ctx, models.RefreshClaimsKey, refresh_token)
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

@@ -7,6 +7,10 @@ RETURNING *;
 SELECT * FROM user_sessions
 WHERE session_id = $1;
 
+-- name: GetUserSessionByTokenId :one
+SELECT * FROM user_sessions
+WHERE token_id = $1;
+
 -- name: ListUserSessions :many
 SELECT * FROM user_sessions ORDER BY created_at DESC;
 
@@ -28,3 +32,8 @@ WHERE session_id = $1;
 -- name: DeleteUserSessionByTokenId :exec
 DELETE FROM user_sessions
 WHERE token_id = $1;
+
+-- name: RevokeUserSession :one
+DELETE FROM user_sessions u
+WHERE session_id = $1 AND token_id != $2
+RETURNING u.token_id;

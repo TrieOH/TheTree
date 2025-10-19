@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"net/http"
 	"github.com/google/uuid"
 	"github.com/golang-jwt/jwt/v5"
@@ -39,12 +40,30 @@ const (
 	RefreshClaimsKey ctxKey = "refreshClaims"
 )
 
-func GetAccessClaims(r *http.Request) (*AccessClaims, bool) {
-	claims, ok := r.Context().Value(AccessClaimsKey).(*AccessClaims)
-	return claims, ok
+func GetAccessClaims(r *http.Request) (*AccessClaims, error) {
+        val := r.Context().Value(AccessClaimsKey)
+        if val == nil {
+                return nil, fmt.Errorf("access claims not found in context")
+        }
+
+        claims, ok := val.(*AccessClaims)
+        if !ok {
+                return nil, fmt.Errorf("invalid type for access claims in context")
+        }
+
+        return claims, nil
 }
 
-func GetRefreshClaims(r *http.Request) (*RefreshClaims, bool) {
-	claims, ok := r.Context().Value(RefreshClaimsKey).(*RefreshClaims)
-	return claims, ok
+func GetRefreshClaims(r *http.Request) (*RefreshClaims, error) {
+        val := r.Context().Value(RefreshClaimsKey)
+        if val == nil {
+                return nil, fmt.Errorf("refresh claims not found in context")
+        }
+
+        claims, ok := val.(*RefreshClaims)
+        if !ok {
+                return nil, fmt.Errorf("invalid type for refresh claims in context")
+        }
+
+        return claims, nil
 }
