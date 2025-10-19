@@ -9,8 +9,8 @@ import {
 } from "../../../utils/field-validator";
 
 export interface SignInProps {
-  onSuccess?: () => void;
-  onFailed?: (message: string) => void;
+  onSuccess?: () => Promise<void>;
+  onFailed?: (message: string) => Promise<void>;
   signUpRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
 }
@@ -24,6 +24,7 @@ export function SignIn({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const { auth } = useAuth();
@@ -41,6 +42,7 @@ export function SignIn({
   const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSubmitted(true);
+    setLoadingSubmit(true);
 
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
@@ -55,8 +57,9 @@ export function SignIn({
     }
 
     const res = await auth.login(email, password);
-    if(res.code === 200 && onSuccess) onSuccess();
-    else if(onFailed) onFailed(res.message);
+    if(res.code === 200 && onSuccess) await onSuccess();
+    else if(onFailed) await onFailed(res.message);
+    setLoadingSubmit(false);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
@@ -87,7 +90,7 @@ export function SignIn({
           submitted={submitted}
         />
       </div>
-      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit}/>
+      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit} loading={loadingSubmit}/>
       <div className="trieoh-card__divider">
         <hr />
         OU

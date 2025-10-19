@@ -9,8 +9,8 @@ import {
 } from "../../../utils/field-validator";
 
 export interface SignUpProps {
-  onSuccess?: () => void;
-  onFailed?: (message: string, trace?: string[]) => void;
+  onSuccess?: () => Promise<void>;
+  onFailed?: (message: string, trace?: string[]) => Promise<void>;
   loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
   passwordRules?: Rule[];
@@ -26,6 +26,7 @@ export function SignUp({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const { auth } = useAuth();
@@ -51,6 +52,7 @@ export function SignUp({
   const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSubmitted(true);
+    setLoadingSubmit(true);
 
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
@@ -65,8 +67,9 @@ export function SignUp({
     }
 
     const res = await auth.register(email, password);
-    if(res.code === 201 && onSuccess) onSuccess();
-    else if(onFailed) onFailed(res.message, res.trace);
+    if(res.code === 201 && onSuccess) await onSuccess();
+    else if(onFailed) await onFailed(res.message, res.trace);
+    setLoadingSubmit(false);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
@@ -97,7 +100,7 @@ export function SignUp({
           submitted={submitted}
         />
       </div>
-      <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit}/>
+      <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit}/>
       <div className="trieoh-card__divider">
         <hr />
         OU
