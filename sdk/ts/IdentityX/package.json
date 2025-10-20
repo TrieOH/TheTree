@@ -19,16 +19,17 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
     "typecheck": "tsc -p . --notEmit",
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/",
+    "access": "restricted"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TrieOH/NodeAuth.git"
+    "url": "git+https://github.com/TrieOH/NodeAuth.git"
   },
   "devDependencies": {
     "@storybook/addon-docs": "9.1.10",
