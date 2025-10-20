@@ -5,8 +5,7 @@ on:
     tags:
       - "v*"
   release:
-    types:
-      - published
+    types: [published]
 
 permissions:
   contents: read
@@ -17,7 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@trie-oh'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -30,13 +36,7 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Configure npmrc for GitHub Packages
-        run: |
-          echo "@trie-oh:registry=https://npm.pkg.github.com" > ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-
-      - name: Publish with bun
+      - name: Publish using npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          bun publish --access restricted
+        run: npm publish --access restricted

@@ -15,6 +15,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: storybook-pages
     # Job steps
     steps:
       # Manual Checkout
@@ -25,6 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Create .env
+        run: |
+          echo "VITE_TRIEOH_AUTH_API_KEY=${{ secrets.VITE_TRIEOH_AUTH_API_KEY }}" >> .env
       #👇 Add Storybook build and deploy to GitHub Pages as a step in the workflow
       - uses: bitovi/github-actions-storybook-to-github-pages@v1.0.3
         with:
