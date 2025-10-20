@@ -52,7 +52,6 @@ export function SignUp({
   const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setSubmitted(true);
-    setLoadingSubmit(true);
 
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
@@ -65,6 +64,8 @@ export function SignUp({
       passwordRef.current?.focus();
       return;
     }
+    
+    setLoadingSubmit(true);
 
     const res = await auth.register(email, password);
     if(res.code === 201 && onSuccess) await onSuccess();
