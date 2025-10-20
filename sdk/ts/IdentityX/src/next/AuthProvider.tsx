@@ -15,24 +15,14 @@ export function AuthProvider({
   children: React.ReactNode;
   baseURL?: string;
 }) {
-  // I need to load only when the style is loaded
-  // const [ready, setReady] = useState(false);
-  // useEffect(() => {
-  //   const check = () => {
-  //     const styleLoaded = Array.from(document.styleSheets).some(sheet =>
-  //       sheet.href?.includes("trieoh") ||
-  //       sheet.ownerNode?.textContent?.includes(".trieoh-")
-  //     );
-  //     if (styleLoaded) setReady(true);
-  //   };
+  const [ready, setReady] = useState(false);
 
-  //   check();
-  //   const timeout = setTimeout(check, 100);
-  //   return () => clearTimeout(timeout);
-  // }, []);
+  useEffect(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)));
+  }, []);
   const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
   const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
-  // if(!ready) return;
+  if (!ready) return <div aria-hidden style={{ minHeight: 40, minWidth: 120 }} />;
   return (
     <AuthContext.Provider value={{ auth }}>{children}</AuthContext.Provider>
   );
