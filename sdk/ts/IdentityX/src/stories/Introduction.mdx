@@ -1,0 +1,110 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+export const RightArrow = () => (
+  <svg
+    viewBox="0 0 14 14"
+    width="8px"
+    height="14px"
+    style={{
+      marginLeft: "4px",
+      display: "inline-block",
+      shapeRendering: "inherit",
+      verticalAlign: "middle",
+      fill: "currentColor",
+      "path fill": "currentColor",
+    }}
+  >
+    <path d="m11.1 7.35-5.5 5.5a.5.5 0 0 1-.7-.7L10.04 7 4.9 1.85a.5.5 0 1 1 .7-.7l5.5 5.5c.2.2.2.5 0 .7Z" />
+  </svg>
+);
+
+<Meta title="Introdução" />
+
+<div className="sb-container">
+  <div className="sb-section-title">
+    # 🧩 TrieOH Auth Components
+
+    Este pacote contém os **componentes de autenticação oficiais da TrieOH**, feitos para integração com o **GoAuth**.
+
+    Os componentes foram criados com **React**, oferecendo uma base consistente, personalizável e moderna para formulários de login, registro e autenticação social.
+
+  </div>
+
+  <div className="sb-section">
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Login Form</h4>
+      <p className="sb-section-item-paragraph">
+        Interface completa de autenticação com validação e feedbacks integrados.
+      </p>
+    </div>
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Register Form</h4>
+      <p className="sb-section-item-paragraph">
+        Criação de conta com campos configuráveis e mensagens de erro amigáveis.
+      </p>
+    </div>
+    <div className="sb-section-item">
+      <h4 className="sb-section-item-heading">Social Buttons</h4>
+      <p className="sb-section-item-paragraph">
+        Suporte a autenticação via Google e provedores adicionais.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="sb-footer">
+  <p>
+    Feito com ❤️ pela <strong>TrieOH</strong> • Documentação v0.1.0
+  </p>
+</div>
+
+<style>
+  {`
+  .sb-container {
+    margin-bottom: 48px;
+  }
+
+  .sb-section {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+  }
+
+  .sb-section-title {
+    margin-bottom: 32px;
+    font-size: 18px;
+  }
+
+  .sb-section-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sb-section-item-heading {
+    padding-top: 20px !important;
+    padding-bottom: 5px !important;
+    margin: 0 !important;
+  }
+
+  .sb-section-item-paragraph {
+    margin: 0;
+    padding-bottom: 10px;
+  }
+
+  .sb-footer {
+    text-align: center;
+    padding: 24px 0;
+    font-size: 14px;
+    color: #555;
+    border-top: 1px solid #eee;
+  }
+
+  @media screen and (max-width: 600px) {
+    .sb-section {
+      flex-direction: column;
+    }
+  }
+  `}
+</style>

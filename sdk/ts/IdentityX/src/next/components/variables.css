@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root {
+  --trieoh-primary: oklch(0.5106 0.2301 276.97);
+  --trieoh-secondary: oklch(0.7975 0.1018 262.7);
+  --trieoh-neutral1: oklch(0.9702 0 0);
+  --trieoh-neutral2: oklch(0.1944 0.0051 248.09);
+
+  --trieoh-radius-full: 50%;
+
+  --trieoh-text-sm: 0.75rem; /* 12px */
+  --trieoh-text-xl: 1.25rem; /* 20px */
+  --trieoh-text-2xl: 1.5rem; /* 24px */
+  --trieoh-text-3xl: 1.875rem; /* 30px */
+  --trieoh-text-6xl: 3.75rem; /* 60px */
+}
