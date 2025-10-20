@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Api } from "../core/api";
-import { AuthService } from "../core/services";
+import { createAuthService } from "../core/services";
 
 type AuthContextType = {
-  auth: typeof AuthService;
+  auth: ReturnType<typeof createAuthService>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -15,17 +15,14 @@ export function AuthProvider({
   children: React.ReactNode;
   baseURL?: string;
 }) {
-  const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
-  const auth = useMemo(
-    () => ({
-      login: (email: string, password: string) =>
-        apiInstance.post("/auth/login", { email, password }),
-      register: (email: string, password: string) =>
-        apiInstance.post("/auth/register", { email, password }),
-    }),
-    [apiInstance]
-  );
+  const [ready, setReady] = useState(false);
 
+  useEffect(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)));
+  }, []);
+  const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
+  const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
+  if (!ready) return <div aria-hidden style={{ minHeight: 40, minWidth: 120 }} />;
   return (
     <AuthContext.Provider value={{ auth }}>{children}</AuthContext.Provider>
   );

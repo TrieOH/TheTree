@@ -9,7 +9,7 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
-class Api {
+export class Api {
   private baseURL: string;
   private apiKey: string;
 
@@ -41,6 +41,7 @@ class Api {
       const res = await fetch(this.buildUrl(path), {
         ...options,
         headers: { ...this.headers, ...(options?.headers ?? {}) },
+        credentials: "include"
       });
 
       const data = await res.json();
@@ -78,6 +79,3 @@ class Api {
     return this.request<T>(path, { method: "DELETE" });
   }
 }
-
-export const api = new Api(); // Default instance
-export { Api };

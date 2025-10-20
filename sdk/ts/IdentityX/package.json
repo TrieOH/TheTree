@@ -1,18 +1,17 @@
 {
   "name": "@trie-oh/node-auth-sdk",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SDK to consume GOAuth",
-  "sideEffects": false,
   "exports": {
-    "./client": {
-      "types": "./dist/esm/client.d.mts",
-      "import": "./dist/esm/client.js",
-      "require": "./dist/cjs/client.js"
+    "./next": {
+      "types": "./dist/esm/next.d.mts",
+      "import": "./dist/esm/next.js",
+      "require": "./dist/cjs/next.js"
     }
   },
-  "main": "./dist/cjs/client.js",
-  "module": "./dist/esm/client.js",
-  "types": "./dist/esm/client.d.mts",
+  "main": "./dist/cjs/next.js",
+  "module": "./dist/esm/next.js",
+  "types": "./dist/esm/next.d.mts",
   "files": [
     "dist"
   ],
@@ -20,7 +19,9 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
     "typecheck": "tsc -p . --notEmit",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
@@ -30,8 +31,12 @@
     "url": "https://github.com/TrieOH/NodeAuth.git"
   },
   "devDependencies": {
+    "@storybook/addon-docs": "9.1.10",
+    "@storybook/react-vite": "9.1.10",
+    "@types/node": "^24.7.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "storybook": "9.1.10",
     "tsup": "^8.5.0",
     "typescript": "^5"
   },

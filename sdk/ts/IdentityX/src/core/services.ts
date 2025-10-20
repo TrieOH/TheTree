@@ -1,9 +1,13 @@
-import { api } from "./api";
+import type { Api } from "./api";
 
-export const AuthService = {
+export const createAuthService = (apiInstance: Api) => ({
   login: (email: string, password: string) =>
-    api.post("/auth/login", { email, password }),
+    apiInstance.post<string>("/auth/login", { email, password }),
 
   register: (email: string, password: string) =>
-    api.post("/auth/register", { email, password }),
-};
+    apiInstance.post<string>("/auth/register", { email, password }),
+
+  logout: () => apiInstance.post<string>("/auth/logout"),
+
+  me: () => apiInstance.post<string>("/auth/me"),
+});

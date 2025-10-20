@@ -2,13 +2,15 @@ import { defineConfig, Options } from "tsup";
 
 export default defineConfig((options) => {
   const commonOptions: Options = {
-    entry: ["src/client.ts"],
+    entry: ["src/next.ts"],
     dts: false,
     minify: true,
     splitting: false,
     sourcemap: true,
     bundle: true,
     clean: true,
+    injectStyle: true,
+    external: ["react", "react-dom"],
     outExtension({ format }) {
       return format === "esm" ? { js: ".js" } : { js: ".js" };
     },
