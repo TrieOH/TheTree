@@ -116,3 +116,40 @@ func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) 
 
 	return nil
 }
+
+func (s *AuthService) RevokeAllSessions(r *http.Request, ctx context.Context) *resp.Response {
+	access_claims, err := models.GetAccessClaims(r)
+	if err != nil {
+		return resp.InternalServerError().AddTrace(err)
+	}
+
+	revoked_sessions, err := s.queries.RevokeAllSessions(ctx, access_claims.Sub.ID)
+
+	if err != nil {
+		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	tokenIDs := make([]uuid.UUID, len(revoked_sessions))
+	expiresAt := make([]time.Time, len(revoked_sessions))
+
+        for i, session := range revoked_sessions {
+		tokenIDs[i] = session.TokenID
+		expiresAt[i] = session.ExpiresAt
+	}
+
+	blacklisted_tokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
+		Column1: tokenIDs,
+		Column2: expiresAt,
+	})
+
+	if len(blacklisted_tokens) != len(tokenIDs) {
+		log.Println(blacklisted_tokens)
+		log.Println(tokenIDs)
+	}
+
+	if err != nil {
+		return resp.InternalServerError().AddTrace("failed to blacklist user tokens", err.Error())
+	}
+
+	return nil
+}
