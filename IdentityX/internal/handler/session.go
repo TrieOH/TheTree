@@ -45,3 +45,23 @@ func (h *AuthHandler) RevokeUserSession(w http.ResponseWriter, r *http.Request) 
 
 	resp.OK("revoked session").Send(w)
 }
+
+// RevokeOtherSessions godoc
+// @Summary Revokes all user sessions but the current one
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {string} string "revoked sessions"
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /sessions/others [delete]
+func (h *AuthHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+	rs := h.AuthService.RevokeOtherSessions(r, r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	resp.OK("revoked sessions").Send(w)
+}

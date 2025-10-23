@@ -1,6 +1,8 @@
 package service
 
 import (
+	"log"
+	"time"
 	"context"
 	"net/http"
 	"GoAuth/internal/repository"
@@ -33,7 +35,7 @@ func (s *AuthService) RevokeUserSession(r *http.Request, ctx context.Context, se
 		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
 	}
 
-	token_id, err := s.queries.RevokeUserSession(ctx, repository.RevokeUserSessionParams{
+	revoked_session, err := s.queries.RevokeUserSession(ctx, repository.RevokeUserSessionParams{
 		SessionID: sid,
 		TokenID: jti,
 	})
@@ -43,13 +45,54 @@ func (s *AuthService) RevokeUserSession(r *http.Request, ctx context.Context, se
 	}
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID: token_id,
-		AccessJti: refresh_claims.Sub.AccessJTI,
-		ExpiresAt: refresh_claims.ExpiresAt.Time,
+		TokenID: revoked_session.TokenID,
+		ExpiresAt: revoked_session.ExpiresAt,
 	})
 
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to blacklist user refresh token", err.Error())
+	}
+
+	return nil
+}
+
+func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) *resp.Response {
+	refresh_claims, err := models.GetRefreshClaims(r)
+	if err != nil {
+		return resp.InternalServerError().AddTrace(err)
+	}
+
+	jti, err := uuid.Parse(refresh_claims.ID)
+	if err != nil {
+		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
+	}
+
+	revoked_sessions, err := s.queries.RevokeOtherSessions(ctx, jti)
+
+	if err != nil {
+		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	tokenIDs := make([]uuid.UUID, len(revoked_sessions))
+	expiresAt := make([]time.Time, len(revoked_sessions))
+
+        for i, session := range revoked_sessions {
+		tokenIDs[i] = session.TokenID
+		expiresAt[i] = session.ExpiresAt
+	}
+
+	blacklisted_tokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
+		Column1: tokenIDs,
+		Column2: expiresAt,
+	})
+
+	if len(blacklisted_tokens) != len(tokenIDs) {
+		log.Println(blacklisted_tokens)
+		log.Println(tokenIDs)
+	}
+
+	if err != nil {
+		return resp.InternalServerError().AddTrace("failed to blacklist other user tokens", err.Error())
 	}
 
 	return nil
