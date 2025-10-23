@@ -132,3 +132,48 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Logged out").Send(w)
 }
 
+// Refresh godoc
+// @Summary Refreshes the user token pair
+// @Description Creates a new token pair from a valid refresh token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param registerInfo body models.RegisterUserRequest true "register request data"
+// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
+// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
+// @Success 200 {string} string "Refreshed tokens"
+// @Failure 500 {object} models.ErrorResponse
+// @Router /auth/refresh [post]
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	tokens, rs := h.AuthService.Refresh(r, r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	accessCookie := http.Cookie{
+		Name:     "access_token",
+		Value:    tokens.AccessTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	refreshCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &accessCookie)
+	http.SetCookie(w, &refreshCookie)
+
+	resp.Created("Refreshed tokens").Send(w)
+}

@@ -34,7 +34,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-    access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	        access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return
@@ -46,7 +46,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-    if access_token.Issuer != "GoAuth" || refresh_token.Issuer != "GoAuth" {
+	        if access_token.Issuer != "GoAuth" || refresh_token.Issuer != "GoAuth" {
 			resp.Unauthorized("Invalid Issuer").WithModule("AuthMW").Send(w)
 			return
 		}

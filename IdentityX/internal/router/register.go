@@ -26,6 +26,7 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(handler.RevokeUserSessionByID))
 	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(handler.RevokeOtherSessions))
 	mux.HandleFunc("DELETE /sessions", authMW.Auth(handler.RevokeAllSessions))
+	mux.HandleFunc("POST /auth/refresh", handler.Refresh)
 
 	return mux
 }
