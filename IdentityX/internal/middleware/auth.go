@@ -3,8 +3,10 @@ package middleware
 import (
 	"strings"
 	"net/http"
+	"context"
 	"GoAuth/internal/utils"
 	"GoAuth/internal/repository"
+	"GoAuth/internal/models"
   "github.com/google/uuid"
 	"github.com/spf13/viper"
 	resp "github.com/MintzyG/GoResponse/response"
@@ -32,7 +34,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-    access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	        access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return
@@ -44,7 +46,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-    if access_token.Issuer != "GoAuth" || refresh_token.Issuer != "GoAuth" {
+	        if access_token.Issuer != "GoAuth" || refresh_token.Issuer != "GoAuth" {
 			resp.Unauthorized("Invalid Issuer").WithModule("AuthMW").Send(w)
 			return
 		}
@@ -66,6 +68,9 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		h.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), models.AccessClaimsKey, access_token)
+		ctx = context.WithValue(ctx, models.RefreshClaimsKey, refresh_token)
+
+		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

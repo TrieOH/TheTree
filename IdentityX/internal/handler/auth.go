@@ -2,13 +2,10 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/validation"
-	"GoAuth/internal/utils"
 
-	"github.com/spf13/viper"
 	resp "github.com/MintzyG/GoResponse/response"
 )
 
@@ -135,43 +132,48 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Logged out").Send(w)
 }
 
-// Me godoc
-// @Summary Prints cookie contents
-// @Description This route prints info from both accessCookie and refreshCookie
+// Refresh godoc
+// @Summary Refreshes the user token pair
+// @Description Creates a new token pair from a valid refresh token
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string
-// @Failure 401 {object} models.ErrorResponse
+// @Param registerInfo body models.RegisterUserRequest true "register request data"
+// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
+// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
+// @Success 200 {string} string "Refreshed tokens"
 // @Failure 500 {object} models.ErrorResponse
-// @Router /me [post]
-func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	access_token_cookie, err := r.Cookie("access_token")
-	if err != nil {
-		resp.Unauthorized("missing access_token cookie")
-		return
-	}
-
-	refresh_token_cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		resp.Unauthorized("missing refresh_token cookie")
-		return
-	}
-
-	accessClaims, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
-	if rs != nil && !strings.Contains(rs.Message, "token expired"){
-	  rs.Send(w)
-		return
-	}
-
-	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+// @Router /auth/refresh [post]
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	tokens, rs := h.AuthService.Refresh(r, r.Context())
 	if rs != nil {
-	  rs.Send(w)
+		rs.Send(w)
 		return
 	}
 
-	hi := accessClaims.Sub.Email + ": " + accessClaims.Sub.ID.String() + "\nrefreshID: " + refreshClaims.ID
+	accessCookie := http.Cookie{
+		Name:     "access_token",
+		Value:    tokens.AccessTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
 
-	resp.OK(hi).Send(w)
+	refreshCookie := http.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshTokenString,
+		Path:     "/",
+		MaxAge:   0,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &accessCookie)
+	http.SetCookie(w, &refreshCookie)
+
+	resp.Created("Refreshed tokens").Send(w)
 }

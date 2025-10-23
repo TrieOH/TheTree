@@ -2,10 +2,16 @@ package logs
 
 import (
 	"net/http"
+	"strings"
 )
 
-func normalizePath(r *http.Request) string {
-	path := r.URL.Path
+func NormalizePath(r *http.Request) string {
+    path := r.URL.Path
 
-	return path
+    switch {
+    case strings.HasPrefix(path, "/sessions/"):
+        return "/sessions/{session_id}"
+    }
+
+    return path
 }
