@@ -49,3 +49,8 @@ RETURNING u.*;
 DELETE FROM user_sessions u
 WHERE user_id = $1
 RETURNING u.*;
+
+-- name: DeleteExpiredSessions :many
+DELETE FROM user_sessions u
+WHERE expires_at < NOW()
+RETURNING u.*;
