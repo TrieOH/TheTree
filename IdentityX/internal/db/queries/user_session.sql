@@ -36,4 +36,9 @@ WHERE token_id = $1;
 -- name: RevokeUserSession :one
 DELETE FROM user_sessions u
 WHERE session_id = $1 AND token_id != $2
-RETURNING u.token_id;
+RETURNING u.*;
+
+-- name: RevokeOtherSessions :many
+DELETE FROM user_sessions u
+WHERE token_id != $1
+RETURNING u.*;

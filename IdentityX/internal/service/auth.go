@@ -140,9 +140,9 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
 		TokenID: jti,
-		AccessJti: refreshClaims.Sub.AccessJTI,
 		ExpiresAt: refreshClaims.ExpiresAt.Time,
 	})
+
 	if err != nil {
 		readable := utils.ParseDBError(err)
 		if strings.Contains(readable.Error(), "duplicate value") {

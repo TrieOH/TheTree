@@ -3,7 +3,6 @@
 
 CREATE TABLE refresh_blacklist (
     token_id UUID PRIMARY KEY,
-    access_jti UUID NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
