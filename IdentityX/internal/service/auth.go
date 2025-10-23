@@ -71,7 +71,7 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
-  expires_at := time.Now().Add(7 * 24 * time.Hour)
+	expires_at := time.Now().Add(7 * 24 * time.Hour)
 	refresh_jti := uuid.New()
 	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at)
 	if rs != nil {
@@ -85,6 +85,7 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 		UserAgent: agent,
 		UserIp: ip,
 		ExpiresAt: expires_at,
+		UserID: dbUser.ID,
 	})
 
 	if err != nil {

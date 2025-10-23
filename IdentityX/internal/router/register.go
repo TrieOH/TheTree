@@ -23,9 +23,9 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("POST /ping/public", handler.PublicPing)
 	mux.HandleFunc("POST /ping/private", authMW.Auth(handler.PrivatePing))
 	mux.HandleFunc("GET /sessions", authMW.Auth(handler.ListUserSessions))
-	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(handler.RevokeUserSession))
+	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(handler.RevokeUserSessionByID))
 	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(handler.RevokeOtherSessions))
-	//mux.HandleFunc("DELETE /sessions", authMW.Auth(handler.RevokeAllSessions))
+	mux.HandleFunc("DELETE /sessions", authMW.Auth(handler.RevokeAllSessions))
 
 	return mux
 }

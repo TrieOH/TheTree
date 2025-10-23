@@ -3,6 +3,7 @@
 
 CREATE TABLE user_sessions (
     session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
     token_id UUID NOT NULL,
     issued_at TIMESTAMP NOT NULL,
     user_agent TEXT NOT NULL,

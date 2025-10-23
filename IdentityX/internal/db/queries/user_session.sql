@@ -1,6 +1,6 @@
 -- name: CreateUserSession :one
-INSERT INTO user_sessions (token_id, issued_at, user_agent, user_ip, expires_at, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+INSERT INTO user_sessions (token_id, user_id, issued_at, user_agent, user_ip, expires_at, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 RETURNING *;
 
 -- name: GetUserSessionById :one
@@ -12,7 +12,9 @@ SELECT * FROM user_sessions
 WHERE token_id = $1;
 
 -- name: ListUserSessions :many
-SELECT * FROM user_sessions ORDER BY created_at DESC;
+SELECT * FROM user_sessions
+WHERE user_id = $1
+ORDER BY created_at DESC;
 
 -- name: UpdateUserSession :one
 UPDATE user_sessions
@@ -25,7 +27,7 @@ SET
 WHERE session_id = $1
 RETURNING *;
 
--- name: DeleteUserSession :exec
+-- name: DeleteUserSessionById :exec
 DELETE FROM user_sessions
 WHERE session_id = $1;
 
@@ -33,12 +35,17 @@ WHERE session_id = $1;
 DELETE FROM user_sessions
 WHERE token_id = $1;
 
--- name: RevokeUserSession :one
+-- name: RevokeUserSessionById :one
 DELETE FROM user_sessions u
-WHERE session_id = $1 AND token_id != $2
+WHERE session_id = $1 AND token_id != $2 AND user_id = $3
 RETURNING u.*;
 
 -- name: RevokeOtherSessions :many
 DELETE FROM user_sessions u
-WHERE token_id != $1
+WHERE token_id != $1 AND user_id = $2
+RETURNING u.*;
+
+-- name: RevokeAllSessions :many
+DELETE FROM user_sessions u
+WHERE user_id = $1
 RETURNING u.*;

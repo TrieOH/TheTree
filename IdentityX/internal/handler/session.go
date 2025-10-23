@@ -16,7 +16,7 @@ import (
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions [get]
 func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, rs := h.AuthService.ListUserSessions(r.Context())
+	sessions, rs := h.AuthService.ListUserSessions(r, r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -25,7 +25,7 @@ func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(sessions).Send(w)
 }
 
-// RevokeUserSession godoc
+// RevokeUserSessionByID godoc
 // @Summary Revokes a user session if it isn't the current one
 // @Tags auth
 // @Accept json
@@ -36,8 +36,8 @@ func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions/{session_id} [delete]
-func (h *AuthHandler) RevokeUserSession(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.RevokeUserSession(r, r.Context(), r.PathValue("session_id"))
+func (h *AuthHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
+	rs := h.AuthService.RevokeUserSessionByID(r, r.Context(), r.PathValue("session_id"))
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -58,6 +58,26 @@ func (h *AuthHandler) RevokeUserSession(w http.ResponseWriter, r *http.Request) 
 // @Router /sessions/others [delete]
 func (h *AuthHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
 	rs := h.AuthService.RevokeOtherSessions(r, r.Context())
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	resp.OK("revoked sessions").Send(w)
+}
+
+// RevokeAllSessions godoc
+// @Summary Revokes all user sessions
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {string} string "revoked sessions"
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /sessions [delete]
+func (h *AuthHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
+	rs := h.AuthService.RevokeAllSessions(r, r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return
