@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"log"
 
 	"GoAuth/internal/models"
 	"GoAuth/internal/repository"
@@ -155,3 +156,89 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 	return nil
 }
 
+func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.UserTokens, *resp.Response) {
+	access_token_cookie, err := r.Cookie("access_token")
+	if err != nil {
+		return nil, resp.Unauthorized("missing access_token cookie")
+	}
+	
+	access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil {
+		return nil, rs
+	}	
+
+	refresh_token_cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		return nil, resp.Unauthorized("missing refresh_token cookie")
+	}
+	
+	refresh_token, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	if rs != nil {
+		return nil, rs
+	}	
+
+	jti, err := uuid.Parse(refresh_token.ID)
+	if err != nil {
+		return nil, resp.Unauthorized("couln't parse refresh JTI")
+	}
+
+	blacklisted, err := s.queries.GetRefreshBlacklistById(ctx, jti)
+	if err != nil && !strings.Contains(err.Error(), "no rows") {
+		return nil, resp.Unauthorized("couldn't fetch refresh token").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	if blacklisted.TokenID == jti {
+		return nil, resp.Unauthorized("refresh token is invalidated")
+	}
+
+	session, err := s.queries.GetUserSessionByTokenId(ctx, jti)
+	if err != nil {
+		return nil, resp.Unauthorized("couldn't fetch user session").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	dbUser, err := s.queries.GetUserById(ctx, access_token.Sub.ID)
+	if err != nil {
+		return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	var tokens models.UserTokens
+	accessToken, accessJTI, rs := newAccessToken(dbUser)
+	if rs != nil {
+		return nil, rs
+	}
+	tokens.AccessTokenString = accessToken
+
+	agent := r.UserAgent()
+	ip := utils.GetClientIP(r)
+	expires_at := time.Now().Add(7 * 24 * time.Hour)
+	refresh_jti := uuid.New()
+	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at)
+	if rs != nil {
+		return nil, rs
+	}
+	tokens.RefreshTokenString = refreshToken
+
+	_, err = s.queries.UpdateUserSession(ctx, repository.UpdateUserSessionParams{
+		IssuedAt: time.Now(),
+		UserAgent: agent,
+		UserIp: ip,
+		ExpiresAt: expires_at,
+		TokenID: refresh_jti,
+		SessionID: session.SessionID,
+	})
+
+	if err != nil {
+		log.Printf("Couldn't update user session: %v", err)
+	}
+	
+	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
+		TokenID: jti,
+		ExpiresAt: refresh_token.ExpiresAt.Time,
+	})
+
+	if err != nil {
+		log.Printf("Couldn't blacklist old token: %v", err)
+	}
+
+	return &tokens, nil
+}

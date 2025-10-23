@@ -23,6 +23,7 @@ SET
     user_agent = $3,
     user_ip = $4,
     expires_at = $5,
+    token_id = $6,
     updated_at = NOW()
 WHERE session_id = $1
 RETURNING *;
