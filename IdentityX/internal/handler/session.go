@@ -16,7 +16,7 @@ import (
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions [get]
 func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, rs := h.AuthService.ListUserSessions(r.Context())
+	sessions, rs := h.AuthService.ListUserSessions(r, r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -25,7 +25,7 @@ func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(sessions).Send(w)
 }
 
-// RevokeUserSession godoc
+// RevokeUserSessionByID godoc
 // @Summary Revokes a user session if it isn't the current one
 // @Tags auth
 // @Accept json
@@ -36,8 +36,8 @@ func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions/{session_id} [delete]
-func (h *AuthHandler) RevokeUserSession(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.RevokeUserSession(r, r.Context(), r.PathValue("session_id"))
+func (h *AuthHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
+	rs := h.AuthService.RevokeUserSessionByID(r, r.Context(), r.PathValue("session_id"))
 	if rs != nil {
 		rs.Send(w)
 		return

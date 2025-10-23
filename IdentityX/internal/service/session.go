@@ -11,15 +11,25 @@ import (
 	resp "github.com/MintzyG/GoResponse/response"
 )
 
-func (s *AuthService) ListUserSessions(ctx context.Context) ([]repository.UserSession, *resp.Response) {
-	sessions, err := s.queries.ListUserSessions(ctx)
+func (s *AuthService) ListUserSessions(r *http.Request, ctx context.Context) ([]repository.UserSession, *resp.Response) {
+	access_claims, err := models.GetAccessClaims(r)
+	if err != nil {
+		return nil, resp.InternalServerError().AddTrace(err)
+	}
+
+	sessions, err := s.queries.ListUserSessions(ctx, access_claims.Sub.ID)
 	if err != nil {
 		return nil, resp.InternalServerError("error listing user sessions").WithTracePrefix("database-error").AddTrace(err)
 	}
 	return sessions, nil
 }
 
-func (s *AuthService) RevokeUserSession(r *http.Request, ctx context.Context, session_id string) *resp.Response {
+func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context, session_id string) *resp.Response {
+	access_claims, err := models.GetAccessClaims(r)
+	if err != nil {
+		return resp.InternalServerError().AddTrace(err)
+	}
+
 	refresh_claims, err := models.GetRefreshClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
@@ -35,9 +45,10 @@ func (s *AuthService) RevokeUserSession(r *http.Request, ctx context.Context, se
 		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
 	}
 
-	revoked_session, err := s.queries.RevokeUserSession(ctx, repository.RevokeUserSessionParams{
+	revoked_session, err := s.queries.RevokeUserSessionById(ctx, repository.RevokeUserSessionByIdParams{
 		SessionID: sid,
 		TokenID: jti,
+		UserID: access_claims.Sub.ID,
 	})
 
 	if err != nil {
@@ -57,6 +68,11 @@ func (s *AuthService) RevokeUserSession(r *http.Request, ctx context.Context, se
 }
 
 func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) *resp.Response {
+	access_claims, err := models.GetAccessClaims(r)
+	if err != nil {
+		return resp.InternalServerError().AddTrace(err)
+	}
+
 	refresh_claims, err := models.GetRefreshClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
@@ -67,7 +83,10 @@ func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) 
 		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
 	}
 
-	revoked_sessions, err := s.queries.RevokeOtherSessions(ctx, jti)
+	revoked_sessions, err := s.queries.RevokeOtherSessions(ctx, repository.RevokeOtherSessionsParams{
+		TokenID: jti,
+		UserID: access_claims.Sub.ID,
+	})
 
 	if err != nil {
 		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
