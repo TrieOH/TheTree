@@ -66,6 +66,7 @@ type accountContext struct {
 	SuccessPasword string `json:"password"`
 	accessToken string `json:"-"`
 	refreshToken string `json:"-"`
+  sessionID string `json:"-"`
 }
 
 func TestGoAuthService(t *testing.T) {
@@ -96,6 +97,15 @@ func TestGoAuthService(t *testing.T) {
 
 	t.Run("PingTests", func(t *testing.T) {
     runPingTests(t, pingAcc)
+	})
+
+	sessionAccount := &accountContext{
+		SuccessEmail: "session@mail.com",
+		SuccessPasword: "Str0ngP4ass!",
+	}
+
+	t.Run("SessionTests", func(t *testing.T) {
+    runSessionTests(t, sessionAccount)
 	})
 
 }
@@ -139,4 +149,27 @@ func runPingTests(t *testing.T, ctx *accountContext) {
   t.Run("CreatePingAccount", registerSuccess(ctx))
   t.Run("LoginPingAccount", loginSuccess(ctx))
   t.Run("PrivatePingSuccess", privatePingSuccess(ctx))
+}
+
+func runSessionTests(t *testing.T, ctx *accountContext) {
+  t.Run("CreateSessionAccount", registerSuccess(ctx))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list1Sessions", listXSessions(ctx, 1))
+  t.Run("RevokeSessionByIDFail", revokeSessionByIDFail(ctx))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list2Sessions", listXSessions(ctx, 2))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list3Sessions", listXSessions(ctx, 3))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list4Sessions", listXSessions(ctx, 4))
+  t.Run("RevokeSessionByIDSuccess", revokeSessionByIDSuccess(ctx))
+  t.Run("list3Sessions", listXSessions(ctx, 3))
+  t.Run("RevokeOtherSessions", revokeOtherSessions(ctx))
+  t.Run("list1Sessions", listXSessions(ctx, 1))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list2Sessions", listXSessions(ctx, 2))
+  t.Run("LoginSessionAccount", loginSuccess(ctx))
+  t.Run("list3Sessions", listXSessions(ctx, 3))
+  t.Run("RevokeAllSessions", revokeAllSessions(ctx))
+  t.Run("ListSessionsFail", listSessionsFail(ctx))
 }

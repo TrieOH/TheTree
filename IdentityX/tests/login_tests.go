@@ -107,8 +107,5 @@ func loginSuccess(user *accountContext) func(t *testing.T) {
 			t.Fatalf("refresh_token cookie value is empty")
 		}
 		user.refreshToken = val
-
-		t.Logf("Access token: %s", user.accessToken)
-		t.Logf("Refresh token: %s", user.refreshToken)
 	}
 }
