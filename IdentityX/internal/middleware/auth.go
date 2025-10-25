@@ -53,18 +53,18 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 
 		refreshUUID, err := uuid.Parse(refresh_token.ID)
 		if err != nil {
-			resp.Unauthorized("couln't parse refresh JTI").WithModule("AuthWM").Send(w)
+			resp.Unauthorized("couln't parse refresh JTI").WithModule("AuthMW").Send(w)
 			return
 		}
 
 		blacklisted, err := mw.queries.GetRefreshBlacklistById(r.Context(), refreshUUID)
 		if err != nil && !strings.Contains(err.Error(), "no rows") {
-			resp.Unauthorized("couldn't fetch refresh token").WithModule("AuthWM").WithTracePrefix("database-error").AddTrace(err).Send(w)
+			resp.Unauthorized("couldn't fetch refresh token").WithModule("AuthMW").WithTracePrefix("database-error").AddTrace(err).Send(w)
 			return
 		}
 
 		if blacklisted.TokenID == refreshUUID {
-			resp.Unauthorized("refresh token is invalidated").WithModule("AuthWM").Send(w)
+			resp.Unauthorized("refresh token is invalidated").WithModule("AuthMW").Send(w)
 			return
 		}
 
