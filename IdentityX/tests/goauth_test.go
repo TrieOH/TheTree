@@ -10,7 +10,7 @@ import (
 	database "GoAuth/internal/db"
 	"GoAuth/internal/router"
 
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/spf13/viper"
 )

@@ -13,7 +13,7 @@ import (
 	"GoAuth/internal/logs"
 
 	"go.uber.org/zap"
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/spf13/viper"
   "github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

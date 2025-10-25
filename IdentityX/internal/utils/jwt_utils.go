@@ -3,7 +3,7 @@ package utils
 import (
 	"errors"
 
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"GoAuth/internal/models"
 	"github.com/golang-jwt/jwt/v5"
   "github.com/google/uuid"
