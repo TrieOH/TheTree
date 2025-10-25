@@ -9,7 +9,7 @@ import (
 	"GoAuth/internal/models"
   "github.com/google/uuid"
 	"github.com/spf13/viper"
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 type AuthMiddleware struct {

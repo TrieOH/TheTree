@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"GoAuth/internal/models"
-	"GoAuth/internal/validation"
 
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	validation "github.com/MintzyG/FastUtilitiesNet/validation"
 )
 
 // Register godoc
@@ -21,7 +21,7 @@ import (
 // @Router /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterUserRequest
-	if rs := validation.ValidateWith(r, &req); rs != nil {
+	if rs := validation.ValidateInto(r, &req); rs != nil {
 		rs.Send(w)
 		return
 	}
@@ -49,7 +49,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginUserRequest
-	if rs := validation.ValidateWith(r, &req); rs != nil {
+	if rs := validation.ValidateInto(r, &req); rs != nil {
 		rs.Send(w)
 		return
 	}

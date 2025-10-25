@@ -6,7 +6,7 @@ import (
 	"GoAuth/internal/models"
 	"GoAuth/internal/repository"
 
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
   "github.com/google/uuid"
 	"github.com/spf13/viper"

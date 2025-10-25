@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/repository"
 	"GoAuth/internal/models"
 	"github.com/google/uuid"
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 func (s *AuthService) ListUserSessions(r *http.Request, ctx context.Context) ([]repository.UserSession, *resp.Response) {

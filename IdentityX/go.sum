@@ -1,7 +1,7 @@
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
-github.com/MintzyG/GoResponse v0.3.4 h1:fXsXrFldyMqdhf/L+iiQmdY2KECm2hVsOkbZRuS7cxQ=
-github.com/MintzyG/GoResponse v0.3.4/go.mod h1:UFjUVNpREyPzUknomv5tHrCsuKqAWcwno450nUBfBzo=
+github.com/MintzyG/FastUtilitiesNet v0.3.7-0.20251025154339-6355d8f12895 h1:hsBsDAuo2ihYGD7teKr7KysVceyvfzewtJ5SAEIYZbI=
+github.com/MintzyG/FastUtilitiesNet v0.3.7-0.20251025154339-6355d8f12895/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2 h1:ZBbLwSJqkHBuFDA6DUhhse0IGJ7T5bemHyNILUjvOq4=
 github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2/go.mod h1:VSw57q4QFiWDbRnjdX8Cb3Ow0SFncRw+bA/ofY6Q83w=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=

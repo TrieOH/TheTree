@@ -6,7 +6,7 @@ import (
 	"GoAuth/internal/utils"
 
 	"github.com/spf13/viper"
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 // PublicPing godoc
