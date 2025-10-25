@@ -22,6 +22,7 @@ func listXSessions(user *accountContext, session_amount int) func(t *testing.T) 
 		data := obj.Value("data").Array()
 		data.Length().Equal(session_amount)
 		user.sessionID = data.Element(session_amount - 1).Object().Value("session_id").String().Raw()
+		user.sessionJIT = data.Element(session_amount - 1).Object().Value("token_id").String().Raw()
 
 		obj.Value("code").Number().Equal(200)
 	}
