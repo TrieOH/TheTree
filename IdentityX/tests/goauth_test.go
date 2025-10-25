@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"database/sql"
+  "database/sql"
 	"log"
 	"net/http/httptest"
 	"testing"
@@ -67,6 +67,7 @@ type accountContext struct {
 	accessToken string `json:"-"`
 	refreshToken string `json:"-"`
   sessionID string `json:"-"`
+  sessionJIT string `json:"-"`
 }
 
 func TestGoAuthService(t *testing.T) {
@@ -108,6 +109,14 @@ func TestGoAuthService(t *testing.T) {
     runSessionTests(t, sessionAccount)
 	})
 
+	refreshAccount := &accountContext{
+		SuccessEmail: "refresh@mail.com",
+		SuccessPasword: "Str0ngP4ass!",
+	}
+
+	t.Run("RefreshTests", func(t *testing.T) {
+    runRefreshTests(t, refreshAccount)
+	})
 }
 
 func runRegisterTests(t *testing.T, ctx *accountContext) {
@@ -172,4 +181,31 @@ func runSessionTests(t *testing.T, ctx *accountContext) {
   t.Run("list3Sessions", listXSessions(ctx, 3))
   t.Run("RevokeAllSessions", revokeAllSessions(ctx))
   t.Run("ListSessionsFail", listSessionsFail(ctx))
+}
+
+func runRefreshTests(t *testing.T, ctx *accountContext) {
+  t.Run("CreateRefreshAccount", registerSuccess(ctx))
+  t.Run("LoginRefreshAccount", loginSuccess(ctx))
+  t.Run("list1Sessions", listXSessions(ctx, 1))
+  oldJIT := ctx.sessionJIT
+  access := ctx.accessToken
+  refresh := ctx.refreshToken
+  t.Run("RefreshTokensSuccess", refreshTokensSuccess(ctx))
+  t.Run("list1Sessions", listXSessions(ctx, 1))
+	t.Run("TokenJTIsMustNotMatch", func(t *testing.T) {
+    if (oldJIT == ctx.sessionJIT) {
+      t.Fatal("refresh token JTIs mustn't match between sessions")
+    }
+	})
+	t.Run("AccessTokensMustNotMatch", func(t *testing.T) {
+    if (access == ctx.accessToken) {
+      t.Fatal("access tokens mustn't match between sessions")
+    }
+	})
+	t.Run("RefreshTokensMustNotMatch", func(t *testing.T) {
+    if (refresh == ctx.refreshToken) {
+      t.Fatal("refresh Tokens mustn't match between sessions")
+    }
+	})
+
 }

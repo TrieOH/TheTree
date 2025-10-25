@@ -175,5 +175,5 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.Created("Refreshed tokens").Send(w)
+	resp.OK("Refreshed tokens").Send(w)
 }
