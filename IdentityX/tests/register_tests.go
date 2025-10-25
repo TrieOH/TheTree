@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func registerSuccess(user *rllCtx) func(t *testing.T) {
+func registerSuccess(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -328,7 +328,7 @@ func registerBigPassword() func(t *testing.T) {
 	}
 }
 
-func accountAlreadyExists(user *rllCtx) func(t *testing.T) {
+func accountAlreadyExists(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
