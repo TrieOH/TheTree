@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/repository"
 	"GoAuth/internal/models"
 	"github.com/google/uuid"
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 func (s *AuthService) ListUserSessions(r *http.Request, ctx context.Context) ([]repository.UserSession, *resp.Response) {
@@ -44,6 +44,10 @@ func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
 	}
+
+  if (refresh_claims.Sub.SessionID == sid) {
+    return resp.BadRequest("can't revoke a currently active session, please logout instead")
+  }
 
 	revoked_session, err := s.queries.RevokeUserSessionById(ctx, repository.RevokeUserSessionByIdParams{
 		SessionID: sid,

@@ -9,7 +9,7 @@ import (
 	database "GoAuth/internal/db"
 	"GoAuth/internal/repository"
 
-	resp "github.com/MintzyG/GoResponse/response"
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	_ "github.com/lib/pq"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"

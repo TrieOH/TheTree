@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func loginWrongPassword(user *rllCtx) func(t *testing.T) {
+func loginWrongPassword(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -26,7 +26,7 @@ func loginWrongPassword(user *rllCtx) func(t *testing.T) {
 	}
 }
 
-func loginWrongEmail(user *rllCtx) func(t *testing.T) {
+func loginWrongEmail(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -68,7 +68,7 @@ func LoginWrongEmailAndPasword() func(t *testing.T) {
 	}
 }
 
-func loginSuccess(user *rllCtx) func(t *testing.T) {
+func loginSuccess(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -107,8 +107,5 @@ func loginSuccess(user *rllCtx) func(t *testing.T) {
 			t.Fatalf("refresh_token cookie value is empty")
 		}
 		user.refreshToken = val
-
-		t.Logf("Access token: %s", user.accessToken)
-		t.Logf("Refresh token: %s", user.refreshToken)
 	}
 }
