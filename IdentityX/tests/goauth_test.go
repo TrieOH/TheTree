@@ -61,7 +61,7 @@ func createExpect(t *testing.T) *httpexpect.Expect {
 	})
 }
 
-type rllCtx struct {
+type accountContext struct {
 	SuccessEmail string `json:"email"`
 	SuccessPasword string `json:"password"`
 	accessToken string `json:"-"`
@@ -72,27 +72,35 @@ func TestGoAuthService(t *testing.T) {
 	runServer()
 	defer Db.Close()
 
-	ctx := &rllCtx{
+	rllAcc := &accountContext{
 		SuccessEmail: "success@mail.com",
 		SuccessPasword: "Str0ngP4ass!",
 	}
 
 	t.Run("RegisterTests", func(t *testing.T) {
-		runRegisterTests(t, ctx)
+		runRegisterTests(t, rllAcc)
 	})
 
 	t.Run("LoginTests", func(t *testing.T) {
-    runLoginTests(t, ctx)
+    runLoginTests(t, rllAcc)
 	})
 
 	t.Run("LogoutTests", func(t *testing.T) {
-    runLogoutTests(t, ctx)
+    runLogoutTests(t, rllAcc)
 	})
 
-	t.Logf("rllCtx: %v", ctx)
+	pingAcc := &accountContext{
+		SuccessEmail: "ping@mail.com",
+		SuccessPasword: "Str0ngP4ass!",
+	}
+
+	t.Run("PingTests", func(t *testing.T) {
+    runPingTests(t, pingAcc)
+	})
+
 }
 
-func runRegisterTests(t *testing.T, ctx *rllCtx) {
+func runRegisterTests(t *testing.T, ctx *accountContext) {
 	t.Run("RegisterNoEmail", registerNoEmail())
 	t.Run("RegisterInvalidEmail", registerInvalidEmail())
 	t.Run("RegisterBigEmail", registerBigEmail())
@@ -110,7 +118,7 @@ func runRegisterTests(t *testing.T, ctx *rllCtx) {
 	t.Run("AccountAlreadyExists", accountAlreadyExists(ctx))
 }
 
-func runLoginTests(t *testing.T, ctx *rllCtx) {
+func runLoginTests(t *testing.T, ctx *accountContext) {
 	t.Run("LoginWrongPassword", loginWrongPassword(ctx))
 	t.Run("LoginWrongEmail", loginWrongEmail(ctx))
 	t.Run("LoginWrongEmailAndPasword", LoginWrongEmailAndPasword())
@@ -118,10 +126,17 @@ func runLoginTests(t *testing.T, ctx *rllCtx) {
 	t.Run("LoginSuccess", loginSuccess(ctx))
 }
 
-func runLogoutTests(t *testing.T, ctx *rllCtx) {
+func runLogoutTests(t *testing.T, ctx *accountContext) {
 	t.Run("LogoutNoTokens", logoutNoTokens())
 	t.Run("LogoutNoRefresh", logoutNoRefresh(ctx))
 	t.Run("LogoutSuccess", logoutSuccess(ctx))
 	t.Run("LoggedOutAlready", loggedOutAlready(ctx))
 }
 
+func runPingTests(t *testing.T, ctx *accountContext) {
+  t.Run("Ping", ping())
+  t.Run("PrivatePingFailure", privatePingFailure())
+  t.Run("CreatePingAccount", registerSuccess(ctx))
+  t.Run("LoginPingAccount", loginSuccess(ctx))
+  t.Run("PrivatePingSuccess", privatePingSuccess(ctx))
+}

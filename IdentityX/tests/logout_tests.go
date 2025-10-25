@@ -22,7 +22,7 @@ func logoutNoTokens() func(t *testing.T) {
 	}
 }
 
-func logoutNoRefresh(user *rllCtx) func(t *testing.T) {
+func logoutNoRefresh(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -40,7 +40,7 @@ func logoutNoRefresh(user *rllCtx) func(t *testing.T) {
 	}
 }
 
-func logoutSuccess(user *rllCtx) func(t *testing.T) {
+func logoutSuccess(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
@@ -59,7 +59,7 @@ func logoutSuccess(user *rllCtx) func(t *testing.T) {
 	}
 }
 
-func loggedOutAlready(user *rllCtx) func(t *testing.T) {
+func loggedOutAlready(user *accountContext) func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
