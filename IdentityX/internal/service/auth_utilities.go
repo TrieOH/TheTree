@@ -36,12 +36,13 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expires_at time.Time) (string, *resp.Response) {
+func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expires_at time.Time, session_id uuid.UUID) (string, *resp.Response) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
 			AccessJTI: accessJTI,
 			UserAgent: agent,
 			UserIP: ip,
+      SessionID: session_id,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expires_at),

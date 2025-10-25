@@ -74,13 +74,8 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 	ip := utils.GetClientIP(r)
 	expires_at := time.Now().Add(7 * 24 * time.Hour)
 	refresh_jti := uuid.New()
-	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at)
-	if rs != nil {
-		return nil, rs
-	}
-	tokens.RefreshTokenString = refreshToken
 
-	_, err = s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
+	session, err := s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
 		TokenID: refresh_jti,
 		IssuedAt: time.Now(),
 		UserAgent: agent,
@@ -88,6 +83,12 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 		ExpiresAt: expires_at,
 		UserID: dbUser.ID,
 	})
+
+	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at, session.SessionID)
+	if rs != nil {
+		return nil, rs
+	}
+	tokens.RefreshTokenString = refreshToken
 
 	if err != nil {
 		reqID := r.Header.Get("X-Request-ID")
@@ -196,7 +197,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("couldn't fetch user session").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	dbUser, err := s.queries.GetUserById(ctx, access_token.Sub.ID)
+  dbUser, err := s.queries.GetUserById(ctx, access_token.Sub.ID)
 	if err != nil {
 		return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
 	}
@@ -212,7 +213,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 	ip := utils.GetClientIP(r)
 	expires_at := time.Now().Add(7 * 24 * time.Hour)
 	refresh_jti := uuid.New()
-	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at)
+	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at, session.SessionID)
 	if rs != nil {
 		return nil, rs
 	}

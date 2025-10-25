@@ -45,6 +45,10 @@ func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context
 		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
 	}
 
+  if (refresh_claims.Sub.SessionID == sid) {
+    return resp.BadRequest("can't revoke a currently active session, please logout instead")
+  }
+
 	revoked_session, err := s.queries.RevokeUserSessionById(ctx, repository.RevokeUserSessionByIdParams{
 		SessionID: sid,
 		TokenID: jti,
