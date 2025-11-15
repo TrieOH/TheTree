@@ -8,7 +8,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
-  "github.com/google/uuid"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -22,7 +22,7 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Issuer:    "GoAuth",
-			ID: accessJTI,
+			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -36,18 +36,18 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expires_at time.Time, session_id uuid.UUID) (string, *resp.Response) {
+func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expiresAt time.Time, sessionId uuid.UUID) (string, *resp.Response) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
 			AccessJTI: accessJTI,
 			UserAgent: agent,
-			UserIP: ip,
-      SessionID: session_id,
+			UserIP:    ip,
+			SessionID: sessionId,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expires_at),
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			Issuer:    "GoAuth",
-			ID: refreshJTI.String(),
+			ID:        refreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}

@@ -3,8 +3,9 @@ package models
 import (
 	"fmt"
 	"net/http"
-	"github.com/google/uuid"
+
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type AccessSubJWT struct {
@@ -20,8 +21,8 @@ type AccessClaims struct {
 type RefreshSubJWT struct {
 	AccessJTI uuid.UUID `json:"access_jti"`
 	SessionID uuid.UUID `json:"session_id"`
-	UserAgent string `json:"user_agent"`
-	UserIP string `json:"user_ip"`
+	UserAgent string    `json:"user_agent"`
+	UserIP    string    `json:"user_ip"`
 }
 
 type RefreshClaims struct {
@@ -42,29 +43,29 @@ const (
 )
 
 func GetAccessClaims(r *http.Request) (*AccessClaims, error) {
-        val := r.Context().Value(AccessClaimsKey)
-        if val == nil {
-                return nil, fmt.Errorf("access claims not found in context")
-        }
+	val := r.Context().Value(AccessClaimsKey)
+	if val == nil {
+		return nil, fmt.Errorf("access claims not found in context")
+	}
 
-        claims, ok := val.(*AccessClaims)
-        if !ok {
-                return nil, fmt.Errorf("invalid type for access claims in context")
-        }
+	claims, ok := val.(*AccessClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid type for access claims in context")
+	}
 
-        return claims, nil
+	return claims, nil
 }
 
 func GetRefreshClaims(r *http.Request) (*RefreshClaims, error) {
-        val := r.Context().Value(RefreshClaimsKey)
-        if val == nil {
-                return nil, fmt.Errorf("refresh claims not found in context")
-        }
+	val := r.Context().Value(RefreshClaimsKey)
+	if val == nil {
+		return nil, fmt.Errorf("refresh claims not found in context")
+	}
 
-        claims, ok := val.(*RefreshClaims)
-        if !ok {
-                return nil, fmt.Errorf("invalid type for refresh claims in context")
-        }
+	claims, ok := val.(*RefreshClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid type for refresh claims in context")
+	}
 
-        return claims, nil
+	return claims, nil
 }

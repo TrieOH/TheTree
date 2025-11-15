@@ -1,58 +1,59 @@
 package service
 
 import (
-	"log"
-	"time"
-	"context"
-	"net/http"
-	"GoAuth/internal/repository"
 	"GoAuth/internal/models"
-	"github.com/google/uuid"
+	"GoAuth/internal/repository"
+	"context"
+	"log"
+	"net/http"
+	"time"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/google/uuid"
 )
 
 func (s *AuthService) ListUserSessions(r *http.Request, ctx context.Context) ([]repository.UserSession, *resp.Response) {
-	access_claims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(r)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
 
-	sessions, err := s.queries.ListUserSessions(ctx, access_claims.Sub.ID)
+	sessions, err := s.queries.ListUserSessions(ctx, accessClaims.Sub.ID)
 	if err != nil {
 		return nil, resp.InternalServerError("error listing user sessions").WithTracePrefix("database-error").AddTrace(err)
 	}
 	return sessions, nil
 }
 
-func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context, session_id string) *resp.Response {
-	access_claims, err := models.GetAccessClaims(r)
+func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context, sessionId string) *resp.Response {
+	accessClaims, err := models.GetAccessClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
 
-	refresh_claims, err := models.GetRefreshClaims(r)
+	refreshClaims, err := models.GetRefreshClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
 
-	jti, err := uuid.Parse(refresh_claims.ID)
+	jti, err := uuid.Parse(refreshClaims.ID)
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
 	}
 
-	sid, err := uuid.Parse(session_id)
+	sid, err := uuid.Parse(sessionId)
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
 	}
 
-  if (refresh_claims.Sub.SessionID == sid) {
-    return resp.BadRequest("can't revoke a currently active session, please logout instead")
-  }
+	if refreshClaims.Sub.SessionID == sid {
+		return resp.BadRequest("can't revoke a currently active session, please logout instead")
+	}
 
 	revoked_session, err := s.queries.RevokeUserSessionById(ctx, repository.RevokeUserSessionByIdParams{
 		SessionID: sid,
-		TokenID: jti,
-		UserID: access_claims.Sub.ID,
+		TokenID:   jti,
+		UserID:    accessClaims.Sub.ID,
 	})
 
 	if err != nil {
@@ -60,7 +61,7 @@ func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context
 	}
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID: revoked_session.TokenID,
+		TokenID:   revoked_session.TokenID,
 		ExpiresAt: revoked_session.ExpiresAt,
 	})
 
@@ -72,45 +73,45 @@ func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context
 }
 
 func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) *resp.Response {
-	access_claims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
 
-	refresh_claims, err := models.GetRefreshClaims(r)
+	refreshClaims, err := models.GetRefreshClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
 
-	jti, err := uuid.Parse(refresh_claims.ID)
+	jti, err := uuid.Parse(refreshClaims.ID)
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
 	}
 
-	revoked_sessions, err := s.queries.RevokeOtherSessions(ctx, repository.RevokeOtherSessionsParams{
+	revokedSessions, err := s.queries.RevokeOtherSessions(ctx, repository.RevokeOtherSessionsParams{
 		TokenID: jti,
-		UserID: access_claims.Sub.ID,
+		UserID:  accessClaims.Sub.ID,
 	})
 
 	if err != nil {
 		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	tokenIDs := make([]uuid.UUID, len(revoked_sessions))
-	expiresAt := make([]time.Time, len(revoked_sessions))
+	tokenIDs := make([]uuid.UUID, len(revokedSessions))
+	expiresAt := make([]time.Time, len(revokedSessions))
 
-        for i, session := range revoked_sessions {
+	for i, session := range revokedSessions {
 		tokenIDs[i] = session.TokenID
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklisted_tokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
+	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
 		Column1: tokenIDs,
 		Column2: expiresAt,
 	})
 
-	if len(blacklisted_tokens) != len(tokenIDs) {
-		log.Println(blacklisted_tokens)
+	if len(blacklistedTokens) != len(tokenIDs) {
+		log.Println(blacklistedTokens)
 		log.Println(tokenIDs)
 	}
 
@@ -122,32 +123,32 @@ func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) 
 }
 
 func (s *AuthService) RevokeAllSessions(r *http.Request, ctx context.Context) *resp.Response {
-	access_claims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(r)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
 
-	revoked_sessions, err := s.queries.RevokeAllSessions(ctx, access_claims.Sub.ID)
+	revokedSessions, err := s.queries.RevokeAllSessions(ctx, accessClaims.Sub.ID)
 
 	if err != nil {
 		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	tokenIDs := make([]uuid.UUID, len(revoked_sessions))
-	expiresAt := make([]time.Time, len(revoked_sessions))
+	tokenIDs := make([]uuid.UUID, len(revokedSessions))
+	expiresAt := make([]time.Time, len(revokedSessions))
 
-        for i, session := range revoked_sessions {
+	for i, session := range revokedSessions {
 		tokenIDs[i] = session.TokenID
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklisted_tokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
+	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
 		Column1: tokenIDs,
 		Column2: expiresAt,
 	})
 
-	if len(blacklisted_tokens) != len(tokenIDs) {
-		log.Println(blacklisted_tokens)
+	if len(blacklistedTokens) != len(tokenIDs) {
+		log.Println(blacklistedTokens)
 		log.Println(tokenIDs)
 	}
 

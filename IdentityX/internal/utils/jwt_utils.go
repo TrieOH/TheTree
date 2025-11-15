@@ -3,10 +3,11 @@ package utils
 import (
 	"errors"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"GoAuth/internal/models"
+
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
-  "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 func handleJWTError(err error, tokenType string) *resp.Response {

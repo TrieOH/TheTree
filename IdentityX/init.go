@@ -1,19 +1,19 @@
 package main
 
 import (
-	"log"
-	"time"
 	"context"
 	"database/sql"
+	"log"
+	"time"
 
 	database "GoAuth/internal/db"
 	"GoAuth/internal/repository"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	_ "github.com/lib/pq"
-	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/google/uuid"
+	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
 var Port string
@@ -47,6 +47,10 @@ func init() {
 		log.Fatalf("Failed migrations: %v", err)
 	}
 
+	if err := database.SetJWTMasterKey(DB); err != nil {
+		log.Fatal(err)
+	}
+
 	// Create the scheduler
 	scheduler, err = gocron.NewScheduler()
 	if err != nil {
@@ -71,7 +75,6 @@ func init() {
 	} else {
 		log.Println("Created DeleteExpiredTokens cron job")
 	}
-
 
 	// Schedule a daily job at 00:00
 	_, err = scheduler.NewJob(

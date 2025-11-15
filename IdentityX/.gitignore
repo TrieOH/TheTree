@@ -5,3 +5,5 @@ internal/repository/*
 docs/
 docs/*
 .env
+.idea/
+.idea
