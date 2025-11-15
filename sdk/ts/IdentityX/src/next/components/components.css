@@ -83,16 +83,13 @@
   height: 5rem;
   min-width: 10rem;
   flex-shrink: 0;
-  border: 0.1875rem solid var(--trieoh-button-color);
-  border-radius: 0.9375rem 1.875rem;
+  border: 0.125rem solid var(--trieoh-button-color);
   color: var(--trieoh-button-color);
   cursor: pointer;
 
   font-size: var(--trieoh-text-3xl);
   font-weight: 600;
-  box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
-  text-shadow: 0 0.25rem 0.25rem rgba(0, 0, 0, 0.25);
-  transition: transform 200ms;
+  transition: transform 500ms;
 }
 
 .trieoh-button--all-rounded {
