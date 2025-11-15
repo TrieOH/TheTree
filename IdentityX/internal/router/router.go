@@ -1,30 +1,29 @@
 //go:build !test
-// +build !test
 
 package router
 
 import (
+	"database/sql"
 	"net/http"
 	"strings"
-	"database/sql"
 
 	"GoAuth/internal/logs"
 	"GoAuth/internal/metrics"
 
 	_ "GoAuth/docs"
+
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
-	"github.com/swaggo/http-swagger"
 	"github.com/spf13/viper"
+	"github.com/swaggo/http-swagger"
 )
 
+// CreateRouter godoc
 // @title        Greet Service API
 // @version      0.1
 // @description  This is the GreetService API that handles user greetings.
-
 // @contact.name   TrieOH Support
 // @contact.url    https://github.com/TrieOH
-
 // @host      localhost:8080
 // @BasePath  /
 func CreateRouter(db *sql.DB) http.Handler {
@@ -34,8 +33,8 @@ func CreateRouter(db *sql.DB) http.Handler {
 	mux = registerRoutes(db, mux)
 
 	mux.Handle("GET /metrics", metrics.Handler())
-	withMetrics := metrics.MetricsMW(mux)
-	withLogging := logs.LogsMW(withMetrics)
+	withMetrics := metrics.Middleware(mux)
+	withLogging := logs.Middleware(withMetrics)
 	withID := logs.RequestIDMW(withLogging)
 
 	withCors := cors.New(cors.Options{

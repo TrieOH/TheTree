@@ -51,7 +51,6 @@ func privatePingSuccess(user *accountContext) func(t *testing.T) {
 			Status(http.StatusOK).
 			JSON().Object()
 
-
 		obj.Value("module").String().Equal("go-auth-test")
 		obj.Value("message").String().Contains("pong to you")
 

@@ -1,15 +1,16 @@
 package middleware
 
 import (
-	"strings"
-	"net/http"
-	"context"
-	"GoAuth/internal/utils"
-	"GoAuth/internal/repository"
 	"GoAuth/internal/models"
-  "github.com/google/uuid"
-	"github.com/spf13/viper"
+	"GoAuth/internal/repository"
+	"GoAuth/internal/utils"
+	"context"
+	"net/http"
+	"strings"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
 type AuthMiddleware struct {
@@ -22,38 +23,38 @@ func NewAuthMiddleware(queries *repository.Queries) *AuthMiddleware {
 
 func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		access_token_cookie, err := r.Cookie("access_token")
+		accessTokenCookie, err := r.Cookie("access_token")
 		if err != nil {
 			resp.Unauthorized("missing access_token cookie").WithModule("AuthMW").Send(w)
 			return
 		}
 
-		refresh_token_cookie, err := r.Cookie("refresh_token")
+		refreshTokenCookie, err := r.Cookie("refresh_token")
 		if err != nil {
 			resp.Unauthorized("missing refresh_token cookie").WithModule("AuthMW").Send(w)
 			return
 		}
 
-	        access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+		accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, viper.GetString("JWT_SECRET"))
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return
 		}
 
-		refresh_token, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+		refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return
 		}
 
-	        if access_token.Issuer != "GoAuth" || refresh_token.Issuer != "GoAuth" {
+		if accessToken.Issuer != "GoAuth" || refreshToken.Issuer != "GoAuth" {
 			resp.Unauthorized("Invalid Issuer").WithModule("AuthMW").Send(w)
 			return
 		}
 
-		refreshUUID, err := uuid.Parse(refresh_token.ID)
+		refreshUUID, err := uuid.Parse(refreshToken.ID)
 		if err != nil {
-			resp.Unauthorized("couln't parse refresh JTI").WithModule("AuthMW").Send(w)
+			resp.Unauthorized("couldn't parse refresh JTI").WithModule("AuthMW").Send(w)
 			return
 		}
 
@@ -68,8 +69,8 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), models.AccessClaimsKey, access_token)
-		ctx = context.WithValue(ctx, models.RefreshClaimsKey, refresh_token)
+		ctx := context.WithValue(r.Context(), models.AccessClaimsKey, accessToken)
+		ctx = context.WithValue(ctx, models.RefreshClaimsKey, refreshToken)
 
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}

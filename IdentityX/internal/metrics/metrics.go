@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"GoAuth/internal/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ func init() {
 	prometheus.MustRegister(HttpRequestsTotal, HttpRequestDuration)
 }
 
-func MetricsMW(next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/metrics" || strings.HasPrefix(r.URL.Path, "/swagger") {
 			next.ServeHTTP(w, r)
@@ -47,7 +48,7 @@ func MetricsMW(next http.Handler) http.Handler {
 
 		duration := time.Since(start).Seconds()
 
-		route := normalizePath(r)
+		route := utils.NormalizePath(r)
 
 		HttpRequestsTotal.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
 		HttpRequestDuration.WithLabelValues(route).Observe(duration)

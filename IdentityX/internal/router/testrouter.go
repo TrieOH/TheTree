@@ -1,8 +1,8 @@
 package router
 
 import (
-	"net/http"
 	"database/sql"
+	"net/http"
 
 	_ "github.com/lib/pq"
 )

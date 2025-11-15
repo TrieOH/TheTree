@@ -12,7 +12,7 @@ func loginWrongPassword(user *accountContext) func(t *testing.T) {
 		obj := e.POST("/auth/login").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": user.SuccessEmail,
+				"email":    user.SuccessEmail,
 				"password": "123",
 			}).
 			Expect().
@@ -33,8 +33,8 @@ func loginWrongEmail(user *accountContext) func(t *testing.T) {
 		obj := e.POST("/auth/login").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "wrong@email.com",
-				"password": user.SuccessPasword, 
+				"email":    "wrong@email.com",
+				"password": user.SuccessPasword,
 			}).
 			Expect().
 			Status(http.StatusUnauthorized).
@@ -47,14 +47,14 @@ func loginWrongEmail(user *accountContext) func(t *testing.T) {
 	}
 }
 
-func LoginWrongEmailAndPasword() func(t *testing.T) {
+func LoginWrongEmailAndPassword() func(t *testing.T) {
 	return func(t *testing.T) {
 		e := createExpect(t)
 
 		obj := e.POST("/auth/login").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "wrong@email.com",
+				"email":    "wrong@email.com",
 				"password": "Wr0ngP4$$",
 			}).
 			Expect().

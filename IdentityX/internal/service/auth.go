@@ -2,20 +2,20 @@ package service
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"time"
-	"log"
 
+	"GoAuth/internal/logs"
 	"GoAuth/internal/models"
 	"GoAuth/internal/repository"
 	"GoAuth/internal/utils"
-	"GoAuth/internal/logs"
 
-	"go.uber.org/zap"
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
-  "github.com/google/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -72,23 +72,17 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
-	expires_at := time.Now().Add(7 * 24 * time.Hour)
-	refresh_jti := uuid.New()
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	refreshJti := uuid.New()
 
 	session, err := s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
-		TokenID: refresh_jti,
-		IssuedAt: time.Now(),
+		TokenID:   refreshJti,
+		IssuedAt:  time.Now(),
 		UserAgent: agent,
-		UserIp: ip,
-		ExpiresAt: expires_at,
-		UserID: dbUser.ID,
+		UserIp:    ip,
+		ExpiresAt: expiresAt,
+		UserID:    dbUser.ID,
 	})
-
-	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at, session.SessionID)
-	if rs != nil {
-		return nil, rs
-	}
-	tokens.RefreshTokenString = refreshToken
 
 	if err != nil {
 		reqID := r.Header.Get("X-Request-ID")
@@ -100,21 +94,27 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 			zap.String("request_id", reqID),
 			zap.String("user_id", dbUser.ID.String()),
 			zap.String("method", r.Method),
-			zap.String("path", logs.NormalizePath(r)),
+			zap.String("path", utils.NormalizePath(r)),
 			zap.String("remote_addr", r.RemoteAddr),
 		)
 	}
+
+	refreshToken, rs := newRefreshToken(accessJTI, refreshJti, agent, ip, expiresAt, session.SessionID)
+	if rs != nil {
+		return nil, rs
+	}
+	tokens.RefreshTokenString = refreshToken
 
 	return &tokens, nil
 }
 
 func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Response {
-	refresh_token_cookie, err := r.Cookie("refresh_token")
+	refreshTokenCookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		return resp.Unauthorized("missing refresh_token cookie")
 	}
 
-	refreshClaims, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+	refreshClaims, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
 		return rs
 	}
@@ -124,7 +124,7 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 		return resp.Unauthorized("invalid token ID")
 	}
 
-  err = s.queries.DeleteUserSessionByTokenId(ctx, jti)
+	err = s.queries.DeleteUserSessionByTokenId(ctx, jti)
 	if err != nil {
 		userID := r.Header.Get("X-User-ID")
 		reqID := r.Header.Get("X-Request-ID")
@@ -136,13 +136,13 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 			zap.String("request_id", reqID),
 			zap.String("user_id", userID),
 			zap.String("method", r.Method),
-			zap.String("path", logs.NormalizePath(r)),
+			zap.String("path", utils.NormalizePath(r)),
 			zap.String("remote_addr", r.RemoteAddr),
 		)
 	}
 
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID: jti,
+		TokenID:   jti,
 		ExpiresAt: refreshClaims.ExpiresAt.Time,
 	})
 
@@ -158,29 +158,29 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 }
 
 func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.UserTokens, *resp.Response) {
-	access_token_cookie, err := r.Cookie("access_token")
+	accessTokenCookie, err := r.Cookie("access_token")
 	if err != nil {
 		return nil, resp.Unauthorized("missing access_token cookie")
 	}
-	
-	access_token, rs := utils.ParseAccessToken(access_token_cookie.Value, viper.GetString("JWT_SECRET"))
+
+	accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
 		return nil, rs
-	}	
+	}
 
-	refresh_token_cookie, err := r.Cookie("refresh_token")
+	refreshTokenCookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		return nil, resp.Unauthorized("missing refresh_token cookie")
 	}
-	
-	refresh_token, rs := utils.ParseRefreshToken(refresh_token_cookie.Value, viper.GetString("JWT_SECRET"))
+
+	refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
 	if rs != nil {
 		return nil, rs
-	}	
+	}
 
-	jti, err := uuid.Parse(refresh_token.ID)
+	jti, err := uuid.Parse(refreshToken.ID)
 	if err != nil {
-		return nil, resp.Unauthorized("couln't parse refresh JTI")
+		return nil, resp.Unauthorized("couldn't parse refresh JTI")
 	}
 
 	blacklisted, err := s.queries.GetRefreshBlacklistById(ctx, jti)
@@ -197,44 +197,44 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("couldn't fetch user session").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-  dbUser, err := s.queries.GetUserById(ctx, access_token.Sub.ID)
+	dbUser, err := s.queries.GetUserById(ctx, accessToken.Sub.ID)
 	if err != nil {
 		return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
 	}
 
 	var tokens models.UserTokens
-	accessToken, accessJTI, rs := newAccessToken(dbUser)
+	newAccessToken, accessJTI, rs := newAccessToken(dbUser)
 	if rs != nil {
 		return nil, rs
 	}
-	tokens.AccessTokenString = accessToken
+	tokens.AccessTokenString = newAccessToken
 
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
-	expires_at := time.Now().Add(7 * 24 * time.Hour)
-	refresh_jti := uuid.New()
-	refreshToken, rs := newRefreshToken(accessJTI, refresh_jti, agent, ip, expires_at, session.SessionID)
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	refreshJti := uuid.New()
+	newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, agent, ip, expiresAt, session.SessionID)
 	if rs != nil {
 		return nil, rs
 	}
-	tokens.RefreshTokenString = refreshToken
+	tokens.RefreshTokenString = newRefreshToken
 
 	_, err = s.queries.UpdateUserSession(ctx, repository.UpdateUserSessionParams{
-		IssuedAt: time.Now(),
+		IssuedAt:  time.Now(),
 		UserAgent: agent,
-		UserIp: ip,
-		ExpiresAt: expires_at,
-		TokenID: refresh_jti,
+		UserIp:    ip,
+		ExpiresAt: expiresAt,
+		TokenID:   refreshJti,
 		SessionID: session.SessionID,
 	})
 
 	if err != nil {
 		log.Printf("Couldn't update user session: %v", err)
 	}
-	
+
 	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID: jti,
-		ExpiresAt: refresh_token.ExpiresAt.Time,
+		TokenID:   jti,
+		ExpiresAt: refreshToken.ExpiresAt.Time,
 	})
 
 	if err != nil {

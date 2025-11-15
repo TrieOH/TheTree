@@ -6,7 +6,7 @@ import (
 	"GoAuth/internal/models"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	validation "github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/MintzyG/FastUtilitiesNet/validation"
 )
 
 // Register godoc
@@ -36,7 +36,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 // Login godoc
 // @Summary Authenticates a customer
-// @Description Autheticates a customer of the system
+// @Description Authenticates a customer of the system
 // @Tags auth
 // @Accept json
 // @Produce json

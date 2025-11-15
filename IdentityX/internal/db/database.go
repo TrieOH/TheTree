@@ -1,9 +1,12 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -51,5 +54,25 @@ func RunMigrations(db *sql.DB, mPath string) error {
 		return err
 	}
 	log.Println("Migrations applied successfully")
+	return nil
+}
+
+func SetJWTMasterKey(db *sql.DB) error {
+	masterKey := viper.GetString("JWT_MASTER_KEY")
+	if masterKey == "" {
+		return errors.New("missing JWT_MASTER_KEY in config")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	query := fmt.Sprintf("SET app.jwt_master_key = '%s'", strings.ReplaceAll(masterKey, "'", "''"))
+
+	_, err := db.ExecContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to set app.jwt_master_key: %w", err)
+	}
+
+	log.Println("Session variable app.jwt_master_key set successfully")
 	return nil
 }
