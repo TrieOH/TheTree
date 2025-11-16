@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"GoAuth/internal/utils"
 	"net/http"
 
 	"GoAuth/internal/models"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/spf13/viper"
 )
 
 // Register godoc
@@ -83,7 +85,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.OK("Logged in").Send(w)
+	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
+	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+
+	resp.OK("Logged in").WithData(map[string]interface{}{
+		"access_token_claims":  accessToken,
+		"refresh_token_claims": refreshToken,
+	}).Send(w)
 }
 
 // Logout godoc
@@ -175,5 +183,11 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.OK("Refreshed tokens").Send(w)
+	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
+	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+
+	resp.OK("Refreshed tokens").WithData(map[string]interface{}{
+		"access_token_claims":  accessToken,
+		"refresh_token_claims": refreshToken,
+	}).Send(w)
 }
