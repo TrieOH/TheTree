@@ -19,3 +19,10 @@ export const DefaultSubmitButton: Story = {
     loading: false,
   }
 };
+
+export const Loading: Story = {
+  args: {
+    label: "Enviando...",
+    loading: true,
+  }
+};

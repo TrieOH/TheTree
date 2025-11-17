@@ -86,6 +86,7 @@
   border: 0.125rem solid var(--trieoh-button-color);
   color: var(--trieoh-button-color);
   cursor: pointer;
+  padding: 0 1.5rem;
 
   font-size: var(--trieoh-text-3xl);
   font-weight: 600;
