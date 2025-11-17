@@ -3,6 +3,7 @@ package handler
 import (
 	"GoAuth/internal/utils"
 	"net/http"
+	"time"
 
 	"GoAuth/internal/models"
 
@@ -62,31 +63,31 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
+	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+
 	accessCookie := http.Cookie{
 		Name:     "access_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(refreshToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
-
-	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
-	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
 
 	resp.OK("Logged in").WithData(map[string]interface{}{
 		"access_token_claims":  accessToken,
@@ -121,7 +122,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
@@ -131,7 +132,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
@@ -160,31 +161,31 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
+	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+
 	accessCookie := http.Cookie{
 		Name:     "access_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(refreshToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
-
-	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
-	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
 
 	resp.OK("Refreshed tokens").WithData(map[string]interface{}{
 		"access_token_claims":  accessToken,
