@@ -9,8 +9,11 @@ import (
 )
 
 type AccessSubJWT struct {
-	ID    uuid.UUID `json:"id"`
-	Email string    `json:"email"`
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	SessionID uuid.UUID `json:"session_id"`
+	UserAgent string    `json:"user_agent"`
+	UserIP    string    `json:"user_ip"`
 }
 
 type AccessClaims struct {
@@ -20,9 +23,6 @@ type AccessClaims struct {
 
 type RefreshSubJWT struct {
 	AccessJTI uuid.UUID `json:"access_jti"`
-	SessionID uuid.UUID `json:"session_id"`
-	UserAgent string    `json:"user_agent"`
-	UserIP    string    `json:"user_ip"`
 }
 
 type RefreshClaims struct {

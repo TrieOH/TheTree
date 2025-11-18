@@ -12,15 +12,18 @@ import (
 	"github.com/google/uuid"
 )
 
-func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) {
+func newAccessToken(dbUser repository.User, ip, agent string, session_id uuid.UUID) (string, uuid.UUID, *resp.Response) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
-			ID:    dbUser.ID,
-			Email: dbUser.Email,
+			ID:        dbUser.ID,
+			Email:     dbUser.Email,
+			SessionID: session_id,
+			UserAgent: agent,
+			UserIP:    ip,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			Issuer:    "GoAuth",
 			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -36,13 +39,10 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expiresAt time.Time, sessionId uuid.UUID) (string, *resp.Response) {
+func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, *resp.Response) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
 			AccessJTI: accessJTI,
-			UserAgent: agent,
-			UserIP:    ip,
-			SessionID: sessionId,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),

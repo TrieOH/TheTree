@@ -63,14 +63,9 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 	}
 
 	var tokens models.UserTokens
-	accessToken, accessJTI, rs := newAccessToken(dbUser)
-	if rs != nil {
-		return nil, rs
-	}
-	tokens.AccessTokenString = accessToken
-
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
+
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshJti := uuid.New()
 
@@ -98,7 +93,13 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 		)
 	}
 
-	refreshToken, rs := newRefreshToken(accessJTI, refreshJti, agent, ip, expiresAt, session.SessionID)
+	accessToken, accessJTI, rs := newAccessToken(dbUser, ip, agent, session.SessionID)
+	if rs != nil {
+		return nil, rs
+	}
+	tokens.AccessTokenString = accessToken
+
+	refreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
 	if rs != nil {
 		return nil, rs
 	}
@@ -202,17 +203,18 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 	}
 
 	var tokens models.UserTokens
-	newAccessToken, accessJTI, rs := newAccessToken(dbUser)
+	agent := r.UserAgent()
+	ip := utils.GetClientIP(r)
+
+	newAccessToken, accessJTI, rs := newAccessToken(dbUser, agent, ip, session.SessionID)
 	if rs != nil {
 		return nil, rs
 	}
 	tokens.AccessTokenString = newAccessToken
 
-	agent := r.UserAgent()
-	ip := utils.GetClientIP(r)
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshJti := uuid.New()
-	newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, agent, ip, expiresAt, session.SessionID)
+	newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
 	if rs != nil {
 		return nil, rs
 	}
