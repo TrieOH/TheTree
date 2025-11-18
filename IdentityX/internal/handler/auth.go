@@ -79,7 +79,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -97,10 +97,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.OK("Logged in").WithData(map[string]interface{}{
-		"access_token_claims":  accessToken,
-		"refresh_token_claims": refreshToken,
-	}).Send(w)
+	resp.OK("Logged in").Send(w)
 }
 
 // Logout godoc
@@ -128,7 +125,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -186,7 +183,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -204,8 +201,5 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
-	resp.OK("Refreshed tokens").WithData(map[string]interface{}{
-		"access_token_claims":  accessToken,
-		"refresh_token_claims": refreshToken,
-	}).Send(w)
+	resp.OK("Refreshed tokens").Send(w)
 }
