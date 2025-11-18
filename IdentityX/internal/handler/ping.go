@@ -6,7 +6,6 @@ import (
 	"GoAuth/internal/utils"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/spf13/viper"
 )
 
 // PublicPing godoc
@@ -41,7 +40,7 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessClaims, rs := utils.ParseAccessToken(accessToken.Value, viper.GetString("JWT_SECRET"))
+	accessClaims, rs := utils.ParseAccessToken(accessToken.Value, utils.GoAuthPublicKey)
 	if rs != nil {
 		rs.Send(w)
 		return

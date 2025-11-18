@@ -1,6 +1,7 @@
 package service
 
 import (
+	"GoAuth/internal/utils"
 	"time"
 
 	"GoAuth/internal/models"
@@ -9,7 +10,6 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 )
 
 func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) {
@@ -28,8 +28,8 @@ func newAccessToken(dbUser repository.User) (string, uuid.UUID, *resp.Response) 
 	}
 
 	accessJTIID, _ := uuid.Parse(accessJTI)
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := accessToken.SignedString([]byte(viper.GetString("JWT_SECRET")))
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
 	if err != nil {
 		return "", uuid.Nil, resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
 	}
@@ -52,8 +52,8 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, agent, ip string, expiresA
 		},
 	}
 
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := refreshToken.SignedString([]byte(viper.GetString("JWT_SECRET")))
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	tokenStr, err := refreshToken.SignedString(utils.GoAuthPrivateKey)
 	if err != nil {
 		return "", resp.InternalServerError("error signing refresh token").WithTracePrefix("error").AddTrace(err)
 	}
