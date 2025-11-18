@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GoAuth/internal/utils"
 	"context"
 	"database/sql"
 	"log"
@@ -23,11 +24,19 @@ var scheduler gocron.Scheduler
 func init() {
 	viper.AutomaticEnv()
 
+	err := utils.LoadEd25519Keys(
+		viper.GetString("JWT_PRIVATE_KEY"),
+		viper.GetString("JWT_PUBLIC_KEY"),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	Port = viper.GetString("PORT")
 	if Port == "" {
 		Port = "8080"
 	}
-
 	resp.SetConfig(resp.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024, // 10MB
@@ -37,7 +46,6 @@ func init() {
 		DefaultModule:        "GoAuth-module",
 	})
 
-	var err error
 	DB, err = database.WaitForDB(30 * time.Second)
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)

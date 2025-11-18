@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +62,7 @@ func RequestIDMW(next http.Handler) http.Handler {
 		userID := r.Header.Get("X-User-ID")
 		if userID == "" {
 			if accessTokenCookie, err := r.Cookie("access_token"); err == nil {
-				if uid := utils.ParseAccessTokenUserIDUnsafe(accessTokenCookie.Value, viper.GetString("JWT_SECRET")); uid != nil {
+				if uid := utils.ParseAccessTokenUserIDUnsafe(accessTokenCookie.Value, utils.GoAuthPublicKey); uid != nil {
 					userID = *uid
 				}
 			}

@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"errors"
-
 	"GoAuth/internal/models"
+	"crypto/ed25519"
+	"errors"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
@@ -41,10 +41,11 @@ func handleJWTError(err error, tokenType string) *resp.Response {
 	return resp.Unauthorized("invalid " + tokenType).AddTrace(err)
 }
 
-func ParseAccessToken(tokenStr, secret string) (*models.AccessClaims, *resp.Response) {
+func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*models.AccessClaims, *resp.Response) {
 	claims := &models.AccessClaims{}
+
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
+		return secret, nil
 	})
 
 	if err != nil {
@@ -58,7 +59,7 @@ func ParseAccessToken(tokenStr, secret string) (*models.AccessClaims, *resp.Resp
 	return claims, nil
 }
 
-func ParseAccessTokenUserIDUnsafe(tokenStr, key string) *string {
+func ParseAccessTokenUserIDUnsafe(tokenStr string, secret ed25519.PublicKey) *string {
 	if tokenStr == "" {
 		return nil
 	}
@@ -71,7 +72,7 @@ func ParseAccessTokenUserIDUnsafe(tokenStr, key string) *string {
 	}
 
 	_, err = jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(key), nil
+		return secret, nil
 	})
 
 	if err != nil {
@@ -90,10 +91,10 @@ func ParseAccessTokenUserIDUnsafe(tokenStr, key string) *string {
 	return &idStr
 }
 
-func ParseRefreshToken(tokenStr, secret string) (*models.RefreshClaims, *resp.Response) {
+func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*models.RefreshClaims, *resp.Response) {
 	claims := &models.RefreshClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
+		return secret, nil
 	})
 
 	if err != nil {

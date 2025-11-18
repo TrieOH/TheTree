@@ -9,7 +9,6 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
-	"github.com/spf13/viper"
 )
 
 // Register godoc
@@ -63,8 +62,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
-	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
 
 	accessCookie := http.Cookie{
 		Name:     "access_token",
@@ -161,8 +169,17 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, _ := utils.ParseAccessToken(tokens.AccessTokenString, viper.GetString("JWT_SECRET"))
-	refreshToken, _ := utils.ParseRefreshToken(tokens.RefreshTokenString, viper.GetString("JWT_SECRET"))
+	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
 
 	accessCookie := http.Cookie{
 		Name:     "access_token",

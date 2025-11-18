@@ -10,7 +10,6 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 )
 
 type AuthMiddleware struct {
@@ -35,13 +34,13 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, viper.GetString("JWT_SECRET"))
+		accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return
 		}
 
-		refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
+		refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, utils.GoAuthPublicKey)
 		if rs != nil {
 			rs.WithModule("AuthMW").Send(w)
 			return

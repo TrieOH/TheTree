@@ -2,9 +2,9 @@
 
 ### Generate the keys
 
-`cd keys`
-`openssl genrsa -out private.pem 2048`
-`openssl rsa -in private.pem -pubout -out public.pem`
+`mkdir keys && cd keys`
+`openssl genpkey -algorithm ed25519 -out ed25519-private.pem`
+`openssl pkey -in ed25519-private.pem -pubout -out ed25519-public.pem`
 
 ## How to run tests
 1. `docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from go-auth-test`

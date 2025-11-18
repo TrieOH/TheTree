@@ -11,6 +11,11 @@ RUN go mod download
 
 COPY . .
 
+RUN if [ ! -f "keys/ed25519-private.pem" ] || [ ! -f "keys/ed25519-public.pem" ]; then \
+        echo "ERROR: Missing Ed25519 keys in /keys/. Build aborted."; \
+        exit 1; \
+    fi
+
 RUN sqlc generate
 RUN swag init -g internal/router/router.go -o docs --parseInternal --parseDependency
 RUN CGO_ENABLED=0 GOOS=linux go build -o GoAuth .
@@ -22,6 +27,7 @@ WORKDIR /app
 COPY --from=builder /app/GoAuth .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/keys ./keys
 
 EXPOSE 8080
 

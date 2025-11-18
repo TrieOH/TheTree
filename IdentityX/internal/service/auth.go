@@ -14,7 +14,6 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -114,7 +113,7 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 		return resp.Unauthorized("missing refresh_token cookie")
 	}
 
-	refreshClaims, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
+	refreshClaims, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, utils.GoAuthPublicKey)
 	if rs != nil {
 		return rs
 	}
@@ -163,7 +162,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("missing access_token cookie")
 	}
 
-	accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, viper.GetString("JWT_SECRET"))
+	accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
 	if rs != nil {
 		return nil, rs
 	}
@@ -173,7 +172,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("missing refresh_token cookie")
 	}
 
-	refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, viper.GetString("JWT_SECRET"))
+	refreshToken, rs := utils.ParseRefreshToken(refreshTokenCookie.Value, utils.GoAuthPublicKey)
 	if rs != nil {
 		return nil, rs
 	}
