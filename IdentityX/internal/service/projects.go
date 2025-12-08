@@ -121,6 +121,27 @@ func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, p
 	return &keys, nil
 }
 
+func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map[string]any, *resp.Response) {
+	pid, err := uuid.Parse(projectId)
+	if err != nil {
+		return nil, resp.BadRequest("error parsing project id").AddTrace(err)
+	}
+
+	pubKey, err := s.queries.GetProjectPublicKeyById(ctx, pid)
+	if err != nil {
+		return nil, resp.InternalServerError("error fetching project public key").WithTracePrefix("database-error").AddTrace(err)
+	}
+
+	parsedKey, err := utils.ParseEd25519PublicKey(pubKey)
+	if err != nil {
+		return nil, resp.BadRequest("error parsing project public key").AddTrace(err)
+	}
+
+	jwks := utils.PublicKeyToJWK(parsedKey)
+
+	return jwks, nil
+}
+
 func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, projectId string, project models.Project) (*models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(r)
 	if err != nil {

@@ -113,6 +113,33 @@ func (h *AuthHandler) GetProjectKeysByID(w http.ResponseWriter, r *http.Request)
 	resp.OK().WithData(keys).Send(w)
 }
 
+// GetProjectJWKS godoc
+// @Summary Returns the JWKS for a given project
+// @Description
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param project_id path string true "ID of the project to retrieve keys"
+// @Success 200 {object} map[string]any
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /projects/{project_id}/.well-known/jwks.json [get]
+func (h *AuthHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
+	projectId := r.PathValue("project_id")
+	if projectId == "" {
+		resp.BadRequest("missing project id parameter").Send(w)
+		return
+	}
+
+	jwks, rs := h.AuthService.GetProjectJWKS(r.Context(), projectId)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	resp.OK().WithData(jwks).Send(w)
+}
+
 // UpdateProjectByID godoc
 // @Summary Updates project information
 // @Description

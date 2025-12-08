@@ -35,6 +35,7 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("PATCH /projects/{project_id}", authMW.Auth(appHandler.UpdateProjectByID))
 	mux.HandleFunc("DELETE /projects/{project_id}", authMW.Auth(appHandler.DeleteProjectByID))
 	mux.HandleFunc("GET /projects/{project_id}/keys", authMW.Auth(appHandler.GetProjectKeysByID))
+	mux.HandleFunc("GET /projects/{project_id}/.well-known/jwks.json", appHandler.GetProjectJWKS)
 
 	return mux
 }
