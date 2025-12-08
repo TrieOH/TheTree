@@ -1,10 +1,11 @@
 package logs
 
 import (
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 	"log"
 	"sync"
+
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var (

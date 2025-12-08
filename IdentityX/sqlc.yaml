@@ -117,3 +117,27 @@ sql:
             go_type:
               type: "int"
               pointer: false
+          - db_type: "jsonb"
+            nullable: false
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+              pointer: false
+          - db_type: "jsonb"
+            nullable: true
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+              pointer: true
+          - db_type: "json"
+            nullable: false
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+              pointer: false
+          - db_type: "json"
+            nullable: true
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+              pointer: true

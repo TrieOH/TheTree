@@ -1,19 +1,20 @@
 package main
 
 import (
-	"log"
-	"time"
+	"GoAuth/internal/utils"
 	"context"
 	"database/sql"
+	"log"
+	"time"
 
 	database "GoAuth/internal/db"
 	"GoAuth/internal/repository"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	_ "github.com/lib/pq"
-	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/google/uuid"
+	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
 var Port string
@@ -23,11 +24,19 @@ var scheduler gocron.Scheduler
 func init() {
 	viper.AutomaticEnv()
 
+	err := utils.LoadEd25519Keys(
+		viper.GetString("JWT_PRIVATE_KEY"),
+		viper.GetString("JWT_PUBLIC_KEY"),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	Port = viper.GetString("PORT")
 	if Port == "" {
 		Port = "8080"
 	}
-
 	resp.SetConfig(resp.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024, // 10MB
@@ -37,7 +46,6 @@ func init() {
 		DefaultModule:        "GoAuth-module",
 	})
 
-	var err error
 	DB, err = database.WaitForDB(30 * time.Second)
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
@@ -45,6 +53,10 @@ func init() {
 
 	if err := database.RunMigrations(DB, "./migrations"); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
+	}
+
+	if err := database.SetJWTMasterKey(DB); err != nil {
+		log.Fatal(err)
 	}
 
 	// Create the scheduler
@@ -72,24 +84,23 @@ func init() {
 		log.Println("Created DeleteExpiredTokens cron job")
 	}
 
-
 	// Schedule a daily job at 00:00
 	_, err = scheduler.NewJob(
 		//gocron.DurationJob(1*time.Minute),
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
 			queries := repository.New(db)
-			revoked_sessions, err := queries.DeleteExpiredSessions(ctx)
+			revokedSessions, err := queries.DeleteExpiredSessions(ctx)
 			if err != nil {
 				log.Printf("Couldn't delete expired sessions: %v\n", err)
 			} else {
 				log.Println("Expired sessions cleanup executed successfully")
 			}
 
-			tokenIDs := make([]uuid.UUID, len(revoked_sessions))
-			expiresAt := make([]time.Time, len(revoked_sessions))
+			tokenIDs := make([]uuid.UUID, len(revokedSessions))
+			expiresAt := make([]time.Time, len(revokedSessions))
 
-			for i, session := range revoked_sessions {
+			for i, session := range revokedSessions {
 				tokenIDs[i] = session.TokenID
 				expiresAt[i] = session.ExpiresAt
 			}

@@ -5,28 +5,37 @@ import (
 	"net/http"
 
 	"GoAuth/internal/handler"
+	"GoAuth/internal/middleware"
 	"GoAuth/internal/repository"
 	"GoAuth/internal/service"
-	"GoAuth/internal/middleware"
 )
 
 func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	queries := repository.New(db)
-	service := service.NewAuthService(queries)
-	handler := handler.NewAuthHandler(service)
+	authService := service.NewAuthService(queries)
+	appHandler := handler.NewAuthHandler(authService)
 
 	authMW := middleware.NewAuthMiddleware(queries)
 
-	mux.HandleFunc("POST /auth/register", handler.Register)
-	mux.HandleFunc("POST /auth/login", handler.Login)
-	mux.HandleFunc("POST /auth/logout", handler.Logout)
-	mux.HandleFunc("POST /ping/public", handler.PublicPing)
-	mux.HandleFunc("POST /ping/private", authMW.Auth(handler.PrivatePing))
-	mux.HandleFunc("GET /sessions", authMW.Auth(handler.ListUserSessions))
-	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(handler.RevokeUserSessionByID))
-	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(handler.RevokeOtherSessions))
-	mux.HandleFunc("DELETE /sessions", authMW.Auth(handler.RevokeAllSessions))
-	mux.HandleFunc("POST /auth/refresh", handler.Refresh)
+	mux.HandleFunc("POST /auth/register", appHandler.Register)
+	mux.HandleFunc("POST /auth/login", appHandler.Login)
+	mux.HandleFunc("POST /auth/logout", appHandler.Logout)
+	mux.HandleFunc("POST /ping/public", appHandler.PublicPing)
+	mux.HandleFunc("POST /ping/private", authMW.Auth(appHandler.PrivatePing))
+	mux.HandleFunc("GET /sessions", authMW.Auth(appHandler.ListUserSessions))
+	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(appHandler.RevokeUserSessionByID))
+	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(appHandler.RevokeOtherSessions))
+	mux.HandleFunc("DELETE /sessions", authMW.Auth(appHandler.RevokeAllSessions))
+	mux.HandleFunc("POST /auth/refresh", appHandler.Refresh)
+	mux.HandleFunc("GET /.well-known/jwks.json", appHandler.JWKS)
+
+	mux.HandleFunc("POST /projects", authMW.Auth(appHandler.CreateProject))
+	mux.HandleFunc("GET /projects", authMW.Auth(appHandler.ListProjects))
+	mux.HandleFunc("GET /projects/{project_id}", authMW.Auth(appHandler.GetProjectByID))
+	mux.HandleFunc("PATCH /projects/{project_id}", authMW.Auth(appHandler.UpdateProjectByID))
+	mux.HandleFunc("DELETE /projects/{project_id}", authMW.Auth(appHandler.DeleteProjectByID))
+	mux.HandleFunc("GET /projects/{project_id}/keys", authMW.Auth(appHandler.GetProjectKeysByID))
+	mux.HandleFunc("GET /projects/{project_id}/.well-known/jwks.json", appHandler.GetProjectJWKS)
 
 	return mux
 }

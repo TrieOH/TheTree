@@ -5,20 +5,19 @@ import (
 
 	"GoAuth/internal/utils"
 
-	"github.com/spf13/viper"
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 // PublicPing godoc
 // @Summary Just replies "pong"
 // @Description This route replies pong to any request to test connectivity
-// @Description This is not meant to be used as a health check but it can be trusted
+// @Description This is not meant to be used as a health check, but it can be trusted
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Success 200 {string} string
 // @Router /ping/public [post]
-func (h *AuthHandler) PublicPing(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) PublicPing(w http.ResponseWriter, _ *http.Request) {
 	resp.OK("pong").Send(w)
 }
 
@@ -35,13 +34,13 @@ func (h *AuthHandler) PublicPing(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /ping/private [post]
 func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
-	access_token, err := r.Cookie("access_token")
+	accessToken, err := r.Cookie("access_token")
 	if err != nil {
 		resp.Unauthorized("missing access_token cookie").Send(w)
 		return
 	}
 
-	accessClaims, rs := utils.ParseAccessToken(access_token.Value, viper.GetString("JWT_SECRET"))
+	accessClaims, rs := utils.ParseAccessToken(accessToken.Value, utils.GoAuthPublicKey)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -49,4 +48,3 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK("pong to you " + accessClaims.Sub.Email).Send(w)
 }
-

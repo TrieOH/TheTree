@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"GoAuth/internal/utils"
 	"net/http"
+	"time"
 
 	"GoAuth/internal/models"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	validation "github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/MintzyG/FastUtilitiesNet/validation"
 )
 
 // Register godoc
@@ -36,7 +38,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 // Login godoc
 // @Summary Authenticates a customer
-// @Description Autheticates a customer of the system
+// @Description Authenticates a customer of the system
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -60,24 +62,36 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
 	accessCookie := http.Cookie{
 		Name:     "access_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
-		MaxAge:   0,
-		HttpOnly: true,
+		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
+		HttpOnly: false,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(refreshToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
@@ -111,9 +125,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
-		HttpOnly: true,
+		HttpOnly: false,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
@@ -123,7 +137,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
@@ -152,28 +166,56 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
 	accessCookie := http.Cookie{
 		Name:     "access_token",
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
-		MaxAge:   0,
-		HttpOnly: true,
+		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
+		HttpOnly: false,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	refreshCookie := http.Cookie{
 		Name:     "refresh_token",
 		Value:    tokens.RefreshTokenString,
 		Path:     "/",
-		MaxAge:   0,
+		MaxAge:   int(time.Until(refreshToken.ExpiresAt.Time).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 
 	http.SetCookie(w, &accessCookie)
 	http.SetCookie(w, &refreshCookie)
 
 	resp.OK("Refreshed tokens").Send(w)
+}
+
+// JWKS godoc
+// @Summary Exposes the public key using a JWKS
+// @Description Lets users verify the tokens using the public key through a JWKS
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]any
+// @Router /.well-known/jwks.json [get]
+func (h *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
+	jwks := map[string]any{
+		"keys": []any{utils.PublicKeyToJWK(utils.GoAuthPublicKey)},
+	}
+
+	resp.OK().WithData(jwks).Send(w)
 }

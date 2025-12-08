@@ -16,7 +16,7 @@ func refreshTokensSuccess(user *accountContext) func(t *testing.T) {
 			Expect().
 			Status(http.StatusOK)
 
-    obj := resp.JSON().Object()
+		obj := resp.JSON().Object()
 		obj.Value("module").String().Equal("go-auth-test")
 		obj.Value("message").String().Equal("Refreshed tokens")
 

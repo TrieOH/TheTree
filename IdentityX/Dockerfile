@@ -2,14 +2,19 @@ FROM golang:1.25.3 AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
-
 RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
+
+RUN if [ ! -f "keys/ed25519-private.pem" ] || [ ! -f "keys/ed25519-public.pem" ]; then \
+        echo "ERROR: Missing Ed25519 keys in /keys/. Build aborted."; \
+        exit 1; \
+    fi
 
 RUN sqlc generate
 RUN swag init -g internal/router/router.go -o docs --parseInternal --parseDependency
@@ -22,6 +27,7 @@ WORKDIR /app
 COPY --from=builder /app/GoAuth .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/keys ./keys
 
 EXPOSE 8080
 

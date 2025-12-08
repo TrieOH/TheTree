@@ -30,8 +30,8 @@ func registerNoEmail() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "",
-				"password":  "N0Email#S4d",
+				"email":    "",
+				"password": "N0Email#S4d",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -55,8 +55,8 @@ func registerNoPassword() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "nopass@mail.com",
-				"password":  "",
+				"email":    "nopass@mail.com",
+				"password": "",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -80,8 +80,8 @@ func registerWeakPasswordLetters() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass1@mail.com",
-				"password":  "abc",
+				"email":    "weakpass1@mail.com",
+				"password": "abc",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -107,8 +107,8 @@ func registerWeakPasswordLettersNumber() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass2@mail.com",
-				"password":  "abc3",
+				"email":    "weakpass2@mail.com",
+				"password": "abc3",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -133,8 +133,8 @@ func registerWeakPasswordLettersSymbol() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass3@mail.com",
-				"password":  "abc#",
+				"email":    "weakpass3@mail.com",
+				"password": "abc#",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -159,8 +159,8 @@ func registerWeakPasswordLettersUppercase() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass4@mail.com",
-				"password":  "Abc",
+				"email":    "weakpass4@mail.com",
+				"password": "Abc",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -185,8 +185,8 @@ func registerWeakPasswordLettersSymbolUppercase() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass5@mail.com",
-				"password":  "Abc#",
+				"email":    "weakpass5@mail.com",
+				"password": "Abc#",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -210,8 +210,8 @@ func registerWeakPasswordLettersNumberUppercase() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass6@mail.com",
-				"password":  "Abc3",
+				"email":    "weakpass6@mail.com",
+				"password": "Abc3",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -235,8 +235,8 @@ func registerWeakPasswordLettersNumberSymbolUppercase() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "weakpass7@mail.com",
-				"password":  "Abc#3",
+				"email":    "weakpass7@mail.com",
+				"password": "Abc#3",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -260,8 +260,8 @@ func registerInvalidEmail() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "invalid-email.com",
-				"password":  "Str0ngP4$$",
+				"email":    "invalid-email.com",
+				"password": "Str0ngP4$$",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -285,8 +285,8 @@ func registerBigEmail() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@email.com",
-				"password":  "B1g&mailMan",
+				"email":    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@email.com",
+				"password": "B1g&mailMan",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).
@@ -310,8 +310,8 @@ func registerBigPassword() func(t *testing.T) {
 		obj := e.POST("/auth/register").
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
-				"email": "bigpassword@mail.com",
-				"password":  "1#Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"email":    "bigpassword@mail.com",
+				"password": "1#Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			}).
 			Expect().
 			Status(http.StatusBadRequest).

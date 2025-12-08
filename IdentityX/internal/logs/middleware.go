@@ -1,16 +1,16 @@
 package logs
 
 import (
-	"context"
-	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"GoAuth/internal/utils"
-	"go.uber.org/zap"
+	"context"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
-func LogsMW(next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -26,7 +26,7 @@ func LogsMW(next http.Handler) http.Handler {
 			zap.String("request_id", reqID),
 			zap.String("user_id", userID),
 			zap.String("method", r.Method),
-			zap.String("path", NormalizePath(r)),
+			zap.String("path", utils.NormalizePath(r)),
 			zap.Int("status", ww.status),
 			zap.Duration("duration", duration),
 			zap.String("remote_addr", r.RemoteAddr),
@@ -61,8 +61,8 @@ func RequestIDMW(next http.Handler) http.Handler {
 
 		userID := r.Header.Get("X-User-ID")
 		if userID == "" {
-			if access_token_cookie, err := r.Cookie("access_token"); err == nil {
-				if uid := utils.ParseAccessTokenUserIDUnsafe(access_token_cookie.Value, viper.GetString("JWT_SECRET")); uid != nil {
+			if accessTokenCookie, err := r.Cookie("access_token"); err == nil {
+				if uid := utils.ParseAccessTokenUserIDUnsafe(accessTokenCookie.Value, utils.GoAuthPublicKey); uid != nil {
 					userID = *uid
 				}
 			}
