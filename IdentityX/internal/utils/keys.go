@@ -16,13 +16,24 @@ func GenerateEd25519Keys() (pubKeyPEM, privKeyPEM string, err error) {
 		return "", "", err
 	}
 
+	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		return "", "", err
+	}
+
 	privPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "PRIVATE KEY",
-		Bytes: priv,
+		Bytes: privBytes,
 	})
+
+	pubBytes, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return "", "", err
+	}
+
 	pubPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "PUBLIC KEY",
-		Bytes: pub,
+		Bytes: pubBytes,
 	})
 
 	return string(pubPEM), string(privPEM), nil
