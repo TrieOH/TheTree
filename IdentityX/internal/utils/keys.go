@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"os"
@@ -103,4 +104,15 @@ func LoadEd25519Keys(privatePath, publicPath string) error {
 	GoAuthPublicKey = pub
 
 	return nil
+}
+
+func PublicKeyToJWK(key ed25519.PublicKey) map[string]any {
+	return map[string]any{
+		"kty": "OKP",
+		"crv": "Ed25519",
+		"alg": "EdDSA",
+		"use": "sig",
+		"kid": "goauth-ed25519",
+		"x":   base64.RawURLEncoding.EncodeToString(key),
+	}
 }

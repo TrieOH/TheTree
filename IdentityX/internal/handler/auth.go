@@ -203,3 +203,19 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK("Refreshed tokens").Send(w)
 }
+
+// JWKS godoc
+// @Summary Exposes the public key using a JWKS
+// @Description Lets users verify the tokens using the public key through a JWKS
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]any
+// @Router /.well-known/jwks.json [get]
+func (h *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
+	jwks := map[string]any{
+		"keys": []any{utils.PublicKeyToJWK(utils.GoAuthPublicKey)},
+	}
+
+	resp.OK().WithData(jwks).Send(w)
+}
