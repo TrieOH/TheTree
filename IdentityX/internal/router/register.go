@@ -27,6 +27,7 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(appHandler.RevokeOtherSessions))
 	mux.HandleFunc("DELETE /sessions", authMW.Auth(appHandler.RevokeAllSessions))
 	mux.HandleFunc("POST /auth/refresh", appHandler.Refresh)
+	mux.HandleFunc("GET /.well-known/jwks.json", appHandler.JWKS)
 
 	mux.HandleFunc("POST /projects", authMW.Auth(appHandler.CreateProject))
 	mux.HandleFunc("GET /projects", authMW.Auth(appHandler.ListProjects))

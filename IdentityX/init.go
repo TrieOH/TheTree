@@ -90,17 +90,17 @@ func init() {
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
 			queries := repository.New(db)
-			revoked_sessions, err := queries.DeleteExpiredSessions(ctx)
+			revokedSessions, err := queries.DeleteExpiredSessions(ctx)
 			if err != nil {
 				log.Printf("Couldn't delete expired sessions: %v\n", err)
 			} else {
 				log.Println("Expired sessions cleanup executed successfully")
 			}
 
-			tokenIDs := make([]uuid.UUID, len(revoked_sessions))
-			expiresAt := make([]time.Time, len(revoked_sessions))
+			tokenIDs := make([]uuid.UUID, len(revokedSessions))
+			expiresAt := make([]time.Time, len(revokedSessions))
 
-			for i, session := range revoked_sessions {
+			for i, session := range revokedSessions {
 				tokenIDs[i] = session.TokenID
 				expiresAt[i] = session.ExpiresAt
 			}
