@@ -6,7 +6,6 @@ export const createAuthService = (apiInstance: Api) => ({
     const res = await apiInstance.post<AuthTokenClaims>(
       "/auth/login",
       { email, password }, 
-      { requiresAuth: true }
     );
     if(res.code === 200 && res.data) saveTokenClaims(res.data);
     return res;
