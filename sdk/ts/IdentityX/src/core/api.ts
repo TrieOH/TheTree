@@ -129,6 +129,14 @@ export class Api {
     });
   }
 
+  patch<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
+    return this.request<T>(path, {
+      ...options,
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
   delete<T = unknown>(path: string, options?: RequestOptions) {
     return this.request<T>(path, { ...options, method: "DELETE" });
   }
