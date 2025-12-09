@@ -19,7 +19,10 @@ export default function BasicSubmitButton({
       type="submit"
       onClick={onSubmit}
       disabled={loading}
-      className={`trieoh trieoh-button ${loading ? "trieoh-button--loading" : ""}`}
+      className={
+        `trieoh trieoh-button trieoh-button--all-rounded 
+        ${loading ? "trieoh-button--loading" : ""}`
+      }
     >
       {label}
     </button>
