@@ -125,7 +125,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
-		HttpOnly: false,
+		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -183,7 +183,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
-		HttpOnly: false,
+		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -202,6 +202,34 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &refreshCookie)
 
 	resp.OK("Refreshed tokens").Send(w)
+}
+
+// Me godoc
+// @Summary Sends session info to user
+// @Description sends the whole access info and the refresh expiry time
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
+// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
+// @Success 200 {object} map[string]any
+// @Failure 500 {object} models.ErrorResponse
+// @Router /sessions/me [get]
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	access, err := models.GetAccessClaims(r)
+	if err != nil {
+		resp.InternalServerError("Failed to get access claims").Send(w)
+	}
+	refresh, err := models.GetRefreshClaims(r)
+	if err != nil {
+		resp.InternalServerError("Failed to get refresh claims").Send(w)
+	}
+
+	resp.OK().WithData(map[string]interface{}{
+		"access":              access,
+		"refresh_expire_date": refresh.ExpiresAt,
+	}).Send(w)
 }
 
 // JWKS godoc
