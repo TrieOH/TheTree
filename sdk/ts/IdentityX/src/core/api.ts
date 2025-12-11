@@ -1,4 +1,8 @@
-import { clearAuthTokens, isTokenExpiringSoon } from "../utils/token-utils";
+import {
+  clearAuthTokens,
+  fetchAndSaveClaims,
+  isTokenExpiringSoon,
+} from "../utils/token-utils";
 import { env } from "./env";
 
 export interface ApiResponse<T = unknown> {
@@ -56,6 +60,7 @@ export class Api {
           if (res.code !== 503) clearAuthTokens();
           throw new Error(res.message || "Failed to refresh token");
         }
+        await fetchAndSaveClaims(this);
         console.log("[TRIEOH SDK] Token refreshed successfully");
       } catch (error) {
         console.error("[TRIEOH SDK] Failed to refresh token:", error);

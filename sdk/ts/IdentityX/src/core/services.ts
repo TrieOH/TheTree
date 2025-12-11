@@ -1,13 +1,13 @@
-import { type AuthTokenClaims, clearAuthTokens, saveTokenClaims } from "../utils/token-utils";
+import { clearAuthTokens, fetchAndSaveClaims, getUserInfo } from "../utils/token-utils";
 import type { Api } from "./api";
 
 export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
-    const res = await apiInstance.post<AuthTokenClaims>(
+    const res = await apiInstance.post<string>(
       "/auth/login",
       { email, password }, 
     );
-    if(res.code === 200 && res.data) saveTokenClaims(res.data);
+    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 
@@ -25,12 +25,14 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   refresh: async () => {
-    const res = await apiInstance.post<AuthTokenClaims>(
+    const res = await apiInstance.post<string>(
       "/auth/refresh",
       undefined,
       { requiresAuth: true, skipRefresh: true }
     );
-    if(res.code === 200 && res.data) saveTokenClaims(res.data);
+    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
     return res;
-  }
+  },
+
+  profile: () => getUserInfo(),
 });

@@ -1,17 +1,9 @@
+import type { Api } from "../core/api";
+
 interface TokenClaims {
   sub: {
     id: string;
     email: string;
-  };
-  iss: string;
-  exp: number;
-  iat: number;
-  jti: string;
-}
-
-interface RefreshTokenClaims {
-  sub: {
-    access_jti: string;
     session_id: string;
     user_agent: string;
     user_ip: string;
@@ -23,48 +15,32 @@ interface RefreshTokenClaims {
 }
 
 export interface AuthTokenClaims {
-  access_token_claims: TokenClaims;
-  refresh_token_claims: RefreshTokenClaims;
+  access: TokenClaims;
+  refresh_expire_date: number;
 }
 
-const TOKEN_CLAIMS_KEY = "auth_token_claims";
+// Stored only in memory
+let memoryClaims: AuthTokenClaims | null = null;
 
 export function saveTokenClaims(claims: AuthTokenClaims): void {
-  if (typeof window === "undefined") return;
-  
-  try {
-    localStorage.setItem(TOKEN_CLAIMS_KEY, JSON.stringify(claims));
-    console.log("[TRIEOH SDK] Token claims saved");
-  } catch (error) {
-    console.error("[TRIEOH SDK] Failed to save token claims:", error);
-  }
+  memoryClaims = claims;
+  console.log("[TRIEOH SDK] Token claims saved (in-memory)");
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
-  if (typeof window === "undefined") return null;
-  
-  try {
-    const claims = localStorage.getItem(TOKEN_CLAIMS_KEY);
-    if (!claims) return null;
-    return JSON.parse(claims) as AuthTokenClaims;
-  } catch (error) {
-    console.error("[TRIEOH SDK] Failed to get token claims:", error);
-    return null;
-  }
+  return memoryClaims;
 }
 
 export function isTokenExpiringSoon(thresholdSeconds: number = 30): boolean {
   const claims = getTokenClaims();
-  if (!claims || !claims.access_token_claims.exp) {
+  if (!claims || !claims.access.exp) {
     console.warn("[TRIEOH SDK] No token claims found or exp missing");
     return true;
   }
 
   const now = Math.floor(Date.now() / 1000);
-  const timeUntilExpiry = claims.access_token_claims.exp - now;
-  
-  console.log(`[TRIEOH SDK] Token expires in ${timeUntilExpiry}s`);
-  
+  const timeUntilExpiry = claims.access.exp - now;
+    
   return timeUntilExpiry <= thresholdSeconds;
 }
 
@@ -74,16 +50,26 @@ export function isAuthenticated(): boolean {
 }
 
 export function clearAuthTokens(): void {
-  if (typeof window !== "undefined") localStorage.removeItem(TOKEN_CLAIMS_KEY);
+  memoryClaims = null;
   console.log("[TRIEOH SDK] Auth tokens and claims cleared");
 }
 
-export function getUserInfo(): { id: string; email: string } | null {
+export function getUserInfo() {
   const claims = getTokenClaims();
   if (!claims) return null;
   
-  return {
-    id: claims.access_token_claims.sub.id,
-    email: claims.access_token_claims.sub.email,
-  };
+  return claims.access.sub
 }
+
+export const fetchAndSaveClaims = async (apiInstance: Api) => {
+  const res = await apiInstance.get<AuthTokenClaims>("/sessions/me",
+    { requiresAuth: true, skipRefresh: true }
+  );
+  
+  if (res.code === 200 && res.data) {
+    saveTokenClaims(res.data);
+    return res.data;
+  }
+  clearAuthTokens(); 
+  throw new Error(res.message || "Failed to fetch session claims");
+};

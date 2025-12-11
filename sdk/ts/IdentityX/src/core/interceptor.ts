@@ -33,11 +33,34 @@ export class AuthInterceptor {
     }
   }
 
+  private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
+    const response = await fetch(`${this.baseURL}/sessions/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      credentials: "include",
+    });
+
+    const resJson = await response.json();
+
+    if (resJson.code !== 200 || !resJson.data) {
+      clearAuthTokens();
+      throw new Error(resJson.message || "Failed to fetch session claims after refresh");
+    }
+    
+    const claims = resJson.data as AuthTokenClaims;
+    saveTokenClaims(claims);
+    return claims;
+  }
+
   private async refreshToken(): Promise<void> {
     if (this.isRefreshing && this.refreshPromise) return this.refreshPromise;
     
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
+      let claims: AuthTokenClaims;
       try {
         const response = await fetch(`${this.baseURL}/auth/refresh`, {
           method: "POST",
@@ -55,11 +78,8 @@ export class AuthInterceptor {
           throw new Error(data.message || "Failed to refresh token");
         }
 
-        if (data.data) {
-          saveTokenClaims(data.data);
-          this.onTokenRefreshed?.(data.data);
-        }
-
+        claims = await this.fetchClaimsAndSave();
+        this.onTokenRefreshed?.(claims);
         console.log("[TRIEOH SDK] Token refreshed successfully");
       } catch (error) {
         console.error("[TRIEOH SDK] Failed to refresh token:", error);
@@ -86,7 +106,6 @@ export class AuthInterceptor {
     }
   }
 
-
   async fetch(url: string, options?: RequestInit): Promise<Response> {
     await this.beforeRequest();
     
@@ -100,7 +119,6 @@ export class AuthInterceptor {
     });
   }
 }
-
 
 export const createAuthInterceptor = (config?: InterceptorConfig) => {
   return new AuthInterceptor(config);
