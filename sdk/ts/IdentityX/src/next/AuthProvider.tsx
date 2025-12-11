@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims } from "../utils/token-utils";
+import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -27,6 +27,11 @@ export function AuthProvider({
     const loadAuthStatus = async () => {
       if(getTokenClaims()) {
         setIsAuthenticated(true);
+        setReady(true);
+        return;
+      }
+      if(isRefreshSessionExpired()) {
+        console.warn("[AuthProvider] Persistent session is expired. Skipping refresh request.");
         setReady(true);
         return;
       }

@@ -1,5 +1,6 @@
 import {
   clearAuthTokens,
+  isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveTokenClaims,
   type AuthTokenClaims
@@ -96,6 +97,11 @@ export class AuthInterceptor {
   }
 
   async beforeRequest(): Promise<void> {
+    if(isRefreshSessionExpired()) {
+      clearAuthTokens();
+      return;
+    }
+    
     if (isTokenExpiringSoon(30)) {
       console.log("[TRIEOH SDK] Token expiring soon, refreshing...");
       try {

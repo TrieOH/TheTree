@@ -19,12 +19,15 @@ export interface AuthTokenClaims {
   refresh_expire_date: number;
 }
 
+const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
+
 // Stored only in memory
 let memoryClaims: AuthTokenClaims | null = null;
 
 export function saveTokenClaims(claims: AuthTokenClaims): void {
   memoryClaims = claims;
-  console.log("[TRIEOH SDK] Token claims saved (in-memory)");
+  localStorage.setItem(REFRESH_EXPIRY_KEY, String(claims.refresh_expire_date));
+  console.log("[TRIEOH SDK] Token claims saved");
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
@@ -44,6 +47,21 @@ export function isTokenExpiringSoon(thresholdSeconds: number = 30): boolean {
   return timeUntilExpiry <= thresholdSeconds;
 }
 
+export function isRefreshSessionExpired(): boolean {
+  try {
+    const expiryStr = localStorage.getItem(REFRESH_EXPIRY_KEY);
+    if (!expiryStr) return true;
+
+    const refreshExpiryTimestamp = parseInt(expiryStr, 10);
+    const now = Math.floor(Date.now() / 1000);
+    
+    return refreshExpiryTimestamp <= now;
+  } catch (e) {
+    console.error("[TRIEOH SDK] Error reading refresh expiry date:", e);
+    return true;
+  }
+}
+
 export function isAuthenticated(): boolean {
   const claims = getTokenClaims();
   return claims !== null;
@@ -51,6 +69,7 @@ export function isAuthenticated(): boolean {
 
 export function clearAuthTokens(): void {
   memoryClaims = null;
+  localStorage.removeItem(REFRESH_EXPIRY_KEY);
   console.log("[TRIEOH SDK] Auth tokens and claims cleared");
 }
 
