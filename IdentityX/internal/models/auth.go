@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,11 +10,13 @@ import (
 )
 
 type AccessSubJWT struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
-	SessionID uuid.UUID `json:"session_id"`
-	UserAgent string    `json:"user_agent"`
-	UserIP    string    `json:"user_ip"`
+	ID        uuid.UUID        `json:"id"`
+	Email     string           `json:"email"`
+	ProjectId *uuid.UUID       `json:"projectId"`
+	Metadata  *json.RawMessage `json:"metadata"`
+	SessionID uuid.UUID        `json:"session_id"`
+	UserAgent string           `json:"user_agent"`
+	UserIP    string           `json:"user_ip"`
 }
 
 type AccessClaims struct {

@@ -38,5 +38,8 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	mux.HandleFunc("GET /projects/{project_id}/keys", authMW.Auth(appHandler.GetProjectKeysByID))
 	mux.HandleFunc("GET /projects/{project_id}/.well-known/jwks.json", appHandler.GetProjectJWKS)
 
+	mux.HandleFunc("POST /projects/{project_id}/register", appHandler.ProjectRegister)
+	mux.HandleFunc("POST /projects/{project_id}/login", appHandler.ProjectLogin)
+
 	return mux
 }
