@@ -1,3 +1,3 @@
 "use client";
-export * from "./next/AuthProvider";
-export * from "./next/components";
+export * from "./react/AuthProvider";
+export * from "./react/components";

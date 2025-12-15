@@ -1,4 +1,4 @@
-import { AuthProvider, BasicLogoutButton, SignIn } from "../../next";
+import { AuthProvider, BasicLogoutButton } from "../../react";
 
 export default function BasicLogoutWithProvider() {
   return (
