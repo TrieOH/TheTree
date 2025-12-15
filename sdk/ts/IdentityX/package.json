@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "description": "SDK to consume GOAuth",
   "exports": {
-    "./next": {
-      "types": "./dist/esm/next.d.mts",
-      "import": "./dist/esm/next.js",
-      "require": "./dist/cjs/next.js"
+    ".": {
+      "types": "./dist/esm/index.d.mts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./react": {
+      "types": "./dist/esm/react.d.mts",
+      "import": "./dist/esm/react.js",
+      "require": "./dist/cjs/react.js"
     }
   },
-  "main": "./dist/cjs/next.js",
-  "module": "./dist/esm/next.js",
-  "types": "./dist/esm/next.d.mts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.mts",
   "files": [
     "dist"
   ],
