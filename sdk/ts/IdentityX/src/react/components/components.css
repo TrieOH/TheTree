@@ -46,6 +46,8 @@
 .trieoh-input__container-icon {
   cursor: pointer;
   flex-shrink: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .trieoh-input__hint {

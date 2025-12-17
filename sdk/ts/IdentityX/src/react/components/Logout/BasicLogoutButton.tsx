@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { useAuth } from "../../AuthProvider";
-import LogoutIcon from "../Icons/LogoutIcon";
+import { FiLogOut } from "react-icons/fi";
 
 export interface LogoutProps {
   onSuccess?: () => Promise<void>;
@@ -34,7 +34,7 @@ export function BasicLogoutButton({
         loading ? "trieoh-button--loading" : ""
       }`}
     >
-      <LogoutIcon /> <span>Logout</span>
+      <FiLogOut /> <span>Logout</span>
     </button>
   )
 }
