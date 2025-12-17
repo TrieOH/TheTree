@@ -107,7 +107,7 @@
   transform: scale(99%);
 }
 
-.trieoh-button[disabled] {
+.trieoh-button[disabled], .trieoh-button--logout[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
@@ -137,21 +137,27 @@
 /* Basic Logout Button */
 
 .trieoh-button--logout {
+  border: none;
+  background: none;
+  cursor: pointer;
   --trieoh-button-color: oklch(0.628 0.2577 29.23);
-  min-width: 14rem;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  border-color: var(--trieoh-button-color);
+  align-items: end;
+  gap: 0.25rem;
+  font-size: var(--trieoh-text-xl);
+  font-weight: 500;
   color: var(--trieoh-button-color);
+  transition: transform 0.2s;
 }
 
-.trieoh-button--logout svg {
-  padding: 0.675rem;
-  border: solid 0.125rem oklch(0.628 0.2577 29.23);
-  border-radius: var(--trieoh-radius-full);
+.trieoh-button--logout:hover {
+  transform: scale(1.05);
 }
+
+.trieoh-button--logout:active {
+  transform: scale(0.98);
+}
+
 
 /* Card/Form Avatar */
 
