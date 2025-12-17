@@ -257,14 +257,14 @@
   font-weight: 500;
 }
 
-.trieoh-session {
+.trieoh-sessions {
   width: 100%;
   min-width: 20rem;
   margin: 0.5rem;
   container-type: inline-size;
 }
 
-.trieoh-session__header {
+.trieoh-sessions__header {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
@@ -272,38 +272,124 @@
   justify-content: center;
   text-align: center;
   gap: 1rem;
+  box-sizing: border-box;
+  padding: 0 0.75rem;
 }
 
-.trieoh-session__header div {
+.trieoh-sessions__header div {
   flex: 0 1 auto;
   max-width: 25rem;
 }
 
-.trieoh-session__header div h3 {
+.trieoh-sessions__header div h3 {
   font-weight: 600;
   font-size: var(--trieoh-text-2xl);
   margin: 0;
   margin-bottom: 0.25rem;
 }
 
-.trieoh-session__header div p {
+.trieoh-sessions__header div p {
   font-weight: 200;
-  font-size: var(--trieoh-text-sm);
+  font-size: var(--trieoh-text-base);
   margin: 0;
 }
 
-.trieoh-session__header button {
+.trieoh-sessions__header button {
   max-width: 14rem;
   padding: 1rem 0;
   height: auto;
   font-size: var(--trieoh-text-base);
 }
 
+.trieoh-sessions__content {
+  margin-top: 1rem;
+}
+
+.trieoh-session {
+  border-top: 1px solid rgba(0, 0, 0, 0.3);
+  padding: 1.25rem 0.75rem;
+  color: var(--trieoh-neutral2);
+}
+
+.trieoh-session__main {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.trieoh-session__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  text-align: center;
+}
+
+.trieoh-session__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trieoh-session__meta {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: var(--trieoh-text-sm);
+  font-weight: 200;
+}
+
+.trieoh-session h3 {
+  font-size: var(--trieoh-text-base);
+  font-weight: 600;
+  margin: 0;
+}
+
+.trieoh-session span strong {
+  color: var(--trieoh-primary);
+  font-weight: 400;
+}
+
+.trieoh-session__main svg:last-child {
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.trieoh-session__main svg:last-child:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.trieoh-session__main svg:last-child:active {
+  transform: scale(0.95);
+}
+
+
 @container (min-width: 640px) {
-  .trieoh-session__header {
+  .trieoh-sessions__header {
     justify-content: space-between;
     text-align: left;
-    flex-wrap: nowrap;
     gap: 2rem;
+  }
+
+  .trieoh-session {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .trieoh-session__content {
+    flex-direction: row; 
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .trieoh-session__meta {
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
   }
 }

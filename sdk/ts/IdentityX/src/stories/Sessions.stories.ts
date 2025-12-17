@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Session } from '../react/components/Session/Session';
+import SessionsWithProvider from './components/SessionsWithProvider';
 
 const meta = {
-  title: "Example/Session",
-  component: Session,
+  title: "Example/Sessions",
+  component: SessionsWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
-} satisfies Meta<typeof Session>;
+} satisfies Meta<typeof SessionsWithProvider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
