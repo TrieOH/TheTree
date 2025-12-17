@@ -40,5 +40,16 @@ export const createAuthService = (apiInstance: Api) => ({
     return res;
   },
 
+  revokeASession: async (id: string) => {
+    const res = await apiInstance.delete<string>(`/sessions/${id}`, { requiresAuth: true });
+    return res;
+  },
+
+  revokeSessions: async (revokeAll: boolean = false) => {
+    const path = revokeAll ? "/sessions" : "/sessions/others"
+    const res = await apiInstance.delete<string>(path, { requiresAuth: true });
+    return res;
+  },
+
   profile: () => getUserInfo(),
 });

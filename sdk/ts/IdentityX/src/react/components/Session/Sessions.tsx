@@ -3,8 +3,17 @@ import SessionCard from "./SessionCard";
 import { useAuth } from "../../AuthProvider";
 import type { SessionI } from "../../../types/sessions-types";
 
+export interface SessionsProps {
+  /** If true will revoke even the current session */
+  revokeAll: boolean;
+  /** What will happen when sessions are revoked */
+  onSuccess?: () => Promise<void>;
+}
 
-export function Sessions() {
+export function Sessions({
+  revokeAll = false,
+  onSuccess,
+}: SessionsProps) {
   const { auth } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<SessionI[]>([]);
@@ -16,22 +25,34 @@ export function Sessions() {
 
   useEffect(() => {
     fetchSessions();
-    // auth.sessions();
-    // console.log(auth.profile())
-  }, [])
-  
+  }, []);
 
-  // const handleRevokeAllSessions = async (e: MouseEvent<HTMLButtonElement>) => {
-  //   e.preventDefault();
-  //   if (loading) return;
+  const handleRevokeASession = async (e: MouseEvent<SVGElement>, id: string) => {
+    e.preventDefault();
+    const sessionToRemove = sessions.find(s => s.session_id === id);
+    if(!sessionToRemove) return;
+    setSessions(sessions.filter(s => s.session_id !== id))
+    try {
+      const res = await auth.revokeASession(id);
+      if(res.code !== 200) setSessions(prev => [...prev, sessionToRemove]);
+    } catch {
+      setSessions(prev => [...prev, sessionToRemove]);
+    }
+  }
 
-  //   setLoading(true);
+  const handleRevokeSessions = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
 
-  //   // const res = await auth.logout();
-  //   // if(res.code === 200 && onSuccess) await onSuccess();
-  //   // else if(onFailed) await onFailed(res.message);
-  //   setLoading(false);
-  // }
+    const res = await auth.revokeSessions(revokeAll);
+    const id = auth.profile()?.session_id;
+    if(res.code === 200) {
+      setSessions(revokeAll ? [] : sessions.filter(s => s.session_id === id));
+      if(onSuccess) onSuccess();
+    }
+    setLoading(false);
+  }
 
   return (
     <div className="trieoh trieoh-sessions">
@@ -42,7 +63,7 @@ export function Sessions() {
         </div>
         <button 
           type="submit"
-          onClick={() => null}
+          onClick={handleRevokeSessions}
           disabled={loading}
           className={
             `trieoh trieoh-button trieoh-button--all-rounded 
@@ -58,6 +79,7 @@ export function Sessions() {
             key={s.session_id} 
             {...s} 
             is_current={auth.profile()?.session_id === s.session_id}
+            onClick={handleRevokeASession}
           />
         ))}
       </div>
