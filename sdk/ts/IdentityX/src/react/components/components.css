@@ -270,6 +270,10 @@
   min-width: 20rem;
   margin: 0.5rem;
   container-type: inline-size;
+  background-color: var(--trieoh-neutral1);
+  color: var(--trieoh-neutral2);
+  padding: 1.5rem 0.5rem;
+  border-radius: 0.5rem;
 }
 
 .trieoh-sessions__header {
