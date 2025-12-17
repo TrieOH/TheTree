@@ -23,7 +23,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
-    "typecheck": "tsc -p . --notEmit",
+    "typecheck": "tsc -p . --noEmit",
     "prepublishOnly": "npm run build",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

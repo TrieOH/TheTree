@@ -25,13 +25,12 @@ export function AuthProvider({
 
   useEffect(() => {
     const loadAuthStatus = async () => {
-      if(getTokenClaims()) {
-        setIsAuthenticated(true);
-        setReady(true);
-        return;
-      }
       if(isRefreshSessionExpired()) {
         console.warn("[AuthProvider] Persistent session is expired. Skipping refresh request.");
+        setReady(true);
+        return;
+      } else if(getTokenClaims()) {
+        setIsAuthenticated(true);
         setReady(true);
         return;
       }
@@ -48,16 +47,16 @@ export function AuthProvider({
       } catch(error) {
         setIsAuthenticated(false);
         console.error("[TRIEOH SDK] Session bootstrap error:", error);
-      } finally {
-        setReady(true);
-      }
+      } finally { setReady(true); }
     }
     loadAuthStatus();
   }, [auth]);
 
-  if (!ready) return <div aria-hidden style={{ minHeight: 40, minWidth: 120 }} />;
+  if (!ready) return null;
   return (
-    <AuthContext.Provider value={{ auth, isAuthenticated }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ auth, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
