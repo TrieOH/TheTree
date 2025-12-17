@@ -5,7 +5,7 @@ import type { SessionI } from "../../../types/sessions-types";
 
 export interface SessionsProps {
   /** If true will revoke even the current session */
-  revokeAll: boolean;
+  revokeAll?: boolean;
   /** What will happen when sessions are revoked */
   onSuccess?: () => Promise<void>;
 }
