@@ -20,16 +20,14 @@ export default function SessionCard({
   const DeviceIcon = deviceIconMap[deviceI.device];
   return (
     <div className="trieoh-session">
-      <div className="trieoh-session__main">
-        <div className="trieoh-session__content">
-          <DeviceIcon size={40} />
-          <div className="trieoh-session__info">
-            <h3>{deviceI.browser} - {deviceI.os}</h3>
-            <span className="trieoh-session__meta">
-              {is_current && <strong>• Sessão Atual •</strong>}
-              <span>{ user_ip }</span>
-            </span>
-          </div>
+      <div className="trieoh-session__content">
+        <DeviceIcon size={40} />
+        <div className="trieoh-session__info">
+          <h3>{deviceI.browser} - {deviceI.os}</h3>
+          <span className="trieoh-session__meta">
+            {is_current && <strong>• Sessão Atual •</strong>}
+            <span>{ user_ip }</span>
+          </span>
         </div>
         {!is_current && <FaTrashAlt size={20} color="red" onClick={(e) => onClick(e, session_id)}/>}
       </div>
