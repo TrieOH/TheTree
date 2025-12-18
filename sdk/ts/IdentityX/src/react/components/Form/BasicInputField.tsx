@@ -1,6 +1,5 @@
 import { useState } from "react";
-import EyeIcon from "../Icons/EyeIcon";
-import EyeClosedIcon from "../Icons/EyeClosedIcon";
+import { RiEyeCloseLine, RiEyeLine } from "react-icons/ri";
 import type { RuleStatus } from "../../../utils/field-validator";
 
 interface BasicInputFieldProps {
@@ -64,13 +63,15 @@ export default function BasicInputField({
         />
         {type === "password" && (
           isSecretVisible ?
-            <EyeClosedIcon 
-              className="trieoh-input__container-icon" 
+            <RiEyeCloseLine 
+              className="trieoh-input__container-icon"
+              size={24}
               onClick={() => setIsSecretVisible(false)} 
             />
           :
-            <EyeIcon 
+            <RiEyeLine 
               className="trieoh-input__container-icon"
+              size={24}
               onClick={() => setIsSecretVisible(true)} 
             />
           )

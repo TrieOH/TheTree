@@ -1,4 +1,5 @@
 import { env } from "./env";
+import { AuthInterceptor } from "./interceptor";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -9,9 +10,15 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
+interface RequestOptions extends RequestInit {
+  requiresAuth?: boolean;
+  skipRefresh?: boolean;
+}
+
 export class Api {
   private baseURL: string;
   private apiKey: string;
+  private authInterceptor: AuthInterceptor;
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || env.BASE_URL;
@@ -20,6 +27,10 @@ export class Api {
       console.warn("[TRIEOH SDK] API_KEY not found, verify your .env file");
       throw new Error("[TRIEOH SDK] API_KEY not found, verify your .env file");
     }
+    this.authInterceptor = new AuthInterceptor({
+      baseURL: this.baseURL,
+      apiKey: this.apiKey,
+    });
   }
 
   private get headers() {
@@ -35,9 +46,11 @@ export class Api {
 
   async request<T = unknown>(
     path: string,
-    options?: RequestInit
+    options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     try {
+      if(options?.requiresAuth && !options.skipRefresh) 
+        await this.authInterceptor.beforeRequest();
       const res = await fetch(this.buildUrl(path), {
         ...options,
         headers: { ...this.headers, ...(options?.headers ?? {}) },
@@ -45,6 +58,7 @@ export class Api {
       });
 
       const data = await res.json();
+
       return data as ApiResponse<T>;
     } catch (error) {
       return {
@@ -57,25 +71,35 @@ export class Api {
     }
   }
 
-  get<T = unknown>(path: string) {
-    return this.request<T>(path, { method: "GET" });
+  get<T = unknown>(path: string, options?: RequestOptions) {
+    return this.request<T>(path, { ...options, method: "GET" });
   }
 
-  post<T = unknown>(path: string, body?: unknown) {
+  post<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
     return this.request<T>(path, {
+      ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  put<T = unknown>(path: string, body?: unknown) {
+  put<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
     return this.request<T>(path, {
+      ...options,
       method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
-  delete<T = unknown>(path: string) {
-    return this.request<T>(path, { method: "DELETE" });
+  patch<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
+    return this.request<T>(path, {
+      ...options,
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  delete<T = unknown>(path: string, options?: RequestOptions) {
+    return this.request<T>(path, { ...options, method: "DELETE" });
   }
 }

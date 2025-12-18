@@ -2,7 +2,10 @@ import { defineConfig, Options } from "tsup";
 
 export default defineConfig((options) => {
   const commonOptions: Options = {
-    entry: ["src/next.ts"],
+    entry: {
+      index: "src/index.ts",
+      react: "src/react.ts"
+    },
     dts: false,
     minify: true,
     splitting: false,
