@@ -24,7 +24,6 @@ ALTER TABLE user_sessions
 
 -- +goose Down
 DROP TABLE IF EXISTS projects;
-DROP EXTENSION IF EXISTS "pgcrypto";
 
 ALTER TABLE user_sessions
 DROP COLUMN IF EXISTS project_id;
