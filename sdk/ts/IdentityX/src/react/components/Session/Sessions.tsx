@@ -74,14 +74,14 @@ export function Sessions({
         </button>
       </div>
       <div className="trieoh-sessions__content">
-        {sessions.map(s => (
+        {sessions.length > 0 ? sessions.map(s => (
           <SessionCard 
             key={s.session_id} 
             {...s} 
             is_current={auth.profile()?.session_id === s.session_id}
             onClick={handleRevokeASession}
           />
-        ))}
+        )) : <span className="trieoh-sessions__empty">Nenhuma Sessão Disponível</span>}
       </div>
     </div>
   )

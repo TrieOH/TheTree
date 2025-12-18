@@ -317,6 +317,15 @@
   margin-top: 1rem;
 }
 
+.trieoh-sessions__empty {
+  display: block;
+  width: 100%;
+  border-top: 1px solid rgba(0, 0, 0, 0.3);
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+}
+
 .trieoh-session {
   border-top: 1px solid rgba(0, 0, 0, 0.3);
   padding: 1.25rem 0.75rem;
