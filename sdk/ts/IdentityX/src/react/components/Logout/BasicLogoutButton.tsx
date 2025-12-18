@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { useAuth } from "../../AuthProvider";
-import LogoutIcon from "../Icons/LogoutIcon";
+import { ImExit } from "react-icons/im";
 
 export interface LogoutProps {
   onSuccess?: () => Promise<void>;
@@ -30,11 +30,9 @@ export function BasicLogoutButton({
       onClick={handleLogout}
       type="button"
       disabled={loading}
-      className={`trieoh trieoh-button trieoh-button--all-rounded trieoh-button--logout ${
-        loading ? "trieoh-button--loading" : ""
-      }`}
+      className={"trieoh trieoh-button--logout"}
     >
-      <LogoutIcon /> <span>Logout</span>
+      <ImExit size={32}/> <span>Log out</span>
     </button>
   )
 }

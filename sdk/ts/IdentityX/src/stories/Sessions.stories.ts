@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Copyright } from '../react';
+import SessionsWithProvider from './components/SessionsWithProvider';
 
 const meta = {
-  title: "Example/Copyright",
-  component: Copyright,
+  title: "Example/Sessions",
+  component: SessionsWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
-} satisfies Meta<typeof Copyright>;
+} satisfies Meta<typeof SessionsWithProvider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-
 export const Default: Story = {};

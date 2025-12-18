@@ -46,6 +46,8 @@
 .trieoh-input__container-icon {
   cursor: pointer;
   flex-shrink: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .trieoh-input__hint {
@@ -105,7 +107,7 @@
   transform: scale(99%);
 }
 
-.trieoh-button[disabled] {
+.trieoh-button[disabled], .trieoh-button--logout[disabled] {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
@@ -135,21 +137,27 @@
 /* Basic Logout Button */
 
 .trieoh-button--logout {
+  border: none;
+  background: none;
+  cursor: pointer;
   --trieoh-button-color: oklch(0.628 0.2577 29.23);
-  min-width: 14rem;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  border-color: var(--trieoh-button-color);
+  align-items: end;
+  gap: 0.25rem;
+  font-size: var(--trieoh-text-xl);
+  font-weight: 500;
   color: var(--trieoh-button-color);
+  transition: transform 0.2s;
 }
 
-.trieoh-button--logout svg {
-  padding: 0.675rem;
-  border: solid 0.125rem oklch(0.628 0.2577 29.23);
-  border-radius: var(--trieoh-radius-full);
+.trieoh-button--logout:hover {
+  transform: scale(1.05);
 }
+
+.trieoh-button--logout:active {
+  transform: scale(0.98);
+}
+
 
 /* Card/Form Avatar */
 
@@ -255,4 +263,150 @@
 .trieoh-copyright {
   font-size: 2rem;
   font-weight: 500;
+}
+
+.trieoh-sessions {
+  width: 100%;
+  min-width: 20rem;
+  margin: 0.5rem;
+  container-type: inline-size;
+  background-color: var(--trieoh-neutral1);
+  color: var(--trieoh-neutral2);
+  padding: 1.5rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.trieoh-sessions__header {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+  box-sizing: border-box;
+  padding: 0 0.75rem;
+}
+
+.trieoh-sessions__header div {
+  flex: 0 1 auto;
+  max-width: 25rem;
+}
+
+.trieoh-sessions__header div h3 {
+  font-weight: 600;
+  font-size: var(--trieoh-text-2xl);
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.trieoh-sessions__header div p {
+  font-weight: 200;
+  font-size: var(--trieoh-text-base);
+  margin: 0;
+}
+
+.trieoh-sessions__header button {
+  max-width: 14rem;
+  padding: 1rem 0;
+  height: auto;
+  font-size: var(--trieoh-text-base);
+}
+
+.trieoh-sessions__content {
+  margin-top: 1rem;
+}
+
+.trieoh-sessions__empty {
+  display: block;
+  width: 100%;
+  border-top: 1px solid rgba(0, 0, 0, 0.3);
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.trieoh-session {
+  border-top: 1px solid rgba(0, 0, 0, 0.3);
+  padding: 1.25rem 0.75rem;
+  color: var(--trieoh-neutral2);
+}
+
+.trieoh-session__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  text-align: center;
+}
+
+.trieoh-session__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trieoh-session__meta {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: var(--trieoh-text-sm);
+  font-weight: 200;
+}
+
+.trieoh-session h3 {
+  font-size: var(--trieoh-text-base);
+  font-weight: 600;
+  margin: 0;
+}
+
+.trieoh-session span strong {
+  color: var(--trieoh-primary);
+  font-weight: 400;
+}
+
+.trieoh-session__content svg:last-child {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.trieoh-session__content svg:last-child:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.trieoh-session__content svg:last-child:active {
+  transform: scale(0.95);
+}
+
+
+@container (min-width: 640px) {
+  .trieoh-sessions__header {
+    justify-content: space-between;
+    text-align: left;
+    gap: 2rem;
+  }
+
+  .trieoh-session {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .trieoh-session__content {
+    flex-direction: row; 
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+  }
+
+  .trieoh-session__meta {
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
 }

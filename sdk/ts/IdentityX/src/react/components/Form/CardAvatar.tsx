@@ -1,4 +1,5 @@
-import UserIcon from "../Icons/UserIcon";
+import { GoPerson } from "react-icons/go";
+
 
 interface CardAvatarProps {
   /** The main text */
@@ -14,7 +15,7 @@ export default function CardAvatar({
   return (
     <div className="trieoh trieoh-avacard">
       <div className="trieoh-avacard__container">
-        <UserIcon className="trieoh-avacard__content"/>
+        <GoPerson className="trieoh-avacard__content" size={70} />
       </div>
       <h3 className="trieoh-avacard__title">{mainText}</h3>
       <span className="trieoh-avacard__sub-title">{subText}</span>

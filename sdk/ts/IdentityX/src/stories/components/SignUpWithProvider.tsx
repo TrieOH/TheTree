@@ -1,4 +1,4 @@
-import { AuthProvider, SignUp } from "../../next";
+import { AuthProvider, SignUp } from "../../react";
 
 export default function SignUpWithProvider() {
   return (

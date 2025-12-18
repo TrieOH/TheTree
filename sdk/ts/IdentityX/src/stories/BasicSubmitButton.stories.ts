@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import BasicSubmitButton from '../next/components/Form/BasicSubmitButton';
+import BasicSubmitButton from '../react/components/Form/BasicSubmitButton';
 import { fn } from 'storybook/test';
 
 const meta = {
