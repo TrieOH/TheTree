@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@trie-oh'
+          scope: '@trieoh'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
