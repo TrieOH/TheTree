@@ -11,9 +11,14 @@ RUN go mod download
 
 COPY . .
 
-RUN if [ ! -f "keys/ed25519-private.pem" ] || [ ! -f "keys/ed25519-public.pem" ]; then \
-        echo "ERROR: Missing Ed25519 keys in /keys/. Build aborted."; \
-        exit 1; \
+RUN mkdir -p keys && \
+    if [ ! -f keys/ed25519-private.pem ]; then \
+        echo "Generating Ed25519 private key"; \
+        openssl genpkey -algorithm ed25519 -out keys/ed25519-private.pem; \
+    fi && \
+    if [ ! -f keys/ed25519-public.pem ]; then \
+        echo "Generating Ed25519 public key"; \
+        openssl pkey -in keys/ed25519-private.pem -pubout -out keys/ed25519-public.pem; \
     fi
 
 RUN sqlc generate

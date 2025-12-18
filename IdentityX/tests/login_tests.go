@@ -34,7 +34,7 @@ func loginWrongEmail(user *accountContext) func(t *testing.T) {
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
 				"email":    "wrong@email.com",
-				"password": user.SuccessPasword,
+				"password": user.SuccessPassword,
 			}).
 			Expect().
 			Status(http.StatusUnauthorized).
@@ -76,7 +76,7 @@ func loginSuccess(user *accountContext) func(t *testing.T) {
 			WithHeader("Content-Type", "application/json").
 			WithJSON(map[string]interface{}{
 				"email":    user.SuccessEmail,
-				"password": user.SuccessPasword,
+				"password": user.SuccessPassword,
 			}).
 			Expect().
 			Status(http.StatusOK)
