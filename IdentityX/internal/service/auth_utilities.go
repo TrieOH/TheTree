@@ -59,3 +59,32 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (stri
 	}
 	return tokenStr, nil
 }
+
+func newProjectAccessToken(dbUser repository.ProjectUser, ip, agent string, session_id uuid.UUID) (string, uuid.UUID, *resp.Response) {
+	accessJTI := uuid.NewString()
+	claims := models.AccessClaims{
+		Sub: models.AccessSubJWT{
+			ID:        dbUser.ID,
+			ProjectId: &dbUser.ProjectID,
+			Metadata:  &dbUser.Metadata,
+			Email:     dbUser.Email,
+			SessionID: session_id,
+			UserAgent: agent,
+			UserIP:    ip,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			Issuer:    "GoAuth",
+			ID:        accessJTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	accessJTIID, _ := uuid.Parse(accessJTI)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
+	if err != nil {
+		return "", uuid.Nil, resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
+	}
+	return tokenStr, accessJTIID, nil
+}

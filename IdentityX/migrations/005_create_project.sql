@@ -9,7 +9,7 @@ CREATE TABLE projects (
     owner_id UUID NOT NULL REFERENCES users(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    metadata JSONB DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT True,
     pub_key TEXT NOT NULL,
     priv_key BYTEA NOT NULL,
@@ -17,6 +17,13 @@ CREATE TABLE projects (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE user_sessions
+    ADD COLUMN project_id UUID REFERENCES projects(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE;
+
 -- +goose Down
 DROP TABLE IF EXISTS projects;
-DROP EXTENSION IF EXISTS "pgcrypto";
+
+ALTER TABLE user_sessions
+DROP COLUMN IF EXISTS project_id;
