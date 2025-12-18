@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/utils"
 	"database/sql"
 	"log"
 	"net/http/httptest"
@@ -21,6 +22,15 @@ var Db *sql.DB
 func init() {
 	viper.AutomaticEnv()
 
+	err := utils.LoadEd25519Keys(
+		viper.GetString("JWT_PRIVATE_KEY"),
+		viper.GetString("JWT_PUBLIC_KEY"),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	Port = viper.GetString("PORT")
 	if Port == "" {
 		Port = "8080"
@@ -35,7 +45,6 @@ func init() {
 		DefaultModule:        "go-auth-test",
 	})
 
-	var err error
 	Db, err = database.WaitForDB(30 * time.Second)
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
