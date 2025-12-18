@@ -12,6 +12,7 @@ type ProjectUsers struct {
 	ProjectID   uuid.UUID        `json:"project_id"`
 	Email       string           `json:"email"`
 	Password    string           `json:"password"`
+	UserType    string           `json:"user_type"`
 	Metadata    *json.RawMessage `json:"metadata"`
 	IsActive    bool             `json:"is_active"`
 	CreatedAt   time.Time        `json:"created_at"`
