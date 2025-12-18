@@ -1,6 +1,11 @@
 -- name: CreateUserSession :one
-INSERT INTO user_sessions (token_id, user_id, issued_at, user_agent, user_ip, expires_at, project_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+INSERT INTO user_sessions (token_id, user_id, issued_at, user_agent, user_ip, expires_at, project_id, user_type, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+        CASE
+            WHEN $7::UUID IS NULL THEN 'client'
+            ELSE 'project'
+        END,
+        NOW(), NOW())
 RETURNING *;
 
 -- name: GetUserSessionById :one
