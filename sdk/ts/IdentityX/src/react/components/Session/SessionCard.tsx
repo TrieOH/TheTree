@@ -3,6 +3,7 @@ import { deviceIconMap } from "../../../utils/icons/device-icon-map";
 import type { SessionI } from "../../../types/sessions-types";
 import { getDeviceInfo } from "../../../utils/ua/get-device-info";
 import type { MouseEvent } from "react";
+import { timeAgo } from "../../../utils/date-utils";
 
 interface SessionProps extends SessionI {
   is_current: boolean;
@@ -13,6 +14,7 @@ export default function SessionCard({
   is_current,
   session_id,
   user_agent,
+  issued_at,
   user_ip,
   onClick
 }: SessionProps) {
@@ -26,7 +28,7 @@ export default function SessionCard({
           <h3>{deviceI.browser} - {deviceI.os}</h3>
           <span className="trieoh-session__meta">
             {is_current && <strong>• Sessão Atual •</strong>}
-            <span>{ user_ip }</span>
+            <span>{ `${user_ip} - ${timeAgo(issued_at)}` }</span>
           </span>
         </div>
         {!is_current && <FaTrashAlt size={20} color="red" onClick={(e) => onClick(e, session_id)}/>}
