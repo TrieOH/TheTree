@@ -9,6 +9,12 @@ FROM project_users AS pu
 JOIN projects AS p on p.id = pu.project_id
 WHERE pu.id = $1 AND pu.project_id = $2 AND p.owner_id = $3;
 
+-- name: GetProjectUserByIdInternal :one
+SELECT pu.*
+FROM project_users AS pu
+         JOIN projects AS p on p.id = pu.project_id
+WHERE pu.id = $1 AND pu.project_id = $2;
+
 -- name: ListProjectUsersExternal :many
 SELECT pu.*
 FROM project_users AS pu

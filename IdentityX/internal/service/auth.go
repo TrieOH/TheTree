@@ -197,50 +197,104 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("couldn't fetch user session").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	dbUser, err := s.queries.GetUserById(ctx, accessToken.Sub.ID)
-	if err != nil {
-		return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
+	var dbUser repository.User
+	var dbProjectUser repository.ProjectUser
+	if accessToken.Sub.ProjectId == nil {
+		dbUser, err = s.queries.GetUserById(ctx, accessToken.Sub.ID)
+		if err != nil {
+			return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
+		}
+
+		var tokens models.UserTokens
+		agent := r.UserAgent()
+		ip := utils.GetClientIP(r)
+
+		newAccessToken, accessJTI, rs := newAccessToken(dbUser, ip, agent, session.SessionID)
+		if rs != nil {
+			return nil, rs
+		}
+		tokens.AccessTokenString = newAccessToken
+
+		expiresAt := time.Now().Add(7 * 24 * time.Hour)
+		refreshJti := uuid.New()
+		newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
+		if rs != nil {
+			return nil, rs
+		}
+		tokens.RefreshTokenString = newRefreshToken
+
+		_, err = s.queries.UpdateUserSession(ctx, repository.UpdateUserSessionParams{
+			IssuedAt:  time.Now(),
+			UserAgent: agent,
+			UserIp:    ip,
+			ExpiresAt: expiresAt,
+			TokenID:   refreshJti,
+			SessionID: session.SessionID,
+		})
+
+		if err != nil {
+			log.Printf("Couldn't update user session: %v", err)
+		}
+
+		err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
+			TokenID:   jti,
+			ExpiresAt: refreshToken.ExpiresAt.Time,
+		})
+
+		if err != nil {
+			log.Printf("Couldn't blacklist old token: %v", err)
+		}
+
+		return &tokens, nil
+	} else {
+		dbProjectUser, err = s.queries.GetProjectUserByIdInternal(ctx, repository.GetProjectUserByIdInternalParams{
+			ID:        accessToken.Sub.ID,
+			ProjectID: *accessToken.Sub.ProjectId,
+		})
+		if err != nil {
+			return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
+		}
+
+		var tokens models.UserTokens
+		agent := r.UserAgent()
+		ip := utils.GetClientIP(r)
+
+		newAccessToken, accessJTI, rs := newProjectAccessToken(dbProjectUser, ip, agent, session.SessionID)
+		if rs != nil {
+			return nil, rs
+		}
+		tokens.AccessTokenString = newAccessToken
+
+		expiresAt := time.Now().Add(7 * 24 * time.Hour)
+		refreshJti := uuid.New()
+		newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
+		if rs != nil {
+			return nil, rs
+		}
+		tokens.RefreshTokenString = newRefreshToken
+
+		_, err = s.queries.UpdateUserSession(ctx, repository.UpdateUserSessionParams{
+			IssuedAt:  time.Now(),
+			UserAgent: agent,
+			UserIp:    ip,
+			ExpiresAt: expiresAt,
+			TokenID:   refreshJti,
+			SessionID: session.SessionID,
+		})
+
+		if err != nil {
+			log.Printf("Couldn't update user session: %v", err)
+		}
+
+		err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
+			TokenID:   jti,
+			ExpiresAt: refreshToken.ExpiresAt.Time,
+		})
+
+		if err != nil {
+			log.Printf("Couldn't blacklist old token: %v", err)
+		}
+
+		return &tokens, nil
 	}
-
-	var tokens models.UserTokens
-	agent := r.UserAgent()
-	ip := utils.GetClientIP(r)
-
-	newAccessToken, accessJTI, rs := newAccessToken(dbUser, agent, ip, session.SessionID)
-	if rs != nil {
-		return nil, rs
-	}
-	tokens.AccessTokenString = newAccessToken
-
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-	newRefreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
-	if rs != nil {
-		return nil, rs
-	}
-	tokens.RefreshTokenString = newRefreshToken
-
-	_, err = s.queries.UpdateUserSession(ctx, repository.UpdateUserSessionParams{
-		IssuedAt:  time.Now(),
-		UserAgent: agent,
-		UserIp:    ip,
-		ExpiresAt: expiresAt,
-		TokenID:   refreshJti,
-		SessionID: session.SessionID,
-	})
-
-	if err != nil {
-		log.Printf("Couldn't update user session: %v", err)
-	}
-
-	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID:   jti,
-		ExpiresAt: refreshToken.ExpiresAt.Time,
-	})
-
-	if err != nil {
-		log.Printf("Couldn't blacklist old token: %v", err)
-	}
-
-	return &tokens, nil
 }
