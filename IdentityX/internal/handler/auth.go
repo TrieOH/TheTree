@@ -79,7 +79,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    tokens.AccessTokenString,
 		Path:     "/",
 		MaxAge:   int(time.Until(accessToken.ExpiresAt.Time).Seconds()),
-		HttpOnly: false,
+		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -152,9 +152,8 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param Cookie header string true "Cookie: refresh_token=yyy"
 // @Param registerInfo body models.RegisterUserRequest true "register request data"
-// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
 // @Success 200 {string} string "Refreshed tokens"
 // @Failure 500 {object} models.ErrorResponse

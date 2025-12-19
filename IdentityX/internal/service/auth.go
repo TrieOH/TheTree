@@ -158,16 +158,6 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 }
 
 func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.UserTokens, *resp.Response) {
-	accessTokenCookie, err := r.Cookie("access_token")
-	if err != nil {
-		return nil, resp.Unauthorized("missing access_token cookie")
-	}
-
-	accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
-	if rs != nil {
-		return nil, rs
-	}
-
 	refreshTokenCookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		return nil, resp.Unauthorized("missing refresh_token cookie")
@@ -199,8 +189,8 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 
 	var dbUser repository.User
 	var dbProjectUser repository.ProjectUser
-	if accessToken.Sub.ProjectId == nil {
-		dbUser, err = s.queries.GetUserById(ctx, accessToken.Sub.ID)
+	if session.ProjectID == nil {
+		dbUser, err = s.queries.GetUserById(ctx, session.UserID)
 		if err != nil {
 			return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
 		}
@@ -248,8 +238,8 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return &tokens, nil
 	} else {
 		dbProjectUser, err = s.queries.GetProjectUserByIdInternal(ctx, repository.GetProjectUserByIdInternalParams{
-			ID:        accessToken.Sub.ID,
-			ProjectID: *accessToken.Sub.ProjectId,
+			ID:        session.UserID,
+			ProjectID: *session.ProjectID,
 		})
 		if err != nil {
 			return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
