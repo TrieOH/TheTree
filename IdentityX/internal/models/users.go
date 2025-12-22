@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Users struct {
+type User struct {
 	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`

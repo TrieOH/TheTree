@@ -216,11 +216,11 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	access, err := models.GetAccessClaims(r)
+	access, err := models.GetAccessClaims(r.Context())
 	if err != nil {
 		resp.InternalServerError("Failed to get access claims").Send(w)
 	}
-	refresh, err := models.GetRefreshClaims(r)
+	refresh, err := models.GetRefreshClaims(r.Context())
 	if err != nil {
 		resp.InternalServerError("Failed to get refresh claims").Send(w)
 	}

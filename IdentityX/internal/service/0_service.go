@@ -1,13 +1,16 @@
 package service
 
 import (
-	"GoAuth/internal/repository"
+	"GoAuth/internal/repo"
+	"GoAuth/internal/sqlc"
 )
 
 type AuthService struct {
-	queries *repository.Queries
+	userRepo    repo.UserRepo
+	sessionRepo repo.SessionRepo
+	queries     *sqlc.Queries
 }
 
-func NewAuthService(queries *repository.Queries) *AuthService {
-	return &AuthService{queries: queries}
+func NewAuthService(userRepo repo.UserRepo, sessionRepo repo.SessionRepo, queries *sqlc.Queries) *AuthService {
+	return &AuthService{userRepo: userRepo, sessionRepo: sessionRepo, queries: queries}
 }

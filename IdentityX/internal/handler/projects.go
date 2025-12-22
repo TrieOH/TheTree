@@ -2,6 +2,7 @@ package handler
 
 import (
 	"GoAuth/internal/models"
+	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -27,7 +28,7 @@ func (h *AuthHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, rs := h.AuthService.CreateProject(r, req)
+	project, rs := h.AuthService.CreateProject(r.Context(), r, req)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -137,7 +138,10 @@ func (h *AuthHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK().WithData(jwks).Send(w)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"keys": []any{jwks},
+	})
 }
 
 // UpdateProjectByID godoc

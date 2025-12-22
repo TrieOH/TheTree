@@ -8,7 +8,7 @@ import (
 
 	"GoAuth/internal/logs"
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
+	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -33,7 +33,7 @@ func (s *AuthService) RegisterProjectUser(ctx context.Context, projectId string,
 		return resp.InternalServerError("error hashing user password").WithTracePrefix("error").AddTrace(err)
 	}
 
-	_, err = s.queries.RegisterProjectUser(ctx, repository.RegisterProjectUserParams{
+	_, err = s.queries.RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
 		ProjectID:    parsedProjectId,
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
@@ -59,7 +59,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
-	dbUser, err := s.queries.GetProjectUserByEmailInternal(ctx, repository.GetProjectUserByEmailInternalParams{
+	dbUser, err := s.queries.GetProjectUserByEmailInternal(ctx, sqlc.GetProjectUserByEmailInternalParams{
 		ProjectID: parsedProjectId,
 		Email:     req.Email,
 	})
@@ -83,7 +83,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshJti := uuid.New()
 
-	session, err := s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
+	session, err := s.queries.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
 		TokenID:   refreshJti,
 		IssuedAt:  time.Now(),
 		UserAgent: agent,

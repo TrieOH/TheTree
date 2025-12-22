@@ -1,9 +1,9 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -45,8 +45,8 @@ const (
 	RefreshClaimsKey ctxKey = "refreshClaims"
 )
 
-func GetAccessClaims(r *http.Request) (*AccessClaims, error) {
-	val := r.Context().Value(AccessClaimsKey)
+func GetAccessClaims(ctx context.Context) (*AccessClaims, error) {
+	val := ctx.Value(AccessClaimsKey)
 	if val == nil {
 		return nil, fmt.Errorf("access claims not found in context")
 	}
@@ -59,8 +59,8 @@ func GetAccessClaims(r *http.Request) (*AccessClaims, error) {
 	return claims, nil
 }
 
-func GetRefreshClaims(r *http.Request) (*RefreshClaims, error) {
-	val := r.Context().Value(RefreshClaimsKey)
+func GetRefreshClaims(ctx context.Context) (*RefreshClaims, error) {
+	val := ctx.Value(RefreshClaimsKey)
 	if val == nil {
 		return nil, fmt.Errorf("refresh claims not found in context")
 	}

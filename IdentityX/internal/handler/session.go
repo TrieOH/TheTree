@@ -12,12 +12,12 @@ import (
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} repository.UserSession
+// @Success 200 {array} sqlc.UserSession
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions [get]
 func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, rs := h.AuthService.ListUserSessions(r, r.Context())
+	sessions, rs := h.AuthService.ListUserSessions(r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -38,7 +38,7 @@ func (h *AuthHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions/{session_id} [delete]
 func (h *AuthHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.RevokeUserSessionByID(r, r.Context(), r.PathValue("session_id"))
+	rs := h.AuthService.RevokeUserSessionByID(r.Context(), r.PathValue("session_id"))
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -58,7 +58,7 @@ func (h *AuthHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions/others [delete]
 func (h *AuthHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.RevokeOtherSessions(r, r.Context())
+	rs := h.AuthService.RevokeOtherSessions(r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -78,7 +78,7 @@ func (h *AuthHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} models.ErrorResponse
 // @Router /sessions [delete]
 func (h *AuthHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.RevokeAllSessions(r, r.Context())
+	rs := h.AuthService.RevokeAllSessions(r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return

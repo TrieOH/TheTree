@@ -2,7 +2,7 @@ package service
 
 import (
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
+	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 	"context"
 	"log"
@@ -13,8 +13,8 @@ import (
 	"github.com/jinzhu/copier"
 )
 
-func (s *AuthService) CreateProject(r *http.Request, project models.Project) (*models.Project, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+func (s *AuthService) CreateProject(ctx context.Context, r *http.Request, project models.Project) (*models.Project, *resp.Response) {
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
@@ -32,7 +32,7 @@ func (s *AuthService) CreateProject(r *http.Request, project models.Project) (*m
 	log.Println(privKey)
 	log.Println(pubKey)
 
-	dbProject, err := s.queries.CreateProject(r.Context(), repository.CreateProjectParams{
+	dbProject, err := s.queries.CreateProject(r.Context(), sqlc.CreateProjectParams{
 		ProjectName: project.ProjectName,
 		OwnerID:     project.OwnerId,
 		Metadata:    project.Metadata,
@@ -52,7 +52,7 @@ func (s *AuthService) CreateProject(r *http.Request, project models.Project) (*m
 }
 
 func (s *AuthService) GetProjectByID(ctx context.Context, r *http.Request, projectID string) (*models.Project, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
@@ -62,7 +62,7 @@ func (s *AuthService) GetProjectByID(ctx context.Context, r *http.Request, proje
 		return nil, resp.InternalServerError("error parsing project uuid").AddTrace(err)
 	}
 
-	dbProject, err := s.queries.GetProjectById(ctx, repository.GetProjectByIdParams{
+	dbProject, err := s.queries.GetProjectById(ctx, sqlc.GetProjectByIdParams{
 		OwnerID: accessClaims.Sub.ID,
 		ID:      pid,
 	})
@@ -78,7 +78,7 @@ func (s *AuthService) GetProjectByID(ctx context.Context, r *http.Request, proje
 }
 
 func (s *AuthService) ListProjects(ctx context.Context, r *http.Request) ([]models.Project, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
@@ -96,7 +96,7 @@ func (s *AuthService) ListProjects(ctx context.Context, r *http.Request) ([]mode
 }
 
 func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, projectId string) (*models.ProjectKeys, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
@@ -106,7 +106,7 @@ func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, p
 		return nil, resp.BadRequest("error parsing project id").AddTrace(err)
 	}
 
-	dbProject, err := s.queries.GetProjectKeysById(ctx, repository.GetProjectKeysByIdParams{
+	dbProject, err := s.queries.GetProjectKeysById(ctx, sqlc.GetProjectKeysByIdParams{
 		OwnerID: accessClaims.Sub.ID,
 		ID:      pid,
 	})
@@ -143,7 +143,7 @@ func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map
 }
 
 func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, projectId string, project models.Project) (*models.Project, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
@@ -158,7 +158,7 @@ func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, pr
 	}
 	newProject.Metadata = project.Metadata
 
-	updatedProject, err := s.queries.UpdateProject(ctx, repository.UpdateProjectParams{
+	updatedProject, err := s.queries.UpdateProject(ctx, sqlc.UpdateProjectParams{
 		OwnerID:     accessClaims.Sub.ID,
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
@@ -176,7 +176,7 @@ func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, pr
 }
 
 func (s *AuthService) DeleteProjectByID(ctx context.Context, r *http.Request, projectId string) *resp.Response {
-	accessClaims, err := models.GetAccessClaims(r)
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)
 	}
@@ -186,7 +186,7 @@ func (s *AuthService) DeleteProjectByID(ctx context.Context, r *http.Request, pr
 		return resp.BadRequest("error parsing project id").AddTrace(err)
 	}
 
-	err = s.queries.DeleteProject(ctx, repository.DeleteProjectParams{
+	err = s.queries.DeleteProject(ctx, sqlc.DeleteProjectParams{
 		ID:      pid,
 		OwnerID: accessClaims.Sub.ID,
 	})

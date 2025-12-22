@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
+	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 	"context"
 	"net/http"
@@ -13,10 +13,10 @@ import (
 )
 
 type AuthMiddleware struct {
-	queries *repository.Queries
+	queries *sqlc.Queries
 }
 
-func NewAuthMiddleware(queries *repository.Queries) *AuthMiddleware {
+func NewAuthMiddleware(queries *sqlc.Queries) *AuthMiddleware {
 	return &AuthMiddleware{queries: queries}
 }
 

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	database "GoAuth/internal/db"
-	"GoAuth/internal/repository"
+	"GoAuth/internal/sqlc"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-co-op/gocron/v2"
@@ -70,7 +70,7 @@ func init() {
 		//gocron.DurationJob(1*time.Minute),
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
-			queries := repository.New(db)
+			queries := sqlc.New(db)
 			if err := queries.DeleteExpiredTokens(ctx); err != nil {
 				log.Printf("Couldn't delete expired tokens: %v\n", err)
 			} else {
@@ -89,7 +89,7 @@ func init() {
 		//gocron.DurationJob(1*time.Minute),
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
-			queries := repository.New(db)
+			queries := sqlc.New(db)
 			revokedSessions, err := queries.DeleteExpiredSessions(ctx)
 			if err != nil {
 				log.Printf("Couldn't delete expired sessions: %v\n", err)
@@ -105,7 +105,7 @@ func init() {
 				expiresAt[i] = session.ExpiresAt
 			}
 
-			_, err = queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
+			_, err = queries.BlacklistManyTokens(ctx, sqlc.BlacklistManyTokensParams{
 				Column1: tokenIDs,
 				Column2: expiresAt,
 			})

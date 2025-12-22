@@ -5,20 +5,20 @@ import (
 	"time"
 
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
+	"GoAuth/internal/sqlc"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-func newAccessToken(dbUser repository.User, ip, agent string, session_id uuid.UUID) (string, uuid.UUID, *resp.Response) {
+func newAccessToken(dbUser models.User, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
 			ID:        dbUser.ID,
 			Email:     dbUser.Email,
-			SessionID: session_id,
+			SessionID: sessionId,
 			UserAgent: agent,
 			UserIP:    ip,
 		},
@@ -60,7 +60,7 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (stri
 	return tokenStr, nil
 }
 
-func newProjectAccessToken(dbUser repository.ProjectUser, ip, agent string, session_id uuid.UUID) (string, uuid.UUID, *resp.Response) {
+func newProjectAccessToken(dbUser sqlc.ProjectUser, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
@@ -68,7 +68,7 @@ func newProjectAccessToken(dbUser repository.ProjectUser, ip, agent string, sess
 			ProjectId: &dbUser.ProjectID,
 			Metadata:  &dbUser.Metadata,
 			Email:     dbUser.Email,
-			SessionID: session_id,
+			SessionID: sessionId,
 			UserAgent: agent,
 			UserIP:    ip,
 		},
