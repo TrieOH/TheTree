@@ -33,28 +33,15 @@ SET
 WHERE session_id = $1
 RETURNING *;
 
--- name: DeleteUserSessionById :exec
+-- name: DeleteSessionsByFilter :many
 DELETE FROM user_sessions
-WHERE session_id = $1;
-
--- name: DeleteUserSessionByTokenId :exec
-DELETE FROM user_sessions
-WHERE token_id = $1;
-
--- name: RevokeUserSessionById :one
-DELETE FROM user_sessions u
-WHERE session_id = $1 AND token_id != $2 AND user_id = $3
-RETURNING u.*;
-
--- name: RevokeOtherSessions :many
-DELETE FROM user_sessions u
-WHERE token_id != $1 AND user_id = $2
-RETURNING u.*;
-
--- name: RevokeAllSessions :many
-DELETE FROM user_sessions u
-WHERE user_id = $1
-RETURNING u.*;
+WHERE
+    user_id = $1
+  AND (sqlc.narg(session_id)::uuid IS NULL OR session_id = sqlc.narg(session_id))
+  AND (sqlc.narg(exclude_id)::uuid IS NULL OR session_id != sqlc.narg(exclude_id))
+  AND (sqlc.narg(token_id)::uuid IS NULL OR token_id = sqlc.narg(token_id))
+  AND (sqlc.narg(expired_before)::timestamp IS NULL OR expires_at < sqlc.narg(expired_before))
+    RETURNING *;
 
 -- name: DeleteExpiredSessions :many
 DELETE FROM user_sessions u
