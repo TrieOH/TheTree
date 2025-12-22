@@ -54,6 +54,9 @@ func init() {
 	if err := database.RunMigrations(Db, "../migrations"); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
+	if err := database.SetJWTMasterKey(Db); err != nil {
+		log.Fatal(err)
+	}
 }
 
 var serverUrl string
@@ -74,6 +77,7 @@ func createExpect(t *testing.T) *httpexpect.Expect {
 type accountContext struct {
 	SuccessEmail    string `json:"email"`
 	SuccessPassword string `json:"password"`
+	projectID       string
 	accessToken     string
 	refreshToken    string
 	sessionID       string
@@ -118,6 +122,13 @@ func TestGoAuthService(t *testing.T) {
 	}
 
 	t.Run("RefreshTests", func(t *testing.T) { runRefreshTests(t, refreshAccount) })
+
+	projectAccount := &accountContext{
+		SuccessEmail:    "project@mail.com",
+		SuccessPassword: "Str0ngP4ass!",
+	}
+
+	t.Run("ProjectTests", func(t *testing.T) { runProjectTests(t, projectAccount) })
 }
 
 func runRegisterTests(t *testing.T, ctx *accountContext) {
@@ -133,7 +144,6 @@ func runRegisterTests(t *testing.T, ctx *accountContext) {
 	t.Run("RegisterWeakPasswordLettersSymbolUppercase", registerWeakPasswordLettersSymbolUppercase())
 	t.Run("RegisterWeakPasswordLettersNumberUppercase", registerWeakPasswordLettersNumberUppercase())
 	t.Run("RegisterWeakPasswordLettersNumberSymbolUppercase", registerWeakPasswordLettersNumberSymbolUppercase())
-
 	t.Run("RegisterSuccess", registerSuccess(ctx))
 	t.Run("AccountAlreadyExists", accountAlreadyExists(ctx))
 }
@@ -666,8 +676,8 @@ func logoutNoTokens() func(t *testing.T) {
 			Status(http.StatusUnauthorized).
 			JSON().Object()
 
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("missing refresh_token cookie")
+		obj.Value("module").String().IsEqual("AuthMW")
+		obj.Value("message").String().IsEqual("missing access_token cookie")
 
 		obj.Value("code").Number().IsEqual(401)
 	}
@@ -683,7 +693,7 @@ func logoutNoRefresh(user *accountContext) func(t *testing.T) {
 			Status(http.StatusUnauthorized).
 			JSON().Object()
 
-		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("module").String().IsEqual("AuthMW")
 		obj.Value("message").String().IsEqual("missing refresh_token cookie")
 
 		obj.Value("code").Number().IsEqual(401)
@@ -716,17 +726,13 @@ func loggedOutAlready(user *accountContext) func(t *testing.T) {
 			WithCookie("access_token", user.accessToken).
 			WithCookie("refresh_token", user.refreshToken).
 			Expect().
-			Status(http.StatusBadRequest).
+			Status(http.StatusUnauthorized).
 			JSON().Object()
 
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("user already logged out")
+		obj.Value("module").String().IsEqual("AuthMW")
+		obj.Value("message").String().IsEqual("refresh token is invalidated")
 
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("token already blacklisted")
-
-		obj.Value("code").Number().IsEqual(400)
+		obj.Value("code").Number().IsEqual(401)
 	}
 }
 
@@ -919,6 +925,160 @@ func revokeAllSessions(user *accountContext) func(t *testing.T) {
 
 		obj.Value("module").String().IsEqual("go-auth-test")
 		obj.Value("message").String().IsEqual("revoked sessions")
+		obj.Value("code").Number().IsEqual(200)
+	}
+}
+
+func runProjectTests(t *testing.T, ctx *accountContext) {
+	t.Run("CreateProjectAccount", registerSuccess(ctx))
+	t.Run("LoginProjectAccount", loginSuccess(ctx))
+	t.Run("CreateProject", createProjectSuccess(ctx))
+	t.Run("ListProjects1", listXProjects(ctx, 1))
+	t.Run("GetProjectByID", getProjectByIDSuccess(ctx))
+	t.Run("GetProjectKeysByID", getProjectKeysByIDSuccess(ctx))
+	t.Run("GetProjectJWKS", getProjectJWKS(ctx))
+	t.Run("UpdateProjectByID", updateProjectByIDSuccess(ctx))
+	t.Run("DeleteProjectByID", deleteProjectByIDSuccess(ctx))
+	t.Run("ListProjects0", listXProjects(ctx, 0))
+}
+
+// Project Test Cases
+func createProjectSuccess(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		body := map[string]any{
+			"project_name": "Test Project",
+			"metadata":     map[string]any{"env": "test"},
+		}
+
+		obj := e.POST("/projects").
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			WithJSON(body).
+			Expect().
+			Status(http.StatusCreated).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("code").Number().IsEqual(201)
+
+		data := obj.Value("data").Object()
+		data.Value("project_name").String().IsEqual("Test Project")
+
+		user.projectID = data.Value("id").String().Raw()
+	}
+}
+func listXProjects(user *accountContext, amount int) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.GET("/projects").
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("code").Number().IsEqual(200)
+
+		data := obj.Value("data").Array()
+		data.Length().IsEqual(amount)
+	}
+}
+func getProjectByIDSuccess(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.GET("/projects/"+user.projectID).
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("code").Number().IsEqual(200)
+
+		data := obj.Value("data").Object()
+		data.Value("id").String().IsEqual(user.projectID)
+	}
+}
+func getProjectKeysByIDSuccess(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.GET("/projects/"+user.projectID+"/keys").
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("code").Number().IsEqual(200)
+
+		data := obj.Value("data").Object()
+		data.Value("pub_key").String().NotEmpty()
+		data.Value("priv_key").NotNull()
+	}
+}
+func getProjectJWKS(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.GET("/projects/" + user.projectID + "/.well-known/jwks.json").
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("keys").Array().NotEmpty()
+	}
+}
+func updateProjectByIDSuccess(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		body := map[string]any{
+			"project_name": "Updated Project Name",
+			"metadata":     map[string]any{"env": "prod"},
+		}
+
+		obj := e.PATCH("/projects/"+user.projectID).
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			WithJSON(body).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("code").Number().IsEqual(200)
+
+		data := obj.Value("data").Object()
+		data.Value("project_name").String().IsEqual("Updated Project Name")
+	}
+}
+func deleteProjectByIDSuccess(user *accountContext) func(t *testing.T) {
+	return func(t *testing.T) {
+		e := createExpect(t)
+
+		obj := e.DELETE("/projects/"+user.projectID).
+			WithHeader("Content-Type", "application/json").
+			WithCookie("access_token", user.accessToken).
+			WithCookie("refresh_token", user.refreshToken).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		obj.Value("module").String().IsEqual("go-auth-test")
+		obj.Value("message").String().IsEqual("Deleted project")
 		obj.Value("code").Number().IsEqual(200)
 	}
 }
