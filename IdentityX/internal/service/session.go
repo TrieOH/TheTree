@@ -48,7 +48,7 @@ func (s *AuthService) RevokeUserSessionByID(ctx context.Context, sessionId strin
 		return resp.InternalServerError("error revoking user session").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	err = s.queries.BlacklistToken(ctx, sqlc.BlacklistTokenParams{
+	err = s.queries.RevokeToken(ctx, sqlc.RevokeTokenParams{
 		TokenID:   revokedSession[0].TokenID,
 		ExpiresAt: revokedSession[0].ExpiresAt,
 	})
@@ -83,7 +83,7 @@ func (s *AuthService) RevokeOtherSessions(ctx context.Context) *resp.Response {
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, sqlc.BlacklistManyTokensParams{
+	blacklistedTokens, err := s.queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
 		Column1: tokenIDs,
 		Column2: expiresAt,
 	})
@@ -122,7 +122,7 @@ func (s *AuthService) RevokeAllSessions(ctx context.Context) *resp.Response {
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, sqlc.BlacklistManyTokensParams{
+	blacklistedTokens, err := s.queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
 		Column1: tokenIDs,
 		Column2: expiresAt,
 	})

@@ -81,13 +81,30 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 			reqID = uuid.New().String()
 		}
 		logs.L().Error("Create User Session Failed",
-			zap.String("error_value", err.Error()),
+			zap.Error(err),
 			zap.String("request_id", reqID),
 			zap.String("user_id", user.ID.String()),
 			zap.String("method", r.Method),
 			zap.String("path", utils.NormalizePath(r)),
 			zap.String("remote_addr", r.RemoteAddr),
 		)
+	}
+
+	if session == nil {
+		reqID := r.Header.Get("X-Request-ID")
+		if reqID == "" {
+			reqID = uuid.New().String()
+		}
+		logs.L().Error("User Session came back nil, proceeding with empty ID",
+			zap.String("request_id", reqID),
+			zap.String("user_id", user.ID.String()),
+			zap.String("method", r.Method),
+			zap.String("path", utils.NormalizePath(r)),
+			zap.String("remote_addr", r.RemoteAddr),
+		)
+		session = &models.Session{
+			SessionID: uuid.Nil,
+		}
 	}
 
 	accessToken, accessJTI, rs := newAccessToken(*user, ip, agent, session.SessionID)
@@ -142,7 +159,7 @@ func (s *AuthService) Logout(r *http.Request, ctx context.Context) *resp.Respons
 		)
 	}
 
-	err = s.queries.BlacklistToken(ctx, sqlc.BlacklistTokenParams{
+	err = s.revokedRefreshTokensRepo.Revoke(ctx, models.RefreshBlacklist{
 		TokenID:   jti,
 		ExpiresAt: refreshClaims.ExpiresAt.Time,
 	})
@@ -174,13 +191,15 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		return nil, resp.Unauthorized("couldn't parse refresh JTI")
 	}
 
-	blacklisted, err := s.queries.GetRefreshBlacklistById(ctx, jti)
+	blacklisted, err := s.revokedRefreshTokensRepo.GetByID(ctx, jti)
 	if err != nil && !strings.Contains(err.Error(), "no rows") {
 		return nil, resp.Unauthorized("couldn't fetch refresh token").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	if blacklisted.TokenID == jti {
-		return nil, resp.Unauthorized("refresh token is invalidated")
+	if blacklisted != nil {
+		if blacklisted.TokenID == jti {
+			return nil, resp.Unauthorized("refresh token is invalidated")
+		}
 	}
 
 	session, err := s.sessionRepo.GetByTokenId(ctx, jti)
@@ -240,7 +259,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 			)
 		}
 
-		err = s.queries.BlacklistToken(ctx, sqlc.BlacklistTokenParams{
+		err = s.revokedRefreshTokensRepo.Revoke(ctx, models.RefreshBlacklist{
 			TokenID:   jti,
 			ExpiresAt: refreshToken.ExpiresAt.Time,
 		})
@@ -303,7 +322,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 			)
 		}
 
-		err = s.queries.BlacklistToken(ctx, sqlc.BlacklistTokenParams{
+		err = s.revokedRefreshTokensRepo.Revoke(ctx, models.RefreshBlacklist{
 			TokenID:   jti,
 			ExpiresAt: refreshToken.ExpiresAt.Time,
 		})

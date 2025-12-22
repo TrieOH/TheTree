@@ -1,21 +1,21 @@
--- name: BlacklistToken :exec
-INSERT INTO refresh_blacklist (token_id, expires_at, created_at, updated_at)
-VALUES ($1, $2, NOW(), NOW());
+-- name: RevokeToken :exec
+INSERT INTO refresh_blacklist (token_id, expires_at, created_at)
+VALUES ($1, $2, NOW());
 
--- name: BlacklistManyTokens :many
+-- name: RevokeManyTokens :many
 INSERT INTO refresh_blacklist (token_id, expires_at)
 SELECT UNNEST($1::uuid[]), UNNEST($2::timestamp[])
 ON CONFLICT (token_id) DO NOTHING
 RETURNING token_id;
 
--- name: GetRefreshBlacklistById :one
+-- name: GetRevokedRefreshByID :one
 SELECT * FROM refresh_blacklist
 WHERE token_id = $1;
 
--- name: DeleteRefreshBlacklist :exec
+-- name: DeleteRevokedRefreshByID :exec
 DELETE FROM refresh_blacklist
 WHERE token_id = $1;
 
--- name: DeleteExpiredTokens :exec
+-- name: DeleteExpiredRefreshTokens :exec
 DELETE FROM refresh_blacklist
 WHERE expires_at < NOW();

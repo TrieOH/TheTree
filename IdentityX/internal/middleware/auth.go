@@ -57,7 +57,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		blacklisted, err := mw.queries.GetRefreshBlacklistById(r.Context(), refreshUUID)
+		blacklisted, err := mw.queries.GetRevokedRefreshByID(r.Context(), refreshUUID)
 		if err != nil && !strings.Contains(err.Error(), "no rows") {
 			resp.Unauthorized("couldn't fetch refresh token").WithModule("AuthMW").WithTracePrefix("database-error").AddTrace(err).Send(w)
 			return

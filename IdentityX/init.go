@@ -71,7 +71,7 @@ func init() {
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
 			queries := sqlc.New(db)
-			if err := queries.DeleteExpiredTokens(ctx); err != nil {
+			if err := queries.DeleteExpiredRefreshTokens(ctx); err != nil {
 				log.Printf("Couldn't delete expired tokens: %v\n", err)
 			} else {
 				log.Println("Expired tokens cleanup executed successfully")
@@ -105,7 +105,7 @@ func init() {
 				expiresAt[i] = session.ExpiresAt
 			}
 
-			_, err = queries.BlacklistManyTokens(ctx, sqlc.BlacklistManyTokensParams{
+			_, err = queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
 				Column1: tokenIDs,
 				Column2: expiresAt,
 			})
