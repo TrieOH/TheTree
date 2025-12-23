@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"GoAuth/internal/models"
-	"GoAuth/internal/sqlc"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
@@ -60,14 +59,14 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (stri
 	return tokenStr, nil
 }
 
-func newProjectAccessToken(dbUser sqlc.ProjectUser, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
+func newProjectAccessToken(user models.ProjectUser, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
-			ID:        dbUser.ID,
-			ProjectId: &dbUser.ProjectID,
-			Metadata:  &dbUser.Metadata,
-			Email:     dbUser.Email,
+			ID:        user.ID,
+			ProjectId: &user.ProjectID,
+			Metadata:  user.Metadata,
+			Email:     user.Email,
 			SessionID: sessionId,
 			UserAgent: agent,
 			UserIP:    ip,

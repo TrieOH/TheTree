@@ -10,7 +10,7 @@ import (
 type Project struct {
 	ID          uuid.UUID       `json:"id"`
 	ProjectName string          `json:"project_name"`
-	OwnerId     uuid.UUID       `json:"owner_id"`
+	OwnerID     uuid.UUID       `json:"owner_id"`
 	Metadata    json.RawMessage `json:"metadata"`
 	IsActive    bool            `json:"is_active"`
 	PubKey      string          `json:"-"`

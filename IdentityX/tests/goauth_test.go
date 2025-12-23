@@ -985,8 +985,12 @@ func listXProjects(user *accountContext, amount int) func(t *testing.T) {
 		obj.Value("module").String().IsEqual("go-auth-test")
 		obj.Value("code").Number().IsEqual(200)
 
-		data := obj.Value("data").Array()
-		data.Length().IsEqual(amount)
+		if amount > 0 {
+			data := obj.Value("data").Array()
+			data.Length().IsEqual(amount)
+		} else {
+			obj.Value("data").IsNull()
+		}
 	}
 }
 func getProjectByIDSuccess(user *accountContext) func(t *testing.T) {

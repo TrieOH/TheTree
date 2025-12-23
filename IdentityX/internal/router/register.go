@@ -17,8 +17,10 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	userRepo := repo.NewUserRepo(queries, logs.L())
 	sessionRepo := repo.NewSessionRepo(queries, logs.L())
 	revokedTokensRepo := repo.NewRevokedRefreshTokensRepo(queries, logs.L())
+	projectRepo := repo.NewProjectRepo(queries, logs.L())
+	projectUserRepo := repo.NewProjectUserRepo(queries, logs.L())
 
-	authService := service.NewAuthService(userRepo, sessionRepo, revokedTokensRepo, queries)
+	authService := service.NewAuthService(userRepo, sessionRepo, revokedTokensRepo, projectRepo, projectUserRepo)
 	appHandler := handler.NewAuthHandler(authService)
 
 	authMW := mw.NewAuthMiddleware(queries)

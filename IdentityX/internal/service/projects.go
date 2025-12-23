@@ -2,56 +2,42 @@ package service
 
 import (
 	"GoAuth/internal/models"
-	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 	"context"
-	"log"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
-	"github.com/jinzhu/copier"
 )
 
-func (s *AuthService) CreateProject(ctx context.Context, r *http.Request, project models.Project) (*models.Project, *resp.Response) {
+func (s *AuthService) CreateProject(ctx context.Context, project models.Project) (*models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
-
-	project.OwnerId = accessClaims.Sub.ID
-	project.IsActive = true
 
 	pubKey, privKey, err := utils.GenerateEd25519Keys()
 	if err != nil {
 		return nil, resp.InternalServerError("error generating public and private project keys").AddTrace(err)
 	}
 
-	project.PubKey = pubKey
-	project.PrivKey = []byte(privKey)
-	log.Println(privKey)
-	log.Println(pubKey)
-
-	dbProject, err := s.queries.CreateProject(r.Context(), sqlc.CreateProjectParams{
+	createdProject, err := s.projectRepo.Create(ctx, models.Project{
 		ProjectName: project.ProjectName,
-		OwnerID:     project.OwnerId,
+		OwnerID:     accessClaims.Sub.ID,
 		Metadata:    project.Metadata,
-		IsActive:    project.IsActive,
-		PubKey:      project.PubKey,
-		PrivKey:     string(project.PrivKey),
+		IsActive:    true,
+		PubKey:      pubKey,
+		PrivKey:     []byte(privKey),
 	})
 
 	if err != nil {
 		return nil, resp.InternalServerError("error creating project").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	var projectDTO models.Project
-	copier.Copy(&projectDTO, &dbProject)
-
-	return &projectDTO, nil
+	return createdProject, nil
 }
 
-func (s *AuthService) GetProjectByID(ctx context.Context, r *http.Request, projectID string) (*models.Project, *resp.Response) {
+func (s *AuthService) GetProjectByID(ctx context.Context, projectID string) (*models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
@@ -62,37 +48,28 @@ func (s *AuthService) GetProjectByID(ctx context.Context, r *http.Request, proje
 		return nil, resp.InternalServerError("error parsing project uuid").AddTrace(err)
 	}
 
-	dbProject, err := s.queries.GetProjectById(ctx, sqlc.GetProjectByIdParams{
-		OwnerID: accessClaims.Sub.ID,
-		ID:      pid,
-	})
+	project, err := s.projectRepo.GetByID(ctx, pid, accessClaims.Sub.ID)
 
 	if err != nil {
 		return nil, resp.InternalServerError("error fetching project").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	var projectDTO models.Project
-	copier.Copy(&projectDTO, &dbProject)
-
-	return &projectDTO, nil
+	return project, nil
 }
 
-func (s *AuthService) ListProjects(ctx context.Context, r *http.Request) ([]models.Project, *resp.Response) {
+func (s *AuthService) ListProjects(ctx context.Context) ([]models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
 
-	dbProjects, err := s.queries.ListProjects(ctx, accessClaims.Sub.ID)
+	projects, err := s.projectRepo.List(ctx, accessClaims.Sub.ID)
 
 	if err != nil {
 		return nil, resp.InternalServerError("error fetching projects").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	var projectDTOs []models.Project
-	copier.Copy(&projectDTOs, &dbProjects)
-
-	return projectDTOs, nil
+	return projects, nil
 }
 
 func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, projectId string) (*models.ProjectKeys, *resp.Response) {
@@ -106,19 +83,13 @@ func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, p
 		return nil, resp.BadRequest("error parsing project id").AddTrace(err)
 	}
 
-	dbProject, err := s.queries.GetProjectKeysById(ctx, sqlc.GetProjectKeysByIdParams{
-		OwnerID: accessClaims.Sub.ID,
-		ID:      pid,
-	})
+	keys, err := s.projectRepo.GetKeysByID(ctx, pid, accessClaims.Sub.ID)
 
 	if err != nil {
 		return nil, resp.InternalServerError("error fetching project keys").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	var keys models.ProjectKeys
-	copier.Copy(&keys, &dbProject)
-
-	return &keys, nil
+	return keys, nil
 }
 
 func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map[string]any, *resp.Response) {
@@ -127,7 +98,7 @@ func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map
 		return nil, resp.BadRequest("error parsing project id").AddTrace(err)
 	}
 
-	pubKey, err := s.queries.GetProjectPublicKeyById(ctx, pid)
+	pubKey, err := s.projectRepo.GetPublicKeyByID(ctx, pid)
 	if err != nil {
 		return nil, resp.InternalServerError("error fetching project public key").WithTracePrefix("database-error").AddTrace(err)
 	}
@@ -142,15 +113,20 @@ func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map
 	return jwks, nil
 }
 
-func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, projectId string, project models.Project) (*models.Project, *resp.Response) {
+func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, ProjectID string, project models.Project) (*models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
 	}
 
-	newProject, rs := s.GetProjectByID(ctx, r, projectId)
-	if rs != nil {
-		return nil, rs
+	pid, err := uuid.Parse(ProjectID)
+	if err != nil {
+		return nil, resp.BadRequest("error parsing project id").AddTrace(err)
+	}
+
+	newProject, err := s.projectRepo.GetByID(ctx, pid, accessClaims.Sub.ID)
+	if err != nil {
+		return nil, resp.InternalServerError("error fetching project").AddTrace(err)
 	}
 
 	if project.ProjectName != "" {
@@ -158,21 +134,20 @@ func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, pr
 	}
 	newProject.Metadata = project.Metadata
 
-	updatedProject, err := s.queries.UpdateProject(ctx, sqlc.UpdateProjectParams{
+	updatedProject, err := s.projectRepo.Update(ctx, models.Project{
 		OwnerID:     accessClaims.Sub.ID,
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
 		Metadata:    newProject.Metadata,
-	})
+	},
+		accessClaims.Sub.ID,
+	)
 
 	if err != nil {
 		return nil, resp.InternalServerError("error updating project").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	var projectDTO models.Project
-	copier.Copy(&projectDTO, &updatedProject)
-
-	return &projectDTO, nil
+	return updatedProject, nil
 }
 
 func (s *AuthService) DeleteProjectByID(ctx context.Context, r *http.Request, projectId string) *resp.Response {
@@ -186,10 +161,7 @@ func (s *AuthService) DeleteProjectByID(ctx context.Context, r *http.Request, pr
 		return resp.BadRequest("error parsing project id").AddTrace(err)
 	}
 
-	err = s.queries.DeleteProject(ctx, sqlc.DeleteProjectParams{
-		ID:      pid,
-		OwnerID: accessClaims.Sub.ID,
-	})
+	err = s.projectRepo.Delete(ctx, pid, accessClaims.Sub.ID)
 
 	if err != nil {
 		return resp.InternalServerError("error updating project").WithTracePrefix("database-error").AddTrace(err)

@@ -8,7 +8,6 @@ import (
 
 	"GoAuth/internal/logs"
 	"GoAuth/internal/models"
-	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -33,11 +32,11 @@ func (s *AuthService) RegisterProjectUser(ctx context.Context, projectId string,
 		return resp.InternalServerError("error hashing user password").WithTracePrefix("error").AddTrace(err)
 	}
 
-	_, err = s.queries.RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
-		ProjectID:    parsedProjectId,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Metadata:     req.CustomFields,
+	_, err = s.projectUserRepo.Register(ctx, models.ProjectUser{
+		ProjectID: parsedProjectId,
+		Email:     req.Email,
+		Password:  string(hashedPassword),
+		Metadata:  &req.CustomFields,
 	})
 
 	if err != nil {
@@ -59,10 +58,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
-	dbUser, err := s.queries.GetProjectUserByEmailInternal(ctx, sqlc.GetProjectUserByEmailInternalParams{
-		ProjectID: parsedProjectId,
-		Email:     req.Email,
-	})
+	user, err := s.projectUserRepo.GetByEmailInternal(ctx, parsedProjectId, req.Email)
 	if err != nil {
 		readable := utils.ParseDBError(err)
 		if strings.Contains(readable.Error(), "record not found") {
@@ -71,7 +67,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 		return nil, resp.InternalServerError("error retrieving user").WithTracePrefix("database-error").AddTrace(readable)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
 		return nil, resp.Unauthorized("invalid email or password")
 	}
@@ -83,13 +79,13 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshJti := uuid.New()
 
-	session, err := s.queries.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
+	session, err := s.sessionRepo.Create(ctx, models.Session{
 		TokenID:   refreshJti,
 		IssuedAt:  time.Now(),
 		UserAgent: agent,
 		UserIp:    ip,
 		ExpiresAt: expiresAt,
-		UserID:    dbUser.ID,
+		UserID:    user.ID,
 		ProjectID: &parsedProjectId,
 	})
 
@@ -99,16 +95,17 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 			reqID = uuid.New().String()
 		}
 		logs.L().Error("Create User Session Failed",
-			zap.String("error_value", err.Error()),
+			zap.Error(err),
+			zap.String("session_token_id", refreshJti.String()),
 			zap.String("request_id", reqID),
-			zap.String("user_id", dbUser.ID.String()),
+			zap.String("user_id", user.ID.String()),
 			zap.String("method", r.Method),
 			zap.String("path", utils.NormalizePath(r)),
 			zap.String("remote_addr", r.RemoteAddr),
 		)
 	}
 
-	accessToken, accessJTI, rs := newProjectAccessToken(dbUser, ip, agent, session.SessionID)
+	accessToken, accessJTI, rs := newProjectAccessToken(*user, ip, agent, session.SessionID)
 	if rs != nil {
 		return nil, rs
 	}

@@ -28,7 +28,7 @@ func (h *AuthHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, rs := h.AuthService.CreateProject(r.Context(), r, req)
+	project, rs := h.AuthService.CreateProject(r.Context(), req)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -56,7 +56,7 @@ func (h *AuthHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, rs := h.AuthService.GetProjectByID(r.Context(), r, projectId)
+	project, rs := h.AuthService.GetProjectByID(r.Context(), projectId)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -77,7 +77,7 @@ func (h *AuthHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /projects [get]
 func (h *AuthHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, rs := h.AuthService.ListProjects(r.Context(), r)
+	projects, rs := h.AuthService.ListProjects(r.Context())
 	if rs != nil {
 		rs.Send(w)
 		return

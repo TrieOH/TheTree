@@ -2,9 +2,7 @@ package service
 
 import (
 	"GoAuth/internal/models"
-	"GoAuth/internal/sqlc"
 	"context"
-	"log"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -48,7 +46,7 @@ func (s *AuthService) RevokeUserSessionByID(ctx context.Context, sessionId strin
 		return resp.InternalServerError("error revoking user session").WithTracePrefix("database-error").AddTrace(err)
 	}
 
-	err = s.queries.RevokeToken(ctx, sqlc.RevokeTokenParams{
+	err = s.revokedRefreshTokensRepo.Revoke(ctx, models.RefreshBlacklist{
 		TokenID:   revokedSession[0].TokenID,
 		ExpiresAt: revokedSession[0].ExpiresAt,
 	})
@@ -83,15 +81,7 @@ func (s *AuthService) RevokeOtherSessions(ctx context.Context) *resp.Response {
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
-		Column1: tokenIDs,
-		Column2: expiresAt,
-	})
-
-	if len(blacklistedTokens) != len(tokenIDs) {
-		log.Println(blacklistedTokens)
-		log.Println(tokenIDs)
-	}
+	err = s.revokedRefreshTokensRepo.RevokeMany(ctx, tokenIDs, expiresAt)
 
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to blacklist other user tokens", err.Error())
@@ -122,15 +112,7 @@ func (s *AuthService) RevokeAllSessions(ctx context.Context) *resp.Response {
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
-		Column1: tokenIDs,
-		Column2: expiresAt,
-	})
-
-	if len(blacklistedTokens) != len(tokenIDs) {
-		log.Println(blacklistedTokens)
-		log.Println(tokenIDs)
-	}
+	err = s.revokedRefreshTokensRepo.RevokeMany(ctx, tokenIDs, expiresAt)
 
 	if err != nil {
 		return resp.InternalServerError().AddTrace("failed to blacklist user tokens", err.Error())

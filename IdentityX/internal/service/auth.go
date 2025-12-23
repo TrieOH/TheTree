@@ -9,7 +9,6 @@ import (
 
 	"GoAuth/internal/logs"
 	"GoAuth/internal/models"
-	"GoAuth/internal/sqlc"
 	"GoAuth/internal/utils"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -208,7 +207,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 	}
 
 	var user *models.User
-	var dbProjectUser sqlc.ProjectUser
+	var projectUser *models.ProjectUser
 	if session.ProjectID == nil {
 		user, err = s.userRepo.GetUserByID(ctx, session.UserID)
 		if err != nil {
@@ -270,10 +269,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 
 		return &tokens, nil
 	} else {
-		dbProjectUser, err = s.queries.GetProjectUserByIdInternal(ctx, sqlc.GetProjectUserByIdInternalParams{
-			ID:        session.UserID,
-			ProjectID: *session.ProjectID,
-		})
+		projectUser, err = s.projectUserRepo.GetByIDInternal(ctx, session.UserID, *session.ProjectID)
 		if err != nil {
 			return nil, resp.Unauthorized("couldn't fetch user from database").WithTracePrefix("database-error").AddTrace(err)
 		}
@@ -282,7 +278,7 @@ func (s *AuthService) Refresh(r *http.Request, ctx context.Context) (*models.Use
 		agent := r.UserAgent()
 		ip := utils.GetClientIP(r)
 
-		newAccessToken, accessJTI, rs := newProjectAccessToken(dbProjectUser, ip, agent, session.SessionID)
+		newAccessToken, accessJTI, rs := newProjectAccessToken(*projectUser, ip, agent, session.SessionID)
 		if rs != nil {
 			return nil, rs
 		}
