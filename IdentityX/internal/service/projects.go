@@ -4,7 +4,6 @@ import (
 	"GoAuth/internal/models"
 	"GoAuth/internal/utils"
 	"context"
-	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
@@ -72,7 +71,7 @@ func (s *AuthService) ListProjects(ctx context.Context) ([]models.Project, *resp
 	return projects, nil
 }
 
-func (s *AuthService) GetProjectKeysByID(ctx context.Context, r *http.Request, projectId string) (*models.ProjectKeys, *resp.Response) {
+func (s *AuthService) GetProjectKeysByID(ctx context.Context, projectId string) (*models.ProjectKeys, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
@@ -113,7 +112,7 @@ func (s *AuthService) GetProjectJWKS(ctx context.Context, projectId string) (map
 	return jwks, nil
 }
 
-func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, ProjectID string, project models.Project) (*models.Project, *resp.Response) {
+func (s *AuthService) UpdateProjectByID(ctx context.Context, ProjectID string, project models.Project) (*models.Project, *resp.Response) {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return nil, resp.InternalServerError().AddTrace(err)
@@ -150,7 +149,7 @@ func (s *AuthService) UpdateProjectByID(ctx context.Context, r *http.Request, Pr
 	return updatedProject, nil
 }
 
-func (s *AuthService) DeleteProjectByID(ctx context.Context, r *http.Request, projectId string) *resp.Response {
+func (s *AuthService) DeleteProjectByID(ctx context.Context, projectId string) *resp.Response {
 	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
 		return resp.InternalServerError().AddTrace(err)

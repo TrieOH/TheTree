@@ -105,7 +105,7 @@ func (h *AuthHandler) GetProjectKeysByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	keys, rs := h.AuthService.GetProjectKeysByID(r.Context(), r, projectId)
+	keys, rs := h.AuthService.GetProjectKeysByID(r.Context(), projectId)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -169,7 +169,7 @@ func (h *AuthHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	project, rs := h.AuthService.UpdateProjectByID(r.Context(), r, projectId, req)
+	project, rs := h.AuthService.UpdateProjectByID(r.Context(), projectId, req)
 	if rs != nil {
 		rs.Send(w)
 		return
@@ -198,7 +198,7 @@ func (h *AuthHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rs := h.AuthService.DeleteProjectByID(r.Context(), r, projectId)
+	rs := h.AuthService.DeleteProjectByID(r.Context(), projectId)
 	if rs != nil {
 		rs.Send(w)
 		return
