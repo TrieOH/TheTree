@@ -2,6 +2,7 @@ package handler
 
 import (
 	"GoAuth/internal/models"
+	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -27,9 +28,9 @@ func (h *AuthHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, rs := h.AuthService.CreateProject(r, req)
-	if rs != nil {
-		rs.Send(w)
+	project, err := h.AuthService.CreateProject(r.Context(), req)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -55,9 +56,9 @@ func (h *AuthHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, rs := h.AuthService.GetProjectByID(r.Context(), r, projectId)
-	if rs != nil {
-		rs.Send(w)
+	project, err := h.AuthService.GetProjectByID(r.Context(), projectId)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -76,9 +77,9 @@ func (h *AuthHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /projects [get]
 func (h *AuthHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, rs := h.AuthService.ListProjects(r.Context(), r)
-	if rs != nil {
-		rs.Send(w)
+	projects, err := h.AuthService.ListProjects(r.Context())
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -104,9 +105,9 @@ func (h *AuthHandler) GetProjectKeysByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	keys, rs := h.AuthService.GetProjectKeysByID(r.Context(), r, projectId)
-	if rs != nil {
-		rs.Send(w)
+	keys, err := h.AuthService.GetProjectKeysByID(r.Context(), projectId)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -131,13 +132,16 @@ func (h *AuthHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwks, rs := h.AuthService.GetProjectJWKS(r.Context(), projectId)
-	if rs != nil {
-		rs.Send(w)
+	jwks, err := h.AuthService.GetProjectJWKS(r.Context(), projectId)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(jwks).Send(w)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"keys": []any{jwks},
+	})
 }
 
 // UpdateProjectByID godoc
@@ -165,9 +169,9 @@ func (h *AuthHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	project, rs := h.AuthService.UpdateProjectByID(r.Context(), r, projectId, req)
-	if rs != nil {
-		rs.Send(w)
+	project, err := h.AuthService.UpdateProjectByID(r.Context(), projectId, req)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -194,9 +198,9 @@ func (h *AuthHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rs := h.AuthService.DeleteProjectByID(r.Context(), r, projectId)
-	if rs != nil {
-		rs.Send(w)
+	err := h.AuthService.DeleteProjectByID(r.Context(), projectId)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -49,14 +51,23 @@ type ctxKey string
 const requestIDKey ctxKey = "requestID"
 const userIDKey ctxKey = "userID"
 
+var (
+	GoAuthMiddlewareTracer = otel.Tracer("goauth/middleware")
+)
+
 func RequestIDMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := GoAuthMiddlewareTracer.Start(r.Context(), "Middleware.RequestID")
+		defer span.End()
+
 		reqID := r.Header.Get("X-Request-ID")
 		if reqID == "" {
 			reqID = uuid.New().String()
 		}
 
-		ctx := context.WithValue(r.Context(), requestIDKey, reqID)
+		span.SetAttributes(attribute.String("request_id", reqID))
+
+		ctx = context.WithValue(ctx, requestIDKey, reqID)
 		w.Header().Set("X-Request-ID", reqID)
 
 		userID := r.Header.Get("X-User-ID")
@@ -67,6 +78,8 @@ func RequestIDMW(next http.Handler) http.Handler {
 				}
 			}
 		}
+
+		span.SetAttributes(attribute.String("user_id", userID))
 
 		ctx = context.WithValue(ctx, userIDKey, userID)
 		w.Header().Set("X-User-ID", userID)

@@ -1,8 +1,6 @@
 -- +goose Up
 -- Created at 2025-11-04T15:25:15-03:00
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
 CREATE TABLE project_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_type TEXT NOT NULL DEFAULT 'project',
@@ -19,18 +17,13 @@ CREATE TABLE project_users (
     UNIQUE (project_id, email)
 );
 
-ALTER TABLE user_sessions
-    ADD COLUMN user_type TEXT NOT NULL;
-
-ALTER TABLE users
-    ADD COLUMN user_type TEXT NOT NULL DEFAULT 'client';
-
 CREATE INDEX IF NOT EXISTS idx_project_users_project_id
     ON project_users(project_id);
 
--- +goose Down
-DROP TABLE IF EXISTS project_users;
-DROP INDEX IF EXISTS idx_project_users_project_id;
+CREATE INDEX IF NOT EXISTS idx_project_users_user_type
+    ON project_users(user_type);
 
-ALTER TABLE user_sessions
-DROP COLUMN IF EXISTS user_type;
+-- +goose Down
+DROP INDEX IF EXISTS idx_project_users_project_id;
+DROP INDEX IF EXISTS idx_project_users_user_type;
+DROP TABLE IF EXISTS project_users;

@@ -1,25 +1,33 @@
 package router
 
 import (
+	"GoAuth/internal/logs"
+	"GoAuth/internal/repo"
 	"database/sql"
 	"net/http"
 
 	"GoAuth/internal/handler"
 	mw "GoAuth/internal/middleware"
-	"GoAuth/internal/repository"
 	"GoAuth/internal/service"
+	"GoAuth/internal/sqlc"
 )
 
 func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
-	queries := repository.New(db)
-	authService := service.NewAuthService(queries)
+	queries := sqlc.New(db)
+	userRepo := repo.NewUserRepo(queries, logs.L())
+	sessionRepo := repo.NewSessionRepo(queries, logs.L())
+	revokedTokensRepo := repo.NewRevokedRefreshTokensRepo(queries, logs.L())
+	projectRepo := repo.NewProjectRepo(queries, logs.L())
+	projectUserRepo := repo.NewProjectUserRepo(queries, logs.L())
+
+	authService := service.NewAuthService(userRepo, sessionRepo, revokedTokensRepo, projectRepo, projectUserRepo)
 	appHandler := handler.NewAuthHandler(authService)
 
-	authMW := mw.NewAuthMiddleware(queries)
+	authMW := mw.NewAuthMiddleware(revokedTokensRepo)
 
 	mux.HandleFunc("POST /auth/register", appHandler.Register)
 	mux.HandleFunc("POST /auth/login", appHandler.Login)
-	mux.HandleFunc("POST /auth/logout", appHandler.Logout)
+	mux.HandleFunc("POST /auth/logout", authMW.Auth(appHandler.Logout))
 	mux.HandleFunc("POST /ping/public", appHandler.PublicPing)
 	mux.HandleFunc("POST /ping/private", authMW.Auth(appHandler.PrivatePing))
 	mux.HandleFunc("GET /sessions", authMW.Auth(appHandler.ListUserSessions))

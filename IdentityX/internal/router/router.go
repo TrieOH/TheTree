@@ -16,6 +16,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/spf13/viper"
 	"github.com/swaggo/http-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // CreateRouter godoc
@@ -44,5 +45,10 @@ func CreateRouter(db *sql.DB) http.Handler {
 		AllowCredentials: true,
 	}).Handler(withID)
 
-	return withCors
+	otelHandler := otelhttp.NewHandler(
+		withCors,
+		"http.server",
+	)
+
+	return otelHandler
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"GoAuth/internal/telemetry"
+	"context"
 	"log"
 	"net/http"
 
@@ -8,8 +10,33 @@ import (
 )
 
 func main() {
-	defer DB.Close()
-	defer scheduler.Shutdown()
+	ctx := context.Background()
+
+	shutdown, err := telemetry.InitTracer(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func(ctx context.Context) {
+		err := shutdown(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(ctx)
+
+	defer func() {
+		err := DB.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	defer func() {
+		err := scheduler.Shutdown()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	mux := router.CreateRouter(DB)
 
 	log.Printf("GoAuth listening on :%s", Port)
