@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
@@ -75,4 +76,34 @@ func (r *Response) Cookies() *AuthContext {
 func (r *Response) JSON() *httpexpect.Object {
 	r.t.Helper()
 	return r.resp.JSON().Object()
+}
+
+func (r *Response) Trace() *httpexpect.Array {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("trace").Array()
+}
+
+func (r *Response) TraceContains(expected ...string) *Response {
+	r.t.Helper()
+
+	trace := r.Trace()
+	raw := trace.Raw()
+
+	for _, exp := range expected {
+		found := false
+
+		for _, v := range raw {
+			s, ok := v.(string)
+			if ok && strings.Contains(s, exp) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			r.t.Fatalf("expected trace to contain %q, but it did not.\ntrace=%v", exp, raw)
+		}
+	}
+
+	return r
 }

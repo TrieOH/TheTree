@@ -56,6 +56,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusConflict).
-			Error("go-auth-test", "error registering user")
+			Error("go-auth-test", "error registering user").
+			TraceContains("email already in use")
 	})
 }
