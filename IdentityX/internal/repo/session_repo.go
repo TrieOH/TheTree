@@ -1,23 +1,24 @@
 package repo
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/models"
 	"GoAuth/internal/sqlc"
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jinzhu/copier"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type SessionRepo interface {
 	Create(ctx context.Context, session models.Session) (*models.Session, error)
 	GetById(ctx context.Context, sessionID uuid.UUID) (*models.Session, error)
-	GetByTokenId(ctx context.Context, tokenID uuid.UUID) (*models.Session, error)
+	GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*models.Session, error)
 	List(ctx context.Context, userID uuid.UUID) ([]models.Session, error)
-	Update(ctx context.Context, session models.Session) (*models.Session, error)
+	Update(ctx context.Context, session models.Session) error
 	DeleteByFilter(ctx context.Context, filter models.SessionFilter) ([]models.Session, error)
 }
 
@@ -33,17 +34,30 @@ func NewSessionRepo(q *sqlc.Queries, log *zap.Logger) SessionRepo {
 	}
 }
 
-func copySessionFromDB(dst *models.Session, src *sqlc.UserSession) error {
-	return copier.Copy(dst, src)
+func mapSessionFromDB(dst *models.Session, src *sqlc.Session) {
+	dst.SessionID = src.SessionID
+	dst.ProjectID = src.ProjectID
+	dst.UserID = src.UserID
+	dst.TokenID = src.TokenID
+	dst.IssuedAt = src.IssuedAt
+	dst.UserAgent = src.UserAgent
+	dst.UserIp = src.UserIp
+	dst.ExpiresAt = src.ExpiresAt
+	dst.CreatedAt = src.CreatedAt
+	dst.UpdatedAt = src.UpdatedAt
+	dst.UserType = src.UserType
 }
 
 func (s sessionRepo) Create(ctx context.Context, session models.Session) (*models.Session, error) {
-	if session.UserID == uuid.Nil {
-		return nil, errors.New("invalid user id")
-	}
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.Create",
+		trace.WithAttributes(
+			attribute.String("session.user_id", session.UserID.String()),
+			attribute.String("session.token_id", session.TokenID.String()),
+		),
+	)
+	defer span.End()
 
 	sqlcSession, err := s.q.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
-		TokenID:   session.TokenID,
 		UserID:    session.UserID,
 		IssuedAt:  session.IssuedAt,
 		UserAgent: session.UserAgent,
@@ -53,103 +67,129 @@ func (s sessionRepo) Create(ctx context.Context, session models.Session) (*model
 	})
 
 	if err != nil {
-		return nil, err
+		sqlErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlErr)
+		return nil, sqlErr
 	}
 
-	if err = copySessionFromDB(&session, &sqlcSession); err != nil {
-		s.log.Error(
-			"failed to copy session",
-			zap.Error(err),
-			zap.String("session_id", sqlcSession.SessionID.String()),
-		)
-		return nil, fmt.Errorf("failed to copy session properly: %w", err)
+	span.SetAttributes(attribute.String("session.user_type", sqlcSession.UserType))
+	if sqlcSession.ProjectID != nil {
+		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
 	}
+
+	mapSessionFromDB(&session, &sqlcSession)
+
+	span.SetAttributes(
+		attribute.String("session.session_id", session.SessionID.String()),
+		attribute.Bool("session.created", true),
+	)
+	span.SetStatus(codes.Ok, "session created")
 
 	return &session, nil
 }
 
 func (s sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*models.Session, error) {
-	if sessionID == uuid.Nil {
-		return nil, errors.New("session id is required for GetById")
-	}
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.GetById",
+		trace.WithAttributes(
+			attribute.String("session_id", sessionID.String()),
+		),
+	)
+	defer span.End()
 
 	sqlcSession, err := s.q.GetUserSessionById(ctx, sessionID)
 
 	if err != nil {
-		return nil, err
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(
+		attribute.String("session.user_id", sqlcSession.UserID.String()),
+		attribute.String("session.token_id", sqlcSession.TokenID.String()),
+		attribute.String("session.user_type", sqlcSession.UserType),
+	)
+
+	if sqlcSession.ProjectID != nil {
+		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
 	}
 
 	var session models.Session
-	if err = copier.Copy(&session, sqlcSession); err != nil {
-		s.log.Error(
-			"failed to copy session",
-			zap.Error(err),
-			zap.String("session_id", sqlcSession.SessionID.String()),
-		)
-		return nil, fmt.Errorf("failed to copy session: %w", err)
-	}
+	mapSessionFromDB(&session, &sqlcSession)
 
 	return &session, nil
 }
 
-func (s sessionRepo) GetByTokenId(ctx context.Context, tokenID uuid.UUID) (*models.Session, error) {
-	if tokenID == uuid.Nil {
-		return nil, errors.New("token id is required for GetByTokenId")
-	}
+func (s sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*models.Session, error) {
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.GetByTokenID",
+		trace.WithAttributes(
+			attribute.String("token_id", tokenID.String()),
+		),
+	)
+	defer span.End()
 
 	sqlcSession, err := s.q.GetUserSessionByTokenId(ctx, tokenID)
 
 	if err != nil {
-		return nil, err
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(
+		attribute.String("session.session_id", sqlcSession.SessionID.String()),
+		attribute.String("session.user_id", sqlcSession.UserID.String()),
+		attribute.String("session.user_type", sqlcSession.UserType),
+	)
+
+	if sqlcSession.ProjectID != nil {
+		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
 	}
 
 	var session models.Session
-	if err = copier.Copy(&session, sqlcSession); err != nil {
-		s.log.Error(
-			"failed to copy session",
-			zap.Error(err),
-			zap.String("session_id", sqlcSession.SessionID.String()),
-		)
-		return nil, fmt.Errorf("failed to copy session: %w", err)
-	}
+	mapSessionFromDB(&session, &sqlcSession)
 
 	return &session, nil
 }
 
 func (s sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]models.Session, error) {
-	if userID == uuid.Nil {
-		return nil, errors.New("user_id is required for list")
-	}
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.List",
+		trace.WithAttributes(
+			attribute.String("user_id", userID.String()),
+		),
+	)
+	defer span.End()
 
 	sqlcSessions, err := s.q.ListUserSessions(ctx, userID)
 
 	if err != nil {
-		return nil, err
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
 	}
 
-	var sessions []models.Session
+	span.SetAttributes(attribute.Int("sessions.count", len(sqlcSessions)))
+
+	sessions := make([]models.Session, 0, len(sqlcSessions))
 	for _, sqlcSession := range sqlcSessions {
 		var session models.Session
-		if err = copier.Copy(&session, sqlcSession); err != nil {
-			s.log.Error(
-				"failed to copy session",
-				zap.Error(err),
-				zap.String("session_id", sqlcSession.SessionID.String()),
-			)
-			return nil, fmt.Errorf("failed to copy session of ID{%v}: %w", sqlcSession.SessionID, err)
-		}
+		mapSessionFromDB(&session, &sqlcSession)
 		sessions = append(sessions, session)
 	}
 
 	return sessions, nil
 }
 
-func (s sessionRepo) Update(ctx context.Context, session models.Session) (*models.Session, error) {
-	if session.SessionID == uuid.Nil {
-		return nil, errors.New("session_id is required for update")
-	}
+func (s sessionRepo) Update(ctx context.Context, session models.Session) error {
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.Update",
+		trace.WithAttributes(
+			attribute.String("session.user_id", session.UserID.String()),
+			attribute.String("session.token_id", session.TokenID.String()),
+		),
+	)
+	defer span.End()
 
-	sqlcSession, err := s.q.UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
+	err := s.q.UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
 		SessionID: session.SessionID,
 		IssuedAt:  session.IssuedAt,
 		UserAgent: session.UserAgent,
@@ -159,25 +199,35 @@ func (s sessionRepo) Update(ctx context.Context, session models.Session) (*model
 	})
 
 	if err != nil {
-		return nil, err
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
 	}
 
-	if err = copySessionFromDB(&session, &sqlcSession); err != nil {
-		s.log.Error(
-			"failed to copy session",
-			zap.Error(err),
-			zap.String("session_id", sqlcSession.SessionID.String()),
-		)
-		return nil, fmt.Errorf("failed to copy session of ID{%v}: %w", sqlcSession.SessionID, err)
-	}
-
-	return &session, nil
+	return nil
 }
 
 func (s sessionRepo) DeleteByFilter(ctx context.Context, filter models.SessionFilter) ([]models.Session, error) {
-	if filter.UserID == uuid.Nil {
-		return nil, errors.New("user_id is required for session deletion")
+	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.DeleteByFilter",
+		trace.WithAttributes(
+			attribute.String("session.user_id", filter.UserID.String()),
+		),
+	)
+
+	if filter.SessionID != nil {
+		span.SetAttributes(attribute.String("session.session_id", filter.SessionID.String()))
 	}
+	if filter.TokenID != nil {
+		span.SetAttributes(attribute.String("session.with_token_id", filter.TokenID.String()))
+	}
+	if filter.ExcludeID != nil {
+		span.SetAttributes(attribute.String("session.with_exclude_id", filter.ExcludeID.String()))
+	}
+	if filter.ExpiredBefore != nil {
+		span.SetAttributes(attribute.String("session.with_expired", filter.ExpiredBefore.String()))
+	}
+
+	defer span.End()
 
 	sqlcSessions, err := s.q.DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
 		UserID:        filter.UserID,
@@ -188,20 +238,17 @@ func (s sessionRepo) DeleteByFilter(ctx context.Context, filter models.SessionFi
 	})
 
 	if err != nil {
-		return nil, err
+		sessionErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sessionErr)
+		return nil, sessionErr
 	}
 
-	var sessions []models.Session
+	span.SetAttributes(attribute.Int("sessions.deleted", len(sqlcSessions)))
+
+	sessions := make([]models.Session, 0, len(sqlcSessions))
 	for _, sqlcSession := range sqlcSessions {
 		var session models.Session
-		if err = copier.Copy(&session, sqlcSession); err != nil {
-			s.log.Error(
-				"failed to copy session",
-				zap.Error(err),
-				zap.String("session_id", sqlcSession.SessionID.String()),
-			)
-			return nil, fmt.Errorf("failed to copy session of ID{%v}: %w", sqlcSession.SessionID, err)
-		}
+		mapSessionFromDB(&session, &sqlcSession)
 		sessions = append(sessions, session)
 	}
 

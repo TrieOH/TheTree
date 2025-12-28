@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 	"github.com/spf13/viper"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 func WaitForDB(timeout time.Duration) (*sql.DB, error) {
@@ -20,29 +23,65 @@ func WaitForDB(timeout time.Duration) (*sql.DB, error) {
 		log.Fatal("Couldn't get DATABASE_URL variable")
 	}
 
+	driverName, err := registerDBDriver()
+	if err != nil {
+		return nil, err
+	}
+
 	deadline := time.Now().Add(timeout)
-	attempt := 1
+	attempt := 0
+
 	for {
-		db, err := sql.Open("postgres", dsn)
-		if err == nil {
+		attempt++
+		log.Printf("waiting for database... attempt %d\n", attempt)
+
+		db, err := sql.Open(driverName, dsn)
+		if err != nil {
+			log.Printf("error opening the database connection: %v\n", err)
+		} else {
 			if pingErr := db.Ping(); pingErr == nil {
-				log.Printf("DB connected on attempt %d\n", attempt)
+				log.Printf("database connected on attempt %d\n", attempt)
 				return db, nil
 			} else {
-				log.Printf("Ping err: %v\n", pingErr)
+				log.Printf("error pinging the database: %v\n", pingErr)
+				err = db.Close()
+				if err != nil {
+					log.Printf("error closing the database connection: %v\n", err)
+				}
 			}
-			db.Close()
 		}
 
 		if time.Now().After(deadline) {
-			return nil, errors.New("DB connection timeout")
+			return nil, errors.New("database connection timeout")
 		}
 
-		log.Printf("Waiting for DB... attempt %d\n", attempt)
-		log.Printf("%v\n", err)
 		time.Sleep(2 * time.Second)
-		attempt++
 	}
+}
+
+var (
+	otelDriverName string
+	registerOnce   sync.Once
+)
+
+func registerDBDriver() (string, error) {
+	var err error
+
+	registerOnce.Do(func() {
+		otelDriverName, err = otelsql.Register(
+			"postgres",
+			otelsql.WithAttributes(
+				semconv.DBSystemPostgreSQL,
+			),
+			otelsql.WithSQLCommenter(true),
+		)
+	})
+
+	if err != nil {
+		err = fmt.Errorf("error registering otelsql driver: %w", err)
+	}
+
+	return otelDriverName, err
 }
 
 func RunMigrations(db *sql.DB, mPath string) error {
@@ -73,6 +112,6 @@ func SetJWTMasterKey(db *sql.DB) error {
 		return fmt.Errorf("failed to set app.jwt_master_key: %w", err)
 	}
 
-	log.Println("Session variable app.jwt_master_key set successfully")
+	log.Println("session variable app.jwt_master_key set successfully")
 	return nil
 }

@@ -11,13 +11,13 @@ type ProjectUser struct {
 	ID          uuid.UUID        `json:"id"`
 	ProjectID   uuid.UUID        `json:"project_id"`
 	Email       string           `json:"email"`
-	Password    string           `json:"password"`
+	Password    string           `json:"-"`
 	UserType    string           `json:"user_type"`
 	Metadata    *json.RawMessage `json:"metadata"`
 	IsActive    bool             `json:"is_active"`
 	CreatedAt   time.Time        `json:"created_at"`
 	UpdatedAt   time.Time        `json:"updated_at"`
-	LastLoginAt time.Time        `json:"last_login_at"`
+	LastLoginAt *time.Time       `json:"last_login_at"`
 }
 
 type RegisterProjectUserRequest struct {

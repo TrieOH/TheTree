@@ -730,7 +730,7 @@ func loggedOutAlready(user *accountContext) func(t *testing.T) {
 			JSON().Object()
 
 		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("refresh token is invalidated")
+		obj.Value("message").String().IsEqual("refresh token is revoked")
 
 		obj.Value("code").Number().IsEqual(401)
 	}
@@ -855,7 +855,7 @@ func listSessionsFail(user *accountContext) func(t *testing.T) {
 			JSON().Object()
 
 		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("refresh token is invalidated")
+		obj.Value("message").String().IsEqual("refresh token is revoked")
 
 		obj.Value("code").Number().IsEqual(401)
 	}
@@ -869,12 +869,12 @@ func revokeSessionByIDFail(user *accountContext) func(t *testing.T) {
 			WithCookie("access_token", user.accessToken).
 			WithCookie("refresh_token", user.refreshToken).
 			Expect().
-			Status(http.StatusBadRequest).
+			Status(http.StatusForbidden).
 			JSON().Object()
 
 		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("can't revoke a currently active session, please logout instead")
-		obj.Value("code").Number().IsEqual(400)
+		obj.Value("message").String().IsEqual("cannot revoke the currently active session")
+		obj.Value("code").Number().IsEqual(403)
 	}
 }
 func revokeSessionByIDSuccess(user *accountContext) func(t *testing.T) {
@@ -985,12 +985,8 @@ func listXProjects(user *accountContext, amount int) func(t *testing.T) {
 		obj.Value("module").String().IsEqual("go-auth-test")
 		obj.Value("code").Number().IsEqual(200)
 
-		if amount > 0 {
-			data := obj.Value("data").Array()
-			data.Length().IsEqual(amount)
-		} else {
-			obj.Value("data").IsNull()
-		}
+		data := obj.Value("data").Array()
+		data.Length().IsEqual(amount)
 	}
 }
 func getProjectByIDSuccess(user *accountContext) func(t *testing.T) {

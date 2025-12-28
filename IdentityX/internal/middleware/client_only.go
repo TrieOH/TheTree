@@ -15,13 +15,13 @@ func ClientOnly(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		accessToken, rs := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
-		if rs != nil {
-			rs.WithModule("AuthMW").Send(w)
+		accessToken, err := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
+		if err != nil {
+			ErrToResp(err).WithModule("AuthMW").Send(w)
 			return
 		}
 
-		if accessToken.Sub.ProjectId != nil {
+		if accessToken.Sub.ProjectID != nil {
 			resp.Unauthorized("only clients can access this endpoint").WithModule("ClientOnlyMW").Send(w)
 			return
 		}

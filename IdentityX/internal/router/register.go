@@ -23,7 +23,7 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 	authService := service.NewAuthService(userRepo, sessionRepo, revokedTokensRepo, projectRepo, projectUserRepo)
 	appHandler := handler.NewAuthHandler(authService)
 
-	authMW := mw.NewAuthMiddleware(queries)
+	authMW := mw.NewAuthMiddleware(revokedTokensRepo)
 
 	mux.HandleFunc("POST /auth/register", appHandler.Register)
 	mux.HandleFunc("POST /auth/login", appHandler.Login)

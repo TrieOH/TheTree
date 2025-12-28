@@ -1,22 +1,23 @@
 package service
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/utils"
 	"time"
 
 	"GoAuth/internal/models"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-func newAccessToken(dbUser models.User, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
+func newAccessToken(user models.User, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, error) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
-			ID:        dbUser.ID,
-			Email:     dbUser.Email,
+			ID:        user.ID,
+			UserType:  user.UserType,
+			Email:     user.Email,
 			SessionID: sessionId,
 			UserAgent: agent,
 			UserIP:    ip,
@@ -33,12 +34,12 @@ func newAccessToken(dbUser models.User, ip, agent string, sessionId uuid.UUID) (
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
 	if err != nil {
-		return "", uuid.Nil, resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
+		return "", uuid.Nil, apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
 	return tokenStr, accessJTIID, nil
 }
 
-func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, *resp.Response) {
+func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, error) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSubJWT{
 			AccessJTI: accessJTI,
@@ -54,17 +55,18 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (stri
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	tokenStr, err := refreshToken.SignedString(utils.GoAuthPrivateKey)
 	if err != nil {
-		return "", resp.InternalServerError("error signing refresh token").WithTracePrefix("error").AddTrace(err)
+		return "", apierr.ErrInternal.WithMsg("error signing refresh token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
 	return tokenStr, nil
 }
 
-func newProjectAccessToken(user models.ProjectUser, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, *resp.Response) {
+func newProjectAccessToken(user models.ProjectUser, ip, agent string, sessionId uuid.UUID) (string, uuid.UUID, error) {
 	accessJTI := uuid.NewString()
 	claims := models.AccessClaims{
 		Sub: models.AccessSubJWT{
 			ID:        user.ID,
-			ProjectId: &user.ProjectID,
+			UserType:  user.UserType,
+			ProjectID: &user.ProjectID,
 			Metadata:  user.Metadata,
 			Email:     user.Email,
 			SessionID: sessionId,
@@ -83,7 +85,7 @@ func newProjectAccessToken(user models.ProjectUser, ip, agent string, sessionId 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
 	if err != nil {
-		return "", uuid.Nil, resp.InternalServerError("error signing access token").WithTracePrefix("error").AddTrace(err)
+		return "", uuid.Nil, apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
 	return tokenStr, accessJTIID, nil
 }

@@ -1,7 +1,12 @@
 package service
 
 import (
+	"GoAuth/internal/models"
 	"GoAuth/internal/repo"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthService struct {
@@ -25,5 +30,21 @@ func NewAuthService(
 		revokedRefreshTokensRepo: revokedRefreshTokensRepo,
 		projectRepo:              projectRepo,
 		projectUserRepo:          projectUserRepo,
+	}
+}
+
+var (
+	GoAuthServiceTracer = otel.Tracer("goauth/service")
+)
+
+func annotateAccessClaims(span trace.Span, claims *models.AccessClaims) {
+	span.SetAttributes(
+		attribute.String("user.id", claims.Sub.ID.String()),
+		attribute.String("user.session_id", claims.Sub.SessionID.String()),
+		attribute.String("user.type", claims.Sub.UserType),
+	)
+
+	if claims.Sub.ProjectID != nil {
+		span.SetAttributes(attribute.String("user.project_id", claims.Sub.ProjectID.String()))
 	}
 }

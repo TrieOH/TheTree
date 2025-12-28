@@ -28,8 +28,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rs := h.AuthService.Register(r.Context(), req); rs != nil {
-		rs.Send(w)
+	if err := h.AuthService.Register(r.Context(), req); err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -56,21 +56,21 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, rs := h.AuthService.Login(r, r.Context(), req)
-	if rs != nil {
-		rs.Send(w)
+	tokens, err := h.AuthService.Login(r, r.Context(), req)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
-	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	accessToken, err := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
-	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	refreshToken, err := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -114,9 +114,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	rs := h.AuthService.Logout(r, r.Context())
-	if rs != nil {
-		rs.Send(w)
+	err := h.AuthService.Logout(r.Context())
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -159,21 +159,37 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse
 // @Router /auth/refresh [post]
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	tokens, rs := h.AuthService.Refresh(r, r.Context())
-	if rs != nil {
-		rs.Send(w)
+	refreshTokenCookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		resp.Unauthorized("error getting refresh token").AddTrace(err).Send(w)
 		return
 	}
 
-	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	if refreshTokenCookie.Value == "" {
+		resp.Unauthorized("missing refresh token value").Send(w)
 		return
 	}
 
-	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	var data models.RefreshData
+	data.RefreshCookie = refreshTokenCookie
+	data.Agent = r.UserAgent()
+	data.IP = utils.GetClientIP(r)
+
+	tokens, err := h.AuthService.Refresh(data, r.Context())
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	accessToken, err := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	refreshToken, err := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -218,11 +234,13 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	access, err := models.GetAccessClaims(r.Context())
 	if err != nil {
-		resp.InternalServerError("Failed to get access claims").Send(w)
+		resp.InternalServerError("Failed to get access claims").AddTrace(err).Send(w)
+		return
 	}
 	refresh, err := models.GetRefreshClaims(r.Context())
 	if err != nil {
-		resp.InternalServerError("Failed to get refresh claims").Send(w)
+		resp.InternalServerError("Failed to get refresh claims").AddTrace(err).Send(w)
+		return
 	}
 
 	resp.OK().WithData(map[string]interface{}{

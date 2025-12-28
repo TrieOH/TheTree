@@ -1,5 +1,5 @@
 -- name: RegisterUser :one
-INSERT INTO users (email, password)
+INSERT INTO users (email, password_hash)
 VALUES ($1, $2)
 RETURNING *;
 
@@ -18,7 +18,7 @@ SELECT * FROM users ORDER BY created_at DESC;
 UPDATE users
 SET
     email = $2,
-    password = $3,
+    password_hash = $3,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;

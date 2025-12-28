@@ -35,8 +35,8 @@ func (h *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rs := h.AuthService.RegisterProjectUser(r.Context(), projectId, req); rs != nil {
-		rs.Send(w)
+	if err := h.AuthService.RegisterProjectUser(r.Context(), projectId, req); err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
@@ -70,21 +70,21 @@ func (h *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, rs := h.AuthService.LoginProjectUser(r, r.Context(), projectId, req)
-	if rs != nil {
-		rs.Send(w)
+	tokens, err := h.AuthService.LoginProjectUser(r, r.Context(), projectId, req)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
-	accessToken, rs := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	accessToken, err := utils.ParseAccessToken(tokens.AccessTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
-	refreshToken, rs := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	refreshToken, err := utils.ParseRefreshToken(tokens.RefreshTokenString, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 
