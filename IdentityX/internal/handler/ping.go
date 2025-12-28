@@ -40,9 +40,9 @@ func (h *AuthHandler) PrivatePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessClaims, rs := utils.ParseAccessToken(accessToken.Value, utils.GoAuthPublicKey)
-	if rs != nil {
-		rs.Send(w)
+	accessClaims, err := utils.ParseAccessToken(accessToken.Value, utils.GoAuthPublicKey)
+	if err != nil {
+		ErrToResp(err).Send(w)
 		return
 	}
 

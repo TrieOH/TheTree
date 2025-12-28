@@ -1,7 +1,13 @@
 -- +goose Up
 
-ALTER TABLE user_sessions
-    ADD CONSTRAINT user_sessions_user_type_check
+ALTER TABLE sessions
+    ADD COLUMN user_type TEXT NOT NULL;
+
+ALTER TABLE users
+    ADD COLUMN user_type TEXT NOT NULL DEFAULT 'client';
+
+ALTER TABLE sessions
+    ADD CONSTRAINT sessions_user_type_check
         CHECK (
             (project_id IS NULL AND user_type = 'client')
                 OR
@@ -9,5 +15,11 @@ ALTER TABLE user_sessions
             );
 
 -- +goose Down
-ALTER TABLE user_sessions
-DROP CONSTRAINT IF EXISTS user_sessions_user_type_check;
+ALTER TABLE sessions
+DROP CONSTRAINT IF EXISTS sessions_user_type_check;
+
+ALTER TABLE sessions
+DROP COLUMN IF EXISTS user_type;
+
+ALTER TABLE users
+DROP COLUMN IF EXISTS user_type;

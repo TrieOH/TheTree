@@ -1,79 +1,95 @@
 package service
 
 import (
+	"GoAuth/internal/apierr"
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
 
-	"GoAuth/internal/logs"
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
 	"GoAuth/internal/utils"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *AuthService) RegisterProjectUser(ctx context.Context, projectId string, req models.RegisterProjectUserRequest) *resp.Response {
-	parsedProjectId, err := uuid.Parse(projectId)
+func (s *AuthService) RegisterProjectUser(ctx context.Context, projectID string, req models.RegisterProjectUserRequest) error {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "ProjectService.RegisterProjectUser",
+		trace.WithAttributes(attribute.String("project.id", projectID)),
+	)
+	defer span.End()
+
+	pid, err := uuid.Parse(projectID)
 	if err != nil {
-		return resp.BadRequest("Invalid project ID")
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
 	}
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
+	if len(req.Password) > 72 {
+		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		if strings.Contains(err.Error(), "password length exceeds 72 bytes") {
-			return resp.BadRequest("error registering user").WithTracePrefix("error").AddTrace("password exceeds 72 char limit")
-		}
-		return resp.InternalServerError("error hashing user password").WithTracePrefix("error").AddTrace(err)
+		hashErr := apierr.ErrInternal.WithMsg("error hashing user password").WithID(apierr.SystemInternalError).WithCause(err)
+		span.SetAttributes(attribute.Bool("password.hashing.failed", true))
+		apierr.RecordSystemError(span, hashErr)
+		return hashErr
 	}
 
-	_, err = s.queries.RegisterProjectUser(ctx, repository.RegisterProjectUserParams{
-		ProjectID:    parsedProjectId,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Metadata:     req.CustomFields,
+	var user *models.ProjectUser
+	user, err = s.projectUserRepo.Register(ctx, models.ProjectUser{
+		ProjectID: pid,
+		Email:     req.Email,
+		Password:  string(hashedPassword),
+		Metadata:  &req.CustomFields,
 	})
-
-	if err != nil {
-		readable := utils.ParseDBError(err)
-		if strings.Contains(readable.Error(), "email is already in use") {
-			return resp.Conflict("error registering user").WithTracePrefix("error").AddTrace("email already in use")
-		}
-		return resp.InternalServerError("error registering user").WithTracePrefix("database-error").AddTrace(readable)
+	if apierr.IsConflict(err) {
+		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
+	} else if err != nil {
+		return err
 	}
+
+	span.SetAttributes(
+		attribute.String("user.id", user.ID.String()),
+		attribute.Int64("user.created_at", user.CreatedAt.Unix()),
+		attribute.String("user.type", user.UserType),
+	)
 
 	return nil
 }
 
-func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, projectId string, req models.LoginProjectUserRequest) (*models.UserTokens, *resp.Response) {
-	parsedProjectId, err := uuid.Parse(projectId)
+func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, projectID string, req models.LoginProjectUserRequest) (*models.UserTokens, error) {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "ProjectService.LoginProjectUser",
+		trace.WithAttributes(attribute.String("project.id", projectID)),
+	)
+	defer span.End()
+
+	pid, err := uuid.Parse(projectID)
 	if err != nil {
-		return nil, resp.BadRequest("Invalid project ID")
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
 	}
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
-
-	dbUser, err := s.queries.GetProjectUserByEmailInternal(ctx, repository.GetProjectUserByEmailInternalParams{
-		ProjectID: parsedProjectId,
-		Email:     req.Email,
-	})
+	user, err := s.projectUserRepo.GetByEmailInternal(ctx, pid, req.Email)
 	if err != nil {
-		readable := utils.ParseDBError(err)
-		if strings.Contains(readable.Error(), "record not found") {
-			return nil, resp.Unauthorized("invalid email or password")
-		}
-		return nil, resp.InternalServerError("error retrieving user").WithTracePrefix("database-error").AddTrace(readable)
+		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(dbUser.PasswordHash), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		return nil, resp.Unauthorized("invalid email or password")
+		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
+		apierr.RecordDomainError(span, authErr)
+		return nil, authErr
 	}
 
 	var tokens models.UserTokens
@@ -83,40 +99,30 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	refreshJti := uuid.New()
 
-	session, err := s.queries.CreateUserSession(ctx, repository.CreateUserSessionParams{
+	session, err := s.sessionRepo.Create(ctx, models.Session{
 		TokenID:   refreshJti,
 		IssuedAt:  time.Now(),
 		UserAgent: agent,
 		UserIp:    ip,
 		ExpiresAt: expiresAt,
-		UserID:    dbUser.ID,
-		ProjectID: &parsedProjectId,
+		UserID:    user.ID,
+		ProjectID: &pid,
 	})
-
 	if err != nil {
-		reqID := r.Header.Get("X-Request-ID")
-		if reqID == "" {
-			reqID = uuid.New().String()
-		}
-		logs.L().Error("Create User Session Failed",
-			zap.String("error_value", err.Error()),
-			zap.String("request_id", reqID),
-			zap.String("user_id", dbUser.ID.String()),
-			zap.String("method", r.Method),
-			zap.String("path", utils.NormalizePath(r)),
-			zap.String("remote_addr", r.RemoteAddr),
-		)
+		return nil, err
 	}
 
-	accessToken, accessJTI, rs := newProjectAccessToken(dbUser, ip, agent, session.SessionID)
-	if rs != nil {
-		return nil, rs
+	accessToken, accessJTI, err := newProjectAccessToken(*user, ip, agent, session.SessionID)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return nil, err
 	}
 	tokens.AccessTokenString = accessToken
 
-	refreshToken, rs := newRefreshToken(accessJTI, refreshJti, expiresAt)
-	if rs != nil {
-		return nil, rs
+	refreshToken, err := newRefreshToken(accessJTI, refreshJti, expiresAt)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return nil, err
 	}
 	tokens.RefreshTokenString = refreshToken
 

@@ -1,47 +1,47 @@
 package utils
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/models"
 	"crypto/ed25519"
 	"errors"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-func handleJWTError(err error, tokenType string) *resp.Response {
+func handleJWTError(err error, tokenType string) error {
 	if err == nil {
 		return nil
 	}
 
 	switch {
 	case errors.Is(err, jwt.ErrTokenExpired):
-		return resp.Unauthorized(tokenType + " expired").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " expired").WithID(apierr.TokenExpired)
 	case errors.Is(err, jwt.ErrTokenSignatureInvalid):
-		return resp.Unauthorized("invalid " + tokenType + " signature").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg("invalid " + tokenType + " signature").WithID(apierr.TokenSignatureInvalid)
 	case errors.Is(err, jwt.ErrTokenMalformed):
-		return resp.Unauthorized("malformed " + tokenType).AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg("malformed " + tokenType + " token").WithID(apierr.TokenMalformed)
 	case errors.Is(err, jwt.ErrTokenInvalidClaims):
-		return resp.Unauthorized("invalid " + tokenType + " claims").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg("invalid " + tokenType + " claims").WithID(apierr.TokenInvalidClaims)
 	case errors.Is(err, jwt.ErrTokenNotValidYet):
-		return resp.Unauthorized(tokenType + " not valid yet").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " not yet valid").WithID(apierr.TokenNotYetValid)
 	case errors.Is(err, jwt.ErrTokenUsedBeforeIssued):
-		return resp.Unauthorized(tokenType + " used before issued").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " used before issued").WithID(apierr.TokenUsedBeforeIssued)
 	case errors.Is(err, jwt.ErrTokenInvalidIssuer):
-		return resp.Unauthorized(tokenType + " has invalid issuer").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " has invalid issuer").WithID(apierr.TokenInvalidIssuer)
 	case errors.Is(err, jwt.ErrTokenInvalidSubject):
-		return resp.Unauthorized(tokenType + " has invalid subject").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " has invalid subject").WithID(apierr.TokenInvalidSubject)
 	case errors.Is(err, jwt.ErrTokenInvalidAudience):
-		return resp.Unauthorized(tokenType + " has invalid audience").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " has invalid audience").WithID(apierr.TokenInvalidAudience)
 	case errors.Is(err, jwt.ErrTokenInvalidId):
-		return resp.Unauthorized(tokenType + " has invalid id").AddTrace(err)
+		return apierr.ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(apierr.TokenInvalidID)
 	}
 
-	return resp.Unauthorized("invalid " + tokenType).AddTrace(err)
+	return apierr.ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(apierr.TokenInvalid).WithCause(err)
 }
 
-func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*models.AccessClaims, *resp.Response) {
+func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*models.AccessClaims, error) {
 	claims := &models.AccessClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
@@ -53,7 +53,7 @@ func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*models.Access
 	}
 
 	if token == nil || !token.Valid {
-		return nil, resp.Unauthorized("invalid access token")
+		return nil, apierr.ErrUnauthorized.WithMsg("invalid access token").WithID(apierr.TokenInvalid)
 	}
 
 	return claims, nil
@@ -91,7 +91,7 @@ func ParseAccessTokenUserIDUnsafe(tokenStr string, secret ed25519.PublicKey) *st
 	return &idStr
 }
 
-func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*models.RefreshClaims, *resp.Response) {
+func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*models.RefreshClaims, error) {
 	claims := &models.RefreshClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
@@ -102,7 +102,7 @@ func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*models.Refre
 	}
 
 	if token == nil || !token.Valid {
-		return nil, resp.Unauthorized("invalid refresh token")
+		return nil, apierr.ErrUnauthorized.WithMsg("invalid refresh token").WithID(apierr.TokenInvalid)
 	}
 
 	return claims, nil

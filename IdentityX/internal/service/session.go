@@ -1,101 +1,107 @@
 package service
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/models"
-	"GoAuth/internal/repository"
 	"context"
-	"log"
-	"net/http"
 	"time"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 )
 
-func (s *AuthService) ListUserSessions(r *http.Request, ctx context.Context) ([]repository.UserSession, *resp.Response) {
-	accessClaims, err := models.GetAccessClaims(r)
+func (s *AuthService) ListUserSessions(ctx context.Context) ([]models.Session, error) {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "AuthService.ListUserSessions")
+	defer span.End()
+
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
-		return nil, resp.InternalServerError().AddTrace(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
 	}
 
-	sessions, err := s.queries.ListUserSessions(ctx, accessClaims.Sub.ID)
+	annotateAccessClaims(span, accessClaims)
+
+	sessions, err := s.sessionRepo.List(ctx, accessClaims.Sub.ID)
 	if err != nil {
-		return nil, resp.InternalServerError("error listing user sessions").WithTracePrefix("database-error").AddTrace(err)
+		return nil, err
 	}
+
+	span.SetAttributes(attribute.Int("sessions.count", len(sessions)))
+
 	return sessions, nil
 }
 
-func (s *AuthService) RevokeUserSessionByID(r *http.Request, ctx context.Context, sessionId string) *resp.Response {
-	accessClaims, err := models.GetAccessClaims(r)
-	if err != nil {
-		return resp.InternalServerError().AddTrace(err)
-	}
-
-	refreshClaims, err := models.GetRefreshClaims(r)
-	if err != nil {
-		return resp.InternalServerError().AddTrace(err)
-	}
-
-	jti, err := uuid.Parse(refreshClaims.ID)
-	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
-	}
+func (s *AuthService) RevokeUserSessionByID(ctx context.Context, sessionId string) error {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "AuthService.RevokeUserSessionByID")
+	defer span.End()
 
 	sid, err := uuid.Parse(sessionId)
 	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to parse session id", err.Error())
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid session id").WithID(apierr.SessionInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
 	}
+
+	accessClaims, err := models.GetAccessClaims(ctx)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	annotateAccessClaims(span, accessClaims)
 
 	if accessClaims.Sub.SessionID == sid {
-		return resp.BadRequest("can't revoke a currently active session, please logout instead")
+		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
 	}
 
-	revokedSession, err := s.queries.RevokeUserSessionById(ctx, repository.RevokeUserSessionByIdParams{
-		SessionID: sid,
-		TokenID:   jti,
+	revokedSessions, err := s.sessionRepo.DeleteByFilter(ctx, models.SessionFilter{
 		UserID:    accessClaims.Sub.ID,
+		SessionID: &sid,
 	})
-
 	if err != nil {
-		return resp.InternalServerError("error revoking user session").WithTracePrefix("database-error").AddTrace(err)
+		return err
 	}
 
-	err = s.queries.BlacklistToken(ctx, repository.BlacklistTokenParams{
-		TokenID:   revokedSession.TokenID,
-		ExpiresAt: revokedSession.ExpiresAt,
-	})
+	if len(revokedSessions) == 0 {
+		return apierr.ErrNotFound.WithMsg("session not found").WithID(apierr.SessionNotFound)
+	}
 
-	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to blacklist user refresh token", err.Error())
+	session := revokedSessions[0]
+
+	if err := s.revokedRefreshTokensRepo.Revoke(ctx, models.RevokedRefreshToken{
+		TokenID:   session.TokenID,
+		ExpiresAt: session.ExpiresAt,
+	}); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) *resp.Response {
-	accessClaims, err := models.GetAccessClaims(r)
+func (s *AuthService) RevokeOtherSessions(ctx context.Context) error {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "AuthService.RevokeOtherSessions")
+	defer span.End()
+
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
-		return resp.InternalServerError().AddTrace(err)
+		apierr.RecordDomainError(span, err)
+		return err
 	}
 
-	refreshClaims, err := models.GetRefreshClaims(r)
-	if err != nil {
-		return resp.InternalServerError().AddTrace(err)
-	}
+	annotateAccessClaims(span, accessClaims)
 
-	jti, err := uuid.Parse(refreshClaims.ID)
-	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to parse refresh jti", err.Error())
-	}
-
-	revokedSessions, err := s.queries.RevokeOtherSessions(ctx, repository.RevokeOtherSessionsParams{
-		TokenID: jti,
-		UserID:  accessClaims.Sub.ID,
+	revokedSessions, err := s.sessionRepo.DeleteByFilter(ctx, models.SessionFilter{
+		UserID:    accessClaims.Sub.ID,
+		ExcludeID: &accessClaims.Sub.SessionID,
 	})
-
 	if err != nil {
-		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
+		return err
 	}
+
+	span.SetAttributes(attribute.Int("sessions.deleted.count", len(revokedSessions)))
 
 	tokenIDs := make([]uuid.UUID, len(revokedSessions))
 	expiresAt := make([]time.Time, len(revokedSessions))
@@ -105,34 +111,36 @@ func (s *AuthService) RevokeOtherSessions(r *http.Request, ctx context.Context) 
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
-		Column1: tokenIDs,
-		Column2: expiresAt,
-	})
-
-	if len(blacklistedTokens) != len(tokenIDs) {
-		log.Println(blacklistedTokens)
-		log.Println(tokenIDs)
-	}
-
+	err = s.revokedRefreshTokensRepo.RevokeMany(ctx, tokenIDs, expiresAt)
 	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to blacklist other user tokens", err.Error())
+		span.SetAttributes(attribute.Bool("sessions.revoked.success", false))
+		return err
 	}
 
+	span.SetAttributes(attribute.Bool("sessions.revoked.success", true))
 	return nil
 }
 
-func (s *AuthService) RevokeAllSessions(r *http.Request, ctx context.Context) *resp.Response {
-	accessClaims, err := models.GetAccessClaims(r)
+func (s *AuthService) RevokeAllSessions(ctx context.Context) error {
+	ctx, span := GoAuthServiceTracer.Start(ctx, "AuthService.RevokeAllSessions")
+	defer span.End()
+
+	accessClaims, err := models.GetAccessClaims(ctx)
 	if err != nil {
-		return resp.InternalServerError().AddTrace(err)
+		apierr.RecordDomainError(span, err)
+		return err
 	}
 
-	revokedSessions, err := s.queries.RevokeAllSessions(ctx, accessClaims.Sub.ID)
+	annotateAccessClaims(span, accessClaims)
 
+	revokedSessions, err := s.sessionRepo.DeleteByFilter(ctx, models.SessionFilter{
+		UserID: accessClaims.Sub.ID,
+	})
 	if err != nil {
-		return resp.InternalServerError("error revoking user sessions").WithTracePrefix("database-error").AddTrace(err)
+		return err
 	}
+
+	span.SetAttributes(attribute.Int("sessions.deleted.count", len(revokedSessions)))
 
 	tokenIDs := make([]uuid.UUID, len(revokedSessions))
 	expiresAt := make([]time.Time, len(revokedSessions))
@@ -142,19 +150,12 @@ func (s *AuthService) RevokeAllSessions(r *http.Request, ctx context.Context) *r
 		expiresAt[i] = session.ExpiresAt
 	}
 
-	blacklistedTokens, err := s.queries.BlacklistManyTokens(ctx, repository.BlacklistManyTokensParams{
-		Column1: tokenIDs,
-		Column2: expiresAt,
-	})
-
-	if len(blacklistedTokens) != len(tokenIDs) {
-		log.Println(blacklistedTokens)
-		log.Println(tokenIDs)
-	}
-
+	err = s.revokedRefreshTokensRepo.RevokeMany(ctx, tokenIDs, expiresAt)
 	if err != nil {
-		return resp.InternalServerError().AddTrace("failed to blacklist user tokens", err.Error())
+		span.SetAttributes(attribute.Bool("sessions.revoked.success", false))
+		return err
 	}
 
+	span.SetAttributes(attribute.Bool("sessions.revoked.success", true))
 	return nil
 }

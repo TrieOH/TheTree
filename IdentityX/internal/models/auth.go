@@ -1,8 +1,9 @@
 package models
 
 import (
+	"GoAuth/internal/apierr"
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,7 +13,8 @@ import (
 type AccessSubJWT struct {
 	ID        uuid.UUID        `json:"id"`
 	Email     string           `json:"email"`
-	ProjectId *uuid.UUID       `json:"projectId"`
+	ProjectID *uuid.UUID       `json:"projectID"`
+	UserType  string           `json:"user_type"`
 	Metadata  *json.RawMessage `json:"metadata"`
 	SessionID uuid.UUID        `json:"session_id"`
 	UserAgent string           `json:"user_agent"`
@@ -38,6 +40,12 @@ type UserTokens struct {
 	RefreshTokenString string `json:"refresh_token"`
 }
 
+type RefreshData struct {
+	RefreshCookie *http.Cookie
+	Agent         string
+	IP            string
+}
+
 type ctxKey string
 
 const (
@@ -45,29 +53,29 @@ const (
 	RefreshClaimsKey ctxKey = "refreshClaims"
 )
 
-func GetAccessClaims(r *http.Request) (*AccessClaims, error) {
-	val := r.Context().Value(AccessClaimsKey)
+func GetAccessClaims(ctx context.Context) (*AccessClaims, error) {
+	val := ctx.Value(AccessClaimsKey)
 	if val == nil {
-		return nil, fmt.Errorf("access claims not found in context")
+		return nil, apierr.ErrUnauthorized.WithMsg("access token is missing or invalid").WithID(apierr.AuthMissingAccessClaims)
 	}
 
 	claims, ok := val.(*AccessClaims)
 	if !ok {
-		return nil, fmt.Errorf("invalid type for access claims in context")
+		return nil, apierr.ErrInternal.WithMsg("invalid access claims type in context").WithID(apierr.AuthInvalidAccessClaims)
 	}
 
 	return claims, nil
 }
 
-func GetRefreshClaims(r *http.Request) (*RefreshClaims, error) {
-	val := r.Context().Value(RefreshClaimsKey)
+func GetRefreshClaims(ctx context.Context) (*RefreshClaims, error) {
+	val := ctx.Value(RefreshClaimsKey)
 	if val == nil {
-		return nil, fmt.Errorf("refresh claims not found in context")
+		return nil, apierr.ErrUnauthorized.WithMsg("refresh token is missing or invalid").WithID(apierr.AuthMissingRefreshClaims)
 	}
 
 	claims, ok := val.(*RefreshClaims)
 	if !ok {
-		return nil, fmt.Errorf("invalid type for refresh claims in context")
+		return nil, apierr.ErrInternal.WithMsg("invalid refresh claims type in context").WithID(apierr.AuthInvalidRefreshClaims)
 	}
 
 	return claims, nil

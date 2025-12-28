@@ -1,7 +1,7 @@
 keys/
 keys/*
-internal/repository/
-internal/repository/*
+internal/sqlc/
+internal/sqlc/*
 docs/
 docs/*
 .env
