@@ -1,1084 +1,387 @@
 package testing
 
 import (
-	"GoAuth/internal/utils"
-	"database/sql"
-	"log"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
-
-	database "GoAuth/internal/db"
-	"GoAuth/internal/router"
-
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/gavv/httpexpect/v2"
-	"github.com/spf13/viper"
 )
 
-var Port string
-var Db *sql.DB
+// ============================================================================
+// TEST SPECS - Declarative test definitions
+// ============================================================================
 
-func init() {
-	viper.AutomaticEnv()
+type ValidationSpec struct {
+	Name   string
+	Email  string
+	Pass   string
+	Errors []string
+}
 
-	err := utils.LoadEd25519Keys(
-		viper.GetString("JWT_PRIVATE_KEY"),
-		viper.GetString("JWT_PUBLIC_KEY"),
-	)
+type PasswordSpec struct {
+	Name     string
+	Password string
+	Errors   []string
+}
 
-	if err != nil {
-		log.Fatal(err)
+// Test data
+var (
+	ValidPassword = "Str0ngP4$$!"
+
+	ValidationTests = []ValidationSpec{
+		{
+			Name:   "NoEmail",
+			Email:  "",
+			Pass:   ValidPassword,
+			Errors: []string{"(email) is required"},
+		},
+		{
+			Name:   "InvalidEmail",
+			Email:  "not-an-email",
+			Pass:   ValidPassword,
+			Errors: []string{"valid email address"},
+		},
+		{
+			Name:   "NoPassword",
+			Email:  "test@mail.com",
+			Pass:   "",
+			Errors: []string{"(password) is required"},
+		},
 	}
 
-	Port = viper.GetString("PORT")
-	if Port == "" {
-		Port = "8080"
+	WeakPasswordTests = []PasswordSpec{
+		{"OnlyLetters", "abc", []string{"uppercase", "number", "symbol"}},
+		{"LettersNumber", "abc3", []string{"uppercase", "symbol"}},
+		{"LettersSymbol", "abc#", []string{"uppercase", "number"}},
+		{"LettersUppercase", "Abc", []string{"number", "symbol"}},
+		{"NoNumber", "Abc#", []string{"number"}},
+		{"NoSymbol", "Abc3", []string{"symbol"}},
+		{"TooShort", "Abc#3", []string{"at least 8 characters"}},
 	}
+)
 
-	resp.SetConfig(resp.Config{
-		MaxTraceSize:         50,
-		ResponseSizeLimit:    10 * 1024 * 1024, // 10MB
-		MaxInterceptorAmount: 20,
-		DefaultContentType:   "application/json",
-		EnableSizeValidation: true,
-		DefaultModule:        "go-auth-test",
+// ============================================================================
+// ACTUAL TESTS - Clean and readable
+// ============================================================================
+
+func TestGoAuth(t *testing.T) {
+	suite := NewTestSuite(t)
+
+	t.Run("Register", func(t *testing.T) {
+		testRegister(t, suite)
 	})
 
-	Db, err = database.WaitForDB(30 * time.Second)
-	if err != nil {
-		log.Fatalf("Failed to connect DB: %v", err)
-	}
-
-	if err := database.RunMigrations(Db, "../migrations"); err != nil {
-		log.Fatalf("Failed migrations: %v", err)
-	}
-	if err := database.SetJWTMasterKey(Db); err != nil {
-		log.Fatal(err)
-	}
-}
-
-var serverUrl string
-
-func runServer() {
-	r := router.CreateTestRouter(Db)
-	server := httptest.NewServer(r)
-	serverUrl = server.URL
-}
-
-func createExpect(t *testing.T) *httpexpect.Expect {
-	return httpexpect.WithConfig(httpexpect.Config{
-		BaseURL:  serverUrl,
-		Reporter: httpexpect.NewAssertReporter(t),
+	t.Run("Login", func(t *testing.T) {
+		testLogin(t, suite)
 	})
-}
 
-type accountContext struct {
-	SuccessEmail    string `json:"email"`
-	SuccessPassword string `json:"password"`
-	projectID       string
-	accessToken     string
-	refreshToken    string
-	sessionID       string
-	sessionJIT      string
-}
-
-func TestGoAuthService(t *testing.T) {
-	runServer()
-	defer func(Db *sql.DB) {
-		err := Db.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(Db)
-
-	rllAcc := &accountContext{
-		SuccessEmail:    "success@mail.com",
-		SuccessPassword: "Str0ngP4ass!",
-	}
-
-	t.Run("RegisterTests", func(t *testing.T) { runRegisterTests(t, rllAcc) })
-	t.Run("LoginTests", func(t *testing.T) { runLoginTests(t, rllAcc) })
-	t.Run("LogoutTests", func(t *testing.T) { runLogoutTests(t, rllAcc) })
-
-	pingAcc := &accountContext{
-		SuccessEmail:    "ping@mail.com",
-		SuccessPassword: "Str0ngP4ass!",
-	}
-
-	t.Run("PingTests", func(t *testing.T) { runPingTests(t, pingAcc) })
-
-	sessionAccount := &accountContext{
-		SuccessEmail:    "session@mail.com",
-		SuccessPassword: "Str0ngP4ass!",
-	}
-
-	t.Run("SessionTests", func(t *testing.T) { runSessionTests(t, sessionAccount) })
-
-	refreshAccount := &accountContext{
-		SuccessEmail:    "refresh@mail.com",
-		SuccessPassword: "Str0ngP4ass!",
-	}
-
-	t.Run("RefreshTests", func(t *testing.T) { runRefreshTests(t, refreshAccount) })
-
-	projectAccount := &accountContext{
-		SuccessEmail:    "project@mail.com",
-		SuccessPassword: "Str0ngP4ass!",
-	}
-
-	t.Run("ProjectTests", func(t *testing.T) { runProjectTests(t, projectAccount) })
-}
-
-func runRegisterTests(t *testing.T, ctx *accountContext) {
-	t.Run("RegisterNoEmail", registerNoEmail())
-	t.Run("RegisterInvalidEmail", registerInvalidEmail())
-	t.Run("RegisterBigEmail", registerBigEmail())
-	t.Run("RegisterNoPassword", registerNoPassword())
-	t.Run("RegisterBigPassword", registerBigPassword())
-	t.Run("RegisterWeakPasswordLetters", registerWeakPasswordLetters())
-	t.Run("RegisterWeakPasswordLettersNumber", registerWeakPasswordLettersNumber())
-	t.Run("RegisterWeakPasswordLettersSymbol", registerWeakPasswordLettersSymbol())
-	t.Run("RegisterWeakPasswordLettersUppercase", registerWeakPasswordLettersUppercase())
-	t.Run("RegisterWeakPasswordLettersSymbolUppercase", registerWeakPasswordLettersSymbolUppercase())
-	t.Run("RegisterWeakPasswordLettersNumberUppercase", registerWeakPasswordLettersNumberUppercase())
-	t.Run("RegisterWeakPasswordLettersNumberSymbolUppercase", registerWeakPasswordLettersNumberSymbolUppercase())
-	t.Run("RegisterSuccess", registerSuccess(ctx))
-	t.Run("AccountAlreadyExists", accountAlreadyExists(ctx))
-}
-
-// Register Test Cases
-func registerSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(user).
-			Expect().
-			Status(http.StatusCreated).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("Registered user")
-
-		obj.Value("code").Number().IsEqual(201)
-	}
-}
-func registerNoEmail() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "",
-				"password": "N0Email#S4d",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(email) is required")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerNoPassword() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "nopass@mail.com",
-				"password": "",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(password) is required")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLetters() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass1@mail.com",
-				"password": "abc",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(3)
-		trace.Value(0).String().Contains("(password) must contain at least one uppercase letter")
-		trace.Value(1).String().Contains("(password) must contain at least one number")
-		trace.Value(2).String().Contains("(password) must contain at least one symbol or punctuation")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersNumber() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass2@mail.com",
-				"password": "abc3",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(2)
-		trace.Value(0).String().Contains("(password) must contain at least one uppercase letter")
-		trace.Value(1).String().Contains("(password) must contain at least one symbol or punctuation")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersSymbol() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass3@mail.com",
-				"password": "abc#",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(2)
-		trace.Value(0).String().Contains("(password) must contain at least one uppercase letter")
-		trace.Value(1).String().Contains("(password) must contain at least one number")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersUppercase() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass4@mail.com",
-				"password": "Abc",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(2)
-		trace.Value(0).String().Contains("(password) must contain at least one number")
-		trace.Value(1).String().Contains("(password) must contain at least one symbol or punctuation")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersSymbolUppercase() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass5@mail.com",
-				"password": "Abc#",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(password) must contain at least one number")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersNumberUppercase() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass6@mail.com",
-				"password": "Abc3",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(password) must contain at least one symbol or punctuation")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerWeakPasswordLettersNumberSymbolUppercase() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "weakpass7@mail.com",
-				"password": "Abc#3",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(password) must be at least 8 characters long")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerInvalidEmail() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "invalid-email.com",
-				"password": "Str0ngP4$$",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(email) must be a valid email address: invalid-email.com")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerBigEmail() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@email.com",
-				"password": "B1g&mailMan",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(email) must be at most 255 characters long:")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func registerBigPassword() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "bigpassword@mail.com",
-				"password": "1#Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			}).
-			Expect().
-			Status(http.StatusBadRequest).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("validation")
-		obj.Value("message").String().IsEqual("Validation failed")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("(password) must be at most 72 characters long")
-
-		obj.Value("code").Number().IsEqual(400)
-	}
-}
-func accountAlreadyExists(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/register").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(user).
-			Expect().
-			Status(http.StatusConflict).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("error registering user")
-
-		trace := obj.Value("trace").Array()
-		trace.Length().IsEqual(1)
-		trace.Value(0).String().Contains("email already in use")
-
-		obj.Value("code").Number().IsEqual(409)
-	}
-}
-
-func runLoginTests(t *testing.T, ctx *accountContext) {
-	t.Run("LoginWrongPassword", loginWrongPassword(ctx))
-	t.Run("LoginWrongEmail", loginWrongEmail(ctx))
-	t.Run("LoginWrongEmailAndPassword", loginWrongEmailAndPassword())
-	t.Run("LoginSuccess", loginSuccess(ctx))
-}
-
-// Login Test Cases
-func loginWrongPassword(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/login").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    user.SuccessEmail,
-				"password": "123",
-			}).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("invalid email or password")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func loginWrongEmail(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/login").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "wrong@email.com",
-				"password": user.SuccessPassword,
-			}).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("invalid email or password")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func loginWrongEmailAndPassword() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/login").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    "wrong@email.com",
-				"password": "Wr0ngP4$$",
-			}).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("invalid email or password")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func loginSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		r := e.POST("/auth/login").
-			WithHeader("Content-Type", "application/json").
-			WithJSON(map[string]interface{}{
-				"email":    user.SuccessEmail,
-				"password": user.SuccessPassword,
-			}).
-			Expect().
-			Status(http.StatusOK)
-
-		obj := r.JSON().Object()
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("Logged in")
-		obj.Value("code").Number().IsEqual(200)
-
-		access := r.Cookie("access_token")
-		if access == nil || access.Raw() == nil {
-			t.Fatalf("expected access_token cookie, got nil")
-		}
-
-		val := access.Value().Raw()
-		if val == "" {
-			t.Fatalf("access_token cookie value is empty")
-		}
-		user.accessToken = val
-
-		refresh := r.Cookie("refresh_token")
-		if refresh == nil || refresh.Raw() == nil {
-			t.Fatalf("expected refresh_token cookie, got nil")
-		}
-
-		val = refresh.Value().Raw()
-		if val == "" {
-			t.Fatalf("refresh_token cookie value is empty")
-		}
-		user.refreshToken = val
-	}
-}
-
-func runRefreshTests(t *testing.T, ctx *accountContext) {
-	t.Run("CreateRefreshAccount", registerSuccess(ctx))
-	t.Run("LoginRefreshAccount", loginSuccess(ctx))
-	t.Run("list1Sessions", listXSessions(ctx, 1))
-	oldJIT := ctx.sessionJIT
-	access := ctx.accessToken
-	refresh := ctx.refreshToken
-	t.Run("RefreshTokensSuccess", refreshTokensSuccess(ctx))
-	t.Run("list1Sessions", listXSessions(ctx, 1))
-	t.Run("TokenJTIsMustNotMatch", func(t *testing.T) {
-		if oldJIT == ctx.sessionJIT {
-			t.Fatal("refresh token JTIs mustn't match between sessions")
-		}
+	t.Run("Sessions", func(t *testing.T) {
+		testSessions(t, suite)
 	})
-	t.Run("AccessTokensMustNotMatch", func(t *testing.T) {
-		if access == ctx.accessToken {
-			t.Fatal("access tokens mustn't match between sessions")
-		}
+
+	t.Run("Refresh", func(t *testing.T) {
+		testRefresh(t, suite)
 	})
-	t.Run("RefreshTokensMustNotMatch", func(t *testing.T) {
-		if refresh == ctx.refreshToken {
-			t.Fatal("refresh Tokens mustn't match between sessions")
-		}
+
+	t.Run("Projects", func(t *testing.T) {
+		testProjects(t, suite)
 	})
 }
 
-// Refresh Test Cases
-func refreshTokensSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		r := e.POST("/auth/refresh").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK)
-
-		obj := r.JSON().Object()
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("Refreshed tokens")
-
-		access := r.Cookie("access_token")
-		if access == nil || access.Raw() == nil {
-			t.Fatalf("expected access_token cookie, got nil")
+func testRegister(t *testing.T, suite *TestSuite) {
+	t.Run("Validation", func(t *testing.T) {
+		for _, spec := range ValidationTests {
+			spec := spec // capture range variable
+			t.Run(spec.Name, func(t *testing.T) {
+				client := suite.Client(t)
+				client.POST("/auth/register").
+					WithBody(map[string]string{
+						"email":    spec.Email,
+						"password": spec.Pass,
+					}).
+					Expect(http.StatusBadRequest).
+					ValidationError(spec.Errors...)
+			})
 		}
+	})
 
-		val := access.Value().Raw()
-		if val == "" {
-			t.Fatalf("access_token cookie value is empty")
+	t.Run("WeakPasswords", func(t *testing.T) {
+		for i, spec := range WeakPasswordTests {
+			spec := spec // capture range variable
+			i := i       // capture range variable
+			t.Run(spec.Name, func(t *testing.T) {
+				client := suite.Client(t)
+				client.POST("/auth/register").
+					WithBody(map[string]string{
+						"email":    fmt.Sprintf("weak%d@mail.com", i),
+						"password": spec.Password,
+					}).
+					Expect(http.StatusBadRequest).
+					ValidationError(spec.Errors...)
+			})
 		}
-		user.accessToken = val
+	})
 
-		refresh := r.Cookie("refresh_token")
-		if refresh == nil || refresh.Raw() == nil {
-			t.Fatalf("expected refresh_token cookie, got nil")
-		}
+	t.Run("Success", func(t *testing.T) {
+		client := suite.Client(t)
+		client.User("new@mail.com", ValidPassword).Register()
+	})
 
-		val = refresh.Value().Raw()
-		if val == "" {
-			t.Fatalf("refresh_token cookie value is empty")
-		}
-		user.refreshToken = val
+	t.Run("DuplicateEmail", func(t *testing.T) {
+		client := suite.Client(t)
+		email := "duplicate@mail.com"
+		client.User(email, ValidPassword).Register()
 
-		obj.Value("code").Number().IsEqual(200)
+		client.POST("/auth/register").
+			WithBody(map[string]string{
+				"email":    email,
+				"password": ValidPassword,
+			}).
+			Expect(http.StatusConflict).
+			Error("go-auth-test", "error registering user")
+	})
+}
+
+func testLogin(t *testing.T, suite *TestSuite) {
+	// Create user in parent test context
+	client := suite.Client(t)
+	user := client.User("login@mail.com", ValidPassword).Register()
+
+	t.Run("WrongPassword", func(t *testing.T) {
+		client := suite.Client(t)
+		client.POST("/auth/login").
+			WithBody(map[string]string{
+				"email":    user.Email,
+				"password": "WrongPass123!",
+			}).
+			Expect(http.StatusUnauthorized).
+			Error("go-auth-test", "invalid email or password")
+	})
+
+	t.Run("WrongEmail", func(t *testing.T) {
+		client := suite.Client(t)
+		client.POST("/auth/login").
+			WithBody(map[string]string{
+				"email":    "wrong@mail.com",
+				"password": user.Password,
+			}).
+			Expect(http.StatusUnauthorized).
+			Error("go-auth-test", "invalid email or password")
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		client := suite.Client(t)
+		client.User(user.Email, user.Password).Login()
+	})
+
+	t.Run("Logout", func(t *testing.T) {
+		client := suite.Client(t)
+		loggedInUser := client.User(user.Email, user.Password).Login()
+		loggedInUser.Logout()
+
+		// Try using revoked session
+		loggedInUser.AuthedClient().POST("/auth/logout").
+			Expect(http.StatusUnauthorized).
+			Error("AuthMW", "refresh token is revoked")
+	})
+}
+
+func testSessions(t *testing.T, suite *TestSuite) {
+	// Create user in parent test context
+	client := suite.Client(t)
+	user := client.User("sessions@mail.com", ValidPassword).Register().Login()
+
+	t.Run("ListSessions", func(t *testing.T) {
+		// Create a new client with subtest's t for the authenticated client
+		// We need to preserve the auth context but use the new t
+		authClient := suite.Client(t).Auth(user.auth)
+		arr := authClient.GET("/sessions").
+			Expect(http.StatusOK).
+			DataArray()
+
+		arr.Length().IsEqual(1)
+	})
+
+	t.Run("MultipleLoginsSessions", func(t *testing.T) {
+		// Create 3 more sessions (we already have 1)
+		client2 := suite.Client(t)
+		client2.User(user.Email, user.Password).Login()
+
+		client3 := suite.Client(t)
+		client3.User(user.Email, user.Password).Login()
+
+		client4 := suite.Client(t)
+		user4 := client4.User(user.Email, user.Password).Login()
+
+		arr := user4.AuthedClient().GET("/sessions").
+			Expect(http.StatusOK).
+			DataArray()
+
+		arr.Length().IsEqual(4)
+
+		// Get oldest session ID to revoke
+		currentSessionID := arr.Value(0).Object().Value("session_id").String().Raw()
+		oldestSessionID := arr.Value(3).Object().Value("session_id").String().Raw()
+
+		// Can't revoke current session
+		user4.AuthedClient().DELETE("/sessions/"+currentSessionID).
+			Expect(http.StatusForbidden).
+			Error("go-auth-test", "cannot revoke the currently active session")
+
+		// Revoke first session
+		user4.AuthedClient().DELETE("/sessions/"+oldestSessionID).
+			Expect(http.StatusOK).
+			Success("go-auth-test", "revoked session")
+
+		// Should have 3 sessions now
+		user4.AuthedClient().GET("/sessions").
+			Expect(http.StatusOK).
+			DataArray().
+			Length().IsEqual(3)
+	})
+
+	t.Run("RevokeOtherSessions", func(t *testing.T) {
+		client := suite.Client(t)
+		user := client.User("revoke-others@mail.com", ValidPassword).Register().Login()
+
+		// Create more sessions
+		suite.Client(t).User(user.Email, user.Password).Login()
+		suite.Client(t).User(user.Email, user.Password).Login()
+
+		user.AuthedClient().DELETE("/sessions/others").
+			Expect(http.StatusOK).
+			Success("go-auth-test", "revoked sessions")
+
+		// Should only have current session
+		user.AuthedClient().GET("/sessions").
+			Expect(http.StatusOK).
+			DataArray().
+			Length().IsEqual(1)
+	})
+
+	t.Run("RevokeAllSessions", func(t *testing.T) {
+		client := suite.Client(t)
+		user := client.User("revoke-all@mail.com", ValidPassword).Register().Login()
+
+		user.AuthedClient().DELETE("/sessions").
+			Expect(http.StatusOK).
+			Success("go-auth-test", "revoked sessions")
+
+		// Session should be invalid
+		user.AuthedClient().GET("/sessions").
+			Expect(http.StatusUnauthorized).
+			Error("AuthMW", "refresh token is revoked")
+	})
+}
+
+func testRefresh(t *testing.T, suite *TestSuite) {
+	client := suite.Client(t)
+	user := client.User("refresh@mail.com", ValidPassword).Register().Login()
+
+	oldAccess := user.auth.AccessToken
+	oldRefresh := user.auth.RefreshToken
+
+	user.Refresh()
+
+	if oldAccess == user.auth.AccessToken {
+		t.Error("Access token should change after refresh")
 	}
-}
 
-func runLogoutTests(t *testing.T, ctx *accountContext) {
-	t.Run("LogoutNoTokens", logoutNoTokens())
-	t.Run("LogoutNoRefresh", logoutNoRefresh(ctx))
-	t.Run("LogoutSuccess", logoutSuccess(ctx))
-	t.Run("LoggedOutAlready", loggedOutAlready(ctx))
-}
-
-// Logout Test Cases
-func logoutNoTokens() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/logout").
-			WithHeader("Content-Type", "application/json").
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("missing access_token cookie")
-
-		obj.Value("code").Number().IsEqual(401)
+	if oldRefresh == user.auth.RefreshToken {
+		t.Error("Refresh token should change after refresh")
 	}
-}
-func logoutNoRefresh(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
 
-		obj := e.POST("/auth/logout").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
+	// Old tokens should be invalid
+	oldClient := client.Auth(&AuthContext{
+		AccessToken:  oldAccess,
+		RefreshToken: oldRefresh,
+	})
 
-		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("missing refresh_token cookie")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func logoutSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/logout").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("Logged out")
-
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-func loggedOutAlready(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/auth/logout").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("refresh token is revoked")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
+	oldClient.GET("/sessions").
+		Expect(http.StatusUnauthorized)
 }
 
-func runPingTests(t *testing.T, ctx *accountContext) {
-	t.Run("Ping", ping())
-	t.Run("PrivatePingFailure", privatePingFailure())
-	t.Run("CreatePingAccount", registerSuccess(ctx))
-	t.Run("LoginPingAccount", loginSuccess(ctx))
-	t.Run("PrivatePingSuccess", privatePingSuccess(ctx))
-}
+func testProjects(t *testing.T, suite *TestSuite) {
+	client := suite.Client(t)
+	user := client.User("projects@mail.com", ValidPassword).Register().Login()
 
-// Ping Test Cases
-func ping() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+	var projectID string
 
-		obj := e.POST("/ping/public").
-			WithHeader("Content-Type", "application/json").
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
+	t.Run("CreateProject", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects").
+			WithBody(map[string]interface{}{
+				"project_name": "Test Project",
+				"metadata":     map[string]string{"env": "test"},
+			}).
+			Expect(http.StatusCreated).
+			Data()
 
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("pong")
-
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-func privatePingFailure() func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/ping/private").
-			WithHeader("Content-Type", "application/json").
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("missing access_token cookie")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func privatePingSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.POST("/ping/private").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().Contains("pong to you")
-
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-
-func runSessionTests(t *testing.T, ctx *accountContext) {
-	t.Run("CreateSessionAccount", registerSuccess(ctx))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list1Sessions", listXSessions(ctx, 1))
-	t.Run("RevokeSessionByIDFail", revokeSessionByIDFail(ctx))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list2Sessions", listXSessions(ctx, 2))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list3Sessions", listXSessions(ctx, 3))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list4Sessions", listXSessions(ctx, 4))
-	t.Run("RevokeSessionByIDSuccess", revokeSessionByIDSuccess(ctx))
-	t.Run("list3Sessions", listXSessions(ctx, 3))
-	t.Run("RevokeOtherSessions", revokeOtherSessions(ctx))
-	t.Run("list1Sessions", listXSessions(ctx, 1))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list2Sessions", listXSessions(ctx, 2))
-	t.Run("LoginSessionAccount", loginSuccess(ctx))
-	t.Run("list3Sessions", listXSessions(ctx, 3))
-	t.Run("RevokeAllSessions", revokeAllSessions(ctx))
-	t.Run("ListSessionsFail", listSessionsFail(ctx))
-}
-
-// Session Test Cases
-func listXSessions(user *accountContext, sessionAmount int) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.GET("/sessions").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-
-		data := obj.Value("data").Array()
-		data.Length().IsEqual(sessionAmount)
-		user.sessionID = data.Value(sessionAmount - 1).Object().Value("session_id").String().Raw()
-		user.sessionJIT = data.Value(sessionAmount - 1).Object().Value("token_id").String().Raw()
-
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-func listSessionsFail(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.GET("/sessions").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusUnauthorized).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("AuthMW")
-		obj.Value("message").String().IsEqual("refresh token is revoked")
-
-		obj.Value("code").Number().IsEqual(401)
-	}
-}
-func revokeSessionByIDFail(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.DELETE("/sessions/"+user.sessionID).
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusForbidden).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("cannot revoke the currently active session")
-		obj.Value("code").Number().IsEqual(403)
-	}
-}
-func revokeSessionByIDSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.DELETE("/sessions/"+user.sessionID).
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("revoked session")
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-func revokeOtherSessions(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.DELETE("/sessions/others").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("revoked sessions")
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-func revokeAllSessions(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.DELETE("/sessions").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("revoked sessions")
-		obj.Value("code").Number().IsEqual(200)
-	}
-}
-
-func runProjectTests(t *testing.T, ctx *accountContext) {
-	t.Run("CreateProjectAccount", registerSuccess(ctx))
-	t.Run("LoginProjectAccount", loginSuccess(ctx))
-	t.Run("CreateProject", createProjectSuccess(ctx))
-	t.Run("ListProjects1", listXProjects(ctx, 1))
-	t.Run("GetProjectByID", getProjectByIDSuccess(ctx))
-	t.Run("GetProjectKeysByID", getProjectKeysByIDSuccess(ctx))
-	t.Run("GetProjectJWKS", getProjectJWKS(ctx))
-	t.Run("UpdateProjectByID", updateProjectByIDSuccess(ctx))
-	t.Run("DeleteProjectByID", deleteProjectByIDSuccess(ctx))
-	t.Run("ListProjects0", listXProjects(ctx, 0))
-}
-
-// Project Test Cases
-func createProjectSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		body := map[string]any{
-			"project_name": "Test Project",
-			"metadata":     map[string]any{"env": "test"},
-		}
-
-		obj := e.POST("/projects").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			WithJSON(body).
-			Expect().
-			Status(http.StatusCreated).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("code").Number().IsEqual(201)
-
-		data := obj.Value("data").Object()
+		projectID = data.Value("id").String().Raw()
 		data.Value("project_name").String().IsEqual("Test Project")
+	})
 
-		user.projectID = data.Value("id").String().Raw()
-	}
-}
-func listXProjects(user *accountContext, amount int) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+	t.Run("ListProjects", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		arr := authClient.GET("/projects").
+			Expect(http.StatusOK).
+			DataArray()
 
-		obj := e.GET("/projects").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
+		arr.Length().IsEqual(1)
+		arr.Value(0).Object().Value("id").IsEqual(projectID)
+	})
 
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("code").Number().IsEqual(200)
+	t.Run("GetProject", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.GET("/projects/" + projectID).
+			Expect(http.StatusOK).
+			Data()
 
-		data := obj.Value("data").Array()
-		data.Length().IsEqual(amount)
-	}
-}
-func getProjectByIDSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+		data.Value("id").String().IsEqual(projectID)
+		data.Value("project_name").String().IsEqual("Test Project")
+	})
 
-		obj := e.GET("/projects/"+user.projectID).
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
+	t.Run("UpdateProject", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.PATCH("/projects/" + projectID).
+			WithBody(map[string]interface{}{
+				"project_name": "Updated Project",
+				"metadata":     map[string]string{"env": "prod"},
+			}).
+			Expect(http.StatusOK).
+			Data()
 
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("code").Number().IsEqual(200)
+		data.Value("project_name").String().IsEqual("Updated Project")
+	})
 
-		data := obj.Value("data").Object()
-		data.Value("id").String().IsEqual(user.projectID)
-	}
-}
-func getProjectKeysByIDSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+	t.Run("GetProjectKeys", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/keys").
+			Expect(http.StatusOK).
+			Data()
 
-		obj := e.GET("/projects/"+user.projectID+"/keys").
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("code").Number().IsEqual(200)
-
-		data := obj.Value("data").Object()
 		data.Value("pub_key").String().NotEmpty()
 		data.Value("priv_key").NotNull()
-	}
-}
-func getProjectJWKS(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+	})
 
-		obj := e.GET("/projects/" + user.projectID + "/.well-known/jwks.json").
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
+	t.Run("GetProjectJWKS", func(t *testing.T) {
+		jwksClient := suite.Client(t)
+		obj := jwksClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
+			Expect(http.StatusOK).
+			JSON()
 
 		obj.Value("keys").Array().NotEmpty()
-	}
-}
-func updateProjectByIDSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
+	})
 
-		body := map[string]any{
-			"project_name": "Updated Project Name",
-			"metadata":     map[string]any{"env": "prod"},
-		}
+	t.Run("DeleteProject", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.DELETE("/projects/"+projectID).
+			Expect(http.StatusOK).
+			Success("go-auth-test", "Deleted project")
 
-		obj := e.PATCH("/projects/"+user.projectID).
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			WithJSON(body).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("code").Number().IsEqual(200)
-
-		data := obj.Value("data").Object()
-		data.Value("project_name").String().IsEqual("Updated Project Name")
-	}
-}
-func deleteProjectByIDSuccess(user *accountContext) func(t *testing.T) {
-	return func(t *testing.T) {
-		e := createExpect(t)
-
-		obj := e.DELETE("/projects/"+user.projectID).
-			WithHeader("Content-Type", "application/json").
-			WithCookie("access_token", user.accessToken).
-			WithCookie("refresh_token", user.refreshToken).
-			Expect().
-			Status(http.StatusOK).
-			JSON().Object()
-
-		obj.Value("module").String().IsEqual("go-auth-test")
-		obj.Value("message").String().IsEqual("Deleted project")
-		obj.Value("code").Number().IsEqual(200)
-	}
+		// Verify deletion
+		authClient.GET("/projects").
+			Expect(http.StatusOK).
+			DataArray().
+			Length().IsEqual(0)
+	})
 }
