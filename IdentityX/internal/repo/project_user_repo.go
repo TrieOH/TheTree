@@ -44,6 +44,7 @@ func mapProjectUserFromDB(dst *models.ProjectUser, src *sqlc.ProjectUser) {
 	dst.ID = src.ID
 	dst.ProjectID = src.ProjectID
 	dst.Email = src.Email
+	dst.PasswordHash = src.PasswordHash
 	dst.UserType = src.UserType
 	dst.Metadata = &src.Metadata
 	dst.IsActive = src.IsActive
@@ -63,7 +64,7 @@ func (r projectUserRepo) Register(ctx context.Context, user models.ProjectUser) 
 	sqlcUser, err := r.q.RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
 		ProjectID:    user.ProjectID,
 		Email:        user.Email,
-		PasswordHash: user.Password,
+		PasswordHash: user.PasswordHash,
 		Metadata:     *user.Metadata,
 	})
 	if err != nil {
@@ -280,7 +281,7 @@ func (r projectUserRepo) Update(ctx context.Context, user models.ProjectUser, ow
 		ID:           user.ID,
 		ProjectID:    user.ProjectID,
 		Email:        user.Email,
-		PasswordHash: user.Password,
+		PasswordHash: user.PasswordHash,
 		OwnerID:      ownerID,
 	})
 	if err != nil {

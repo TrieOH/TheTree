@@ -17,7 +17,7 @@ services:
       - go-auth-test-database
     networks:
       - testnet
-    command: ["go", "test", "-v", "./tests/..."]
+    command: ["go", "test", "-v", "./testing_framework/..."]
 
   go-auth-test-database:
     image: postgres:18

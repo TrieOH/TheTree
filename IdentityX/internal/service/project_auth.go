@@ -46,10 +46,10 @@ func (s *AuthService) RegisterProjectUser(ctx context.Context, projectID string,
 
 	var user *models.ProjectUser
 	user, err = s.projectUserRepo.Register(ctx, models.ProjectUser{
-		ProjectID: pid,
-		Email:     req.Email,
-		Password:  string(hashedPassword),
-		Metadata:  &req.CustomFields,
+		ProjectID:    pid,
+		Email:        req.Email,
+		PasswordHash: string(hashedPassword),
+		Metadata:     &req.CustomFields,
 	})
 	if apierr.IsConflict(err) {
 		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
@@ -81,11 +81,15 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	user, err := s.projectUserRepo.GetByEmailInternal(ctx, pid, req.Email)
-	if err != nil {
+	if apierr.IsNotFound(err) {
+		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
+		apierr.RecordDomainError(span, authErr)
+		return nil, authErr
+	} else if err != nil {
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
@@ -97,10 +101,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 	ip := utils.GetClientIP(r)
 
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-
 	session, err := s.sessionRepo.Create(ctx, models.Session{
-		TokenID:   refreshJti,
 		IssuedAt:  time.Now(),
 		UserAgent: agent,
 		UserIp:    ip,
@@ -119,7 +120,7 @@ func (s *AuthService) LoginProjectUser(r *http.Request, ctx context.Context, pro
 	}
 	tokens.AccessTokenString = accessToken
 
-	refreshToken, err := newRefreshToken(accessJTI, refreshJti, expiresAt)
+	refreshToken, err := newRefreshToken(accessJTI, session.TokenID, expiresAt)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
