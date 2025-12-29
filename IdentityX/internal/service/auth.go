@@ -73,10 +73,12 @@ func (s *AuthService) Login(r *http.Request, ctx context.Context, req models.Log
 
 	var user *models.User
 	user, err = s.userRepo.GetUserByEmail(ctx, req.Email)
-	if err != nil {
+	if apierr.IsNotFound(err) {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
 		return nil, authErr
+	} else if err != nil {
+		return nil, err
 	}
 
 	span.SetAttributes(

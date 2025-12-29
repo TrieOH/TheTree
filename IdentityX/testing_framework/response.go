@@ -1,0 +1,109 @@
+package testing
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/gavv/httpexpect/v2"
+)
+
+// ============================================================================
+// RESPONSE - Chainable response assertions
+// ============================================================================
+
+type Response struct {
+	resp   *httpexpect.Response
+	t      *testing.T
+	status int
+}
+
+func (r *Response) Success(module, message string) *Response {
+	r.t.Helper()
+	obj := r.resp.JSON().Object()
+	obj.Value("module").String().IsEqual(module)
+	obj.Value("message").String().IsEqual(message)
+	obj.Value("code").Number().IsEqual(r.status)
+	return r
+}
+
+func (r *Response) Error(module, message string) *Response {
+	r.t.Helper()
+	return r.Success(module, message)
+}
+
+func (r *Response) ValidationError(expectedErrors ...string) *Response {
+	r.t.Helper()
+	obj := r.resp.JSON().Object()
+	obj.Value("module").String().IsEqual("validation")
+	obj.Value("message").String().IsEqual("Validation failed")
+
+	trace := obj.Value("trace").Array()
+	trace.Length().IsEqual(len(expectedErrors))
+
+	for i, err := range expectedErrors {
+		trace.Value(i).String().Contains(err)
+	}
+
+	return r
+}
+
+func (r *Response) Data() *httpexpect.Object {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("data").Object()
+}
+
+func (r *Response) DataArray() *httpexpect.Array {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("data").Array()
+}
+
+func (r *Response) Cookies() *AuthContext {
+	r.t.Helper()
+	access := r.resp.Cookie("access_token")
+	refresh := r.resp.Cookie("refresh_token")
+
+	if access.Raw() == nil || refresh.Raw() == nil {
+		r.t.Fatal("Expected auth cookies but got nil")
+		return nil
+	}
+
+	return &AuthContext{
+		AccessToken:  access.Value().Raw(),
+		RefreshToken: refresh.Value().Raw(),
+	}
+}
+
+func (r *Response) JSON() *httpexpect.Object {
+	r.t.Helper()
+	return r.resp.JSON().Object()
+}
+
+func (r *Response) Trace() *httpexpect.Array {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("trace").Array()
+}
+
+func (r *Response) TraceContains(expected ...string) *Response {
+	r.t.Helper()
+
+	trace := r.Trace()
+	raw := trace.Raw()
+
+	for _, exp := range expected {
+		found := false
+
+		for _, v := range raw {
+			s, ok := v.(string)
+			if ok && strings.Contains(s, exp) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			r.t.Fatalf("expected trace to contain %q, but it did not.\ntrace=%v", exp, raw)
+		}
+	}
+
+	return r
+}
