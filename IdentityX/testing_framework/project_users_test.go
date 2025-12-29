@@ -301,7 +301,6 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			ProjectRegister(user.ProjectID).
 			ProjectLogin(user.ProjectID)
 
-		var projectID string
 		t.Run("CreateProject", func(t *testing.T) {
 			authClient := suite.Client(t).Auth(nested.auth)
 			authClient.POST("/projects").
@@ -322,14 +321,14 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		t.Run("GetProject", func(t *testing.T) {
 			authClient := suite.Client(t).Auth(nested.auth)
-			authClient.GET("/projects/"+projectID).
+			authClient.GET("/projects/"+user.ProjectID).
 				Expect(http.StatusUnauthorized).
 				Error("ClientOnlyMW", "only clients can access this endpoint")
 		})
 
 		t.Run("UpdateProject", func(t *testing.T) {
 			authClient := suite.Client(t).Auth(nested.auth)
-			authClient.PATCH("/projects/"+projectID).
+			authClient.PATCH("/projects/"+user.ProjectID).
 				WithBody(map[string]interface{}{
 					"project_name": "Updated Project",
 					"metadata":     map[string]string{"env": "prod"},
@@ -340,7 +339,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		t.Run("GetProjectKeys", func(t *testing.T) {
 			authClient := suite.Client(t).Auth(nested.auth)
-			authClient.GET("/projects/"+projectID+"/keys").
+			authClient.GET("/projects/"+user.ProjectID+"/keys").
 				Expect(http.StatusUnauthorized).
 				Error("ClientOnlyMW", "only clients can access this endpoint")
 		})
@@ -356,7 +355,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		t.Run("DeleteProject", func(t *testing.T) {
 			authClient := suite.Client(t).Auth(nested.auth)
-			authClient.DELETE("/projects/"+projectID).
+			authClient.DELETE("/projects/"+user.ProjectID).
 				Expect(http.StatusUnauthorized).
 				Error("ClientOnlyMW", "only clients can access this endpoint")
 		})
