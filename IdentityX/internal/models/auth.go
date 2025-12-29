@@ -13,7 +13,7 @@ import (
 type AccessSubJWT struct {
 	ID        uuid.UUID        `json:"id"`
 	Email     string           `json:"email"`
-	ProjectID *uuid.UUID       `json:"projectID"`
+	ProjectID *uuid.UUID       `json:"project_id"`
 	UserType  string           `json:"user_type"`
 	Metadata  *json.RawMessage `json:"metadata"`
 	SessionID uuid.UUID        `json:"session_id"`

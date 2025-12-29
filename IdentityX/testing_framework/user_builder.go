@@ -10,11 +10,12 @@ import (
 // ============================================================================
 
 type User struct {
-	Email    string
-	Password string
-	client   *Client
-	auth     *AuthContext
-	t        *testing.T
+	Email     string
+	Password  string
+	ProjectID string
+	client    *Client
+	auth      *AuthContext
+	t         *testing.T
 }
 
 func (c *Client) User(email, password string) *User {
@@ -38,9 +39,36 @@ func (u *User) Register() *User {
 	return u
 }
 
+func (u *User) ProjectRegister(projectID string) *User {
+	u.t.Helper()
+	u.client.POST("/projects/"+projectID+"/register").
+		WithBody(map[string]interface{}{
+			"email":         u.Email,
+			"password":      u.Password,
+			"custom_fields": []interface{}{},
+		}).
+		Expect(http.StatusCreated).
+		Success("go-auth-test", "Registered user")
+	return u
+}
+
 func (u *User) Login() *User {
 	u.t.Helper()
 	resp := u.client.POST("/auth/login").
+		WithBody(map[string]string{
+			"email":    u.Email,
+			"password": u.Password,
+		}).
+		Expect(http.StatusOK)
+
+	resp.Success("go-auth-test", "Logged in")
+	u.auth = resp.Cookies()
+	return u
+}
+
+func (u *User) ProjectLogin(projectID string) *User {
+	u.t.Helper()
+	resp := u.client.POST("/projects/" + projectID + "/login").
 		WithBody(map[string]string{
 			"email":    u.Email,
 			"password": u.Password,
@@ -89,4 +117,18 @@ func (u *User) authedClient() *Client {
 
 func (u *User) AuthedClient() *Client {
 	return u.authedClient()
+}
+
+func (u *User) CreateProject(name string) *User {
+	u.t.Helper()
+	resp := u.authedClient().POST("/projects").
+		WithBody(map[string]interface{}{
+			"project_name": name,
+			"metadata":     map[string]string{"env": "test"},
+		}).
+		Expect(http.StatusCreated)
+
+	resp.Success("go-auth-test", "Created project")
+	u.ProjectID = resp.Data().Value("id").String().Raw()
+	return u
 }

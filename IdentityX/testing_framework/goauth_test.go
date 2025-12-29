@@ -30,4 +30,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Projects", func(t *testing.T) {
 		testProjects(t, suite)
 	})
+
+	t.Run("Project Users", func(t *testing.T) {
+		testProjectUsers(t, suite)
+	})
 }

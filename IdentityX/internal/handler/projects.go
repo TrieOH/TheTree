@@ -34,7 +34,7 @@ func (h *AuthHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Created().WithData(project).Send(w)
+	resp.Created("Created project").WithData(project).Send(w)
 }
 
 // GetProjectByID godoc

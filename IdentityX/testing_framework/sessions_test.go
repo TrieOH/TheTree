@@ -78,9 +78,40 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			Length().IsEqual(1)
 	})
 
+	t.Run("SessionInfo", func(t *testing.T) {
+		client := suite.Client(t)
+		user := client.User("session-me@mail.com", ValidPassword).Register().Login()
+
+		data := user.AuthedClient().GET("/sessions/me").
+			Expect(http.StatusOK).
+			Data()
+
+		data.Value("refresh_expire_date").IsNumber()
+
+		access := data.Value("access").Object()
+		access.Value("iss").String().IsEqual("GoAuth")
+		access.Value("exp").IsNumber()
+		access.Value("iat").IsNumber()
+		access.Value("jti").String().NotEmpty()
+
+		sub := access.Value("sub").Object()
+		sub.Value("id").String().NotEmpty()
+		sub.Value("email").String().IsEqual("session-me@mail.com")
+		sub.Value("project_id").IsNull()
+		sub.Value("user_type").String().IsEqual("client")
+		sub.Value("metadata").IsNull()
+		sub.Value("session_id").String().NotEmpty()
+		sub.Value("user_agent").String().NotEmpty()
+		sub.Value("user_ip").String().NotEmpty()
+	})
+
 	t.Run("RevokeAllSessions", func(t *testing.T) {
 		client := suite.Client(t)
 		user := client.User("revoke-all@mail.com", ValidPassword).Register().Login()
+
+		// Create more sessions
+		suite.Client(t).User(user.Email, user.Password).Login()
+		suite.Client(t).User(user.Email, user.Password).Login()
 
 		user.AuthedClient().DELETE("/sessions").
 			Expect(http.StatusOK).
