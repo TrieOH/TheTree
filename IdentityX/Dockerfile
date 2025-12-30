@@ -22,7 +22,7 @@ RUN mkdir -p keys && \
     fi
 
 RUN sqlc generate
-RUN swag init -g internal/router/router.go -o docs --parseInternal --parseDependency
+RUN swag init -g internal/adapters/http/router/router.go -o docs --parseInternal --parseDependency
 RUN CGO_ENABLED=0 GOOS=linux go build -o GoAuth .
 
 FROM alpine:3.20
@@ -31,7 +31,7 @@ WORKDIR /app
 
 COPY --from=builder /app/GoAuth .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/internal/database/migrations ./internal/database/migrations
 COPY --from=builder /app/keys ./keys
 
 EXPOSE 8080

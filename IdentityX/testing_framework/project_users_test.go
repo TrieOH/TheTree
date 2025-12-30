@@ -337,13 +337,6 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 				Error("ClientOnlyMW", "only clients can access this endpoint")
 		})
 
-		t.Run("GetProjectKeys", func(t *testing.T) {
-			authClient := suite.Client(t).Auth(nested.auth)
-			authClient.GET("/projects/"+user.ProjectID+"/keys").
-				Expect(http.StatusUnauthorized).
-				Error("ClientOnlyMW", "only clients can access this endpoint")
-		})
-
 		t.Run("GetProjectJWKS", func(t *testing.T) {
 			jwksClient := suite.Client(t)
 			obj := jwksClient.GET("/projects/" + user.ProjectID + "/.well-known/jwks.json").

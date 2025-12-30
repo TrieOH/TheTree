@@ -2,7 +2,7 @@ package utils
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/models"
+	"GoAuth/internal/domain/auth"
 	"crypto/ed25519"
 	"errors"
 
@@ -41,8 +41,8 @@ func handleJWTError(err error, tokenType string) error {
 	return apierr.ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(apierr.TokenInvalid).WithCause(err)
 }
 
-func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*models.AccessClaims, error) {
-	claims := &models.AccessClaims{}
+func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*auth.AccessClaims, error) {
+	claims := &auth.AccessClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
@@ -64,7 +64,7 @@ func ParseAccessTokenUserIDUnsafe(tokenStr string, secret ed25519.PublicKey) *st
 		return nil
 	}
 
-	claims := &models.AccessClaims{}
+	claims := &auth.AccessClaims{}
 
 	_, _, err := new(jwt.Parser).ParseUnverified(tokenStr, claims)
 	if err != nil || claims.Sub.ID == uuid.Nil {
@@ -91,8 +91,8 @@ func ParseAccessTokenUserIDUnsafe(tokenStr string, secret ed25519.PublicKey) *st
 	return &idStr
 }
 
-func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*models.RefreshClaims, error) {
-	claims := &models.RefreshClaims{}
+func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*auth.RefreshClaims, error) {
+	claims := &auth.RefreshClaims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
