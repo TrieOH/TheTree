@@ -1,14 +1,14 @@
 package main
 
 import (
+	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/utils"
 	"context"
 	"database/sql"
 	"log"
 	"time"
 
-	database "GoAuth/internal/db"
-	"GoAuth/internal/sqlc"
+	"GoAuth/internal/database"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-co-op/gocron/v2"
@@ -51,7 +51,7 @@ func init() {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
 
-	if err := database.RunMigrations(DB, "./migrations"); err != nil {
+	if err := database.RunMigrations(DB, "./internal/database/migrations"); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
 

@@ -11,7 +11,7 @@ import (
 func TestGoAuth(t *testing.T) {
 	suite := NewTestSuite(t)
 
-	t.Run("Register", func(t *testing.T) {
+	t.Run("Create", func(t *testing.T) {
 		testRegister(t, suite)
 	})
 

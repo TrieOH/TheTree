@@ -1,7 +1,7 @@
 version: "2"
 sql:
-  - schema: "./migrations"
-    queries: "internal/db/queries/*.sql"
+  - schema: "internal/database/migrations"
+    queries: "internal/database/queries/*.sql"
     engine: "postgresql"
     gen:
       go:
@@ -10,7 +10,7 @@ sql:
         emit_prepared_queries: false
         emit_exact_table_names: false
         package: "sqlc"
-        out: "internal/sqlc"
+        out: "internal/adapters/persistence/sqlc"
         sql_package: "database/sql"
         overrides:
           - db_type: "pg_catalog.varchar"
