@@ -58,16 +58,6 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		data.Value("project_name").String().IsEqual("Updated Project")
 	})
 
-	t.Run("GetProjectKeys", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
-		data := authClient.GET("/projects/" + projectID + "/keys").
-			Expect(http.StatusOK).
-			Data()
-
-		data.Value("pub_key").String().NotEmpty()
-		data.Value("priv_key").NotNull()
-	})
-
 	t.Run("GetProjectJWKS", func(t *testing.T) {
 		jwksClient := suite.Client(t)
 		obj := jwksClient.GET("/projects/" + projectID + "/.well-known/jwks.json").

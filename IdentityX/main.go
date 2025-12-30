@@ -1,12 +1,11 @@
 package main
 
 import (
-	"GoAuth/internal/telemetry"
+	"GoAuth/internal/adapters/http/router"
+	"GoAuth/internal/infrastructure/telemetry"
 	"context"
 	"log"
 	"net/http"
-
-	"GoAuth/internal/router"
 )
 
 func main() {
