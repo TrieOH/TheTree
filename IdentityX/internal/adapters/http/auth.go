@@ -2,7 +2,6 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/utils"
 	"net/http"
@@ -236,7 +235,6 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	projectId := r.PathValue("project_id")
 	if projectId == "" {
-		logs.L().Info("no project id specified on login request") // also noop for CI
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}

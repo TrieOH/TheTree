@@ -8,7 +8,6 @@ import (
 	"net/http"
 )
 
-// literally just a comment to test CI
 func main() {
 	ctx := context.Background()
 
