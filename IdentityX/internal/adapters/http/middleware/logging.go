@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/utils"
 	"context"
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -24,11 +24,16 @@ func Logs(next http.Handler) http.Handler {
 		reqID := GetRequestID(r.Context())
 		userID := GetUserID(r.Context())
 
+		routePattern := chi.RouteContext(r.Context()).RoutePattern()
+		if routePattern == "" {
+			routePattern = "not_found"
+		}
+
 		logs.L().Info("http_request",
 			zap.String("request_id", reqID),
 			zap.String("user_id", userID),
 			zap.String("method", r.Method),
-			zap.String("path", utils.NormalizePath(r)),
+			zap.String("path", routePattern),
 			zap.Int("status", ww.status),
 			zap.Duration("duration", duration),
 			zap.String("remote_addr", r.RemoteAddr),
@@ -57,13 +62,6 @@ func RequestID(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-ID", reqID)
 
 		userID := r.Header.Get("X-User-ID")
-		if userID == "" {
-			if accessTokenCookie, err := r.Cookie("access_token"); err == nil {
-				if uid := utils.ParseAccessTokenUserIDUnsafe(accessTokenCookie.Value, utils.GoAuthPublicKey); uid != nil {
-					userID = *uid
-				}
-			}
-		}
 
 		span.SetAttributes(attribute.String("user_id", userID))
 

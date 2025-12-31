@@ -8,6 +8,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/go-chi/chi/v5"
 )
 
 type ProjectHandler struct {
@@ -67,7 +68,7 @@ func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /projects [get]
 func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("project_id")
+	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
@@ -120,7 +121,7 @@ func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
 func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
+	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
@@ -151,7 +152,7 @@ func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /projects/{project_id} [patch]
 func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("project_id")
+	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
@@ -195,7 +196,7 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /projects/{project_id} [delete]
 func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
+	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return

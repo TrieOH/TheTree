@@ -10,10 +10,11 @@ import (
 	"GoAuth/internal/application/project"
 	"GoAuth/internal/application/session"
 	"database/sql"
-	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
+func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
 
 	userRepo := persistence.NewUserRepo(queries, logs.L())
@@ -32,68 +33,64 @@ func registerRoutes(db *sql.DB, mux *http.ServeMux) *http.ServeMux {
 
 	authMW := middleware.NewAuthMiddleware(revokedTokensRepo)
 
-	registerAuthRoutes(mux, authHandler, authMW)
-	registerSessionRoutes(mux, sessionHandler, authMW)
-	registerProjectRoutes(mux, projectHandler, authMW)
+	registerAuthRoutes(r, authHandler, authMW)
+	registerSessionRoutes(r, sessionHandler, authMW)
+	registerProjectRoutes(r, projectHandler, authMW)
 
-	return mux
+	return r
 }
 
 func registerAuthRoutes(
-	mux *http.ServeMux,
+	r *chi.Mux,
 	h *http2.AuthHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
-	mux.HandleFunc("POST /auth/register", h.Register)
-	mux.HandleFunc("POST /auth/login", h.Login)
-	mux.HandleFunc("POST /auth/refresh", h.Refresh)
-	mux.HandleFunc("POST /auth/logout", authMW.Auth(h.Logout))
+	r.Group(func(r chi.Router) {
+		r.Post("/auth/register", h.Register)
+		r.Post("/auth/login", h.Login)
+		r.Post("/auth/refresh", h.Refresh)
+		r.With(authMW.Auth()).Post("/auth/logout", h.Logout)
 
-	mux.HandleFunc("GET /.well-known/jwks.json", h.JWKS)
+		r.Get("/.well-known/jwks.json", h.JWKS)
 
-	mux.HandleFunc("POST /projects/{project_id}/register", h.ProjectRegister)
-	mux.HandleFunc("POST /projects/{project_id}/login", h.ProjectLogin)
+		r.Post("/projects/{project_id}/register", h.ProjectRegister)
+		r.Post("/projects/{project_id}/login", h.ProjectLogin)
+	})
 }
 
 func registerSessionRoutes(
-	mux *http.ServeMux,
+	r *chi.Mux,
 	h *http2.SessionHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
-	mux.HandleFunc("GET /sessions", authMW.Auth(h.ListUserSessions))
-	mux.HandleFunc("GET /sessions/me", authMW.Auth(h.Me))
-	mux.HandleFunc("DELETE /sessions/{session_id}", authMW.Auth(h.RevokeUserSessionByID))
-	mux.HandleFunc("DELETE /sessions/others", authMW.Auth(h.RevokeOtherSessions))
-	mux.HandleFunc("DELETE /sessions", authMW.Auth(h.RevokeAllSessions))
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+
+		r.Get("/sessions", h.ListUserSessions)
+		r.Get("/sessions/me", h.Me)
+		r.Delete("/sessions/{session_id}", h.RevokeUserSessionByID)
+		r.Delete("/sessions/others", h.RevokeOtherSessions)
+		r.Delete("/sessions", h.RevokeAllSessions)
+	})
 }
 
 func registerProjectRoutes(
-	mux *http.ServeMux,
+	r *chi.Mux,
 	h *http2.ProjectHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
-	secureClient := func(hf handlerFn) handlerFn {
-		return requireClient(authMW, hf)
-	}
+	r.Group(func(r chi.Router) {
+		r.Get("/projects/{project_id}/.well-known/jwks.json", h.GetProjectJWKS)
 
-	mux.HandleFunc("POST /projects", secureClient(h.CreateProject))
-	mux.HandleFunc("GET /projects", secureClient(h.ListProjects))
-	mux.HandleFunc("GET /projects/{project_id}", secureClient(h.GetProjectByID))
-	mux.HandleFunc("PATCH /projects/{project_id}", secureClient(h.UpdateProjectByID))
-	mux.HandleFunc("DELETE /projects/{project_id}", secureClient(h.DeleteProjectByID))
+		r.Group(func(r chi.Router) {
+			r.Use(authMW.Auth())
+			r.Use(middleware.ClientOnly())
 
-	// public
-	mux.HandleFunc(
-		"GET /projects/{project_id}/.well-known/jwks.json",
-		h.GetProjectJWKS,
-	)
-}
-
-type handlerFn = func(http.ResponseWriter, *http.Request)
-
-func requireClient(
-	authMW *middleware.AuthMiddleware,
-	h handlerFn,
-) handlerFn {
-	return authMW.Auth(middleware.ClientOnly(h))
+			r.Post("/projects", h.CreateProject)
+			r.Get("/projects", h.ListProjects)
+			r.Get("/projects/{project_id}", h.GetProjectByID)
+			r.Patch("/projects/{project_id}", h.UpdateProjectByID)
+			r.Delete("/projects/{project_id}", h.DeleteProjectByID)
+		})
+	})
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/go-chi/chi/v5"
 )
 
 type SessionHandler struct {
@@ -50,7 +51,7 @@ func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /sessions/{session_id} [delete]
 func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
-	err := sh.uc.RevokeUserSessionByID(r.Context(), r.PathValue("session_id"))
+	err := sh.uc.RevokeUserSessionByID(r.Context(), chi.URLParam(r, "session_id"))
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

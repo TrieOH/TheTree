@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"GoAuth/internal/utils"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -48,7 +48,10 @@ func Metrics(next http.Handler) http.Handler {
 
 		duration := time.Since(start).Seconds()
 
-		route := utils.NormalizePath(r)
+		route := chi.RouteContext(r.Context()).RoutePattern()
+		if route == "" {
+			route = "not_found"
+		}
 
 		HttpRequestsTotal.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
 		HttpRequestDuration.WithLabelValues(route).Observe(duration)

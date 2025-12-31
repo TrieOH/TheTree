@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 func handleJWTError(err error, tokenType string) error {
@@ -57,38 +56,6 @@ func ParseAccessToken(tokenStr string, secret ed25519.PublicKey) (*auth.AccessCl
 	}
 
 	return claims, nil
-}
-
-func ParseAccessTokenUserIDUnsafe(tokenStr string, secret ed25519.PublicKey) *string {
-	if tokenStr == "" {
-		return nil
-	}
-
-	claims := &auth.AccessClaims{}
-
-	_, _, err := new(jwt.Parser).ParseUnverified(tokenStr, claims)
-	if err != nil || claims.Sub.ID == uuid.Nil {
-		return nil
-	}
-
-	_, err = jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return secret, nil
-	})
-
-	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) ||
-			errors.Is(err, jwt.ErrTokenNotValidYet) ||
-			errors.Is(err, jwt.ErrTokenUsedBeforeIssued) {
-			// These are fine - still return ID
-		} else {
-			// Signature invalid, malformed, etc -> token is not mine
-			return nil
-		}
-	}
-
-	// Success - return UserID
-	idStr := claims.Sub.ID.String()
-	return &idStr
 }
 
 func ParseRefreshToken(tokenStr string, secret ed25519.PublicKey) (*auth.RefreshClaims, error) {
