@@ -24,8 +24,8 @@ func NewSessionHandler(uc *session.UseCase) *SessionHandler {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {array} dto.SessionResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /sessions [get]
 func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 	sessions, err := sh.uc.ListUserSessions(r.Context())
@@ -47,8 +47,8 @@ func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Reques
 // @Param session_id path string true "ID of the session to be invalidated"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string "revoked session"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /sessions/{session_id} [delete]
 func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeUserSessionByID(r.Context(), chi.URLParam(r, "session_id"))
@@ -67,8 +67,8 @@ func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.R
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string "revoked sessions"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /sessions/others [delete]
 func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeOtherSessions(r.Context())
@@ -87,8 +87,8 @@ func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Req
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string "revoked sessions"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /sessions [delete]
 func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeAllSessions(r.Context())
@@ -110,7 +110,7 @@ func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Reque
 // @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
 // @Success 200 {object} map[string]any
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /sessions/me [get]
 func (sh *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
 	principal, err := sh.uc.Me(r.Context())

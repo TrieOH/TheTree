@@ -27,7 +27,7 @@ func NewAuthHandler(uc *auth.UseCase) *AuthHandler {
 // @Produce json
 // @Param registerInfo body dto.RegisterUserRequest true "register request data"
 // @Success 201 {string} string "Registered user"
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /auth/register [post]
 func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterUserRequest
@@ -59,8 +59,8 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "Logged in"
 // @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Success 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /auth/login [post]
 func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginUserRequest
@@ -99,8 +99,8 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "Logged out"
 // @Header 200 {string} Set-Cookie "clears the access_token cookie"
 // @Header 200 {string} Set-Cookie "clears the refresh_token cookie"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /auth/logout [post]
 func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := ah.uc.Logout(r.Context())
@@ -127,7 +127,7 @@ func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: refresh_token=yyy"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
 // @Success 200 {string} string "Refreshed tokens"
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /auth/refresh [post]
 func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshTokenCookie, err := r.Cookie("refresh_token")
@@ -188,7 +188,7 @@ func (ah *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 // @Param project_id path string true "ID of the project to register user"
 // @Param registerInfo body dto.RegisterProjectUserRequest true "register project user request data"
 // @Success 201 {string} string "Registered user"
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects/{project_id}/register [post]
 func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")
@@ -230,8 +230,8 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "Logged in"
 // @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Success 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects/{project_id}/login [post]
 func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")

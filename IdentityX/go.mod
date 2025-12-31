@@ -3,7 +3,7 @@ module GoAuth
 go 1.25.3
 
 require (
-	github.com/MintzyG/FastUtilitiesNet v0.3.7-0.20251025154339-6355d8f12895
+	github.com/MintzyG/FastUtilitiesNet v0.3.7
 	github.com/XSAM/otelsql v0.41.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-chi/chi/v5 v5.2.3

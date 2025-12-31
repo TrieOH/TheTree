@@ -28,8 +28,8 @@ func NewProjectHandler(uc *project.UseCase) *ProjectHandler {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 201 {object} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects [post]
 func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProjectRequest
@@ -64,8 +64,8 @@ func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) 
 // @Param project_id path string true "ID of the project to retrieve keys"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {array} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects [get]
 func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
@@ -94,8 +94,8 @@ func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request)
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {array} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects [get]
 func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	projects, err := ph.uc.ListProjects(r.Context())
@@ -117,8 +117,8 @@ func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project to retrieve keys"
 // @Success 200 {object} map[string]any
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
 func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")
@@ -148,8 +148,8 @@ func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request)
 // @Param project_id path string true "ID of the project to retrieve keys"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects/{project_id} [patch]
 func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
@@ -192,8 +192,8 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 // @Param project_id path string true "ID of the project to retrieve keys"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string "Deleted project"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /projects/{project_id} [delete]
 func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")
