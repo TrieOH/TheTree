@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/ports/outbound"
 	"GoAuth/internal/utils"
-	"context"
 	"errors"
 	"net/http"
 
@@ -102,8 +102,8 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		var refreshUUID uuid.UUID
-		refreshUUID, err = uuid.Parse(refreshToken.ID)
+		var refreshTokenJTI uuid.UUID
+		refreshTokenJTI, err = uuid.Parse(refreshToken.ID)
 		if err != nil {
 			mwErr := apierr.ErrUnauthorized.WithMsg("couldn't parse refresh JTI").WithID(apierr.TokenInvalidID).WithCause(err)
 			ErrToResp(mwErr).WithModule("AuthMW").Send(w)
@@ -112,7 +112,7 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		var isRevoked bool
-		isRevoked, err = mw.RevokedRefreshTokensRepo.IsRevoked(ctx, refreshUUID)
+		isRevoked, err = mw.RevokedRefreshTokensRepo.IsRevoked(ctx, refreshTokenJTI)
 		if err != nil {
 			mwErr := apierr.FromSQLC(err)
 			ErrToResp(mwErr).WithModule("AuthMW").Send(w)
@@ -127,8 +127,15 @@ func (mw *AuthMiddleware) Auth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx = context.WithValue(ctx, auth.AccessClaimsKey, accessToken)
-		ctx = context.WithValue(ctx, auth.RefreshClaimsKey, refreshToken)
+		var principal *authz.Principal
+		principal, err = authz.NewPrincipal(accessToken, refreshToken)
+		if err != nil {
+			ErrToResp(err).WithModule("AuthMW").Send(w)
+			apierr.RecordDomainError(span, err)
+			return
+		}
+
+		ctx = authz.WithPrincipal(ctx, principal)
 
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}

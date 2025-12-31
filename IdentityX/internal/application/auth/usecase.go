@@ -2,6 +2,7 @@ package auth
 
 import (
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/revoked_refreshes"
@@ -178,49 +179,40 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		}
 	}()
 
-	var accessClaims *auth.AccessClaims
-	accessClaims, err = auth.GetAccessClaims(ctx)
+	var principal *authz.Principal
+	principal, err = authz.RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
 	span.SetAttributes(
-		attribute.String("user.id", accessClaims.Sub.ID.String()),
-		attribute.String("user.type", accessClaims.Sub.UserType),
-		attribute.String("user.session_id", accessClaims.Sub.SessionID.String()),
+		attribute.String("user.id", principal.UserID.String()),
+		attribute.String("user.type", principal.UserType),
+		attribute.String("user.session_id", principal.SessionID.String()),
 	)
 
-	if accessClaims.Sub.ProjectID != nil {
+	if principal.ProjectID != nil {
 		span.SetAttributes(
-			attribute.String("user.project_id", accessClaims.Sub.ProjectID.String()),
+			attribute.String("user.project_id", principal.ProjectID.String()),
 		)
 	}
 
-	var refreshClaims *auth.RefreshClaims
-	refreshClaims, err = auth.GetRefreshClaims(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	var jti uuid.UUID
-	jti, err = uuid.Parse(refreshClaims.ID)
-	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return apierr.ErrUnauthorized.WithMsg("unable to parse refresh ID").WithID(apierr.TokenInvalidID)
-	}
-
 	if _, err = uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
-		TokenID: &jti,
-		UserID:  accessClaims.Sub.ID,
+		TokenID: &principal.RefreshJTI,
+		UserID:  principal.UserID,
 	}); err != nil {
 		return err
 	}
 
 	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshClaims.ExpiresAt.Time,
+		TokenID:   principal.RefreshJTI,
+		ExpiresAt: principal.RefreshClaims.ExpiresAt.Time,
 	}); err != nil {
 		return err
 	}

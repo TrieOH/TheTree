@@ -3,7 +3,7 @@ package session
 import (
 	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/outbound"
@@ -38,15 +38,15 @@ func (uc *UseCase) ListUserSessions(ctx context.Context) ([]OutputSession, error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.ListUserSessions")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
+	tracing.AnnotatePrincipal(span, principal)
 
-	sessions, err := uc.sessions.List(ctx, accessClaims.Sub.ID)
+	sessions, err := uc.sessions.List(ctx, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,22 +67,22 @@ func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) 
 		return apiErr
 	}
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
+	tracing.AnnotatePrincipal(span, principal)
 
-	if accessClaims.Sub.SessionID == sid {
+	if principal.SessionID == sid {
 		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
-		UserID:    accessClaims.Sub.ID,
+		UserID:    principal.UserID,
 		SessionID: &sid,
 	})
 	if err != nil {
@@ -108,17 +108,17 @@ func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeOtherSessions")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
+	tracing.AnnotatePrincipal(span, principal)
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
-		UserID:    accessClaims.Sub.ID,
-		ExcludeID: &accessClaims.Sub.SessionID,
+		UserID:    principal.UserID,
+		ExcludeID: &principal.SessionID,
 	})
 	if err != nil {
 		return err
@@ -147,16 +147,16 @@ func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeAllSessions")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
+	tracing.AnnotatePrincipal(span, principal)
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
-		UserID: accessClaims.Sub.ID,
+		UserID: principal.UserID,
 	})
 	if err != nil {
 		return err
@@ -181,14 +181,6 @@ func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
 	return nil
 }
 
-func (uc *UseCase) Me(ctx context.Context) (*auth.AccessClaims, *auth.RefreshClaims, error) {
-	access, err := auth.GetAccessClaims(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	refresh, err := auth.GetRefreshClaims(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return access, refresh, nil
+func (uc *UseCase) Me(ctx context.Context) (*authz.Principal, error) {
+	return authz.RequirePrincipal(ctx)
 }

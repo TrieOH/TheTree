@@ -20,6 +20,7 @@ const (
 	AuthInvalidAccessCookie  ID = "AUTH_017"
 	AuthMissingRefreshCookie ID = "AUTH_018"
 	AuthMissingAccessCookie  ID = "AUTH_019"
+	AuthMissingPrincipal     ID = "AUTH_020"
 )
 
 const (

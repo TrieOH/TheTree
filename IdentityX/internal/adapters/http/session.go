@@ -112,14 +112,14 @@ func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} domain.ErrorResponse
 // @Router /sessions/me [get]
 func (sh *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
-	access, refresh, err := sh.uc.Me(r.Context())
+	principal, err := sh.uc.Me(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
 	}
 
 	resp.OK().WithData(map[string]interface{}{
-		"access":              access,
-		"refresh_expire_date": refresh.ExpiresAt,
+		"access":              principal.AccessClaims,
+		"refresh_expire_date": principal.RefreshClaims.ExpiresAt,
 	}).Send(w)
 }
