@@ -12,16 +12,20 @@ import (
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
+	"go.opentelemetry.io/otel"
 )
 
 func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
 
-	userRepo := persistence.NewUserRepo(queries, logs.L())
-	sessionRepo := persistence.NewSessionRepo(queries, logs.L())
-	revokedTokensRepo := persistence.NewRevokedRefreshTokensRepo(queries, logs.L())
-	projectRepo := persistence.NewProjectRepo(queries, logs.L())
-	projectUserRepo := persistence.NewProjectUserRepo(queries, logs.L())
+	tracer := otel.Tracer("goauth/repo")
+	logging := logs.L()
+
+	userRepo := persistence.NewUserRepo(queries, logging, tracer)
+	sessionRepo := persistence.NewSessionRepo(queries, logging, tracer)
+	revokedTokensRepo := persistence.NewRevokedRefreshTokensRepo(queries, logging, tracer)
+	projectRepo := persistence.NewProjectRepo(queries, logging, tracer)
+	projectUserRepo := persistence.NewProjectUserRepo(queries, logging, tracer)
 
 	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, projectUserRepo)
 	projectUC := project.New(projectRepo)

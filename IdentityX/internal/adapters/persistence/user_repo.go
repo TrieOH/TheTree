@@ -14,16 +14,18 @@ import (
 )
 
 type userRepo struct {
-	q   *sqlc.Queries
-	log *zap.Logger
+	q      *sqlc.Queries
+	log    *zap.Logger
+	Tracer trace.Tracer
 }
 
 var _ outbound.UserRepository = (*userRepo)(nil)
 
-func NewUserRepo(q *sqlc.Queries, l *zap.Logger) outbound.UserRepository {
+func NewUserRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound.UserRepository {
 	return &userRepo{
-		q:   q,
-		log: l,
+		q:      q,
+		log:    l,
+		Tracer: tracer,
 	}
 }
 
@@ -36,11 +38,11 @@ func copyUserFromDB(dst *user.User, src *sqlc.User) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (u userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "UserRepo.Register")
+func (r userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
+	ctx, span := r.Tracer.Start(ctx, "UserRepo.Register")
 	defer span.End()
 
-	sqlcUser, err := u.q.RegisterUser(ctx, sqlc.RegisterUserParams{
+	sqlcUser, err := r.q.RegisterUser(ctx, sqlc.RegisterUserParams{
 		Email:        email,
 		PasswordHash: password,
 	})
@@ -63,15 +65,15 @@ func (u userRepo) Register(ctx context.Context, email, password string) (*user.U
 	return &usr, nil
 }
 
-func (u userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "UserRepo.GetUserByID",
+func (r userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error) {
+	ctx, span := r.Tracer.Start(ctx, "UserRepo.GetUserByID",
 		trace.WithAttributes(
 			attribute.String("user.id", userID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUser, err := u.q.GetUserById(ctx, userID)
+	sqlcUser, err := r.q.GetUserById(ctx, userID)
 
 	if err != nil {
 		sqlErr := apierr.FromSQLC(err)
@@ -90,11 +92,11 @@ func (u userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User
 	return &usr, nil
 }
 
-func (u userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "UserRepo.GetUserByEmail")
+func (r userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	ctx, span := r.Tracer.Start(ctx, "UserRepo.GetUserByEmail")
 	defer span.End()
 
-	sqlcUser, err := u.q.GetUserByEmail(ctx, email)
+	sqlcUser, err := r.q.GetUserByEmail(ctx, email)
 
 	if err != nil {
 		sqlErr := apierr.FromSQLC(err)
