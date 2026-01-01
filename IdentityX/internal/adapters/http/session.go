@@ -19,13 +19,14 @@ func NewSessionHandler(uc *session.UseCase) *SessionHandler {
 
 // ListUserSessions godoc
 // @Summary Lists all active user sessions
+// @Description Retrieves a list of all active sessions for the authenticated user.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} dto.SessionResponse
-// @Failure 401 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {array} dto.SessionResponse "List of active user sessions"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions [get]
 func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
 	sessions, err := sh.uc.ListUserSessions(r.Context())
@@ -40,15 +41,18 @@ func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Reques
 }
 
 // RevokeUserSessionByID godoc
-// @Summary Revokes a user session if it isn't the current one
+// @Summary Revokes a user session by ID
+// @Description Revokes a specific user session by its ID, provided it's not the current session.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param session_id path string true "ID of the session to be invalidated"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string "revoked session"
-// @Failure 401 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} object "Session revoked successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid session ID or trying to revoke current session"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 404 {object} ErrorResponse "Not Found: Session not found"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
 func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeUserSessionByID(r.Context(), chi.URLParam(r, "session_id"))
@@ -61,14 +65,15 @@ func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.R
 }
 
 // RevokeOtherSessions godoc
-// @Summary Revokes all user sessions but the current one
+// @Summary Revokes all user sessions except the current one
+// @Description Invalidates all active sessions for the authenticated user, except for the one currently in use.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string "revoked sessions"
-// @Failure 401 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} object "Other sessions revoked successfully"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/others [delete]
 func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeOtherSessions(r.Context())
@@ -82,13 +87,14 @@ func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Req
 
 // RevokeAllSessions godoc
 // @Summary Revokes all user sessions
+// @Description Invalidates all active sessions for the authenticated user, including the current one.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string "revoked sessions"
-// @Failure 401 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} object "All sessions revoked successfully"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions [delete]
 func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
 	err := sh.uc.RevokeAllSessions(r.Context())
@@ -101,16 +107,15 @@ func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Reque
 }
 
 // Me godoc
-// @Summary Sends session info to user
-// @Description sends the whole access info and the refresh expiry time
+// @Summary Sends current session information to user
+// @Description Returns details about the current access and refresh tokens, including their expiry times.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
-// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 200 {object} map[string]any
-// @Failure 500 {object} ErrorResponse
+// @Success 200 {object} object{access=object,refresh_expire_date=string} "Current session information"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/me [get]
 func (sh *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
 	principal, err := sh.uc.Me(r.Context())

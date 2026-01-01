@@ -21,13 +21,29 @@ import (
 )
 
 // CreateRouter godoc
-// @title        Greet Service API
-// @version      0.6.0
-// @description  This is the GoAuth IdP API
-// @contact.name   TrieOH Support
-// @contact.url    https://github.com/TrieOH
-// @host      localhost:8080
-// @BasePath  /
+// @title GoAuth API
+// @version 0.6.0
+// @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
+// @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @contact.name TrieOH
+// @contact.url https://github.com/TrieOH
+// @contact.email trieoh@trieoh.com
+// @license.name MIT License
+// @license.url https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @host localhost:8080
+// @BasePath /
+// @schemes http https
+// @tag.name auth
+// @tag.description "Operations related to user authentication and authorization"
+// @tag.name projects
+// @tag.description "Operations related to project management"
+// @produce json
+// @consumes json
+// @response 200 {object} object "Standard success response"
+// @response 400 {object} http.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} http.ErrorResponse "Standard error response for unauthorized requests"
+// @response 404 {object} http.ErrorResponse "Standard error response for not found errors"
+// @response 500 {object} http.ErrorResponse "Standard error response for internal server errors"
 func CreateRouter(db *sql.DB) http.Handler {
 	r := chi.NewRouter()
 
