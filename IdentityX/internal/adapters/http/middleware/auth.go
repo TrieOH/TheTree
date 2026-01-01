@@ -6,7 +6,6 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/ports/outbound"
 	"GoAuth/internal/utils"
-	"context"
 	"errors"
 	"net/http"
 
@@ -111,9 +110,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			var isRevoked bool
 			isRevoked, err = mw.RevokedRefreshTokensRepo.IsRevoked(ctx, refreshTokenJTI)
 			if err != nil {
-				mwErr := apierr.FromSQLC(err)
-				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, mwErr)
+				ErrToResp(err).WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -133,8 +130,6 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			ctx = authz.WithPrincipal(ctx, principal)
-			ctx = context.WithValue(ctx, userIDKey, principal.UserID.String())
-
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

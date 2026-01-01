@@ -50,12 +50,12 @@ const requestIDKey ctxKey = "requestID"
 const userIDKey ctxKey = "userID"
 
 var (
-	GoAuthMiddlewareTracer = otel.Tracer("GoAuthMiddlewareTracer")
+	goAuthMiddlewareTracer = otel.Tracer("GoAuthMiddlewareTracer")
 )
 
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := GoAuthMiddlewareTracer.Start(r.Context(), "Middleware.RequestID")
+		ctx, span := goAuthMiddlewareTracer.Start(r.Context(), "Middleware.RequestID")
 		defer span.End()
 
 		reqID := r.Header.Get("X-Request-ID")

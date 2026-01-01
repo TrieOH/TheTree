@@ -14,7 +14,7 @@ import (
 
 type fieldsRepo struct {
 	q      *sqlc.Queries
-	log    *zap.Logger
+	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
 }
 

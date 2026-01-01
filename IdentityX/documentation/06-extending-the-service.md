@@ -83,6 +83,7 @@ Next, we need an inbound adapter to handle HTTP requests. We will create a new h
         "encoding/json"
         "net/http"
 
+    	"github.com/go-chi/chi/v5"
         "github.com/google/uuid"
     )
 
@@ -95,7 +96,7 @@ Next, we need an inbound adapter to handle HTTP requests. We will create a new h
     }
 
     func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-        userIDStr := r.PathValue("user_id")
+        userIDStr := chi.URLParam(r, "user_id")
         userID, err := uuid.Parse(userIDStr)
         if err != nil {
             // In a real implementation, you'd use a proper error response helper.
@@ -155,11 +156,15 @@ Now we need to initialize our new handler and register the route.
     }
 
     func registerUserRoutes(
-        mux *http.ServeMux,
+        r chi.Router,
         h *http2.UserHandler,
         authMW *middleware.AuthMiddleware,
     ) {
-        mux.HandleFunc("GET /users/{user_id}", authMW.Auth(h.GetUser))
+        r.Group(func(r chi.Router) {
+            r.Use(authMW.Auth())
+    
+            r.Get("/users/{user_id}", h.GetUser)
+        }
     }
     ```
 

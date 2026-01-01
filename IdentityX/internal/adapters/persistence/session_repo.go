@@ -16,7 +16,7 @@ import (
 
 type sessionRepo struct {
 	q      *sqlc.Queries
-	log    *zap.Logger
+	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
 }
 
@@ -48,7 +48,6 @@ func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 	ctx, span := r.tracer.Start(ctx, "SessionRepo.Create",
 		trace.WithAttributes(
 			attribute.String("session.user_id", new.UserID.String()),
-			attribute.String("session.token_id", new.TokenID.String()),
 		),
 	)
 	defer span.End()
@@ -78,6 +77,7 @@ func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 
 	span.SetAttributes(
 		attribute.String("session.session_id", created.SessionID.String()),
+		attribute.String("session.token_id", created.TokenID.String()),
 		attribute.Bool("session.created", true),
 	)
 	span.SetStatus(codes.Ok, "session created")
@@ -182,6 +182,7 @@ func (r sessionRepo) Update(ctx context.Context, updated session.Session) error 
 		trace.WithAttributes(
 			attribute.String("session.user_id", updated.UserID.String()),
 			attribute.String("session.token_id", updated.TokenID.String()),
+			attribute.String("session.session_id", updated.SessionID.String()),
 		),
 	)
 	defer span.End()
