@@ -2,6 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/application/project"
 	"encoding/json"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type ProjectHandler struct {
@@ -137,9 +139,13 @@ func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	if err = json.NewEncoder(w).Encode(map[string]any{
 		"keys": []any{jwks},
-	})
+	}); err != nil {
+		logs.L().Error("Failed to encode response",
+			zap.Error(err),
+			zap.String("project_id", projectId))
+	}
 }
 
 // UpdateProjectByID godoc

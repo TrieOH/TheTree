@@ -107,7 +107,7 @@ func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, pro
 }
 
 func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, projectID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := r.Tracer.Start(ctx, "ProjectUserRepo.GetByID",
+	ctx, span := r.Tracer.Start(ctx, "ProjectUserRepo.GetByIDInternal",
 		trace.WithAttributes(
 			attribute.String("project_user.project_id", projectID.String()),
 			attribute.String("project_user.id", projectUserID.String()),
