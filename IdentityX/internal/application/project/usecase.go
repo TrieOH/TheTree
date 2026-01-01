@@ -202,7 +202,6 @@ func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput)
 	newProject.Metadata = in.Metadata
 
 	updatedProject, err := uc.projects.Update(ctx, project.Project{
-		OwnerID:     principal.UserID,
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
 		Metadata:    newProject.Metadata,

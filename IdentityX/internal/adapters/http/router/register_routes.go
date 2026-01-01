@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/project"
 	"GoAuth/internal/application/session"
+	"GoAuth/internal/infrastructure/telemetry"
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
@@ -18,7 +19,8 @@ import (
 func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
 
-	tracer := otel.Tracer("goauth/repo")
+	tracer := otel.Tracer(string(telemetry.RepoTracerName))
+	authMWTracer := otel.Tracer(string(telemetry.AuthMWTracerName))
 	logging := logs.L()
 
 	userRepo := persistence.NewUserRepo(queries, logging, tracer)
@@ -35,7 +37,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	projectHandler := http2.NewProjectHandler(projectUC)
 	sessionHandler := http2.NewSessionHandler(sessionUC)
 
-	authMW := middleware.NewAuthMiddleware(revokedTokensRepo)
+	authMW := middleware.NewAuthMiddleware(revokedTokensRepo, authMWTracer)
 
 	registerAuthRoutes(r, authHandler, authMW)
 	registerSessionRoutes(r, sessionHandler, authMW)

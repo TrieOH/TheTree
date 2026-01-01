@@ -14,7 +14,7 @@ For this tutorial, we are lucky: the persistence layer we need already exists! T
 
 ---
 
-### Step 1: Define the Application Use Case
+## Step 1: Define the Application Use Case
 
 Our first step is to define the business logic. We'll create a new use case for user-related operations.
 
@@ -66,7 +66,7 @@ Our first step is to define the business logic. We'll create a new use case for 
 
 ---
 
-### Step 2: Create the HTTP Handler
+## Step 2: Create the HTTP Handler
 
 Next, we need an inbound adapter to handle HTTP requests. We will create a new handler for user-related endpoints.
 
@@ -126,7 +126,7 @@ Next, we need an inbound adapter to handle HTTP requests. We will create a new h
 
 ---
 
-### Step 3: Register the New Route
+## Step 3: Register the New Route
 
 Now we need to initialize our new handler and register the route.
 
@@ -165,7 +165,7 @@ Now we need to initialize our new handler and register the route.
 
 ---
 
-### Step 4: Add an Integration Test
+## Step 4: Add an Integration Test
 
 Finally, let's add a test to ensure our new endpoint works correctly.
 

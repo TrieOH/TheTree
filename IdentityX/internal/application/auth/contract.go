@@ -14,6 +14,9 @@ type RegisterUserInput struct {
 type LoginUserInput struct {
 	Email    string
 	Password string
+
+	Agent string
+	IP    string
 }
 
 type UserTokensOutput struct {

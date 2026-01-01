@@ -34,6 +34,12 @@ func NewPrincipal(
 	access *auth.AccessClaims,
 	refresh *auth.RefreshClaims,
 ) (*Principal, error) {
+	if access == nil {
+		return nil, apierr.ErrUnauthorized.WithMsg("access claims required").WithID(apierr.TokenInvalidID)
+	}
+	if refresh == nil {
+		return nil, apierr.ErrUnauthorized.WithMsg("refresh claims required").WithID(apierr.TokenInvalidID)
+	}
 
 	accessJTI, err := uuid.Parse(access.ID)
 	if err != nil {

@@ -48,13 +48,15 @@ func Metrics(next http.Handler) http.Handler {
 
 		duration := time.Since(start).Seconds()
 
-		route := chi.RouteContext(r.Context()).RoutePattern()
-		if route == "" {
-			route = "not_found"
+		routePattern := "not_found"
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			if pattern := rctx.RoutePattern(); pattern != "" {
+				routePattern = pattern
+			}
 		}
 
-		HttpRequestsTotal.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
-		HttpRequestDuration.WithLabelValues(route).Observe(duration)
+		HttpRequestsTotal.WithLabelValues(routePattern, r.Method, http.StatusText(ww.status)).Inc()
+		HttpRequestDuration.WithLabelValues(routePattern).Observe(duration)
 	})
 }
 

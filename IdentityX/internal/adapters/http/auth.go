@@ -74,9 +74,12 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	in := auth.LoginUserInput{
 		Email:    req.Email,
 		Password: req.Password,
+
+		Agent: r.UserAgent(),
+		IP:    utils.GetClientIP(r),
 	}
 
-	tokens, err := ah.uc.Login(r, r.Context(), in)
+	tokens, err := ah.uc.Login(r.Context(), in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

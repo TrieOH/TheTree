@@ -14,7 +14,7 @@ type Project struct {
 	Metadata    json.RawMessage
 	IsActive    bool
 	PubKey      string
-	PrivKey     []byte
+	PrivKey     []byte `json:"-"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

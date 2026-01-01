@@ -16,7 +16,7 @@ import (
 type userRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
-	Tracer trace.Tracer
+	tracer trace.Tracer
 }
 
 var _ outbound.UserRepository = (*userRepo)(nil)
@@ -25,7 +25,7 @@ func NewUserRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound.U
 	return &userRepo{
 		q:      q,
 		log:    l,
-		Tracer: tracer,
+		tracer: tracer,
 	}
 }
 
@@ -39,7 +39,7 @@ func copyUserFromDB(dst *user.User, src *sqlc.User) {
 }
 
 func (r userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
-	ctx, span := r.Tracer.Start(ctx, "UserRepo.Register")
+	ctx, span := r.tracer.Start(ctx, "UserRepo.Register")
 	defer span.End()
 
 	sqlcUser, err := r.q.RegisterUser(ctx, sqlc.RegisterUserParams{
@@ -66,7 +66,7 @@ func (r userRepo) Register(ctx context.Context, email, password string) (*user.U
 }
 
 func (r userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error) {
-	ctx, span := r.Tracer.Start(ctx, "UserRepo.GetUserByID",
+	ctx, span := r.tracer.Start(ctx, "UserRepo.GetUserByID",
 		trace.WithAttributes(
 			attribute.String("user.id", userID.String()),
 		),
@@ -93,7 +93,7 @@ func (r userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User
 }
 
 func (r userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
-	ctx, span := r.Tracer.Start(ctx, "UserRepo.GetUserByEmail")
+	ctx, span := r.tracer.Start(ctx, "UserRepo.GetUserByEmail")
 	defer span.End()
 
 	sqlcUser, err := r.q.GetUserByEmail(ctx, email)

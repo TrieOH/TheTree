@@ -2,10 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbound"
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -15,7 +15,7 @@ import (
 type schemaRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
-	Tracer trace.Tracer
+	tracer trace.Tracer
 }
 
 var _ outbound.SchemaRepository = (*schemaRepo)(nil)
@@ -24,26 +24,26 @@ func NewSchemaRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound
 	return &schemaRepo{
 		q:      q,
 		log:    l,
-		Tracer: tracer,
+		tracer: tracer,
 	}
 }
 
 func (r schemaRepo) Draft(ctx context.Context, schema schema.Schema) (*schema.Schema, error) {
 	// TODO Implement me!
-	panic(errors.New("not implemented"))
+	return nil, apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
 }
 
 func (r schemaRepo) Publish(ctx context.Context, schemaID uuid.UUID) error {
 	// TODO Implement me!
-	panic(errors.New("not implemented"))
+	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
 }
 
 func (r schemaRepo) Archive(ctx context.Context, schemaID uuid.UUID) error {
 	// TODO Implement me!
-	panic(errors.New("not implemented"))
+	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
 }
 
 func (r schemaRepo) Delete(ctx context.Context, schemaID uuid.UUID) error {
 	// TODO Implement me!
-	panic(errors.New("not implemented"))
+	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
 }

@@ -17,7 +17,7 @@ import (
 type revokedRefreshTokensRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
-	Tracer trace.Tracer
+	tracer trace.Tracer
 }
 
 var _ outbound.RevokedRefreshTokenRepository = (*revokedRefreshTokensRepo)(nil)
@@ -26,7 +26,7 @@ func NewRevokedRefreshTokensRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tr
 	return &revokedRefreshTokensRepo{
 		q:      q,
 		log:    l,
-		Tracer: tracer,
+		tracer: tracer,
 	}
 }
 
@@ -37,7 +37,7 @@ func mapRevokedRefreshTokenFromDB(dst *revoked_refreshes.RevokedRefreshToken, sr
 }
 
 func (r revokedRefreshTokensRepo) Revoke(ctx context.Context, blacklist revoked_refreshes.RevokedRefreshToken) error {
-	ctx, span := r.Tracer.Start(ctx, "RevokedRefreshTokensRepo.Revoke",
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokensRepo.Revoke",
 		trace.WithAttributes(
 			attribute.String("revoked_token.id", blacklist.TokenID.String()),
 			attribute.Int64("revoked_token.expires_at", blacklist.ExpiresAt.Unix()),
@@ -67,7 +67,7 @@ func (r revokedRefreshTokensRepo) Revoke(ctx context.Context, blacklist revoked_
 }
 
 func (r revokedRefreshTokensRepo) RevokeMany(ctx context.Context, tokenIDs []uuid.UUID, expiresAts []time.Time) error {
-	ctx, span := r.Tracer.Start(ctx, "RevokedRefreshTokensRepo.RevokeMany",
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokensRepo.RevokeMany",
 		trace.WithAttributes(
 			attribute.Int("revoke_many.count", len(tokenIDs)),
 		),
@@ -98,7 +98,7 @@ func (r revokedRefreshTokensRepo) RevokeMany(ctx context.Context, tokenIDs []uui
 }
 
 func (r revokedRefreshTokensRepo) GetByID(ctx context.Context, RevokedTokenID uuid.UUID) (*revoked_refreshes.RevokedRefreshToken, error) {
-	ctx, span := r.Tracer.Start(ctx, "RevokedRefreshTokenRepo.GetByID",
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokenRepo.GetByID",
 		trace.WithAttributes(
 			attribute.String("revoked_token_id", RevokedTokenID.String()),
 		),
@@ -125,7 +125,7 @@ func (r revokedRefreshTokensRepo) GetByID(ctx context.Context, RevokedTokenID uu
 }
 
 func (r revokedRefreshTokensRepo) Delete(ctx context.Context, tokenID uuid.UUID) error {
-	ctx, span := r.Tracer.Start(ctx, "RevokedRefreshTokenRepo.Delete",
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokenRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("deleted_revoked_token_id", tokenID.String()),
 		),
@@ -143,11 +143,20 @@ func (r revokedRefreshTokensRepo) Delete(ctx context.Context, tokenID uuid.UUID)
 }
 
 func (r revokedRefreshTokensRepo) DeleteExpired(ctx context.Context) error {
-	return r.q.DeleteExpiredRefreshTokens(ctx)
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokensRepo.DeleteExpired")
+	defer span.End()
+
+	if err := r.q.DeleteExpiredRefreshTokens(ctx); err != nil {
+		sqlErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlErr)
+		return sqlErr
+	}
+
+	return nil
 }
 
 func (r revokedRefreshTokensRepo) IsRevoked(ctx context.Context, tokenID uuid.UUID) (bool, error) {
-	ctx, span := r.Tracer.Start(ctx, "RevokedRefreshTokenRepo.IsRevoked",
+	ctx, span := r.tracer.Start(ctx, "RevokedRefreshTokenRepo.IsRevoked",
 		trace.WithAttributes(
 			attribute.String("revoked_token.id", tokenID.String()),
 		),

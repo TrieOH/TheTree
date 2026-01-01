@@ -15,7 +15,7 @@ Before you begin, ensure you have the following installed on your system:
 First, clone the GoAuth repository to your local machine:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/TrieOH/GoAuth.git
 cd GoAuth
 ```
 

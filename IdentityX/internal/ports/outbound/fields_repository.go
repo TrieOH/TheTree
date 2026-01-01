@@ -13,5 +13,5 @@ type FieldsRepository interface {
 	SetOptions(ctx context.Context, options []field.Option) error
 	SetRequiredRules(ctx context.Context, required []field.RequiredRule) error
 	SetVisibilityRules(ctx context.Context, visibilityRules []field.VisibilityRule) error
-	Delete(ctx context.Context, FieldID uuid.UUID) error
+	Delete(ctx context.Context, fieldID uuid.UUID) error
 }

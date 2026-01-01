@@ -11,7 +11,6 @@ import (
 	"GoAuth/internal/ports/outbound"
 	"context"
 	"errors"
-	"net/http"
 	"strings"
 	"time"
 
@@ -91,7 +90,7 @@ func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 	return nil
 }
 
-func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput) (*UserTokensOutput, error) {
+func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOutput, error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var err error
@@ -126,16 +125,13 @@ func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput
 		return nil, authErr
 	}
 
-	agent := r.UserAgent()
-	ip := utils.GetClientIP(r)
-
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	var sess *session.Session
 	sess, err = uc.sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
-		UserAgent: agent,
-		UserIp:    ip,
+		UserAgent: in.Agent,
+		UserIp:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    u.ID,
 	})
@@ -147,7 +143,7 @@ func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput
 	var accessToken string
 	var accessJTI uuid.UUID
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, accessJTI, err = newAccessToken(*u, ip, agent, sess.SessionID, accessExpiresAt)
+	accessToken, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
@@ -196,11 +192,6 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		span.SetAttributes(
 			attribute.String("user.project_id", principal.ProjectID.String()),
 		)
-	}
-
-	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return err
 	}
 
 	if _, err = uc.sessions.DeleteByFilter(ctx, session.SessionFilter{

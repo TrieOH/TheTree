@@ -8,6 +8,10 @@ import (
 )
 
 func AnnotatePrincipal(span trace.Span, principal *authz.Principal) {
+	if principal == nil {
+		return
+	}
+
 	span.SetAttributes(
 		attribute.String("user.id", principal.UserID.String()),
 		attribute.String("user.session_id", principal.SessionID.String()),

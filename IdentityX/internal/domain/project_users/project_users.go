@@ -11,7 +11,7 @@ type ProjectUser struct {
 	ID           uuid.UUID
 	ProjectID    uuid.UUID
 	Email        string
-	PasswordHash string
+	PasswordHash string `json:"-"`
 	UserType     string
 	Metadata     *json.RawMessage
 	IsActive     bool

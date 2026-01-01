@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
@@ -24,9 +25,11 @@ func Logs(next http.Handler) http.Handler {
 		reqID := GetRequestID(r.Context())
 		userID := GetUserID(r.Context())
 
-		routePattern := chi.RouteContext(r.Context()).RoutePattern()
-		if routePattern == "" {
-			routePattern = "not_found"
+		routePattern := "not_found"
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			if pattern := rctx.RoutePattern(); pattern != "" {
+				routePattern = pattern
+			}
 		}
 
 		logs.L().Info("http_request",
@@ -45,6 +48,10 @@ type ctxKey string
 
 const requestIDKey ctxKey = "requestID"
 const userIDKey ctxKey = "userID"
+
+var (
+	GoAuthMiddlewareTracer = otel.Tracer("GoAuthMiddlewareTracer")
+)
 
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

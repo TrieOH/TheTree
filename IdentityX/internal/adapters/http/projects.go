@@ -126,25 +126,39 @@ func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
 func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "project_id")
-	if projectId == "" {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
-	jwks, err := ph.uc.GetProjectJWKS(r.Context(), projectId)
+	jwks, err := ph.uc.GetProjectJWKS(r.Context(), projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(map[string]any{
+	payload := map[string]any{
 		"keys": []any{jwks},
-	}); err != nil {
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
 		logs.L().Error("Failed to encode response",
 			zap.Error(err),
-			zap.String("project_id", projectId))
+			zap.String("project_id", projectID),
+		)
+		resp.InternalServerError("Failed to encode JWKS").Send(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err = w.Write(data); err != nil {
+		logs.L().Error("Failed to write JWKS response",
+			zap.Error(err),
+			zap.String("project_id", projectID),
+		)
 	}
 }
 
@@ -209,14 +223,14 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [delete]
 func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "project_id")
-	if projectId == "" {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
 	ctx := r.Context()
-	err := ph.uc.DeleteProjectByID(ctx, projectId)
+	err := ph.uc.DeleteProjectByID(ctx, projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

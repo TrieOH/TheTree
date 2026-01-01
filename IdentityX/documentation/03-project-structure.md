@@ -6,7 +6,7 @@ The project root contains configuration files like `Dockerfile`, `docker-compose
 
 Here is a breakdown of the key directories:
 
-```
+```text
 /
 ├── documentation/      # All project documentation.
 ├── internal/           # All private application code resides here.

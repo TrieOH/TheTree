@@ -17,7 +17,7 @@ import (
 type sessionRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
-	Tracer trace.Tracer
+	tracer trace.Tracer
 }
 
 var _ outbound.SessionRepository = (*sessionRepo)(nil)
@@ -26,7 +26,7 @@ func NewSessionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbo
 	return &sessionRepo{
 		q:      q,
 		log:    log,
-		Tracer: tracer,
+		tracer: tracer,
 	}
 }
 
@@ -45,7 +45,7 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 }
 
 func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.Session, error) {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.Create",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.Create",
 		trace.WithAttributes(
 			attribute.String("session.user_id", new.UserID.String()),
 			attribute.String("session.token_id", new.TokenID.String()),
@@ -73,19 +73,20 @@ func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
 	}
 
-	mapSessionFromDB(&new, &sqlcSession)
+	var created session.Session
+	mapSessionFromDB(&created, &sqlcSession)
 
 	span.SetAttributes(
-		attribute.String("session.session_id", new.SessionID.String()),
+		attribute.String("session.session_id", created.SessionID.String()),
 		attribute.Bool("session.created", true),
 	)
 	span.SetStatus(codes.Ok, "session created")
 
-	return &new, nil
+	return &created, nil
 }
 
 func (r sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.GetById",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetById",
 		trace.WithAttributes(
 			attribute.String("session_id", sessionID.String()),
 		),
@@ -117,7 +118,7 @@ func (r sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session
 }
 
 func (r sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*session.Session, error) {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.GetByTokenID",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetByTokenID",
 		trace.WithAttributes(
 			attribute.String("token_id", tokenID.String()),
 		),
@@ -149,7 +150,7 @@ func (r sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*sess
 }
 
 func (r sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.List",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.List",
 		trace.WithAttributes(
 			attribute.String("user_id", userID.String()),
 		),
@@ -177,7 +178,7 @@ func (r sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Sess
 }
 
 func (r sessionRepo) Update(ctx context.Context, updated session.Session) error {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.Update",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.Update",
 		trace.WithAttributes(
 			attribute.String("session.user_id", updated.UserID.String()),
 			attribute.String("session.token_id", updated.TokenID.String()),
@@ -204,7 +205,7 @@ func (r sessionRepo) Update(ctx context.Context, updated session.Session) error 
 }
 
 func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.SessionFilter) ([]session.Session, error) {
-	ctx, span := r.Tracer.Start(ctx, "SessionRepo.DeleteByFilter",
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
 		trace.WithAttributes(
 			attribute.String("session.user_id", filter.UserID.String()),
 		),

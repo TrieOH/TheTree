@@ -11,34 +11,29 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthMiddleware struct {
 	RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepository
+	tracer                   trace.Tracer
 }
 
-var (
-	GoAuthMiddlewareTracer = otel.Tracer("goauth/middleware")
-)
-
-func NewAuthMiddleware(RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepository) *AuthMiddleware {
-	return &AuthMiddleware{RevokedRefreshTokensRepo: RevokedRefreshTokensRepo}
+func NewAuthMiddleware(RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepository, tracer trace.Tracer) *AuthMiddleware {
+	return &AuthMiddleware{RevokedRefreshTokensRepo: RevokedRefreshTokensRepo, tracer: tracer}
 }
 
 func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			ctx, span := GoAuthMiddlewareTracer.Start(ctx, "Middleware.Auth")
+			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
 			var err error
 			defer func() {
-				if span != nil {
-					span.SetAttributes(attribute.Bool("success", err == nil))
-				}
+				span.SetAttributes(attribute.Bool("success", err == nil))
 			}()
 
 			accessTokenCookie, err := r.Cookie("access_token")
