@@ -14,16 +14,18 @@ import (
 )
 
 type projectUserRepo struct {
-	q   *sqlc.Queries
-	log *zap.Logger
+	q      *sqlc.Queries
+	log    *zap.Logger // reserved for future use
+	tracer trace.Tracer
 }
 
 var _ outbound.ProjectUserRepository = (*projectUserRepo)(nil)
 
-func NewProjectUserRepo(q *sqlc.Queries, log *zap.Logger) outbound.ProjectUserRepository {
+func NewProjectUserRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.ProjectUserRepository {
 	return &projectUserRepo{
-		q:   q,
-		log: log,
+		q:      q,
+		log:    log,
+		tracer: tracer,
 	}
 }
 
@@ -41,7 +43,7 @@ func mapProjectUserFromDB(dst *project_users.ProjectUser, src *sqlc.ProjectUser)
 }
 
 func (r projectUserRepo) Register(ctx context.Context, user project_users.ProjectUser) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Register",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.Register",
 		trace.WithAttributes(
 			attribute.String("user.project_id", user.ProjectID.String()),
 		),
@@ -72,7 +74,7 @@ func (r projectUserRepo) Register(ctx context.Context, user project_users.Projec
 }
 
 func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByIDExternal",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.GetByIDExternal",
 		trace.WithAttributes(
 			attribute.String("project_user.id", projectUserID.String()),
 			attribute.String("project_user.project_id", projectID.String()),
@@ -105,7 +107,7 @@ func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, pro
 }
 
 func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, projectID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByID",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.GetByIDInternal",
 		trace.WithAttributes(
 			attribute.String("project_user.project_id", projectID.String()),
 			attribute.String("project_user.id", projectUserID.String()),
@@ -135,7 +137,7 @@ func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, pro
 }
 
 func (r projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.UUID, email string, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByEmailExternal",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.GetByEmailExternal",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project_user.project_id", projectID.String()),
@@ -167,7 +169,7 @@ func (r projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.
 }
 
 func (r projectUserRepo) GetByEmailInternal(ctx context.Context, projectID uuid.UUID, email string) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByEmailInternal",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.GetByEmailInternal",
 		trace.WithAttributes(
 			attribute.String("project_user.project_id", projectID.String()),
 		),
@@ -197,7 +199,7 @@ func (r projectUserRepo) GetByEmailInternal(ctx context.Context, projectID uuid.
 }
 
 func (r projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uuid.UUID) ([]project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.ListExternal",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.ListExternal",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.project_id", projectID.String()),
@@ -228,7 +230,7 @@ func (r projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uu
 }
 
 func (r projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UUID) ([]project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.ListInternal",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.ListInternal",
 		trace.WithAttributes(
 			attribute.String("project.project_id", projectID.String()),
 		),
@@ -255,7 +257,7 @@ func (r projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UUID) 
 }
 
 func (r projectUserRepo) Update(ctx context.Context, user project_users.ProjectUser, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Update",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.Update",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.project_id", user.ProjectID.String()),
@@ -288,7 +290,7 @@ func (r projectUserRepo) Update(ctx context.Context, user project_users.ProjectU
 }
 
 func (r projectUserRepo) Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Delete",
+	ctx, span := r.tracer.Start(ctx, "ProjectUserRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("project.project_id", projectID.String()),
 			attribute.String("project.owner_id", ownerID.String()),

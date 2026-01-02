@@ -21,8 +21,15 @@ var Port string
 var DB *sql.DB
 var scheduler gocron.Scheduler
 
+// init initializes the application.
+// It loads environment variables, sets up ED25519 keys, configures the response utility,
+// connects to the database, runs migrations, sets the JWT master key, and schedules cron jobs.
 func init() {
 	viper.AutomaticEnv()
+
+	if iss := viper.GetString("ISSUER"); iss == "" {
+		log.Fatalf("ISSUER environment variable not set.")
+	}
 
 	err := utils.LoadEd25519Keys(
 		viper.GetString("JWT_PRIVATE_KEY"),

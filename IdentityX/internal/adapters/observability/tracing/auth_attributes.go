@@ -1,20 +1,25 @@
 package tracing
 
 import (
-	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/application/authz"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func AnnotateAccessClaims(span trace.Span, claims *auth.AccessClaims) {
+// AnnotatePrincipal annotates a span with the principal's information.
+func AnnotatePrincipal(span trace.Span, principal *authz.Principal) {
+	if principal == nil {
+		return
+	}
+
 	span.SetAttributes(
-		attribute.String("user.id", claims.Sub.ID.String()),
-		attribute.String("user.session_id", claims.Sub.SessionID.String()),
-		attribute.String("user.type", claims.Sub.UserType),
+		attribute.String("user.id", principal.UserID.String()),
+		attribute.String("user.session_id", principal.SessionID.String()),
+		attribute.String("user.type", principal.UserType),
 	)
 
-	if claims.Sub.ProjectID != nil {
-		span.SetAttributes(attribute.String("user.project_id", claims.Sub.ProjectID.String()))
+	if principal.ProjectID != nil {
+		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
 	}
 }

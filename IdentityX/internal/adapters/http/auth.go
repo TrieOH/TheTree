@@ -8,6 +8,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/go-chi/chi/v5"
 )
 
 type AuthHandler struct {
@@ -19,14 +20,15 @@ func NewAuthHandler(uc *auth.UseCase) *AuthHandler {
 }
 
 // Register godoc
-// @Summary Register a new customer
-// @Description registers a customer into the system
+// @Summary Register a new user
+// @Description Creates a new user in the system.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param registerInfo body dto.RegisterUserRequest true "register request data"
-// @Success 201 {string} string "Registered user"
-// @Failure 500 {object} domain.ErrorResponse
+// @Param registerInfo body dto.RegisterUserRequest true "User registration information"
+// @Success 201 {object} object "User registered successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/register [post]
 func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterUserRequest
@@ -49,17 +51,18 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
-// @Summary Authenticates a customer
-// @Description Authenticates a customer of the system
+// @Summary Authenticate a user
+// @Description Authenticates a user and sets authentication cookies.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param loginInfo body dto.LoginUserRequest true "login request data"
-// @Success 200 {string} string "Logged in"
+// @Param loginInfo body dto.LoginUserRequest true "User login information"
+// @Success 200 {object} object "Successful authentication"
 // @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input provided"
+// @Failure 401 {object} ErrorResponse "Unauthorized: Invalid credentials"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/login [post]
 func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginUserRequest
@@ -71,9 +74,12 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	in := auth.LoginUserInput{
 		Email:    req.Email,
 		Password: req.Password,
+
+		Agent: r.UserAgent(),
+		IP:    utils.GetClientIP(r),
 	}
 
-	tokens, err := ah.uc.Login(r, r.Context(), in)
+	tokens, err := ah.uc.Login(r.Context(), in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -89,17 +95,17 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout godoc
-// @Summary Logs out a customer
-// @Description Logs out an authenticated customer of the system
+// @Summary Logs out a user
+// @Description Logs out an authenticated user by clearing their session cookies.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string "Logged out"
+// @Success 200 {object} object "Successfully logged out"
 // @Header 200 {string} Set-Cookie "clears the access_token cookie"
 // @Header 200 {string} Set-Cookie "clears the refresh_token cookie"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/logout [post]
 func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := ah.uc.Logout(r.Context())
@@ -118,15 +124,18 @@ func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // Refresh godoc
-// @Summary Refreshes the user token pair
-// @Description Creates a new token pair from a valid refresh token
+// @Summary Refreshes user tokens
+// @Description Creates a new access and refresh token pair using a valid refresh token.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: refresh_token=yyy"
+// @Success 200 {object} object "Tokens refreshed successfully"
+// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 200 {string} string "Refreshed tokens"
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing or invalid refresh token"
+// @Failure 401 {object} ErrorResponse "Unauthorized: Invalid or expired refresh token"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/refresh [post]
 func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshTokenCookie, err := r.Cookie("refresh_token")
@@ -163,12 +172,13 @@ func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 // JWKS godoc
-// @Summary Exposes the public key using a JWKS
-// @Description Lets users verify the tokens using the public key through a JWKS
+// @Summary Exposes the public key using a JWKS endpoint
+// @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by the authentication service.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]any
+// @Success 200 {object} object "JSON Web Key Set (JWKS)"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
 func (ah *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 	jwks := map[string]any{
@@ -180,17 +190,18 @@ func (ah *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 
 // ProjectRegister godoc
 // @Summary Register a new user into a client project
-// @Description registers a user into the specified project
+// @Description Registers a new user within a specific client project.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param project_id path string true "ID of the project to register user"
-// @Param registerInfo body dto.RegisterProjectUserRequest true "register project user request data"
-// @Success 201 {string} string "Registered user"
-// @Failure 500 {object} domain.ErrorResponse
+// @Param registerInfo body dto.RegisterProjectUserRequest true "User registration information for the project"
+// @Success 201 {object} object "User registered successfully in project"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or missing project ID"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/register [post]
 func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
+	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
@@ -220,20 +231,21 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 
 // ProjectLogin godoc
 // @Summary Authenticates a user into a client project
-// @Description Authenticates a user into the specified client project
+// @Description Authenticates a user within a specific client project and sets authentication cookies.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param project_id path string true "ID of the project to login user"
-// @Param loginInfo body dto.LoginProjectUserRequest true "login project user request data"
-// @Success 200 {string} string "Logged in"
+// @Param loginInfo body dto.LoginProjectUserRequest true "User login information for the project"
+// @Success 200 {object} object "Successfully authenticated into project"
 // @Header 200 {string} Set-Cookie "access_token cookie for authentication"
 // @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Success 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or missing project ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized: Invalid credentials"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/login [post]
 func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
+	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return

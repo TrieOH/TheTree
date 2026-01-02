@@ -20,6 +20,9 @@ const (
 	AuthInvalidAccessCookie  ID = "AUTH_017"
 	AuthMissingRefreshCookie ID = "AUTH_018"
 	AuthMissingAccessCookie  ID = "AUTH_019"
+	AuthMissingPrincipal     ID = "AUTH_020"
+	AuthNotClient            ID = "AUTH_021"
+	AuthInvalidPrincipal     ID = "AUTH_022"
 )
 
 const (
@@ -86,4 +89,5 @@ const (
 	SystemInternalError  ID = "SYS_001"
 	SystemMisconfigured  ID = "SYS_002"
 	SystemDependencyDown ID = "SYS_003"
+	SystemUnimplemented  ID = "SYS_004"
 )

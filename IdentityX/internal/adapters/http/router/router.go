@@ -4,49 +4,126 @@ package router
 
 import (
 	"GoAuth/internal/adapters/http/middleware"
+	"GoAuth/internal/adapters/observability/logs"
 	"database/sql"
 	"net/http"
 	"strings"
+	"time"
 
 	_ "GoAuth/docs"
 
+	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
-	"github.com/rs/cors"
 	"github.com/spf13/viper"
-	"github.com/swaggo/http-swagger"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
+// CreateRouter creates a new Chi router and registers all the routes.
 // CreateRouter godoc
-// @title        Greet Service API
-// @version      0.1
-// @description  This is the GreetService API that handles user greetings.
-// @contact.name   TrieOH Support
-// @contact.url    https://github.com/TrieOH
-// @host      localhost:8080
-// @BasePath  /
+// @title GoAuth API
+// @version 0.6.0
+// @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
+// @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @contact.name TrieOH
+// @contact.url https://github.com/TrieOH
+// @contact.email trieoh@trieoh.com
+// @license.name MIT License
+// @license.url https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @host localhost:8080
+// @BasePath /
+// @schemes http https
+// @tag.name auth
+// @tag.description "Operations related to user authentication and authorization"
+// @tag.name projects
+// @tag.description "Operations related to project management"
+// @produce json
+// @consumes json
+// @response 200 {object} object "Standard success response"
+// @response 400 {object} http.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} http.ErrorResponse "Standard error response for unauthorized requests"
+// @response 404 {object} http.ErrorResponse "Standard error response for not found errors"
+// @response 500 {object} http.ErrorResponse "Standard error response for internal server errors"
 func CreateRouter(db *sql.DB) http.Handler {
-	mux := http.NewServeMux()
-	mux.Handle("/swagger/", httpSwagger.WrapHandler)
+	r := chi.NewRouter()
 
-	mux = registerRoutes(db, mux)
+	r.Use(chimiddleware.Recoverer)
+	r.Use(chimiddleware.Timeout(60 * time.Second))
+	r.Use(cors.Handler(GetCORSOptions()))
 
-	mux.Handle("GET /metrics", middleware.Handler())
-	withMetrics := middleware.Metrics(mux)
-	withLogging := middleware.Logs(withMetrics)
-	withID := middleware.RequestID(withLogging)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logs)
+	r.Use(middleware.Metrics)
 
-	withCors := cors.New(cors.Options{
-		AllowedOrigins:   strings.Split(viper.GetString("CORS_ALLOWED_ORIGINS"), ","),
-		AllowedMethods:   strings.Split(viper.GetString("CORS_ALLOWED_METHODS"), ","),
-		AllowedHeaders:   strings.Split(viper.GetString("CORS_ALLOWED_HEADERS"), ","),
+	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+	r.Handle("/metrics", middleware.Handler())
+
+	r = registerRoutes(db, r)
+
+	return otelhttp.NewHandler(r, "http.server")
+}
+
+func splitAndCleanCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+
+	return out
+}
+
+// GetCORSOptions builds a safe cors.Options configuration from environment
+// variables, applying sensible defaults and preventing invalid empty values.
+func GetCORSOptions() cors.Options {
+	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
+	allowedMethods := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_METHODS"))
+	allowedHeaders := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_HEADERS"))
+
+	// Never default origins to "*"
+	if allowedOrigins == nil {
+		logs.L().Warn(
+			"CORS_ALLOWED_ORIGINS is not set; cross-origin requests will be rejected",
+		)
+	}
+
+	if allowedMethods == nil {
+		allowedMethods = []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+			http.MethodOptions,
+		}
+	}
+
+	if allowedHeaders == nil {
+		allowedHeaders = []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+		}
+	}
+
+	return cors.Options{
+		AllowedOrigins:   allowedOrigins,
+		AllowedMethods:   allowedMethods,
+		AllowedHeaders:   allowedHeaders,
 		AllowCredentials: true,
-	}).Handler(withID)
-
-	otelHandler := otelhttp.NewHandler(
-		withCors,
-		"http.server",
-	)
-
-	return otelHandler
+		MaxAge:           300,
+	}
 }

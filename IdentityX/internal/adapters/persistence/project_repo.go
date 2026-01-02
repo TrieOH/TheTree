@@ -14,16 +14,18 @@ import (
 )
 
 type projectRepo struct {
-	q   *sqlc.Queries
-	log *zap.Logger
+	q      *sqlc.Queries
+	log    *zap.Logger // reserved for future use
+	tracer trace.Tracer
 }
 
 var _ outbound.ProjectRepository = (*projectRepo)(nil)
 
-func NewProjectRepo(q *sqlc.Queries, log *zap.Logger) outbound.ProjectRepository {
+func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.ProjectRepository {
 	return &projectRepo{
-		q:   q,
-		log: log,
+		q:      q,
+		log:    log,
+		tracer: tracer,
 	}
 }
 
@@ -72,7 +74,7 @@ func mapProjectRowFromDB(dst *project.Project, src *sqlc.CreateProjectRow) {
 }
 
 func (r projectRepo) Create(ctx context.Context, project project.Project) (*project.Project, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.Create",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Create",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", project.OwnerID.String()),
 			attribute.String("project.name", project.ProjectName),
@@ -101,7 +103,7 @@ func (r projectRepo) Create(ctx context.Context, project project.Project) (*proj
 }
 
 func (r projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) (*project.Project, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.GetByID",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.GetByID",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", projectID.String()),
@@ -127,7 +129,7 @@ func (r projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) 
 }
 
 func (r projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) (string, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.GetPublicKeyByID",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.GetPublicKeyByID",
 		trace.WithAttributes(
 			attribute.String("project.id", projectID.String()),
 		),
@@ -145,7 +147,7 @@ func (r projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) 
 }
 
 func (r projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Project, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.List",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.List",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 		),
@@ -172,7 +174,7 @@ func (r projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Pro
 }
 
 func (r projectRepo) Update(ctx context.Context, project project.Project, ownerID uuid.UUID) (*project.Project, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.Update",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Update",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", project.ID.String()),
@@ -197,7 +199,7 @@ func (r projectRepo) Update(ctx context.Context, project project.Project, ownerI
 }
 
 func (r projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUID) error {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectRepo.Delete",
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", projectID.String()),

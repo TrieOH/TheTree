@@ -1,31 +1,29 @@
 package middleware
 
 import (
-	"GoAuth/internal/utils"
+	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/authz"
 	"net/http"
-
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
-func ClientOnly(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		accessTokenCookie, err := r.Cookie("access_token")
-		if err != nil {
-			resp.Unauthorized("missing access_token cookie").WithModule("AuthMW").Send(w)
-			return
-		}
+// ClientOnly is a middleware that ensures that the request is made by a client and not a project user.
+func ClientOnly() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			principal, err := authz.RequirePrincipal(ctx)
+			if err != nil {
+				ErrToResp(err).WithModule("ClientOnlyMW").Send(w)
+				return
+			}
 
-		accessToken, err := utils.ParseAccessToken(accessTokenCookie.Value, utils.GoAuthPublicKey)
-		if err != nil {
-			ErrToResp(err).WithModule("AuthMW").Send(w)
-			return
-		}
+			if principal.ProjectID != nil {
+				mwErr := apierr.ErrUnauthorized.WithMsg("only clients can access this endpoint").WithID(apierr.AuthNotClient)
+				ErrToResp(mwErr).WithModule("ClientOnlyMW").Send(w)
+				return
+			}
 
-		if accessToken.Sub.ProjectID != nil {
-			resp.Unauthorized("only clients can access this endpoint").WithModule("ClientOnlyMW").Send(w)
-			return
-		}
-
-		h.ServeHTTP(w, r.WithContext(r.Context()))
+			next.ServeHTTP(w, r)
+		})
 	}
 }

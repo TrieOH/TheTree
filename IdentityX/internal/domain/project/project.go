@@ -8,13 +8,13 @@ import (
 )
 
 type Project struct {
-	ID          uuid.UUID       `json:"id"`
-	ProjectName string          `json:"project_name"`
-	OwnerID     uuid.UUID       `json:"owner_id"`
-	Metadata    json.RawMessage `json:"metadata"`
-	IsActive    bool            `json:"is_active"`
-	PubKey      string          `json:"-"`
-	PrivKey     []byte          `json:"-"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ID          uuid.UUID
+	ProjectName string
+	OwnerID     uuid.UUID
+	Metadata    json.RawMessage
+	IsActive    bool
+	PubKey      string
+	PrivKey     []byte `json:"-"`
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

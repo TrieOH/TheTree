@@ -15,16 +15,18 @@ import (
 )
 
 type sessionRepo struct {
-	q   *sqlc.Queries
-	log *zap.Logger
+	q      *sqlc.Queries
+	log    *zap.Logger // reserved for future use
+	tracer trace.Tracer
 }
 
 var _ outbound.SessionRepository = (*sessionRepo)(nil)
 
-func NewSessionRepo(q *sqlc.Queries, log *zap.Logger) outbound.SessionRepository {
+func NewSessionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.SessionRepository {
 	return &sessionRepo{
-		q:   q,
-		log: log,
+		q:      q,
+		log:    log,
+		tracer: tracer,
 	}
 }
 
@@ -35,27 +37,26 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.TokenID = src.TokenID
 	dst.IssuedAt = src.IssuedAt
 	dst.UserAgent = src.UserAgent
-	dst.UserIp = src.UserIp
+	dst.UserIP = src.UserIp
 	dst.ExpiresAt = src.ExpiresAt
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 	dst.UserType = src.UserType
 }
 
-func (s sessionRepo) Create(ctx context.Context, new session.Session) (*session.Session, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.Create",
+func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.Session, error) {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.Create",
 		trace.WithAttributes(
 			attribute.String("session.user_id", new.UserID.String()),
-			attribute.String("session.token_id", new.TokenID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := s.q.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
+	sqlcSession, err := r.q.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
 		UserID:    new.UserID,
 		IssuedAt:  new.IssuedAt,
 		UserAgent: new.UserAgent,
-		UserIp:    new.UserIp,
+		UserIp:    new.UserIP,
 		ExpiresAt: new.ExpiresAt,
 		ProjectID: new.ProjectID,
 	})
@@ -71,26 +72,28 @@ func (s sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
 	}
 
-	mapSessionFromDB(&new, &sqlcSession)
+	var created session.Session
+	mapSessionFromDB(&created, &sqlcSession)
 
 	span.SetAttributes(
-		attribute.String("session.session_id", new.SessionID.String()),
+		attribute.String("session.session_id", created.SessionID.String()),
+		attribute.String("session.token_id", created.TokenID.String()),
 		attribute.Bool("session.created", true),
 	)
 	span.SetStatus(codes.Ok, "session created")
 
-	return &new, nil
+	return &created, nil
 }
 
-func (s sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.GetById",
+func (r sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetById",
 		trace.WithAttributes(
 			attribute.String("session_id", sessionID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := s.q.GetUserSessionById(ctx, sessionID)
+	sqlcSession, err := r.q.GetUserSessionById(ctx, sessionID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -114,15 +117,15 @@ func (s sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session
 	return &sess, nil
 }
 
-func (s sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*session.Session, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.GetByTokenID",
+func (r sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*session.Session, error) {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetByTokenID",
 		trace.WithAttributes(
 			attribute.String("token_id", tokenID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := s.q.GetUserSessionByTokenId(ctx, tokenID)
+	sqlcSession, err := r.q.GetUserSessionByTokenId(ctx, tokenID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -146,15 +149,15 @@ func (s sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*sess
 	return &sess, nil
 }
 
-func (s sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.List",
+func (r sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.List",
 		trace.WithAttributes(
 			attribute.String("user_id", userID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSessions, err := s.q.ListUserSessions(ctx, userID)
+	sqlcSessions, err := r.q.ListUserSessions(ctx, userID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -174,20 +177,21 @@ func (s sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Sess
 	return sessions, nil
 }
 
-func (s sessionRepo) Update(ctx context.Context, updated session.Session) error {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.Update",
+func (r sessionRepo) Update(ctx context.Context, updated session.Session) error {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.Update",
 		trace.WithAttributes(
 			attribute.String("session.user_id", updated.UserID.String()),
 			attribute.String("session.token_id", updated.TokenID.String()),
+			attribute.String("session.session_id", updated.SessionID.String()),
 		),
 	)
 	defer span.End()
 
-	err := s.q.UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
+	err := r.q.UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
 		SessionID: updated.SessionID,
 		IssuedAt:  updated.IssuedAt,
 		UserAgent: updated.UserAgent,
-		UserIp:    updated.UserIp,
+		UserIp:    updated.UserIP,
 		ExpiresAt: updated.ExpiresAt,
 		TokenID:   updated.TokenID,
 	})
@@ -201,8 +205,8 @@ func (s sessionRepo) Update(ctx context.Context, updated session.Session) error 
 	return nil
 }
 
-func (s sessionRepo) DeleteByFilter(ctx context.Context, filter session.SessionFilter) ([]session.Session, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "SessionRepo.DeleteByFilter",
+func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
+	ctx, span := r.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
 		trace.WithAttributes(
 			attribute.String("session.user_id", filter.UserID.String()),
 		),
@@ -223,7 +227,7 @@ func (s sessionRepo) DeleteByFilter(ctx context.Context, filter session.SessionF
 
 	defer span.End()
 
-	sqlcSessions, err := s.q.DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
+	sqlcSessions, err := r.q.DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
 		UserID:        filter.UserID,
 		SessionID:     filter.SessionID,
 		ExcludeID:     filter.ExcludeID,

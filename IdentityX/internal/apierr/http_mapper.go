@@ -12,8 +12,7 @@ func MapAPIError(e *Error) *resp.Response {
 	}
 
 	if e.ID != "" {
-		// TODO: Update FastNetUtils to support error IDs
-		// r = r.WithID(string(e.ID))
+		r = r.WithErrID(string(e.ID))
 	}
 
 	if e.Cause != nil {
