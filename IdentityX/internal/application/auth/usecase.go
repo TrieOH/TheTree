@@ -56,7 +56,7 @@ func New(
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Create")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
 	defer func() {
 		if span != nil {
@@ -103,7 +103,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var err error
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Login")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 	defer func() {
 		if span != nil {
@@ -176,7 +176,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 // Logout handles the business logic for logging out a user.
 // It retrieves the principal from the context, deletes the session, and revokes the refresh token.
 func (uc *UseCase) Logout(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Logout")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Logout")
 	defer span.End()
 
 	var err error
@@ -226,7 +226,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
 func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Refresh")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Refresh")
 	defer span.End()
 
 	var err error
@@ -306,7 +306,7 @@ func (uc *UseCase) RefreshClient(
 	*inbounds.UserTokensOutput,
 	error,
 ) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshClient")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RefreshClient")
 	defer span.End()
 
 	var err error
@@ -397,7 +397,7 @@ func (uc *UseCase) RefreshProjectUser(
 	*inbounds.UserTokensOutput,
 	error,
 ) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshProjectUser")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RefreshProjectUser")
 	defer span.End()
 
 	var err error
@@ -479,7 +479,7 @@ func (uc *UseCase) RefreshProjectUser(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.RegisterProjectUser",
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()
@@ -537,7 +537,7 @@ func (uc *UseCase) LoginProjectUser(
 	*inbounds.UserTokensOutput,
 	error,
 ) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.LoginProjectUser",
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.LoginProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()

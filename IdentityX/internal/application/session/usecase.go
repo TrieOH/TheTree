@@ -39,7 +39,7 @@ func New(
 
 // List handles the business logic for listing all sessions for the authenticated user.
 func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.List")
+	ctx, span := usecaseTracer.Start(ctx, "SessionService.List")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -63,7 +63,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
 func (uc *UseCase) RevokeByID(ctx context.Context, sessionId string) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeByID")
+	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
 	sid, err := uuid.Parse(sessionId)
@@ -112,7 +112,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionId string) error {
 
 // RevokeOthers handles the business logic for revoking all sessions for the authenticated user except for the current one.
 func (uc *UseCase) RevokeOthers(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeOthers")
+	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -152,7 +152,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 
 // RevokeAll handles the business logic for revoking all sessions for the authenticated user.
 func (uc *UseCase) RevokeAll(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeAll")
+	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeAll")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)

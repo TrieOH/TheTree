@@ -72,15 +72,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateProjectInput) (
 		attribute.String("project.name", createdProject.ProjectName),
 	)
 
-	return &inbounds.OutputProject{
-		ID:          createdProject.ID,
-		ProjectName: createdProject.ProjectName,
-		OwnerID:     createdProject.OwnerID,
-		Metadata:    createdProject.Metadata,
-		IsActive:    createdProject.IsActive,
-		CreatedAt:   createdProject.CreatedAt,
-		UpdatedAt:   createdProject.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(createdProject), nil
 }
 
 // GetByID handles the business logic for retrieving a project by its ID.
@@ -116,15 +108,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.Out
 		attribute.String("project.name", proj.ProjectName),
 	)
 
-	return &inbounds.OutputProject{
-		ID:          proj.ID,
-		ProjectName: proj.ProjectName,
-		OwnerID:     proj.OwnerID,
-		Metadata:    proj.Metadata,
-		IsActive:    proj.IsActive,
-		CreatedAt:   proj.CreatedAt,
-		UpdatedAt:   proj.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(proj), nil
 }
 
 // List handles the business logic for listing all projects for the authenticated user.
