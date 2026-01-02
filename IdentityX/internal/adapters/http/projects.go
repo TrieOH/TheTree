@@ -3,7 +3,7 @@ package http
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/application/project"
+	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
 
@@ -14,11 +14,11 @@ import (
 )
 
 type ProjectHandler struct {
-	uc *project.UseCase
+	projects inbounds.ProjectService
 }
 
-func NewProjectHandler(uc *project.UseCase) *ProjectHandler {
-	return &ProjectHandler{uc: uc}
+func NewProjectHandler(uc inbounds.ProjectService) *ProjectHandler {
+	return &ProjectHandler{projects: uc}
 }
 
 // CreateProject godoc
@@ -34,20 +34,20 @@ func NewProjectHandler(uc *project.UseCase) *ProjectHandler {
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects [post]
-func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProjectRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
 		rs.Send(w)
 		return
 	}
 
-	in := project.CreateProjectInput{
+	in := inbounds.CreateProjectInput{
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
 
 	ctx := r.Context()
-	res, err := ph.uc.CreateProject(ctx, in)
+	res, err := handler.projects.Create(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -72,7 +72,7 @@ func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) 
 // @Failure 404 {object} ErrorResponse "Not Found: Project not found"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [get]
-func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -80,7 +80,7 @@ func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
-	proj, err := ph.uc.GetProjectByID(ctx, projectID)
+	proj, err := handler.projects.GetByID(ctx, projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -102,8 +102,8 @@ func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request)
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects [get]
-func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, err := ph.uc.ListProjects(r.Context())
+func (handler *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
+	projects, err := handler.projects.List(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -125,14 +125,14 @@ func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} ErrorResponse "Bad Request: Missing project ID"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
-func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
-	jwks, err := ph.uc.GetProjectJWKS(r.Context(), projectID)
+	jwks, err := handler.projects.GetJWKS(r.Context(), projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -177,7 +177,7 @@ func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request)
 // @Failure 404 {object} ErrorResponse "Not Found: Project not found"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [patch]
-func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -190,14 +190,14 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	in := project.UpdateProjectInput{
+	in := inbounds.UpdateProjectInput{
 		ProjectID:   projectID,
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
 
 	ctx := r.Context()
-	proj, err := ph.uc.UpdateProjectByID(ctx, in)
+	proj, err := handler.projects.Update(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -222,7 +222,7 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 // @Failure 404 {object} ErrorResponse "Not Found: Project not found"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [delete]
-func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -230,7 +230,7 @@ func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Reque
 	}
 
 	ctx := r.Context()
-	err := ph.uc.DeleteProjectByID(ctx, projectID)
+	err := handler.projects.Delete(ctx, projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
 	"errors"
@@ -34,12 +35,14 @@ type UseCase struct {
 	projectUsers outbound.ProjectUserRepository
 }
 
+var _ inbounds.AuthService = (*UseCase)(nil)
+
 func New(
 	users outbound.UserRepository,
 	sessions outbound.SessionRepository,
 	refresh outbound.RevokedRefreshTokenRepository,
 	projectUsers outbound.ProjectUserRepository,
-) *UseCase {
+) inbounds.AuthService {
 	return &UseCase{
 		users:        users,
 		sessions:     sessions,
@@ -51,7 +54,7 @@ func New(
 // Register handles the business logic for creating a new user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
-func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
+func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "Auth.Create")
 	defer span.End()
@@ -96,7 +99,7 @@ func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
 // creates a new session and returns a new set of access and refresh tokens.
-func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOutput, error) {
+func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbounds.UserTokensOutput, error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var err error
@@ -162,7 +165,7 @@ func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOut
 		return nil, err
 	}
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessToken,
 		RefreshTokenString: refreshToken,
 		AccessExpiresAt:    accessExpiresAt,
@@ -222,7 +225,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 // Refresh handles the business logic for refreshing a user's tokens.
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
-func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
+func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "Auth.Refresh")
 	defer span.End()
 
@@ -279,7 +282,7 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
 	}
 
-	var tokens *UserTokensOutput
+	var tokens *inbounds.UserTokensOutput
 	if sess.ProjectID == nil {
 		tokens, err = uc.RefreshClient(ctx, sess, in, jti, refreshToken)
 		span.SetAttributes(attribute.String("refresh.flow", "client"))
@@ -296,11 +299,11 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 func (uc *UseCase) RefreshClient(
 	ctx context.Context,
 	sess *session.Session,
-	in RefreshInput,
+	in inbounds.RefreshInput,
 	jti uuid.UUID,
 	refreshToken *auth.RefreshClaims,
 ) (
-	*UserTokensOutput,
+	*inbounds.UserTokensOutput,
 	error,
 ) {
 	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshClient")
@@ -374,7 +377,7 @@ func (uc *UseCase) RefreshClient(
 		),
 	)
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  newAccessTokenStr,
 		RefreshTokenString: newRefreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
@@ -387,11 +390,11 @@ func (uc *UseCase) RefreshClient(
 func (uc *UseCase) RefreshProjectUser(
 	ctx context.Context,
 	sess *session.Session,
-	in RefreshInput,
+	in inbounds.RefreshInput,
 	jti uuid.UUID,
 	refreshToken *auth.RefreshClaims,
 ) (
-	*UserTokensOutput,
+	*inbounds.UserTokensOutput,
 	error,
 ) {
 	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshProjectUser")
@@ -465,7 +468,7 @@ func (uc *UseCase) RefreshProjectUser(
 		),
 	)
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  newAccessTokenStr,
 		RefreshTokenString: newRefreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
@@ -475,7 +478,7 @@ func (uc *UseCase) RefreshProjectUser(
 
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
-func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterInput) error {
+func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
@@ -529,9 +532,9 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterIn
 // creates a new session and returns a new set of access and refresh tokens.
 func (uc *UseCase) LoginProjectUser(
 	ctx context.Context,
-	in ProjectLoginInput,
+	in inbounds.ProjectLoginInput,
 ) (
-	*UserTokensOutput,
+	*inbounds.UserTokensOutput,
 	error,
 ) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.LoginProjectUser",
@@ -589,7 +592,7 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessToken,
 		RefreshTokenString: refreshToken,
 		AccessExpiresAt:    accessExpiresAt,

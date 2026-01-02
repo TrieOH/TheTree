@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/session"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
 	"time"
@@ -24,19 +25,21 @@ type UseCase struct {
 	refresh  outbound.RevokedRefreshTokenRepository
 }
 
+var _ inbounds.SessionService = (*UseCase)(nil)
+
 func New(
 	sessions outbound.SessionRepository,
 	refresh outbound.RevokedRefreshTokenRepository,
-) *UseCase {
+) inbounds.SessionService {
 	return &UseCase{
 		sessions: sessions,
 		refresh:  refresh,
 	}
 }
 
-// ListUserSessions handles the business logic for listing all sessions for the authenticated user.
-func (uc *UseCase) ListUserSessions(ctx context.Context) ([]OutputSession, error) {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.ListUserSessions")
+// List handles the business logic for listing all sessions for the authenticated user.
+func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.List")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -54,13 +57,13 @@ func (uc *UseCase) ListUserSessions(ctx context.Context) ([]OutputSession, error
 
 	span.SetAttributes(attribute.Int("sessions.count", len(sessions)))
 
-	return OutputSessionSliceFromSessionSlice(sessions), nil
+	return inbounds.OutputSessionSliceFromSessionSlice(sessions), nil
 }
 
-// RevokeUserSessionByID handles the business logic for revoking a specific session for the authenticated user.
+// RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeUserSessionByID")
+func (uc *UseCase) RevokeByID(ctx context.Context, sessionId string) error {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeByID")
 	defer span.End()
 
 	sid, err := uuid.Parse(sessionId)
@@ -107,9 +110,9 @@ func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) 
 	return nil
 }
 
-// RevokeOtherSessions handles the business logic for revoking all sessions for the authenticated user except for the current one.
-func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeOtherSessions")
+// RevokeOthers handles the business logic for revoking all sessions for the authenticated user except for the current one.
+func (uc *UseCase) RevokeOthers(ctx context.Context) error {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeOthers")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -147,9 +150,9 @@ func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
 	return nil
 }
 
-// RevokeAllSessions handles the business logic for revoking all sessions for the authenticated user.
-func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeAllSessions")
+// RevokeAll handles the business logic for revoking all sessions for the authenticated user.
+func (uc *UseCase) RevokeAll(ctx context.Context) error {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeAll")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)

@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"GoAuth/internal/application/project"
+	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"time"
 )
@@ -26,7 +26,7 @@ type ProjectResponse struct {
 	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
-func ProjectToResponse(r *project.OutputProject) ProjectResponse {
+func ProjectToResponse(r *inbounds.OutputProject) ProjectResponse {
 	return ProjectResponse{
 		ID:          r.ID.String(),
 		ProjectName: r.ProjectName,
@@ -38,7 +38,7 @@ func ProjectToResponse(r *project.OutputProject) ProjectResponse {
 	}
 }
 
-func ProjectSliceToProjectResponseSlice(src []project.OutputProject) []ProjectResponse {
+func ProjectSliceToProjectResponseSlice(src []inbounds.OutputProject) []ProjectResponse {
 	dst := make([]ProjectResponse, 0, len(src))
 	for _, p := range src {
 		dst = append(dst, ProjectToResponse(&p))
