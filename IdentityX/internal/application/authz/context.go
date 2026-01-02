@@ -28,7 +28,7 @@ func RequirePrincipal(ctx context.Context) (*Principal, error) {
 	if !ok {
 		return nil, apierr.ErrInternal.
 			WithMsg("invalid principal in context").
-			WithID(apierr.AuthMissingPrincipal)
+			WithID(apierr.AuthInvalidPrincipal)
 	}
 
 	return p, nil

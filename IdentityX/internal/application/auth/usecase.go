@@ -137,7 +137,7 @@ func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOut
 	sess, err = uc.sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
-		UserIp:    in.IP,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    u.ID,
 	})
@@ -360,7 +360,7 @@ func (uc *UseCase) RefreshClient(
 	if err = uc.sessions.Update(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
-		UserIp:    in.IP,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		TokenID:   refreshJti,
 		SessionID: sess.SessionID,
@@ -451,7 +451,7 @@ func (uc *UseCase) RefreshProjectUser(
 	if err = uc.sessions.Update(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
-		UserIp:    in.IP,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		TokenID:   refreshJti,
 		SessionID: sess.SessionID,
@@ -575,7 +575,7 @@ func (uc *UseCase) LoginProjectUser(
 	sess, err := uc.sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
-		UserIp:    in.IP,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
 		ProjectID: &pid,

@@ -1,10 +1,9 @@
 package middleware
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"net/http"
-
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 // ClientOnly is a middleware that ensures that the request is made by a client and not a project user.
@@ -19,7 +18,8 @@ func ClientOnly() func(http.Handler) http.Handler {
 			}
 
 			if principal.ProjectID != nil {
-				resp.Unauthorized("only clients can access this endpoint").WithModule("ClientOnlyMW").Send(w)
+				mwErr := apierr.ErrUnauthorized.WithMsg("only clients can access this endpoint").WithID(apierr.AuthNotClient)
+				ErrToResp(mwErr).WithModule("ClientOnlyMW").Send(w)
 				return
 			}
 

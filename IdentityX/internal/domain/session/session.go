@@ -13,7 +13,7 @@ type Session struct {
 	TokenID   uuid.UUID
 	IssuedAt  time.Time
 	UserAgent string
-	UserIp    string
+	UserIP    string
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time

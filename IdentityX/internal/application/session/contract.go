@@ -27,7 +27,7 @@ func OutputSessionFromSession(s *session.Session) *OutputSession {
 		UserID:    s.UserID,
 		IssuedAt:  s.IssuedAt,
 		UserAgent: s.UserAgent,
-		UserIp:    s.UserIp,
+		UserIp:    s.UserIP,
 		ExpiresAt: s.ExpiresAt,
 		CreatedAt: s.CreatedAt,
 		UpdatedAt: s.UpdatedAt,

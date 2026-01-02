@@ -21,6 +21,8 @@ const (
 	AuthMissingRefreshCookie ID = "AUTH_018"
 	AuthMissingAccessCookie  ID = "AUTH_019"
 	AuthMissingPrincipal     ID = "AUTH_020"
+	AuthNotClient            ID = "AUTH_021"
+	AuthInvalidPrincipal     ID = "AUTH_022"
 )
 
 const (

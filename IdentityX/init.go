@@ -32,6 +32,10 @@ func init() {
 		viper.GetString("JWT_PUBLIC_KEY"),
 	)
 
+	if iss := viper.GetString("ISSUER"); iss == "" {
+		log.Fatalf("ISSUER environment variable not set.")
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}

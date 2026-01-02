@@ -37,7 +37,7 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.TokenID = src.TokenID
 	dst.IssuedAt = src.IssuedAt
 	dst.UserAgent = src.UserAgent
-	dst.UserIp = src.UserIp
+	dst.UserIP = src.UserIp
 	dst.ExpiresAt = src.ExpiresAt
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
@@ -56,7 +56,7 @@ func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 		UserID:    new.UserID,
 		IssuedAt:  new.IssuedAt,
 		UserAgent: new.UserAgent,
-		UserIp:    new.UserIp,
+		UserIp:    new.UserIP,
 		ExpiresAt: new.ExpiresAt,
 		ProjectID: new.ProjectID,
 	})
@@ -191,7 +191,7 @@ func (r sessionRepo) Update(ctx context.Context, updated session.Session) error 
 		SessionID: updated.SessionID,
 		IssuedAt:  updated.IssuedAt,
 		UserAgent: updated.UserAgent,
-		UserIp:    updated.UserIp,
+		UserIp:    updated.UserIP,
 		ExpiresAt: updated.ExpiresAt,
 		TokenID:   updated.TokenID,
 	})

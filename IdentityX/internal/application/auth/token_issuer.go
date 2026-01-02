@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
 func newAccessToken(user user.User, ip, agent string, sessionId uuid.UUID, expiresAt time.Time) (string, uuid.UUID, error) {
@@ -25,7 +26,7 @@ func newAccessToken(user user.User, ip, agent string, sessionId uuid.UUID, expir
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -47,7 +48,7 @@ func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (stri
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        refreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -76,7 +77,7 @@ func newProjectAccessToken(user project_users.ProjectUser, ip, agent string, ses
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

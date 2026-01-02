@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -94,7 +95,8 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			if accessToken.Issuer != "GoAuth" || refreshToken.Issuer != "GoAuth" {
+			issuer := viper.GetString("ISSUER")
+			if accessToken.Issuer != issuer || refreshToken.Issuer != issuer {
 				mwErr := apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
 				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, mwErr)
