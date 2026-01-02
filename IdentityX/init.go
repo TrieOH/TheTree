@@ -27,14 +27,14 @@ var scheduler gocron.Scheduler
 func init() {
 	viper.AutomaticEnv()
 
+	if iss := viper.GetString("ISSUER"); iss == "" {
+		log.Fatalf("ISSUER environment variable not set.")
+	}
+
 	err := utils.LoadEd25519Keys(
 		viper.GetString("JWT_PRIVATE_KEY"),
 		viper.GetString("JWT_PUBLIC_KEY"),
 	)
-
-	if iss := viper.GetString("ISSUER"); iss == "" {
-		log.Fatalf("ISSUER environment variable not set.")
-	}
 
 	if err != nil {
 		log.Fatal(err)

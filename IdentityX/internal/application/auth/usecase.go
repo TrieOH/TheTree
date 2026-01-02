@@ -257,17 +257,9 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 	}
 
 	if isRevoked {
-		revoked, err := uc.refresh.GetByID(ctx, jti)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if revoked.TokenID == jti {
-			tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token revoked").WithID(apierr.TokenRevoked)
-			apierr.RecordDomainError(span, tokenErr)
-			return nil, tokenErr
-		}
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token revoked").WithID(apierr.TokenRevoked)
+		apierr.RecordDomainError(span, tokenErr)
+		return nil, tokenErr
 	}
 
 	var sess *session.Session
