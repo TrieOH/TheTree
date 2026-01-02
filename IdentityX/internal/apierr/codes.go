@@ -11,6 +11,8 @@ const (
 	Internal     Code = "INTERNAL"
 )
 
+// As converts an error to an API error.
+// It returns the API error and true if the error is an API error, otherwise it returns nil and false.
 func As(err error) (*Error, bool) {
 	var apiErr *Error
 	if errors.As(err, &apiErr) {
@@ -49,6 +51,8 @@ func IsInternal(err error) bool {
 	return ok && apiErr.Code == Internal
 }
 
+// IsSystemError returns true if the error is a system error.
+// An error is considered a system error if it is not an API error or if it is an internal API error.
 func IsSystemError(err error) bool {
 	apiErr, ok := As(err)
 	if !ok {

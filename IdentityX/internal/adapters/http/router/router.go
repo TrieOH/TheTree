@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
+// CreateRouter creates a new Chi router and registers all the routes.
 // CreateRouter godoc
 // @title GoAuth API
 // @version 0.6.0

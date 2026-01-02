@@ -30,7 +30,10 @@ func (c *Client) Auth(ctx *AuthContext) *Client {
 	}
 }
 
+// ----------------
 // Request builders
+// ----------------
+
 func (c *Client) POST(path string) *RequestBuilder {
 	return c.newRequest("POST", path)
 }

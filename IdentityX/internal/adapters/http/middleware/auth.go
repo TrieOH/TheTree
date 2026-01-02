@@ -23,6 +23,9 @@ func NewAuthMiddleware(RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepo
 	return &AuthMiddleware{RevokedRefreshTokensRepo: RevokedRefreshTokensRepo, tracer: tracer}
 }
 
+// Auth is a middleware function that checks for valid access and refresh tokens.
+// It validates the tokens, checks if the refresh token is revoked, and creates a principal from the tokens.
+// The principal is then added to the request context.
 func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +113,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			var isRevoked bool
 			isRevoked, err = mw.RevokedRefreshTokensRepo.IsRevoked(ctx, refreshTokenJTI)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				ErrToResp(err).WithModule("AuthMW").Send(w) // not recording to domain since IsRevoked already does that
 				return
 			}
 

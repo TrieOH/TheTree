@@ -205,7 +205,7 @@ func (r sessionRepo) Update(ctx context.Context, updated session.Session) error 
 	return nil
 }
 
-func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.SessionFilter) ([]session.Session, error) {
+func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
 	ctx, span := r.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
 		trace.WithAttributes(
 			attribute.String("session.user_id", filter.UserID.String()),

@@ -19,6 +19,7 @@ var (
 		[]string{"path", "method", "status"},
 	)
 
+	// HttpRequestDuration is a histogram of the duration of HTTP requests.
 	HttpRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
@@ -35,6 +36,7 @@ func init() {
 	prometheus.MustRegister(HttpRequestsTotal, HttpRequestDuration)
 }
 
+// Metrics is a middleware that records Prometheus metrics for HTTP requests.
 func Metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/metrics" || strings.HasPrefix(r.URL.Path, "/swagger") {

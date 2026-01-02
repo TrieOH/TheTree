@@ -29,6 +29,9 @@ func New(
 	return &UseCase{projects: projects}
 }
 
+// CreateProject handles the business logic for creating a new project.
+// It requires a valid principal in the context, generates a new key pair for the project,
+// and then creates the project in the database.
 func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.CreateProject")
 	defer span.End()
@@ -77,6 +80,8 @@ func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*O
 	}, nil
 }
 
+// GetProjectByID handles the business logic for retrieving a project by its ID.
+// It requires a valid principal in the context and that the principal is the owner of the project.
 func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectByID",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
@@ -119,6 +124,7 @@ func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*Outpu
 	}, nil
 }
 
+// ListProjects handles the business logic for listing all projects for the authenticated user.
 func (uc *UseCase) ListProjects(ctx context.Context) ([]OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.ListProjects")
 	defer span.End()
@@ -141,6 +147,8 @@ func (uc *UseCase) ListProjects(ctx context.Context) ([]OutputProject, error) {
 	return OutputProjectSliceFromProjectSlice(projects), nil
 }
 
+// GetProjectJWKS handles the business logic for retrieving the JWKS for a project.
+// It retrieves the public key for the project and converts it to a JWK set.
 func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[string]any, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectJWKS",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
@@ -170,6 +178,9 @@ func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[st
 	return jwks, nil
 }
 
+// UpdateProjectByID handles the business logic for updating a project.
+// It requires a valid principal in the context and that the principal is the owner of the project.
+// It retrieves the project, updates the fields, and then saves the changes to the database.
 func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput) (*OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.UpdateProjectByID",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
@@ -215,6 +226,8 @@ func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput)
 	return OutputProjectFromProject(updatedProject), nil
 }
 
+// DeleteProjectByID handles the business logic for deleting a project.
+// It requires a valid principal in the context and that the principal is the owner of the project.
 func (uc *UseCase) DeleteProjectByID(ctx context.Context, projectID string) error {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.DeleteProjectByID",
 		trace.WithAttributes(attribute.String("project.id", projectID)),

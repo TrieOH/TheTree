@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// AnnotatePrincipal annotates a span with the principal's information.
 func AnnotatePrincipal(span trace.Span, principal *authz.Principal) {
 	if principal == nil {
 		return

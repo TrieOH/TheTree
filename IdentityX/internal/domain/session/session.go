@@ -20,7 +20,7 @@ type Session struct {
 	UserType  string
 }
 
-type SessionFilter struct {
+type Filter struct {
 	UserID        uuid.UUID
 	SessionID     *uuid.UUID
 	ExcludeID     *uuid.UUID

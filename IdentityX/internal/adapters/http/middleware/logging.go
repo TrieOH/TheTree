@@ -22,8 +22,8 @@ func Logs(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		reqID := GetRequestID(r.Context())
-		userID := GetUserID(r.Context())
+		reqID := RequestIDFromCtx(r.Context())
+		userID := UserIDFromCtx(r.Context())
 
 		routePattern := "not_found"
 		if rctx := chi.RouteContext(r.Context()); rctx != nil {
@@ -46,13 +46,17 @@ func Logs(next http.Handler) http.Handler {
 
 type ctxKey string
 
-const requestIDKey ctxKey = "requestID"
-const userIDKey ctxKey = "userID"
+const (
+	requestIDKey ctxKey = "requestID"
+	userIDKey    ctxKey = "userID"
+)
 
 var (
 	goAuthMiddlewareTracer = otel.Tracer("GoAuthMiddlewareTracer")
 )
 
+// RequestID is a middleware that adds a request ID to the request context.
+// It also adds the request ID to the response headers.
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := goAuthMiddlewareTracer.Start(r.Context(), "Middleware.RequestID")
@@ -79,14 +83,14 @@ func RequestID(next http.Handler) http.Handler {
 	})
 }
 
-func GetRequestID(ctx context.Context) string {
+func RequestIDFromCtx(ctx context.Context) string {
 	if v, ok := ctx.Value(requestIDKey).(string); ok {
 		return v
 	}
 	return ""
 }
 
-func GetUserID(ctx context.Context) string {
+func UserIDFromCtx(ctx context.Context) string {
 	if v, ok := ctx.Value(userIDKey).(string); ok {
 		return v
 	}

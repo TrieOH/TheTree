@@ -48,6 +48,9 @@ func New(
 	}
 }
 
+// Register handles the business logic for creating a new user.
+// It validates the input, hashes the password, and then attempts to create the user in the database.
+// It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "Auth.Create")
@@ -90,6 +93,9 @@ func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 	return nil
 }
 
+// Login handles the business logic for logging in a user.
+// It finds the user by email, compares the password, and if successful,
+// creates a new session and returns a new set of access and refresh tokens.
 func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOutput, error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
@@ -164,6 +170,8 @@ func (uc *UseCase) Login(ctx context.Context, in LoginUserInput) (*UserTokensOut
 	}, nil
 }
 
+// Logout handles the business logic for logging out a user.
+// It retrieves the principal from the context, deletes the session, and revokes the refresh token.
 func (uc *UseCase) Logout(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "Auth.Logout")
 	defer span.End()
@@ -194,7 +202,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		)
 	}
 
-	if _, err = uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
+	if _, err = uc.sessions.DeleteByFilter(ctx, session.Filter{
 		TokenID: &principal.RefreshJTI,
 		UserID:  principal.UserID,
 	}); err != nil {
@@ -211,6 +219,9 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	return nil
 }
 
+// Refresh handles the business logic for refreshing a user's tokens.
+// It parses the refresh token, checks if it's revoked, and if not,
+// determines whether to refresh the tokens for a client or a project user.
 func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "Auth.Refresh")
 	defer span.End()
@@ -288,6 +299,8 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 	return tokens, err
 }
 
+// RefreshClient handles the business logic for refreshing a client's tokens.
+// It generates a new access and refresh token pair, updates the session, and revokes the old refresh token.
 func (uc *UseCase) RefreshClient(
 	ctx context.Context,
 	sess *session.Session,
@@ -377,6 +390,8 @@ func (uc *UseCase) RefreshClient(
 	}, nil
 }
 
+// RefreshProjectUser handles the business logic for refreshing a project user's tokens.
+// It generates a new access and refresh token pair, updates the session, and revokes the old refresh token.
 func (uc *UseCase) RefreshProjectUser(
 	ctx context.Context,
 	sess *session.Session,
@@ -466,6 +481,8 @@ func (uc *UseCase) RefreshProjectUser(
 	}, nil
 }
 
+// RegisterProjectUser handles the business logic for creating a new project user.
+// It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
@@ -515,6 +532,9 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterIn
 	return nil
 }
 
+// LoginProjectUser handles the business logic for logging in a project user.
+// It finds the user by email, compares the password, and if successful,
+// creates a new session and returns a new set of access and refresh tokens.
 func (uc *UseCase) LoginProjectUser(
 	ctx context.Context,
 	in ProjectLoginInput,

@@ -34,6 +34,7 @@ func New(
 	}
 }
 
+// ListUserSessions handles the business logic for listing all sessions for the authenticated user.
 func (uc *UseCase) ListUserSessions(ctx context.Context) ([]OutputSession, error) {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.ListUserSessions")
 	defer span.End()
@@ -56,6 +57,8 @@ func (uc *UseCase) ListUserSessions(ctx context.Context) ([]OutputSession, error
 	return OutputSessionSliceFromSessionSlice(sessions), nil
 }
 
+// RevokeUserSessionByID handles the business logic for revoking a specific session for the authenticated user.
+// It ensures that the user is not revoking the current session.
 func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeUserSessionByID")
 	defer span.End()
@@ -81,7 +84,7 @@ func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) 
 		return apiErr
 	}
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
+	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
 		SessionID: &sid,
 	})
@@ -104,6 +107,7 @@ func (uc *UseCase) RevokeUserSessionByID(ctx context.Context, sessionId string) 
 	return nil
 }
 
+// RevokeOtherSessions handles the business logic for revoking all sessions for the authenticated user except for the current one.
 func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeOtherSessions")
 	defer span.End()
@@ -116,7 +120,7 @@ func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
 
 	tracing.AnnotatePrincipal(span, principal)
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
+	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
 		ExcludeID: &principal.SessionID,
 	})
@@ -143,6 +147,7 @@ func (uc *UseCase) RevokeOtherSessions(ctx context.Context) error {
 	return nil
 }
 
+// RevokeAllSessions handles the business logic for revoking all sessions for the authenticated user.
 func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RevokeAllSessions")
 	defer span.End()
@@ -155,7 +160,7 @@ func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
 
 	tracing.AnnotatePrincipal(span, principal)
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
+	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID: principal.UserID,
 	})
 	if err != nil {
@@ -181,6 +186,7 @@ func (uc *UseCase) RevokeAllSessions(ctx context.Context) error {
 	return nil
 }
 
+// Me returns the principal of the authenticated user.
 func (uc *UseCase) Me(ctx context.Context) (*authz.Principal, error) {
 	return authz.RequirePrincipal(ctx)
 }

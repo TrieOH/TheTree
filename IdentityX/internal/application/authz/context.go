@@ -8,7 +8,9 @@ import (
 
 type ctxKey string
 
-const principalKey ctxKey = "principal"
+const (
+	principalKey ctxKey = "principal"
+)
 
 func WithPrincipal(ctx context.Context, p *Principal) context.Context {
 	return context.WithValue(ctx, principalKey, p)
