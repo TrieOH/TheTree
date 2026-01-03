@@ -2,7 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/application/session"
+	"GoAuth/internal/ports/inbounds"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -10,11 +10,11 @@ import (
 )
 
 type SessionHandler struct {
-	uc *session.UseCase
+	sessions inbounds.SessionService
 }
 
-func NewSessionHandler(uc *session.UseCase) *SessionHandler {
-	return &SessionHandler{uc: uc}
+func NewSessionHandler(uc inbounds.SessionService) *SessionHandler {
+	return &SessionHandler{sessions: uc}
 }
 
 // ListUserSessions godoc
@@ -28,8 +28,8 @@ func NewSessionHandler(uc *session.UseCase) *SessionHandler {
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions [get]
-func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, err := sh.uc.ListUserSessions(r.Context())
+func (handler *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
+	sessions, err := handler.sessions.List(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -54,8 +54,8 @@ func (sh *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.Reques
 // @Failure 404 {object} ErrorResponse "Not Found: Session not found"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
-func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
-	err := sh.uc.RevokeUserSessionByID(r.Context(), chi.URLParam(r, "session_id"))
+func (handler *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
+	err := handler.sessions.RevokeByID(r.Context(), chi.URLParam(r, "session_id"))
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -75,8 +75,8 @@ func (sh *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.R
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/others [delete]
-func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
-	err := sh.uc.RevokeOtherSessions(r.Context())
+func (handler *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+	err := handler.sessions.RevokeOthers(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -96,8 +96,8 @@ func (sh *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Req
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions [delete]
-func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
-	err := sh.uc.RevokeAllSessions(r.Context())
+func (handler *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
+	err := handler.sessions.RevokeAll(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -117,8 +117,8 @@ func (sh *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.Reque
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/me [get]
-func (sh *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
-	principal, err := sh.uc.Me(r.Context())
+func (handler *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
+	principal, err := handler.sessions.Me(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

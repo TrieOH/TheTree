@@ -5,6 +5,7 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/project"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"GoAuth/internal/utils"
 	"context"
@@ -23,17 +24,19 @@ type UseCase struct {
 	projects outbound.ProjectRepository
 }
 
+var _ inbounds.ProjectService = (*UseCase)(nil)
+
 func New(
 	projects outbound.ProjectRepository,
-) *UseCase {
+) inbounds.ProjectService {
 	return &UseCase{projects: projects}
 }
 
-// CreateProject handles the business logic for creating a new project.
+// Create handles the business logic for creating a new project.
 // It requires a valid principal in the context, generates a new key pair for the project,
 // and then creates the project in the database.
-func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.CreateProject")
+func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateProjectInput) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -69,21 +72,13 @@ func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*O
 		attribute.String("project.name", createdProject.ProjectName),
 	)
 
-	return &OutputProject{
-		ID:          createdProject.ID,
-		ProjectName: createdProject.ProjectName,
-		OwnerID:     createdProject.OwnerID,
-		Metadata:    createdProject.Metadata,
-		IsActive:    createdProject.IsActive,
-		CreatedAt:   createdProject.CreatedAt,
-		UpdatedAt:   createdProject.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(createdProject), nil
 }
 
-// GetProjectByID handles the business logic for retrieving a project by its ID.
+// GetByID handles the business logic for retrieving a project by its ID.
 // It requires a valid principal in the context and that the principal is the owner of the project.
-func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectByID",
+func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetByID",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()
@@ -113,20 +108,12 @@ func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*Outpu
 		attribute.String("project.name", proj.ProjectName),
 	)
 
-	return &OutputProject{
-		ID:          proj.ID,
-		ProjectName: proj.ProjectName,
-		OwnerID:     proj.OwnerID,
-		Metadata:    proj.Metadata,
-		IsActive:    proj.IsActive,
-		CreatedAt:   proj.CreatedAt,
-		UpdatedAt:   proj.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(proj), nil
 }
 
-// ListProjects handles the business logic for listing all projects for the authenticated user.
-func (uc *UseCase) ListProjects(ctx context.Context) ([]OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.ListProjects")
+// List handles the business logic for listing all projects for the authenticated user.
+func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipal(ctx)
@@ -144,13 +131,13 @@ func (uc *UseCase) ListProjects(ctx context.Context) ([]OutputProject, error) {
 
 	span.SetAttributes(attribute.Int("projects.count", len(projects)))
 
-	return OutputProjectSliceFromProjectSlice(projects), nil
+	return inbounds.OutputProjectSliceFromProjectSlice(projects), nil
 }
 
-// GetProjectJWKS handles the business logic for retrieving the JWKS for a project.
+// GetJWKS handles the business logic for retrieving the JWKS for a project.
 // It retrieves the public key for the project and converts it to a JWK set.
-func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[string]any, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectJWKS",
+func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]any, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()
@@ -178,11 +165,11 @@ func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[st
 	return jwks, nil
 }
 
-// UpdateProjectByID handles the business logic for updating a project.
+// Update handles the business logic for updating a project.
 // It requires a valid principal in the context and that the principal is the owner of the project.
 // It retrieves the project, updates the fields, and then saves the changes to the database.
-func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.UpdateProjectByID",
+func (uc *UseCase) Update(ctx context.Context, in inbounds.UpdateProjectInput) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()
@@ -223,13 +210,13 @@ func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput)
 		return nil, err
 	}
 
-	return OutputProjectFromProject(updatedProject), nil
+	return inbounds.OutputProjectFromProject(updatedProject), nil
 }
 
-// DeleteProjectByID handles the business logic for deleting a project.
+// Delete handles the business logic for deleting a project.
 // It requires a valid principal in the context and that the principal is the owner of the project.
-func (uc *UseCase) DeleteProjectByID(ctx context.Context, projectID string) error {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.DeleteProjectByID",
+func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Delete",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()

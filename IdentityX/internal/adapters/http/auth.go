@@ -2,7 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/application/auth"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/utils"
 	"net/http"
 
@@ -12,11 +12,11 @@ import (
 )
 
 type AuthHandler struct {
-	uc *auth.UseCase
+	auth inbounds.AuthService
 }
 
-func NewAuthHandler(uc *auth.UseCase) *AuthHandler {
-	return &AuthHandler{uc: uc}
+func NewAuthHandler(uc inbounds.AuthService) *AuthHandler {
+	return &AuthHandler{auth: uc}
 }
 
 // Register godoc
@@ -30,19 +30,19 @@ func NewAuthHandler(uc *auth.UseCase) *AuthHandler {
 // @Failure 400 {object} ErrorResponse "Bad Request: Invalid input"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/register [post]
-func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
 		rs.Send(w)
 		return
 	}
 
-	in := auth.RegisterUserInput{
+	in := inbounds.RegisterUserInput{
 		Email:    req.Email,
 		Password: req.Password,
 	}
 
-	if err := ah.uc.Register(r.Context(), in); err != nil {
+	if err := handler.auth.Register(r.Context(), in); err != nil {
 		ErrToResp(err).Send(w)
 		return
 	}
@@ -64,14 +64,14 @@ func (ah *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} ErrorResponse "Unauthorized: Invalid credentials"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/login [post]
-func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
 		rs.Send(w)
 		return
 	}
 
-	in := auth.LoginUserInput{
+	in := inbounds.LoginUserInput{
 		Email:    req.Email,
 		Password: req.Password,
 
@@ -79,7 +79,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		IP:    utils.GetClientIP(r),
 	}
 
-	tokens, err := ah.uc.Login(r.Context(), in)
+	tokens, err := handler.auth.Login(r.Context(), in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -107,8 +107,8 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/logout [post]
-func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	err := ah.uc.Logout(r.Context())
+func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	err := handler.auth.Logout(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -137,7 +137,7 @@ func (ah *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} ErrorResponse "Unauthorized: Invalid or expired refresh token"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/refresh [post]
-func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshTokenCookie, err := r.Cookie("refresh_token")
 	if err != nil {
 		resp.Unauthorized("error getting refresh token").AddTrace(err).Send(w)
@@ -149,14 +149,14 @@ func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := auth.RefreshInput{
+	in := inbounds.RefreshInput{
 		RefreshCookie: refreshTokenCookie,
 		Agent:         r.UserAgent(),
 		IP:            utils.GetClientIP(r),
 	}
 
 	ctx := r.Context()
-	tokens, err := ah.uc.Refresh(ctx, in)
+	tokens, err := handler.auth.Refresh(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -180,7 +180,7 @@ func (ah *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
-func (ah *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
+func (handler *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 	jwks := map[string]any{
 		"keys": []any{utils.PublicKeyToJWK(utils.GoAuthPublicKey)},
 	}
@@ -200,7 +200,7 @@ func (ah *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 // @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or missing project ID"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/register [post]
-func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -213,7 +213,7 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := auth.ProjectRegisterInput{
+	in := inbounds.ProjectRegisterInput{
 		Email:        req.Email,
 		Password:     req.Password,
 		CustomFields: req.CustomFields,
@@ -221,7 +221,7 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	if err := ah.uc.RegisterProjectUser(ctx, in); err != nil {
+	if err := handler.auth.RegisterProjectUser(ctx, in); err != nil {
 		ErrToResp(err).Send(w)
 		return
 	}
@@ -244,7 +244,7 @@ func (ah *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} ErrorResponse "Unauthorized: Invalid credentials"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/login [post]
-func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
+func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "project_id")
 	if projectId == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -260,7 +260,7 @@ func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	agent := r.UserAgent()
 	ip := utils.GetClientIP(r)
 
-	in := auth.ProjectLoginInput{
+	in := inbounds.ProjectLoginInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		ProjectID: projectId,
@@ -269,7 +269,7 @@ func (ah *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	tokens, err := ah.uc.LoginProjectUser(ctx, in)
+	tokens, err := handler.auth.LoginProjectUser(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

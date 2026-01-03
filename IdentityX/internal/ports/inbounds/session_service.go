@@ -1,11 +1,21 @@
-package session
+package inbounds
 
 import (
+	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/session"
+	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type SessionService interface {
+	List(ctx context.Context) ([]OutputSession, error)
+	RevokeByID(ctx context.Context, sessionId string) error
+	RevokeOthers(ctx context.Context) error
+	RevokeAll(ctx context.Context) error
+	Me(ctx context.Context) (*authz.Principal, error)
+}
 
 type OutputSession struct {
 	SessionID uuid.UUID

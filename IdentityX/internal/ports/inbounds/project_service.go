@@ -1,12 +1,22 @@
-package project
+package inbounds
 
 import (
 	"GoAuth/internal/domain/project"
+	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type ProjectService interface {
+	Create(ctx context.Context, in CreateProjectInput) (*OutputProject, error)
+	GetByID(ctx context.Context, projectID string) (*OutputProject, error)
+	List(ctx context.Context) ([]OutputProject, error)
+	GetJWKS(ctx context.Context, projectID string) (map[string]any, error)
+	Update(ctx context.Context, in UpdateProjectInput) (*OutputProject, error)
+	Delete(ctx context.Context, projectID string) error
+}
 
 type CreateProjectInput struct {
 	ProjectName string

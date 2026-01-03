@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"GoAuth/internal/application/session"
+	"GoAuth/internal/ports/inbounds"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +20,7 @@ type SessionResponse struct {
 	UserType  string     `json:"user_type"`
 }
 
-func SessionResponseFromSessionOutput(s session.OutputSession) SessionResponse {
+func SessionResponseFromSessionOutput(s inbounds.OutputSession) SessionResponse {
 	return SessionResponse{
 		SessionID: s.SessionID,
 		ProjectID: s.ProjectID,
@@ -35,7 +35,7 @@ func SessionResponseFromSessionOutput(s session.OutputSession) SessionResponse {
 	}
 }
 
-func SessionResponseSliceFromSessionOutputSlice(src []session.OutputSession) []SessionResponse {
+func SessionResponseSliceFromSessionOutputSlice(src []inbounds.OutputSession) []SessionResponse {
 	dst := make([]SessionResponse, 0, len(src))
 	for _, s := range src {
 		dst = append(dst, SessionResponseFromSessionOutput(s))
