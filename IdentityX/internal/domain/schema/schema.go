@@ -25,6 +25,7 @@ const (
 type Schema struct {
 	ID               uuid.UUID
 	ProjectID        uuid.UUID
+	Title            string
 	FlowID           string
 	Type             Type
 	CurrentVersionID *uuid.UUID
