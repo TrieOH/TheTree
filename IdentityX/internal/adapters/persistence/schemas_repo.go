@@ -141,7 +141,7 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 	)
 	defer span.End()
 
-	slqcSchema, err := r.q.GetSchema(ctx, sqlc.GetSchemaParams{
+	sqlcSchema, err := r.q.GetSchema(ctx, sqlc.GetSchemaParams{
 		ID:        schemaID,
 		ProjectID: projectID,
 	})
@@ -151,10 +151,10 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 		return nil, sqlcErr
 	}
 
-	span.SetAttributes(attribute.String("schema.type", string(slqcSchema.Type)))
+	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
 
 	var foundSchema schema.Schema
-	mapSchemaFromDB(&foundSchema, &slqcSchema)
+	mapSchemaFromDB(&foundSchema, &sqlcSchema)
 	return &foundSchema, nil
 }
 
