@@ -7,12 +7,12 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
-func ProjectUserOnly(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func ProjectUserOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		principal, err := authz.RequirePrincipal(ctx)
 		if err != nil {
-			ErrToResp(err).WithModule("ClientOnlyMW").Send(w)
+			ErrToResp(err).WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 
@@ -21,6 +21,6 @@ func ProjectUserOnly(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		h.ServeHTTP(w, r.WithContext(r.Context()))
-	}
+		next.ServeHTTP(w, r.WithContext(r.Context()))
+	})
 }
