@@ -323,10 +323,6 @@ func (uc *UseCase) RefreshClient(
 		attribute.String("refresh_client.session.user_type", sess.UserType),
 	)
 
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
-
 	var u *user.User
 	u, err = uc.users.GetUserByID(ctx, sess.UserID)
 	if err != nil {
