@@ -84,7 +84,7 @@ func (r schemaRepo) Publish(ctx context.Context, schemaID uuid.UUID, projectID u
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return err
+		return sqlcErr
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (r schemaRepo) Archive(ctx context.Context, schemaID uuid.UUID, projectID u
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return err
+		return sqlcErr
 	}
 
 	return nil
@@ -126,7 +126,7 @@ func (r schemaRepo) Delete(ctx context.Context, schemaID uuid.UUID, projectID uu
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return err
+		return sqlcErr
 	}
 
 	return nil
@@ -148,7 +148,7 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, err
+		return nil, sqlcErr
 	}
 
 	span.SetAttributes(attribute.String("schema.type", string(slqcSchema.Type)))
@@ -159,26 +159,26 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 }
 
 func (r schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByID",
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.List",
 		trace.WithAttributes(
 			attribute.String("schema.project_id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	slqcSchemas, err := r.q.ListSchemas(ctx, projectID)
+	sqlcSchemas, err := r.q.ListSchemas(ctx, projectID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, err
+		return nil, sqlcErr
 	}
 
-	span.SetAttributes(attribute.Int("schema.count", len(slqcSchemas)))
+	span.SetAttributes(attribute.Int("schema.count", len(sqlcSchemas)))
 
-	var schemaList []schema.Schema
-	for _, slqcSchema := range slqcSchemas {
+	schemaList := make([]schema.Schema, 0, len(sqlcSchemas))
+	for _, sqlcSchema := range sqlcSchemas {
 		var foundSchema schema.Schema
-		mapSchemaFromDB(&foundSchema, &slqcSchema)
+		mapSchemaFromDB(&foundSchema, &sqlcSchema)
 		schemaList = append(schemaList, foundSchema)
 	}
 	return schemaList, nil
