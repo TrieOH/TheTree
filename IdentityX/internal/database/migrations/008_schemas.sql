@@ -39,6 +39,7 @@ CREATE TYPE rule_operator AS ENUM (
 
 CREATE TABLE schemas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL DEFAULT 'Unnamed Schema',
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     flow_id VARCHAR(63) NOT NULL,
     type schema_type NOT NULL,
