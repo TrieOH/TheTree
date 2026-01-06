@@ -27,6 +27,9 @@ type DraftSchemaResponse struct {
 }
 
 func SchemaToResponse(out *inbounds.DraftSchemaOutput) *DraftSchemaResponse {
+	if out == nil {
+		return nil
+	}
 	return &DraftSchemaResponse{
 		ID:               out.ID,
 		ProjectID:        out.ProjectID,

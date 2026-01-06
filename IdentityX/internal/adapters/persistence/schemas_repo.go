@@ -181,7 +181,7 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 }
 
 func (r schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID uuid.UUID) (*schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByID",
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByFlowID",
 		trace.WithAttributes(
 			attribute.String("schema.project_id", projectID.String()),
 		),

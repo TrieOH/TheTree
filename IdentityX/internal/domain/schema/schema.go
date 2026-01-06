@@ -15,12 +15,8 @@ const (
 )
 
 func IsValidSchemaType(s string) bool {
-	switch s {
-	case "core":
-		return true
-	case "context":
-		return true
-	case "sub-context":
+	switch Type(s) {
+	case Core, Context, SubContext:
 		return true
 	default:
 		return false
