@@ -75,7 +75,7 @@ CREATE UNIQUE INDEX uniq_published_schema_versions
 -- FIELDS
 -- =========================
 
-CREATE TABLE fields (
+CREATE TABLE schema_fields (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     schema_version_id UUID NOT NULL REFERENCES schema_versions(id) ON DELETE CASCADE,
 
@@ -99,16 +99,16 @@ CREATE TABLE fields (
     UNIQUE (schema_version_id, key)
 );
 
-CREATE INDEX idx_fields_schema_version_id
-    ON fields(schema_version_id);
+CREATE INDEX idx_schema_fields_schema_version_id
+    ON schema_fields(schema_version_id);
 
 -- =========================
 -- FIELD OPTIONS
 -- =========================
 
-CREATE TABLE field_options (
+CREATE TABLE schema_field_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    field_id UUID NOT NULL REFERENCES fields(id) ON DELETE CASCADE,
+    field_id UUID NOT NULL REFERENCES schema_fields(id) ON DELETE CASCADE,
 
     value VARCHAR(255) NOT NULL,
     label VARCHAR(255) NOT NULL,
@@ -117,22 +117,22 @@ CREATE TABLE field_options (
     UNIQUE (field_id, value)
 );
 
-CREATE INDEX idx_field_options_field_id
-    ON field_options(field_id);
+CREATE INDEX idx_schema_field_options_field_id
+    ON schema_field_options(field_id);
 
 -- =========================
 -- FIELD VISIBILITY RULES
 -- =========================
 
-CREATE TABLE field_visibility_rules (
+CREATE TABLE schema_field_visibility_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     field_id UUID NOT NULL
-        REFERENCES fields(id)
+        REFERENCES schema_fields(id)
             ON DELETE CASCADE,
 
     depends_on_field_id UUID NOT NULL
-        REFERENCES fields(id)
+        REFERENCES schema_fields(id)
             ON DELETE CASCADE,
 
     operator rule_operator NOT NULL,
@@ -144,24 +144,24 @@ CREATE TABLE field_visibility_rules (
 );
 
 CREATE INDEX idx_visibility_rules_field_id
-    ON field_visibility_rules(field_id);
+    ON schema_field_visibility_rules(field_id);
 
 CREATE INDEX idx_visibility_rules_depends_on
-    ON field_visibility_rules(depends_on_field_id);
+    ON schema_field_visibility_rules(depends_on_field_id);
 
 -- =========================
 -- FIELD REQUIRED RULES
 -- =========================
 
-CREATE TABLE field_required_rules (
+CREATE TABLE schema_field_required_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     field_id UUID NOT NULL
-        REFERENCES fields(id)
+        REFERENCES schema_fields(id)
             ON DELETE CASCADE,
 
     depends_on_field_id UUID NOT NULL
-        REFERENCES fields(id)
+        REFERENCES schema_fields(id)
             ON DELETE CASCADE,
 
     operator rule_operator NOT NULL,
@@ -173,10 +173,10 @@ CREATE TABLE field_required_rules (
 );
 
 CREATE INDEX idx_required_rules_field_id
-    ON field_required_rules(field_id);
+    ON schema_field_required_rules(field_id);
 
 CREATE INDEX idx_required_rules_depends_on
-    ON field_required_rules(depends_on_field_id);
+    ON schema_field_required_rules(depends_on_field_id);
 
 -- =========================
 -- CURRENT VERSION FK
@@ -192,13 +192,13 @@ ALTER TABLE schemas
 ALTER TABLE schemas
 DROP CONSTRAINT IF EXISTS fk_current_schema_version;
 
-DROP TABLE IF EXISTS field_required_rules;
-DROP TABLE IF EXISTS field_visibility_rules;
+DROP TABLE IF EXISTS schema_field_required_rules;
+DROP TABLE IF EXISTS schema_field_visibility_rules;
 DROP TYPE IF EXISTS rule_operator;
 
-DROP TABLE IF EXISTS field_options;
+DROP TABLE IF EXISTS schema_field_options;
 
-DROP TABLE IF EXISTS fields;
+DROP TABLE IF EXISTS schema_fields;
 DROP TYPE IF EXISTS field_owner;
 DROP TYPE IF EXISTS field_type;
 

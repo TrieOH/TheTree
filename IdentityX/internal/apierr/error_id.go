@@ -69,11 +69,18 @@ const (
 )
 
 const (
-	ProjectInvalidID           ID = "PROJ_001"
-	ProjectNotFound            ID = "PROJ_002"
-	ProjectInactive            ID = "PROJ_003"
-	ProjectErrorGeneratingKeys ID = "PROJ_004"
-	ProjectErrorParsingKeys    ID = "PROJ_005"
+	ProjectInvalidID            ID = "PROJ_001"
+	ProjectNotFound             ID = "PROJ_002"
+	ProjectInactive             ID = "PROJ_003"
+	ProjectErrorGeneratingKeys  ID = "PROJ_004"
+	ProjectErrorParsingKeys     ID = "PROJ_005"
+	ProjectOwnershipCheckFailed ID = "PROJ_006"
+	ProjectNotOwnedByPrincipal  ID = "PROJ_007"
+)
+
+const (
+	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
+	SchemaInvalidSchemaType         ID = "SCHEMA_002"
 )
 
 const (
