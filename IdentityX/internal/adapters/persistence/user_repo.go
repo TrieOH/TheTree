@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,6 +18,13 @@ type userRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+}
+
+func (repo *userRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 var _ outbound.UserRepository = (*userRepo)(nil)
@@ -38,11 +46,11 @@ func copyUserFromDB(dst *user.User, src *sqlc.User) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (r userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
-	ctx, span := r.tracer.Start(ctx, "UserRepo.Register")
+func (repo *userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.Register")
 	defer span.End()
 
-	sqlcUser, err := r.q.RegisterUser(ctx, sqlc.RegisterUserParams{
+	sqlcUser, err := repo.queries(ctx).RegisterUser(ctx, sqlc.RegisterUserParams{
 		Email:        email,
 		PasswordHash: password,
 	})
@@ -65,15 +73,15 @@ func (r userRepo) Register(ctx context.Context, email, password string) (*user.U
 	return &usr, nil
 }
 
-func (r userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error) {
-	ctx, span := r.tracer.Start(ctx, "UserRepo.GetUserByID",
+func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByID",
 		trace.WithAttributes(
 			attribute.String("user.id", userID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.GetUserById(ctx, userID)
+	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 
 	if err != nil {
 		sqlErr := apierr.FromSQLC(err)
@@ -92,11 +100,11 @@ func (r userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.User
 	return &usr, nil
 }
 
-func (r userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
-	ctx, span := r.tracer.Start(ctx, "UserRepo.GetUserByEmail")
+func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByEmail")
 	defer span.End()
 
-	sqlcUser, err := r.q.GetUserByEmail(ctx, email)
+	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, email)
 
 	if err != nil {
 		sqlErr := apierr.FromSQLC(err)

@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,6 +18,13 @@ type schemaRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+}
+
+func (repo *schemaRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 var _ outbound.SchemaRepository = (*schemaRepo)(nil)
@@ -41,20 +49,20 @@ func mapSchemaFromDB(dst *schema.Schema, src *sqlc.Schema) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (r schemaRepo) Draft(ctx context.Context, newSchema schema.Schema) (*schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Draft",
+func (repo *schemaRepo) Draft(ctx context.Context, toDraft schema.Schema) (*schema.Schema, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.Draft",
 		trace.WithAttributes(
-			attribute.String("schema.project_id", newSchema.ProjectID.String()),
-			attribute.String("schema.type", string(newSchema.Type)),
+			attribute.String("schema.project_id", toDraft.ProjectID.String()),
+			attribute.String("schema.type", string(toDraft.Type)),
 		),
 	)
 	defer span.End()
 
-	sqlcSchema, err := r.q.DraftSchema(ctx, sqlc.DraftSchemaParams{
-		ProjectID: newSchema.ProjectID,
-		Title:     newSchema.Title,
-		FlowID:    newSchema.FlowID,
-		Type:      sqlc.SchemaType(newSchema.Type),
+	sqlcSchema, err := repo.queries(ctx).DraftSchema(ctx, sqlc.DraftSchemaParams{
+		ProjectID: toDraft.ProjectID,
+		Title:     toDraft.Title,
+		FlowID:    toDraft.FlowID,
+		Type:      sqlc.SchemaType(toDraft.Type),
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -69,18 +77,18 @@ func (r schemaRepo) Draft(ctx context.Context, newSchema schema.Schema) (*schema
 	return &createdSchema, nil
 }
 
-func (r schemaRepo) Publish(ctx context.Context, publishedSchema schema.Schema) error {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Publish",
+func (repo *schemaRepo) Publish(ctx context.Context, toPublish schema.Schema) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.Publish",
 		trace.WithAttributes(
-			attribute.String("schema.id", publishedSchema.ID.String()),
-			attribute.String("schema.project_id", publishedSchema.ProjectID.String()),
+			attribute.String("schema.id", toPublish.ID.String()),
+			attribute.String("schema.project_id", toPublish.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
-	if err := r.q.PublishSchema(ctx, sqlc.PublishSchemaParams{
-		ID:        publishedSchema.ID,
-		ProjectID: publishedSchema.ProjectID,
+	if err := repo.queries(ctx).PublishSchema(ctx, sqlc.PublishSchemaParams{
+		ID:        toPublish.ID,
+		ProjectID: toPublish.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -90,18 +98,18 @@ func (r schemaRepo) Publish(ctx context.Context, publishedSchema schema.Schema) 
 	return nil
 }
 
-func (r schemaRepo) Archive(ctx context.Context, archivedSchema schema.Schema) error {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Archive",
+func (repo *schemaRepo) Archive(ctx context.Context, toArchive schema.Schema) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.Archive",
 		trace.WithAttributes(
-			attribute.String("schema.id", archivedSchema.ID.String()),
-			attribute.String("schema.project_id", archivedSchema.ProjectID.String()),
+			attribute.String("schema.id", toArchive.ID.String()),
+			attribute.String("schema.project_id", toArchive.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
-	if err := r.q.ArchiveSchema(ctx, sqlc.ArchiveSchemaParams{
-		ID:        archivedSchema.ID,
-		ProjectID: archivedSchema.ProjectID,
+	if err := repo.queries(ctx).ArchiveSchema(ctx, sqlc.ArchiveSchemaParams{
+		ID:        toArchive.ID,
+		ProjectID: toArchive.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -111,18 +119,18 @@ func (r schemaRepo) Archive(ctx context.Context, archivedSchema schema.Schema) e
 	return nil
 }
 
-func (r schemaRepo) Delete(ctx context.Context, deletedSchema schema.Schema) error {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Delete",
+func (repo *schemaRepo) Delete(ctx context.Context, toDelete schema.Schema) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.Delete",
 		trace.WithAttributes(
-			attribute.String("schema.id", deletedSchema.ID.String()),
-			attribute.String("schema.project_id", deletedSchema.ProjectID.String()),
+			attribute.String("schema.id", toDelete.ID.String()),
+			attribute.String("schema.project_id", toDelete.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
-	if err := r.q.DeleteSchema(ctx, sqlc.DeleteSchemaParams{
-		ID:        deletedSchema.ID,
-		ProjectID: deletedSchema.ProjectID,
+	if err := repo.queries(ctx).DeleteSchema(ctx, sqlc.DeleteSchemaParams{
+		ID:        toDelete.ID,
+		ProjectID: toDelete.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -132,18 +140,18 @@ func (r schemaRepo) Delete(ctx context.Context, deletedSchema schema.Schema) err
 	return nil
 }
 
-func (r schemaRepo) Exists(ctx context.Context, existsSchema schema.Schema) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Exists",
+func (repo *schemaRepo) Exists(ctx context.Context, toCheck schema.Schema) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.Exists",
 		trace.WithAttributes(
-			attribute.String("schema.project_id", existsSchema.ProjectID.String()),
+			attribute.String("schema.project_id", toCheck.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
-	exists, err := r.q.SchemaExists(ctx, sqlc.SchemaExistsParams{
-		ProjectID: existsSchema.ProjectID,
-		FlowID:    existsSchema.FlowID,
-		Type:      sqlc.SchemaType(existsSchema.Type),
+	exists, err := repo.queries(ctx).SchemaExists(ctx, sqlc.SchemaExistsParams{
+		ProjectID: toCheck.ProjectID,
+		FlowID:    toCheck.FlowID,
+		Type:      sqlc.SchemaType(toCheck.Type),
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -154,8 +162,30 @@ func (r schemaRepo) Exists(ctx context.Context, existsSchema schema.Schema) (boo
 	return exists, nil
 }
 
-func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) (*schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByID",
+func (repo *schemaRepo) BelongsToProject(ctx context.Context, toCheck schema.Schema) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.BelongsToProject",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", toCheck.ProjectID.String()),
+			attribute.String("schema.id", toCheck.ID.String()),
+		),
+	)
+	defer span.End()
+
+	belongs, err := repo.queries(ctx).SchemaBelongsToProject(ctx, sqlc.SchemaBelongsToProjectParams{
+		ID:        toCheck.ID,
+		ProjectID: toCheck.ProjectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return belongs, nil
+}
+
+func (repo *schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) (*schema.Schema, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.FindByID",
 		trace.WithAttributes(
 			attribute.String("schema.id", schemaID.String()),
 			attribute.String("schema.project_id", projectID.String()),
@@ -163,7 +193,7 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 	)
 	defer span.End()
 
-	sqlcSchema, err := r.q.GetSchema(ctx, sqlc.GetSchemaParams{
+	sqlcSchema, err := repo.queries(ctx).GetSchema(ctx, sqlc.GetSchemaParams{
 		ID:        schemaID,
 		ProjectID: projectID,
 	})
@@ -180,15 +210,15 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 	return &foundSchema, nil
 }
 
-func (r schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID uuid.UUID) (*schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByFlowID",
+func (repo *schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID uuid.UUID) (*schema.Schema, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.FindByFlowID",
 		trace.WithAttributes(
 			attribute.String("schema.project_id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSchema, err := r.q.GetSchemaByFlowID(ctx, sqlc.GetSchemaByFlowIDParams{
+	sqlcSchema, err := repo.queries(ctx).GetSchemaByFlowID(ctx, sqlc.GetSchemaByFlowIDParams{
 		FlowID:    flowID,
 		ProjectID: projectID,
 	})
@@ -206,15 +236,15 @@ func (r schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID u
 	return &foundSchema, nil
 }
 
-func (r schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Schema, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaRepo.List",
+func (repo *schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Schema, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.List",
 		trace.WithAttributes(
 			attribute.String("schema.project_id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSchemas, err := r.q.ListSchemas(ctx, projectID)
+	sqlcSchemas, err := repo.queries(ctx).ListSchemas(ctx, projectID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -230,4 +260,30 @@ func (r schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Sch
 		schemaList = append(schemaList, foundSchema)
 	}
 	return schemaList, nil
+}
+
+func (repo *schemaRepo) SetVersion(ctx context.Context, toUpdate schema.Schema) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.SetVersion",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", toUpdate.ProjectID.String()),
+			attribute.String("schema.id", toUpdate.ID.String()),
+		),
+	)
+	if toUpdate.CurrentVersionID != nil {
+		span.SetAttributes(attribute.String("schema.current_version_id", toUpdate.CurrentVersionID.String()))
+	}
+	defer span.End()
+
+	err := repo.queries(ctx).SetSchemaVersion(ctx, sqlc.SetSchemaVersionParams{
+		CurrentVersionID: toUpdate.CurrentVersionID,
+		ID:               toUpdate.ID,
+		ProjectID:        toUpdate.ProjectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
 }

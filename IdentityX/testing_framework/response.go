@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"strings"
 	"testing"
 
@@ -103,6 +104,30 @@ func (r *Response) TraceContains(expected ...string) *Response {
 		if !found {
 			r.t.Fatalf("expected trace to contain %q, but it did not.\ntrace=%v", exp, raw)
 		}
+	}
+
+	return r
+}
+
+func (r *Response) MessageContains(expected string) *Response {
+	r.t.Helper()
+
+	msg := r.resp.JSON().Object().Value("message").String().Raw()
+
+	if !strings.Contains(msg, expected) {
+		r.t.Fatalf("expected message to contain %q, but it did not.\nmessage=%v", expected, msg)
+	}
+
+	return r
+}
+
+func (r *Response) ExpectErrorID(expected apierr.ID) *Response {
+	r.t.Helper()
+
+	errID := r.resp.JSON().Object().Value("error_id").String().Raw()
+
+	if errID != string(expected) {
+		r.t.Fatalf("expected error id %q, but it was %q", expected, errID)
 	}
 
 	return r

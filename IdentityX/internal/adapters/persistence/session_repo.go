@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -18,6 +19,13 @@ type sessionRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+}
+
+func (repo *sessionRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 var _ outbound.SessionRepository = (*sessionRepo)(nil)
@@ -44,21 +52,21 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.UserType = src.UserType
 }
 
-func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.Session, error) {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.Create",
+func (repo *sessionRepo) Create(ctx context.Context, toCreate session.Session) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.Create",
 		trace.WithAttributes(
-			attribute.String("session.user_id", new.UserID.String()),
+			attribute.String("session.user_id", toCreate.UserID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := r.q.CreateUserSession(ctx, sqlc.CreateUserSessionParams{
-		UserID:    new.UserID,
-		IssuedAt:  new.IssuedAt,
-		UserAgent: new.UserAgent,
-		UserIp:    new.UserIP,
-		ExpiresAt: new.ExpiresAt,
-		ProjectID: new.ProjectID,
+	sqlcSession, err := repo.queries(ctx).CreateUserSession(ctx, sqlc.CreateUserSessionParams{
+		UserID:    toCreate.UserID,
+		IssuedAt:  toCreate.IssuedAt,
+		UserAgent: toCreate.UserAgent,
+		UserIp:    toCreate.UserIP,
+		ExpiresAt: toCreate.ExpiresAt,
+		ProjectID: toCreate.ProjectID,
 	})
 
 	if err != nil {
@@ -85,15 +93,15 @@ func (r sessionRepo) Create(ctx context.Context, new session.Session) (*session.
 	return &created, nil
 }
 
-func (r sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetById",
+func (repo *sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetById",
 		trace.WithAttributes(
 			attribute.String("session_id", sessionID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := r.q.GetUserSessionById(ctx, sessionID)
+	sqlcSession, err := repo.queries(ctx).GetUserSessionById(ctx, sessionID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -117,15 +125,15 @@ func (r sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session
 	return &sess, nil
 }
 
-func (r sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*session.Session, error) {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.GetByTokenID",
+func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetByTokenID",
 		trace.WithAttributes(
 			attribute.String("token_id", tokenID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := r.q.GetUserSessionByTokenId(ctx, tokenID)
+	sqlcSession, err := repo.queries(ctx).GetUserSessionByTokenId(ctx, tokenID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -149,15 +157,15 @@ func (r sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*sess
 	return &sess, nil
 }
 
-func (r sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.List",
+func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.List",
 		trace.WithAttributes(
 			attribute.String("user_id", userID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSessions, err := r.q.ListUserSessions(ctx, userID)
+	sqlcSessions, err := repo.queries(ctx).ListUserSessions(ctx, userID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -177,23 +185,23 @@ func (r sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Sess
 	return sessions, nil
 }
 
-func (r sessionRepo) Update(ctx context.Context, updated session.Session) error {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.Update",
+func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session) error {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.Update",
 		trace.WithAttributes(
-			attribute.String("session.user_id", updated.UserID.String()),
-			attribute.String("session.token_id", updated.TokenID.String()),
-			attribute.String("session.session_id", updated.SessionID.String()),
+			attribute.String("session.user_id", toUpdate.UserID.String()),
+			attribute.String("session.token_id", toUpdate.TokenID.String()),
+			attribute.String("session.session_id", toUpdate.SessionID.String()),
 		),
 	)
 	defer span.End()
 
-	err := r.q.UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
-		SessionID: updated.SessionID,
-		IssuedAt:  updated.IssuedAt,
-		UserAgent: updated.UserAgent,
-		UserIp:    updated.UserIP,
-		ExpiresAt: updated.ExpiresAt,
-		TokenID:   updated.TokenID,
+	err := repo.queries(ctx).UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
+		SessionID: toUpdate.SessionID,
+		IssuedAt:  toUpdate.IssuedAt,
+		UserAgent: toUpdate.UserAgent,
+		UserIp:    toUpdate.UserIP,
+		ExpiresAt: toUpdate.ExpiresAt,
+		TokenID:   toUpdate.TokenID,
 	})
 
 	if err != nil {
@@ -205,8 +213,8 @@ func (r sessionRepo) Update(ctx context.Context, updated session.Session) error 
 	return nil
 }
 
-func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
-	ctx, span := r.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
+func (repo *sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
 		trace.WithAttributes(
 			attribute.String("session.user_id", filter.UserID.String()),
 		),
@@ -227,7 +235,7 @@ func (r sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) 
 
 	defer span.End()
 
-	sqlcSessions, err := r.q.DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
+	sqlcSessions, err := repo.queries(ctx).DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
 		UserID:        filter.UserID,
 		SessionID:     filter.SessionID,
 		ExcludeID:     filter.ExcludeID,

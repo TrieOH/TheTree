@@ -1,0 +1,35 @@
+package dto
+
+import (
+	"GoAuth/internal/ports/inbounds"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type DraftSchemaVersionRequest struct {
+	SchemaID string `json:"schema_id" validate:"required"`
+}
+
+type DraftSchemaVersionResponse struct {
+	ID            uuid.UUID `json:"id"`
+	SchemaID      uuid.UUID `json:"schema_id"`
+	VersionNumber int       `json:"version_number"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+func SchemaVersionOutputToResponse(out *inbounds.DraftSchemaVersionOutput) *DraftSchemaVersionResponse {
+	if out == nil {
+		return nil
+	}
+	return &DraftSchemaVersionResponse{
+		ID:            out.ID,
+		SchemaID:      out.SchemaID,
+		VersionNumber: out.VersionNumber,
+		Status:        string(out.Status),
+		CreatedAt:     out.CreatedAt,
+		UpdatedAt:     out.UpdatedAt,
+	}
+}

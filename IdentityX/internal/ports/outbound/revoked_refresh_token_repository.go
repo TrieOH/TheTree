@@ -9,9 +9,9 @@ import (
 )
 
 type RevokedRefreshTokenRepository interface {
-	Revoke(ctx context.Context, blacklist revoked_refreshes.RevokedRefreshToken) error
+	Revoke(ctx context.Context, toRevoke revoked_refreshes.RevokedRefreshToken) error
 	RevokeMany(ctx context.Context, tokenIDs []uuid.UUID, expiresAts []time.Time) error
-	GetByID(ctx context.Context, BlacklistID uuid.UUID) (*revoked_refreshes.RevokedRefreshToken, error)
+	GetByID(ctx context.Context, revokedID uuid.UUID) (*revoked_refreshes.RevokedRefreshToken, error)
 	Delete(ctx context.Context, tokenID uuid.UUID) error
 	DeleteExpired(ctx context.Context) error
 	IsRevoked(ctx context.Context, tokenID uuid.UUID) (bool, error)

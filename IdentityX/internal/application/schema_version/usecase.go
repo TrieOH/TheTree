@@ -1,0 +1,156 @@
+package schema_version
+
+import (
+	"GoAuth/internal/adapters/observability/tracing"
+	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/transactions"
+	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/ports/inbounds"
+	"GoAuth/internal/ports/outbound"
+	"context"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+)
+
+var (
+	usecaseTracer = otel.Tracer("GoAuth.SchemaVersionService")
+)
+
+type UseCase struct {
+	schemas  outbound.SchemaRepository
+	versions outbound.SchemaVersionRepository
+	projects outbound.ProjectRepository
+	tx       transactions.TxRunner
+}
+
+var _ inbounds.SchemaVersionService = (*UseCase)(nil)
+
+func New(
+	schemas outbound.SchemaRepository,
+	versions outbound.SchemaVersionRepository,
+	projects outbound.ProjectRepository,
+	tx transactions.TxRunner,
+) inbounds.SchemaVersionService {
+	return &UseCase{
+		schemas:  schemas,
+		versions: versions,
+		projects: projects,
+		tx:       tx,
+	}
+}
+
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
+	var out *inbounds.DraftSchemaVersionOutput
+	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		out, err = uc.draftInternal(ctx, in)
+		return err
+	})
+
+	return out, err
+}
+
+func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.Draft")
+	defer span.End()
+
+	var err error
+	defer func() {
+		span.SetAttributes(attribute.Bool("draft.success", err == nil))
+	}()
+
+	var principal *authz.Principal
+	principal, err = authz.RequirePrincipal(ctx)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	tracing.AnnotatePrincipal(span, principal)
+
+	var pid uuid.UUID
+	pid, err = uuid.Parse(in.ProjectID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var sid uuid.UUID
+	sid, err = uuid.Parse(in.SchemaID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var belongs bool
+	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: pid,
+		ID:        sid,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var latest *schema.Version
+	latest, err = uc.versions.GetLatest(ctx, sid)
+
+	if err != nil && !apierr.IsNotFound(err) {
+		return nil, err
+	}
+
+	var newVersion *schema.Version
+	if err != nil && apierr.IsNotFound(err) {
+		newVersion = &schema.Version{
+			SchemaID:      sid,
+			VersionNumber: 1,
+		}
+	} else {
+		newVersion = &schema.Version{
+			SchemaID:      sid,
+			VersionNumber: latest.VersionNumber + 1,
+		}
+	}
+
+	newVersion, err = uc.versions.Draft(ctx, *newVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = uc.schemas.SetVersion(ctx, schema.Schema{
+		ID:               sid,
+		ProjectID:        pid,
+		CurrentVersionID: &newVersion.ID,
+	}); err != nil {
+		return nil, err
+	}
+
+	return inbounds.SchemaVersionToOutput(newVersion), nil
+}
+
+func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersionInput) error {
+	// TODO: Implement me!
+	return apierr.ErrInternal.WithMsg("publish not yet implemented")
+}

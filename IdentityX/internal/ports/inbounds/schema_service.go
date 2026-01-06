@@ -9,10 +9,8 @@ import (
 )
 
 type SchemaService interface {
-	// Draft /projects/{id}/schemas
-	Draft(ctx context.Context, in DraftSchemaInput) (*DraftSchemaOutput, error)
-	// Publish /projects/{id}/schemas/{schemaID}/publish?flowID=xxx
-	Publish(ctx context.Context, in PublishSchemaInput) error
+	Draft(ctx context.Context, in DraftSchemaInput) (*SchemaOutput, error)
+	GetByID(ctx context.Context, in GetSchemaByIDInput) (*SchemaOutput, error)
 }
 
 type DraftSchemaInput struct {
@@ -22,19 +20,41 @@ type DraftSchemaInput struct {
 	ProjectID  string
 }
 
+type GetSchemaByIDInput struct {
+	ProjectID string
+	SchemaID  string
+}
+
 type PublishSchemaInput struct {
 	FlowID    string
 	ProjectID string
 }
 
-type DraftSchemaOutput struct {
+type SchemaOutput struct {
 	ID               uuid.UUID
 	ProjectID        uuid.UUID
 	Title            string
 	FlowID           string
-	Type             schema.Type
+	Type             string
 	CurrentVersionID *uuid.UUID
-	Status           schema.Status
+	Status           string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+}
+
+func SchemaToSchemaOutput(out *schema.Schema) *SchemaOutput {
+	if out == nil {
+		return nil
+	}
+	return &SchemaOutput{
+		ID:               out.ID,
+		ProjectID:        out.ProjectID,
+		Title:            out.Title,
+		FlowID:           out.FlowID,
+		Type:             string(out.Type),
+		CurrentVersionID: out.CurrentVersionID,
+		Status:           string(out.Status),
+		CreatedAt:        out.CreatedAt,
+		UpdatedAt:        out.UpdatedAt,
+	}
 }

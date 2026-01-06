@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/project"
 	"GoAuth/internal/application/schema"
+	"GoAuth/internal/application/schema_version"
 	"GoAuth/internal/application/session"
 	"GoAuth/internal/infrastructure/telemetry"
 	"database/sql"
@@ -19,6 +20,7 @@ import (
 
 func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
+	txRunner := persistence.NewTxRunner(db)
 
 	tracer := otel.Tracer(string(telemetry.RepoTracerName))
 	authMWTracer := otel.Tracer(string(telemetry.AuthMWTracerName))
@@ -30,16 +32,19 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	projectRepo := persistence.NewProjectRepo(queries, logging, tracer)
 	projectUserRepo := persistence.NewProjectUserRepo(queries, logging, tracer)
 	schemaRepo := persistence.NewSchemaRepo(queries, logging, tracer)
+	schemaVersionRepo := persistence.NewSchemaVersionRepo(queries, logging, tracer)
 
 	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, projectUserRepo)
 	projectUC := project.New(projectRepo)
 	sessionUC := session.New(sessionRepo, revokedTokensRepo)
 	schemaUC := schema.New(schemaRepo, projectRepo)
+	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, projectRepo, txRunner)
 
 	authHandler := http2.NewAuthHandler(authUC)
 	projectHandler := http2.NewProjectHandler(projectUC)
 	sessionHandler := http2.NewSessionHandler(sessionUC)
 	schemaHandler := http2.NewSchemaHandler(schemaUC)
+	schemaVersionHandler := http2.NewSchemaVersionHandler(schemaVersionUC)
 
 	authMW := middleware.NewAuthMiddleware(revokedTokensRepo, authMWTracer)
 
@@ -47,6 +52,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	registerSessionRoutes(r, sessionHandler, authMW)
 	registerProjectRoutes(r, projectHandler, authMW)
 	registerSchemaRoutes(r, schemaHandler, authMW)
+	registerSchemaVersionRoutes(r, schemaVersionHandler, authMW)
 
 	return r
 }
@@ -115,6 +121,20 @@ func registerSchemaRoutes(
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
 
-		r.Post("/projects/{project_id}/schemas", h.DraftSchema)
+		r.Post("/projects/{project_id}/schemas", h.Draft)
+		r.Get("/projects/{project_id}/schemas/{schema_id}", h.GetByID)
+	})
+}
+
+func registerSchemaVersionRoutes(
+	r *chi.Mux,
+	h *http2.SchemaVersionHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+
+		r.Post("/projects/{project_id}/schemas/versions", h.Draft)
 	})
 }

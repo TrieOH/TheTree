@@ -79,8 +79,18 @@ const (
 )
 
 const (
+	ProjectUserInvalidMetadata ID = "PROJ_USR_001"
+)
+
+const (
 	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
 	SchemaInvalidSchemaType         ID = "SCHEMA_002"
+	SchemaInvalidID                 ID = "SCHEMA_003"
+	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
+)
+
+const (
+	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
 )
 
 const (
@@ -90,6 +100,9 @@ const (
 	DBNotNullViolation     ID = "DB_003"
 	DBValueTooLong         ID = "DB_004"
 	DBSerializationFailure ID = "DB_005"
+	DBCommitTXFailed       ID = "DB_006"
+	DBBeginTXFailed        ID = "DB_007"
+	DBNestedTXNotAllowed   ID = "DB_008"
 )
 
 const (
