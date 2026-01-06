@@ -121,36 +121,17 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 		return nil, err
 	}
 
+	var newVersion *schema.Version
 	if err != nil && apierr.IsNotFound(err) {
-		firstVersion := schema.Version{
+		newVersion = &schema.Version{
 			SchemaID:      sid,
 			VersionNumber: 1,
 		}
-
-		var newVersion *schema.Version
-		newVersion, err = uc.versions.Draft(ctx, firstVersion)
-		if err != nil {
-			return nil, err
+	} else {
+		newVersion = &schema.Version{
+			SchemaID:      sid,
+			VersionNumber: latest.VersionNumber + 1,
 		}
-
-		if err = uc.schemas.SetVersion(ctx, schema.Schema{
-			ID:               sid,
-			ProjectID:        pid,
-			CurrentVersionID: &newVersion.ID,
-		}); err != nil {
-			return nil, err
-		}
-
-		return inbounds.SchemaVersionToOutput(newVersion), nil
-	}
-
-	var newVersion *schema.Version
-	newVersion, err = uc.versions.Draft(ctx, schema.Version{
-		SchemaID:      sid,
-		VersionNumber: latest.VersionNumber + 1,
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	if err = uc.schemas.SetVersion(ctx, schema.Schema{

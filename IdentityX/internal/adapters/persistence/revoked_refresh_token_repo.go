@@ -106,7 +106,7 @@ func (repo *revokedRefreshTokensRepo) RevokeMany(ctx context.Context, tokenIDs [
 }
 
 func (repo *revokedRefreshTokensRepo) GetByID(ctx context.Context, revokedID uuid.UUID) (*revoked_refreshes.RevokedRefreshToken, error) {
-	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokenRepo.GetByID",
+	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokensRepo.GetByID",
 		trace.WithAttributes(
 			attribute.String("revoked_token_id", revokedID.String()),
 		),
@@ -133,7 +133,7 @@ func (repo *revokedRefreshTokensRepo) GetByID(ctx context.Context, revokedID uui
 }
 
 func (repo *revokedRefreshTokensRepo) Delete(ctx context.Context, tokenID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokenRepo.Delete",
+	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokensRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("deleted_revoked_token_id", tokenID.String()),
 		),
@@ -164,7 +164,7 @@ func (repo *revokedRefreshTokensRepo) DeleteExpired(ctx context.Context) error {
 }
 
 func (repo *revokedRefreshTokensRepo) IsRevoked(ctx context.Context, tokenID uuid.UUID) (bool, error) {
-	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokenRepo.IsRevoked",
+	ctx, span := repo.tracer.Start(ctx, "RevokedRefreshTokensRepo.IsRevoked",
 		trace.WithAttributes(
 			attribute.String("revoked_token.id", tokenID.String()),
 		),
