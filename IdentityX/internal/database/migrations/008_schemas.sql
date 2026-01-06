@@ -193,6 +193,8 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     WHERE status = 'draft';
 
 -- +goose Down
+DROP INDEX IF EXISTS one_version_draft_per_schema;
+
 ALTER TABLE schemas
 DROP CONSTRAINT IF EXISTS fk_current_schema_version;
 

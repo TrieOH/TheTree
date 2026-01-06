@@ -90,7 +90,7 @@ const (
 )
 
 const (
-	SchemaVersionDraftAlreadyExists ID = "SCHEMA_001"
+	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
 )
 
 const (
