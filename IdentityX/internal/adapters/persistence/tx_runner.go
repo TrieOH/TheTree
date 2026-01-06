@@ -10,9 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
-type txKey string
+type txKey struct{}
 
-var txKeyValue txKey = "tx_key"
+var txKeyValue = txKey{}
 
 type TxRunner struct {
 	db *sql.DB
@@ -31,6 +31,10 @@ func (r *TxRunner) WithinTxWithOptions(
 	opts transactions.TxOptions,
 	fn func(ctx context.Context) error,
 ) error {
+	if ctx.Value(txKeyValue) != nil {
+		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBCannotNestTXFailed)
+	}
+
 	sqlOpts := &sql.TxOptions{
 		Isolation: opts.Isolation,
 		ReadOnly:  opts.ReadOnly,

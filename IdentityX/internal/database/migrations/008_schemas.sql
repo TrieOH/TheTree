@@ -188,6 +188,10 @@ ALTER TABLE schemas
             REFERENCES schema_versions(id)
             ON DELETE SET NULL;
 
+CREATE UNIQUE INDEX one_version_draft_per_schema
+    ON schema_versions (schema_id)
+    WHERE status = 'draft';
+
 -- +goose Down
 ALTER TABLE schemas
 DROP CONSTRAINT IF EXISTS fk_current_schema_version;

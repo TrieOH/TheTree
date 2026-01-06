@@ -90,6 +90,10 @@ const (
 )
 
 const (
+	SchemaVersionDraftAlreadyExists ID = "SCHEMA_001"
+)
+
+const (
 	DBNotFound             ID = "DB_000"
 	DBUniqueViolation      ID = "DB_001"
 	DBForeignKeyViolation  ID = "DB_002"
@@ -98,6 +102,7 @@ const (
 	DBSerializationFailure ID = "DB_005"
 	DBCommitTXFailed       ID = "DB_006"
 	DBBeginTXFailed        ID = "DB_007"
+	DBCannotNestTXFailed   ID = "DB_008"
 )
 
 const (

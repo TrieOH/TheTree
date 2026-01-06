@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
 )
@@ -67,5 +68,16 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("type").String().IsEqual("context")
 		data.Value("status").String().IsEqual("draft")
 		data.Value("current_version_id").IsEqual(schemaVersionID)
+	})
+
+	t.Run("DraftVersionError", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/versions").
+			WithBody(map[string]interface{}{
+				"schema_id": schemaID,
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("a draft schema version already exists").
+			ExpectErrorID(apierr.SchemaVersionDraftAlreadyExists)
 	})
 }
