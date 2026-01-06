@@ -102,7 +102,7 @@ const (
 	DBSerializationFailure ID = "DB_005"
 	DBCommitTXFailed       ID = "DB_006"
 	DBBeginTXFailed        ID = "DB_007"
-	DBCannotNestTXFailed   ID = "DB_008"
+	DBNestedTXNotAllowed   ID = "DB_008"
 )
 
 const (

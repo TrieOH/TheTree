@@ -32,7 +32,7 @@ func (r *TxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) error {
 	if ctx.Value(txKeyValue) != nil {
-		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBCannotNestTXFailed)
+		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBNestedTXNotAllowed)
 	}
 
 	sqlOpts := &sql.TxOptions{
