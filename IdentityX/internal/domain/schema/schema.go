@@ -14,6 +14,19 @@ const (
 	SubContext Type = "sub-context"
 )
 
+func IsValidSchemaType(s string) bool {
+	switch s {
+	case "core":
+		return true
+	case "context":
+		return true
+	case "sub-context":
+		return true
+	default:
+		return false
+	}
+}
+
 type Status string
 
 const (
@@ -43,10 +56,10 @@ const (
 )
 
 type Version struct {
-	ID        uuid.UUID
-	SchemaID  uuid.UUID
-	Version   int
-	Status    VersionStatus
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	Status        VersionStatus
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }

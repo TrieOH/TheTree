@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/project"
+	"GoAuth/internal/application/schema"
 	"GoAuth/internal/application/session"
 	"GoAuth/internal/infrastructure/telemetry"
 	"database/sql"
@@ -28,20 +29,24 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	revokedTokensRepo := persistence.NewRevokedRefreshTokensRepo(queries, logging, tracer)
 	projectRepo := persistence.NewProjectRepo(queries, logging, tracer)
 	projectUserRepo := persistence.NewProjectUserRepo(queries, logging, tracer)
+	schemaRepo := persistence.NewSchemaRepo(queries, logging, tracer)
 
 	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, projectUserRepo)
 	projectUC := project.New(projectRepo)
 	sessionUC := session.New(sessionRepo, revokedTokensRepo)
+	schemaUC := schema.New(schemaRepo, projectRepo)
 
 	authHandler := http2.NewAuthHandler(authUC)
 	projectHandler := http2.NewProjectHandler(projectUC)
 	sessionHandler := http2.NewSessionHandler(sessionUC)
+	schemaHandler := http2.NewSchemaHandler(schemaUC)
 
 	authMW := middleware.NewAuthMiddleware(revokedTokensRepo, authMWTracer)
 
 	registerAuthRoutes(r, authHandler, authMW)
 	registerSessionRoutes(r, sessionHandler, authMW)
 	registerProjectRoutes(r, projectHandler, authMW)
+	registerSchemaRoutes(r, schemaHandler, authMW)
 
 	return r
 }
@@ -98,5 +103,18 @@ func registerProjectRoutes(
 			r.Patch("/projects/{project_id}", h.UpdateProjectByID)
 			r.Delete("/projects/{project_id}", h.DeleteProjectByID)
 		})
+	})
+}
+
+func registerSchemaRoutes(
+	r *chi.Mux,
+	h *http2.SchemaHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+
+		r.Post("/projects/{project_id}/schemas", h.DraftSchema)
 	})
 }

@@ -146,6 +146,28 @@ func (r projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) 
 	return pub, nil
 }
 
+func (r projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "ProjectRepo.IsOwnerOf",
+		trace.WithAttributes(
+			attribute.String("project.owner_id", ownerID.String()),
+			attribute.String("project.id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	isOwner, err := r.q.IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
+		OwnerID: ownerID,
+		ID:      projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return isOwner, nil
+}
+
 func (r projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Project, error) {
 	ctx, span := r.tracer.Start(ctx, "ProjectRepo.List",
 		trace.WithAttributes(

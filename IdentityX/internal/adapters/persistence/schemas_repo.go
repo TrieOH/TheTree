@@ -41,20 +41,20 @@ func mapSchemaFromDB(dst *schema.Schema, src *sqlc.Schema) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (r schemaRepo) Draft(ctx context.Context, createSchema schema.Schema) (*schema.Schema, error) {
+func (r schemaRepo) Draft(ctx context.Context, newSchema schema.Schema) (*schema.Schema, error) {
 	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Draft",
 		trace.WithAttributes(
-			attribute.String("schema.project_id", createSchema.ProjectID.String()),
-			attribute.String("schema.type", string(createSchema.Type)),
+			attribute.String("schema.project_id", newSchema.ProjectID.String()),
+			attribute.String("schema.type", string(newSchema.Type)),
 		),
 	)
 	defer span.End()
 
 	sqlcSchema, err := r.q.DraftSchema(ctx, sqlc.DraftSchemaParams{
-		ProjectID: createSchema.ProjectID,
-		Title:     createSchema.Title,
-		FlowID:    createSchema.FlowID,
-		Type:      sqlc.SchemaType(createSchema.Type),
+		ProjectID: newSchema.ProjectID,
+		Title:     newSchema.Title,
+		FlowID:    newSchema.FlowID,
+		Type:      sqlc.SchemaType(newSchema.Type),
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -64,23 +64,23 @@ func (r schemaRepo) Draft(ctx context.Context, createSchema schema.Schema) (*sch
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
 
-	var newSchema schema.Schema
-	mapSchemaFromDB(&newSchema, &sqlcSchema)
-	return &newSchema, nil
+	var createdSchema schema.Schema
+	mapSchemaFromDB(&createdSchema, &sqlcSchema)
+	return &createdSchema, nil
 }
 
-func (r schemaRepo) Publish(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) error {
+func (r schemaRepo) Publish(ctx context.Context, publishedSchema schema.Schema) error {
 	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Publish",
 		trace.WithAttributes(
-			attribute.String("schema.id", schemaID.String()),
-			attribute.String("schema.project_id", projectID.String()),
+			attribute.String("schema.id", publishedSchema.ID.String()),
+			attribute.String("schema.project_id", publishedSchema.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
 	if err := r.q.PublishSchema(ctx, sqlc.PublishSchemaParams{
-		ID:        schemaID,
-		ProjectID: projectID,
+		ID:        publishedSchema.ID,
+		ProjectID: publishedSchema.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -90,18 +90,18 @@ func (r schemaRepo) Publish(ctx context.Context, schemaID uuid.UUID, projectID u
 	return nil
 }
 
-func (r schemaRepo) Archive(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) error {
+func (r schemaRepo) Archive(ctx context.Context, archivedSchema schema.Schema) error {
 	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Archive",
 		trace.WithAttributes(
-			attribute.String("schema.id", schemaID.String()),
-			attribute.String("schema.project_id", projectID.String()),
+			attribute.String("schema.id", archivedSchema.ID.String()),
+			attribute.String("schema.project_id", archivedSchema.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
 	if err := r.q.ArchiveSchema(ctx, sqlc.ArchiveSchemaParams{
-		ID:        schemaID,
-		ProjectID: projectID,
+		ID:        archivedSchema.ID,
+		ProjectID: archivedSchema.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -111,18 +111,18 @@ func (r schemaRepo) Archive(ctx context.Context, schemaID uuid.UUID, projectID u
 	return nil
 }
 
-func (r schemaRepo) Delete(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) error {
+func (r schemaRepo) Delete(ctx context.Context, deletedSchema schema.Schema) error {
 	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Delete",
 		trace.WithAttributes(
-			attribute.String("schema.id", schemaID.String()),
-			attribute.String("schema.project_id", projectID.String()),
+			attribute.String("schema.id", deletedSchema.ID.String()),
+			attribute.String("schema.project_id", deletedSchema.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
 	if err := r.q.DeleteSchema(ctx, sqlc.DeleteSchemaParams{
-		ID:        schemaID,
-		ProjectID: projectID,
+		ID:        deletedSchema.ID,
+		ProjectID: deletedSchema.ProjectID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -130,6 +130,28 @@ func (r schemaRepo) Delete(ctx context.Context, schemaID uuid.UUID, projectID uu
 	}
 
 	return nil
+}
+
+func (r schemaRepo) Exists(ctx context.Context, existsSchema schema.Schema) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.Exists",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", existsSchema.ProjectID.String()),
+		),
+	)
+	defer span.End()
+
+	exists, err := r.q.SchemaExists(ctx, sqlc.SchemaExistsParams{
+		ProjectID: existsSchema.ProjectID,
+		FlowID:    existsSchema.FlowID,
+		Type:      sqlc.SchemaType(existsSchema.Type),
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return exists, nil
 }
 
 func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) (*schema.Schema, error) {
@@ -152,6 +174,32 @@ func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID 
 	}
 
 	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
+
+	var foundSchema schema.Schema
+	mapSchemaFromDB(&foundSchema, &sqlcSchema)
+	return &foundSchema, nil
+}
+
+func (r schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID uuid.UUID) (*schema.Schema, error) {
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByID",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcSchema, err := r.q.GetSchemaByFlowID(ctx, sqlc.GetSchemaByFlowIDParams{
+		FlowID:    flowID,
+		ProjectID: projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
+	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
 
 	var foundSchema schema.Schema
 	mapSchemaFromDB(&foundSchema, &sqlcSchema)

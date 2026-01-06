@@ -45,6 +45,13 @@ RETURNING
 DELETE FROM projects
 WHERE id = $1 AND owner_id = $2;
 
+-- name: IsOwnerOf :one
+SELECT EXISTS (
+    SELECT 1
+    FROM projects
+    WHERE id = $1 AND owner_id = $2
+);
+
 -- admin
 -- name: AdminGetProjectById :one
 SELECT 
