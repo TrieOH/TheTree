@@ -31,11 +31,16 @@ func (r *TxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) er
 
 	if err := fn(ctx); err != nil {
 		txErr := tx.Rollback()
-		logs.L().Error("error during tx rollback", zap.Error(txErr))
+		if txErr != nil {
+			logs.L().Error("error during tx rollback", zap.Error(txErr))
+		}
 		return err
 	}
 
 	txErr := tx.Commit()
-	logs.L().Error("error during tx commit", zap.Error(txErr))
-	return apierr.ErrInternal.WithMsg("transaction commit failed").WithID(apierr.DBCommitTXFailed).WithCause(txErr)
+	if txErr != nil {
+		logs.L().Error("error during tx commit", zap.Error(txErr))
+		return apierr.ErrInternal.WithMsg("transaction commit failed").WithID(apierr.DBCommitTXFailed).WithCause(txErr)
+	}
+	return nil
 }

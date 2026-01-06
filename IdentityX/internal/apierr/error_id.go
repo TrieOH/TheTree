@@ -79,6 +79,10 @@ const (
 )
 
 const (
+	ProjectUserInvalidMetadata ID = "PROJ_USR_001"
+)
+
+const (
 	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
 	SchemaInvalidSchemaType         ID = "SCHEMA_002"
 	SchemaInvalidID                 ID = "SCHEMA_003"
