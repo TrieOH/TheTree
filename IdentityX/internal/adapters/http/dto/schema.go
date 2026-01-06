@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
 	"time"
 
@@ -15,18 +14,18 @@ type DraftSchemaRequest struct {
 }
 
 type DraftSchemaResponse struct {
-	ID               uuid.UUID     `json:"id"`
-	ProjectID        uuid.UUID     `json:"project_id"`
-	Title            string        `json:"title"`
-	FlowID           string        `json:"flow_id"`
-	Type             schema.Type   `json:"type"`
-	CurrentVersionID *uuid.UUID    `json:"current_version_id"`
-	Status           schema.Status `json:"status"`
-	CreatedAt        time.Time     `json:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at"`
+	ID               uuid.UUID  `json:"id"`
+	ProjectID        uuid.UUID  `json:"project_id"`
+	Title            string     `json:"title"`
+	FlowID           string     `json:"flow_id"`
+	Type             string     `json:"type"`
+	CurrentVersionID *uuid.UUID `json:"current_version_id"`
+	Status           string     `json:"status"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
-func SchemaToResponse(out *inbounds.DraftSchemaOutput) *DraftSchemaResponse {
+func SchemaOutputToResponse(out *inbounds.SchemaOutput) *DraftSchemaResponse {
 	if out == nil {
 		return nil
 	}
@@ -35,9 +34,9 @@ func SchemaToResponse(out *inbounds.DraftSchemaOutput) *DraftSchemaResponse {
 		ProjectID:        out.ProjectID,
 		Title:            out.Title,
 		FlowID:           out.FlowID,
-		Type:             out.Type,
+		Type:             string(out.Type),
 		CurrentVersionID: out.CurrentVersionID,
-		Status:           out.Status,
+		Status:           string(out.Status),
 		CreatedAt:        out.CreatedAt,
 		UpdatedAt:        out.UpdatedAt,
 	}

@@ -36,7 +36,7 @@ func New(
 	}
 }
 
-func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*inbounds.DraftSchemaOutput, error) {
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*inbounds.SchemaOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Draft")
 	defer span.End()
 
@@ -114,19 +114,52 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 		return nil, err
 	}
 
-	return &inbounds.DraftSchemaOutput{
-		ID:               drafted.ID,
-		ProjectID:        drafted.ProjectID,
-		Title:            drafted.Title,
-		FlowID:           drafted.FlowID,
-		Type:             drafted.Type,
-		CurrentVersionID: drafted.CurrentVersionID,
-		Status:           drafted.Status,
-		CreatedAt:        drafted.CreatedAt,
-		UpdatedAt:        drafted.UpdatedAt,
-	}, nil
+	return inbounds.SchemaToSchemaOutput(drafted), nil
 }
 
-func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) error {
-	return nil
+func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) (*inbounds.SchemaOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetByID")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipal(ctx)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	tracing.AnnotatePrincipal(span, principal)
+
+	sid, err := uuid.Parse(in.SchemaID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	pid, err := uuid.Parse(in.ProjectID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	isOwner, err := uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	if err != nil {
+		err = apierr.ErrUnauthorized.WithMsg("error checking project ownership").WithID(apierr.ProjectOwnershipCheckFailed).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	if !isOwner {
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	found, err := uc.schemas.FindByID(ctx, sid, pid)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.SchemaToSchemaOutput(found), nil
 }

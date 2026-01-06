@@ -154,6 +154,28 @@ func (r schemaRepo) Exists(ctx context.Context, existsSchema schema.Schema) (boo
 	return exists, nil
 }
 
+func (r schemaRepo) BelongsToProject(ctx context.Context, belongsToProject schema.Schema) (bool, error) {
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.BelongsToProject",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", belongsToProject.ID.String()),
+			attribute.String("schema.id", belongsToProject.ID.String()),
+		),
+	)
+	defer span.End()
+
+	belongs, err := r.q.SchemaBelongsToProject(ctx, sqlc.SchemaBelongsToProjectParams{
+		ID:        belongsToProject.ID,
+		ProjectID: belongsToProject.ProjectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return belongs, nil
+}
+
 func (r schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projectID uuid.UUID) (*schema.Schema, error) {
 	ctx, span := r.tracer.Start(ctx, "SchemaRepo.FindByID",
 		trace.WithAttributes(
@@ -230,4 +252,28 @@ func (r schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Sch
 		schemaList = append(schemaList, foundSchema)
 	}
 	return schemaList, nil
+}
+
+func (r schemaRepo) SetVersion(ctx context.Context, setVersion schema.Schema) error {
+	ctx, span := r.tracer.Start(ctx, "SchemaRepo.SetVersion",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", setVersion.ProjectID.String()),
+			attribute.String("schema.id", setVersion.ID.String()),
+			attribute.String("schema.current_version_id", setVersion.CurrentVersionID.String()),
+		),
+	)
+	defer span.End()
+
+	err := r.q.SetSchemaVersion(ctx, sqlc.SetSchemaVersionParams{
+		CurrentVersionID: setVersion.CurrentVersionID,
+		ID:               setVersion.ID,
+		ProjectID:        setVersion.ProjectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
 }

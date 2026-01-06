@@ -18,7 +18,7 @@ func NewSchemaHandler(uc inbounds.SchemaService) *SchemaHandler {
 	return &SchemaHandler{schemas: uc}
 }
 
-func (handler *SchemaHandler) DraftSchema(w http.ResponseWriter, r *http.Request) {
+func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
@@ -46,6 +46,36 @@ func (handler *SchemaHandler) DraftSchema(w http.ResponseWriter, r *http.Request
 	}
 
 	resp.Created("drafted schema").
-		WithData(dto.SchemaToResponse(res)).
+		WithData(dto.SchemaOutputToResponse(res)).
+		Send(w)
+}
+
+func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
+		resp.BadRequest("missing project_id parameter").Send(w)
+		return
+	}
+
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema_id parameter").Send(w)
+		return
+	}
+
+	in := inbounds.GetSchemaByIDInput{
+		ProjectID: projectID,
+		SchemaID:  schemaID,
+	}
+
+	ctx := r.Context()
+	found, err := handler.schemas.GetByID(ctx, in)
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	resp.OK().
+		WithData(dto.SchemaOutputToResponse(found)).
 		Send(w)
 }

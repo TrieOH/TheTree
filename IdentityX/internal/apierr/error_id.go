@@ -81,6 +81,8 @@ const (
 const (
 	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
 	SchemaInvalidSchemaType         ID = "SCHEMA_002"
+	SchemaInvalidID                 ID = "SCHEMA_003"
+	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
 )
 
 const (
