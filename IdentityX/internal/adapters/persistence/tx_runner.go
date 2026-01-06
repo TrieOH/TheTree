@@ -3,6 +3,7 @@ package persistence
 import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/transactions"
 	"context"
 	"database/sql"
 
@@ -22,7 +23,20 @@ func NewTxRunner(db *sql.DB) *TxRunner {
 }
 
 func (r *TxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+	return r.WithinTxWithOptions(ctx, transactions.TxOptions{}, fn)
+}
+
+func (r *TxRunner) WithinTxWithOptions(
+	ctx context.Context,
+	opts transactions.TxOptions,
+	fn func(ctx context.Context) error,
+) error {
+	sqlOpts := &sql.TxOptions{
+		Isolation: opts.Isolation,
+		ReadOnly:  opts.ReadOnly,
+	}
+
+	tx, err := r.db.BeginTx(ctx, sqlOpts)
 	if err != nil {
 		return apierr.ErrInternal.WithMsg("cannot begin transaction").WithID(apierr.DBBeginTXFailed).WithCause(err)
 	}

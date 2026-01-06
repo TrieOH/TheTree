@@ -134,6 +134,11 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 		}
 	}
 
+	newVersion, err = uc.versions.Draft(ctx, *newVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = uc.schemas.SetVersion(ctx, schema.Schema{
 		ID:               sid,
 		ProjectID:        pid,
@@ -146,5 +151,6 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 }
 
 func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersionInput) error {
+	// TODO: Implement me!
 	return apierr.ErrInternal.WithMsg("publish not yet implemented")
 }
