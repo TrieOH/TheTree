@@ -4,6 +4,7 @@ import (
 	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
@@ -22,6 +23,7 @@ type UseCase struct {
 	schemas  outbound.SchemaRepository
 	versions outbound.SchemaVersionRepository
 	projects outbound.ProjectRepository
+	tx       transactions.TxRunner
 }
 
 var _ inbounds.SchemaVersionService = (*UseCase)(nil)
@@ -30,15 +32,28 @@ func New(
 	schemas outbound.SchemaRepository,
 	versions outbound.SchemaVersionRepository,
 	projects outbound.ProjectRepository,
+	tx transactions.TxRunner,
 ) inbounds.SchemaVersionService {
 	return &UseCase{
 		schemas:  schemas,
 		versions: versions,
 		projects: projects,
+		tx:       tx,
 	}
 }
 
 func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
+	var out *inbounds.DraftSchemaVersionOutput
+	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		out, err = uc.draftInternal(ctx, in)
+		return err
+	})
+
+	return out, err
+}
+
+func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.Draft")
 	defer span.End()
 
@@ -150,5 +165,5 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInpu
 }
 
 func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersionInput) error {
-	return nil
+	return apierr.ErrInternal.WithMsg("publish not yet implemented")
 }

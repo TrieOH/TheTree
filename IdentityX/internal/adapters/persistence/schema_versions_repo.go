@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,6 +18,13 @@ type schemaVersionRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+}
+
+func (repo *schemaVersionRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 var _ outbound.SchemaVersionRepository = (*schemaVersionRepo)(nil)
@@ -38,18 +46,18 @@ func mapSchemaVersionFromDB(dst *schema.Version, src *sqlc.SchemaVersion) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (r schemaVersionRepo) Draft(ctx context.Context, version schema.Version) (*schema.Version, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaVersionRepo.Draft",
+func (repo *schemaVersionRepo) Draft(ctx context.Context, toDraft schema.Version) (*schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionRepo.Draft",
 		trace.WithAttributes(
-			attribute.String("version.schema_id", version.SchemaID.String()),
-			attribute.Int("version.version", version.VersionNumber),
+			attribute.String("version.schema_id", toDraft.SchemaID.String()),
+			attribute.Int("version.version", toDraft.VersionNumber),
 		),
 	)
 	defer span.End()
 
-	sqlcSchemaVersion, err := r.q.DraftSchemaVersion(ctx, sqlc.DraftSchemaVersionParams{
-		SchemaID: version.SchemaID,
-		Version:  version.VersionNumber,
+	sqlcSchemaVersion, err := repo.queries(ctx).DraftSchemaVersion(ctx, sqlc.DraftSchemaVersionParams{
+		SchemaID: toDraft.SchemaID,
+		Version:  toDraft.VersionNumber,
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -64,18 +72,18 @@ func (r schemaVersionRepo) Draft(ctx context.Context, version schema.Version) (*
 	return &createdSchemaVersion, nil
 }
 
-func (r schemaVersionRepo) Publish(ctx context.Context, version schema.Version) error {
-	ctx, span := r.tracer.Start(ctx, "SchemaVersionsRepo.Publish",
+func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish schema.Version) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.Publish",
 		trace.WithAttributes(
-			attribute.String("version.id", version.ID.String()),
-			attribute.String("version.schema_id", version.SchemaID.String()),
+			attribute.String("version.id", toPublish.ID.String()),
+			attribute.String("version.schema_id", toPublish.SchemaID.String()),
 		),
 	)
 	defer span.End()
 
-	if err := r.q.PublishSchemaVersion(ctx, sqlc.PublishSchemaVersionParams{
-		ID:       version.ID,
-		SchemaID: version.SchemaID,
+	if err := repo.queries(ctx).PublishSchemaVersion(ctx, sqlc.PublishSchemaVersionParams{
+		ID:       toPublish.ID,
+		SchemaID: toPublish.SchemaID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -85,18 +93,18 @@ func (r schemaVersionRepo) Publish(ctx context.Context, version schema.Version) 
 	return nil
 }
 
-func (r schemaVersionRepo) Archive(ctx context.Context, version schema.Version) error {
-	ctx, span := r.tracer.Start(ctx, "SchemaVersionsRepo.Archive",
+func (repo *schemaVersionRepo) Archive(ctx context.Context, toArchive schema.Version) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.Archive",
 		trace.WithAttributes(
-			attribute.String("version.id", version.ID.String()),
-			attribute.String("version.schema_id", version.SchemaID.String()),
+			attribute.String("version.id", toArchive.ID.String()),
+			attribute.String("version.schema_id", toArchive.SchemaID.String()),
 		),
 	)
 	defer span.End()
 
-	if err := r.q.ArchiveSchemaVersion(ctx, sqlc.ArchiveSchemaVersionParams{
-		ID:       version.ID,
-		SchemaID: version.SchemaID,
+	if err := repo.queries(ctx).ArchiveSchemaVersion(ctx, sqlc.ArchiveSchemaVersionParams{
+		ID:       toArchive.ID,
+		SchemaID: toArchive.SchemaID,
 	}); err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -106,15 +114,15 @@ func (r schemaVersionRepo) Archive(ctx context.Context, version schema.Version) 
 	return nil
 }
 
-func (r schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
-	ctx, span := r.tracer.Start(ctx, "SchemaVersionsRepo.Archive",
+func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetLatest",
 		trace.WithAttributes(
 			attribute.String("version.schema_id", schemaID.String()),
 		),
 	)
 	defer span.End()
 
-	latest, err := r.q.GetLatestSchemaVersion(ctx, schemaID)
+	latest, err := repo.queries(ctx).GetLatestSchemaVersion(ctx, schemaID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)

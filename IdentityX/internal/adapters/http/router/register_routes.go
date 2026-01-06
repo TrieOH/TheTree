@@ -20,6 +20,7 @@ import (
 
 func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
+	txRunner := persistence.NewTxRunner(db)
 
 	tracer := otel.Tracer(string(telemetry.RepoTracerName))
 	authMWTracer := otel.Tracer(string(telemetry.AuthMWTracerName))
@@ -37,7 +38,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	projectUC := project.New(projectRepo)
 	sessionUC := session.New(sessionRepo, revokedTokensRepo)
 	schemaUC := schema.New(schemaRepo, projectRepo)
-	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, projectRepo)
+	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, projectRepo, txRunner)
 
 	authHandler := http2.NewAuthHandler(authUC)
 	projectHandler := http2.NewProjectHandler(projectUC)

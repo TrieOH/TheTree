@@ -53,13 +53,13 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
-		resp.BadRequest("missing project_id parameter").Send(w)
+		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
 	schemaID := chi.URLParam(r, "schema_id")
 	if schemaID == "" {
-		resp.BadRequest("missing schema_id parameter").Send(w)
+		resp.BadRequest("missing schema id parameter").Send(w)
 		return
 	}
 

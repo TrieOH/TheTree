@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,6 +28,13 @@ func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbo
 		log:    log,
 		tracer: tracer,
 	}
+}
+
+func (repo *projectRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 func mapUpdateProjectsRowFromDB(dst *project.Project, src *sqlc.UpdateProjectRow) {
@@ -73,22 +81,22 @@ func mapProjectRowFromDB(dst *project.Project, src *sqlc.CreateProjectRow) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
-func (r projectRepo) Create(ctx context.Context, project project.Project) (*project.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Create",
+func (repo *projectRepo) Create(ctx context.Context, toCreate project.Project) (*project.Project, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.Create",
 		trace.WithAttributes(
-			attribute.String("project.owner_id", project.OwnerID.String()),
-			attribute.String("project.name", project.ProjectName),
+			attribute.String("project.owner_id", toCreate.OwnerID.String()),
+			attribute.String("project.name", toCreate.ProjectName),
 		),
 	)
 	defer span.End()
 
-	sqlcProject, err := r.q.CreateProject(ctx, sqlc.CreateProjectParams{
-		ProjectName: project.ProjectName,
-		OwnerID:     project.OwnerID,
-		Metadata:    project.Metadata,
-		IsActive:    project.IsActive,
-		PubKey:      project.PubKey,
-		PrivKey:     string(project.PrivKey),
+	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
+		ProjectName: toCreate.ProjectName,
+		OwnerID:     toCreate.OwnerID,
+		Metadata:    toCreate.Metadata,
+		IsActive:    toCreate.IsActive,
+		PubKey:      toCreate.PubKey,
+		PrivKey:     string(toCreate.PrivKey),
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -98,12 +106,12 @@ func (r projectRepo) Create(ctx context.Context, project project.Project) (*proj
 
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
 
-	mapProjectRowFromDB(&project, &sqlcProject)
-	return &project, nil
+	mapProjectRowFromDB(&toCreate, &sqlcProject)
+	return &toCreate, nil
 }
 
-func (r projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) (*project.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.GetByID",
+func (repo *projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) (*project.Project, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.GetByID",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", projectID.String()),
@@ -111,7 +119,7 @@ func (r projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) 
 	)
 	defer span.End()
 
-	sqlcProject, err := r.q.GetProjectById(ctx, sqlc.GetProjectByIdParams{
+	sqlcProject, err := repo.queries(ctx).GetProjectById(ctx, sqlc.GetProjectByIdParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
@@ -128,15 +136,15 @@ func (r projectRepo) GetByID(ctx context.Context, projectID, ownerID uuid.UUID) 
 	return &proj, nil
 }
 
-func (r projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) (string, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.GetPublicKeyByID",
+func (repo *projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) (string, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.GetPublicKeyByID",
 		trace.WithAttributes(
 			attribute.String("project.id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	pub, err := r.q.GetProjectPublicKeyById(ctx, projectID)
+	pub, err := repo.queries(ctx).GetProjectPublicKeyById(ctx, projectID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -146,8 +154,8 @@ func (r projectRepo) GetPublicKeyByID(ctx context.Context, projectID uuid.UUID) 
 	return pub, nil
 }
 
-func (r projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID) (bool, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.IsOwnerOf",
+func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.IsOwnerOf",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", projectID.String()),
@@ -155,7 +163,7 @@ func (r projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID
 	)
 	defer span.End()
 
-	isOwner, err := r.q.IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
+	isOwner, err := repo.queries(ctx).IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
 		OwnerID: ownerID,
 		ID:      projectID,
 	})
@@ -168,15 +176,15 @@ func (r projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID
 	return isOwner, nil
 }
 
-func (r projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.List",
+func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Project, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.List",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcProjects, err := r.q.ListProjects(ctx, ownerID)
+	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -195,20 +203,20 @@ func (r projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project.Pro
 	return projects, nil
 }
 
-func (r projectRepo) Update(ctx context.Context, project project.Project, ownerID uuid.UUID) (*project.Project, error) {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Update",
+func (repo *projectRepo) Update(ctx context.Context, toUpdate project.Project, ownerID uuid.UUID) (*project.Project, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.Update",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
-			attribute.String("project.id", project.ID.String()),
+			attribute.String("project.id", toUpdate.ID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcProject, err := r.q.UpdateProject(ctx, sqlc.UpdateProjectParams{
-		ID:          project.ID,
+	sqlcProject, err := repo.queries(ctx).UpdateProject(ctx, sqlc.UpdateProjectParams{
+		ID:          toUpdate.ID,
 		OwnerID:     ownerID,
-		ProjectName: project.ProjectName,
-		Metadata:    project.Metadata,
+		ProjectName: toUpdate.ProjectName,
+		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -216,12 +224,12 @@ func (r projectRepo) Update(ctx context.Context, project project.Project, ownerI
 		return nil, sqlcErr
 	}
 
-	mapUpdateProjectsRowFromDB(&project, &sqlcProject)
-	return &project, nil
+	mapUpdateProjectsRowFromDB(&toUpdate, &sqlcProject)
+	return &toUpdate, nil
 }
 
-func (r projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUID) error {
-	ctx, span := r.tracer.Start(ctx, "ProjectRepo.Delete",
+func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.id", projectID.String()),
@@ -229,7 +237,7 @@ func (r projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUID) e
 	)
 	defer span.End()
 
-	err := r.q.DeleteProject(ctx, sqlc.DeleteProjectParams{
+	err := repo.queries(ctx).DeleteProject(ctx, sqlc.DeleteProjectParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
