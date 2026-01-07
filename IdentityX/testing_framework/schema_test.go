@@ -248,7 +248,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		schemaVersion2ID = data.Value("id").String().Raw()
 	})
 
-	t.Run("CheckSchemaVersion", func(t *testing.T) {
+	t.Run("CheckSchemaVersionAfterV2Draft", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
@@ -336,8 +336,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusOK).
 			Data()
 
-		t.Log(schema)
-
 		schema.Value("id").String().IsEqual(schemaID)
 		schema.Value("project_id").String().IsEqual(projectID)
 		schema.Value("title").String().IsEqual("scti-register-flow")
@@ -367,11 +365,11 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		fieldsV2field2ID := fieldsV2.Value(1).Object().Value("id").String().Raw()
 
 		if fieldsV1field1ID != fieldsV2field1ID {
-			t.Fatalf("field id doesn't match between versions")
+			t.Fatalf("field 1 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field1ID, fieldsV2field1ID)
 		}
 
 		if fieldsV1field2ID != fieldsV2field2ID {
-			t.Fatalf("field id doesn't match between versions")
+			t.Fatalf("field 2 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field2ID, fieldsV2field2ID)
 		}
 	})
 }

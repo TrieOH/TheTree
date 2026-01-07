@@ -46,7 +46,7 @@ func New(
 	}
 }
 
-func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.SchemaVersionOutput, error) {
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaVersionServiceInput) (*inbounds.SchemaVersionOutput, error) {
 	var out *inbounds.SchemaVersionOutput
 	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -57,7 +57,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInpu
 	return out, err
 }
 
-func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.SchemaVersionOutput, error) {
+func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionServiceInput) (*inbounds.SchemaVersionOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.Draft")
 	defer span.End()
 
@@ -175,7 +175,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 	return inbounds.SchemaVersionToOutput(newVersionDraft), nil
 }
 
-func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersionInput) error {
+func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionServiceInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.Publish")
 	defer span.End()
 

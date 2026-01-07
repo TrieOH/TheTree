@@ -31,7 +31,7 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.DraftSchemaInput{
+	in := inbounds.SchemaServiceInput{
 		SchemaType: req.SchemaType,
 		Title:      req.Title,
 		FlowID:     req.FlowID,
@@ -63,7 +63,7 @@ func (handler *SchemaHandler) Publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.PublishSchemaInput{
+	in := inbounds.SchemaServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}
@@ -90,7 +90,7 @@ func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.GetSchemaByIDInput{
+	in := inbounds.SchemaServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}
@@ -120,7 +120,7 @@ func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	in := inbounds.GetSchemaVerboseInput{
+	in := inbounds.SchemaServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}

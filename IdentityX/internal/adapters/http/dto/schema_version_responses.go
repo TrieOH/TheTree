@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type DraftSchemaVersionResponse struct {
+type SchemaVersionResponse struct {
 	ID            uuid.UUID `json:"id"`
 	SchemaID      uuid.UUID `json:"schema_id"`
 	VersionNumber int       `json:"version_number"`
@@ -16,11 +16,16 @@ type DraftSchemaVersionResponse struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-func SchemaVersionOutputToResponse(out *inbounds.SchemaVersionOutput) *DraftSchemaVersionResponse {
+type VersionVerboseResponse struct {
+	SchemaVersionResponse
+	Fields []FieldResponse `json:"fields"`
+}
+
+func SchemaVersionOutputToResponse(out *inbounds.SchemaVersionOutput) *SchemaVersionResponse {
 	if out == nil {
 		return nil
 	}
-	return &DraftSchemaVersionResponse{
+	return &SchemaVersionResponse{
 		ID:            out.ID,
 		SchemaID:      out.SchemaID,
 		VersionNumber: out.VersionNumber,
@@ -28,9 +33,4 @@ func SchemaVersionOutputToResponse(out *inbounds.SchemaVersionOutput) *DraftSche
 		CreatedAt:     out.CreatedAt,
 		UpdatedAt:     out.UpdatedAt,
 	}
-}
-
-type VersionVerboseResponse struct {
-	DraftSchemaVersionResponse
-	Fields []FieldResponse `json:"fields"`
 }

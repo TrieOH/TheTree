@@ -43,7 +43,7 @@ func New(
 	}
 }
 
-func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*inbounds.SchemaOutput, error) {
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Draft")
 	defer span.End()
 
@@ -122,7 +122,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 	return inbounds.SchemaToSchemaOutput(drafted), nil
 }
 
-func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) error {
+func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Publish")
 	defer span.End()
 
@@ -239,7 +239,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	return nil
 }
 
-func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) (*inbounds.SchemaOutput, error) {
+func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetByID")
 	defer span.End()
 
@@ -286,7 +286,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) 
 	return inbounds.SchemaToSchemaOutput(found), nil
 }
 
-func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.GetSchemaVerboseInput) (*inbounds.SchemaVerboseOutput, error) {
+func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaVerboseOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetVerbose")
 	defer span.End()
 

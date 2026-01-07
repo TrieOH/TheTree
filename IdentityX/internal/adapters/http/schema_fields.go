@@ -56,7 +56,7 @@ func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	in := inbounds.CreateSchemaFieldInput{
+	in := inbounds.SchemaFieldInput{
 		ProjectID:     projectID,
 		SchemaID:      schemaID,
 		VersionNumber: versionNumber,

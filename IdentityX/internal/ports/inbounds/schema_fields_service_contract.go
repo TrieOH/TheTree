@@ -2,18 +2,13 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/field"
-	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type SchemaFieldsService interface {
-	Create(ctx context.Context, in CreateSchemaFieldInput) ([]OutputField, error)
-}
-
-type CreateSchemaFieldInput struct {
+type SchemaFieldInput struct {
 	SchemaID      string
 	ProjectID     string
 	VersionNumber int
@@ -54,6 +49,14 @@ type OutputField struct {
 	UpdatedAt       time.Time
 }
 
+func FieldSliceToOutputFieldSlice(fs []field.Field) []OutputField {
+	out := make([]OutputField, 0, len(fs))
+	for _, f := range fs {
+		out = append(out, *FieldToOutputField(&f))
+	}
+	return out
+}
+
 func FieldToOutputField(f *field.Field) *OutputField {
 	if f == nil {
 		return nil
@@ -76,12 +79,4 @@ func FieldToOutputField(f *field.Field) *OutputField {
 		CreatedAt:       f.CreatedAt,
 		UpdatedAt:       f.UpdatedAt,
 	}
-}
-
-func FieldSliceToOutputFieldSlice(fs []field.Field) []OutputField {
-	out := make([]OutputField, 0, len(fs))
-	for _, f := range fs {
-		out = append(out, *FieldToOutputField(&f))
-	}
-	return out
 }

@@ -2,39 +2,22 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/schema"
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type SchemaService interface {
-	Draft(ctx context.Context, in DraftSchemaInput) (*SchemaOutput, error)
-	Publish(ctx context.Context, in PublishSchemaInput) error
-	GetByID(ctx context.Context, in GetSchemaByIDInput) (*SchemaOutput, error)
-	GetVerbose(ctx context.Context, in GetSchemaVerboseInput) (*SchemaVerboseOutput, error)
-}
-
-type DraftSchemaInput struct {
+type SchemaServiceInput struct {
 	SchemaType string
 	Title      string
 	FlowID     string
 	ProjectID  string
+	SchemaID   string
 }
 
-type GetSchemaByIDInput struct {
-	ProjectID string
-	SchemaID  string
-}
-
-type GetSchemaVerboseInput struct {
-	ProjectID string
-	SchemaID  string
-}
-
-type PublishSchemaInput struct {
-	SchemaID  string
-	ProjectID string
+type SchemaVerboseOutput struct {
+	SchemaOutput
+	Versions []VersionVerboseOutput
 }
 
 type SchemaOutput struct {
@@ -64,9 +47,4 @@ func SchemaToSchemaOutput(out *schema.Schema) *SchemaOutput {
 		CreatedAt:        out.CreatedAt,
 		UpdatedAt:        out.UpdatedAt,
 	}
-}
-
-type SchemaVerboseOutput struct {
-	SchemaOutput
-	Versions []VersionVerboseOutput
 }

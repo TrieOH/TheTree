@@ -2,25 +2,19 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/schema"
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type SchemaVersionService interface {
-	Draft(ctx context.Context, in DraftSchemaVersionInput) (*SchemaVersionOutput, error)
-	Publish(ctx context.Context, in PublishSchemaVersionInput) error
-}
-
-type DraftSchemaVersionInput struct {
+type SchemaVersionServiceInput struct {
 	SchemaID  string
 	ProjectID string
 }
 
-type PublishSchemaVersionInput struct {
-	SchemaID  string
-	ProjectID string
+type VersionVerboseOutput struct {
+	SchemaVersionOutput
+	Fields []OutputField
 }
 
 type SchemaVersionOutput struct {
@@ -44,9 +38,4 @@ func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
 		CreatedAt:     out.CreatedAt,
 		UpdatedAt:     out.UpdatedAt,
 	}
-}
-
-type VersionVerboseOutput struct {
-	SchemaVersionOutput
-	Fields []OutputField
 }

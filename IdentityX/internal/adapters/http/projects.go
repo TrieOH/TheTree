@@ -41,7 +41,7 @@ func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	in := inbounds.CreateProjectInput{
+	in := inbounds.ProjectServiceInput{
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
@@ -190,8 +190,8 @@ func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.
 		return
 	}
 
-	in := inbounds.UpdateProjectInput{
-		ProjectID:   projectID,
+	in := inbounds.ProjectServiceInput{
+		ProjectID:   &projectID,
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}

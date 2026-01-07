@@ -7,13 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type DraftSchemaRequest struct {
-	SchemaType string `json:"schema_type" validate:"required,oneof=core context sub-context"`
-	Title      string `json:"title" validate:"required,max=255"`
-	FlowID     string `json:"flow_id" validate:"required,max=63"`
-}
-
-type DraftSchemaResponse struct {
+type SchemaResponse struct {
 	ID               uuid.UUID  `json:"id"`
 	ProjectID        uuid.UUID  `json:"project_id"`
 	Title            string     `json:"title"`
@@ -25,11 +19,11 @@ type DraftSchemaResponse struct {
 	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
-func SchemaOutputToResponse(out *inbounds.SchemaOutput) *DraftSchemaResponse {
+func SchemaOutputToResponse(out *inbounds.SchemaOutput) *SchemaResponse {
 	if out == nil {
 		return nil
 	}
-	return &DraftSchemaResponse{
+	return &SchemaResponse{
 		ID:               out.ID,
 		ProjectID:        out.ProjectID,
 		Title:            out.Title,
@@ -43,7 +37,7 @@ func SchemaOutputToResponse(out *inbounds.SchemaOutput) *DraftSchemaResponse {
 }
 
 type VerboseSchemaResponse struct {
-	DraftSchemaResponse
+	SchemaResponse
 	Versions []VersionVerboseResponse `json:"versions"`
 }
 
@@ -53,7 +47,7 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 	}
 
 	schemaDTO := &VerboseSchemaResponse{
-		DraftSchemaResponse: DraftSchemaResponse{
+		SchemaResponse: SchemaResponse{
 			ID:               out.ID,
 			ProjectID:        out.ProjectID,
 			Title:            out.Title,
@@ -68,25 +62,9 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 
 	versionsDTO := make([]VersionVerboseResponse, 0, len(out.Versions))
 	for _, version := range out.Versions {
-		versionOutput := VersionVerboseResponse{
-			DraftSchemaVersionResponse: DraftSchemaVersionResponse{
-				ID:            version.ID,
-				SchemaID:      version.SchemaID,
-				VersionNumber: version.VersionNumber,
-				Status:        string(version.Status),
-				CreatedAt:     version.CreatedAt,
-				UpdatedAt:     version.UpdatedAt,
-			},
-			Fields: nil,
-		}
-		versionsDTO = append(versionsDTO, versionOutput)
-	}
-
-	schemaDTO.Versions = versionsDTO
-
-	for i := range schemaDTO.Versions {
-		for _, f := range out.Versions[i].Fields {
-			schemaDTO.Versions[i].Fields = append(schemaDTO.Versions[i].Fields, FieldResponse{
+		fields := make([]FieldResponse, 0, len(version.Fields))
+		for _, f := range version.Fields {
+			fields = append(fields, FieldResponse{
 				ObjectID:        f.ObjectID,
 				ID:              f.ID,
 				Key:             f.Key,
@@ -105,7 +83,20 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 				UpdatedAt:       f.UpdatedAt,
 			})
 		}
+		versionOutput := VersionVerboseResponse{
+			SchemaVersionResponse: SchemaVersionResponse{
+				ID:            version.ID,
+				SchemaID:      version.SchemaID,
+				VersionNumber: version.VersionNumber,
+				Status:        string(version.Status),
+				CreatedAt:     version.CreatedAt,
+				UpdatedAt:     version.UpdatedAt,
+			},
+			Fields: fields,
+		}
+		versionsDTO = append(versionsDTO, versionOutput)
 	}
+	schemaDTO.Versions = versionsDTO
 
 	return schemaDTO
 }

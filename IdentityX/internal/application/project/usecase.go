@@ -35,7 +35,7 @@ func New(
 // Create handles the business logic for creating a new project.
 // It requires a valid principal in the context, generates a new key pair for the project,
 // and then creates the project in the database.
-func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateProjectInput) (*inbounds.OutputProject, error) {
+func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
@@ -168,9 +168,9 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]an
 // Update handles the business logic for updating a project.
 // It requires a valid principal in the context and that the principal is the owner of the project.
 // It retrieves the project, updates the fields, and then saves the changes to the database.
-func (uc *UseCase) Update(ctx context.Context, in inbounds.UpdateProjectInput) (*inbounds.OutputProject, error) {
+func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update",
-		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
+		trace.WithAttributes(attribute.String("project.id", *in.ProjectID)),
 	)
 	defer span.End()
 
@@ -182,7 +182,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.UpdateProjectInput) (
 
 	tracing.AnnotatePrincipal(span, principal)
 
-	pid, err := uuid.Parse(in.ProjectID)
+	pid, err := uuid.Parse(*in.ProjectID)
 	if err != nil {
 		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
 		apierr.RecordDomainError(span, apiErr)
