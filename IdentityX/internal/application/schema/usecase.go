@@ -176,7 +176,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -190,10 +190,14 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	if toPublish.Status != schema.StatusDraft {
 		if toPublish.Status == schema.StatusPublished {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema that isn't a draft").WithID(apierr.SchemaTryingToPublishPublished)
+			apierr.RecordDomainError(span, err)
 		} else if toPublish.Status == schema.StatusArchived {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema that isn't a draft").WithID(apierr.SchemaTryingToPublishArchived)
+			apierr.RecordDomainError(span, err)
+		} else {
+			err = apierr.ErrInternal.WithMsg("catastrophic system error").WithID(apierr.SchemaNoValidType)
+			apierr.RecordSystemError(span, err)
 		}
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 

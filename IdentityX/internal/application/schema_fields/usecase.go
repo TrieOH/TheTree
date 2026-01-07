@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	usecaseTracer = otel.Tracer("GoAuth.SchemaVersionService")
+	usecaseTracer = otel.Tracer("GoAuth.SchemaFieldsService")
 )
 
 type UseCase struct {
@@ -98,7 +98,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot create a field for a schema version in project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -121,6 +121,18 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	var latest *schema.Version
 	latest, err = uc.versions.GetLatest(ctx, sid)
 	if err != nil {
+		return nil, err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		err = apierr.ErrUnauthorized.WithMsg("version number does not match latest version").WithID(apierr.SchemaVersionMismatch)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	if latest.Status != schema.VersionStatusDraft {
+		err = apierr.ErrUnauthorized.WithMsg("cannot add fields to a non-draft version").WithID(apierr.SchemaVersionNotDraft)
+		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 

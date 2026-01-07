@@ -40,6 +40,7 @@ func NewFieldsRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound
 func mapSchemaFieldFromDB(dst *field.Field, src *sqlc.SchemaField) {
 	dst.ObjectID = src.ObjectID
 	dst.ID = src.ID
+	dst.SchemaID = src.SchemaID
 	dst.SchemaVersionID = src.SchemaVersionID
 	dst.Key = src.Key
 	dst.Type = field.Type(src.Type)
@@ -107,7 +108,7 @@ func (repo *schemaFieldsRepo) GetByVersionID(ctx context.Context, schemaVersionI
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, err
+		return nil, sqlcErr
 	}
 
 	span.SetAttributes(

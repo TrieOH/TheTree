@@ -92,6 +92,7 @@ const (
 	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
 	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
 	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
+	SchemaNoValidType               ID = "SCHEMA_0010"
 )
 
 const (
@@ -101,6 +102,8 @@ const (
 	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
 	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
 	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
+	SchemaVersionMismatch                 ID = "SCM_VER_007"
+	SchemaVersionNotDraft                 ID = "SCM_VER_008"
 )
 
 const (

@@ -160,7 +160,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 
 	var err error
 	defer func() {
-		span.SetAttributes(attribute.Bool("draft.success", err == nil))
+		span.SetAttributes(attribute.Bool("publish.success", err == nil))
 	}()
 
 	var principal *authz.Principal

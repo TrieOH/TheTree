@@ -44,10 +44,6 @@ type FieldResponse struct {
 	UpdatedAt       time.Time        `json:"updated_at"`
 }
 
-type CreateFieldResponse struct {
-	Fields []FieldParam `json:"fields"`
-}
-
 func FieldParamToInputField(f *FieldParam) *inbounds.InputField {
 	if f == nil {
 		return nil
@@ -79,21 +75,22 @@ func OutputFieldToFieldResponse(field *inbounds.OutputField) *FieldResponse {
 		return nil
 	}
 	return &FieldResponse{
-		ObjectID:     field.ObjectID,
-		ID:           field.ID,
-		Key:          field.Key,
-		SchemaID:     field.SchemaID,
-		Type:         field.Type,
-		Owner:        field.Owner,
-		Title:        field.Title,
-		Description:  field.Description,
-		Placeholder:  field.Placeholder,
-		Required:     field.Required,
-		Mutable:      field.Mutable,
-		DefaultValue: field.DefaultValue,
-		Position:     field.Position,
-		CreatedAt:    field.CreatedAt,
-		UpdatedAt:    field.UpdatedAt,
+		ObjectID:        field.ObjectID,
+		ID:              field.ID,
+		Key:             field.Key,
+		SchemaID:        field.SchemaID,
+		SchemaVersionID: field.SchemaVersionID,
+		Type:            field.Type,
+		Owner:           field.Owner,
+		Title:           field.Title,
+		Description:     field.Description,
+		Placeholder:     field.Placeholder,
+		Required:        field.Required,
+		Mutable:         field.Mutable,
+		DefaultValue:    field.DefaultValue,
+		Position:        field.Position,
+		CreatedAt:       field.CreatedAt,
+		UpdatedAt:       field.UpdatedAt,
 	}
 }
 

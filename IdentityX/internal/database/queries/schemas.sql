@@ -66,7 +66,7 @@ INSERT INTO schema_versions (schema_id, version)
 VALUES ($1, $2)
 RETURNING *;
 
--- name: PublishSchemaVersion :exec
+-- name: PublishSchemaVersion :execrows
 UPDATE schema_versions s
 SET
     status = 'published',
