@@ -98,7 +98,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot create a field for a schema version in project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot create a fields for schema versions in a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}

@@ -98,7 +98,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version for a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -210,7 +210,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version for a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -235,7 +235,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version that isn't a draft").WithID(apierr.SchemaVersionTryingToPublishArchived)
 			apierr.RecordDomainError(span, err)
 		} else {
-			err = apierr.ErrInternal.WithMsg("catastrophic system error").WithID(apierr.SchemaVersionNoValidType)
+			err = apierr.ErrInternal.WithMsg("CATASTROPHIC: schema version found with no valid status").WithID(apierr.SchemaVersionNoValidType)
 			apierr.RecordSystemError(span, err)
 		}
 		return err

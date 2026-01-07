@@ -74,7 +74,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema for a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema for a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -176,7 +176,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -195,7 +195,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema that isn't a draft").WithID(apierr.SchemaTryingToPublishArchived)
 			apierr.RecordDomainError(span, err)
 		} else {
-			err = apierr.ErrInternal.WithMsg("catastrophic system error").WithID(apierr.SchemaNoValidType)
+			err = apierr.ErrInternal.WithMsg("CATASTROPHIC: schema found with no valid status").WithID(apierr.SchemaNoValidType)
 			apierr.RecordSystemError(span, err)
 		}
 		return err
@@ -269,7 +269,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) 
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
