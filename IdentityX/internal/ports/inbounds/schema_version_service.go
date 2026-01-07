@@ -9,7 +9,7 @@ import (
 )
 
 type SchemaVersionService interface {
-	Draft(ctx context.Context, in DraftSchemaVersionInput) (*DraftSchemaVersionOutput, error)
+	Draft(ctx context.Context, in DraftSchemaVersionInput) (*SchemaVersionOutput, error)
 	Publish(ctx context.Context, in PublishSchemaVersionInput) error
 }
 
@@ -23,7 +23,7 @@ type PublishSchemaVersionInput struct {
 	ProjectID string
 }
 
-type DraftSchemaVersionOutput struct {
+type SchemaVersionOutput struct {
 	ID            uuid.UUID
 	SchemaID      uuid.UUID
 	VersionNumber int
@@ -32,11 +32,11 @@ type DraftSchemaVersionOutput struct {
 	UpdatedAt     time.Time
 }
 
-func SchemaVersionToOutput(out *schema.Version) *DraftSchemaVersionOutput {
+func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
 	if out == nil {
 		return nil
 	}
-	return &DraftSchemaVersionOutput{
+	return &SchemaVersionOutput{
 		ID:            out.ID,
 		SchemaID:      out.SchemaID,
 		VersionNumber: out.VersionNumber,
@@ -47,12 +47,6 @@ func SchemaVersionToOutput(out *schema.Version) *DraftSchemaVersionOutput {
 }
 
 type VersionVerboseOutput struct {
-	ID            uuid.UUID
-	SchemaID      uuid.UUID
-	VersionNumber int
-	Status        string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-
+	SchemaVersionOutput
 	Fields []OutputField
 }

@@ -70,7 +70,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			ExpectErrorID(apierr.SchemaVersionDraftDoesntExist)
 	})
 
-	var schemaVersionID string
+	var schemaVersion1ID string
 	t.Run("DraftVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
@@ -81,7 +81,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("schema_id").String().IsEqual(schemaID)
 		data.Value("version_number").IsNumber().IsEqual(1)
 
-		schemaVersionID = data.Value("id").String().Raw()
+		schemaVersion1ID = data.Value("id").String().Raw()
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
@@ -96,7 +96,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("id").String().NotEmpty()
 		data.Value("type").String().IsEqual("context")
 		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsEqual(schemaVersionID)
+		data.Value("current_version_id").IsEqual(schemaVersion1ID)
 	})
 
 	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
@@ -293,7 +293,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			ExpectErrorID(apierr.FieldInvalidCharactersInKey)
 	})
 
-	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
+	t.Run("AddFieldToV2Success", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
 			WithBody(map[string]interface{}{
@@ -319,7 +319,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
 
 		if _, err := uuid.Parse(id1); err != nil {
-			t.Fatalf("couldn't parse id from field período: %v", err)
+			t.Fatalf("couldn't parse id from field periodo: %v", err)
 		}
 	})
 
@@ -328,5 +328,50 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
 			MessageContains("published schema version")
+	})
+
+	t.Run("GetSchemaVerbose", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
+			Expect(http.StatusOK).
+			Data()
+
+		t.Log(schema)
+
+		schema.Value("id").String().IsEqual(schemaID)
+		schema.Value("project_id").String().IsEqual(projectID)
+		schema.Value("title").String().IsEqual("scti-register-flow")
+		schema.Value("flow_id").String().IsEqual("scti-register")
+		schema.Value("type").String().IsEqual("context")
+		schema.Value("status").String().IsEqual("published")
+		schema.Value("current_version_id").String().IsEqual(schemaVersion2ID)
+		schema.Value("created_at").String().NotEmpty()
+		schema.Value("updated_at").String().NotEmpty()
+
+		versions := schema.Value("versions").Array()
+		versions.Length().IsEqual(2)
+
+		version2 := versions.Value(0).Object()
+		version1 := versions.Value(1).Object()
+
+		fieldsV1 := version1.Value("fields").Array()
+		fieldsV2 := version2.Value("fields").Array()
+
+		fieldsV1.Length().IsEqual(2)
+		fieldsV2.Length().IsEqual(3)
+
+		fieldsV1field1ID := fieldsV1.Value(0).Object().Value("id").String().Raw()
+		fieldsV1field2ID := fieldsV1.Value(1).Object().Value("id").String().Raw()
+
+		fieldsV2field1ID := fieldsV2.Value(0).Object().Value("id").String().Raw()
+		fieldsV2field2ID := fieldsV2.Value(1).Object().Value("id").String().Raw()
+
+		if fieldsV1field1ID != fieldsV2field1ID {
+			t.Fatalf("field id doesn't match between versions")
+		}
+
+		if fieldsV1field2ID != fieldsV2field2ID {
+			t.Fatalf("field id doesn't match between versions")
+		}
 	})
 }

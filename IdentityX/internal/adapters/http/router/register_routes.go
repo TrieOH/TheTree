@@ -128,6 +128,7 @@ func registerSchemaRoutes(
 
 		r.Post("/projects/{project_id}/schemas", schemas.Draft)
 		r.Get("/projects/{project_id}/schemas/{schema_id}", schemas.GetByID)
+		r.Get("/projects/{project_id}/schemas/{schema_id}/verbose", schemas.GetVerbose)
 		r.Post("/projects/{project_id}/schemas/{schema_id}/publish", schemas.Publish)
 	})
 }

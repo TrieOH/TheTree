@@ -132,6 +132,7 @@ func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// TODO: Apply DTO to this temporary OBJ
-	resp.OK().WithData(res).Send(w)
+	resp.OK().
+		WithData(dto.VerboseSchemaOutputToResponse(res)).
+		Send(w)
 }

@@ -16,7 +16,7 @@ type DraftSchemaVersionResponse struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-func SchemaVersionOutputToResponse(out *inbounds.DraftSchemaVersionOutput) *DraftSchemaVersionResponse {
+func SchemaVersionOutputToResponse(out *inbounds.SchemaVersionOutput) *DraftSchemaVersionResponse {
 	if out == nil {
 		return nil
 	}
@@ -28,4 +28,9 @@ func SchemaVersionOutputToResponse(out *inbounds.DraftSchemaVersionOutput) *Draf
 		CreatedAt:     out.CreatedAt,
 		UpdatedAt:     out.UpdatedAt,
 	}
+}
+
+type VersionVerboseResponse struct {
+	DraftSchemaVersionResponse
+	Fields []FieldResponse `json:"fields"`
 }

@@ -123,7 +123,7 @@ func (repo *schemaVersionRepo) Archive(ctx context.Context, toArchive schema.Ver
 func (repo *schemaVersionRepo) GetCurrent(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetCurrent",
 		trace.WithAttributes(
-			attribute.String("version.id", schemaID.String()),
+			attribute.String("version.schema_id", schemaID.String()),
 		),
 	)
 	defer span.End()
@@ -161,7 +161,7 @@ func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID
 }
 
 func (repo *schemaVersionRepo) List(ctx context.Context, schemaID uuid.UUID) ([]schema.Version, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.List",
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.List",
 		trace.WithAttributes(
 			attribute.String("schema.id", schemaID.String()),
 		),

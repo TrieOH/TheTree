@@ -206,8 +206,8 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 func (repo *schemaFieldsRepo) DiffVersionsState(ctx context.Context, baseVersionID, draftVersionID uuid.UUID) (bool, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DiffVersionsState",
 		trace.WithAttributes(
-			attribute.String("delta_a_version_id", baseVersionID.String()),
-			attribute.String("delta_b_version_id", draftVersionID.String()),
+			attribute.String("base_version_id", baseVersionID.String()),
+			attribute.String("draft_version_id", draftVersionID.String()),
 		),
 	)
 	defer span.End()

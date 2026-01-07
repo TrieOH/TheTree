@@ -46,8 +46,8 @@ func New(
 	}
 }
 
-func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
-	var out *inbounds.DraftSchemaVersionOutput
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.SchemaVersionOutput, error) {
+	var out *inbounds.SchemaVersionOutput
 	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
 		out, err = uc.draftInternal(ctx, in)
@@ -57,7 +57,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaVersionInpu
 	return out, err
 }
 
-func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.DraftSchemaVersionOutput, error) {
+func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVersionInput) (*inbounds.SchemaVersionOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.Draft")
 	defer span.End()
 
@@ -293,6 +293,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 
 	if !hasChanges {
 		err = apierr.ErrInvalidInput.WithMsg("cannot publish a version with no changes").WithID(apierr.SchemaVersionNoChanges)
+		apierr.RecordDomainError(span, err)
 		return err
 	}
 

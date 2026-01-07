@@ -73,6 +73,9 @@ CREATE TABLE schema_versions (
 CREATE INDEX idx_schema_versions_schema_id
     ON schema_versions(schema_id);
 
+CREATE INDEX idx_schema_versions_based_on_version_id
+    ON schema_versions(based_on_version_id);
+
 CREATE UNIQUE INDEX uniq_published_schema_versions
     ON schema_versions (schema_id, version)
     WHERE status = 'published';
@@ -220,6 +223,7 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     WHERE status = 'draft';
 
 -- +goose Down
+DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
 
 ALTER TABLE schemas

@@ -67,15 +67,6 @@ func SchemaToSchemaOutput(out *schema.Schema) *SchemaOutput {
 }
 
 type SchemaVerboseOutput struct {
-	ID               uuid.UUID
-	ProjectID        uuid.UUID
-	Title            string
-	FlowID           string
-	Type             string
-	CurrentVersionID *uuid.UUID
-	Status           string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-
+	SchemaOutput
 	Versions []VersionVerboseOutput
 }

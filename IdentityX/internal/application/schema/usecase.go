@@ -347,15 +347,17 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.GetSchemaVerboseI
 	}
 
 	schemaOutput := &inbounds.SchemaVerboseOutput{
-		ID:               schemaPart.ID,
-		ProjectID:        schemaPart.ProjectID,
-		Title:            schemaPart.Title,
-		FlowID:           schemaPart.FlowID,
-		Type:             string(schemaPart.Type),
-		CurrentVersionID: schemaPart.CurrentVersionID,
-		Status:           string(schemaPart.Status),
-		CreatedAt:        schemaPart.CreatedAt,
-		UpdatedAt:        schemaPart.UpdatedAt,
+		SchemaOutput: inbounds.SchemaOutput{
+			ID:               schemaPart.ID,
+			ProjectID:        schemaPart.ProjectID,
+			Title:            schemaPart.Title,
+			FlowID:           schemaPart.FlowID,
+			Type:             string(schemaPart.Type),
+			CurrentVersionID: schemaPart.CurrentVersionID,
+			Status:           string(schemaPart.Status),
+			CreatedAt:        schemaPart.CreatedAt,
+			UpdatedAt:        schemaPart.UpdatedAt,
+		},
 	}
 
 	var versionsPart []schema.Version
@@ -367,12 +369,15 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.GetSchemaVerboseI
 	versionsOutput := make([]inbounds.VersionVerboseOutput, 0, len(versionsPart))
 	for _, version := range versionsPart {
 		versionOutput := inbounds.VersionVerboseOutput{
-			ID:            version.ID,
-			SchemaID:      version.SchemaID,
-			VersionNumber: version.VersionNumber,
-			Status:        string(version.Status),
-			CreatedAt:     version.CreatedAt,
-			UpdatedAt:     version.UpdatedAt,
+			SchemaVersionOutput: inbounds.SchemaVersionOutput{
+				ID:            version.ID,
+				SchemaID:      version.SchemaID,
+				VersionNumber: version.VersionNumber,
+				Status:        version.Status,
+				CreatedAt:     version.CreatedAt,
+				UpdatedAt:     version.UpdatedAt,
+			},
+			Fields: nil,
 		}
 		versionsOutput = append(versionsOutput, versionOutput)
 	}
@@ -385,13 +390,13 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.GetSchemaVerboseI
 		return nil, err
 	}
 
-	for _, v := range schemaOutput.Versions {
+	for i := range schemaOutput.Versions {
 		for _, f := range fieldsPart {
-			if f.SchemaVersionID != v.ID {
+			if f.SchemaVersionID != schemaOutput.Versions[i].ID {
 				continue
 			}
 
-			v.Fields = append(v.Fields, inbounds.OutputField{
+			schemaOutput.Versions[i].Fields = append(schemaOutput.Versions[i].Fields, inbounds.OutputField{
 				ObjectID:        f.ObjectID,
 				ID:              f.ID,
 				Key:             f.Key,
