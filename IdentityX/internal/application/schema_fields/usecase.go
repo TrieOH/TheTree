@@ -98,7 +98,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot create a fields for schema versions in a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for schema versions in a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -125,13 +125,13 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	}
 
 	if latest.VersionNumber != in.VersionNumber {
-		err = apierr.ErrUnauthorized.WithMsg("version number does not match latest version").WithID(apierr.SchemaVersionMismatch)
+		err = apierr.ErrInvalidInput.WithMsg("version number does not match latest version").WithID(apierr.SchemaVersionMismatch)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
 	if latest.Status != schema.VersionStatusDraft {
-		err = apierr.ErrUnauthorized.WithMsg("cannot add fields to a non-draft version").WithID(apierr.SchemaVersionNotDraft)
+		err = apierr.ErrConflict.WithMsg("cannot add fields to a non-draft version").WithID(apierr.SchemaVersionNotDraft)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}

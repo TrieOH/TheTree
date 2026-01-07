@@ -50,7 +50,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			MessageContains("cannot publish a schema version draft that doesnt exists").
+			MessageContains("cannot publish a schema version draft that doesn't exists").
 			ExpectErrorID(apierr.SchemaVersionDraftDoesntExist)
 	})
 
