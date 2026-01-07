@@ -108,6 +108,10 @@ const (
 )
 
 const (
+	FieldSamePositionForMultipleFields ID = "FIELD_001"
+)
+
+const (
 	DBNotFound             ID = "DB_000"
 	DBUniqueViolation      ID = "DB_001"
 	DBForeignKeyViolation  ID = "DB_002"

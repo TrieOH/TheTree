@@ -80,7 +80,7 @@ CREATE TABLE schema_fields (
     object_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     -- Stable logical identity of a field within a schema
-    id UUID NOT NULL,
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
 
     -- (identity scope)
     schema_id UUID NOT NULL

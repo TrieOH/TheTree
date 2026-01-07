@@ -140,7 +140,6 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaF
 	for _, f := range in.Fields {
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
-			ID:              uuid.New(),
 			SchemaID:        sid,
 			SchemaVersionID: latest.ID,
 			Key:             f.Key,

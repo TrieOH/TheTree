@@ -4,6 +4,8 @@ import (
 	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func testSchemas(t *testing.T, suite *TestSuite) {
@@ -107,6 +109,40 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			ExpectErrorID(apierr.SchemaVersionPublishWithNoFields)
 	})
 
+	t.Run("CreateFieldsSamePosition", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"key":         "curso",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Curso de Matrícula",
+						"description": "O curso que você está matrículado na UENF",
+						"placeholder": "Ciência da Computação",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("two fields can't occupy the same position").
+			ExpectErrorID(apierr.FieldSamePositionForMultipleFields)
+	})
+
 	t.Run("CreateFields", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
@@ -142,9 +178,16 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 		data.Length().IsEqual(2)
 		data.Value(0).Object().Value("object_id").NotNull()
-		data.Value(0).Object().Value("id").NotNull()
+		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
 		data.Value(1).Object().Value("object_id").NotNull()
-		data.Value(1).Object().Value("id").NotNull()
+		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
+
+		if _, err := uuid.Parse(id1); err != nil {
+			t.Fatalf("could't parse id from field matricula: %v", err)
+		}
+		if _, err := uuid.Parse(id2); err != nil {
+			t.Fatalf("could't parse id from field curso: %v", err)
+		}
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {

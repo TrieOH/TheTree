@@ -1,6 +1,5 @@
 -- name: CreateSchemaField :one
 INSERT INTO schema_fields (
-    id,
     schema_id,
     schema_version_id,
     key,
@@ -15,7 +14,6 @@ INSERT INTO schema_fields (
     position
 )
 SELECT
-    sqlc.arg(field_id),
     sv.schema_id,
     sv.id,
     sqlc.arg(key),

@@ -66,7 +66,6 @@ func (repo *schemaFieldsRepo) Create(ctx context.Context, toCreate field.Field) 
 	defer span.End()
 
 	sqlcSchemaField, err := repo.queries(ctx).CreateSchemaField(ctx, sqlc.CreateSchemaFieldParams{
-		FieldID:         uuid.New(),
 		Key:             toCreate.Key,
 		Type:            sqlc.FieldType(toCreate.Type),
 		Owner:           sqlc.FieldOwner(toCreate.Owner),
