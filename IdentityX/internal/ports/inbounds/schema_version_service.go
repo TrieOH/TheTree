@@ -45,3 +45,14 @@ func SchemaVersionToOutput(out *schema.Version) *DraftSchemaVersionOutput {
 		UpdatedAt:     out.UpdatedAt,
 	}
 }
+
+type VersionVerboseOutput struct {
+	ID            uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	Status        string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+
+	Fields []OutputField
+}

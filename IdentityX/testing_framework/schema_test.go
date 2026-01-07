@@ -110,9 +110,9 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	t.Run("DraftVersionError", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
-			Expect(http.StatusConflict).
-			MessageContains("a draft schema version already exists").
-			ExpectErrorID(apierr.SchemaVersionDraftAlreadyExists)
+			Expect(http.StatusUnauthorized).
+			MessageContains("new versions can only be drafted from published versions").
+			ExpectErrorID(apierr.SchemaVersionDraftOnNonPublished)
 	})
 
 	t.Run("PublishVersionFieldsError", func(t *testing.T) {
@@ -232,5 +232,101 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusUnauthorized).
 			MessageContains("cannot publish a schema that isn't a draft").
 			ExpectErrorID(apierr.SchemaTryingToPublishPublished)
+	})
+
+	var schemaVersion2ID string
+	t.Run("DraftVersion2", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			Data()
+
+		data.Value("id").String().NotEmpty()
+		data.Value("schema_id").String().IsEqual(schemaID)
+		data.Value("version_number").IsNumber().IsEqual(2)
+
+		schemaVersion2ID = data.Value("id").String().Raw()
+	})
+
+	t.Run("CheckSchemaVersion", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
+			Expect(http.StatusOK).
+			Data()
+
+		data.Value("project_id").String().IsEqual(projectID)
+		data.Value("title").String().IsEqual("scti-register-flow")
+		data.Value("flow_id").String().IsEqual("scti-register")
+		data.Value("id").String().NotEmpty()
+		data.Value("type").String().IsEqual("context")
+		data.Value("status").String().IsEqual("published")
+		data.Value("current_version_id").IsEqual(schemaVersion2ID)
+	})
+
+	t.Run("PublishVersion2NoChanges", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusBadRequest).
+			MessageContains("cannot publish a version with no changes").
+			ExpectErrorID(apierr.SchemaVersionNoChanges)
+	})
+
+	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "período",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Período Atual",
+						"description": "O período da sua matéria mais avançada da grade",
+						"required":    true,
+						"mutable":     true,
+						"position":    2,
+					},
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores").
+			ExpectErrorID(apierr.FieldInvalidCharactersInKey)
+	})
+
+	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "periodo",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Período Atual",
+						"description": "O período da sua matéria mais avançada da grade",
+						"required":    true,
+						"mutable":     true,
+						"position":    2,
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			MessageContains("created fields").
+			DataArray()
+
+		data.Length().IsEqual(1)
+		data.Value(0).Object().Value("object_id").NotNull()
+		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
+
+		if _, err := uuid.Parse(id1); err != nil {
+			t.Fatalf("couldn't parse id from field período: %v", err)
+		}
+	})
+
+	t.Run("PublishVersion2Success", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema version")
 	})
 }

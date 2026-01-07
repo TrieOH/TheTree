@@ -106,3 +106,32 @@ func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		WithData(dto.SchemaOutputToResponse(found)).
 		Send(w)
 }
+
+func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
+		resp.BadRequest("missing project id parameter").Send(w)
+		return
+	}
+
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema id parameter").Send(w)
+		return
+	}
+
+	in := inbounds.GetSchemaVerboseInput{
+		ProjectID: projectID,
+		SchemaID:  schemaID,
+	}
+
+	ctx := r.Context()
+	res, err := handler.schemas.GetVerbose(ctx, in)
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	// TODO: Apply DTO to this temporary OBJ
+	resp.OK().WithData(res).Send(w)
+}

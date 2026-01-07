@@ -12,6 +12,7 @@ type SchemaService interface {
 	Draft(ctx context.Context, in DraftSchemaInput) (*SchemaOutput, error)
 	Publish(ctx context.Context, in PublishSchemaInput) error
 	GetByID(ctx context.Context, in GetSchemaByIDInput) (*SchemaOutput, error)
+	GetVerbose(ctx context.Context, in GetSchemaVerboseInput) (*SchemaVerboseOutput, error)
 }
 
 type DraftSchemaInput struct {
@@ -22,6 +23,11 @@ type DraftSchemaInput struct {
 }
 
 type GetSchemaByIDInput struct {
+	ProjectID string
+	SchemaID  string
+}
+
+type GetSchemaVerboseInput struct {
 	ProjectID string
 	SchemaID  string
 }
@@ -58,4 +64,18 @@ func SchemaToSchemaOutput(out *schema.Schema) *SchemaOutput {
 		CreatedAt:        out.CreatedAt,
 		UpdatedAt:        out.UpdatedAt,
 	}
+}
+
+type SchemaVerboseOutput struct {
+	ID               uuid.UUID
+	ProjectID        uuid.UUID
+	Title            string
+	FlowID           string
+	Type             string
+	CurrentVersionID *uuid.UUID
+	Status           string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+
+	Versions []VersionVerboseOutput
 }

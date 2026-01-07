@@ -52,10 +52,11 @@ const (
 )
 
 type Version struct {
-	ID            uuid.UUID
-	SchemaID      uuid.UUID
-	VersionNumber int
-	Status        VersionStatus
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID               uuid.UUID
+	SchemaID         uuid.UUID
+	VersionNumber    int
+	Status           VersionStatus
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	BasedOnVersionID *uuid.UUID
 }

@@ -125,20 +125,41 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 		return nil, err
 	}
 
-	var newVersion *schema.Version
-	if err != nil && apierr.IsNotFound(err) {
-		newVersion = &schema.Version{
+	if apierr.IsNotFound(err) {
+		newVersion := &schema.Version{
 			SchemaID:      sid,
 			VersionNumber: 1,
 		}
-	} else {
-		newVersion = &schema.Version{
-			SchemaID:      sid,
-			VersionNumber: latest.VersionNumber + 1,
+
+		newVersion, err = uc.versions.Draft(ctx, *newVersion)
+		if err != nil {
+			return nil, err
 		}
+
+		if err = uc.schemas.SetVersion(ctx, schema.Schema{
+			ID:               sid,
+			ProjectID:        pid,
+			CurrentVersionID: &newVersion.ID,
+		}); err != nil {
+			return nil, err
+		}
+
+		return inbounds.SchemaVersionToOutput(newVersion), nil
 	}
 
-	newVersion, err = uc.versions.Draft(ctx, *newVersion)
+	if latest.Status != schema.VersionStatusPublished {
+		err = apierr.ErrUnauthorized.WithMsg("new versions can only be drafted from published versions").WithID(apierr.SchemaVersionDraftOnNonPublished)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var newVersionDraft *schema.Version
+	newVersionDraft, err = uc.versions.CopyOnDraft(ctx, latest.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = uc.fields.CloneFromTo(ctx, latest.ID, newVersionDraft.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +167,12 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.DraftSchemaVer
 	if err = uc.schemas.SetVersion(ctx, schema.Schema{
 		ID:               sid,
 		ProjectID:        pid,
-		CurrentVersionID: &newVersion.ID,
+		CurrentVersionID: &newVersionDraft.ID,
 	}); err != nil {
 		return nil, err
 	}
 
-	return inbounds.SchemaVersionToOutput(newVersion), nil
+	return inbounds.SchemaVersionToOutput(newVersionDraft), nil
 }
 
 func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersionInput) error {
@@ -238,6 +259,40 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 			err = apierr.ErrInternal.WithMsg("CATASTROPHIC: schema version found with no valid status").WithID(apierr.SchemaVersionNoValidType)
 			apierr.RecordSystemError(span, err)
 		}
+		return err
+	}
+
+	if latest.BasedOnVersionID == nil {
+		var fields []field.Field
+		fields, err = uc.fields.GetByVersionID(ctx, latest.ID)
+		if err != nil && !apierr.IsNotFound(err) {
+			return err
+		}
+
+		if apierr.IsNotFound(err) || len(fields) == 0 {
+			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version with no fields").WithID(apierr.SchemaVersionPublishWithNoFields)
+			apierr.RecordDomainError(span, err)
+			return err
+		}
+
+		if err = uc.versions.Publish(ctx, schema.Version{
+			SchemaID: sid,
+			ID:       latest.ID,
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	var hasChanges bool
+	hasChanges, err = uc.fields.DiffVersionsState(ctx, *latest.BasedOnVersionID, latest.ID)
+	if err != nil {
+		return err
+	}
+
+	if !hasChanges {
+		err = apierr.ErrInvalidInput.WithMsg("cannot publish a version with no changes").WithID(apierr.SchemaVersionNoChanges)
 		return err
 	}
 

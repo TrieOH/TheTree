@@ -105,10 +105,14 @@ const (
 	SchemaVersionMismatch                 ID = "SCM_VER_007"
 	SchemaVersionNotDraft                 ID = "SCM_VER_008"
 	SchemaVersionNoValidType              ID = "SCM_VER_009"
+	SchemaVersionDraftOnNonPublished      ID = "SCM_VER_010"
+	SchemaVersionNoChanges                ID = "SCM_VER_011"
 )
 
 const (
 	FieldSamePositionForMultipleFields ID = "FIELD_001"
+	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
+	FieldInvalidCharactersInKey        ID = "FIELD_003"
 )
 
 const (
@@ -121,6 +125,7 @@ const (
 	DBCommitTXFailed       ID = "DB_006"
 	DBBeginTXFailed        ID = "DB_007"
 	DBNestedTXNotAllowed   ID = "DB_008"
+	DBCheckViolation       ID = "DB_009"
 )
 
 const (

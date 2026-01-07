@@ -62,6 +62,11 @@ CREATE TABLE schema_versions (
     status schema_version_status NOT NULL DEFAULT 'draft',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    based_on_version_id UUID
+        REFERENCES schema_versions(id)
+            ON DELETE SET NULL,
+
     UNIQUE (schema_id, version)
 );
 

@@ -44,6 +44,7 @@ func mapSchemaVersionFromDB(dst *schema.Version, src *sqlc.SchemaVersion) {
 	dst.Status = schema.VersionStatus(src.Status)
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+	dst.BasedOnVersionID = src.BasedOnVersionID
 }
 
 func (repo *schemaVersionRepo) Draft(ctx context.Context, toDraft schema.Version) (*schema.Version, error) {
@@ -119,6 +120,26 @@ func (repo *schemaVersionRepo) Archive(ctx context.Context, toArchive schema.Ver
 	return nil
 }
 
+func (repo *schemaVersionRepo) GetCurrent(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetCurrent",
+		trace.WithAttributes(
+			attribute.String("version.id", schemaID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcVersion, err := repo.queries(ctx).GetCurrentSchemaVersion(ctx, schemaID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var currentSchemaVersion schema.Version
+	mapSchemaVersionFromDB(&currentSchemaVersion, &sqlcVersion)
+	return &currentSchemaVersion, nil
+}
+
 func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetLatest",
 		trace.WithAttributes(
@@ -137,4 +158,51 @@ func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID
 	var found schema.Version
 	mapSchemaVersionFromDB(&found, &latest)
 	return &found, nil
+}
+
+func (repo *schemaVersionRepo) List(ctx context.Context, schemaID uuid.UUID) ([]schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.List",
+		trace.WithAttributes(
+			attribute.String("schema.id", schemaID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcVersions, err := repo.queries(ctx).ListSchemaVersion(ctx, schemaID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("schema.count", len(sqlcVersions)))
+
+	listed := make([]schema.Version, 0, len(sqlcVersions))
+	for _, version := range sqlcVersions {
+		var found schema.Version
+		mapSchemaVersionFromDB(&found, &version)
+		listed = append(listed, found)
+	}
+
+	return listed, nil
+}
+
+func (repo *schemaVersionRepo) CopyOnDraft(ctx context.Context, schemaVersionID uuid.UUID) (*schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.CopyOnDraft",
+		trace.WithAttributes(
+			attribute.String("version.id", schemaVersionID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcVersion, err := repo.queries(ctx).CopyVersionOnDraft(ctx, schemaVersionID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var copied schema.Version
+	mapSchemaVersionFromDB(&copied, &sqlcVersion)
+	return &copied, nil
 }
