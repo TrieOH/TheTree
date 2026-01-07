@@ -222,7 +222,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 	}
 
 	if err != nil && apierr.IsNotFound(err) {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version draft that doesnt exists").WithID(apierr.SchemaVersionDraftDoesntExist)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version draft that doesn't exists").WithID(apierr.SchemaVersionDraftDoesntExist)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
@@ -247,7 +247,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 		return err
 	}
 
-	if err != nil && apierr.IsNotFound(err) || len(fields) == 0 {
+	if apierr.IsNotFound(err) || len(fields) == 0 {
 		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version with no fields").WithID(apierr.SchemaVersionPublishWithNoFields)
 		apierr.RecordDomainError(span, err)
 		return err
