@@ -57,15 +57,15 @@ const (
 	TokenCouldNotSign     ID = "TOKEN_007"
 	TokenMissingRefresh   ID = "TOKEN_008"
 	TokenMissingAccess    ID = "TOKEN_009"
-	TokenInvalidClaims    ID = "TOKEN_0010"
-	TokenNotYetValid      ID = "TOKEN_0011"
-	TokenUsedBeforeIssued ID = "TOKEN_0012"
-	TokenInvalidIssuer    ID = "TOKEN_0013"
-	TokenInvalidSubject   ID = "TOKEN_0014"
-	TokenInvalidAudience  ID = "TOKEN_0015"
-	TokenInvalidID        ID = "TOKEN_0016"
-	TokenRevoked          ID = "TOKEN_0017"
-	TokenRevokeFailed     ID = "TOKEN_0018"
+	TokenInvalidClaims    ID = "TOKEN_010"
+	TokenNotYetValid      ID = "TOKEN_011"
+	TokenUsedBeforeIssued ID = "TOKEN_012"
+	TokenInvalidIssuer    ID = "TOKEN_013"
+	TokenInvalidSubject   ID = "TOKEN_014"
+	TokenInvalidAudience  ID = "TOKEN_015"
+	TokenInvalidID        ID = "TOKEN_016"
+	TokenRevoked          ID = "TOKEN_017"
+	TokenRevokeFailed     ID = "TOKEN_018"
 )
 
 const (
@@ -92,7 +92,7 @@ const (
 	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
 	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
 	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
-	SchemaNoValidType               ID = "SCHEMA_0010"
+	SchemaNoValidType               ID = "SCHEMA_010"
 )
 
 const (
@@ -104,6 +104,7 @@ const (
 	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
 	SchemaVersionMismatch                 ID = "SCM_VER_007"
 	SchemaVersionNotDraft                 ID = "SCM_VER_008"
+	SchemaVersionNoValidType              ID = "SCM_VER_009"
 )
 
 const (

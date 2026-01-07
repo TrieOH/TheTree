@@ -92,7 +92,7 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish schema.Ver
 	}
 
 	if affectedRows == 0 {
-		return apierr.ErrInternal.WithMsg("idk what to put here code rabbit or even how i'd use this rows affected lol")
+		return apierr.ErrNotFound.WithMsg("schema version not found or not in draft status").WithID(apierr.SchemaVersionNotDraft)
 	}
 
 	return nil

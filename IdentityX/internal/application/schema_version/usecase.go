@@ -230,10 +230,14 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 	if latest.Status != schema.VersionStatusDraft {
 		if latest.Status == schema.VersionStatusPublished {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version that isn't a draft").WithID(apierr.SchemaVersionTryingToPublishPublished)
+			apierr.RecordDomainError(span, err)
 		} else if latest.Status == schema.VersionStatusArchived {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version that isn't a draft").WithID(apierr.SchemaVersionTryingToPublishArchived)
+			apierr.RecordDomainError(span, err)
+		} else {
+			err = apierr.ErrInternal.WithMsg("catastrophic system error").WithID(apierr.SchemaVersionNoValidType)
+			apierr.RecordSystemError(span, err)
 		}
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 

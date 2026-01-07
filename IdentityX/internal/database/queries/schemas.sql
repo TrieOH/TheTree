@@ -67,7 +67,7 @@ VALUES ($1, $2)
 RETURNING *;
 
 -- name: PublishSchemaVersion :execrows
-UPDATE schema_versions s
+UPDATE schema_versions
 SET
     status = 'published',
     updated_at = NOW()
