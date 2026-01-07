@@ -222,7 +222,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaVersion
 	}
 
 	if err != nil && apierr.IsNotFound(err) {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version draft that doesn't exists").WithID(apierr.SchemaVersionDraftDoesntExist)
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version draft that doesn't exist").WithID(apierr.SchemaVersionDraftDoesntExist)
 		apierr.RecordDomainError(span, err)
 		return err
 	}

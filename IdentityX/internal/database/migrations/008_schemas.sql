@@ -113,9 +113,6 @@ CREATE TABLE schema_fields (
     -- A field identity appears at most once per version
    UNIQUE (schema_version_id, id),
 
-    -- A field identity belongs to exactly one schema
-    UNIQUE (schema_id, id),
-
     -- UI / API guarantees per version
     UNIQUE (schema_version_id, key),
     UNIQUE (schema_version_id, position),

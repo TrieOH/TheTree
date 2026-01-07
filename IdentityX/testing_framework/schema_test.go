@@ -15,9 +15,23 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Login().
 		CreateProject("schema testing")
 
-	var schemaID string
 	var projectID string
 	projectID = user.ProjectID
+
+	rid, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("Couldn't generate random uuid for test: %v", err)
+	}
+
+	t.Run("PublishSchemaRandomID", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + rid.String() + "/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema you don't own").
+			ExpectErrorID(apierr.SchemaNotOwnedByPrincipal)
+	})
+
+	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
@@ -52,7 +66,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			MessageContains("cannot publish a schema version draft that doesn't exists").
+			MessageContains("cannot publish a schema version draft that doesn't exist").
 			ExpectErrorID(apierr.SchemaVersionDraftDoesntExist)
 	})
 
@@ -183,10 +197,10 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
 
 		if _, err := uuid.Parse(id1); err != nil {
-			t.Fatalf("could't parse id from field matricula: %v", err)
+			t.Fatalf("couldn't parse id from field matricula: %v", err)
 		}
 		if _, err := uuid.Parse(id2); err != nil {
-			t.Fatalf("could't parse id from field curso: %v", err)
+			t.Fatalf("couldn't parse id from field curso: %v", err)
 		}
 	})
 

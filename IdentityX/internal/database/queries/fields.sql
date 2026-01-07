@@ -36,4 +36,5 @@ WHERE
 -- name: GetFieldsByVersionID :many
 SELECT *
 FROM schema_fields
-WHERE schema_version_id = $1;
+WHERE schema_version_id = $1
+ORDER BY position;
