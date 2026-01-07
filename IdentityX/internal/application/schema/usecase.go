@@ -21,6 +21,7 @@ var (
 
 type UseCase struct {
 	schemas  outbound.SchemaRepository
+	versions outbound.SchemaVersionRepository
 	projects outbound.ProjectRepository
 }
 
@@ -28,10 +29,12 @@ var _ inbounds.SchemaService = (*UseCase)(nil)
 
 func New(
 	schemas outbound.SchemaRepository,
+	versions outbound.SchemaVersionRepository,
 	projects outbound.ProjectRepository,
 ) inbounds.SchemaService {
 	return &UseCase{
 		schemas:  schemas,
+		versions: versions,
 		projects: projects,
 	}
 }
@@ -67,8 +70,6 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 	var isOwner bool
 	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
 	if err != nil {
-		err = apierr.ErrUnauthorized.WithMsg("error checking project ownership").WithID(apierr.ProjectOwnershipCheckFailed).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
@@ -115,6 +116,119 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 	}
 
 	return inbounds.SchemaToSchemaOutput(drafted), nil
+}
+
+func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Publish")
+	defer span.End()
+
+	var err error
+	defer func() {
+		span.SetAttributes(attribute.Bool("publish.success", err == nil))
+	}()
+
+	in.SchemaID = strings.TrimSpace(strings.ToLower(in.SchemaID))
+
+	var principal *authz.Principal
+	principal, err = authz.RequirePrincipal(ctx)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	tracing.AnnotatePrincipal(span, principal)
+
+	var sid uuid.UUID
+	sid, err = uuid.Parse(in.SchemaID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	var pid uuid.UUID
+	pid, err = uuid.Parse(in.ProjectID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema for a project you dont own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	var belongs bool
+	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: pid,
+		ID:        sid,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !belongs {
+		err = apierr.ErrUnauthorized.WithMsg("cannot draft a schema version for a schema you dont own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	var toPublish *schema.Schema
+	toPublish, err = uc.schemas.FindByID(ctx, sid, pid)
+	if err != nil {
+		return err
+	}
+
+	if toPublish.Status != schema.StatusDraft {
+		if toPublish.Status == schema.StatusPublished {
+			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema that isn't a draft").WithID(apierr.SchemaTryingToPublishPublished)
+		} else if toPublish.Status == schema.StatusArchived {
+			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema that isn't a draft").WithID(apierr.SchemaTryingToPublishArchived)
+		}
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	var latest *schema.Version
+	latest, err = uc.versions.GetLatest(ctx, sid)
+	if err != nil && !apierr.IsNotFound(err) {
+		return err
+	}
+
+	if err != nil && apierr.IsNotFound(err) {
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema with no versions").WithID(apierr.SchemaNoPublishedVersion)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	if latest.VersionNumber == 1 && latest.Status == schema.VersionStatusDraft {
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema with only draft versions").WithID(apierr.SchemaHasOnlyDraftVersion)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	if latest.VersionNumber == 1 && latest.Status == schema.VersionStatusArchived {
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema with only archived versions").WithID(apierr.SchemaHasOnlyArchivedVersion)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
+
+	if err = uc.schemas.Publish(ctx, schema.Schema{
+		ID:        sid,
+		ProjectID: pid,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) (*inbounds.SchemaOutput, error) {

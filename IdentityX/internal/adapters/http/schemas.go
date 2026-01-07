@@ -50,6 +50,33 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 		Send(w)
 }
 
+func (handler *SchemaHandler) Publish(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
+		resp.BadRequest("missing project id parameter").Send(w)
+		return
+	}
+
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema id parameter").Send(w)
+		return
+	}
+
+	in := inbounds.PublishSchemaInput{
+		ProjectID: projectID,
+		SchemaID:  schemaID,
+	}
+
+	ctx := r.Context()
+	if err := handler.schemas.Publish(ctx, in); err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	resp.OK("published schema").Send(w)
+}
+
 func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {

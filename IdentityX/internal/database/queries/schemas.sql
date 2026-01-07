@@ -67,11 +67,13 @@ VALUES ($1, $2)
 RETURNING *;
 
 -- name: PublishSchemaVersion :exec
-UPDATE schema_versions
+UPDATE schema_versions s
 SET
     status = 'published',
     updated_at = NOW()
-WHERE id = $1 AND schema_id = $2;
+WHERE id = $1
+  AND schema_id = $2
+  AND status = 'draft';
 
 -- name: ArchiveSchemaVersion :exec
 UPDATE schema_versions

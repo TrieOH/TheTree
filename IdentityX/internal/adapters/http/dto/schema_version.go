@@ -7,10 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type DraftSchemaVersionRequest struct {
-	SchemaID string `json:"schema_id" validate:"required"`
-}
-
 type DraftSchemaVersionResponse struct {
 	ID            uuid.UUID `json:"id"`
 	SchemaID      uuid.UUID `json:"schema_id"`

@@ -27,7 +27,9 @@ const (
 )
 
 type Field struct {
+	ObjectID        uuid.UUID
 	ID              uuid.UUID
+	SchemaID        uuid.UUID
 	SchemaVersionID uuid.UUID
 	Key             string
 	Type            Type

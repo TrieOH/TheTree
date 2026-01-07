@@ -32,7 +32,7 @@ const (
 	UserEmailNotVerified   ID = "USER_004"
 	UserPasswordTooWeak    ID = "USER_005"
 	UserInvalidID          ID = "USER_006"
-	UserEmailAlreadyExists ID = "USER_003"
+	UserEmailAlreadyExists ID = "USER_007"
 )
 
 const (
@@ -87,10 +87,20 @@ const (
 	SchemaInvalidSchemaType         ID = "SCHEMA_002"
 	SchemaInvalidID                 ID = "SCHEMA_003"
 	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
+	SchemaNoPublishedVersion        ID = "SCHEMA_005"
+	SchemaHasOnlyDraftVersion       ID = "SCHEMA_006"
+	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
+	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
+	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
 )
 
 const (
-	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
+	SchemaVersionDraftAlreadyExists       ID = "SCM_VER_001"
+	SchemaVersionInvalidID                ID = "SCM_VER_002"
+	SchemaVersionPublishWithNoFields      ID = "SCM_VER_003"
+	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
+	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
+	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
 )
 
 const (
