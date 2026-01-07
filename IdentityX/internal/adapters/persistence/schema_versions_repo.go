@@ -81,13 +81,18 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish schema.Ver
 	)
 	defer span.End()
 
-	if err := repo.queries(ctx).PublishSchemaVersion(ctx, sqlc.PublishSchemaVersionParams{
+	affectedRows, err := repo.queries(ctx).PublishSchemaVersion(ctx, sqlc.PublishSchemaVersionParams{
 		ID:       toPublish.ID,
 		SchemaID: toPublish.SchemaID,
-	}); err != nil {
+	})
+	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
 		return sqlcErr
+	}
+
+	if affectedRows == 0 {
+		return apierr.ErrNotFound.WithMsg("schema version not found or not in draft status").WithID(apierr.SchemaVersionNotDraft)
 	}
 
 	return nil

@@ -4,6 +4,8 @@ import (
 	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func testSchemas(t *testing.T, suite *TestSuite) {
@@ -13,9 +15,23 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Login().
 		CreateProject("schema testing")
 
-	var schemaID string
 	var projectID string
 	projectID = user.ProjectID
+
+	rid, err := uuid.NewRandom()
+	if err != nil {
+		t.Fatalf("Couldn't generate random uuid for test: %v", err)
+	}
+
+	t.Run("PublishSchemaRandomID", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + rid.String() + "/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema you don't own").
+			ExpectErrorID(apierr.SchemaNotOwnedByPrincipal)
+	})
+
+	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
@@ -38,13 +54,26 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		schemaID = data.Value("id").String().Raw()
 	})
 
+	t.Run("PublishSchemaNoVersion", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema with no versions").
+			ExpectErrorID(apierr.SchemaNoPublishedVersion)
+	})
+
+	t.Run("PublishVersionNoDraft", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema version draft that doesn't exist").
+			ExpectErrorID(apierr.SchemaVersionDraftDoesntExist)
+	})
+
 	var schemaVersionID string
 	t.Run("DraftVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
-		data := authClient.POST("/projects/" + projectID + "/schemas/versions").
-			WithBody(map[string]interface{}{
-				"schema_id": schemaID,
-			}).
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
 			Data()
 
@@ -70,14 +99,138 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("current_version_id").IsEqual(schemaVersionID)
 	})
 
+	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema with only draft versions").
+			ExpectErrorID(apierr.SchemaHasOnlyDraftVersion)
+	})
+
 	t.Run("DraftVersionError", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
-		authClient.POST("/projects/" + projectID + "/schemas/versions").
-			WithBody(map[string]interface{}{
-				"schema_id": schemaID,
-			}).
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusConflict).
 			MessageContains("a draft schema version already exists").
 			ExpectErrorID(apierr.SchemaVersionDraftAlreadyExists)
+	})
+
+	t.Run("PublishVersionFieldsError", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema version with no fields").
+			ExpectErrorID(apierr.SchemaVersionPublishWithNoFields)
+	})
+
+	t.Run("CreateFieldsSamePosition", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"key":         "curso",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Curso de Matrícula",
+						"description": "O curso que você está matrículado na UENF",
+						"placeholder": "Ciência da Computação",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("two fields can't occupy the same position").
+			ExpectErrorID(apierr.FieldSamePositionForMultipleFields)
+	})
+
+	t.Run("CreateFields", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"key":         "curso",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Curso de Matrícula",
+						"description": "O curso que você está matrículado na UENF",
+						"placeholder": "Ciência da Computação",
+						"required":    true,
+						"mutable":     true,
+						"position":    1,
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			MessageContains("created fields").
+			DataArray()
+
+		data.Length().IsEqual(2)
+		data.Value(0).Object().Value("object_id").NotNull()
+		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
+		data.Value(1).Object().Value("object_id").NotNull()
+		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
+
+		if _, err := uuid.Parse(id1); err != nil {
+			t.Fatalf("couldn't parse id from field matricula: %v", err)
+		}
+		if _, err := uuid.Parse(id2); err != nil {
+			t.Fatalf("couldn't parse id from field curso: %v", err)
+		}
+	})
+
+	t.Run("PublishVersionSuccess", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema version")
+	})
+
+	t.Run("PublishVersionAlreadyPublished", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema version that isn't a draft").
+			ExpectErrorID(apierr.SchemaVersionTryingToPublishPublished)
+	})
+
+	t.Run("PublishSchemaSuccess", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema")
+	})
+
+	t.Run("PublishSchemaAlreadyPublished", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
+			Expect(http.StatusUnauthorized).
+			MessageContains("cannot publish a schema that isn't a draft").
+			ExpectErrorID(apierr.SchemaTryingToPublishPublished)
 	})
 }

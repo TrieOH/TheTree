@@ -32,7 +32,7 @@ const (
 	UserEmailNotVerified   ID = "USER_004"
 	UserPasswordTooWeak    ID = "USER_005"
 	UserInvalidID          ID = "USER_006"
-	UserEmailAlreadyExists ID = "USER_003"
+	UserEmailAlreadyExists ID = "USER_007"
 )
 
 const (
@@ -57,15 +57,15 @@ const (
 	TokenCouldNotSign     ID = "TOKEN_007"
 	TokenMissingRefresh   ID = "TOKEN_008"
 	TokenMissingAccess    ID = "TOKEN_009"
-	TokenInvalidClaims    ID = "TOKEN_0010"
-	TokenNotYetValid      ID = "TOKEN_0011"
-	TokenUsedBeforeIssued ID = "TOKEN_0012"
-	TokenInvalidIssuer    ID = "TOKEN_0013"
-	TokenInvalidSubject   ID = "TOKEN_0014"
-	TokenInvalidAudience  ID = "TOKEN_0015"
-	TokenInvalidID        ID = "TOKEN_0016"
-	TokenRevoked          ID = "TOKEN_0017"
-	TokenRevokeFailed     ID = "TOKEN_0018"
+	TokenInvalidClaims    ID = "TOKEN_010"
+	TokenNotYetValid      ID = "TOKEN_011"
+	TokenUsedBeforeIssued ID = "TOKEN_012"
+	TokenInvalidIssuer    ID = "TOKEN_013"
+	TokenInvalidSubject   ID = "TOKEN_014"
+	TokenInvalidAudience  ID = "TOKEN_015"
+	TokenInvalidID        ID = "TOKEN_016"
+	TokenRevoked          ID = "TOKEN_017"
+	TokenRevokeFailed     ID = "TOKEN_018"
 )
 
 const (
@@ -87,10 +87,28 @@ const (
 	SchemaInvalidSchemaType         ID = "SCHEMA_002"
 	SchemaInvalidID                 ID = "SCHEMA_003"
 	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
+	SchemaNoPublishedVersion        ID = "SCHEMA_005"
+	SchemaHasOnlyDraftVersion       ID = "SCHEMA_006"
+	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
+	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
+	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
+	SchemaNoValidType               ID = "SCHEMA_010"
 )
 
 const (
-	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
+	SchemaVersionDraftAlreadyExists       ID = "SCM_VER_001"
+	SchemaVersionInvalidID                ID = "SCM_VER_002"
+	SchemaVersionPublishWithNoFields      ID = "SCM_VER_003"
+	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
+	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
+	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
+	SchemaVersionMismatch                 ID = "SCM_VER_007"
+	SchemaVersionNotDraft                 ID = "SCM_VER_008"
+	SchemaVersionNoValidType              ID = "SCM_VER_009"
+)
+
+const (
+	FieldSamePositionForMultipleFields ID = "FIELD_001"
 )
 
 const (

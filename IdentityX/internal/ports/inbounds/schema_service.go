@@ -10,6 +10,7 @@ import (
 
 type SchemaService interface {
 	Draft(ctx context.Context, in DraftSchemaInput) (*SchemaOutput, error)
+	Publish(ctx context.Context, in PublishSchemaInput) error
 	GetByID(ctx context.Context, in GetSchemaByIDInput) (*SchemaOutput, error)
 }
 
@@ -26,7 +27,7 @@ type GetSchemaByIDInput struct {
 }
 
 type PublishSchemaInput struct {
-	FlowID    string
+	SchemaID  string
 	ProjectID string
 }
 

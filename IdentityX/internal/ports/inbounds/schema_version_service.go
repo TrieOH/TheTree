@@ -10,7 +10,6 @@ import (
 
 type SchemaVersionService interface {
 	Draft(ctx context.Context, in DraftSchemaVersionInput) (*DraftSchemaVersionOutput, error)
-	// Publish /projects/{id}/schemas/{schemaID}/{version:v[0-9]+}/publish
 	Publish(ctx context.Context, in PublishSchemaVersionInput) error
 }
 
@@ -20,7 +19,6 @@ type DraftSchemaVersionInput struct {
 }
 
 type PublishSchemaVersionInput struct {
-	VersionID string
 	SchemaID  string
 	ProjectID string
 }

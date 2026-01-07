@@ -11,6 +11,7 @@ CREATE TYPE schema_version_status AS ENUM ('draft', 'published', 'archived');
 
 CREATE TYPE field_type AS ENUM (
     'string',
+    'email',
     'int',
     'select',
     'radio',
@@ -76,10 +77,23 @@ CREATE UNIQUE INDEX uniq_published_schema_versions
 -- =========================
 
 CREATE TABLE schema_fields (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    schema_version_id UUID NOT NULL REFERENCES schema_versions(id) ON DELETE CASCADE,
+    object_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    key VARCHAR(63) NOT NULL,                -- machine identifier
+    -- Stable logical identity of a field within a schema
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
+
+    -- (identity scope)
+    schema_id UUID NOT NULL
+        REFERENCES schemas(id)
+            ON DELETE CASCADE,
+
+    schema_version_id UUID NOT NULL
+        REFERENCES schema_versions(id)
+            ON DELETE CASCADE,
+
+    -- Version-local identifier (can change across versions)
+    key VARCHAR(63) NOT NULL,
+
     type field_type NOT NULL DEFAULT 'string',
     owner field_owner NOT NULL DEFAULT 'system',
 
@@ -87,7 +101,7 @@ CREATE TABLE schema_fields (
     description TEXT,
     placeholder VARCHAR(255),
 
-    required BOOLEAN NOT NULL DEFAULT false, -- base requirement
+    required BOOLEAN NOT NULL DEFAULT false,
     mutable BOOLEAN NOT NULL DEFAULT true,
 
     default_value JSONB,
@@ -96,8 +110,16 @@ CREATE TABLE schema_fields (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    UNIQUE (schema_version_id, key)
+    -- A field identity appears at most once per version
+   UNIQUE (schema_version_id, id),
+
+    -- UI / API guarantees per version
+    UNIQUE (schema_version_id, key),
+    UNIQUE (schema_version_id, position),
+
+    CHECK (key ~ '^[a-z][a-z0-9_]*$')
 );
+
 
 CREATE INDEX idx_schema_fields_schema_version_id
     ON schema_fields(schema_version_id);
@@ -108,7 +130,7 @@ CREATE INDEX idx_schema_fields_schema_version_id
 
 CREATE TABLE schema_field_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    field_id UUID NOT NULL REFERENCES schema_fields(id) ON DELETE CASCADE,
+    field_id UUID NOT NULL REFERENCES schema_fields(object_id) ON DELETE CASCADE,
 
     value VARCHAR(255) NOT NULL,
     label VARCHAR(255) NOT NULL,
@@ -128,11 +150,11 @@ CREATE TABLE schema_field_visibility_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     field_id UUID NOT NULL
-        REFERENCES schema_fields(id)
+        REFERENCES schema_fields(object_id)
             ON DELETE CASCADE,
 
     depends_on_field_id UUID NOT NULL
-        REFERENCES schema_fields(id)
+        REFERENCES schema_fields(object_id)
             ON DELETE CASCADE,
 
     operator rule_operator NOT NULL,
@@ -157,11 +179,11 @@ CREATE TABLE schema_field_required_rules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     field_id UUID NOT NULL
-        REFERENCES schema_fields(id)
+        REFERENCES schema_fields(object_id)
             ON DELETE CASCADE,
 
     depends_on_field_id UUID NOT NULL
-        REFERENCES schema_fields(id)
+        REFERENCES schema_fields(object_id)
             ON DELETE CASCADE,
 
     operator rule_operator NOT NULL,

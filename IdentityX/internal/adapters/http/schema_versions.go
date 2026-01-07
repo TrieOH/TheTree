@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/FastUtilitiesNet/validation"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -25,15 +24,15 @@ func (handler *SchemaVersionHandler) Draft(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var req dto.DraftSchemaVersionRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema id parameter").Send(w)
 		return
 	}
 
 	in := inbounds.DraftSchemaVersionInput{
 		ProjectID: projectID,
-		SchemaID:  req.SchemaID,
+		SchemaID:  schemaID,
 	}
 
 	ctx := r.Context()
@@ -46,4 +45,32 @@ func (handler *SchemaVersionHandler) Draft(w http.ResponseWriter, r *http.Reques
 	resp.Created("drafted schema version").
 		WithData(dto.SchemaVersionOutputToResponse(res)).
 		Send(w)
+}
+
+func (handler *SchemaVersionHandler) Publish(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
+		resp.BadRequest("missing project id parameter").Send(w)
+		return
+	}
+
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema id parameter").Send(w)
+		return
+	}
+
+	in := inbounds.PublishSchemaVersionInput{
+		ProjectID: projectID,
+		SchemaID:  schemaID,
+	}
+
+	ctx := r.Context()
+	err := handler.versions.Publish(ctx, in)
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	resp.OK("published schema version").Send(w)
 }
