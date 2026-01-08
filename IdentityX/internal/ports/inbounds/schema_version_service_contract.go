@@ -18,12 +18,13 @@ type VersionVerboseOutput struct {
 }
 
 type SchemaVersionOutput struct {
-	ID            uuid.UUID
-	SchemaID      uuid.UUID
-	VersionNumber int
-	Status        schema.VersionStatus
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID               uuid.UUID
+	SchemaID         uuid.UUID
+	BasedOnVersionID *uuid.UUID
+	VersionNumber    int
+	Status           schema.VersionStatus
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {

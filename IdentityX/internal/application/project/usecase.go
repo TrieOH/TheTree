@@ -169,10 +169,16 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]an
 // It requires a valid principal in the context and that the principal is the owner of the project.
 // It retrieves the project, updates the fields, and then saves the changes to the database.
 func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update",
-		trace.WithAttributes(attribute.String("project.id", *in.ProjectID)),
-	)
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
+
+	if in.ProjectID == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("project id is required for update").WithID(apierr.ProjectInvalidID)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
+	}
+
+	span.SetAttributes(attribute.String("project_id", *in.ProjectID))
 
 	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {

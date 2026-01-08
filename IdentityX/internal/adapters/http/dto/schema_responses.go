@@ -28,9 +28,9 @@ func SchemaOutputToResponse(out *inbounds.SchemaOutput) *SchemaResponse {
 		ProjectID:        out.ProjectID,
 		Title:            out.Title,
 		FlowID:           out.FlowID,
-		Type:             string(out.Type),
+		Type:             out.Type,
 		CurrentVersionID: out.CurrentVersionID,
-		Status:           string(out.Status),
+		Status:           out.Status,
 		CreatedAt:        out.CreatedAt,
 		UpdatedAt:        out.UpdatedAt,
 	}

@@ -267,13 +267,26 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 
 	isOwner, err := uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
 	if err != nil {
-		err = apierr.ErrUnauthorized.WithMsg("error checking project ownership").WithID(apierr.ProjectOwnershipCheckFailed).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
 	if !isOwner {
 		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var belongs bool
+	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: pid,
+		ID:        sid,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -370,12 +383,13 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	for _, version := range versionsPart {
 		versionOutput := inbounds.VersionVerboseOutput{
 			SchemaVersionOutput: inbounds.SchemaVersionOutput{
-				ID:            version.ID,
-				SchemaID:      version.SchemaID,
-				VersionNumber: version.VersionNumber,
-				Status:        version.Status,
-				CreatedAt:     version.CreatedAt,
-				UpdatedAt:     version.UpdatedAt,
+				ID:               version.ID,
+				SchemaID:         version.SchemaID,
+				BasedOnVersionID: version.BasedOnVersionID,
+				VersionNumber:    version.VersionNumber,
+				Status:           version.Status,
+				CreatedAt:        version.CreatedAt,
+				UpdatedAt:        version.UpdatedAt,
 			},
 			Fields: nil,
 		}

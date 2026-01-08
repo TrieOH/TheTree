@@ -5,7 +5,6 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/transactions"
-	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
@@ -14,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -263,15 +263,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if latest.BasedOnVersionID == nil {
-		var fields []field.Field
-		fields, err = uc.fields.GetByVersionID(ctx, latest.ID)
-		if err != nil && !apierr.IsNotFound(err) {
-			return err
-		}
-
-		if apierr.IsNotFound(err) || len(fields) == 0 {
-			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version with no fields").WithID(apierr.SchemaVersionPublishWithNoFields)
-			apierr.RecordDomainError(span, err)
+		if err := uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
 			return err
 		}
 
@@ -297,15 +289,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	var fields []field.Field
-	fields, err = uc.fields.GetByVersionID(ctx, latest.ID)
-	if err != nil && !apierr.IsNotFound(err) {
-		return err
-	}
-
-	if apierr.IsNotFound(err) || len(fields) == 0 {
-		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version with no fields").WithID(apierr.SchemaVersionPublishWithNoFields)
-		apierr.RecordDomainError(span, err)
+	if err := uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
 		return err
 	}
 
@@ -316,5 +300,19 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
+	return nil
+}
+
+func (uc *UseCase) validateVersionHasFields(ctx context.Context, span trace.Span, versionID uuid.UUID) error {
+	fields, err := uc.fields.GetByVersionID(ctx, versionID)
+	if err != nil && !apierr.IsNotFound(err) {
+		return err
+	}
+
+	if apierr.IsNotFound(err) || len(fields) == 0 {
+		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version with no fields").WithID(apierr.SchemaVersionPublishWithNoFields)
+		apierr.RecordDomainError(span, err)
+		return err
+	}
 	return nil
 }
