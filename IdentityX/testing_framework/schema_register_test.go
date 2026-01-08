@@ -1,0 +1,299 @@
+package testing
+
+import (
+	"GoAuth/internal/apierr"
+	"net/http"
+	"testing"
+
+	"github.com/google/uuid"
+)
+
+func testSchemaRegister(t *testing.T, suite *TestSuite) {
+	client := suite.Client(t)
+	user := client.User("schemas_register@mail.com", ValidPassword).
+		Register().
+		Login().
+		CreateProject("schema testing")
+
+	var projectID string
+	projectID = user.ProjectID
+
+	var schemaID string
+	t.Run("Draft", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "scti",
+				"flow_id":     "estudante",
+			}).
+			Expect(http.StatusCreated).
+			Data()
+
+		data.Value("project_id").String().IsEqual(projectID)
+		data.Value("title").String().IsEqual("scti")
+		data.Value("flow_id").String().IsEqual("estudante")
+		data.Value("id").String().NotEmpty()
+		data.Value("type").String().IsEqual("context")
+		data.Value("status").String().IsEqual("draft")
+		data.Value("current_version_id").IsNull()
+
+		schemaID = data.Value("id").String().Raw()
+	})
+
+	var schemaVersion1ID string
+	t.Run("DraftVersion", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			Data()
+
+		data.Value("id").String().NotEmpty()
+		data.Value("schema_id").String().IsEqual(schemaID)
+		data.Value("version_number").IsNumber().IsEqual(1)
+
+		schemaVersion1ID = data.Value("id").String().Raw()
+	})
+
+	t.Run("CheckSchemaVersion", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
+			Expect(http.StatusOK).
+			Data()
+
+		data.Value("project_id").String().IsEqual(projectID)
+		data.Value("title").String().IsEqual("scti")
+		data.Value("flow_id").String().IsEqual("estudante")
+		data.Value("id").String().NotEmpty()
+		data.Value("type").String().IsEqual("context")
+		data.Value("status").String().IsEqual("draft")
+		data.Value("current_version_id").IsEqual(schemaVersion1ID)
+	})
+
+	t.Run("CreateFields", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"key":         "curso",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Curso de Matrícula",
+						"description": "O curso que você está matrículado na UENF",
+						"placeholder": "Ciência da Computação",
+						"required":    true,
+						"mutable":     true,
+						"position":    1,
+					},
+					map[string]interface{}{
+						"key":         "periodo",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Período Atual",
+						"description": "O período da sua matéria mais avançada da grade",
+						"required":    true,
+						"mutable":     true,
+						"position":    2,
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			MessageContains("created fields").
+			DataArray()
+
+		data.Length().IsEqual(3)
+		data.Value(0).Object().Value("object_id").NotNull()
+		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
+		data.Value(1).Object().Value("object_id").NotNull()
+		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
+		data.Value(2).Object().Value("object_id").NotNull()
+		id3 := data.Value(2).Object().Value("id").String().NotEmpty().Raw()
+
+		if _, err := uuid.Parse(id1); err != nil {
+			t.Fatalf("couldn't parse id from field matricula: %v", err)
+		}
+		if _, err := uuid.Parse(id2); err != nil {
+			t.Fatalf("couldn't parse id from field curso: %v", err)
+		}
+		if _, err := uuid.Parse(id3); err != nil {
+			t.Fatalf("couldn't parse id from field curso: %v", err)
+		}
+	})
+
+	t.Run("PublishVersionSuccess", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema version")
+	})
+
+	t.Run("PublishSchemaSuccess", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema")
+	})
+
+	t.Run("RegisterOnSchemaNoCustomFields", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":         "client@email.com",
+				"password":      ValidPassword,
+				"custom_fields": map[string]interface{}{},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("missing required field").
+			ExpectErrorID(apierr.FieldRequiredMissing)
+	})
+
+	t.Run("RegisterOnSchemaNoCursoField", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("missing required field").
+			ExpectErrorID(apierr.FieldRequiredMissing)
+	})
+
+	t.Run("RegisterOnSchemaNoMatriculaField", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"curso": "Ciência da Computação",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("missing required field").
+			ExpectErrorID(apierr.FieldRequiredMissing)
+	})
+
+	t.Run("RegisterOnSchemaUnknownField", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"valor": "4",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("unknown custom field").
+			ExpectErrorID(apierr.FieldNotDefinedFieldInSchema)
+	})
+
+	t.Run("RegisterOnSchemaWrongTypeStringOnInt", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"periodo": "abc",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("invalid field type").
+			ExpectErrorID(apierr.FieldTypeMismatch)
+	})
+
+	t.Run("RegisterOnSchemaWrongTypeIntOnString", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": 20221100033,
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("invalid field type").
+			ExpectErrorID(apierr.FieldTypeMismatch)
+	})
+
+	t.Run("RegisterOnSchemaSuccess", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4,
+				},
+			}).
+			Expect(http.StatusCreated).
+			MessageContains("Registered user")
+	})
+
+	t.Run("SchemaUserSessionInfo", func(t *testing.T) {
+		client := suite.Client(t)
+		schemaUser := client.User("client@email.com", ValidPassword).ProjectLogin(user.ProjectID)
+		data := schemaUser.AuthedClient().GET("/sessions/me").
+			Expect(http.StatusOK).
+			Value()
+
+		spec := map[string]interface{}{
+			"refresh_expire_date": AnyNumber{},
+			"access": map[string]interface{}{
+				"iss": "GoAuth",
+				"exp": AnyNumber{},
+				"iat": AnyNumber{},
+				"jti": AnyUUID{},
+				"sub": map[string]interface{}{
+					"id":         AnyUUID{},
+					"email":      "client@email.com",
+					"project_id": projectID,
+					"user_type":  "project",
+					"session_id": AnyUUID{},
+					"user_agent": AnyString{},
+					"user_ip":    AnyString{},
+					"metadata": map[string]interface{}{
+						"context": map[string]interface{}{
+							"estudante": map[string]interface{}{
+								"schema_id":         schemaID,
+								"schema_version_id": schemaVersion1ID,
+								"curso":             "Ciência da Computação",
+								"matricula":         "20221100033",
+								"periodo":           4,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+}

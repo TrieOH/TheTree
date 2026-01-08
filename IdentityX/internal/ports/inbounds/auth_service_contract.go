@@ -32,6 +32,8 @@ type ProjectRegisterInput struct {
 	Password     string
 	CustomFields json.RawMessage
 	ProjectID    string
+	SchemaType   string
+	FlowID       string
 }
 
 type ProjectLoginInput struct {

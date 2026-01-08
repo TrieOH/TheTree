@@ -1,6 +1,10 @@
 package apierr
 
 const (
+	RequestMissingQueryParams ID = "REQ_001"
+)
+
+const (
 	AuthInvalidEmail         ID = "AUTH_001"
 	AuthInvalidPassword      ID = "AUTH_002"
 	AuthWrongPassword        ID = "AUTH_003"
@@ -93,6 +97,8 @@ const (
 	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
 	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
 	SchemaNoValidType               ID = "SCHEMA_010"
+	SchemaInvalidFlowID             ID = "SCHEMA_011"
+	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
 )
 
 const (
@@ -113,6 +119,10 @@ const (
 	FieldSamePositionForMultipleFields ID = "FIELD_001"
 	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
 	FieldInvalidCharactersInKey        ID = "FIELD_003"
+	FieldNotDefinedFieldInSchema       ID = "FIELD_004"
+	FieldTypeMismatch                  ID = "FIELD_005"
+	FieldSameKeyForMultipleFields      ID = "FIELD_006"
+	FieldRequiredMissing               ID = "FIELD_007"
 )
 
 const (

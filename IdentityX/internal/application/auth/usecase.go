@@ -4,14 +4,18 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/revoked_refreshes"
+	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -32,6 +36,9 @@ type UseCase struct {
 	users        outbound.UserRepository
 	refresh      outbound.RevokedRefreshTokenRepository
 	sessions     outbound.SessionRepository
+	schemas      outbound.SchemaRepository
+	versions     outbound.SchemaVersionRepository
+	fields       outbound.SchemaFieldsRepository
 	projectUsers outbound.ProjectUserRepository
 }
 
@@ -41,12 +48,18 @@ func New(
 	users outbound.UserRepository,
 	sessions outbound.SessionRepository,
 	refresh outbound.RevokedRefreshTokenRepository,
+	schemas outbound.SchemaRepository,
+	versions outbound.SchemaVersionRepository,
+	fields outbound.SchemaFieldsRepository,
 	projectUsers outbound.ProjectUserRepository,
 ) inbounds.AuthService {
 	return &UseCase{
 		users:        users,
 		sessions:     sessions,
 		refresh:      refresh,
+		schemas:      schemas,
+		versions:     versions,
+		fields:       fields,
 		projectUsers: projectUsers,
 	}
 }
@@ -480,6 +493,8 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	)
 	defer span.End()
 
+	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+
 	pid, err := uuid.Parse(in.ProjectID)
 	if err != nil {
 		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
@@ -487,7 +502,120 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		return apiErr
 	}
 
-	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+	if !schema.IsValidSchemaType(in.SchemaType) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid schema type").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	var registerSchema *schema.Schema
+	var validatedMetadata *json.RawMessage = nil
+	if !(schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none") {
+		registerSchema, err = uc.schemas.FindByFlowIDAndType(ctx, in.FlowID, in.SchemaType, pid)
+		if err != nil {
+			return err
+		}
+
+		if registerSchema.CurrentVersionID == nil {
+			apiErr := apierr.ErrInvalidInput.WithMsg("schema has no published version").WithID(apierr.SchemaNoPublishedVersion)
+			apierr.RecordDomainError(span, apiErr)
+			return apiErr
+		}
+
+		var registerVersion *schema.Version
+		registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID)
+		if err != nil {
+			return err
+		}
+
+		if registerVersion.ID != *registerSchema.CurrentVersionID {
+			apiErr := apierr.ErrInternal.WithMsg("schema version and retrieved version mismatch").WithID(apierr.SchemaVersionMismatch)
+			apierr.RecordSystemError(span, apiErr)
+			return apiErr
+		}
+
+		var registerFields []field.Field
+		registerFields, err = uc.fields.GetByVersionID(ctx, registerVersion.ID)
+		if err != nil {
+			return err
+		}
+
+		fieldDefs := make(map[string]field.Field)
+		for _, f := range registerFields {
+			fieldDefs[f.Key] = f
+		}
+
+		var custom map[string]any
+
+		if err := json.Unmarshal(in.CustomFields, &custom); err != nil {
+			return apierr.ErrInvalidInput.
+				WithMsg("invalid custom fields JSON").
+				WithCause(err)
+		}
+
+		validated := make(map[string]any)
+		for key, value := range custom {
+			f, ok := fieldDefs[key]
+			if !ok {
+				apiErr := apierr.ErrInvalidInput.WithMsg("unknown custom field").WithID(apierr.FieldNotDefinedFieldInSchema).WithCause(errors.New("unknown field: " + key))
+				apierr.RecordDomainError(span, apiErr)
+				return apiErr
+			}
+
+			if !validateFieldType(f.Type, value) {
+				apiErr := apierr.ErrInvalidInput.WithMsg("invalid field type").WithID(apierr.FieldTypeMismatch).WithCause(fmt.Errorf("field %q expects %s, got %T", key, f.Type, value))
+				apierr.RecordDomainError(span, apiErr)
+				return apiErr
+			}
+
+			validated[key] = value
+		}
+
+		for _, f := range registerFields {
+			if !f.Required {
+				continue
+			}
+
+			if _, ok := validated[f.Key]; !ok {
+				apiErr := apierr.ErrInvalidInput.WithMsg("missing required field").WithID(apierr.FieldRequiredMissing).WithCause(errors.New("missing field: " + f.Key))
+				apierr.RecordDomainError(span, apiErr)
+				return apiErr
+			}
+		}
+
+		metadata := make(map[string]any)
+		schemaPayload := make(map[string]any)
+
+		schemaPayload["schema_id"] = registerSchema.ID.String()
+		schemaPayload["schema_version_id"] = registerVersion.ID.String()
+
+		for k, v := range validated {
+			schemaPayload[k] = v
+		}
+
+		flowMap := map[string]any{
+			in.FlowID: schemaPayload,
+		}
+
+		metadata[in.SchemaType] = flowMap
+
+		marshalledMetadata, err := json.Marshal(metadata)
+		if err != nil {
+			apiErr := apierr.ErrInternal.
+				WithID(apierr.SystemInternalError).
+				WithCause(err)
+			apierr.RecordSystemError(span, apiErr)
+			return apiErr
+		}
+
+		rawMetadata := json.RawMessage(marshalledMetadata)
+
+		validatedMetadata = &rawMetadata
+	}
+
+	if validatedMetadata != nil {
+		in.CustomFields = *validatedMetadata
+	}
 
 	if len(in.Password) > 72 {
 		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)

@@ -236,6 +236,32 @@ func (repo *schemaRepo) FindByFlowID(ctx context.Context, flowID string, project
 	return &foundSchema, nil
 }
 
+func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID, schemaType string, projectID uuid.UUID) (*schema.Schema, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.FindByFlowIDAndType",
+		trace.WithAttributes(
+			attribute.String("schema.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcSchema, err := repo.queries(ctx).GetSchemaByFlowIDAndType(ctx, sqlc.GetSchemaByFlowIDAndTypeParams{
+		FlowID:    flowID,
+		Type:      sqlc.SchemaType(schemaType),
+		ProjectID: projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
+
+	var foundSchema schema.Schema
+	mapSchemaFromDB(&foundSchema, &sqlcSchema)
+	return &foundSchema, nil
+}
+
 func (repo *schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema.Schema, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.List",
 		trace.WithAttributes(

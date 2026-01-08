@@ -55,6 +55,39 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		schemaID = data.Value("id").String().Raw()
 	})
 
+	t.Run("DraftAnother", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "eenge",
+				"flow_id":     "estudante",
+			}).
+			Expect(http.StatusCreated).
+			Data()
+
+		data.Value("project_id").String().IsEqual(projectID)
+		data.Value("title").String().IsEqual("eenge")
+		data.Value("flow_id").String().IsEqual("estudante")
+		data.Value("id").String().NotEmpty()
+		data.Value("type").String().IsEqual("context")
+		data.Value("status").String().IsEqual("draft")
+		data.Value("current_version_id").IsNull()
+	})
+
+	t.Run("DraftSameFlowIDAndType", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "eenge",
+				"flow_id":     "estudante",
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("schema with this flow ID already exists in this type").
+			ExpectErrorID(apierr.SchemaFlowIDAlreadyExistsInType)
+	})
+
 	t.Run("PublishSchemaNoVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
@@ -156,6 +189,40 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusConflict).
 			MessageContains("two fields can't occupy the same position").
 			ExpectErrorID(apierr.FieldSamePositionForMultipleFields)
+	})
+
+	t.Run("CreateFieldsSameKey", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"key":         "matricula",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+						"placeholder": "20223200045",
+						"required":    true,
+						"mutable":     true,
+						"position":    1,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("two fields can't have the same key").
+			ExpectErrorID(apierr.FieldSameKeyForMultipleFields)
 	})
 
 	t.Run("CreateFields", func(t *testing.T) {
@@ -357,13 +424,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				Specs: []interface{}{
 					// Version 2 (newest first in response)
 					map[string]interface{}{
-						"id":             AnyUUID{},
+						"id":             schemaVersion2ID,
 						"schema_id":      schemaID,
 						"version_number": 2,
 						"fields": ByKey{
 							Key: "key",
 							Spec: map[string]interface{}{
 								"matricula": map[string]interface{}{
+									"object_id":   AnyUUID{},
 									"id":          Store{Into: &matriculaV2ID},
 									"key":         "matricula",
 									"type":        "string",
@@ -376,6 +444,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 									"position":    0,
 								},
 								"curso": map[string]interface{}{
+									"object_id":   AnyUUID{},
 									"id":          Store{Into: &cursoV2ID},
 									"key":         "curso",
 									"type":        "string",
@@ -388,6 +457,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 									"position":    1,
 								},
 								"periodo": map[string]interface{}{
+									"object_id":   AnyUUID{},
 									"id":          AnyUUID{},
 									"key":         "periodo",
 									"type":        "int",
@@ -403,13 +473,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					},
 					// Version 1
 					map[string]interface{}{
-						"id":             AnyUUID{},
+						"id":             schemaVersion1ID,
 						"schema_id":      schemaID,
 						"version_number": 1,
 						"fields": ByKey{
 							Key: "key",
 							Spec: map[string]interface{}{
 								"matricula": map[string]interface{}{
+									"object_id":   AnyUUID{},
 									"id":          Store{Into: &matriculaV1ID},
 									"key":         "matricula",
 									"type":        "string",
@@ -422,6 +493,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 									"position":    0,
 								},
 								"curso": map[string]interface{}{
+									"object_id":   AnyUUID{},
 									"id":          Store{Into: &cursoV1ID},
 									"key":         "curso",
 									"type":        "string",

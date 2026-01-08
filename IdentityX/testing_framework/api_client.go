@@ -65,3 +65,8 @@ func (c *Client) newRequest(method, path string) *RequestBuilder {
 		t:   c.t,
 	}
 }
+
+func (c *Client) WithT(t *testing.T) *Client {
+	c.t = t
+	return c
+}

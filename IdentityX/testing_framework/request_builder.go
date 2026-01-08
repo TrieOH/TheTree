@@ -20,6 +20,11 @@ func (rb *RequestBuilder) WithBody(body interface{}) *RequestBuilder {
 	return rb
 }
 
+func (rb *RequestBuilder) WithQuery(key, value string) *RequestBuilder {
+	rb.req = rb.req.WithQuery(key, value)
+	return rb
+}
+
 func (rb *RequestBuilder) Expect(status int) *Response {
 	rb.t.Helper()
 	return &Response{

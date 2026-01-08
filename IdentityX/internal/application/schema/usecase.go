@@ -53,6 +53,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	}()
 
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
+	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	var principal *authz.Principal
 	principal, err = authz.RequirePrincipal(ctx)
@@ -83,9 +84,20 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 		return nil, err
 	}
 
-	isValidType := schema.IsValidSchemaType(in.SchemaType)
-	if !isValidType {
+	if !schema.IsValidSchemaType(in.SchemaType) {
 		err = apierr.ErrInvalidInput.WithMsg("invalid schema type").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	if schema.IsValidSchemaType(in.FlowID) {
+		err = apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	if in.FlowID == "none" {
+		err = apierr.ErrInvalidInput.WithMsg("flow id can't be the reserved keyword 'none'").WithID(apierr.SchemaFlowIDIsReserved)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}

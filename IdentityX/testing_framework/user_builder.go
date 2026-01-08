@@ -115,6 +115,7 @@ func (u *User) authedClient() *Client {
 	return u.client.Auth(u.auth)
 }
 
+// AuthedClient Returns the authenticated client for the user
 func (u *User) AuthedClient() *Client {
 	return u.authedClient()
 }
@@ -130,5 +131,11 @@ func (u *User) CreateProject(name string) *User {
 
 	resp.Success("go-auth-test", "Created project")
 	u.ProjectID = resp.Data().Value("id").String().Raw()
+	return u
+}
+
+func (u *User) WithT(t *testing.T) *User {
+	u.t = t
+	u.t.Helper()
 	return u
 }

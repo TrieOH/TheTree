@@ -46,6 +46,11 @@ SELECT *
 FROM schemas
 WHERE flow_id = $1 AND project_id = $2;
 
+-- name: GetSchemaByFlowIDAndType :one
+SELECT *
+FROM schemas
+WHERE flow_id = $1 AND type = $2 AND project_id = $3;
+
 -- name: ListSchemas :many
 SELECT *
 FROM schemas
