@@ -1,7 +1,6 @@
 package testing
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
@@ -178,22 +177,25 @@ func (h HasAtPosition) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	arr := val.Array()
 
 	// Find the item with the matching key
+	var foundAt int = -1
+	var item *httpexpect.Value
+
 	for i := 0; i < int(arr.Length().Raw()); i++ {
 		candidate := arr.Value(i)
 		obj := candidate.Object()
 		keyVal := obj.Value(h.Key).String().Raw()
 
 		if keyVal == h.Value {
-			// Found it - check position and validate
-			require.Equal(t, h.Position, i, "item with %s=%s found at wrong position (expected %d, got %d)",
-				h.Key, h.Value, h.Position, i)
-			return Validate(t, candidate, h.Spec)
+			foundAt = i
+			item = candidate
+			break
 		}
 	}
 
-	// Not found
-	require.FailNow(t, fmt.Sprintf("item with %s=%s not found in array", h.Key, h.Value))
-	return nil // unreachable, but makes linter happy
+	require.NotEqual(t, -1, foundAt, "item with %s=%s not found", h.Key, h.Value)
+	require.Equal(t, h.Position, foundAt, "item with %s=%s found at wrong position", h.Key, h.Value)
+
+	return Validate(t, item, h.Spec)
 }
 
 // Validate recursively validates a value against a spec
@@ -233,57 +235,156 @@ func Validate(t *testing.T, val *httpexpect.Value, spec interface{}) interface{}
 		return results
 	}
 
-	// Handle primitive values - direct equality
-	v := val.Raw()
-	require.Equal(t, spec, v, "value mismatch")
-	return v
+	// Handle primitive values - direct equality with numeric tolerance
+	actual := val.Raw()
+
+	// Special handling for numeric comparisons (JSON decodes all numbers as float64)
+	switch expected := spec.(type) {
+	case int:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
+			return actual
+		}
+	case int64:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
+			return actual
+		}
+	case float64:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, expected, actualFloat, "numeric value mismatch")
+			return actual
+		}
+	case float32:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
+			return actual
+		}
+	}
+
+	// Default: direct equality
+	require.Equal(t, spec, actual, "value mismatch")
+	return actual
 }
 
-// Example usage:
+// Example usage with the actual test:
 //
-// // Capture field IDs for cross-version comparison
-// var emailIDv1, emailIDv2 interface{}
+// t.Run("GetSchemaVerbose", func(t *testing.T) {
+// 	authClient := suite.Client(t).Auth(user.auth)
+// 	schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
+// 		Expect(http.StatusOK).
+// 		Data()
 //
-// spec := map[string]interface{}{
-// 	"id":         AnyUUID{},
-// 	"project_id": projectID,
-// 	"title":      "scti-register-flow",
-// 	"flow_id":    "scti-register",
-// 	"type":       "context",
-// 	"status":     "published",
-// 	"created_at": NotEmpty{},
-// 	"updated_at": NotEmpty{},
-// 	"versions": Each{
-// 		Spec: map[string]interface{}{
-// 			"id":            AnyUUID{},
-// 			"version_number": AnyNumber{},
-// 			"schema_id":      AnyUUID{},
-// 			"fields": ByKey{
-// 				Key: "key",
-// 				Spec: map[string]interface{}{
-// 					"matricula": map[string]interface{}{
-// 						"id":          Store{Into: &emailIDv1}, // capture in v1
-// 						"key":         "matricula",
-// 						"type":        "string",
-// 						"owner":       "user",
-// 						"title":       "Numero da Matrícula",
-// 						"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
-// 						"required":    true,
-// 						"mutable":     true,
-// 						"position":    0,
+// 	// Capture field IDs for cross-version stability checks
+// 	var (
+// 		matriculaV1ID, matriculaV2ID interface{}
+// 		cursoV1ID, cursoV2ID         interface{}
+// 	)
+//
+// 	spec := map[string]interface{}{
+// 		"id":                  schemaID,
+// 		"project_id":          projectID,
+// 		"title":               "scti-register-flow",
+// 		"flow_id":             "scti-register",
+// 		"type":                "context",
+// 		"status":              "published",
+// 		"current_version_id":  schemaVersion2ID,
+// 		"created_at":          NotEmpty{},
+// 		"updated_at":          NotEmpty{},
+// 		"versions": InOrder{
+// 			Specs: []interface{}{
+// 				// Version 2 (newest first in response)
+// 				map[string]interface{}{
+// 					"id":             AnyUUID{},
+// 					"schema_id":      schemaID,
+// 					"version_number": 2,
+// 					"fields": ByKey{
+// 						Key: "key",
+// 						Spec: map[string]interface{}{
+// 							"matricula": map[string]interface{}{
+// 								"id":          Store{Into: &matriculaV2ID},
+// 								"key":         "matricula",
+// 								"type":        "string",
+// 								"owner":       "user",
+// 								"title":       "Numero da Matrícula",
+// 								"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+// 								"placeholder": "20223200045",
+// 								"required":    true,
+// 								"mutable":     true,
+// 								"position":    0,
+// 							},
+// 							"curso": map[string]interface{}{
+// 								"id":          Store{Into: &cursoV2ID},
+// 								"key":         "curso",
+// 								"type":        "string",
+// 								"owner":       "user",
+// 								"title":       "Curso de Matrícula",
+// 								"description": "O curso que você está matrículado na UENF",
+// 								"placeholder": "Ciência da Computação",
+// 								"required":    true,
+// 								"mutable":     true,
+// 								"position":    1,
+// 							},
+// 							"periodo": map[string]interface{}{
+// 								"id":          AnyUUID{},
+// 								"key":         "periodo",
+// 								"type":        "int",
+// 								"owner":       "user",
+// 								"title":       "Período Atual",
+// 								"description": "O período da sua matéria mais avançada da grade",
+// 								"required":    true,
+// 								"mutable":     true,
+// 								"position":    2,
+// 							},
+// 						},
 // 					},
-// 					"curso": map[string]interface{}{
-// 						"id":       AnyUUID{},
-// 						"key":      "curso",
-// 						"type":     "string",
-// 						"required": true,
+// 				},
+// 				// Version 1
+// 				map[string]interface{}{
+// 					"id":             AnyUUID{},
+// 					"schema_id":      schemaID,
+// 					"version_number": 1,
+// 					"fields": ByKey{
+// 						Key: "key",
+// 						Spec: map[string]interface{}{
+// 							"matricula": map[string]interface{}{
+// 								"id":          Store{Into: &matriculaV1ID},
+// 								"key":         "matricula",
+// 								"type":        "string",
+// 								"owner":       "user",
+// 								"title":       "Numero da Matrícula",
+// 								"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+// 								"placeholder": "20223200045",
+// 								"required":    true,
+// 								"mutable":     true,
+// 								"position":    0,
+// 							},
+// 							"curso": map[string]interface{}{
+// 								"id":          Store{Into: &cursoV1ID},
+// 								"key":         "curso",
+// 								"type":        "string",
+// 								"owner":       "user",
+// 								"title":       "Curso de Matrícula",
+// 								"description": "O curso que você está matrículado na UENF",
+// 								"placeholder": "Ciência da Computação",
+// 								"required":    true,
+// 								"mutable":     true,
+// 								"position":    1,
+// 							},
+// 						},
 // 					},
 // 				},
 // 			},
 // 		},
-// 	},
-// }
+// 	}
 //
-// Validate(t, schema, spec)
+// 	Validate(t, schema, spec)
 //
-// // Later you can assert: emailIDv1 == emailIDv2
+// 	// Cross-version field ID stability checks
+// 	require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")
+// 	require.Equal(t, cursoV1ID, cursoV2ID, "curso field ID changed between versions")
+// })
