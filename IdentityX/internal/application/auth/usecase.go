@@ -508,6 +508,22 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		return apiErr
 	}
 
+	if schema.IsValidSchemaType(in.FlowID) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if in.FlowID == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && len(in.CustomFields) > 0 {
+		return apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
+	}
+
 	var registerSchema *schema.Schema
 	var validatedMetadata *json.RawMessage = nil
 	if !(schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none") {
@@ -557,7 +573,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		for key, value := range custom {
 			f, ok := fieldDefs[key]
 			if !ok {
-				apiErr := apierr.ErrInvalidInput.WithMsg("unknown custom field").WithID(apierr.FieldNotDefinedFieldInSchema).WithCause(errors.New("unknown field: " + key))
+				apiErr := apierr.ErrInvalidInput.WithMsg("unknown custom field").WithID(apierr.FieldNotDefinedInSchema).WithCause(errors.New("unknown field: " + key))
 				apierr.RecordDomainError(span, apiErr)
 				return apiErr
 			}
@@ -611,6 +627,9 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		rawMetadata := json.RawMessage(marshalledMetadata)
 
 		validatedMetadata = &rawMetadata
+	} else {
+		empty := json.RawMessage(`{}`)
+		validatedMetadata = &empty
 	}
 
 	if validatedMetadata != nil {

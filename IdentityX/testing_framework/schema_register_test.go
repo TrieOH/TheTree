@@ -4,8 +4,6 @@ import (
 	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func testSchemaRegister(t *testing.T, suite *TestSuite) {
@@ -111,25 +109,24 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusCreated).
 			MessageContains("created fields").
-			DataArray()
+			Value()
 
-		data.Length().IsEqual(3)
-		data.Value(0).Object().Value("object_id").NotNull()
-		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
-		data.Value(1).Object().Value("object_id").NotNull()
-		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
-		data.Value(2).Object().Value("object_id").NotNull()
-		id3 := data.Value(2).Object().Value("id").String().NotEmpty().Raw()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
+		}
 
-		if _, err := uuid.Parse(id1); err != nil {
-			t.Fatalf("couldn't parse id from field matricula: %v", err)
-		}
-		if _, err := uuid.Parse(id2); err != nil {
-			t.Fatalf("couldn't parse id from field curso: %v", err)
-		}
-		if _, err := uuid.Parse(id3); err != nil {
-			t.Fatalf("couldn't parse id from field curso: %v", err)
-		}
+		Validate(t, data, spec)
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
@@ -205,7 +202,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			MessageContains("unknown custom field").
-			ExpectErrorID(apierr.FieldNotDefinedFieldInSchema)
+			ExpectErrorID(apierr.FieldNotDefinedInSchema)
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeStringOnInt", func(t *testing.T) {

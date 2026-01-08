@@ -11,8 +11,13 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 			q := r.URL.Query()
 
 			for _, p := range params {
+				if !q.Has(p) {
+					err := apierr.ErrInvalidInput.WithMsg("missing query parameter: " + p).WithID(apierr.RequestMissingQueryParam)
+					ErrToResp(err).WithModule("RequireQueryParamsMW").Send(w)
+					return
+				}
 				if q.Get(p) == "" {
-					err := apierr.ErrInvalidInput.WithMsg("missing query parameter: " + p).WithID(apierr.RequestMissingQueryParams)
+					err := apierr.ErrInvalidInput.WithMsg("missing query parameter value for: " + p).WithID(apierr.RequestMissingQueryParamValue)
 					ErrToResp(err).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}

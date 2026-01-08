@@ -67,6 +67,9 @@ func (c *Client) newRequest(method, path string) *RequestBuilder {
 }
 
 func (c *Client) WithT(t *testing.T) *Client {
-	c.t = t
-	return c
+	return &Client{
+		expect: c.expect,
+		t:      t,
+		auth:   c.auth,
+	}
 }

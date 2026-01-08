@@ -1,7 +1,8 @@
 package apierr
 
 const (
-	RequestMissingQueryParams ID = "REQ_001"
+	RequestMissingQueryParamValue ID = "REQ_001"
+	RequestMissingQueryParam      ID = "REQ_002"
 )
 
 const (
@@ -99,6 +100,8 @@ const (
 	SchemaNoValidType               ID = "SCHEMA_010"
 	SchemaInvalidFlowID             ID = "SCHEMA_011"
 	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
+	SchemaInvalidMetadata           ID = "SCHEMA_013"
+	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
 )
 
 const (
@@ -119,7 +122,7 @@ const (
 	FieldSamePositionForMultipleFields ID = "FIELD_001"
 	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
 	FieldInvalidCharactersInKey        ID = "FIELD_003"
-	FieldNotDefinedFieldInSchema       ID = "FIELD_004"
+	FieldNotDefinedInSchema            ID = "FIELD_004"
 	FieldTypeMismatch                  ID = "FIELD_005"
 	FieldSameKeyForMultipleFields      ID = "FIELD_006"
 	FieldRequiredMissing               ID = "FIELD_007"

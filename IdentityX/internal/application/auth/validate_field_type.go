@@ -24,7 +24,11 @@ func validateFieldType(fieldType field.Type, value any) bool {
 			return true
 		case float64:
 			// JSON numbers default to float64
-			return math.Trunc(v) == v
+			if math.Trunc(v) != v {
+				return false
+			}
+			// Check if within int64 range
+			return v >= float64(math.MinInt64) && v <= float64(math.MaxInt64)
 		case json.Number:
 			_, err := v.Int64()
 			return err == nil
