@@ -30,7 +30,7 @@ type UserTokensOutput struct {
 type ProjectRegisterInput struct {
 	Email        string
 	Password     string
-	CustomFields json.RawMessage
+	CustomFields *json.RawMessage
 	ProjectID    string
 	SchemaType   string
 	FlowID       string

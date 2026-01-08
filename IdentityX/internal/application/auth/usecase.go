@@ -3,8 +3,8 @@ package auth
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/domain/auth"
-	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/schema"
@@ -15,7 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -40,6 +39,7 @@ type UseCase struct {
 	versions     outbound.SchemaVersionRepository
 	fields       outbound.SchemaFieldsRepository
 	projectUsers outbound.ProjectUserRepository
+	tx           transactions.TxRunner
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -52,6 +52,7 @@ func New(
 	versions outbound.SchemaVersionRepository,
 	fields outbound.SchemaFieldsRepository,
 	projectUsers outbound.ProjectUserRepository,
+	tx transactions.TxRunner,
 ) inbounds.AuthService {
 	return &UseCase{
 		users:        users,
@@ -61,6 +62,7 @@ func New(
 		versions:     versions,
 		fields:       fields,
 		projectUsers: projectUsers,
+		tx:           tx,
 	}
 }
 
@@ -68,6 +70,16 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
+	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		err = uc.registerInternal(ctx, in)
+		return err
+	})
+
+	return err
+}
+
+func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -488,6 +500,16 @@ func (uc *UseCase) RefreshProjectUser(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
+	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		err = uc.registerProjectUserInternal(ctx, in)
+		return err
+	})
+
+	return err
+}
+
+func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
@@ -508,6 +530,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		return apiErr
 	}
 
+	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
 		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
 		apierr.RecordDomainError(span, apiErr)
@@ -520,120 +543,22 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		return apiErr
 	}
 
-	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && len(in.CustomFields) > 0 {
+	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && in.CustomFields != nil {
 		return apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
 	}
 
-	var registerSchema *schema.Schema
 	var validatedMetadata *json.RawMessage = nil
 	if !(schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none") {
-		registerSchema, err = uc.schemas.FindByFlowIDAndType(ctx, in.FlowID, in.SchemaType, pid)
+		validatedMetadata, err = uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}
-
-		if registerSchema.CurrentVersionID == nil {
-			apiErr := apierr.ErrInvalidInput.WithMsg("schema has no published version").WithID(apierr.SchemaNoPublishedVersion)
-			apierr.RecordDomainError(span, apiErr)
-			return apiErr
-		}
-
-		var registerVersion *schema.Version
-		registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID)
-		if err != nil {
-			return err
-		}
-
-		if registerVersion.ID != *registerSchema.CurrentVersionID {
-			apiErr := apierr.ErrInternal.WithMsg("schema version and retrieved version mismatch").WithID(apierr.SchemaVersionMismatch)
-			apierr.RecordSystemError(span, apiErr)
-			return apiErr
-		}
-
-		var registerFields []field.Field
-		registerFields, err = uc.fields.GetByVersionID(ctx, registerVersion.ID)
-		if err != nil {
-			return err
-		}
-
-		fieldDefs := make(map[string]field.Field)
-		for _, f := range registerFields {
-			fieldDefs[f.Key] = f
-		}
-
-		var custom map[string]any
-
-		if err := json.Unmarshal(in.CustomFields, &custom); err != nil {
-			return apierr.ErrInvalidInput.
-				WithMsg("invalid custom fields JSON").
-				WithCause(err)
-		}
-
-		validated := make(map[string]any)
-		for key, value := range custom {
-			f, ok := fieldDefs[key]
-			if !ok {
-				apiErr := apierr.ErrInvalidInput.WithMsg("unknown custom field").WithID(apierr.FieldNotDefinedInSchema).WithCause(errors.New("unknown field: " + key))
-				apierr.RecordDomainError(span, apiErr)
-				return apiErr
-			}
-
-			if !validateFieldType(f.Type, value) {
-				apiErr := apierr.ErrInvalidInput.WithMsg("invalid field type").WithID(apierr.FieldTypeMismatch).WithCause(fmt.Errorf("field %q expects %s, got %T", key, f.Type, value))
-				apierr.RecordDomainError(span, apiErr)
-				return apiErr
-			}
-
-			validated[key] = value
-		}
-
-		for _, f := range registerFields {
-			if !f.Required {
-				continue
-			}
-
-			if _, ok := validated[f.Key]; !ok {
-				apiErr := apierr.ErrInvalidInput.WithMsg("missing required field").WithID(apierr.FieldRequiredMissing).WithCause(errors.New("missing field: " + f.Key))
-				apierr.RecordDomainError(span, apiErr)
-				return apiErr
-			}
-		}
-
-		metadata := make(map[string]any)
-		schemaPayload := make(map[string]any)
-
-		schemaPayload["schema_id"] = registerSchema.ID.String()
-		schemaPayload["schema_version_id"] = registerVersion.ID.String()
-
-		for k, v := range validated {
-			schemaPayload[k] = v
-		}
-
-		flowMap := map[string]any{
-			in.FlowID: schemaPayload,
-		}
-
-		metadata[in.SchemaType] = flowMap
-
-		marshalledMetadata, err := json.Marshal(metadata)
-		if err != nil {
-			apiErr := apierr.ErrInternal.
-				WithID(apierr.SystemInternalError).
-				WithCause(err)
-			apierr.RecordSystemError(span, apiErr)
-			return apiErr
-		}
-
-		rawMetadata := json.RawMessage(marshalledMetadata)
-
-		validatedMetadata = &rawMetadata
-	} else {
-		empty := json.RawMessage(`{}`)
-		validatedMetadata = &empty
 	}
 
+	empty := json.RawMessage(`{}`)
+	customFields := &empty
 	if validatedMetadata != nil {
-		in.CustomFields = *validatedMetadata
+		customFields = validatedMetadata
 	}
 
 	if len(in.Password) > 72 {
@@ -653,7 +578,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		ProjectID:    pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
-		Metadata:     &in.CustomFields,
+		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
 		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))

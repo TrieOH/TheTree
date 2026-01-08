@@ -148,6 +148,19 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			WithQuery("schema_type", "context").
 			WithQuery("flow_id", "estudante").
 			WithBody(map[string]interface{}{
+				"email":    "client@email.com",
+				"password": ValidPassword,
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("the schema custom fields are required on a schema register").
+			ExpectErrorID(apierr.RequestMissingSchemaCustomFields)
+	})
+
+	t.Run("RegisterOnSchemaEmptyCustomFields", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
 				"email":         "client@email.com",
 				"password":      ValidPassword,
 				"custom_fields": map[string]interface{}{},

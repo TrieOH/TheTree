@@ -1,8 +1,9 @@
 package apierr
 
 const (
-	RequestMissingQueryParamValue ID = "REQ_001"
-	RequestMissingQueryParam      ID = "REQ_002"
+	RequestMissingQueryParamValue    ID = "REQ_001"
+	RequestMissingQueryParam         ID = "REQ_002"
+	RequestMissingSchemaCustomFields ID = "REQ_003"
 )
 
 const (
