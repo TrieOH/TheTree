@@ -52,6 +52,18 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 		span.SetAttributes(attribute.Bool("draft.success", err == nil))
 	}()
 
+	if in.FlowID == "" {
+		err = apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	if in.SchemaType == "" {
+		err = apierr.ErrInvalidInput.WithMsg("schema type can't be empty").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 

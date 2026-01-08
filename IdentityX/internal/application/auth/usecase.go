@@ -515,7 +515,21 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	)
 	defer span.End()
 
+	if in.FlowID == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if in.SchemaType == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("schema type can't be empty").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
+	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	pid, err := uuid.Parse(in.ProjectID)
 	if err != nil {
@@ -537,14 +551,10 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		return apiErr
 	}
 
-	if in.FlowID == "" {
-		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && in.CustomFields != nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
-	}
-
-	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && in.CustomFields != nil {
-		return apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
 	}
 
 	var validatedMetadata *json.RawMessage = nil

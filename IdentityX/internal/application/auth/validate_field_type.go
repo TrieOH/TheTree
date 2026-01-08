@@ -23,7 +23,7 @@ func validateFieldType(fieldType field.Type, value any) bool {
 
 	case field.Int:
 		switch v := value.(type) {
-		case int, int8, int16, int32, int64:
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 			return true
 		case float64:
 			// Reject special float values

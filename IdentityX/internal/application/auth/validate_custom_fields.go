@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// validateAndConstructMetadata validates custom fields against a schema and returns structured metadata
 func (uc *UseCase) validateAndConstructMetadata(
 	ctx context.Context,
 	span trace.Span,
@@ -65,7 +66,9 @@ func (uc *UseCase) validateAndConstructMetadata(
 	}
 
 	if err := json.Unmarshal(*customFields, &custom); err != nil {
-		return nil, apierr.ErrInvalidInput.WithMsg("invalid custom fields JSON").WithCause(err)
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid custom fields JSON").WithID(apierr.RequestInvalidJSON).WithCause(err)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
 	}
 
 	validated := make(map[string]any)
@@ -116,9 +119,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
-		apiErr := apierr.ErrInternal.
-			WithID(apierr.SystemInternalError).
-			WithCause(err)
+		apiErr := apierr.ErrInternal.WithID(apierr.SystemInternalError).WithCause(err)
 		apierr.RecordSystemError(span, apiErr)
 		return nil, apiErr
 	}

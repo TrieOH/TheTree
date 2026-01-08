@@ -13,9 +13,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 		Login().
 		CreateProject("schema testing")
 
-	var projectID string
-	projectID = user.ProjectID
-
+	projectID := user.ProjectID
 	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
