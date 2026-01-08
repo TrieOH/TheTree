@@ -25,6 +25,14 @@ func validateFieldType(fieldType field.Type, value any) bool {
 		switch v := value.(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 			return true
+		case float32:
+			if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+				return false
+			}
+			if float32(math.Trunc(float64(v))) != v {
+				return false
+			}
+			return true
 		case float64:
 			// Reject special float values
 			if math.IsNaN(v) || math.IsInf(v, 0) {
@@ -38,7 +46,7 @@ func validateFieldType(fieldType field.Type, value any) bool {
 			const maxSafeInt64 float64 = 1<<53 - 1 // 2^53 - 1, largest precise integer in float64
 			const minSafeInt64 float64 = -(1 << 53)
 			if v > maxSafeInt64 || v < minSafeInt64 {
-				logs.L().Info(
+				logs.L().Debug(
 					"rejected a value outside the safe range for float precision",
 					zap.Float64("value", v),
 				)

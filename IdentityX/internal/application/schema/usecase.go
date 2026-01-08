@@ -109,8 +109,8 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 		return nil, err
 	}
 
-	if in.FlowID == "none" {
-		err = apierr.ErrInvalidInput.WithMsg("flow id can't be the reserved keyword 'none'").WithID(apierr.SchemaFlowIDIsReserved)
+	if schema.IsFlowIDReserved(in.FlowID) {
+		err = apierr.ErrInvalidInput.WithMsg("flow id can't be the reserved keyword '" + string(in.FlowID) + "'").WithID(apierr.SchemaFlowIDIsReserved)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}

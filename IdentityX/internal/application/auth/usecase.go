@@ -70,13 +70,9 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
-	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		var err error
-		err = uc.registerInternal(ctx, in)
-		return err
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerInternal(ctx, in)
 	})
-
-	return err
 }
 
 func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
@@ -500,13 +496,9 @@ func (uc *UseCase) RefreshProjectUser(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
-	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		var err error
-		err = uc.registerProjectUserInternal(ctx, in)
-		return err
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerProjectUserInternal(ctx, in)
 	})
-
-	return err
 }
 
 func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
@@ -551,14 +543,14 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		return apiErr
 	}
 
-	if schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none" && in.CustomFields != nil {
+	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
 		apiErr := apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
 
 	var validatedMetadata *json.RawMessage = nil
-	if !(schema.Type(in.SchemaType) == schema.Core && in.FlowID == "none") {
+	if !(schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)) {
 		validatedMetadata, err = uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
