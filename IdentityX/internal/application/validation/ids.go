@@ -1,0 +1,89 @@
+package validation
+
+import (
+	"GoAuth/internal/apierr"
+
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
+)
+
+func ParseProjectID(span trace.Span, projectID string) (*uuid.UUID, error) {
+	pid, err := uuid.Parse(projectID)
+	if err != nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
+	}
+	return &pid, nil
+}
+
+func ProjectIDNotNull(span trace.Span, projectID *string) error {
+	if projectID == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("project id is required").WithID(apierr.ProjectMissingID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+	return nil
+}
+
+func RequireProjectID(span trace.Span, projectID *string) (*uuid.UUID, error) {
+	err := ProjectIDNotNull(span, projectID)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectID(span, *projectID)
+}
+
+func ParseSchemaID(span trace.Span, schemaID string) (*uuid.UUID, error) {
+	sid, err := uuid.Parse(schemaID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+	return &sid, nil
+}
+
+func SchemaIDNotNull(span trace.Span, schemaID *string) error {
+	if schemaID == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("schema id is required").WithID(apierr.SchemaMissingID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+	return nil
+}
+
+func RequireSchemaID(span trace.Span, schemaID *string) (*uuid.UUID, error) {
+	err := SchemaIDNotNull(span, schemaID)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSchemaID(span, *schemaID)
+}
+
+func ParseSessionID(span trace.Span, sessionID string) (*uuid.UUID, error) {
+	sid, err := uuid.Parse(sessionID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid session id").WithID(apierr.SessionInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+	return &sid, nil
+}
+
+func SessionIDNotNull(span trace.Span, sessionID *string) error {
+	if sessionID == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("session id is required").WithID(apierr.SessionMissingID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+	return nil
+}
+
+func RequireSessionID(span trace.Span, sessionID *string) (*uuid.UUID, error) {
+	err := SessionIDNotNull(span, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSessionID(span, *sessionID)
+}

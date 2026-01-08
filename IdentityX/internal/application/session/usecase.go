@@ -1,9 +1,9 @@
 package session
 
 import (
-	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
@@ -42,13 +42,10 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.List")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
-
-	tracing.AnnotatePrincipal(span, principal)
 
 	sessions, err := uc.sessions.List(ctx, principal.UserID)
 	if err != nil {
@@ -66,22 +63,17 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
-	sid, err := uuid.Parse(sessionID)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid session id").WithID(apierr.SessionInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
-	}
-
-	principal, err := authz.RequirePrincipal(ctx)
-	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotatePrincipal(span, principal)
+	sid, err := validation.RequireSessionID(span, &sessionID)
+	if err != nil {
+		return err
+	}
 
-	if principal.SessionID == sid {
+	if principal.SessionID == *sid {
 		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
@@ -89,7 +81,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
-		SessionID: &sid,
+		SessionID: sid,
 	})
 	if err != nil {
 		return err
@@ -115,13 +107,10 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
-
-	tracing.AnnotatePrincipal(span, principal)
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
@@ -155,13 +144,10 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeAll")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
-
-	tracing.AnnotatePrincipal(span, principal)
 
 	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
 		UserID: principal.UserID,

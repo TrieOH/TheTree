@@ -155,21 +155,6 @@ func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) 
 	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
 }
 
-func (repo *schemaFieldsRepo) SetOptions(ctx context.Context, options []field.Option) error {
-	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
-}
-
-func (repo *schemaFieldsRepo) SetRequiredRules(ctx context.Context, rules []field.RequiredRule) error {
-	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
-}
-
-func (repo *schemaFieldsRepo) SetVisibilityRules(ctx context.Context, rules []field.VisibilityRule) error {
-	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
-}
-
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
 	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)

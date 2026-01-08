@@ -1,10 +1,10 @@
 package schema_fields
 
 import (
-	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/transactions"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
@@ -67,32 +67,25 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}()
 
 	var principal *authz.Principal
-	principal, err = authz.RequirePrincipal(ctx)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	tracing.AnnotatePrincipal(span, principal)
-
-	var pid uuid.UUID
-	pid, err = uuid.Parse(in.ProjectID)
+	var pid *uuid.UUID
+	pid, err = validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
-		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	var sid uuid.UUID
-	sid, err = uuid.Parse(in.SchemaID)
+	var sid *uuid.UUID
+	sid, err = validation.RequireSchemaID(span, &in.SchemaID)
 	if err != nil {
-		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +98,8 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 
 	var belongs bool
 	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
-		ProjectID: pid,
-		ID:        sid,
+		ProjectID: *pid,
+		ID:        *sid,
 	})
 	if err != nil {
 		return nil, err
@@ -119,7 +112,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var latest *schema.Version
-	latest, err = uc.versions.GetLatest(ctx, sid)
+	latest, err = uc.versions.GetLatest(ctx, *sid)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +133,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	for _, f := range in.Fields {
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
-			SchemaID:        sid,
+			SchemaID:        *sid,
 			SchemaVersionID: latest.ID,
 			Key:             f.Key,
 			Type:            field.Type(f.Type),
