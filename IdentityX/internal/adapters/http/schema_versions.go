@@ -30,7 +30,7 @@ func (handler *SchemaVersionHandler) Draft(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	in := inbounds.DraftSchemaVersionInput{
+	in := inbounds.SchemaVersionServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}
@@ -60,7 +60,7 @@ func (handler *SchemaVersionHandler) Publish(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	in := inbounds.PublishSchemaVersionInput{
+	in := inbounds.SchemaVersionServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}

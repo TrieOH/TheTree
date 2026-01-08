@@ -88,3 +88,28 @@ FROM schema_versions
 WHERE schema_id = $1
 ORDER BY version DESC
 LIMIT 1;
+
+-- name: GetCurrentSchemaVersion :one
+SELECT sv.*
+FROM schemas s
+JOIN schema_versions sv
+ON sv.id = s.current_version_id
+WHERE s.id = $1;
+
+-- name: ListSchemaVersion :many
+SELECT *
+FROM schema_versions
+WHERE schema_id = $1
+ORDER BY version DESC;
+
+-- name: CopyVersionOnDraft :one
+INSERT INTO schema_versions (schema_id, version, status, based_on_version_id)
+SELECT
+    sv.schema_id,
+    sv.version + 1,
+    'draft',
+    sv.id
+FROM schema_versions sv
+WHERE sv.id = $1 AND sv.status = 'published'
+RETURNING *;
+

@@ -1,21 +1,11 @@
 package inbounds
 
 import (
-	"GoAuth/internal/application/authz"
 	"GoAuth/internal/domain/session"
-	"context"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type SessionService interface {
-	List(ctx context.Context) ([]OutputSession, error)
-	RevokeByID(ctx context.Context, sessionId string) error
-	RevokeOthers(ctx context.Context) error
-	RevokeAll(ctx context.Context) error
-	Me(ctx context.Context) (*authz.Principal, error)
-}
 
 type OutputSession struct {
 	SessionID uuid.UUID
@@ -28,6 +18,14 @@ type OutputSession struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	UserType  string
+}
+
+func OutputSessionSliceFromSessionSlice(src []session.Session) []OutputSession {
+	dst := make([]OutputSession, 0, len(src))
+	for _, s := range src {
+		dst = append(dst, *OutputSessionFromSession(&s))
+	}
+	return dst
 }
 
 func OutputSessionFromSession(s *session.Session) *OutputSession {
@@ -43,12 +41,4 @@ func OutputSessionFromSession(s *session.Session) *OutputSession {
 		UpdatedAt: s.UpdatedAt,
 		UserType:  s.UserType,
 	}
-}
-
-func OutputSessionSliceFromSessionSlice(src []session.Session) []OutputSession {
-	dst := make([]OutputSession, 0, len(src))
-	for _, s := range src {
-		dst = append(dst, *OutputSessionFromSession(&s))
-	}
-	return dst
 }

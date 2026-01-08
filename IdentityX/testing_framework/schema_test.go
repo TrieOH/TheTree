@@ -70,7 +70,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			ExpectErrorID(apierr.SchemaVersionDraftDoesntExist)
 	})
 
-	var schemaVersionID string
+	var schemaVersion1ID string
 	t.Run("DraftVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
@@ -81,7 +81,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("schema_id").String().IsEqual(schemaID)
 		data.Value("version_number").IsNumber().IsEqual(1)
 
-		schemaVersionID = data.Value("id").String().Raw()
+		schemaVersion1ID = data.Value("id").String().Raw()
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
@@ -96,7 +96,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		data.Value("id").String().NotEmpty()
 		data.Value("type").String().IsEqual("context")
 		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsEqual(schemaVersionID)
+		data.Value("current_version_id").IsEqual(schemaVersion1ID)
 	})
 
 	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
@@ -110,9 +110,9 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	t.Run("DraftVersionError", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
-			Expect(http.StatusConflict).
-			MessageContains("a draft schema version already exists").
-			ExpectErrorID(apierr.SchemaVersionDraftAlreadyExists)
+			Expect(http.StatusUnauthorized).
+			MessageContains("new versions can only be drafted from published versions").
+			ExpectErrorID(apierr.SchemaVersionDraftOnNonPublished)
 	})
 
 	t.Run("PublishVersionFieldsError", func(t *testing.T) {
@@ -232,5 +232,144 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusUnauthorized).
 			MessageContains("cannot publish a schema that isn't a draft").
 			ExpectErrorID(apierr.SchemaTryingToPublishPublished)
+	})
+
+	var schemaVersion2ID string
+	t.Run("DraftVersion2", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			Data()
+
+		data.Value("id").String().NotEmpty()
+		data.Value("schema_id").String().IsEqual(schemaID)
+		data.Value("version_number").IsNumber().IsEqual(2)
+
+		schemaVersion2ID = data.Value("id").String().Raw()
+	})
+
+	t.Run("CheckSchemaVersionAfterV2Draft", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
+			Expect(http.StatusOK).
+			Data()
+
+		data.Value("project_id").String().IsEqual(projectID)
+		data.Value("title").String().IsEqual("scti-register-flow")
+		data.Value("flow_id").String().IsEqual("scti-register")
+		data.Value("id").String().NotEmpty()
+		data.Value("type").String().IsEqual("context")
+		data.Value("status").String().IsEqual("published")
+		data.Value("current_version_id").IsEqual(schemaVersion2ID)
+	})
+
+	t.Run("PublishVersion2NoChanges", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusBadRequest).
+			MessageContains("cannot publish a version with no changes").
+			ExpectErrorID(apierr.SchemaVersionNoChanges)
+	})
+
+	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "período",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Período Atual",
+						"description": "O período da sua matéria mais avançada da grade",
+						"required":    true,
+						"mutable":     true,
+						"position":    2,
+					},
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores").
+			ExpectErrorID(apierr.FieldInvalidCharactersInKey)
+	})
+
+	t.Run("AddFieldToV2Success", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "periodo",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Período Atual",
+						"description": "O período da sua matéria mais avançada da grade",
+						"required":    true,
+						"mutable":     true,
+						"position":    2,
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			MessageContains("created fields").
+			DataArray()
+
+		data.Length().IsEqual(1)
+		data.Value(0).Object().Value("object_id").NotNull()
+		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
+
+		if _, err := uuid.Parse(id1); err != nil {
+			t.Fatalf("couldn't parse id from field periodo: %v", err)
+		}
+	})
+
+	t.Run("PublishVersion2Success", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK).
+			MessageContains("published schema version")
+	})
+
+	t.Run("GetSchemaVerbose", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
+			Expect(http.StatusOK).
+			Data()
+
+		schema.Value("id").String().IsEqual(schemaID)
+		schema.Value("project_id").String().IsEqual(projectID)
+		schema.Value("title").String().IsEqual("scti-register-flow")
+		schema.Value("flow_id").String().IsEqual("scti-register")
+		schema.Value("type").String().IsEqual("context")
+		schema.Value("status").String().IsEqual("published")
+		schema.Value("current_version_id").String().IsEqual(schemaVersion2ID)
+		schema.Value("created_at").String().NotEmpty()
+		schema.Value("updated_at").String().NotEmpty()
+
+		versions := schema.Value("versions").Array()
+		versions.Length().IsEqual(2)
+
+		version2 := versions.Value(0).Object()
+		version1 := versions.Value(1).Object()
+
+		fieldsV1 := version1.Value("fields").Array()
+		fieldsV2 := version2.Value("fields").Array()
+
+		fieldsV1.Length().IsEqual(2)
+		fieldsV2.Length().IsEqual(3)
+
+		fieldsV1field1ID := fieldsV1.Value(0).Object().Value("id").String().Raw()
+		fieldsV1field2ID := fieldsV1.Value(1).Object().Value("id").String().Raw()
+
+		fieldsV2field1ID := fieldsV2.Value(0).Object().Value("id").String().Raw()
+		fieldsV2field2ID := fieldsV2.Value(1).Object().Value("id").String().Raw()
+
+		if fieldsV1field1ID != fieldsV2field1ID {
+			t.Fatalf("field 1 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field1ID, fieldsV2field1ID)
+		}
+
+		if fieldsV1field2ID != fieldsV2field2ID {
+			t.Fatalf("field 2 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field2ID, fieldsV2field2ID)
+		}
 	})
 }

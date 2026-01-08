@@ -24,3 +24,20 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 			WithCause(cause)
 	}
 }
+
+func fromCheckViolation(pqErr *pq.Error, cause error) *Error {
+	switch pqErr.Constraint {
+
+	case "schema_fields_key_check":
+		return ErrInvalidInput.
+			WithMsg("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores").
+			WithID(FieldInvalidCharactersInKey).
+			WithCause(cause)
+
+	default:
+		return ErrInvalidInput.
+			WithMsg("invalid value violates a database constraint").
+			WithID(DBCheckViolation).
+			WithCause(cause)
+	}
+}

@@ -39,7 +39,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, projectUserRepo)
 	projectUC := project.New(projectRepo)
 	sessionUC := session.New(sessionRepo, revokedTokensRepo)
-	schemaUC := schema.New(schemaRepo, schemaVersionRepo, projectRepo)
+	schemaUC := schema.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo)
 	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
 	schemaFieldUC := schema_fields.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
 
@@ -128,6 +128,7 @@ func registerSchemaRoutes(
 
 		r.Post("/projects/{project_id}/schemas", schemas.Draft)
 		r.Get("/projects/{project_id}/schemas/{schema_id}", schemas.GetByID)
+		r.Get("/projects/{project_id}/schemas/{schema_id}/verbose", schemas.GetVerbose)
 		r.Post("/projects/{project_id}/schemas/{schema_id}/publish", schemas.Publish)
 	})
 }

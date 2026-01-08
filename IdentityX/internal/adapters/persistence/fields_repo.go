@@ -124,6 +124,32 @@ func (repo *schemaFieldsRepo) GetByVersionID(ctx context.Context, schemaVersionI
 	return fields, nil
 }
 
+func (repo *schemaFieldsRepo) List(ctx context.Context, schemaID uuid.UUID) ([]field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.List",
+		trace.WithAttributes(
+			attribute.String("field.schema_id", schemaID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcFields, err := repo.queries(ctx).ListFieldsFromSchema(ctx, schemaID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("count", len(sqlcFields)))
+
+	fields := make([]field.Field, 0, len(sqlcFields))
+	for _, sqlcField := range sqlcFields {
+		var newSchemaField field.Field
+		mapSchemaFieldFromDB(&newSchemaField, &sqlcField)
+		fields = append(fields, newSchemaField)
+	}
+	return fields, nil
+}
+
 func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) error {
 	// TODO Implement me!
 	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
@@ -147,4 +173,54 @@ func (repo *schemaFieldsRepo) SetVisibilityRules(ctx context.Context, rules []fi
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
 	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
+}
+
+func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, toVersionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.CloneFromTo",
+		trace.WithAttributes(
+			attribute.String("from_version_id", fromVersionID.String()),
+			attribute.String("to_version_id", toVersionID.String()),
+		),
+	)
+	defer span.End()
+
+	affectedRows, err := repo.queries(ctx).CloneFields(ctx, sqlc.CloneFieldsParams{
+		DraftVersionID:  toVersionID,
+		SourceVersionID: fromVersionID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	if affectedRows == 0 {
+		apiErr := apierr.ErrNotFound.WithMsg("no affected rows").WithID(apierr.FieldNoAffectedRowsOnClone)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	return nil
+}
+
+func (repo *schemaFieldsRepo) DiffVersionsState(ctx context.Context, baseVersionID, draftVersionID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DiffVersionsState",
+		trace.WithAttributes(
+			attribute.String("base_version_id", baseVersionID.String()),
+			attribute.String("draft_version_id", draftVersionID.String()),
+		),
+	)
+	defer span.End()
+
+	hasChanges, err := repo.queries(ctx).DiffVersionFields(ctx, sqlc.DiffVersionFieldsParams{
+		BaseVersionID:  baseVersionID,
+		DraftVersionID: draftVersionID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return hasChanges, nil
 }

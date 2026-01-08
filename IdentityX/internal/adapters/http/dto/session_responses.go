@@ -20,6 +20,14 @@ type SessionResponse struct {
 	UserType  string     `json:"user_type"`
 }
 
+func SessionResponseSliceFromSessionOutputSlice(src []inbounds.OutputSession) []SessionResponse {
+	dst := make([]SessionResponse, 0, len(src))
+	for _, s := range src {
+		dst = append(dst, SessionResponseFromSessionOutput(s))
+	}
+	return dst
+}
+
 func SessionResponseFromSessionOutput(s inbounds.OutputSession) SessionResponse {
 	return SessionResponse{
 		SessionID: s.SessionID,
@@ -33,12 +41,4 @@ func SessionResponseFromSessionOutput(s inbounds.OutputSession) SessionResponse 
 		UpdatedAt: s.UpdatedAt,
 		UserType:  s.UserType,
 	}
-}
-
-func SessionResponseSliceFromSessionOutputSlice(src []inbounds.OutputSession) []SessionResponse {
-	dst := make([]SessionResponse, 0, len(src))
-	for _, s := range src {
-		dst = append(dst, SessionResponseFromSessionOutput(s))
-	}
-	return dst
 }

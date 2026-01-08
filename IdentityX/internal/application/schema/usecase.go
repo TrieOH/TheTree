@@ -4,6 +4,7 @@ import (
 	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
@@ -22,6 +23,7 @@ var (
 type UseCase struct {
 	schemas  outbound.SchemaRepository
 	versions outbound.SchemaVersionRepository
+	fields   outbound.SchemaFieldsRepository
 	projects outbound.ProjectRepository
 }
 
@@ -30,16 +32,18 @@ var _ inbounds.SchemaService = (*UseCase)(nil)
 func New(
 	schemas outbound.SchemaRepository,
 	versions outbound.SchemaVersionRepository,
+	fields outbound.SchemaFieldsRepository,
 	projects outbound.ProjectRepository,
 ) inbounds.SchemaService {
 	return &UseCase{
 		schemas:  schemas,
 		versions: versions,
+		fields:   fields,
 		projects: projects,
 	}
 }
 
-func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*inbounds.SchemaOutput, error) {
+func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Draft")
 	defer span.End()
 
@@ -118,7 +122,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.DraftSchemaInput) (*in
 	return inbounds.SchemaToSchemaOutput(drafted), nil
 }
 
-func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) error {
+func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.Publish")
 	defer span.End()
 
@@ -235,7 +239,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.PublishSchemaInput) 
 	return nil
 }
 
-func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) (*inbounds.SchemaOutput, error) {
+func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetByID")
 	defer span.End()
 
@@ -263,13 +267,26 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) 
 
 	isOwner, err := uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
 	if err != nil {
-		err = apierr.ErrUnauthorized.WithMsg("error checking project ownership").WithID(apierr.ProjectOwnershipCheckFailed).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
 	if !isOwner {
 		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var belongs bool
+	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: pid,
+		ID:        sid,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
@@ -280,4 +297,137 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.GetSchemaByIDInput) 
 	}
 
 	return inbounds.SchemaToSchemaOutput(found), nil
+}
+
+func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.SchemaVerboseOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetVerbose")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipal(ctx)
+	if err != nil {
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	tracing.AnnotatePrincipal(span, principal)
+
+	sid, err := uuid.Parse(in.SchemaID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid schema id").WithID(apierr.SchemaInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	pid, err := uuid.Parse(in.ProjectID)
+	if err != nil {
+		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	isOwner, err := uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema from a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var belongs bool
+	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: pid,
+		ID:        sid,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		err = apierr.ErrUnauthorized.WithMsg("cannot get a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
+		apierr.RecordDomainError(span, err)
+		return nil, err
+	}
+
+	var schemaPart *schema.Schema
+	schemaPart, err = uc.schemas.FindByID(ctx, sid, pid)
+	if err != nil {
+		return nil, err
+	}
+
+	schemaOutput := &inbounds.SchemaVerboseOutput{
+		SchemaOutput: inbounds.SchemaOutput{
+			ID:               schemaPart.ID,
+			ProjectID:        schemaPart.ProjectID,
+			Title:            schemaPart.Title,
+			FlowID:           schemaPart.FlowID,
+			Type:             string(schemaPart.Type),
+			CurrentVersionID: schemaPart.CurrentVersionID,
+			Status:           string(schemaPart.Status),
+			CreatedAt:        schemaPart.CreatedAt,
+			UpdatedAt:        schemaPart.UpdatedAt,
+		},
+	}
+
+	var versionsPart []schema.Version
+	versionsPart, err = uc.versions.List(ctx, sid)
+	if err != nil {
+		return nil, err
+	}
+
+	versionsOutput := make([]inbounds.VersionVerboseOutput, 0, len(versionsPart))
+	for _, version := range versionsPart {
+		versionOutput := inbounds.VersionVerboseOutput{
+			SchemaVersionOutput: inbounds.SchemaVersionOutput{
+				ID:               version.ID,
+				SchemaID:         version.SchemaID,
+				BasedOnVersionID: version.BasedOnVersionID,
+				VersionNumber:    version.VersionNumber,
+				Status:           version.Status,
+				CreatedAt:        version.CreatedAt,
+				UpdatedAt:        version.UpdatedAt,
+			},
+			Fields: nil,
+		}
+		versionsOutput = append(versionsOutput, versionOutput)
+	}
+
+	schemaOutput.Versions = versionsOutput
+
+	var fieldsPart []field.Field
+	fieldsPart, err = uc.fields.List(ctx, sid)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range schemaOutput.Versions {
+		for _, f := range fieldsPart {
+			if f.SchemaVersionID != schemaOutput.Versions[i].ID {
+				continue
+			}
+
+			schemaOutput.Versions[i].Fields = append(schemaOutput.Versions[i].Fields, inbounds.OutputField{
+				ObjectID:        f.ObjectID,
+				ID:              f.ID,
+				Key:             f.Key,
+				SchemaID:        f.SchemaID,
+				SchemaVersionID: f.SchemaVersionID,
+				Type:            string(f.Type),
+				Owner:           string(f.Owner),
+				Title:           f.Title,
+				Description:     f.Description,
+				Placeholder:     f.Placeholder,
+				Required:        f.Required,
+				Mutable:         f.Mutable,
+				DefaultValue:    f.DefaultValue,
+				Position:        f.Position,
+				CreatedAt:       f.CreatedAt,
+				UpdatedAt:       f.UpdatedAt,
+			})
+		}
+	}
+
+	return schemaOutput, nil
 }

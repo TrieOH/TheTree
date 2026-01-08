@@ -62,11 +62,19 @@ CREATE TABLE schema_versions (
     status schema_version_status NOT NULL DEFAULT 'draft',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    based_on_version_id UUID
+        REFERENCES schema_versions(id)
+            ON DELETE SET NULL,
+
     UNIQUE (schema_id, version)
 );
 
 CREATE INDEX idx_schema_versions_schema_id
     ON schema_versions(schema_id);
+
+CREATE INDEX idx_schema_versions_based_on_version_id
+    ON schema_versions(based_on_version_id);
 
 CREATE UNIQUE INDEX uniq_published_schema_versions
     ON schema_versions (schema_id, version)
@@ -215,6 +223,7 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     WHERE status = 'draft';
 
 -- +goose Down
+DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
 
 ALTER TABLE schemas

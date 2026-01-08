@@ -62,11 +62,11 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *UseCase) RevokeByID(ctx context.Context, sessionId string) error {
+func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
-	sid, err := uuid.Parse(sessionId)
+	sid, err := uuid.Parse(sessionID)
 	if err != nil {
 		apiErr := apierr.ErrInvalidInput.WithMsg("invalid session id").WithID(apierr.SessionInvalidID).WithCause(err)
 		apierr.RecordDomainError(span, apiErr)

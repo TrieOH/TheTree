@@ -8,23 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type CreateFieldRequest struct {
-	Fields []FieldParam `json:"fields"`
-}
-
-type FieldParam struct {
-	Key          string           `json:"key"`
-	Type         string           `json:"type"`
-	Owner        string           `json:"owner"`
-	Title        string           `json:"title"`
-	Description  *string          `json:"description"`
-	Placeholder  *string          `json:"placeholder"`
-	Required     bool             `json:"required"`
-	Mutable      bool             `json:"mutable"`
-	DefaultValue *json.RawMessage `json:"default_value"`
-	Position     int              `json:"position"`
-}
-
 type FieldResponse struct {
 	ObjectID        uuid.UUID        `json:"object_id"`
 	ID              uuid.UUID        `json:"id"`
@@ -44,28 +27,10 @@ type FieldResponse struct {
 	UpdatedAt       time.Time        `json:"updated_at"`
 }
 
-func FieldParamToInputField(f *FieldParam) *inbounds.InputField {
-	if f == nil {
-		return nil
-	}
-	return &inbounds.InputField{
-		Key:          f.Key,
-		Type:         f.Type,
-		Owner:        f.Owner,
-		Title:        f.Title,
-		Description:  f.Description,
-		Placeholder:  f.Placeholder,
-		Required:     f.Required,
-		Mutable:      f.Mutable,
-		DefaultValue: f.DefaultValue,
-		Position:     f.Position,
-	}
-}
-
-func FieldParamSliceToInputFieldSlice(fps []FieldParam) []inbounds.InputField {
-	out := make([]inbounds.InputField, 0, len(fps))
+func OutputFieldSliceToFieldResponseSlice(fps []inbounds.OutputField) []FieldResponse {
+	out := make([]FieldResponse, 0, len(fps))
 	for _, f := range fps {
-		out = append(out, *FieldParamToInputField(&f))
+		out = append(out, *OutputFieldToFieldResponse(&f))
 	}
 	return out
 }
@@ -92,12 +57,4 @@ func OutputFieldToFieldResponse(field *inbounds.OutputField) *FieldResponse {
 		CreatedAt:       field.CreatedAt,
 		UpdatedAt:       field.UpdatedAt,
 	}
-}
-
-func OutputFieldSliceToFieldResponseSlice(fps []inbounds.OutputField) []FieldResponse {
-	out := make([]FieldResponse, 0, len(fps))
-	for _, f := range fps {
-		out = append(out, *OutputFieldToFieldResponse(&f))
-	}
-	return out
 }

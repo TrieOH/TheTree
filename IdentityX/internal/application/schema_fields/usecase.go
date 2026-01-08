@@ -46,7 +46,7 @@ func New(
 	}
 }
 
-func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateSchemaFieldInput) ([]inbounds.OutputField, error) {
+func (uc *UseCase) Create(ctx context.Context, in inbounds.SchemaFieldInput) ([]inbounds.OutputField, error) {
 	var out []inbounds.OutputField
 	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
@@ -57,7 +57,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateSchemaFieldInpu
 	return out, err
 }
 
-func (uc *UseCase) createInternal(ctx context.Context, in inbounds.CreateSchemaFieldInput) ([]inbounds.OutputField, error) {
+func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldInput) ([]inbounds.OutputField, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.Create")
 	defer span.End()
 

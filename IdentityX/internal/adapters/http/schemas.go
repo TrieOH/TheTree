@@ -31,7 +31,7 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.DraftSchemaInput{
+	in := inbounds.SchemaServiceInput{
 		SchemaType: req.SchemaType,
 		Title:      req.Title,
 		FlowID:     req.FlowID,
@@ -63,7 +63,7 @@ func (handler *SchemaHandler) Publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.PublishSchemaInput{
+	in := inbounds.SchemaServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}
@@ -90,7 +90,7 @@ func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := inbounds.GetSchemaByIDInput{
+	in := inbounds.SchemaServiceInput{
 		ProjectID: projectID,
 		SchemaID:  schemaID,
 	}
@@ -104,5 +104,35 @@ func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK().
 		WithData(dto.SchemaOutputToResponse(found)).
+		Send(w)
+}
+
+func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
+		resp.BadRequest("missing project id parameter").Send(w)
+		return
+	}
+
+	schemaID := chi.URLParam(r, "schema_id")
+	if schemaID == "" {
+		resp.BadRequest("missing schema id parameter").Send(w)
+		return
+	}
+
+	in := inbounds.SchemaServiceInput{
+		ProjectID: projectID,
+		SchemaID:  schemaID,
+	}
+
+	ctx := r.Context()
+	res, err := handler.schemas.GetVerbose(ctx, in)
+	if err != nil {
+		ErrToResp(err).Send(w)
+		return
+	}
+
+	resp.OK().
+		WithData(dto.VerboseSchemaOutputToResponse(res)).
 		Send(w)
 }
