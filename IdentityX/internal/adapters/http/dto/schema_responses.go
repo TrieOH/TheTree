@@ -85,12 +85,13 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 		}
 		versionOutput := VersionVerboseResponse{
 			SchemaVersionResponse: SchemaVersionResponse{
-				ID:            version.ID,
-				SchemaID:      version.SchemaID,
-				VersionNumber: version.VersionNumber,
-				Status:        string(version.Status),
-				CreatedAt:     version.CreatedAt,
-				UpdatedAt:     version.UpdatedAt,
+				ID:               version.ID,
+				SchemaID:         version.SchemaID,
+				BasedOnVersionID: version.BasedOnVersionID,
+				VersionNumber:    version.VersionNumber,
+				Status:           string(version.Status),
+				CreatedAt:        version.CreatedAt,
+				UpdatedAt:        version.UpdatedAt,
 			},
 			Fields: fields,
 		}

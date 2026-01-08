@@ -32,11 +32,12 @@ func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
 		return nil
 	}
 	return &SchemaVersionOutput{
-		ID:            out.ID,
-		SchemaID:      out.SchemaID,
-		VersionNumber: out.VersionNumber,
-		Status:        out.Status,
-		CreatedAt:     out.CreatedAt,
-		UpdatedAt:     out.UpdatedAt,
+		ID:               out.ID,
+		SchemaID:         out.SchemaID,
+		BasedOnVersionID: out.BasedOnVersionID,
+		VersionNumber:    out.VersionNumber,
+		Status:           out.Status,
+		CreatedAt:        out.CreatedAt,
+		UpdatedAt:        out.UpdatedAt,
 	}
 }

@@ -327,8 +327,6 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 
 	isOwner, err := uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
 	if err != nil {
-		err = apierr.ErrUnauthorized.WithMsg("error checking project ownership").WithID(apierr.ProjectOwnershipCheckFailed).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
