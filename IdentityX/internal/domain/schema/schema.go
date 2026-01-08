@@ -23,6 +23,19 @@ func IsValidSchemaType(s string) bool {
 	}
 }
 
+type ReservedFlowID string
+
+const NoFlowID ReservedFlowID = "none"
+
+func IsFlowIDReserved(flowID string) bool {
+	switch ReservedFlowID(flowID) {
+	case NoFlowID:
+		return true
+	default:
+		return false
+	}
+}
+
 type Status string
 
 const (

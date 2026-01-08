@@ -43,9 +43,8 @@ func (u *User) ProjectRegister(projectID string) *User {
 	u.t.Helper()
 	u.client.POST("/projects/"+projectID+"/register").
 		WithBody(map[string]interface{}{
-			"email":         u.Email,
-			"password":      u.Password,
-			"custom_fields": []interface{}{},
+			"email":    u.Email,
+			"password": u.Password,
 		}).
 		Expect(http.StatusCreated).
 		Success("go-auth-test", "Registered user")
@@ -115,6 +114,7 @@ func (u *User) authedClient() *Client {
 	return u.client.Auth(u.auth)
 }
 
+// AuthedClient Returns the authenticated client for the user
 func (u *User) AuthedClient() *Client {
 	return u.authedClient()
 }
@@ -131,4 +131,16 @@ func (u *User) CreateProject(name string) *User {
 	resp.Success("go-auth-test", "Created project")
 	u.ProjectID = resp.Data().Value("id").String().Raw()
 	return u
+}
+
+func (u *User) WithT(t *testing.T) *User {
+	t.Helper()
+	return &User{
+		Email:     u.Email,
+		Password:  u.Password,
+		ProjectID: u.ProjectID,
+		client:    u.client,
+		auth:      u.auth,
+		t:         t,
+	}
 }

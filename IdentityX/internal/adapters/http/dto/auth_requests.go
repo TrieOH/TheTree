@@ -13,9 +13,9 @@ type LoginUserRequest struct {
 }
 
 type RegisterProjectUserRequest struct {
-	Email        string          `json:"email" validate:"required,email,max=255"`
-	Password     string          `json:"password" validate:"required,passwd,min=8,max=72"`
-	CustomFields json.RawMessage `json:"custom_fields" validate:"required"`
+	Email        string           `json:"email" validate:"required,email,max=255"`
+	Password     string           `json:"password" validate:"required,passwd,min=8,max=72"`
+	CustomFields *json.RawMessage `json:"custom_fields"`
 }
 
 type LoginProjectUserRequest struct {

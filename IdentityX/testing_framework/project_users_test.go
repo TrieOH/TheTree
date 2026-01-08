@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"fmt"
 	"net/http"
 	"testing"
@@ -25,9 +26,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			client := suite.Client(t)
 			client.POST("/projects/"+wrongFormatID+"/register").
 				WithBody(map[string]interface{}{
-					"email":         user.Email,
-					"password":      user.Password,
-					"custom_fields": []map[string]interface{}{},
+					"email":    user.Email,
+					"password": user.Password,
 				}).
 				Expect(http.StatusBadRequest).
 				Error("go-auth-test", "invalid project id")
@@ -38,9 +38,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			client := suite.Client(t)
 			client.POST("/projects/"+nonexistentID+"/register").
 				WithBody(map[string]interface{}{
-					"email":         user.Email,
-					"password":      user.Password,
-					"custom_fields": []map[string]interface{}{},
+					"email":    user.Email,
+					"password": user.Password,
 				}).
 				Expect(http.StatusBadRequest).
 				Error("go-auth-test", "invalid reference").
@@ -54,9 +53,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					client := suite.Client(t)
 					client.POST("/projects/" + user.ProjectID + "/register").
 						WithBody(map[string]interface{}{
-							"email":         spec.Email,
-							"password":      spec.Pass,
-							"custom_fields": []map[string]interface{}{},
+							"email":    spec.Email,
+							"password": spec.Pass,
 						}).
 						Expect(http.StatusBadRequest).
 						ValidationError(spec.Errors...)
@@ -72,9 +70,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					client := suite.Client(t)
 					client.POST("/projects/" + user.ProjectID + "/register").
 						WithBody(map[string]interface{}{
-							"email":         fmt.Sprintf("weak%d@mail.com", i),
-							"password":      spec.Password,
-							"custom_fields": []map[string]interface{}{},
+							"email":    fmt.Sprintf("weak%d@mail.com", i),
+							"password": spec.Password,
 						}).
 						Expect(http.StatusBadRequest).
 						ValidationError(spec.Errors...)
@@ -86,13 +83,27 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			client := suite.Client(t)
 			client.POST("/projects/"+user.ProjectID+"/register").
 				WithBody(map[string]interface{}{
-					"email":         user.Email,
-					"password":      user.Password,
-					"custom_fields": []map[string]interface{}{},
+					"email":    user.Email,
+					"password": user.Password,
 				}).
 				Expect(http.StatusConflict).
 				Error("go-auth-test", "error registering user").
 				TraceContains("email already in use")
+		})
+
+		t.Run("MetadataRegisterOnCoreDenied", func(t *testing.T) {
+			client := suite.Client(t)
+			client.POST("/projects/" + user.ProjectID + "/register").
+				WithBody(map[string]interface{}{
+					"email":    "metadata_denied@email.com",
+					"password": user.Password,
+					"custom_fields": map[string]interface{}{
+						"curso": "Ciência da Computação",
+					},
+				}).
+				Expect(http.StatusBadRequest).
+				MessageContains("custom fields are not allowed for core schema").
+				ExpectErrorID(apierr.SchemaMetadataNotAllowed)
 		})
 
 		t.Run("SuccessProjectRegister", func(t *testing.T) {
@@ -239,7 +250,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			sub.Value("email").String().IsEqual("session-me@mail.com")
 			sub.Value("project_id").IsEqual(user.ProjectID)
 			sub.Value("user_type").String().IsEqual("project")
-			sub.Value("metadata").Array().IsEmpty()
+			sub.Value("metadata").Object().IsEmpty()
 			sub.Value("session_id").String().NotEmpty()
 			sub.Value("user_agent").String().NotEmpty()
 			sub.Value("user_ip").String().NotEmpty()

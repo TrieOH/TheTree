@@ -213,11 +213,16 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	schemaType := r.URL.Query().Get("schema_type")
+	flowID := r.URL.Query().Get("flow_id")
+
 	in := inbounds.ProjectRegisterInput{
 		Email:        req.Email,
 		Password:     req.Password,
 		CustomFields: req.CustomFields,
 		ProjectID:    projectId,
+		SchemaType:   schemaType,
+		FlowID:       flowID,
 	}
 
 	ctx := r.Context()

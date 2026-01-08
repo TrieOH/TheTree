@@ -65,3 +65,11 @@ func (c *Client) newRequest(method, path string) *RequestBuilder {
 		t:   c.t,
 	}
 }
+
+func (c *Client) WithT(t *testing.T) *Client {
+	return &Client{
+		expect: c.expect,
+		t:      t,
+		auth:   c.auth,
+	}
+}

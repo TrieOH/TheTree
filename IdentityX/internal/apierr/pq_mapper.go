@@ -17,6 +17,12 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 			WithID(FieldSamePositionForMultipleFields).
 			WithCause(cause)
 
+	case "schema_fields_schema_version_id_key_key":
+		return ErrConflict.
+			WithMsg("two fields can't have the same key").
+			WithID(FieldSameKeyForMultipleFields).
+			WithCause(cause)
+
 	default:
 		return ErrConflict.
 			WithMsg("resource already exists").

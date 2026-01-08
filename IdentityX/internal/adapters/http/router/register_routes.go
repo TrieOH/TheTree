@@ -36,7 +36,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	schemaVersionRepo := persistence.NewSchemaVersionRepo(queries, logging, tracer)
 	fieldsRepo := persistence.NewFieldsRepo(queries, logging, tracer)
 
-	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, projectUserRepo)
+	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, schemaRepo, schemaVersionRepo, fieldsRepo, projectUserRepo, txRunner)
 	projectUC := project.New(projectRepo)
 	sessionUC := session.New(sessionRepo, revokedTokensRepo)
 	schemaUC := schema.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo)
@@ -75,7 +75,11 @@ func registerAuthRoutes(
 
 		r.Get("/.well-known/jwks.json", h.JWKS)
 
-		r.Post("/projects/{project_id}/register", h.ProjectRegister)
+		r.With(
+			middleware.DefaultQueryParam("schema_type", "core"),
+			middleware.DefaultQueryParam("flow_id", "none"),
+		).Post("/projects/{project_id}/register", h.ProjectRegister)
+
 		r.Post("/projects/{project_id}/login", h.ProjectLogin)
 	})
 }

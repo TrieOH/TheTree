@@ -38,4 +38,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Schemas", func(t *testing.T) {
 		testSchemas(t, suite)
 	})
+
+	t.Run("Schema Register", func(t *testing.T) {
+		testSchemaRegister(t, suite)
+	})
 }

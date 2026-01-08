@@ -3,14 +3,17 @@ package auth
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/revoked_refreshes"
+	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -32,7 +35,11 @@ type UseCase struct {
 	users        outbound.UserRepository
 	refresh      outbound.RevokedRefreshTokenRepository
 	sessions     outbound.SessionRepository
+	schemas      outbound.SchemaRepository
+	versions     outbound.SchemaVersionRepository
+	fields       outbound.SchemaFieldsRepository
 	projectUsers outbound.ProjectUserRepository
+	tx           transactions.TxRunner
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -41,13 +48,21 @@ func New(
 	users outbound.UserRepository,
 	sessions outbound.SessionRepository,
 	refresh outbound.RevokedRefreshTokenRepository,
+	schemas outbound.SchemaRepository,
+	versions outbound.SchemaVersionRepository,
+	fields outbound.SchemaFieldsRepository,
 	projectUsers outbound.ProjectUserRepository,
+	tx transactions.TxRunner,
 ) inbounds.AuthService {
 	return &UseCase{
 		users:        users,
 		sessions:     sessions,
 		refresh:      refresh,
+		schemas:      schemas,
+		versions:     versions,
+		fields:       fields,
 		projectUsers: projectUsers,
+		tx:           tx,
 	}
 }
 
@@ -55,6 +70,12 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerInternal(ctx, in)
+	})
+}
+
+func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -475,10 +496,32 @@ func (uc *UseCase) RefreshProjectUser(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerProjectUserInternal(ctx, in)
+	})
+}
+
+func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()
+
+	if in.FlowID == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if in.SchemaType == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("schema type can't be empty").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
+	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	pid, err := uuid.Parse(in.ProjectID)
 	if err != nil {
@@ -487,7 +530,39 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		return apiErr
 	}
 
-	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+	if !schema.IsValidSchemaType(in.SchemaType) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid schema type").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	// FlowIDs cannot be the same as schema types so if this matches we error out
+	if schema.IsValidSchemaType(in.FlowID) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	empty := json.RawMessage(`{}`)
+	customFields := &empty
+
+	// Validate and construct metadata for non-core or non-reserved flows
+	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
+	if !isCoreWithReservedFlow {
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
+		if err != nil {
+			return err
+		}
+		if validatedMetadata != nil {
+			customFields = validatedMetadata
+		}
+	}
 
 	if len(in.Password) > 72 {
 		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)
@@ -506,7 +581,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		ProjectID:    pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
-		Metadata:     &in.CustomFields,
+		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
 		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
