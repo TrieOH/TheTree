@@ -178,7 +178,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 		return nil, apiErr
 	}
 
-	span.SetAttributes(attribute.String("projec.id", *in.ProjectID))
+	span.SetAttributes(attribute.String("project.id", *in.ProjectID))
 
 	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
