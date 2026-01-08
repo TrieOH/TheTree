@@ -53,6 +53,11 @@ func (r *Response) Data() *httpexpect.Object {
 	return r.resp.JSON().Object().Value("data").Object()
 }
 
+func (r *Response) Value() *httpexpect.Value {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("data")
+}
+
 func (r *Response) DataArray() *httpexpect.Array {
 	r.t.Helper()
 	return r.resp.JSON().Object().Value("data").Array()

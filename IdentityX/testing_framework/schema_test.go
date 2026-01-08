@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func testSchemas(t *testing.T, suite *TestSuite) {
@@ -334,42 +335,115 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		schema.Value("id").String().IsEqual(schemaID)
-		schema.Value("project_id").String().IsEqual(projectID)
-		schema.Value("title").String().IsEqual("scti-register-flow")
-		schema.Value("flow_id").String().IsEqual("scti-register")
-		schema.Value("type").String().IsEqual("context")
-		schema.Value("status").String().IsEqual("published")
-		schema.Value("current_version_id").String().IsEqual(schemaVersion2ID)
-		schema.Value("created_at").String().NotEmpty()
-		schema.Value("updated_at").String().NotEmpty()
+		// Capture field IDs for cross-version stability checks
+		var (
+			matriculaV1ID, matriculaV2ID interface{}
+			cursoV1ID, cursoV2ID         interface{}
+		)
 
-		versions := schema.Value("versions").Array()
-		versions.Length().IsEqual(2)
-
-		version2 := versions.Value(0).Object()
-		version1 := versions.Value(1).Object()
-
-		fieldsV1 := version1.Value("fields").Array()
-		fieldsV2 := version2.Value("fields").Array()
-
-		fieldsV1.Length().IsEqual(2)
-		fieldsV2.Length().IsEqual(3)
-
-		fieldsV1field1ID := fieldsV1.Value(0).Object().Value("id").String().Raw()
-		fieldsV1field2ID := fieldsV1.Value(1).Object().Value("id").String().Raw()
-
-		fieldsV2field1ID := fieldsV2.Value(0).Object().Value("id").String().Raw()
-		fieldsV2field2ID := fieldsV2.Value(1).Object().Value("id").String().Raw()
-
-		if fieldsV1field1ID != fieldsV2field1ID {
-			t.Fatalf("field 1 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field1ID, fieldsV2field1ID)
+		spec := map[string]interface{}{
+			"id":                 schemaID,
+			"project_id":         projectID,
+			"title":              "scti-register-flow",
+			"flow_id":            "scti-register",
+			"type":               "context",
+			"status":             "published",
+			"current_version_id": schemaVersion2ID,
+			"created_at":         NotEmpty{},
+			"updated_at":         NotEmpty{},
+			"versions": InOrder{
+				Specs: []interface{}{
+					// Version 2 (newest first in response)
+					map[string]interface{}{
+						"id":             AnyUUID{},
+						"schema_id":      schemaID,
+						"version_number": 2,
+						"fields": ByKey{
+							Key: "key",
+							Spec: map[string]interface{}{
+								"matricula": map[string]interface{}{
+									"id":          Store{Into: &matriculaV2ID},
+									"key":         "matricula",
+									"type":        "string",
+									"owner":       "user",
+									"title":       "Numero da Matrícula",
+									"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+									"placeholder": "20223200045",
+									"required":    true,
+									"mutable":     true,
+									"position":    0,
+								},
+								"curso": map[string]interface{}{
+									"id":          Store{Into: &cursoV2ID},
+									"key":         "curso",
+									"type":        "string",
+									"owner":       "user",
+									"title":       "Curso de Matrícula",
+									"description": "O curso que você está matrículado na UENF",
+									"placeholder": "Ciência da Computação",
+									"required":    true,
+									"mutable":     true,
+									"position":    1,
+								},
+								"periodo": map[string]interface{}{
+									"id":          AnyUUID{},
+									"key":         "periodo",
+									"type":        "int",
+									"owner":       "user",
+									"title":       "Período Atual",
+									"description": "O período da sua matéria mais avançada da grade",
+									"required":    true,
+									"mutable":     true,
+									"position":    2,
+								},
+							},
+						},
+					},
+					// Version 1
+					map[string]interface{}{
+						"id":             AnyUUID{},
+						"schema_id":      schemaID,
+						"version_number": 1,
+						"fields": ByKey{
+							Key: "key",
+							Spec: map[string]interface{}{
+								"matricula": map[string]interface{}{
+									"id":          Store{Into: &matriculaV1ID},
+									"key":         "matricula",
+									"type":        "string",
+									"owner":       "user",
+									"title":       "Numero da Matrícula",
+									"description": "Sua matrícula da UENF como aparece no sistema acadêmico",
+									"placeholder": "20223200045",
+									"required":    true,
+									"mutable":     true,
+									"position":    0,
+								},
+								"curso": map[string]interface{}{
+									"id":          Store{Into: &cursoV1ID},
+									"key":         "curso",
+									"type":        "string",
+									"owner":       "user",
+									"title":       "Curso de Matrícula",
+									"description": "O curso que você está matrículado na UENF",
+									"placeholder": "Ciência da Computação",
+									"required":    true,
+									"mutable":     true,
+									"position":    1,
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 
-		if fieldsV1field2ID != fieldsV2field2ID {
-			t.Fatalf("field 2 id doesn't match between versions: v1=%s, v2=%s", fieldsV1field2ID, fieldsV2field2ID)
-		}
+		Validate(t, schema, spec)
+
+		// Cross-version field ID stability checks
+		require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")
+		require.Equal(t, cursoV1ID, cursoV2ID, "curso field ID changed between versions")
 	})
 }
