@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,8 +35,9 @@ type AnyUUID struct{}
 func (AnyUUID) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	s := val.String().NotEmpty().Raw()
-	// Basic UUID validation (you can make this stricter)
 	require.Len(t, s, 36, "expected UUID format")
+	_, err := uuid.Parse(s)
+	require.NoError(t, err, "expected valid UUID format, got %q", s)
 	return s
 }
 
@@ -73,8 +75,9 @@ func (s SameAs) Match(t *testing.T, val *httpexpect.Value) interface{} {
 
 // ByKey - for arrays of objects, index by a key field
 type ByKey struct {
-	Key  string                 // the field to use as key (e.g. "key", "id")
-	Spec map[string]interface{} // key -> expected spec
+	Key        string                 // the field to use as key (e.g. "key", "id")
+	Spec       map[string]interface{} // key -> expected spec
+	AllowExtra bool                   // if true, allows keys not in Spec
 }
 
 func (b ByKey) Match(t *testing.T, val *httpexpect.Value) interface{} {
@@ -96,9 +99,11 @@ func (b ByKey) Match(t *testing.T, val *httpexpect.Value) interface{} {
 		require.Contains(t, actual, key, "missing key %q in array", key)
 	}
 
-	// Check no unexpected keys (optional - remove if you want to allow extras)
-	for key := range actual {
-		require.Contains(t, b.Spec, key, "unexpected key %q in array", key)
+	// Check no unexpected keys
+	if !b.AllowExtra {
+		for key := range actual {
+			require.Contains(t, b.Spec, key, "unexpected key %q in array", key)
+		}
 	}
 
 	// Validate each item
@@ -119,12 +124,13 @@ type Each struct {
 func (e Each) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	arr := val.Array()
-	results := make([]interface{}, 0)
+	length := int(arr.Length().Raw())
+	results := make([]interface{}, length)
 
-	for i := 0; i < int(arr.Length().Raw()); i++ {
+	for i := 0; i < length; i++ {
 		item := arr.Value(i)
 		result := Validate(t, item, e.Spec)
-		results = append(results, result)
+		results[i] = result
 	}
 
 	return results
@@ -259,6 +265,18 @@ func Validate(t *testing.T, val *httpexpect.Value, spec interface{}) interface{}
 			return actual
 		}
 	case float32:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
+			return actual
+		}
+	case uint:
+		actualFloat, ok := actual.(float64)
+		if ok {
+			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
+			return actual
+		}
+	case uint64:
 		actualFloat, ok := actual.(float64)
 		if ok {
 			require.Equal(t, float64(expected), actualFloat, "numeric value mismatch")
