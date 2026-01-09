@@ -84,8 +84,11 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 
 	span.SetAttributes(
 		attribute.String("session.id", sess.SessionID.String()),
-		attribute.String("session.revoked_at", sess.RevokedAt.String()),
 	)
+
+	if sess.RevokedAt != nil {
+		span.SetAttributes(attribute.String("session.revoked_at", sess.RevokedAt.String()))
+	}
 
 	return nil
 }
@@ -100,7 +103,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 		return err
 	}
 
-	revokedSessions, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
+	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
 		ExcludeID: &principal.SessionID,
 	})
@@ -108,7 +111,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 		return err
 	}
 
-	span.SetAttributes(attribute.Int("sessions.revoked.count", len(revokedSessions)))
+	span.SetAttributes(attribute.Int("sessions.revoked.count", revokedCount))
 	return nil
 }
 
@@ -122,14 +125,14 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 		return err
 	}
 
-	revokedSessions, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
+	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
 		UserID: principal.UserID,
 	})
 	if err != nil {
 		return err
 	}
 
-	span.SetAttributes(attribute.Int("sessions.revoked.count", len(revokedSessions)))
+	span.SetAttributes(attribute.Int("sessions.revoked.count", revokedCount))
 
 	return nil
 }

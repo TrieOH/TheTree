@@ -281,7 +281,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	)
 	if err != nil {
 		// sql.ErrNoRows → raced / reused / revoked
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid)
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
 		return nil, tokenErr
 	}
 

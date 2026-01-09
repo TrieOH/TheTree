@@ -91,7 +91,7 @@ func RequireSessionID(span trace.Span, sessionID *string) (*uuid.UUID, error) {
 func ParseRefreshJTI(span trace.Span, refreshJTI string) (*uuid.UUID, error) {
 	jti, err := uuid.Parse(refreshJTI)
 	if err != nil {
-		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid refresh token id").WithID(apierr.TokenInvalidID)
+		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid refresh token id").WithID(apierr.TokenInvalidID).WithCause(err)
 		apierr.RecordDomainError(span, tokenErr)
 		return nil, tokenErr
 	}

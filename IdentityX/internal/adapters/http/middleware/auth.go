@@ -127,7 +127,8 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			if sess.RevokedAt != nil {
-				// should never happen due to query, just being defensive
+				// should never happen due to query guarding against this, just being defensive
+				// system error for appropriate priority if it happens, since it should never happen
 				mwErr := apierr.ErrUnauthorized.WithMsg("session revoked").WithID(apierr.SessionRevoked)
 				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
 				apierr.RecordSystemError(span, mwErr)

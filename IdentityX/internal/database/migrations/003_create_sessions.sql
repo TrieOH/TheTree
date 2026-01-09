@@ -4,7 +4,7 @@
 CREATE TABLE sessions (
     session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
-    token_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    token_id UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
     issued_at TIMESTAMP NOT NULL,
     user_agent TEXT NOT NULL,
     user_ip VARCHAR(64) NOT NULL,
