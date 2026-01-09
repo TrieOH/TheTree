@@ -13,13 +13,9 @@ CREATE TABLE sessions (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_token_id
-    ON sessions(token_id);
-
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id
     ON sessions(user_id);
 
 -- +goose Down
-DROP INDEX IF EXISTS idx_sessions_token_id;
 DROP INDEX IF EXISTS idx_sessions_user_id;
 DROP TABLE IF EXISTS sessions;
