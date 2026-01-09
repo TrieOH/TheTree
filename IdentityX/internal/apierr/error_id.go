@@ -52,6 +52,7 @@ const (
 	SessionRequiredID          ID = "SESS_007"
 	SessionSelfRevokeForbidden ID = "SESS_008"
 	SessionUpdateFailed        ID = "SESS_009"
+	SessionMissingID           ID = "SESS_010"
 )
 
 const (
@@ -83,6 +84,7 @@ const (
 	ProjectErrorParsingKeys     ID = "PROJ_005"
 	ProjectOwnershipCheckFailed ID = "PROJ_006"
 	ProjectNotOwnedByPrincipal  ID = "PROJ_007"
+	ProjectMissingID            ID = "PROJ_008"
 )
 
 const (
@@ -104,6 +106,7 @@ const (
 	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
 	SchemaInvalidMetadata           ID = "SCHEMA_013"
 	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
+	SchemaMissingID                 ID = "SCHEMA_015"
 )
 
 const (

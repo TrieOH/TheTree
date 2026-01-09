@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func testProjectUsers(t *testing.T, suite *TestSuite) {
@@ -235,25 +237,29 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 			data := infoUser.AuthedClient().GET("/sessions/me").
 				Expect(http.StatusOK).
-				Data()
+				Value()
 
-			data.Value("refresh_expire_date").IsNumber()
+			spec := map[string]interface{}{
+				"refresh_expire_date": AnyNumber{},
+				"access": map[string]interface{}{
+					"iss": "GoAuth",
+					"exp": AnyNumber{},
+					"iat": AnyNumber{},
+					"jti": AnyUUID{},
+					"sub": map[string]interface{}{
+						"id":         AnyUUID{},
+						"email":      "session-me@mail.com",
+						"project_id": AsString{user.ProjectID, AnyUUID{}},
+						"user_type":  "project",
+						"metadata":   map[string]interface{}{},
+						"session_id": AnyUUID{},
+						"user_agent": AnyString{},
+						"user_ip":    AnyString{},
+					},
+				},
+			}
 
-			access := data.Value("access").Object()
-			access.Value("iss").String().IsEqual("GoAuth")
-			access.Value("exp").IsNumber()
-			access.Value("iat").IsNumber()
-			access.Value("jti").String().NotEmpty()
-
-			sub := access.Value("sub").Object()
-			sub.Value("id").String().NotEmpty()
-			sub.Value("email").String().IsEqual("session-me@mail.com")
-			sub.Value("project_id").IsEqual(user.ProjectID)
-			sub.Value("user_type").String().IsEqual("project")
-			sub.Value("metadata").Object().IsEmpty()
-			sub.Value("session_id").String().NotEmpty()
-			sub.Value("user_agent").String().NotEmpty()
-			sub.Value("user_ip").String().NotEmpty()
+			Validate(t, data, spec)
 		})
 
 		t.Run("RevokeAllSessions", func(t *testing.T) {
@@ -288,13 +294,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		refreshUSer.Refresh()
 
-		if oldAccess == refreshUSer.auth.AccessToken {
-			t.Error("Access token should change after refresh")
-		}
-
-		if oldRefresh == refreshUSer.auth.RefreshToken {
-			t.Error("Refresh token should change after refresh")
-		}
+		require.NotEqual(t, oldAccess, refreshUSer.auth.AccessToken, "Access token should change after refresh")
+		require.NotEqual(t, oldRefresh, refreshUSer.auth.RefreshToken, "Refresh token should change after refresh")
 
 		// Old tokens should be invalid
 		oldClient := client.Auth(&AuthContext{
@@ -303,7 +304,9 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		})
 
 		oldClient.GET("/sessions").
-			Expect(http.StatusUnauthorized)
+			Expect(http.StatusUnauthorized).
+			ExpectErrorID(apierr.TokenRevoked).
+			MessageContains("refresh token is revoked")
 	})
 
 	t.Run("ProjectUsersProjects", func(t *testing.T) {

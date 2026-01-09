@@ -10,39 +10,73 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	user := client.User("projects@mail.com", ValidPassword).Register().Login()
 
 	var projectID string
-
 	t.Run("CreateProject", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
-		data := authClient.POST("/projects").
+		val := authClient.POST("/projects").
 			WithBody(map[string]interface{}{
 				"project_name": "Test Project",
 				"metadata":     map[string]string{"env": "test"},
 			}).
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		projectID = data.Value("id").String().Raw()
-		data.Value("project_name").String().IsEqual("Test Project")
+		spec := map[string]interface{}{
+			"id":           StoreString{Into: &projectID, Matcher: AnyUUID{}},
+			"owner_id":     AnyUUID{},
+			"project_name": "Test Project",
+			"is_active":    true,
+			"metadata": map[string]interface{}{
+				"env": "test",
+			},
+			"created_at": AnyDate{},
+			"updated_at": AnyDate{},
+		}
+
+		Validate(t, val, spec)
 	})
 
 	t.Run("ListProjects", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
-		arr := authClient.GET("/projects").
+		data := authClient.GET("/projects").
 			Expect(http.StatusOK).
-			DataArray()
+			Value()
 
-		arr.Length().IsEqual(1)
-		arr.Value(0).Object().Value("id").IsEqual(projectID)
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":           AsString{projectID, AnyUUID{}},
+				"owner_id":     AnyUUID{},
+				"project_name": "Test Project",
+				"is_active":    true,
+				"metadata": map[string]interface{}{
+					"env": "test",
+				},
+				"created_at": AnyDate{},
+				"updated_at": AnyDate{},
+			},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("GetProject", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID).
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		data.Value("id").String().IsEqual(projectID)
-		data.Value("project_name").String().IsEqual("Test Project")
+		spec := map[string]interface{}{
+			"id":           AsString{projectID, AnyUUID{}},
+			"owner_id":     AnyUUID{},
+			"project_name": "Test Project",
+			"is_active":    true,
+			"metadata": map[string]interface{}{
+				"env": "test",
+			},
+			"created_at": AnyDate{},
+			"updated_at": AnyDate{},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("UpdateProject", func(t *testing.T) {
@@ -53,9 +87,21 @@ func testProjects(t *testing.T, suite *TestSuite) {
 				"metadata":     map[string]string{"env": "prod"},
 			}).
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		data.Value("project_name").String().IsEqual("Updated Project")
+		spec := map[string]interface{}{
+			"id":           AsString{projectID, AnyUUID{}},
+			"owner_id":     AnyUUID{},
+			"project_name": "Updated Project",
+			"is_active":    true,
+			"metadata": map[string]interface{}{
+				"env": "prod",
+			},
+			"created_at": AnyDate{},
+			"updated_at": AnyDate{},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("GetProjectJWKS", func(t *testing.T) {

@@ -1,7 +1,10 @@
 package testing
 
 import (
+	"math"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/google/uuid"
@@ -41,6 +44,21 @@ func (AnyUUID) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return s
 }
 
+// AnyDate - validates RFC3339/RFC3339Nano, date format and returns the string
+type AnyDate struct{}
+
+func (AnyDate) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	s := val.String().NotEmpty().Raw()
+	_, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		// Try RFC3339Nano as fallback (includes nanoseconds)
+		_, err = time.Parse(time.RFC3339Nano, s)
+		require.NoError(t, err, "expected valid RFC3339 date format, got %q", s)
+	}
+	return s
+}
+
 // NotEmpty - just validates not empty, returns raw value
 type NotEmpty struct{}
 
@@ -51,14 +69,180 @@ func (NotEmpty) Match(t *testing.T, val *httpexpect.Value) interface{} {
 }
 
 // Store - captures a value into a variable for later comparison
+// Optionally validates with a Matcher first
 type Store struct {
-	Into *interface{}
+	Into    *interface{}
+	Matcher Matcher // optional: if provided, validates before storing
 }
 
 func (s Store) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
-	*s.Into = val.Raw()
-	return *s.Into
+	require.NotNil(t, s.Into, "Store.Into must not be nil")
+	var result interface{}
+
+	if s.Matcher != nil {
+		result = s.Matcher.Match(t, val)
+	} else {
+		result = val.Raw()
+	}
+
+	*s.Into = result
+	return result
+}
+
+// StoreString - stores directly into a *string variable
+type StoreString struct {
+	Into    *string
+	Matcher Matcher // optional: if provided, validates before storing
+}
+
+func (s StoreString) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	require.NotNil(t, s.Into, "StoreString.Into must not be nil")
+	var result interface{}
+
+	if s.Matcher != nil {
+		result = s.Matcher.Match(t, val)
+	} else {
+		result = val.Raw()
+	}
+
+	str, ok := result.(string)
+	require.True(t, ok, "expected string value for StoreString, got %T", result)
+	*s.Into = str
+	return result
+}
+
+// StoreInt - stores directly into an *int variable
+type StoreInt struct {
+	Into    *int
+	Matcher Matcher // optional: if provided, validates before storing
+}
+
+func (s StoreInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	require.NotNil(t, s.Into, "StoreInt.Into must not be nil")
+	var result interface{}
+
+	if s.Matcher != nil {
+		result = s.Matcher.Match(t, val)
+	} else {
+		result = val.Raw()
+	}
+
+	// Handle JSON numeric type (float64)
+	switch v := result.(type) {
+	case float64:
+		require.False(t, math.IsNaN(v) || math.IsInf(v, 0), "expected finite number for StoreInt, got %v", v)
+		require.Equal(t, v, math.Trunc(v), "expected integer-like number for StoreInt, got %v", v)
+		if strconv.IntSize == 32 {
+			require.True(t, v >= math.MinInt32 && v <= math.MaxInt32, "int32 out of range for StoreInt: %v", v)
+		} else {
+			require.True(t, v >= math.MinInt64 && v <= math.MaxInt64, "int64 out of range for StoreInt: %v", v)
+		}
+		*s.Into = int(v)
+	case int:
+		*s.Into = v
+	default:
+		require.FailNow(t, "expected numeric value for StoreInt, got %T", result)
+	}
+
+	return result
+}
+
+// StoreBool - stores directly into a *bool variable
+type StoreBool struct {
+	Into    *bool
+	Matcher Matcher // optional: if provided, validates before storing
+}
+
+func (s StoreBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	require.NotNil(t, s.Into, "StoreBool.Into must not be nil")
+	var result interface{}
+
+	if s.Matcher != nil {
+		result = s.Matcher.Match(t, val)
+	} else {
+		result = val.Raw()
+	}
+
+	b, ok := result.(bool)
+	require.True(t, ok, "expected boolean value for StoreBool, got %T", result)
+	*s.Into = b
+	return result
+}
+
+// AsString - validates type is string, checks equality, and optionally validates format
+type AsString struct {
+	Value   string  // expected value to compare
+	Matcher Matcher // optional: additional format validation (applied after equality check)
+}
+
+func (a AsString) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	s := val.String().Raw() // This validates it's a string
+
+	// First: check string equality
+	require.Equal(t, a.Value, s, "string value mismatch")
+
+	// Second: if matcher provided, validate the format (only need to check once since they're equal)
+	if a.Matcher != nil {
+		a.Matcher.Match(t, val)
+	}
+
+	return s
+}
+
+// AsInt - validates type is number, checks equality, and optionally validates constraints
+type AsInt struct {
+	Value   int     // expected value to compare
+	Matcher Matcher // optional: additional validation (applied after equality check)
+}
+
+func (a AsInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	n := val.Number().Raw() // This validates it's a number
+
+	// First: check numeric equality
+	require.Equal(t, float64(a.Value), n, "numeric value mismatch")
+
+	// Second: if matcher provided, validate constraints (only need to check once since they're equal)
+	if a.Matcher != nil {
+		a.Matcher.Match(t, val)
+	}
+
+	return n
+}
+
+// AsBool - validates type is boolean, checks equality, and optionally validates constraints
+type AsBool struct {
+	Value   bool    // expected value to compare
+	Matcher Matcher // optional: additional validation (applied after equality check)
+}
+
+func (a AsBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	b := val.Boolean().Raw() // This validates it's a boolean
+
+	// First: check boolean equality
+	require.Equal(t, a.Value, b, "boolean value mismatch")
+
+	// Second: if matcher provided, validate (only need to check once since they're equal)
+	if a.Matcher != nil {
+		a.Matcher.Match(t, val)
+	}
+
+	return b
+}
+
+// Null - validates that value is null
+type Null struct{}
+
+func (Null) Match(t *testing.T, val *httpexpect.Value) interface{} {
+	t.Helper()
+	val.IsNull()
+	return nil
 }
 
 // SameAs - compares against a stored value
@@ -73,7 +257,8 @@ func (s SameAs) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return actual
 }
 
-// ByKey - for arrays of objects, index by a key field
+// ByKey - for arrays of objects, index by a key fiel
+// silently overwrites on duplicate keys, if a fail on duplicates is needed please implement a new version
 type ByKey struct {
 	Key        string                 // the field to use as key (e.g. "key", "id")
 	Spec       map[string]interface{} // key -> expected spec
@@ -85,13 +270,12 @@ func (b ByKey) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	arr := val.Array()
 
 	// Build map of actual items by key
-	// We store the *httpexpect.Value (not Object) so we can pass it to Validate
 	actual := make(map[string]*httpexpect.Value)
 	for i := 0; i < int(arr.Length().Raw()); i++ {
-		item := arr.Value(i) // Keep as Value
-		obj := item.Object() // Convert to Object temporarily to read the key
+		item := arr.Value(i)
+		obj := item.Object()
 		keyValue := obj.Value(b.Key).String().Raw()
-		actual[keyValue] = item // Store the Value, not the Object
+		actual[keyValue] = item
 	}
 
 	// Check all expected keys exist
@@ -129,7 +313,7 @@ func (e Each) Match(t *testing.T, val *httpexpect.Value) interface{} {
 
 	for i := 0; i < length; i++ {
 		item := arr.Value(i)
-		result := Validate(t, item, e.Spec)
+		result := validate(t, item, e.Spec, false)
 		results[i] = result
 	}
 
@@ -148,7 +332,7 @@ func (a AtIndex) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	require.Greater(t, int(arr.Length().Raw()), a.Index, "array too short for index %d", a.Index)
 
 	item := arr.Value(a.Index)
-	return Validate(t, item, a.Spec)
+	return validate(t, item, a.Spec, false)
 }
 
 // InOrder - validates array elements in exact positional order
@@ -164,7 +348,7 @@ func (io InOrder) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	results := make([]interface{}, len(io.Specs))
 	for i, spec := range io.Specs {
 		item := arr.Value(i)
-		results[i] = Validate(t, item, spec)
+		results[i] = validate(t, item, spec, false)
 	}
 
 	return results
@@ -201,12 +385,23 @@ func (h HasAtPosition) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	require.NotEqual(t, -1, foundAt, "item with %s=%s not found", h.Key, h.Value)
 	require.Equal(t, h.Position, foundAt, "item with %s=%s found at wrong position", h.Key, h.Value)
 
-	return Validate(t, item, h.Spec)
+	return validate(t, item, h.Spec, false)
 }
 
 // Validate recursively validates a value against a spec
 // Returns captured values for further assertions
 func Validate(t *testing.T, val *httpexpect.Value, spec interface{}) interface{} {
+	t.Helper()
+	return validate(t, val, spec, false)
+}
+
+// ValidateExact is like Validate but fails if the actual data has extra fields not in spec
+func ValidateExact(t *testing.T, val *httpexpect.Value, spec interface{}) interface{} {
+	t.Helper()
+	return validate(t, val, spec, true)
+}
+
+func validate(t *testing.T, val *httpexpect.Value, spec interface{}, exact bool) interface{} {
 	t.Helper()
 
 	// Handle Matcher types
@@ -219,9 +414,17 @@ func Validate(t *testing.T, val *httpexpect.Value, spec interface{}) interface{}
 		obj := val.Object()
 		results := make(map[string]interface{})
 
+		// Check for extra keys if exact mode
+		if exact {
+			rawObj := obj.Raw()
+			for key := range rawObj {
+				require.Contains(t, specMap, key, "unexpected field %q in response", key)
+			}
+		}
+
 		for key, expectedVal := range specMap {
 			fieldVal := obj.Value(key)
-			results[key] = Validate(t, fieldVal, expectedVal)
+			results[key] = validate(t, fieldVal, expectedVal, exact)
 		}
 
 		return results
@@ -235,7 +438,7 @@ func Validate(t *testing.T, val *httpexpect.Value, spec interface{}) interface{}
 
 		for i, expectedVal := range specSlice {
 			item := arr.Value(i)
-			results[i] = Validate(t, item, expectedVal)
+			results[i] = validate(t, item, expectedVal, exact)
 		}
 
 		return results

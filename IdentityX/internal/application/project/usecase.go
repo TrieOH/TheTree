@@ -1,16 +1,15 @@
 package project
 
 import (
-	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"GoAuth/internal/utils"
 	"context"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -39,13 +38,10 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
-
-	tracing.AnnotatePrincipal(span, principal)
 
 	pubKey, privKey, err := utils.GenerateEd25519Keys()
 	if err != nil {
@@ -83,22 +79,16 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.Out
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	tracing.AnnotatePrincipal(span, principal)
-
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
-
-	proj, err := uc.projects.GetByID(ctx, pid, principal.UserID)
+	proj, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +106,10 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
-
-	tracing.AnnotatePrincipal(span, principal)
 
 	projects, err := uc.projects.List(ctx, principal.UserID)
 	if err != nil {
@@ -142,14 +129,11 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]an
 	)
 	defer span.End()
 
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
-
-	pubKey, err := uc.projects.GetPublicKeyByID(ctx, pid)
+	pubKey, err := uc.projects.GetPublicKeyByID(ctx, *pid)
 	if err != nil {
 		return nil, err
 	}
@@ -172,30 +156,19 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 
-	if in.ProjectID == nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("project id is required for update").WithID(apierr.ProjectInvalidID)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	pid, err := validation.RequireProjectID(span, in.ProjectID)
+	if err != nil {
+		return nil, err
 	}
 
 	span.SetAttributes(attribute.String("project.id", *in.ProjectID))
 
-	principal, err := authz.RequirePrincipal(ctx)
-	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return nil, err
-	}
-
-	tracing.AnnotatePrincipal(span, principal)
-
-	pid, err := uuid.Parse(*in.ProjectID)
-	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
-	}
-
-	newProject, err := uc.projects.GetByID(ctx, pid, principal.UserID)
+	newProject, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,22 +200,16 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotatePrincipal(span, principal)
-
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return err
 	}
-
-	err = uc.projects.Delete(ctx, pid, principal.UserID)
+	err = uc.projects.Delete(ctx, *pid, principal.UserID)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/transactions"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/revoked_refreshes"
@@ -208,22 +209,9 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	}()
 
 	var principal *authz.Principal
-	principal, err = authz.RequirePrincipal(ctx)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
-	}
-
-	span.SetAttributes(
-		attribute.String("user.id", principal.UserID.String()),
-		attribute.String("user.type", principal.UserType),
-		attribute.String("user.session_id", principal.SessionID.String()),
-	)
-
-	if principal.ProjectID != nil {
-		span.SetAttributes(
-			attribute.String("user.project_id", principal.ProjectID.String()),
-		)
 	}
 
 	if _, err = uc.sessions.DeleteByFilter(ctx, session.Filter{
@@ -281,7 +269,7 @@ func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbo
 	}
 
 	if isRevoked {
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token revoked").WithID(apierr.TokenRevoked)
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is revoked").WithID(apierr.TokenRevoked)
 		apierr.RecordDomainError(span, tokenErr)
 		return nil, tokenErr
 	}
@@ -523,11 +511,9 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
-	pid, err := uuid.Parse(in.ProjectID)
+	pid, err := validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return err
 	}
 
 	if !schema.IsValidSchemaType(in.SchemaType) {
@@ -555,7 +541,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, *pid, in.SchemaType, in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}
@@ -578,7 +564,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 
 	var usr *project_users.ProjectUser
 	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
-		ProjectID:    pid,
+		ProjectID:    *pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
 		Metadata:     customFields,
@@ -613,15 +599,13 @@ func (uc *UseCase) LoginProjectUser(
 	)
 	defer span.End()
 
-	pid, err := uuid.Parse(in.ProjectID)
+	pid, err := validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, pid, in.Email)
+	usr, err := uc.projectUsers.GetByEmailInternal(ctx, *pid, in.Email)
 	if apierr.IsNotFound(err) {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
@@ -644,7 +628,7 @@ func (uc *UseCase) LoginProjectUser(
 		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
-		ProjectID: &pid,
+		ProjectID: pid,
 	})
 	if err != nil {
 		return nil, err

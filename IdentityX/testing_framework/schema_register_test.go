@@ -24,17 +24,21 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"flow_id":     "estudante",
 			}).
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("scti")
-		data.Value("flow_id").String().IsEqual("estudante")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsNull()
+		spec := map[string]interface{}{
+			"id":                 StoreString{Into: &schemaID, Matcher: AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "scti",
+			"flow_id":            "estudante",
+			"type":               "context",
+			"status":             "draft",
+			"current_version_id": nil,
+			"created_at":         AnyDate{},
+			"updated_at":         AnyDate{},
+		}
 
-		schemaID = data.Value("id").String().Raw()
+		Validate(t, data, spec)
 	})
 
 	var schemaVersion1ID string
@@ -42,28 +46,34 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("id").String().NotEmpty()
-		data.Value("schema_id").String().IsEqual(schemaID)
-		data.Value("version_number").IsNumber().IsEqual(1)
+		spec := map[string]interface{}{
+			"id":             StoreString{Into: &schemaVersion1ID, Matcher: AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"version_number": 1,
+		}
 
-		schemaVersion1ID = data.Value("id").String().Raw()
+		Validate(t, data, spec)
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("scti")
-		data.Value("flow_id").String().IsEqual("estudante")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsEqual(schemaVersion1ID)
+		spec := map[string]interface{}{
+			"id":                 AsString{schemaID, AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "scti",
+			"flow_id":            "estudante",
+			"type":               "context",
+			"status":             "draft",
+			"current_version_id": AsString{schemaVersion1ID, AnyUUID{}},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("CreateFields", func(t *testing.T) {
