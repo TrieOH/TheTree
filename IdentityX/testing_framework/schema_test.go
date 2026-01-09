@@ -42,17 +42,21 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "scti-register",
 			}).
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("scti-register-flow")
-		data.Value("flow_id").String().IsEqual("scti-register")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsNull()
+		spec := map[string]interface{}{
+			"id":                 StoreString{Into: &schemaID, Matcher: AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "scti-register-flow",
+			"flow_id":            "scti-register",
+			"type":               "context",
+			"status":             "draft",
+			"current_version_id": nil,
+			"created_at":         AnyDate{},
+			"updated_at":         AnyDate{},
+		}
 
-		schemaID = data.Value("id").String().Raw()
+		ValidateExact(t, data, spec)
 	})
 
 	t.Run("DraftAnother", func(t *testing.T) {
@@ -64,15 +68,19 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "estudante",
 			}).
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("eenge")
-		data.Value("flow_id").String().IsEqual("estudante")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsNull()
+		spec := map[string]interface{}{
+			"id":                 AnyUUID{},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "eenge",
+			"flow_id":            "estudante",
+			"type":               "context",
+			"status":             "draft",
+			"current_version_id": nil,
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("DraftSameFlowIDAndType", func(t *testing.T) {
@@ -109,28 +117,34 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("id").String().NotEmpty()
-		data.Value("schema_id").String().IsEqual(schemaID)
-		data.Value("version_number").IsNumber().IsEqual(1)
+		spec := map[string]interface{}{
+			"id":             StoreString{Into: &schemaVersion1ID, Matcher: AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"version_number": 1,
+		}
 
-		schemaVersion1ID = data.Value("id").String().Raw()
+		Validate(t, data, spec)
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("scti-register-flow")
-		data.Value("flow_id").String().IsEqual("scti-register")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("draft")
-		data.Value("current_version_id").IsEqual(schemaVersion1ID)
+		spec := map[string]interface{}{
+			"id":                 AsString{schemaID, AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "scti-register-flow",
+			"flow_id":            "scti-register",
+			"type":               "context",
+			"status":             "draft",
+			"current_version_id": AsString{schemaVersion1ID, AnyUUID{}},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
@@ -256,20 +270,20 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusCreated).
 			MessageContains("created fields").
-			DataArray()
+			Value()
 
-		data.Length().IsEqual(2)
-		data.Value(0).Object().Value("object_id").NotNull()
-		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
-		data.Value(1).Object().Value("object_id").NotNull()
-		id2 := data.Value(1).Object().Value("id").String().NotEmpty().Raw()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
+		}
 
-		if _, err := uuid.Parse(id1); err != nil {
-			t.Fatalf("couldn't parse id from field matricula: %v", err)
-		}
-		if _, err := uuid.Parse(id2); err != nil {
-			t.Fatalf("couldn't parse id from field curso: %v", err)
-		}
+		Validate(t, data, spec)
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
@@ -307,28 +321,34 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
-			Data()
+			Value()
 
-		data.Value("id").String().NotEmpty()
-		data.Value("schema_id").String().IsEqual(schemaID)
-		data.Value("version_number").IsNumber().IsEqual(2)
+		spec := map[string]interface{}{
+			"id":             StoreString{Into: &schemaVersion2ID, Matcher: AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"version_number": 2,
+		}
 
-		schemaVersion2ID = data.Value("id").String().Raw()
+		Validate(t, data, spec)
 	})
 
 	t.Run("CheckSchemaVersionAfterV2Draft", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
-			Data()
+			Value()
 
-		data.Value("project_id").String().IsEqual(projectID)
-		data.Value("title").String().IsEqual("scti-register-flow")
-		data.Value("flow_id").String().IsEqual("scti-register")
-		data.Value("id").String().NotEmpty()
-		data.Value("type").String().IsEqual("context")
-		data.Value("status").String().IsEqual("published")
-		data.Value("current_version_id").IsEqual(schemaVersion2ID)
+		spec := map[string]interface{}{
+			"id":                 AsString{schemaID, AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
+			"title":              "scti-register-flow",
+			"flow_id":            "scti-register",
+			"type":               "context",
+			"status":             "published",
+			"current_version_id": AsString{schemaVersion2ID, AnyUUID{}},
+		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("PublishVersion2NoChanges", func(t *testing.T) {
@@ -380,15 +400,24 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusCreated).
 			MessageContains("created fields").
-			DataArray()
+			Value()
 
-		data.Length().IsEqual(1)
-		data.Value(0).Object().Value("object_id").NotNull()
-		id1 := data.Value(0).Object().Value("id").String().NotEmpty().Raw()
-
-		if _, err := uuid.Parse(id1); err != nil {
-			t.Fatalf("couldn't parse id from field periodo: %v", err)
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id":   AnyUUID{},
+				"id":          AnyUUID{},
+				"key":         "periodo",
+				"type":        "int",
+				"owner":       "user",
+				"title":       "Período Atual",
+				"description": "O período da sua matéria mais avançada da grade",
+				"required":    true,
+				"mutable":     true,
+				"position":    2,
+			},
 		}
+
+		Validate(t, data, spec)
 	})
 
 	t.Run("PublishVersion2Success", func(t *testing.T) {
@@ -406,33 +435,33 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 		// Capture field IDs for cross-version stability checks
 		var (
-			matriculaV1ID, matriculaV2ID interface{}
-			cursoV1ID, cursoV2ID         interface{}
+			matriculaV1ID, matriculaV2ID string
+			cursoV1ID, cursoV2ID         string
 		)
 
 		spec := map[string]interface{}{
-			"id":                 schemaID,
-			"project_id":         projectID,
+			"id":                 AsString{schemaID, AnyUUID{}},
+			"project_id":         AsString{projectID, AnyUUID{}},
 			"title":              "scti-register-flow",
 			"flow_id":            "scti-register",
 			"type":               "context",
 			"status":             "published",
-			"current_version_id": schemaVersion2ID,
-			"created_at":         NotEmpty{},
-			"updated_at":         NotEmpty{},
+			"current_version_id": AsString{schemaVersion2ID, AnyUUID{}},
+			"created_at":         AnyDate{},
+			"updated_at":         AnyDate{},
 			"versions": InOrder{
 				Specs: []interface{}{
 					// Version 2 (newest first in response)
 					map[string]interface{}{
-						"id":             schemaVersion2ID,
-						"schema_id":      schemaID,
+						"id":             AsString{schemaVersion2ID, AnyUUID{}},
+						"schema_id":      AsString{schemaID, AnyUUID{}},
 						"version_number": 2,
 						"fields": ByKey{
 							Key: "key",
 							Spec: map[string]interface{}{
 								"matricula": map[string]interface{}{
 									"object_id":   AnyUUID{},
-									"id":          Store{Into: &matriculaV2ID},
+									"id":          StoreString{&matriculaV2ID, AnyUUID{}},
 									"key":         "matricula",
 									"type":        "string",
 									"owner":       "user",
@@ -445,7 +474,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 								},
 								"curso": map[string]interface{}{
 									"object_id":   AnyUUID{},
-									"id":          Store{Into: &cursoV2ID},
+									"id":          StoreString{&cursoV2ID, AnyUUID{}},
 									"key":         "curso",
 									"type":        "string",
 									"owner":       "user",
@@ -473,15 +502,15 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					},
 					// Version 1
 					map[string]interface{}{
-						"id":             schemaVersion1ID,
-						"schema_id":      schemaID,
+						"id":             AsString{schemaVersion1ID, AnyUUID{}},
+						"schema_id":      AsString{schemaID, AnyUUID{}},
 						"version_number": 1,
 						"fields": ByKey{
 							Key: "key",
 							Spec: map[string]interface{}{
 								"matricula": map[string]interface{}{
 									"object_id":   AnyUUID{},
-									"id":          Store{Into: &matriculaV1ID},
+									"id":          StoreString{&matriculaV1ID, AnyUUID{}},
 									"key":         "matricula",
 									"type":        "string",
 									"owner":       "user",
@@ -494,7 +523,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 								},
 								"curso": map[string]interface{}{
 									"object_id":   AnyUUID{},
-									"id":          Store{Into: &cursoV1ID},
+									"id":          StoreString{&cursoV1ID, AnyUUID{}},
 									"key":         "curso",
 									"type":        "string",
 									"owner":       "user",
@@ -512,7 +541,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			},
 		}
 
-		Validate(t, schema, spec)
+		ValidateExact(t, schema, spec)
 
 		// Cross-version field ID stability checks
 		require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")

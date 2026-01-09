@@ -73,16 +73,14 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
-	var pid uuid.UUID
-	pid, err = uuid.Parse(in.ProjectID)
+	var pid *uuid.UUID
+	pid, err = validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
-		err = apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +115,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	var exists bool
 	exists, err = uc.schemas.Exists(ctx, schema.Schema{
 		FlowID:    in.FlowID,
-		ProjectID: pid,
+		ProjectID: *pid,
 		Type:      validSchemaType,
 	})
 	if err != nil {
@@ -132,7 +130,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 
 	var drafted *schema.Schema
 	drafted, err = uc.schemas.Draft(ctx, schema.Schema{
-		ProjectID: pid,
+		ProjectID: *pid,
 		Title:     in.Title,
 		FlowID:    in.FlowID,
 		Type:      validSchemaType,

@@ -156,65 +156,73 @@ func (s StoreBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return result
 }
 
-// AsString - validates type is string and optionally matches with a Matcher
+// AsString - validates type is string, checks equality, and optionally validates format
 type AsString struct {
-	Value   string  // expected value (if not using Matcher)
-	Matcher Matcher // optional: for dynamic validation like AnyUUID, AnyString, etc.
+	Value   string  // expected value to compare
+	Matcher Matcher // optional: additional format validation (applied after equality check)
 }
 
 func (a AsString) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	s := val.String().Raw() // This validates it's a string
 
+	// First: check string equality
+	require.Equal(t, a.Value, s, "string value mismatch")
+
+	// Second: if matcher provided, validate the format (only need to check once since they're equal)
 	if a.Matcher != nil {
-		// Re-wrap as Value for matcher
-		return a.Matcher.Match(t, val)
+		a.Matcher.Match(t, val)
 	}
 
-	require.Equal(t, a.Value, s, "string value mismatch")
 	return s
 }
 
-// AsInt - validates type is number and optionally matches with a Matcher
+// AsInt - validates type is number, checks equality, and optionally validates constraints
 type AsInt struct {
-	Value   int     // expected value (if not using Matcher)
-	Matcher Matcher // optional: for dynamic validation
+	Value   int     // expected value to compare
+	Matcher Matcher // optional: additional validation (applied after equality check)
 }
 
 func (a AsInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	n := val.Number().Raw() // This validates it's a number
 
+	// First: check numeric equality
+	require.Equal(t, float64(a.Value), n, "numeric value mismatch")
+
+	// Second: if matcher provided, validate constraints (only need to check once since they're equal)
 	if a.Matcher != nil {
-		return a.Matcher.Match(t, val)
+		a.Matcher.Match(t, val)
 	}
 
-	require.Equal(t, float64(a.Value), n, "numeric value mismatch")
 	return n
 }
 
-// AsBool - validates type is boolean and optionally checks value
+// AsBool - validates type is boolean, checks equality, and optionally validates constraints
 type AsBool struct {
-	Value   bool    // expected value (if not using Matcher)
-	Matcher Matcher // optional: for dynamic validation
+	Value   bool    // expected value to compare
+	Matcher Matcher // optional: additional validation (applied after equality check)
 }
 
 func (a AsBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	b := val.Boolean().Raw() // This validates it's a boolean
 
+	// First: check boolean equality
+	require.Equal(t, a.Value, b, "boolean value mismatch")
+
+	// Second: if matcher provided, validate (only need to check once since they're equal)
 	if a.Matcher != nil {
-		return a.Matcher.Match(t, val)
+		a.Matcher.Match(t, val)
 	}
 
-	require.Equal(t, a.Value, b, "boolean value mismatch")
 	return b
 }
 
-// AsNull - validates that value is null
-type AsNull struct{}
+// Null - validates that value is null
+type Null struct{}
 
-func (AsNull) Match(t *testing.T, val *httpexpect.Value) interface{} {
+func (Null) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
 	val.IsNull()
 	return nil

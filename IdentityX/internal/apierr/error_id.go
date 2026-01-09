@@ -52,7 +52,7 @@ const (
 	SessionRequiredID          ID = "SESS_007"
 	SessionSelfRevokeForbidden ID = "SESS_008"
 	SessionUpdateFailed        ID = "SESS_009"
-	SessionMissingID           ID = "SESS_0010"
+	SessionMissingID           ID = "SESS_010"
 )
 
 const (

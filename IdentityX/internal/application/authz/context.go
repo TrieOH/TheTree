@@ -48,7 +48,7 @@ func RequirePrincipalAndAnnotate(ctx context.Context, span trace.Span) (*Princip
 
 // AnnotatePrincipal annotates a span with the principal's information.
 func AnnotatePrincipal(span trace.Span, principal *Principal) {
-	if principal == nil {
+	if span == nil || principal == nil {
 		return
 	}
 
