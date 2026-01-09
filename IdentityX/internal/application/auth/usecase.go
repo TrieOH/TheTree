@@ -269,7 +269,7 @@ func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbo
 	}
 
 	if isRevoked {
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token revoked").WithID(apierr.TokenRevoked)
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is revoked").WithID(apierr.TokenRevoked)
 		apierr.RecordDomainError(span, tokenErr)
 		return nil, tokenErr
 	}

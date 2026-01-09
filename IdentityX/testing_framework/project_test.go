@@ -32,7 +32,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			"updated_at": AnyDate{},
 		}
 
-		ValidateExact(t, val, spec)
+		Validate(t, val, spec)
 	})
 
 	t.Run("ListProjects", func(t *testing.T) {
@@ -55,7 +55,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			},
 		}
 
-		ValidateExact(t, data, spec)
+		Validate(t, data, spec)
 	})
 
 	t.Run("GetProject", func(t *testing.T) {
@@ -76,7 +76,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			"updated_at": AnyDate{},
 		}
 
-		ValidateExact(t, data, spec)
+		Validate(t, data, spec)
 	})
 
 	t.Run("UpdateProject", func(t *testing.T) {

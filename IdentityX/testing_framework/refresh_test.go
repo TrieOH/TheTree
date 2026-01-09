@@ -35,14 +35,14 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("RefreshRevokedToken", func(t *testing.T) {
-		oldClient := suite.Client(t)
+		deniedClient := suite.Client(t)
 
-		resp := oldClient.expect.POST("/auth/refresh").
+		resp := deniedClient.expect.POST("/auth/refresh").
 			WithCookie("refresh_token", oldRefresh).
 			Expect().
 			Status(http.StatusUnauthorized)
 
 		resp.JSON().Object().Value("error_id").String().IsEqual(string(apierr.TokenRevoked))
-		resp.JSON().Object().Value("message").String().IsEqual("refresh token revoked")
+		resp.JSON().Object().Value("message").String().IsEqual("refresh token is revoked")
 	})
 }

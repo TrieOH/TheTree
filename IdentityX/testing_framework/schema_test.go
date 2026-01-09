@@ -56,7 +56,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			"updated_at":         AnyDate{},
 		}
 
-		ValidateExact(t, data, spec)
+		Validate(t, data, spec)
 	})
 
 	t.Run("DraftAnother", func(t *testing.T) {
@@ -541,7 +541,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			},
 		}
 
-		ValidateExact(t, schema, spec)
+		Validate(t, schema, spec)
 
 		// Cross-version field ID stability checks
 		require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")

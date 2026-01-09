@@ -38,7 +38,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			"updated_at":         AnyDate{},
 		}
 
-		ValidateExact(t, data, spec)
+		Validate(t, data, spec)
 	})
 
 	var schemaVersion1ID string

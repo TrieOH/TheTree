@@ -103,7 +103,9 @@ func (s StoreString) Match(t *testing.T, val *httpexpect.Value) interface{} {
 		result = val.Raw()
 	}
 
-	*s.Into = result.(string)
+	str, ok := result.(string)
+	require.True(t, ok, "expected string value for StoreString, got %T", result)
+	*s.Into = str
 	return result
 }
 
@@ -152,7 +154,9 @@ func (s StoreBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
 		result = val.Raw()
 	}
 
-	*s.Into = result.(bool)
+	b, ok := result.(bool)
+	require.True(t, ok, "expected boolean value for StoreBool, got %T", result)
+	*s.Into = b
 	return result
 }
 
