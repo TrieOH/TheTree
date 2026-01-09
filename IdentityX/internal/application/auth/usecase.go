@@ -201,7 +201,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("logout.success", err == nil))
 		}
 	}()
 
@@ -309,7 +309,7 @@ func (uc *UseCase) finishClientRefresh(
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("finishClientRefresh.success", err == nil))
 		}
 	}()
 
@@ -356,7 +356,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("finishProjectUserRefresh.success", err == nil))
 		}
 	}()
 

@@ -5,12 +5,12 @@ CREATE TABLE sessions (
     session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
     token_id UUID UNIQUE NOT NULL DEFAULT gen_random_uuid(),
-    issued_at TIMESTAMP NOT NULL,
+    issued_at TIMESTAMPTZ NOT NULL,
     user_agent TEXT NOT NULL,
     user_ip VARCHAR(64) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id
