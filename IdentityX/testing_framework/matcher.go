@@ -1,6 +1,8 @@
 package testing
 
 import (
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -42,7 +44,7 @@ func (AnyUUID) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return s
 }
 
-// AnyDate - validates RFC3339/ISO8601 date format and returns the string
+// AnyDate - validates RFC3339/RFC3339Nano, date format and returns the string
 type AnyDate struct{}
 
 func (AnyDate) Match(t *testing.T, val *httpexpect.Value) interface{} {
@@ -131,7 +133,13 @@ func (s StoreInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	// Handle JSON numeric type (float64)
 	switch v := result.(type) {
 	case float64:
-		require.Equal(t, float64(int(v)), v, "expected integer-like number for StoreInt, got %v", v)
+		require.False(t, math.IsNaN(v) || math.IsInf(v, 0), "expected finite number for StoreInt, got %v", v)
+		require.Equal(t, v, math.Trunc(v), "expected integer-like number for StoreInt, got %v", v)
+		if strconv.IntSize == 32 {
+			require.True(t, v >= math.MinInt32 && v <= math.MaxInt32, "int32 out of range for StoreInt: %v", v)
+		} else {
+			require.True(t, v >= math.MinInt64 && v <= math.MaxInt64, "int64 out of range for StoreInt: %v", v)
+		}
 		*s.Into = int(v)
 	case int:
 		*s.Into = v
@@ -249,7 +257,8 @@ func (s SameAs) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return actual
 }
 
-// ByKey - for arrays of objects, index by a key field
+// ByKey - for arrays of objects, index by a key fiel
+// silently overwrites on duplicate keys, if a fail on duplicates is needed please implement a new version
 type ByKey struct {
 	Key        string                 // the field to use as key (e.g. "key", "id")
 	Spec       map[string]interface{} // key -> expected spec
