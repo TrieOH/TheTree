@@ -91,8 +91,8 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 			}
 		}
 
+		require.Zero(t, otherCount, "Unexpected status code(s) returned: %v codes", otherCount)
 		require.Equal(t, 1, successCount, "Only one refresh request should succeed")
 		require.Equal(t, concurrency-1, failCount, "All other refresh requests should fail")
-		require.Equal(t, 0, otherCount, "Unexpected status code(s) returned")
 	})
 }
