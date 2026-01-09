@@ -74,14 +74,11 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 	}
 
 	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, *sid)
-	if err != nil {
-		return err
-	}
-
-	if sess == nil {
-		apiErr := apierr.ErrNotFound.WithMsg("session not found").WithID(apierr.SessionNotFound)
-		apierr.RecordDomainError(span, apiErr)
+	if apierr.IsNotFound(err) {
+		apiErr := apierr.ErrNotFound.WithMsg("session not found or revoked").WithID(apierr.SessionNotFound)
 		return apiErr
+	} else if err != nil {
+		return err
 	}
 
 	span.SetAttributes(
