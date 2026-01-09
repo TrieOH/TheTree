@@ -79,7 +79,9 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 	}
 
 	if sess == nil {
-		return apierr.ErrNotFound.WithMsg("session not found").WithID(apierr.SessionNotFound)
+		apiErr := apierr.ErrNotFound.WithMsg("session not found").WithID(apierr.SessionNotFound)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
 	}
 
 	span.SetAttributes(
