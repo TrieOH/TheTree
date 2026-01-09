@@ -78,6 +78,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			"type":               "context",
 			"status":             "draft",
 			"current_version_id": nil,
+			"created_at":         AnyDate{},
+			"updated_at":         AnyDate{},
 		}
 
 		Validate(t, data, spec)

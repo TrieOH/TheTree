@@ -75,6 +75,7 @@ type Store struct {
 
 func (s Store) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
+	require.NotNil(t, s.Into, "Store.Into must not be nil")
 	var result interface{}
 
 	if s.Matcher != nil {
@@ -95,6 +96,7 @@ type StoreString struct {
 
 func (s StoreString) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
+	require.NotNil(t, s.Into, "StoreString.Into must not be nil")
 	var result interface{}
 
 	if s.Matcher != nil {
@@ -117,6 +119,7 @@ type StoreInt struct {
 
 func (s StoreInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
+	require.NotNil(t, s.Into, "StoreInt.Into must not be nil")
 	var result interface{}
 
 	if s.Matcher != nil {
@@ -128,11 +131,12 @@ func (s StoreInt) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	// Handle JSON numeric type (float64)
 	switch v := result.(type) {
 	case float64:
+		require.Equal(t, float64(int(v)), v, "expected integer-like number for StoreInt, got %v", v)
 		*s.Into = int(v)
 	case int:
 		*s.Into = v
 	default:
-		require.FailNow(t, "expected numeric value for StoreInt")
+		require.FailNow(t, "expected numeric value for StoreInt, got %T", result)
 	}
 
 	return result
@@ -146,6 +150,7 @@ type StoreBool struct {
 
 func (s StoreBool) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	t.Helper()
+	require.NotNil(t, s.Into, "StoreBool.Into must not be nil")
 	var result interface{}
 
 	if s.Matcher != nil {
