@@ -14,6 +14,7 @@ type Session struct {
 	IssuedAt  time.Time
 	UserAgent string
 	UserIP    string
+	RevokedAt *time.Time
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -21,9 +22,6 @@ type Session struct {
 }
 
 type Filter struct {
-	UserID        uuid.UUID
-	SessionID     *uuid.UUID
-	ExcludeID     *uuid.UUID
-	TokenID       *uuid.UUID
-	ExpiredBefore *time.Time
+	UserID    uuid.UUID
+	ExcludeID *uuid.UUID
 }

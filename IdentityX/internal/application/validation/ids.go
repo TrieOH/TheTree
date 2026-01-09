@@ -87,3 +87,30 @@ func RequireSessionID(span trace.Span, sessionID *string) (*uuid.UUID, error) {
 	}
 	return ParseSessionID(span, *sessionID)
 }
+
+func ParseRefreshJTI(span trace.Span, refreshJTI string) (*uuid.UUID, error) {
+	jti, err := uuid.Parse(refreshJTI)
+	if err != nil {
+		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid refresh token id").WithID(apierr.TokenInvalidID)
+		apierr.RecordDomainError(span, tokenErr)
+		return nil, tokenErr
+	}
+	return &jti, nil
+}
+
+func RefreshJTINotNull(span trace.Span, refreshJTI *string) error {
+	if refreshJTI == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("refresh token id is required").WithID(apierr.TokenIDMissing)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+	return nil
+}
+
+func RequireRefreshJTI(span trace.Span, refreshJTI *string) (*uuid.UUID, error) {
+	err := RefreshJTINotNull(span, refreshJTI)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRefreshJTI(span, *refreshJTI)
+}

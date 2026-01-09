@@ -7,6 +7,7 @@ import (
 	"GoAuth/internal/ports/outbound"
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -46,6 +47,7 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.IssuedAt = src.IssuedAt
 	dst.UserAgent = src.UserAgent
 	dst.UserIP = src.UserIp
+	dst.RevokedAt = src.RevokedAt
 	dst.ExpiresAt = src.ExpiresAt
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
@@ -93,15 +95,15 @@ func (repo *sessionRepo) Create(ctx context.Context, toCreate session.Session) (
 	return &created, nil
 }
 
-func (repo *sessionRepo) GetById(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
-	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetById",
+func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetByID",
 		trace.WithAttributes(
 			attribute.String("session_id", sessionID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSession, err := repo.queries(ctx).GetUserSessionById(ctx, sessionID)
+	sqlcSession, err := repo.queries(ctx).GetUserSessionByID(ctx, sessionID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -133,7 +135,7 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 	)
 	defer span.End()
 
-	sqlcSession, err := repo.queries(ctx).GetUserSessionByTokenId(ctx, tokenID)
+	sqlcSession, err := repo.queries(ctx).GetUserSessionByTokenID(ctx, tokenID)
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -213,43 +215,85 @@ func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session) e
 	return nil
 }
 
-func (repo *sessionRepo) DeleteByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
-	ctx, span := repo.tracer.Start(ctx, "SessionRepo.DeleteByFilter",
+func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, newTokenID uuid.UUID, expiresAt time.Time) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.RotateToken",
 		trace.WithAttributes(
-			attribute.String("session.user_id", filter.UserID.String()),
+			attribute.String("old_token_id", oldTokenID.String()),
+			attribute.String("new_token_id", newTokenID.String()),
 		),
 	)
-
-	if filter.SessionID != nil {
-		span.SetAttributes(attribute.String("session.session_id", filter.SessionID.String()))
-	}
-	if filter.TokenID != nil {
-		span.SetAttributes(attribute.String("session.with_token_id", filter.TokenID.String()))
-	}
-	if filter.ExcludeID != nil {
-		span.SetAttributes(attribute.String("session.with_exclude_id", filter.ExcludeID.String()))
-	}
-	if filter.ExpiredBefore != nil {
-		span.SetAttributes(attribute.String("session.with_expired", filter.ExpiredBefore.String()))
-	}
-
 	defer span.End()
 
-	sqlcSessions, err := repo.queries(ctx).DeleteSessionsByFilter(ctx, sqlc.DeleteSessionsByFilterParams{
-		UserID:        filter.UserID,
-		SessionID:     filter.SessionID,
-		ExcludeID:     filter.ExcludeID,
-		TokenID:       filter.TokenID,
-		ExpiredBefore: filter.ExpiredBefore,
+	sqlcSession, err := repo.queries(ctx).RotateSessionToken(ctx, sqlc.RotateSessionTokenParams{
+		ExpiresAt:  expiresAt,
+		NewTokenID: newTokenID,
+		OldTokenID: oldTokenID,
 	})
-
 	if err != nil {
-		sessionErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sessionErr)
-		return nil, sessionErr
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
 	}
 
-	span.SetAttributes(attribute.Int("sessions.deleted", len(sqlcSessions)))
+	var rotatedSession session.Session
+	mapSessionFromDB(&rotatedSession, &sqlcSession)
+	return &rotatedSession, nil
+}
+
+func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByID",
+		trace.WithAttributes(
+			attribute.String("session_id", sessionID.String()),
+			attribute.String("user_id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcSession, err := repo.queries(ctx).RevokeSessionByID(ctx, sqlc.RevokeSessionByIDParams{
+		SessionID: sessionID,
+		UserID:    userID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var revokedSession session.Session
+	mapSessionFromDB(&revokedSession, &sqlcSession)
+	return &revokedSession, nil
+}
+
+func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByFilter",
+		trace.WithAttributes(
+			attribute.String("user_id", filter.UserID.String()),
+		),
+	)
+	defer span.End()
+
+	var err error
+	var revokeType string
+	var sqlcSessions []sqlc.Session
+	if filter.ExcludeID != nil {
+		revokeType = "other"
+		sqlcSessions, err = repo.queries(ctx).RevokeOtherSessions(ctx, sqlc.RevokeOtherSessionsParams{
+			UserID:    filter.UserID,
+			SessionID: *filter.ExcludeID,
+		})
+	} else {
+		revokeType = "all"
+		sqlcSessions, err = repo.queries(ctx).RevokeAllSessions(ctx, filter.UserID)
+	}
+
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("revoke.count", len(sqlcSessions)))
+	span.SetAttributes(attribute.String("revoke.type", revokeType))
 
 	sessions := make([]session.Session, 0, len(sqlcSessions))
 	for _, sqlcSession := range sqlcSessions {

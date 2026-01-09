@@ -30,8 +30,8 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 	t.Run("UseOldTokenError", func(t *testing.T) {
 		oldClient.WithT(t).GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			ExpectErrorID(apierr.TokenRevoked).
-			MessageContains("refresh token is revoked")
+			ExpectErrorID(apierr.SessionUnauthorized).
+			MessageContains("session not found or revoked")
 	})
 
 	t.Run("RefreshRevokedToken", func(t *testing.T) {
@@ -42,7 +42,48 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 			Expect().
 			Status(http.StatusUnauthorized)
 
-		resp.JSON().Object().Value("error_id").String().IsEqual(string(apierr.TokenRevoked))
-		resp.JSON().Object().Value("message").String().IsEqual("refresh token is revoked")
+		resp.JSON().Object().Value("error_id").String().IsEqual(string(apierr.TokenInvalid))
+		resp.JSON().Object().Value("message").String().IsEqual("refresh token is invalid")
+	})
+
+	t.Run("ConcurrentRefresh", func(t *testing.T) {
+		// New user for this test
+		concUser := client.User("concurrent_refresh@mail.com", ValidPassword).Register().Login()
+		refreshToken := concUser.auth.RefreshToken
+
+		concurrency := 5
+		results := make(chan int, concurrency)
+
+		httpClient := &http.Client{}
+
+		for i := 0; i < concurrency; i++ {
+			go func() {
+				req, _ := http.NewRequest("POST", suite.Server.URL+"/auth/refresh", nil)
+				req.AddCookie(&http.Cookie{Name: "refresh_token", Value: refreshToken})
+				resp, err := httpClient.Do(req)
+				if err != nil {
+					// Treat network error as failure to refresh (or 0)
+					results <- 0
+					return
+				}
+				resp.Body.Close()
+				results <- resp.StatusCode
+			}()
+		}
+
+		successCount := 0
+		failCount := 0
+
+		for i := 0; i < concurrency; i++ {
+			status := <-results
+			if status == http.StatusOK {
+				successCount++
+			} else if status == http.StatusUnauthorized {
+				failCount++
+			}
+		}
+
+		require.Equal(t, 1, successCount, "Only one refresh request should succeed")
+		require.Equal(t, concurrency-1, failCount, "All other refresh requests should fail")
 	})
 }

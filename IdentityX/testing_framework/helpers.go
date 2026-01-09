@@ -18,14 +18,12 @@ func setupDatabase() (*sql.DB, error) {
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
-
-	if err := database.RunMigrations(db, "../internal/database/migrations"); err != nil {
+	if err = database.RunMigrations(db, "../internal/database/migrations"); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
-	if err := database.SetJWTMasterKey(db); err != nil {
+	if err = database.SetJWTMasterKey(db); err != nil {
 		log.Fatal(err)
 	}
-
 	return db, nil
 }
 

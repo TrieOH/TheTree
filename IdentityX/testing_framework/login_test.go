@@ -45,6 +45,6 @@ func testLogin(t *testing.T, suite *TestSuite) {
 		// Try using revoked session
 		loggedInUser.AuthedClient().POST("/auth/logout").
 			Expect(http.StatusUnauthorized).
-			Error("AuthMW", "refresh token is revoked")
+			Error("AuthMW", "session not found or revoked")
 	})
 }

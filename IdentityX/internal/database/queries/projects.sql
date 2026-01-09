@@ -41,7 +41,7 @@ RETURNING
     id, project_name, owner_id, metadata, is_active, pub_key,
     created_at, updated_at;
 
--- name: DeleteProject :exec
+-- name: DeleteProject :execrows
 DELETE FROM projects
 WHERE id = $1 AND owner_id = $2;
 

@@ -112,6 +112,11 @@ func SetJWTMasterKey(db *sql.DB) error {
 		return fmt.Errorf("failed to set app.jwt_master_key: %w", err)
 	}
 
+	query = fmt.Sprintf("ALTER ROLE CURRENT_USER SET app.jwt_master_key = '%s'", masterKey)
+	if _, err := db.Exec(query); err != nil {
+		return fmt.Errorf("failed to set persistent master key: %w", err)
+	}
+
 	log.Println("session variable app.jwt_master_key set successfully")
 	return nil
 }

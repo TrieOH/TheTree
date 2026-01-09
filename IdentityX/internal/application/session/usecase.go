@@ -4,14 +4,11 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/validation"
-	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
-	"time"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -22,18 +19,15 @@ var (
 
 type UseCase struct {
 	sessions outbound.SessionRepository
-	refresh  outbound.RevokedRefreshTokenRepository
 }
 
 var _ inbounds.SessionService = (*UseCase)(nil)
 
 func New(
 	sessions outbound.SessionRepository,
-	refresh outbound.RevokedRefreshTokenRepository,
 ) inbounds.SessionService {
 	return &UseCase{
 		sessions: sessions,
-		refresh:  refresh,
 	}
 }
 
@@ -79,25 +73,19 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 		return apiErr
 	}
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
-		UserID:    principal.UserID,
-		SessionID: sid,
-	})
+	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, *sid)
 	if err != nil {
 		return err
 	}
 
-	if len(revokedSessions) == 0 {
+	if sess == nil {
 		return apierr.ErrNotFound.WithMsg("session not found").WithID(apierr.SessionNotFound)
 	}
 
-	sess := revokedSessions[0]
-	if err := uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   sess.TokenID,
-		ExpiresAt: sess.ExpiresAt,
-	}); err != nil {
-		return err
-	}
+	span.SetAttributes(
+		attribute.String("session.id", sess.SessionID.String()),
+		attribute.String("session.revoked_at", sess.RevokedAt.String()),
+	)
 
 	return nil
 }
@@ -112,7 +100,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 		return err
 	}
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
+	revokedSessions, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
 		UserID:    principal.UserID,
 		ExcludeID: &principal.SessionID,
 	})
@@ -120,22 +108,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 		return err
 	}
 
-	span.SetAttributes(attribute.Int("sessions.deleted.count", len(revokedSessions)))
-
-	tokenIDs := make([]uuid.UUID, len(revokedSessions))
-	expireAts := make([]time.Time, len(revokedSessions))
-	for i, sess := range revokedSessions {
-		tokenIDs[i] = sess.TokenID
-		expireAts[i] = sess.ExpiresAt
-	}
-
-	err = uc.refresh.RevokeMany(ctx, tokenIDs, expireAts)
-	if err != nil {
-		span.SetAttributes(attribute.Bool("sessions.revoked.success", false))
-		return err
-	}
-
-	span.SetAttributes(attribute.Bool("sessions.revoked.success", true))
+	span.SetAttributes(attribute.Int("sessions.revoked.count", len(revokedSessions)))
 	return nil
 }
 
@@ -149,29 +122,15 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 		return err
 	}
 
-	revokedSessions, err := uc.sessions.DeleteByFilter(ctx, session.Filter{
+	revokedSessions, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
 		UserID: principal.UserID,
 	})
 	if err != nil {
 		return err
 	}
 
-	span.SetAttributes(attribute.Int("sessions.deleted.count", len(revokedSessions)))
+	span.SetAttributes(attribute.Int("sessions.revoked.count", len(revokedSessions)))
 
-	tokenIDs := make([]uuid.UUID, len(revokedSessions))
-	expireAts := make([]time.Time, len(revokedSessions))
-	for i, sess := range revokedSessions {
-		tokenIDs[i] = sess.TokenID
-		expireAts[i] = sess.ExpiresAt
-	}
-
-	err = uc.refresh.RevokeMany(ctx, tokenIDs, expireAts)
-	if err != nil {
-		span.SetAttributes(attribute.Bool("sessions.revoked.success", false))
-		return err
-	}
-
-	span.SetAttributes(attribute.Bool("sessions.revoked.success", true))
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/utils"
 	"context"
@@ -12,9 +13,9 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var Port string
@@ -72,60 +73,32 @@ func init() {
 		log.Fatalf("Failed to create scheduler: %v", err)
 	}
 
-	// Schedule a daily job at 00:00
+	// SessionCleanup scheduled daily at 00:00
 	_, err = scheduler.NewJob(
-		//gocron.DurationJob(1*time.Minute),
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
 			queries := sqlc.New(db)
-			if err := queries.DeleteExpiredRefreshTokens(ctx); err != nil {
-				log.Printf("Couldn't delete expired tokens: %v\n", err)
-			} else {
-				log.Println("Expired tokens cleanup executed successfully")
+
+			revoked, err := queries.RevokeExpiredSessions(ctx)
+			if err != nil {
+				logs.L().Error("Couldn't revoke expired sessions", zap.Error(err))
+				return
 			}
+			logs.L().Info("Revoked expired sessions", zap.Int("count", len(revoked)))
+
+			deleted, err := queries.DeleteRevokedSessions(ctx)
+			if err != nil {
+				logs.L().Error("Couldn't delete revoked sessions", zap.Error(err))
+				return
+			}
+			logs.L().Info("Deleted revoked sessions", zap.Int("count", len(deleted)))
 		}, DB),
 	)
+
 	if err != nil {
-		log.Fatalf("Couldn't create DeleteExpiredTokens cron job: %v", err)
+		log.Fatalf("Couldn't create SessionCleanup cron job: %v", err)
 	} else {
-		log.Println("Created DeleteExpiredTokens cron job")
-	}
-
-	// Schedule a daily job at 00:00
-	_, err = scheduler.NewJob(
-		//gocron.DurationJob(1*time.Minute),
-		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
-		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
-			queries := sqlc.New(db)
-			revokedSessions, err := queries.DeleteExpiredSessions(ctx)
-			if err != nil {
-				log.Printf("Couldn't delete expired sessions: %v\n", err)
-			} else {
-				log.Println("Expired sessions cleanup executed successfully")
-			}
-
-			tokenIDs := make([]uuid.UUID, len(revokedSessions))
-			expiresAt := make([]time.Time, len(revokedSessions))
-
-			for i, session := range revokedSessions {
-				tokenIDs[i] = session.TokenID
-				expiresAt[i] = session.ExpiresAt
-			}
-
-			_, err = queries.RevokeManyTokens(ctx, sqlc.RevokeManyTokensParams{
-				Column1: tokenIDs,
-				Column2: expiresAt,
-			})
-
-			if err != nil {
-				log.Println("Couldn't blacklist tokens from invalidated sessions")
-			}
-		}, DB),
-	)
-	if err != nil {
-		log.Fatalf("Couldn't create DeleteExpiredSessions cron job: %v", err)
-	} else {
-		log.Println("Created DeleteExpiredSessions cron job")
+		log.Println("Created SessionCleanup cron job")
 	}
 
 	// Start the scheduler in the background

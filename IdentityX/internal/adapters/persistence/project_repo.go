@@ -237,7 +237,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	)
 	defer span.End()
 
-	err := repo.queries(ctx).DeleteProject(ctx, sqlc.DeleteProjectParams{
+	affectedRows, err := repo.queries(ctx).DeleteProject(ctx, sqlc.DeleteProjectParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
@@ -246,6 +246,10 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
 		return sqlcErr
+	}
+
+	if affectedRows == 0 {
+		return apierr.ErrNotFound.WithMsg("project not found").WithID(apierr.ProjectNotFound)
 	}
 
 	return nil

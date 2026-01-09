@@ -7,13 +7,13 @@ import (
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
-	"GoAuth/internal/domain/revoked_refreshes"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -34,7 +34,6 @@ var (
 
 type UseCase struct {
 	users        outbound.UserRepository
-	refresh      outbound.RevokedRefreshTokenRepository
 	sessions     outbound.SessionRepository
 	schemas      outbound.SchemaRepository
 	versions     outbound.SchemaVersionRepository
@@ -48,7 +47,6 @@ var _ inbounds.AuthService = (*UseCase)(nil)
 func New(
 	users outbound.UserRepository,
 	sessions outbound.SessionRepository,
-	refresh outbound.RevokedRefreshTokenRepository,
 	schemas outbound.SchemaRepository,
 	versions outbound.SchemaVersionRepository,
 	fields outbound.SchemaFieldsRepository,
@@ -58,7 +56,6 @@ func New(
 	return &UseCase{
 		users:        users,
 		sessions:     sessions,
-		refresh:      refresh,
 		schemas:      schemas,
 		versions:     versions,
 		fields:       fields,
@@ -204,7 +201,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("logout.success", err == nil))
+			span.SetAttributes(attribute.Bool("success", err == nil))
 		}
 	}()
 
@@ -214,19 +211,13 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		return err
 	}
 
-	if _, err = uc.sessions.DeleteByFilter(ctx, session.Filter{
-		TokenID: &principal.RefreshJTI,
-		UserID:  principal.UserID,
-	}); err != nil {
+	var sess *session.Session
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID)
+	if err != nil {
 		return err
 	}
 
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   principal.RefreshJTI,
-		ExpiresAt: principal.RefreshClaims.ExpiresAt.Time,
-	}); err != nil {
-		return err
-	}
+	span.SetAttributes(attribute.String("session.id", sess.SessionID.String()))
 
 	return nil
 }
@@ -235,6 +226,22 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
 func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
+	txOptions := transactions.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+		ReadOnly:  false,
+	}
+
+	var out *inbounds.UserTokensOutput
+	err := uc.tx.WithinTxWithOptions(ctx, txOptions, func(ctx context.Context) error {
+		var err error
+		out, err = uc.refreshInternal(ctx, in)
+		return err
+	})
+
+	return out, err
+}
+
+func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Refresh")
 	defer span.End()
 
@@ -252,32 +259,30 @@ func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbo
 		return nil, err
 	}
 
-	var jti uuid.UUID
-	jti, err = uuid.Parse(refreshToken.ID)
-	if err != nil {
-		tokenErr := apierr.ErrInvalidInput.WithMsg("unable to parse refresh token ID").WithID(apierr.TokenInvalidID)
-		apierr.RecordDomainError(span, tokenErr)
-		return nil, tokenErr
-	}
-
-	span.SetAttributes(attribute.String("refresh_token.id", jti.String()))
-
-	var isRevoked bool
-	isRevoked, err = uc.refresh.IsRevoked(ctx, jti)
+	var oldJTI *uuid.UUID
+	oldJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if isRevoked {
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is revoked").WithID(apierr.TokenRevoked)
-		apierr.RecordDomainError(span, tokenErr)
-		return nil, tokenErr
-	}
+	var (
+		newRefreshJTI = uuid.New()
+		refreshExp    = time.Now().Add(7 * 24 * time.Hour)
+	)
 
-	var sess *session.Session
-	sess, err = uc.sessions.GetByTokenID(ctx, jti)
+	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
+	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
+
+	sess, err := uc.sessions.RotateToken(
+		ctx,
+		*oldJTI,
+		newRefreshJTI,
+		refreshExp,
+	)
 	if err != nil {
-		return nil, err
+		// sql.ErrNoRows → raced / reused / revoked
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid)
+		return nil, tokenErr
 	}
 
 	span.SetAttributes(
@@ -287,50 +292,29 @@ func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbo
 		attribute.String("session.user_type", sess.UserType),
 	)
 
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
-
-	var tokens *inbounds.UserTokensOutput
 	if sess.ProjectID == nil {
-		tokens, err = uc.RefreshClient(ctx, sess, in, jti, refreshToken)
-		span.SetAttributes(attribute.String("refresh.flow", "client"))
-	} else {
-		tokens, err = uc.RefreshProjectUser(ctx, sess, in, jti, refreshToken)
-		span.SetAttributes(attribute.String("refresh.flow", "project"))
+		return uc.finishClientRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 	}
 
-	return tokens, err
+	return uc.finishProjectUserRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 }
 
-// RefreshClient handles the business logic for refreshing a client's tokens.
-// It generates a new access and refresh token pair, updates the session, and revokes the old refresh token.
-func (uc *UseCase) RefreshClient(
+func (uc *UseCase) finishClientRefresh(
 	ctx context.Context,
 	sess *session.Session,
 	in inbounds.RefreshInput,
-	jti uuid.UUID,
-	refreshToken *auth.RefreshClaims,
-) (
-	*inbounds.UserTokensOutput,
-	error,
-) {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RefreshClient")
+	refreshJTI uuid.UUID,
+	refreshExpiresAt time.Time,
+) (*inbounds.UserTokensOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.finishClientRefresh")
 	defer span.End()
 
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("refresh_client.success", err == nil))
+			span.SetAttributes(attribute.Bool("success", err == nil))
 		}
 	}()
-
-	span.SetAttributes(
-		attribute.String("refresh_client.session.token_id", sess.TokenID.String()),
-		attribute.String("refresh_client.session.id", sess.SessionID.String()),
-		attribute.String("refresh_client.session.user_id", sess.UserID.String()),
-		attribute.String("refresh_client.session.user_type", sess.UserType),
-	)
 
 	var u *user.User
 	u, err = uc.users.GetUserByID(ctx, sess.UserID)
@@ -338,144 +322,71 @@ func (uc *UseCase) RefreshClient(
 		return nil, err
 	}
 
-	var newAccessTokenStr string
+	var accessTokenStr string
 	var accessJTI uuid.UUID
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	newAccessTokenStr, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-
-	var newRefreshTokenStr string
-	newRefreshTokenStr, err = newRefreshToken(accessJTI, refreshJti, refreshExpiresAt)
+	var refreshTokenStr string
+	refreshTokenStr, err = newRefreshToken(accessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
-
-	if err = uc.sessions.Update(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIP:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		TokenID:   refreshJti,
-		SessionID: sess.SessionID,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshToken.ExpiresAt.Time,
-	}); err != nil {
-		return nil, err
-	}
-
-	span.AddEvent("refresh_client.revoked",
-		trace.WithAttributes(
-			attribute.Int64("revoked.expires_at", refreshToken.ExpiresAt.Time.Unix()),
-			attribute.String("revoked.token_id", jti.String()),
-		),
-	)
 
 	return &inbounds.UserTokensOutput{
-		AccessTokenString:  newAccessTokenStr,
-		RefreshTokenString: newRefreshTokenStr,
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
 }
 
-// RefreshProjectUser handles the business logic for refreshing a project user's tokens.
-// It generates a new access and refresh token pair, updates the session, and revokes the old refresh token.
-func (uc *UseCase) RefreshProjectUser(
+func (uc *UseCase) finishProjectUserRefresh(
 	ctx context.Context,
 	sess *session.Session,
 	in inbounds.RefreshInput,
-	jti uuid.UUID,
-	refreshToken *auth.RefreshClaims,
-) (
-	*inbounds.UserTokensOutput,
-	error,
-) {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RefreshProjectUser")
+	refreshJTI uuid.UUID,
+	refreshExpiresAt time.Time,
+) (*inbounds.UserTokensOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.finishProjectUserRefresh")
 	defer span.End()
 
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("refresh_project_user.success", err == nil))
+			span.SetAttributes(attribute.Bool("success", err == nil))
 		}
 	}()
 
-	span.SetAttributes(
-		attribute.String("refresh_project_user.session.token_id", sess.TokenID.String()),
-		attribute.String("refresh_project_user.session.id", sess.SessionID.String()),
-		attribute.String("refresh_project_user.session.user_id", sess.UserID.String()),
-		attribute.String("refresh_project_user.session.user_type", sess.UserType),
-	)
-
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
-
-	var projectUser *project_users.ProjectUser
-	projectUser, err = uc.projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
+	projectUser, err := uc.projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	var newAccessTokenStr string
+	var accessTokenStr string
 	var accessJTI uuid.UUID
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	newAccessTokenStr, accessJTI, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, accessJTI, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-
-	var newRefreshTokenStr string
-	newRefreshTokenStr, err = newRefreshToken(accessJTI, refreshJti, refreshExpiresAt)
+	var refreshTokenStr string
+	refreshTokenStr, err = newRefreshToken(accessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
-
-	if err = uc.sessions.Update(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIP:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		TokenID:   refreshJti,
-		SessionID: sess.SessionID,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshToken.ExpiresAt.Time,
-	}); err != nil {
-		return nil, err
-	}
-
-	span.AddEvent("refresh_project_user.revoked",
-		trace.WithAttributes(
-			attribute.Int64("revoked.expires_at", refreshToken.ExpiresAt.Time.Unix()),
-			attribute.String("revoked.token_id", jti.String()),
-		),
-	)
 
 	return &inbounds.UserTokensOutput{
-		AccessTokenString:  newAccessTokenStr,
-		RefreshTokenString: newRefreshTokenStr,
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil

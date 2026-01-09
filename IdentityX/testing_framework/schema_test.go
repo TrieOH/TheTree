@@ -98,6 +98,59 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			ExpectErrorID(apierr.SchemaFlowIDAlreadyExistsInType)
 	})
 
+	t.Run("DraftReservedFlowID", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "Reserved",
+				"flow_id":     "none",
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("flow id can't be the reserved keyword 'none'").
+			ExpectErrorID(apierr.SchemaFlowIDIsReserved)
+	})
+
+	t.Run("DraftFlowIDSameAsType", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "SameAsType",
+				"flow_id":     "context",
+			}).
+			Expect(http.StatusBadRequest).
+			MessageContains("flow id can't be the same as a schema type").
+			ExpectErrorID(apierr.SchemaInvalidFlowID)
+	})
+
+	t.Run("DraftValidation", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+
+		t.Run("InvalidType", func(t *testing.T) {
+			authClient.POST("/projects/" + projectID + "/schemas").
+				WithBody(map[string]interface{}{
+					"schema_type": "invalid-type",
+					"title":       "test",
+					"flow_id":     "test",
+				}).
+				Expect(http.StatusBadRequest).
+				ValidationError("(schema_type)")
+		})
+
+		t.Run("FlowIDTooLong", func(t *testing.T) {
+			longFlowID := "this-flow-id-is-way-too-long-and-should-fail-validation-because-it-exceeds-63-chars"
+			authClient.POST("/projects/" + projectID + "/schemas").
+				WithBody(map[string]interface{}{
+					"schema_type": "context",
+					"title":       "test",
+					"flow_id":     longFlowID,
+				}).
+				Expect(http.StatusBadRequest).
+				ValidationError("(flow_id)")
+		})
+	})
+
 	t.Run("PublishSchemaNoVersion", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
@@ -422,6 +475,50 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Validate(t, data, spec)
 	})
 
+	t.Run("CreateFieldDuplicateInherited", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "matricula", // Inherited from v1
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Numero da Matrícula",
+						"description": "Duplicate",
+						"required":    true,
+						"mutable":     true,
+						"position":    3, // Different position
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("two fields can't have the same key").
+			ExpectErrorID(apierr.FieldSameKeyForMultipleFields)
+	})
+
+	t.Run("CreateFieldDuplicateInDraft", func(t *testing.T) {
+		authClient := suite.Client(t).Auth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "periodo", // Created in this draft
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Duplicate",
+						"description": "Duplicate",
+						"required":    true,
+						"mutable":     true,
+						"position":    4, // Different position
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("two fields can't have the same key").
+			ExpectErrorID(apierr.FieldSameKeyForMultipleFields)
+	})
+
 	t.Run("PublishVersion2Success", func(t *testing.T) {
 		authClient := suite.Client(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
@@ -546,7 +643,47 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Validate(t, schema, spec)
 
 		// Cross-version field ID stability checks
+		// Field IDs must match between versions
 		require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")
 		require.Equal(t, cursoV1ID, cursoV2ID, "curso field ID changed between versions")
+	})
+
+	t.Run("ProjectUserAccessDenied", func(t *testing.T) {
+		// Register a project user
+		projUser := client.User("proj-user-schema@mail.com", ValidPassword).
+			ProjectRegister(user.ProjectID).
+			ProjectLogin(user.ProjectID)
+
+		authClient := suite.Client(t).Auth(projUser.auth)
+
+		// Try Draft
+		authClient.POST("/projects/"+projectID+"/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "forbidden",
+				"flow_id":     "forbidden",
+			}).
+			Expect(http.StatusUnauthorized).
+			Error("ClientOnlyMW", "only clients can access this endpoint")
+
+		// Try Publish
+		authClient.POST("/projects/"+projectID+"/schemas/"+schemaID+"/publish").
+			Expect(http.StatusUnauthorized).
+			Error("ClientOnlyMW", "only clients can access this endpoint")
+
+		// Try Get
+		authClient.GET("/projects/"+projectID+"/schemas/"+schemaID).
+			Expect(http.StatusUnauthorized).
+			Error("ClientOnlyMW", "only clients can access this endpoint")
+
+		// Try Get Verbose
+		authClient.GET("/projects/"+projectID+"/schemas/"+schemaID+"/verbose").
+			Expect(http.StatusUnauthorized).
+			Error("ClientOnlyMW", "only clients can access this endpoint")
+
+		// Try Draft Version
+		authClient.POST("/projects/"+projectID+"/schemas/"+schemaID+"/versions/draft").
+			Expect(http.StatusUnauthorized).
+			Error("ClientOnlyMW", "only clients can access this endpoint")
 	})
 }
