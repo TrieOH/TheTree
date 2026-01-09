@@ -2,6 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"net/http"
 
@@ -27,7 +28,7 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.DraftSchemaRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 

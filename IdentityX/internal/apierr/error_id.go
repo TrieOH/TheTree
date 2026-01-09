@@ -5,6 +5,7 @@ const (
 	RequestMissingQueryParam         ID = "REQ_002"
 	RequestMissingSchemaCustomFields ID = "REQ_003"
 	RequestInvalidJSON               ID = "REQ_004"
+	RequestValidationError           ID = "REQ_005"
 )
 
 const (

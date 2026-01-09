@@ -495,10 +495,10 @@ func validate(t *testing.T, val *httpexpect.Value, spec interface{}, exact bool)
 // Example usage with the actual test:
 //
 // t.Run("GetSchemaVerbose", func(t *testing.T) {
-// 	authClient := suite.Client(t).Auth(user.auth)
+// 	authClient := suite.NewClient(t).Auth(user.auth)
 // 	schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
 // 		Expect(http.StatusOK).
-// 		Data()
+// 		RequireDataObject()
 //
 // 	// Capture field IDs for cross-version stability checks
 // 	var (

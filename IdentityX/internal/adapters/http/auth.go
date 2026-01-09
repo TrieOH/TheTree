@@ -2,6 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/utils"
 	"net/http"
@@ -33,7 +34,7 @@ func NewAuthHandler(uc inbounds.AuthService) *AuthHandler {
 func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
@@ -67,7 +68,7 @@ func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
@@ -209,7 +210,7 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 
 	var req dto.RegisterProjectUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
@@ -258,7 +259,7 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 
 	var req dto.LoginProjectUserRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 

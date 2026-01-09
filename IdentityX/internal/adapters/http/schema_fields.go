@@ -2,6 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"net/http"
 	"strconv"
@@ -52,7 +53,7 @@ func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Reques
 	var req dto.CreateFieldRequest
 	rs := validation.ValidateInto(r, &req)
 	if rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 

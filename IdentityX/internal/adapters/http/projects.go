@@ -3,6 +3,7 @@ package http
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/observability/logs"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
@@ -37,7 +38,7 @@ func NewProjectHandler(uc inbounds.ProjectService) *ProjectHandler {
 func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProjectRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
@@ -186,7 +187,7 @@ func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.
 
 	var req dto.UpdateProjectRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 

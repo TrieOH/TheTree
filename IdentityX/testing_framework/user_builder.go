@@ -18,7 +18,7 @@ type User struct {
 	t         *testing.T
 }
 
-func (c *Client) User(email, password string) *User {
+func (c *Client) NewUser(email, password string) *User {
 	return &User{
 		Email:    email,
 		Password: password,
@@ -35,47 +35,51 @@ func (u *User) Register() *User {
 			"password": u.Password,
 		}).
 		Expect(http.StatusCreated).
-		Success("go-auth-test", "Registered user")
+		HasModule("go-auth-test").
+		HasMessage("Registered user")
 	return u
 }
 
 func (u *User) ProjectRegister(projectID string) *User {
 	u.t.Helper()
-	u.client.POST("/projects/"+projectID+"/register").
+	u.client.POST("/projects/" + projectID + "/register").
 		WithBody(map[string]interface{}{
 			"email":    u.Email,
 			"password": u.Password,
 		}).
 		Expect(http.StatusCreated).
-		Success("go-auth-test", "Registered user")
+		HasModule("go-auth-test").
+		HasMessage("Registered user")
 	return u
 }
 
 func (u *User) Login() *User {
 	u.t.Helper()
-	resp := u.client.POST("/auth/login").
+	u.auth = u.client.POST("/auth/login").
 		WithBody(map[string]string{
 			"email":    u.Email,
 			"password": u.Password,
 		}).
-		Expect(http.StatusOK)
+		Expect(http.StatusOK).
+		HasModule("go-auth-test").
+		HasMessage("Logged in").
+		AuthCookies()
 
-	resp.Success("go-auth-test", "Logged in")
-	u.auth = resp.Cookies()
 	return u
 }
 
 func (u *User) ProjectLogin(projectID string) *User {
 	u.t.Helper()
-	resp := u.client.POST("/projects/" + projectID + "/login").
+	u.auth = u.client.POST("/projects/" + projectID + "/login").
 		WithBody(map[string]string{
 			"email":    u.Email,
 			"password": u.Password,
 		}).
-		Expect(http.StatusOK)
+		Expect(http.StatusOK).
+		HasModule("go-auth-test").
+		HasMessage("Logged in").
+		AuthCookies()
 
-	resp.Success("go-auth-test", "Logged in")
-	u.auth = resp.Cookies()
 	return u
 }
 
@@ -83,7 +87,8 @@ func (u *User) Logout() *User {
 	u.t.Helper()
 	u.authedClient().POST("/auth/logout").
 		Expect(http.StatusOK).
-		Success("go-auth-test", "Logged out")
+		HasModule("go-auth-test").
+		HasMessage("Logged out")
 	return u
 }
 
@@ -126,10 +131,10 @@ func (u *User) CreateProject(name string) *User {
 			"project_name": name,
 			"metadata":     map[string]string{"env": "test"},
 		}).
-		Expect(http.StatusCreated)
+		Expect(http.StatusCreated).
+		HasMessage("Created project")
 
-	resp.Success("go-auth-test", "Created project")
-	u.ProjectID = resp.Data().Value("id").String().Raw()
+	u.ProjectID = resp.RequireDataObject().Value("id").String().NotEmpty().Raw()
 	return u
 }
 

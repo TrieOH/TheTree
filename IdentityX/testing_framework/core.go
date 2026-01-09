@@ -72,8 +72,8 @@ func (s *TestSuite) teardown() {
 	}
 }
 
-// Client creates a new API client for testing
-func (s *TestSuite) Client(t *testing.T) *Client {
+// NewClient creates a new API client for testing
+func (s *TestSuite) NewClient(t *testing.T) *Client {
 	return &Client{
 		expect: httpexpect.WithConfig(httpexpect.Config{
 			BaseURL:  s.Server.URL,

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 // ============================================================================
@@ -18,52 +19,43 @@ type Response struct {
 	status int
 }
 
-func (r *Response) Success(module, message string) *Response {
-	r.t.Helper()
-	obj := r.resp.JSON().Object()
-	obj.Value("module").String().IsEqual(module)
-	obj.Value("message").String().IsEqual(message)
-	obj.Value("code").Number().IsEqual(r.status)
-	return r
-}
-
-func (r *Response) Error(module, message string) *Response {
-	r.t.Helper()
-	return r.Success(module, message)
-}
-
 func (r *Response) ValidationError(expectedErrors ...string) *Response {
 	r.t.Helper()
+
 	obj := r.resp.JSON().Object()
+
+	// STRUCTURAL: fail fast
 	obj.Value("module").String().IsEqual("validation")
 	obj.Value("message").String().IsEqual("Validation failed")
 
-	trace := obj.Value("trace").Array()
+	trace := r.RequireTrace()
 	trace.Length().IsEqual(len(expectedErrors))
 
+	// CONTENT: non-fatal diagnostics
 	for i, err := range expectedErrors {
-		trace.Value(i).String().Contains(err)
+		actual := trace.Value(i).String().Raw()
+		assert.Contains(r.t, actual, err, "trace[%d] mismatch", i)
 	}
 
 	return r
 }
 
-func (r *Response) Data() *httpexpect.Object {
-	r.t.Helper()
-	return r.resp.JSON().Object().Value("data").Object()
-}
-
-func (r *Response) Value() *httpexpect.Value {
-	r.t.Helper()
-	return r.resp.JSON().Object().Value("data")
-}
-
-func (r *Response) DataArray() *httpexpect.Array {
+func (r *Response) RequireDataArray() *httpexpect.Array {
 	r.t.Helper()
 	return r.resp.JSON().Object().Value("data").Array()
 }
 
-func (r *Response) Cookies() *AuthContext {
+func (r *Response) RequireDataObject() *httpexpect.Object {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("data").Object()
+}
+
+func (r *Response) RequireDataValue() *httpexpect.Value {
+	r.t.Helper()
+	return r.resp.JSON().Object().Value("data")
+}
+
+func (r *Response) AuthCookies() *AuthContext {
 	r.t.Helper()
 	access := r.resp.Cookie("access_token")
 	refresh := r.resp.Cookie("refresh_token")
@@ -84,7 +76,7 @@ func (r *Response) JSON() *httpexpect.Object {
 	return r.resp.JSON().Object()
 }
 
-func (r *Response) Trace() *httpexpect.Array {
+func (r *Response) RequireTrace() *httpexpect.Array {
 	r.t.Helper()
 	return r.resp.JSON().Object().Value("trace").Array()
 }
@@ -92,7 +84,7 @@ func (r *Response) Trace() *httpexpect.Array {
 func (r *Response) TraceContains(expected ...string) *Response {
 	r.t.Helper()
 
-	trace := r.Trace()
+	trace := r.RequireTrace()
 	raw := trace.Raw()
 
 	for _, exp := range expected {
@@ -107,33 +99,30 @@ func (r *Response) TraceContains(expected ...string) *Response {
 		}
 
 		if !found {
-			r.t.Fatalf("expected trace to contain %q, but it did not.\ntrace=%v", exp, raw)
+			assert.Fail(r.t, "missing trace entry", "expected trace to contain %q, but it did not.\ntrace=%v", exp, raw)
 		}
 	}
 
 	return r
 }
 
-func (r *Response) MessageContains(expected string) *Response {
+func (r *Response) HasMessage(expected string) *Response {
 	r.t.Helper()
-
 	msg := r.resp.JSON().Object().Value("message").String().Raw()
-
-	if !strings.Contains(msg, expected) {
-		r.t.Fatalf("expected message to contain %q, but it did not.\nmessage=%v", expected, msg)
-	}
-
+	assert.Contains(r.t, msg, expected, "expected message to contain %q, but got %q", expected, msg)
 	return r
 }
 
-func (r *Response) ExpectErrorID(expected apierr.ID) *Response {
+func (r *Response) HasModule(expected string) *Response {
 	r.t.Helper()
+	msg := r.resp.JSON().Object().Value("module").String().Raw()
+	assert.Contains(r.t, msg, expected, "expected module to contain %q, but got %q", expected, msg)
+	return r
+}
 
+func (r *Response) HasErrID(expected apierr.ID) *Response {
+	r.t.Helper()
 	errID := r.resp.JSON().Object().Value("error_id").String().Raw()
-
-	if errID != string(expected) {
-		r.t.Fatalf("expected error id %q, but it was %q", expected, errID)
-	}
-
+	assert.Equal(r.t, string(expected), errID, "expected error id %q, but it was %q", string(expected), errID)
 	return r
 }

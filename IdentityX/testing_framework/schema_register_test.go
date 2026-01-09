@@ -7,8 +7,8 @@ import (
 )
 
 func testSchemaRegister(t *testing.T, suite *TestSuite) {
-	client := suite.Client(t)
-	user := client.User("schemas_register@mail.com", ValidPassword).
+	client := suite.NewClient(t)
+	user := client.NewUser("schemas_register@mail.com", ValidPassword).
 		Register().
 		Login().
 		CreateProject("schema testing")
@@ -16,7 +16,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	projectID := user.ProjectID
 	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -24,7 +24,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"flow_id":     "estudante",
 			}).
 			Expect(http.StatusCreated).
-			Value()
+			RequireDataValue()
 
 		spec := map[string]interface{}{
 			"id":                 StoreString{Into: &schemaID, Matcher: AnyUUID{}},
@@ -43,10 +43,10 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 
 	var schemaVersion1ID string
 	t.Run("DraftVersion", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
-			Value()
+			RequireDataValue()
 
 		spec := map[string]interface{}{
 			"id":             StoreString{Into: &schemaVersion1ID, Matcher: AnyUUID{}},
@@ -58,10 +58,10 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
-			Value()
+			RequireDataValue()
 
 		spec := map[string]interface{}{
 			"id":                 AsString{schemaID, AnyUUID{}},
@@ -77,7 +77,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFields", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -116,8 +116,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusCreated).
-			MessageContains("created fields").
-			Value()
+			HasMessage("created fields").
+			RequireDataValue()
 
 		spec := []interface{}{
 			map[string]interface{}{
@@ -138,17 +138,17 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
-			MessageContains("published schema version")
+			HasMessage("published schema version")
 	})
 
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
-		authClient := suite.Client(t).Auth(user.auth)
+		authClient := suite.NewClient(t).Auth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusOK).
-			MessageContains("published schema")
+			HasMessage("published schema")
 	})
 
 	t.Run("RegisterOnSchemaNoCustomFields", func(t *testing.T) {
@@ -160,8 +160,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("the schema custom fields are required on a schema register").
-			ExpectErrorID(apierr.RequestMissingSchemaCustomFields)
+			HasErrID(apierr.RequestMissingSchemaCustomFields).
+			HasMessage("the schema custom fields are required on a schema register")
 	})
 
 	t.Run("RegisterOnSchemaEmptyCustomFields", func(t *testing.T) {
@@ -174,8 +174,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"custom_fields": map[string]interface{}{},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("missing required field").
-			ExpectErrorID(apierr.FieldRequiredMissing)
+			HasErrID(apierr.FieldRequiredMissing).
+			HasMessage("missing required field")
 	})
 
 	t.Run("RegisterOnSchemaNoCursoField", func(t *testing.T) {
@@ -190,8 +190,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("missing required field").
-			ExpectErrorID(apierr.FieldRequiredMissing)
+			HasErrID(apierr.FieldRequiredMissing).
+			HasMessage("missing required field")
 	})
 
 	t.Run("RegisterOnSchemaNoMatriculaField", func(t *testing.T) {
@@ -206,8 +206,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("missing required field").
-			ExpectErrorID(apierr.FieldRequiredMissing)
+			HasErrID(apierr.FieldRequiredMissing).
+			HasMessage("missing required field")
 	})
 
 	t.Run("RegisterOnSchemaUnknownField", func(t *testing.T) {
@@ -222,8 +222,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("unknown custom field").
-			ExpectErrorID(apierr.FieldNotDefinedInSchema)
+			HasErrID(apierr.FieldNotDefinedInSchema).
+			HasMessage("unknown custom field")
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeStringOnInt", func(t *testing.T) {
@@ -238,8 +238,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("invalid field type").
-			ExpectErrorID(apierr.FieldTypeMismatch)
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeIntOnString", func(t *testing.T) {
@@ -254,8 +254,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			MessageContains("invalid field type").
-			ExpectErrorID(apierr.FieldTypeMismatch)
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
 	})
 
 	t.Run("RegisterOnSchemaSuccess", func(t *testing.T) {
@@ -272,7 +272,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusCreated).
-			MessageContains("Registered user")
+			HasMessage("Registered user")
 	})
 
 	t.Run("RegisterOnSchemaDuplicateEmail", func(t *testing.T) {
@@ -289,16 +289,17 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			MessageContains("error registering user").
+			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasMessage("error registering user").
 			TraceContains("email already in use")
 	})
 
 	t.Run("SchemaUserSessionInfo", func(t *testing.T) {
-		client := suite.Client(t)
-		schemaUser := client.User("client@email.com", ValidPassword).ProjectLogin(user.ProjectID)
+		client := suite.NewClient(t)
+		schemaUser := client.NewUser("client@email.com", ValidPassword).ProjectLogin(user.ProjectID)
 		data := schemaUser.AuthedClient().GET("/sessions/me").
 			Expect(http.StatusOK).
-			Value()
+			RequireDataValue()
 
 		spec := map[string]interface{}{
 			"refresh_expire_date": AnyNumber{},
@@ -331,5 +332,102 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 		}
 
 		Validate(t, data, spec)
+	})
+
+	t.Run("SchemaStateEdgeCases", func(t *testing.T) {
+		client := suite.NewClient(t)
+		// New user/project for this isolation
+		user := client.NewUser("schema_state@mail.com", ValidPassword).
+			Register().
+			Login().
+			CreateProject("Schema State Project")
+
+		projectID := user.ProjectID
+		authClient := suite.NewClient(t).Auth(user.auth)
+
+		// 1. Create a schema but don't create any version
+		var schemaID string
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "No Version Schema",
+				"flow_id":     "noversion",
+			}).
+			Expect(http.StatusCreated).
+			RequireDataValue()
+
+		schemaID = data.Path("$.id").String().Raw()
+
+		t.Run("RegisterFailsNoVersion", func(t *testing.T) {
+			client.POST("/projects/"+projectID+"/register").
+				WithQuery("schema_type", "context").
+				WithQuery("flow_id", "noversion").
+				WithBody(map[string]interface{}{
+					"email":         "user@noversion.com",
+					"password":      ValidPassword,
+					"custom_fields": map[string]interface{}{},
+				}).
+				Expect(http.StatusBadRequest).
+				HasErrID(apierr.SchemaNoPublishedVersion).
+				HasMessage("something")
+		})
+
+		// 2. Create a version but don't publish it
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated)
+
+		// Add a field so it could potentially be published later
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "test",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Test",
+						"position": 0,
+						"required": true,
+					},
+				},
+			}).
+			Expect(http.StatusCreated)
+
+		t.Run("RegisterFailsVersionNotPublished", func(t *testing.T) {
+			// Even with a version draft, it's not the "current_version" yet because it's not published
+			client.POST("/projects/"+projectID+"/register").
+				WithQuery("schema_type", "context").
+				WithQuery("flow_id", "noversion").
+				WithBody(map[string]interface{}{
+					"email":    "user@notpublished.com",
+					"password": ValidPassword,
+					"custom_fields": map[string]interface{}{
+						"test": "val",
+					},
+				}).
+				Expect(http.StatusBadRequest).
+				HasErrID(apierr.SchemaNoPublishedVersion).
+				HasMessage("something")
+		})
+
+		// 3. Publish the version but not the schema
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK)
+
+		t.Run("RegisterFailsSchemaNotPublished", func(t *testing.T) {
+			// Schema is still in 'draft' status
+			client.POST("/projects/"+projectID+"/register").
+				WithQuery("schema_type", "context").
+				WithQuery("flow_id", "noversion").
+				WithBody(map[string]interface{}{
+					"email":    "user@schemadraft.com",
+					"password": ValidPassword,
+					"custom_fields": map[string]interface{}{
+						"test": "val",
+					},
+				}).
+				Expect(http.StatusBadRequest).                // Should be BadRequest or NotFound depending on implementation
+				HasMessage("schema has no published version") // Or specific error if schema is draft
+			// TODO: Fix error messages for these tests
+		})
 	})
 }
