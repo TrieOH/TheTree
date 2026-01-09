@@ -93,6 +93,33 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 				TraceContains("email already in use")
 		})
 
+		t.Run("InvalidSchemaTypeRegister", func(t *testing.T) {
+			client := suite.Client(t)
+			client.POST("/projects/"+user.ProjectID+"/register").
+				WithQuery("schema_type", "invalid").
+				WithBody(map[string]interface{}{
+					"email":    "invalid_schema@email.com",
+					"password": user.Password,
+				}).
+				Expect(http.StatusBadRequest).
+				MessageContains("invalid schema type").
+				ExpectErrorID(apierr.SchemaInvalidSchemaType)
+		})
+
+		t.Run("FlowIDSameAsTypeRegister", func(t *testing.T) {
+			client := suite.Client(t)
+			client.POST("/projects/"+user.ProjectID+"/register").
+				WithQuery("schema_type", "context").
+				WithQuery("flow_id", "context").
+				WithBody(map[string]interface{}{
+					"email":    "flow_same_as_type@email.com",
+					"password": user.Password,
+				}).
+				Expect(http.StatusBadRequest).
+				MessageContains("flow id can't be the same as a schema type").
+				ExpectErrorID(apierr.SchemaInvalidFlowID)
+		})
+
 		t.Run("MetadataRegisterOnCoreDenied", func(t *testing.T) {
 			client := suite.Client(t)
 			client.POST("/projects/" + user.ProjectID + "/register").
@@ -150,7 +177,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Try using revoked session
 			loggedInUser.AuthedClient().POST("/auth/logout").
 				Expect(http.StatusUnauthorized).
-				Error("AuthMW", "refresh token is revoked")
+				Error("AuthMW", "session not found or revoked")
 		})
 	})
 
@@ -279,7 +306,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Session should be invalid
 			revoked.AuthedClient().GET("/sessions").
 				Expect(http.StatusUnauthorized).
-				Error("AuthMW", "refresh token is revoked")
+				Error("AuthMW", "session not found or revoked")
 		})
 	})
 
@@ -305,8 +332,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		oldClient.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			ExpectErrorID(apierr.TokenRevoked).
-			MessageContains("refresh token is revoked")
+			ExpectErrorID(apierr.SessionUnauthorized).
+			MessageContains("session not found or revoked")
 	})
 
 	t.Run("ProjectUsersProjects", func(t *testing.T) {

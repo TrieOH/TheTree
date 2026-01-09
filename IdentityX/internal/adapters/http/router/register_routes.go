@@ -29,16 +29,15 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 
 	userRepo := persistence.NewUserRepo(queries, logging, tracer)
 	sessionRepo := persistence.NewSessionRepo(queries, logging, tracer)
-	revokedTokensRepo := persistence.NewRevokedRefreshTokensRepo(queries, logging, tracer)
 	projectRepo := persistence.NewProjectRepo(queries, logging, tracer)
 	projectUserRepo := persistence.NewProjectUserRepo(queries, logging, tracer)
 	schemaRepo := persistence.NewSchemaRepo(queries, logging, tracer)
 	schemaVersionRepo := persistence.NewSchemaVersionRepo(queries, logging, tracer)
 	fieldsRepo := persistence.NewFieldsRepo(queries, logging, tracer)
 
-	authUC := auth.New(userRepo, sessionRepo, revokedTokensRepo, schemaRepo, schemaVersionRepo, fieldsRepo, projectUserRepo, txRunner)
+	authUC := auth.New(userRepo, sessionRepo, schemaRepo, schemaVersionRepo, fieldsRepo, projectUserRepo, txRunner)
 	projectUC := project.New(projectRepo)
-	sessionUC := session.New(sessionRepo, revokedTokensRepo)
+	sessionUC := session.New(sessionRepo)
 	schemaUC := schema.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo)
 	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
 	schemaFieldUC := schema_fields.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
@@ -50,7 +49,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	schemaVersionHandler := http2.NewSchemaVersionHandler(schemaVersionUC)
 	schemaFieldsHandler := http2.NewSchemaFieldsHandler(schemaFieldUC)
 
-	authMW := middleware.NewAuthMiddleware(revokedTokensRepo, authMWTracer)
+	authMW := middleware.NewAuthMiddleware(sessionRepo, authMWTracer)
 
 	registerAuthRoutes(r, authHandler, authMW)
 	registerSessionRoutes(r, sessionHandler, authMW)

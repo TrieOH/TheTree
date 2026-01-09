@@ -124,6 +124,38 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Session should be invalid
 		user.AuthedClient().GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			Error("AuthMW", "refresh token is revoked")
+			Error("AuthMW", "session not found or revoked")
+	})
+
+	t.Run("ExpiredSessionNotListed", func(t *testing.T) {
+		// Create a new user
+		user := client.WithT(t).User("expired@mail.com", ValidPassword).Register().Login()
+
+		// Manually insert an expired session for this user
+		_, err := suite.DB.Exec(`
+			INSERT INTO sessions (
+				user_id, issued_at, user_agent, user_ip, expires_at, user_type, created_at, updated_at
+			) VALUES (
+				(SELECT id FROM users WHERE email = 'expired@mail.com'),
+				NOW() - INTERVAL '2 days',
+				'Expired Agent',
+				'127.0.0.1',
+				NOW() - INTERVAL '1 day',
+				'client',
+				NOW(),
+				NOW()
+			)
+		`)
+		if err != nil {
+			t.Fatalf("Failed to insert expired session: %v", err)
+		}
+
+		// Verify that the expired session is NOT in the list
+		arr := user.AuthedClient().GET("/sessions").
+			Expect(http.StatusOK).
+			DataArray()
+
+		// Should only have the active login session (1), ignoring the manually inserted expired one
+		arr.Length().IsEqual(1)
 	})
 }

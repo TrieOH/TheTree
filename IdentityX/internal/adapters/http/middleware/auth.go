@@ -16,12 +16,12 @@ import (
 )
 
 type AuthMiddleware struct {
-	RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepository
-	tracer                   trace.Tracer
+	sessions outbound.SessionRepository
+	tracer   trace.Tracer
 }
 
-func NewAuthMiddleware(RevokedRefreshTokensRepo outbound.RevokedRefreshTokenRepository, tracer trace.Tracer) *AuthMiddleware {
-	return &AuthMiddleware{RevokedRefreshTokensRepo: RevokedRefreshTokensRepo, tracer: tracer}
+func NewAuthMiddleware(sessions outbound.SessionRepository, tracer trace.Tracer) *AuthMiddleware {
+	return &AuthMiddleware{sessions: sessions, tracer: tracer}
 }
 
 // Auth is a middleware function that checks for valid access and refresh tokens.
@@ -75,12 +75,6 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			span.SetAttributes(
-				attribute.String("user.type", accessToken.Sub.UserType),
-				attribute.String("user.id", accessToken.Sub.ID.String()),
-				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
-			)
-
 			if accessToken.Sub.ProjectID != nil {
 				span.SetAttributes(
 					attribute.String("user.project_id", accessToken.Sub.ProjectID.String()),
@@ -112,19 +106,40 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			var isRevoked bool
-			isRevoked, err = mw.RevokedRefreshTokensRepo.IsRevoked(ctx, refreshTokenJTI)
+			sess, err := mw.sessions.GetByTokenID(ctx, refreshTokenJTI)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w) // not recording to domain since IsRevoked already does that
+				if apierr.IsNotFound(err) {
+					mwErr := apierr.ErrUnauthorized.WithMsg("session not found or revoked").WithID(apierr.SessionUnauthorized).WithCause(err)
+					ErrToResp(mwErr).WithModule("AuthMW").Send(w)
+					apierr.RecordDomainError(span, mwErr)
+					return
+				}
+				ErrToResp(err).WithModule("AuthMW").Send(w) // unexpected DB / infra error
+				apierr.RecordDomainError(span, err)
 				return
 			}
 
-			if isRevoked {
-				mwErr := apierr.ErrUnauthorized.WithMsg("refresh token is revoked").WithID(apierr.TokenRevoked)
+			if sess.SessionID != accessToken.Sub.SessionID {
+				mwErr := apierr.ErrUnauthorized.WithMsg("token/session mismatch").WithID(apierr.TokenSessionMismatch)
 				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, mwErr)
 				return
 			}
+
+			if sess.RevokedAt != nil {
+				// should never happen due to query guarding against this, just being defensive
+				// system error for appropriate priority if it happens, since it should never happen
+				mwErr := apierr.ErrUnauthorized.WithMsg("session revoked").WithID(apierr.SessionRevoked)
+				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
+				apierr.RecordSystemError(span, mwErr)
+				return
+			}
+
+			span.SetAttributes(
+				attribute.String("user.type", accessToken.Sub.UserType),
+				attribute.String("user.id", accessToken.Sub.ID.String()),
+				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
+			)
 
 			var principal *authz.Principal
 			principal, err = authz.NewPrincipal(accessToken, refreshToken)

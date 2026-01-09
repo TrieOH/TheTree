@@ -83,7 +83,6 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.Out
 	if err != nil {
 		return nil, err
 	}
-
 	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
 		return nil, err
@@ -209,6 +208,7 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 	if err != nil {
 		return err
 	}
+
 	err = uc.projects.Delete(ctx, *pid, principal.UserID)
 	if err != nil {
 		return err

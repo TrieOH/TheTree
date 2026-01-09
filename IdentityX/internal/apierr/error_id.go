@@ -53,6 +53,7 @@ const (
 	SessionSelfRevokeForbidden ID = "SESS_008"
 	SessionUpdateFailed        ID = "SESS_009"
 	SessionMissingID           ID = "SESS_010"
+	SessionUnauthorized        ID = "SESS_011"
 )
 
 const (
@@ -74,6 +75,8 @@ const (
 	TokenInvalidID        ID = "TOKEN_016"
 	TokenRevoked          ID = "TOKEN_017"
 	TokenRevokeFailed     ID = "TOKEN_018"
+	TokenIDMissing        ID = "TOKEN_019"
+	TokenSessionMismatch  ID = "TOKEN_020"
 )
 
 const (

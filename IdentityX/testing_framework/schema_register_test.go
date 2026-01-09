@@ -275,6 +275,24 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			MessageContains("Registered user")
 	})
 
+	t.Run("RegisterOnSchemaDuplicateEmail", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "client@email.com", // Same email as above
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4,
+				},
+			}).
+			Expect(http.StatusConflict).
+			MessageContains("error registering user").
+			TraceContains("email already in use")
+	})
+
 	t.Run("SchemaUserSessionInfo", func(t *testing.T) {
 		client := suite.Client(t)
 		schemaUser := client.User("client@email.com", ValidPassword).ProjectLogin(user.ProjectID)

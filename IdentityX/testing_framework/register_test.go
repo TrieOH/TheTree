@@ -40,6 +40,18 @@ func testRegister(t *testing.T, suite *TestSuite) {
 		}
 	})
 
+	t.Run("PasswordTooLong", func(t *testing.T) {
+		client := suite.Client(t)
+		longPass := "A1@" + string(make([]byte, 70)) // 3 chars + 70 chars = 73 chars > 72
+		client.POST("/auth/register").
+			WithBody(map[string]string{
+				"email":    "longpass@mail.com",
+				"password": longPass,
+			}).
+			Expect(http.StatusBadRequest).
+			ValidationError("(password)") // Validation middleware catches this first
+	})
+
 	t.Run("Success", func(t *testing.T) {
 		client := suite.Client(t)
 		client.User("new@mail.com", ValidPassword).Register()

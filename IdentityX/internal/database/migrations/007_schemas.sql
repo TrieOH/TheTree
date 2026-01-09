@@ -222,7 +222,12 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     ON schema_versions (schema_id)
     WHERE status = 'draft';
 
+
+ALTER TABLE sessions
+    ADD COLUMN revoked_at TIMESTAMP NULL;
+
 -- +goose Down
+ALTER TABLE sessions DROP COLUMN IF EXISTS revoked_at;
 DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
 
