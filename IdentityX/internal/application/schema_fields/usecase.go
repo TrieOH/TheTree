@@ -137,7 +137,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 			return nil, err
 		}
 		if !field.IsValidOwnerType(f.Owner) {
-			err = apierr.ErrInvalidInput.WithMsg("invalid owner type (" + f.Type + ") for field: " + f.Key).WithID(apierr.FieldInvalidOwner)
+			err = apierr.ErrInvalidInput.WithMsg("invalid owner type (" + f.Owner + ") for field: " + f.Key).WithID(apierr.FieldInvalidOwner)
 			apierr.RecordDomainError(span, err)
 			return nil, err
 		}
