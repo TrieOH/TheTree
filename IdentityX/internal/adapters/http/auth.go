@@ -77,7 +77,7 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 
 		Agent: r.UserAgent(),
-		IP:    GetClientIP(r, HTTPProxyConfig).String(),
+		IP:    ClientIPString(GetClientIP(r, HTTPProxyConfig)),
 	}
 
 	tokens, err := handler.auth.Login(r.Context(), in)
@@ -153,7 +153,7 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	in := inbounds.RefreshInput{
 		RefreshCookie: refreshTokenCookie,
 		Agent:         r.UserAgent(),
-		IP:            GetClientIP(r, HTTPProxyConfig).String(),
+		IP:            ClientIPString(GetClientIP(r, HTTPProxyConfig)),
 	}
 
 	ctx := r.Context()
@@ -264,7 +264,7 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	}
 
 	agent := r.UserAgent()
-	ip := GetClientIP(r, HTTPProxyConfig).String()
+	ip := ClientIPString(GetClientIP(r, HTTPProxyConfig))
 
 	in := inbounds.ProjectLoginInput{
 		Email:     req.Email,

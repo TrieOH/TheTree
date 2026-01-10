@@ -83,6 +83,13 @@ type ProxyConfig struct {
 
 var HTTPProxyConfig = ProxyConfig{}
 
+func ClientIPString(ip netip.Addr) string {
+	if !ip.IsValid() {
+		return "unknown"
+	}
+	return ip.String()
+}
+
 // GetClientIP gets the client's IP address from the request.
 // It checks the X-Forwarded-For and X-Real-IP headers first, and then falls back to the remote address.
 func GetClientIP(r *http.Request, cfg ProxyConfig) netip.Addr {
@@ -144,7 +151,8 @@ func isTrustedProxy(ip netip.Addr, trusted []netip.Prefix) bool {
 func parseXForwardedFor(xff string, trusted []netip.Prefix) (netip.Addr, bool) {
 	parts := strings.Split(xff, ",")
 
-	for _, part := range parts {
+	for i := len(parts) - 1; i >= 0; i-- {
+		part := parts[i]
 		part = strings.TrimSpace(part)
 
 		ip, err := netip.ParseAddr(part)
