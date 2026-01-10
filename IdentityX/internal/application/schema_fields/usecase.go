@@ -131,6 +131,16 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 
 	createdFields := make([]field.Field, 0, len(in.Fields))
 	for _, f := range in.Fields {
+		if !field.IsValidFieldType(f.Type) {
+			err = apierr.ErrInvalidInput.WithMsg("invalid field type (" + f.Type + ") for field: " + f.Key).WithID(apierr.FieldInvalidType)
+			apierr.RecordDomainError(span, err)
+			return nil, err
+		}
+		if !field.IsValidOwnerType(f.Owner) {
+			err = apierr.ErrInvalidInput.WithMsg("invalid owner type (" + f.Type + ") for field: " + f.Key).WithID(apierr.FieldInvalidOwner)
+			apierr.RecordDomainError(span, err)
+			return nil, err
+		}
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
 			SchemaID:        *sid,

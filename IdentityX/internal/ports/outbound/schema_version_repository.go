@@ -13,6 +13,7 @@ type SchemaVersionRepository interface {
 	Archive(ctx context.Context, toArchive schema.Version) error
 	GetCurrent(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error)
 	GetLatest(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error)
+	GetLatestForUpdate(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error)
 	List(ctx context.Context, schemaID uuid.UUID) ([]schema.Version, error)
 	CopyOnDraft(ctx context.Context, schemaVersionID uuid.UUID) (*schema.Version, error)
 }

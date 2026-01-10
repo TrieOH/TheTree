@@ -5,6 +5,7 @@ import (
 	"GoAuth/internal/database"
 	"GoAuth/internal/utils"
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -94,13 +95,13 @@ func (s *TestSuite) NewClient(t *testing.T) *Client {
 func setupDatabase() (*sql.DB, error) {
 	db, err := database.WaitForDB(30 * time.Second)
 	if err != nil {
-		log.Fatalf("Failed to connect DB: %v", err)
+		return nil, fmt.Errorf("failed to connect DB: %w", err)
 	}
 	if err = database.RunMigrations(db, "../internal/database/migrations"); err != nil {
-		log.Fatalf("Failed migrations: %v", err)
+		return nil, fmt.Errorf("failed migrations: %w", err)
 	}
 	if err = database.SetJWTMasterKey(db); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	return db, nil
 }

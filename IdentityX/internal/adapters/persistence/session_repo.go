@@ -23,7 +23,7 @@ type sessionRepo struct {
 }
 
 func (repo *sessionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q

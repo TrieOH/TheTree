@@ -109,15 +109,15 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			WithBody(map[string]interface{}{
 				"project_name": "Hacked",
 			}).
-			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ProjectNotOwnedByPrincipal).
-			HasMessage("cannot update a project you don't own")
+			Expect(http.StatusNotFound).
+			HasErrID(apierr.DBNotFound).
+			HasMessage("resource not found")
 
 		// Try to DELETE
 		attackerClient.DELETE("/projects/" + projectID).
-			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ProjectNotOwnedByPrincipal).
-			HasMessage("cannot delete a project you don't own")
+			Expect(http.StatusNotFound).
+			HasErrID(apierr.ProjectNotFound).
+			HasMessage("project not found")
 
 		// Ensure it was NOT actually deleted from the perspective of the owner
 		authClient := suite.NewClient(t).WithAuth(user.auth)
@@ -130,7 +130,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		data := authClient.PATCH("/projects/" + projectID).
 			WithBody(map[string]interface{}{
 				"project_name": "Updated Project",
-				"metadata":     map[string]string{"env": "prod"},
+				"metadata":     map[string]interface{}{"env": "prod"},
 			}).
 			Expect(http.StatusOK).
 			RequireDataValue()

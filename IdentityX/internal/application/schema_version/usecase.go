@@ -112,7 +112,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	var latest *schema.Version
-	latest, err = uc.versions.GetLatest(ctx, *sid)
+	latest, err = uc.versions.GetLatestForUpdate(ctx, *sid)
 
 	if err != nil && !apierr.IsNotFound(err) {
 		return nil, err
@@ -249,7 +249,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if latest.BasedOnVersionID == nil {
-		if err := uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
+		if err = uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
 			return err
 		}
 
@@ -275,7 +275,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	if err := uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
+	if err = uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
 		return err
 	}
 

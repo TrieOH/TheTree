@@ -21,7 +21,7 @@ type schemaRepo struct {
 }
 
 func (repo *schemaRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
@@ -204,32 +204,6 @@ func (repo *schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projec
 	}
 
 	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
-
-	var foundSchema schema.Schema
-	mapSchemaFromDB(&foundSchema, &sqlcSchema)
-	return &foundSchema, nil
-}
-
-func (repo *schemaRepo) FindByFlowID(ctx context.Context, flowID string, projectID uuid.UUID) (*schema.Schema, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.FindByFlowID",
-		trace.WithAttributes(
-			attribute.String("schema.project_id", projectID.String()),
-		),
-	)
-	defer span.End()
-
-	sqlcSchema, err := repo.queries(ctx).GetSchemaByFlowID(ctx, sqlc.GetSchemaByFlowIDParams{
-		FlowID:    flowID,
-		ProjectID: projectID,
-	})
-	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
-	}
-
-	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
-	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
 
 	var foundSchema schema.Schema
 	mapSchemaFromDB(&foundSchema, &sqlcSchema)
