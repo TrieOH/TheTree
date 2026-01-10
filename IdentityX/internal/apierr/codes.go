@@ -4,6 +4,7 @@ import "errors"
 
 const (
 	InvalidInput Code = "INVALID_INPUT"
+	BadRequest   Code = "BAD_REQUEST"
 	NotFound     Code = "NOT_FOUND"
 	Conflict     Code = "CONFLICT"
 	Unauthorized Code = "UNAUTHORIZED"
@@ -36,6 +37,11 @@ func IsInvalidInput(err error) bool {
 	return ok && apiErr.Code == InvalidInput
 }
 
+func IsBadRequest(err error) bool {
+	apiErr, ok := As(err)
+	return ok && apiErr.Code == BadRequest
+}
+
 func IsUnauthorized(err error) bool {
 	apiErr, ok := As(err)
 	return ok && apiErr.Code == Unauthorized
@@ -60,7 +66,7 @@ func IsSystemError(err error) bool {
 	}
 
 	switch apiErr.Code {
-	case InvalidInput, NotFound, Conflict, Unauthorized, Forbidden:
+	case InvalidInput, BadRequest, NotFound, Conflict, Unauthorized, Forbidden:
 		return false
 	default:
 		return true

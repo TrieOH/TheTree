@@ -7,6 +7,12 @@ var (
 		ID:      SystemInternalError,
 	}
 
+	ErrBadRequest = Error{
+		Code:    BadRequest,
+		Message: "bad request",
+		ID:      SystemInternalError,
+	}
+
 	ErrNotFound = Error{
 		Code:    NotFound,
 		Message: "resource not found",

@@ -1,50 +1,54 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
 )
 
 func testLogin(t *testing.T, suite *TestSuite) {
 	// Create user in parent test context
-	client := suite.Client(t)
-	user := client.User("login@mail.com", ValidPassword).Register()
+	client := suite.NewClient(t)
+	user := client.WithCredentials("login@mail.com", ValidPassword).Register()
 
 	t.Run("WrongPassword", func(t *testing.T) {
-		client := suite.Client(t)
+		client := suite.NewClient(t)
 		client.POST("/auth/login").
 			WithBody(map[string]string{
-				"email":    user.Email,
+				"email":    user.email,
 				"password": "WrongPass123!",
 			}).
 			Expect(http.StatusUnauthorized).
-			Error("go-auth-test", "invalid email or password")
+			HasErrID(apierr.AuthInvalidCredentials).
+			HasMessage("invalid email or password")
 	})
 
 	t.Run("WrongEmail", func(t *testing.T) {
-		client := suite.Client(t)
+		client := suite.NewClient(t)
 		client.POST("/auth/login").
 			WithBody(map[string]string{
 				"email":    "wrong@mail.com",
-				"password": user.Password,
+				"password": user.password,
 			}).
 			Expect(http.StatusUnauthorized).
-			Error("go-auth-test", "invalid email or password")
+			HasErrID(apierr.AuthInvalidCredentials).
+			HasMessage("invalid email or password")
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		client := suite.Client(t)
-		client.User(user.Email, user.Password).Login()
+		client := suite.NewClient(t)
+		client.WithCredentials(user.email, user.password).Login()
 	})
 
 	t.Run("Logout", func(t *testing.T) {
-		client := suite.Client(t)
-		loggedInUser := client.User(user.Email, user.Password).Login()
+		client := suite.NewClient(t)
+		loggedInUser := client.WithCredentials(user.email, user.password).Login()
 		loggedInUser.Logout()
 
 		// Try using revoked session
-		loggedInUser.AuthedClient().POST("/auth/logout").
+		loggedInUser.POST("/auth/logout").
 			Expect(http.StatusUnauthorized).
-			Error("AuthMW", "session not found or revoked")
+			HasErrID(apierr.SessionUnauthorized).
+			HasMessage("session not found or revoked")
 	})
 }

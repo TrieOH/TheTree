@@ -34,10 +34,22 @@ func (uc *UseCase) validateAndConstructMetadata(
 		return nil, apiErr
 	}
 
+	if registerSchema.Status == schema.StatusDraft {
+		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema").WithID(apierr.ProjectUserRegisterOnSchemaDraft)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
+	}
+
 	var registerVersion *schema.Version
 	registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	if registerVersion.Status == schema.VersionStatusDraft {
+		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionDraft)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
 	}
 
 	if registerVersion.ID != *registerSchema.CurrentVersionID {
