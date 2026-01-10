@@ -43,3 +43,10 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 
 	return tp.Shutdown, nil
 }
+
+type TracerName string
+
+const (
+	RepoTracerName   TracerName = "goauth/repo"
+	AuthMWTracerName TracerName = "goauth/auth-middleware"
+)

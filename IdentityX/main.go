@@ -8,7 +8,6 @@ import (
 	"net/http"
 )
 
-// noop for ci test
 func main() {
 	ctx := context.Background()
 

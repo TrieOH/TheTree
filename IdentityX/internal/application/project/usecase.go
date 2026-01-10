@@ -1,15 +1,15 @@
 package project
 
 import (
-	"GoAuth/internal/adapters/observability/tracing"
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/project"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"GoAuth/internal/utils"
 	"context"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -23,23 +23,25 @@ type UseCase struct {
 	projects outbound.ProjectRepository
 }
 
+var _ inbounds.ProjectService = (*UseCase)(nil)
+
 func New(
 	projects outbound.ProjectRepository,
-) *UseCase {
+) inbounds.ProjectService {
 	return &UseCase{projects: projects}
 }
 
-func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.CreateProject")
+// Create handles the business logic for creating a new project.
+// It requires a valid principal in the context, generates a new key pair for the project,
+// and then creates the project in the database.
+func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
-
-	tracing.AnnotateAccessClaims(span, accessClaims)
 
 	pubKey, privKey, err := utils.GenerateEd25519Keys()
 	if err != nil {
@@ -50,7 +52,7 @@ func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*O
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
 		ProjectName: in.ProjectName,
-		OwnerID:     accessClaims.Sub.ID,
+		OwnerID:     principal.UserID,
 		Metadata:    in.Metadata,
 		IsActive:    true,
 		PubKey:      pubKey,
@@ -66,39 +68,26 @@ func (uc *UseCase) CreateProject(ctx context.Context, in CreateProjectInput) (*O
 		attribute.String("project.name", createdProject.ProjectName),
 	)
 
-	return &OutputProject{
-		ID:          createdProject.ID,
-		ProjectName: createdProject.ProjectName,
-		OwnerID:     createdProject.OwnerID,
-		Metadata:    createdProject.Metadata,
-		IsActive:    createdProject.IsActive,
-		CreatedAt:   createdProject.CreatedAt,
-		UpdatedAt:   createdProject.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(createdProject), nil
 }
 
-func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectByID",
+// GetByID handles the business logic for retrieving a project by its ID.
+// It requires a valid principal in the context and that the principal is the owner of the project.
+func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetByID",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
-
-	tracing.AnnotateAccessClaims(span, accessClaims)
-
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
-
-	proj, err := uc.projects.GetByID(ctx, pid, accessClaims.Sub.ID)
+	proj, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,61 +97,50 @@ func (uc *UseCase) GetProjectByID(ctx context.Context, projectID string) (*Outpu
 		attribute.String("project.name", proj.ProjectName),
 	)
 
-	return &OutputProject{
-		ID:          proj.ID,
-		ProjectName: proj.ProjectName,
-		OwnerID:     proj.OwnerID,
-		Metadata:    proj.Metadata,
-		IsActive:    proj.IsActive,
-		CreatedAt:   proj.CreatedAt,
-		UpdatedAt:   proj.UpdatedAt,
-	}, nil
+	return inbounds.OutputProjectFromProject(proj), nil
 }
 
-func (uc *UseCase) ListProjects(ctx context.Context) ([]OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.ListProjects")
+// List handles the business logic for listing all projects for the authenticated user.
+func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
-
-	projects, err := uc.projects.List(ctx, accessClaims.Sub.ID)
+	projects, err := uc.projects.List(ctx, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
 
 	span.SetAttributes(attribute.Int("projects.count", len(projects)))
 
-	return OutputProjectSliceFromProjectSlice(projects), nil
+	return inbounds.OutputProjectSliceFromProjectSlice(projects), nil
 }
 
-func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[string]any, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetProjectJWKS",
+// GetJWKS handles the business logic for retrieving the JWKS for a project.
+// It retrieves the public key for the project and converts it to a JWK set.
+func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]any, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()
 
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
-
-	pubKey, err := uc.projects.GetPublicKeyByID(ctx, pid)
+	pubKey, err := uc.projects.GetPublicKeyByID(ctx, *pid)
 	if err != nil {
 		return nil, err
 	}
 
 	parsedKey, err := utils.ParseEd25519PublicKey(pubKey)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("error parsing project public key").WithID(apierr.ProjectErrorParsingKeys).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
+		apiErr := apierr.ErrInternal.WithMsg("error parsing project public key").WithID(apierr.ProjectErrorParsingKeys).WithCause(err)
+		apierr.RecordSystemError(span, apiErr)
 		return nil, apiErr
 	}
 
@@ -170,28 +148,26 @@ func (uc *UseCase) GetProjectJWKS(ctx context.Context, projectID string) (map[st
 	return jwks, nil
 }
 
-func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput) (*OutputProject, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.UpdateProjectByID",
-		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
-	)
+// Update handles the business logic for updating a project.
+// It requires a valid principal in the context and that the principal is the owner of the project.
+// It retrieves the project, updates the fields, and then saves the changes to the database.
+func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
-
-	pid, err := uuid.Parse(in.ProjectID)
+	pid, err := validation.RequireProjectID(span, in.ProjectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
 
-	newProject, err := uc.projects.GetByID(ctx, pid, accessClaims.Sub.ID)
+	span.SetAttributes(attribute.String("project.id", *in.ProjectID))
+
+	newProject, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,42 +178,38 @@ func (uc *UseCase) UpdateProjectByID(ctx context.Context, in UpdateProjectInput)
 	newProject.Metadata = in.Metadata
 
 	updatedProject, err := uc.projects.Update(ctx, project.Project{
-		OwnerID:     accessClaims.Sub.ID,
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
 		Metadata:    newProject.Metadata,
 	},
-		accessClaims.Sub.ID,
+		principal.UserID,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return OutputProjectFromProject(updatedProject), nil
+	return inbounds.OutputProjectFromProject(updatedProject), nil
 }
 
-func (uc *UseCase) DeleteProjectByID(ctx context.Context, projectID string) error {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.DeleteProjectByID",
+// Delete handles the business logic for deleting a project.
+// It requires a valid principal in the context and that the principal is the owner of the project.
+func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Delete",
 		trace.WithAttributes(attribute.String("project.id", projectID)),
 	)
 	defer span.End()
 
-	accessClaims, err := auth.GetAccessClaims(ctx)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	tracing.AnnotateAccessClaims(span, accessClaims)
-
-	pid, err := uuid.Parse(projectID)
+	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return err
 	}
 
-	err = uc.projects.Delete(ctx, pid, accessClaims.Sub.ID)
+	err = uc.projects.Delete(ctx, *pid, principal.UserID)
 	if err != nil {
 		return err
 	}

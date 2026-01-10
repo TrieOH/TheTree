@@ -2,48 +2,53 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/application/project"
+	"GoAuth/internal/adapters/observability/logs"
+	"GoAuth/internal/apierr"
+	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/FastUtilitiesNet/validation"
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type ProjectHandler struct {
-	uc *project.UseCase
+	projects inbounds.ProjectService
 }
 
-func NewProjectHandler(uc *project.UseCase) *ProjectHandler {
-	return &ProjectHandler{uc: uc}
+func NewProjectHandler(uc inbounds.ProjectService) *ProjectHandler {
+	return &ProjectHandler{projects: uc}
 }
 
 // CreateProject godoc
-// @Summary Creates a project
-// @Description This endpoint creates a project that will consume the Authentication service.
-// @Description this project is subjected to limits
+// @Summary Creates a new project
+// @Description Creates a new project that will consume the Authentication service.
 // @Tags projects
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 201 {object} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Param projectInfo body dto.CreateProjectRequest true "Project creation information"
+// @Success 201 {object} dto.ProjectResponse "Project created successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects [post]
-func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProjectRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
-	in := project.CreateProjectInput{
+	in := inbounds.ProjectServiceInput{
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
 
 	ctx := r.Context()
-	res, err := ph.uc.CreateProject(ctx, in)
+	res, err := handler.projects.Create(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -56,25 +61,27 @@ func (ph *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) 
 
 // GetProjectByID godoc
 // @Summary Gets a project by its ID
-// @Description
+// @Description Retrieves details of a specific project by its ID.
 // @Tags projects
 // @Accept json
 // @Produce json
-// @Param project_id path string true "ID of the project to retrieve keys"
+// @Param project_id path string true "ID of the project to retrieve"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
-// @Router /projects [get]
-func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("project_id")
+// @Success 200 {object} dto.ProjectResponse "Project details"
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing project ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 404 {object} ErrorResponse "Not Found: Project not found"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /projects/{project_id} [get]
+func (handler *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
 	ctx := r.Context()
-	proj, err := ph.uc.GetProjectByID(ctx, projectID)
+	proj, err := handler.projects.GetByID(ctx, projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -87,17 +94,17 @@ func (ph *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request)
 
 // ListProjects godoc
 // @Summary List all user projects
-// @Description
+// @Description Retrieves a list of all projects associated with the authenticated user.
 // @Tags projects
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Success 200 {array} dto.ProjectResponse "List of user projects"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects [get]
-func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, err := ph.uc.ListProjects(r.Context())
+func (handler *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
+	projects, err := handler.projects.List(r.Context())
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -110,48 +117,69 @@ func (ph *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 
 // GetProjectJWKS godoc
 // @Summary Returns the JWKS for a given project
-// @Description
+// @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued for a specific project.
 // @Tags projects
 // @Accept json
 // @Produce json
 // @Param project_id path string true "ID of the project to retrieve keys"
-// @Success 200 {object} map[string]any
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Success 200 {object} object "JSON Web Key Set (JWKS)"
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing project ID"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
-func (ph *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
-	if projectId == "" {
+func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
-	jwks, err := ph.uc.GetProjectJWKS(r.Context(), projectId)
+	jwks, err := handler.projects.GetJWKS(r.Context(), projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	payload := map[string]any{
 		"keys": []any{jwks},
-	})
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		logs.L().Error("Failed to encode response",
+			zap.Error(err),
+			zap.String("project_id", projectID),
+		)
+		resp.InternalServerError("Failed to encode JWKS").Send(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err = w.Write(data); err != nil {
+		logs.L().Error("Failed to write JWKS response",
+			zap.Error(err),
+			zap.String("project_id", projectID),
+		)
+	}
 }
 
 // UpdateProjectByID godoc
 // @Summary Updates project information
-// @Description
+// @Description Updates the name and/or metadata for a specific project.
 // @Tags projects
 // @Accept json
 // @Produce json
-// @Param project_id path string true "ID of the project to retrieve keys"
+// @Param project_id path string true "ID of the project to update"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} dto.ProjectResponse
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Param projectInfo body dto.UpdateProjectRequest true "Project update information"
+// @Success 200 {object} dto.ProjectResponse "Project updated successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or missing project ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 404 {object} ErrorResponse "Not Found: Project not found"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [patch]
-func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("project_id")
+func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
 	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
@@ -159,18 +187,18 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 
 	var req dto.UpdateProjectRequest
 	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.Send(w)
+		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
 		return
 	}
 
-	in := project.UpdateProjectInput{
-		ProjectID:   projectID,
+	in := inbounds.ProjectServiceInput{
+		ProjectID:   &projectID,
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
 
 	ctx := r.Context()
-	proj, err := ph.uc.UpdateProjectByID(ctx, in)
+	proj, err := handler.projects.Update(ctx, in)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return
@@ -183,26 +211,27 @@ func (ph *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Reque
 
 // DeleteProjectByID godoc
 // @Summary Deletes a user project
-// @Description since this is a dangerous action so implement triple confirmation on frontend
-// @Description Type the name of the project and hold you are sure button
+// @Description Deletes a specific project by its ID. This is a dangerous action and requires careful confirmation.
 // @Tags projects
 // @Accept json
 // @Produce json
-// @Param project_id path string true "ID of the project to retrieve keys"
+// @Param project_id path string true "ID of the project to delete"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {string} string "Deleted project"
-// @Failure 401 {object} domain.ErrorResponse
-// @Failure 500 {object} domain.ErrorResponse
+// @Success 200 {object} object "Project deleted successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing project ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 404 {object} ErrorResponse "Not Found: Project not found"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [delete]
-func (ph *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectId := r.PathValue("project_id")
-	if projectId == "" {
+func (handler *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "project_id")
+	if projectID == "" {
 		resp.BadRequest("missing project id parameter").Send(w)
 		return
 	}
 
 	ctx := r.Context()
-	err := ph.uc.DeleteProjectByID(ctx, projectId)
+	err := handler.projects.Delete(ctx, projectID)
 	if err != nil {
 		ErrToResp(err).Send(w)
 		return

@@ -13,6 +13,7 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
+      ISSUER: ${ISSUER}
     depends_on:
       - go-auth-test-database
     networks:
@@ -21,6 +22,14 @@ services:
 
   go-auth-test-database:
     image: postgres:18
+    command:
+      - postgres
+      - -c
+      - log_statement=${POSTGRES_LOG_STATEMENT:-none}
+      - -c
+      - log_min_messages=${POSTGRES_LOG_MIN_MESSAGES:-fatal}
+      - -c
+      - log_min_error_statement=${POSTGRES_LOG_MIN_ERROR_STATEMENT:-fatal}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

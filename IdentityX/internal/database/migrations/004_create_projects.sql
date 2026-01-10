@@ -1,0 +1,35 @@
+-- +goose Up
+-- Created at 2025-11-04T15:25:15-03:00
+
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_name VARCHAR(255) NOT NULL DEFAULT 'Unnamed Project',
+    owner_id UUID NOT NULL REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT True,
+    pub_key TEXT NOT NULL,
+    priv_key BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE sessions
+    ADD COLUMN project_id UUID REFERENCES projects(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_sessions_project_id
+    ON sessions(project_id);
+
+CREATE INDEX IF NOT EXISTS idx_projects_id
+    ON projects(id);
+
+-- +goose Down
+ALTER TABLE sessions
+DROP COLUMN IF EXISTS project_id;
+DROP INDEX IF EXISTS idx_sessions_project_id;
+DROP INDEX IF EXISTS idx_projects_id;
+DROP TABLE IF EXISTS projects;
+

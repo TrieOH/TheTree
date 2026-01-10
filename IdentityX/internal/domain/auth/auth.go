@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"GoAuth/internal/apierr"
-	"context"
 	"encoding/json"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,39 +30,4 @@ type RefreshSubJWT struct {
 type RefreshClaims struct {
 	Sub RefreshSubJWT `json:"sub"`
 	jwt.RegisteredClaims
-}
-
-type ctxKey string
-
-const (
-	AccessClaimsKey  ctxKey = "accessClaims"
-	RefreshClaimsKey ctxKey = "refreshClaims"
-)
-
-func GetAccessClaims(ctx context.Context) (*AccessClaims, error) {
-	val := ctx.Value(AccessClaimsKey)
-	if val == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("access token is missing or invalid").WithID(apierr.AuthMissingAccessClaims)
-	}
-
-	claims, ok := val.(*AccessClaims)
-	if !ok {
-		return nil, apierr.ErrInternal.WithMsg("invalid access claims type in context").WithID(apierr.AuthInvalidAccessClaims)
-	}
-
-	return claims, nil
-}
-
-func GetRefreshClaims(ctx context.Context) (*RefreshClaims, error) {
-	val := ctx.Value(RefreshClaimsKey)
-	if val == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("refresh token is missing or invalid").WithID(apierr.AuthMissingRefreshClaims)
-	}
-
-	claims, ok := val.(*RefreshClaims)
-	if !ok {
-		return nil, apierr.ErrInternal.WithMsg("invalid refresh claims type in context").WithID(apierr.AuthInvalidRefreshClaims)
-	}
-
-	return claims, nil
 }

@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,16 +15,25 @@ import (
 )
 
 type projectUserRepo struct {
-	q   *sqlc.Queries
-	log *zap.Logger
+	q      *sqlc.Queries
+	log    *zap.Logger // reserved for future use
+	tracer trace.Tracer
+}
+
+func (repo *projectUserRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
 }
 
 var _ outbound.ProjectUserRepository = (*projectUserRepo)(nil)
 
-func NewProjectUserRepo(q *sqlc.Queries, log *zap.Logger) outbound.ProjectUserRepository {
+func NewProjectUserRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.ProjectUserRepository {
 	return &projectUserRepo{
-		q:   q,
-		log: log,
+		q:      q,
+		log:    log,
+		tracer: tracer,
 	}
 }
 
@@ -40,19 +50,23 @@ func mapProjectUserFromDB(dst *project_users.ProjectUser, src *sqlc.ProjectUser)
 	dst.LastLoginAt = src.LastLoginAt
 }
 
-func (r projectUserRepo) Register(ctx context.Context, user project_users.ProjectUser) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Register",
+func (repo *projectUserRepo) Register(ctx context.Context, toRegister project_users.ProjectUser) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Register",
 		trace.WithAttributes(
-			attribute.String("user.project_id", user.ProjectID.String()),
+			attribute.String("user.project_id", toRegister.ProjectID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
-		ProjectID:    user.ProjectID,
-		Email:        user.Email,
-		PasswordHash: user.PasswordHash,
-		Metadata:     *user.Metadata,
+	if toRegister.Metadata == nil {
+		return nil, apierr.ErrInvalidInput.WithMsg("metadata must be at least an empty json object on register").WithID(apierr.ProjectUserInvalidMetadata)
+	}
+
+	sqlcUser, err := repo.queries(ctx).RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
+		ProjectID:    toRegister.ProjectID,
+		Email:        toRegister.Email,
+		PasswordHash: toRegister.PasswordHash,
+		Metadata:     *toRegister.Metadata,
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -66,13 +80,13 @@ func (r projectUserRepo) Register(ctx context.Context, user project_users.Projec
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	mapProjectUserFromDB(&user, &sqlcUser)
+	mapProjectUserFromDB(&toRegister, &sqlcUser)
 
-	return &user, nil
+	return &toRegister, nil
 }
 
-func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByIDExternal",
+func (repo *projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.GetByIDExternal",
 		trace.WithAttributes(
 			attribute.String("project_user.id", projectUserID.String()),
 			attribute.String("project_user.project_id", projectID.String()),
@@ -81,7 +95,7 @@ func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, pro
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.GetProjectUserById(ctx, sqlc.GetProjectUserByIdParams{
+	sqlcUser, err := repo.queries(ctx).GetProjectUserById(ctx, sqlc.GetProjectUserByIdParams{
 		ID:        projectUserID,
 		ProjectID: projectID,
 		OwnerID:   ownerID,
@@ -104,8 +118,8 @@ func (r projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID, pro
 	return &user, nil
 }
 
-func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, projectID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByID",
+func (repo *projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, projectID uuid.UUID) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.GetByIDInternal",
 		trace.WithAttributes(
 			attribute.String("project_user.project_id", projectID.String()),
 			attribute.String("project_user.id", projectUserID.String()),
@@ -113,7 +127,7 @@ func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, pro
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.GetProjectUserByIdInternal(ctx, sqlc.GetProjectUserByIdInternalParams{
+	sqlcUser, err := repo.queries(ctx).GetProjectUserByIdInternal(ctx, sqlc.GetProjectUserByIdInternalParams{
 		ID:        projectUserID,
 		ProjectID: projectID,
 	})
@@ -134,8 +148,8 @@ func (r projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID, pro
 	return &user, nil
 }
 
-func (r projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.UUID, email string, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByEmailExternal",
+func (repo *projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.UUID, email string, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.GetByEmailExternal",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project_user.project_id", projectID.String()),
@@ -143,7 +157,7 @@ func (r projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.GetProjectUserByEmailExternal(ctx, sqlc.GetProjectUserByEmailExternalParams{
+	sqlcUser, err := repo.queries(ctx).GetProjectUserByEmailExternal(ctx, sqlc.GetProjectUserByEmailExternalParams{
 		ProjectID: projectID,
 		Email:     email,
 		OwnerID:   ownerID,
@@ -166,15 +180,15 @@ func (r projectUserRepo) GetByEmailExternal(ctx context.Context, projectID uuid.
 	return &user, nil
 }
 
-func (r projectUserRepo) GetByEmailInternal(ctx context.Context, projectID uuid.UUID, email string) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.GetByEmailInternal",
+func (repo *projectUserRepo) GetByEmailInternal(ctx context.Context, projectID uuid.UUID, email string) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.GetByEmailInternal",
 		trace.WithAttributes(
 			attribute.String("project_user.project_id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.GetProjectUserByEmailInternal(ctx, sqlc.GetProjectUserByEmailInternalParams{
+	sqlcUser, err := repo.queries(ctx).GetProjectUserByEmailInternal(ctx, sqlc.GetProjectUserByEmailInternalParams{
 		ProjectID: projectID,
 		Email:     email,
 	})
@@ -196,8 +210,8 @@ func (r projectUserRepo) GetByEmailInternal(ctx context.Context, projectID uuid.
 	return &user, nil
 }
 
-func (r projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uuid.UUID) ([]project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.ListExternal",
+func (repo *projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uuid.UUID) ([]project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.ListExternal",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
 			attribute.String("project.project_id", projectID.String()),
@@ -205,7 +219,7 @@ func (r projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uu
 	)
 	defer span.End()
 
-	sqlcUsers, err := r.q.ListProjectUsersExternal(ctx, sqlc.ListProjectUsersExternalParams{
+	sqlcUsers, err := repo.queries(ctx).ListProjectUsersExternal(ctx, sqlc.ListProjectUsersExternalParams{
 		ProjectID: projectID,
 		OwnerID:   ownerID,
 	})
@@ -227,15 +241,15 @@ func (r projectUserRepo) ListExternal(ctx context.Context, projectID, ownerID uu
 	return users, nil
 }
 
-func (r projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UUID) ([]project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.ListInternal",
+func (repo *projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UUID) ([]project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.ListInternal",
 		trace.WithAttributes(
 			attribute.String("project.project_id", projectID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUsers, err := r.q.ListProjectUsersInternal(ctx, projectID)
+	sqlcUsers, err := repo.queries(ctx).ListProjectUsersInternal(ctx, projectID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
@@ -254,21 +268,21 @@ func (r projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UUID) 
 	return users, nil
 }
 
-func (r projectUserRepo) Update(ctx context.Context, user project_users.ProjectUser, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Update",
+func (repo *projectUserRepo) Update(ctx context.Context, toUpdate project_users.ProjectUser, ownerID uuid.UUID) (*project_users.ProjectUser, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Update",
 		trace.WithAttributes(
 			attribute.String("project.owner_id", ownerID.String()),
-			attribute.String("project.project_id", user.ProjectID.String()),
-			attribute.String("project_user.id", user.ID.String()),
+			attribute.String("project.project_id", toUpdate.ProjectID.String()),
+			attribute.String("project_user.id", toUpdate.ID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcUser, err := r.q.UpdateProjectUser(ctx, sqlc.UpdateProjectUserParams{
-		ID:           user.ID,
-		ProjectID:    user.ProjectID,
-		Email:        user.Email,
-		PasswordHash: user.PasswordHash,
+	sqlcUser, err := repo.queries(ctx).UpdateProjectUser(ctx, sqlc.UpdateProjectUserParams{
+		ID:           toUpdate.ID,
+		ProjectID:    toUpdate.ProjectID,
+		Email:        toUpdate.Email,
+		PasswordHash: toUpdate.PasswordHash,
 		OwnerID:      ownerID,
 	})
 	if err != nil {
@@ -282,13 +296,13 @@ func (r projectUserRepo) Update(ctx context.Context, user project_users.ProjectU
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	mapProjectUserFromDB(&user, &sqlcUser)
+	mapProjectUserFromDB(&toUpdate, &sqlcUser)
 
-	return &user, nil
+	return &toUpdate, nil
 }
 
-func (r projectUserRepo) Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error {
-	ctx, span := GoAuthRepoTracer.Start(ctx, "ProjectUserRepo.Delete",
+func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Delete",
 		trace.WithAttributes(
 			attribute.String("project.project_id", projectID.String()),
 			attribute.String("project.owner_id", ownerID.String()),
@@ -297,7 +311,7 @@ func (r projectUserRepo) Delete(ctx context.Context, projectUserID, projectID, o
 	)
 	defer span.End()
 
-	if err := r.q.DeleteProjectUser(ctx, sqlc.DeleteProjectUserParams{
+	if err := repo.queries(ctx).DeleteProjectUser(ctx, sqlc.DeleteProjectUserParams{
 		ID:        projectUserID,
 		ProjectID: projectID,
 		OwnerID:   ownerID,

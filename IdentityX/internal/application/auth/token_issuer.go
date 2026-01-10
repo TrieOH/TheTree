@@ -5,64 +5,64 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/user"
-	"GoAuth/internal/utils"
+	"crypto/ed25519"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 )
 
-func newAccessToken(user user.User, ip, agent string, sessionId uuid.UUID, expiresAt time.Time) (string, uuid.UUID, error) {
-	accessJTI := uuid.NewString()
+func newAccessToken(user user.User, key ed25519.PrivateKey, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
 			ID:        user.ID,
 			UserType:  user.UserType,
 			Email:     user.Email,
-			SessionID: sessionId,
+			SessionID: sessionID,
 			UserAgent: agent,
 			UserIP:    ip,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
-	accessJTIID, _ := uuid.Parse(accessJTI)
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
+	accessToken.Header["kid"] = keyID
+	tokenStr, err := accessToken.SignedString(key)
 	if err != nil {
-		return "", uuid.Nil, apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
+		return "", apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
-	return tokenStr, accessJTIID, nil
+	return tokenStr, nil
 }
 
-func newRefreshToken(accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, error) {
+func newRefreshToken(keyID string, privKey ed25519.PrivateKey, accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, error) {
 	claims := auth.RefreshClaims{
 		Sub: auth.RefreshSubJWT{
 			AccessJTI: accessJTI,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        refreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	tokenStr, err := refreshToken.SignedString(utils.GoAuthPrivateKey)
+	refreshToken.Header["kid"] = keyID
+	tokenStr, err := refreshToken.SignedString(privKey)
 	if err != nil {
 		return "", apierr.ErrInternal.WithMsg("error signing refresh token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
 	return tokenStr, nil
 }
 
-func newProjectAccessToken(user project_users.ProjectUser, ip, agent string, sessionId uuid.UUID, expiresAt time.Time) (string, uuid.UUID, error) {
-	accessJTI := uuid.NewString()
+func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time, privKey ed25519.PrivateKey) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
 			ID:        user.ID,
@@ -70,23 +70,23 @@ func newProjectAccessToken(user project_users.ProjectUser, ip, agent string, ses
 			ProjectID: &user.ProjectID,
 			Metadata:  user.Metadata,
 			Email:     user.Email,
-			SessionID: sessionId,
+			SessionID: sessionID,
 			UserAgent: agent,
 			UserIP:    ip,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			Issuer:    "GoAuth",
+			Issuer:    viper.GetString("ISSUER"),
 			ID:        accessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
-	accessJTIID, _ := uuid.Parse(accessJTI)
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
+	accessToken.Header["kid"] = keyID
+	tokenStr, err := accessToken.SignedString(privKey)
 	if err != nil {
-		return "", uuid.Nil, apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
+		return "", apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}
-	return tokenStr, accessJTIID, nil
+	return tokenStr, nil
 }

@@ -2,15 +2,22 @@ package auth
 
 import (
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/transactions"
+	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
-	"GoAuth/internal/domain/revoked_refreshes"
+	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
+	authport "GoAuth/internal/ports/auth"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"crypto/ed25519"
+	"database/sql"
+	"encoding/json"
 	"errors"
-	"net/http"
 	"strings"
 	"time"
 
@@ -28,29 +35,55 @@ var (
 )
 
 type UseCase struct {
-	users        outbound.UserRepository
-	refresh      outbound.RevokedRefreshTokenRepository
-	sessions     outbound.SessionRepository
-	projectUsers outbound.ProjectUserRepository
+	users         outbound.UserRepository
+	sessions      outbound.SessionRepository
+	schemas       outbound.SchemaRepository
+	versions      outbound.SchemaVersionRepository
+	fields        outbound.SchemaFieldsRepository
+	projects      outbound.ProjectRepository
+	projectUsers  outbound.ProjectUserRepository
+	tokenVerifier authport.TokenVerifier
+	tx            transactions.TxRunner
 }
+
+var _ inbounds.AuthService = (*UseCase)(nil)
 
 func New(
 	users outbound.UserRepository,
 	sessions outbound.SessionRepository,
-	refresh outbound.RevokedRefreshTokenRepository,
+	schemas outbound.SchemaRepository,
+	versions outbound.SchemaVersionRepository,
+	fields outbound.SchemaFieldsRepository,
+	projects outbound.ProjectRepository,
 	projectUsers outbound.ProjectUserRepository,
-) *UseCase {
+	tokenVerifier authport.TokenVerifier,
+	tx transactions.TxRunner,
+) inbounds.AuthService {
 	return &UseCase{
-		users:        users,
-		sessions:     sessions,
-		refresh:      refresh,
-		projectUsers: projectUsers,
+		users:         users,
+		sessions:      sessions,
+		schemas:       schemas,
+		versions:      versions,
+		fields:        fields,
+		projects:      projects,
+		projectUsers:  projectUsers,
+		tokenVerifier: tokenVerifier,
+		tx:            tx,
 	}
 }
 
-func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
+// Register handles the business logic for creating a new user.
+// It validates the input, hashes the password, and then attempts to create the user in the database.
+// It returns an error if the email is already in use or if there is a problem with the database.
+func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerInternal(ctx, in)
+	})
+}
+
+func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Create")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
 	defer func() {
 		if span != nil {
@@ -76,7 +109,7 @@ func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 	var u *user.User
 	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
+		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
 	} else if err != nil {
 		return err
 	}
@@ -90,11 +123,14 @@ func (uc *UseCase) Register(ctx context.Context, in RegisterUserInput) error {
 	return nil
 }
 
-func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput) (*UserTokensOutput, error) {
+// Login handles the business logic for logging in a user.
+// It finds the user by email, compares the password, and if successful,
+// creates a new session and returns a new set of access and refresh tokens.
+func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbounds.UserTokensOutput, error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var err error
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Login")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 	defer func() {
 		if span != nil {
@@ -125,16 +161,13 @@ func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput
 		return nil, authErr
 	}
 
-	agent := r.UserAgent()
-	ip := utils.GetClientIP(r)
-
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	var sess *session.Session
 	sess, err = uc.sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
-		UserAgent: agent,
-		UserIp:    ip,
+		UserAgent: in.Agent,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    u.ID,
 	})
@@ -144,22 +177,22 @@ func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput
 	}
 
 	var accessToken string
-	var accessJTI uuid.UUID
+	accessJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, accessJTI, err = newAccessToken(*u, ip, agent, sess.SessionID, accessExpiresAt)
+	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
 	var refreshToken string
-	refreshToken, err = newRefreshToken(accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessToken,
 		RefreshTokenString: refreshToken,
 		AccessExpiresAt:    accessExpiresAt,
@@ -167,8 +200,10 @@ func (uc *UseCase) Login(r *http.Request, ctx context.Context, in LoginUserInput
 	}, nil
 }
 
+// Logout handles the business logic for logging out a user.
+// It retrieves the principal from the context, deletes the session, and revokes the refresh token.
 func (uc *UseCase) Logout(ctx context.Context) error {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Logout")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Logout")
 	defer span.End()
 
 	var err error
@@ -178,58 +213,44 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		}
 	}()
 
-	var accessClaims *auth.AccessClaims
-	accessClaims, err = auth.GetAccessClaims(ctx)
+	var principal *authz.Principal
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	span.SetAttributes(
-		attribute.String("user.id", accessClaims.Sub.ID.String()),
-		attribute.String("user.type", accessClaims.Sub.UserType),
-		attribute.String("user.session_id", accessClaims.Sub.SessionID.String()),
-	)
-
-	if accessClaims.Sub.ProjectID != nil {
-		span.SetAttributes(
-			attribute.String("user.project_id", accessClaims.Sub.ProjectID.String()),
-		)
-	}
-
-	var refreshClaims *auth.RefreshClaims
-	refreshClaims, err = auth.GetRefreshClaims(ctx)
+	var sess *session.Session
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	var jti uuid.UUID
-	jti, err = uuid.Parse(refreshClaims.ID)
-	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return apierr.ErrUnauthorized.WithMsg("unable to parse refresh ID").WithID(apierr.TokenInvalidID)
-	}
-
-	if _, err = uc.sessions.DeleteByFilter(ctx, session.SessionFilter{
-		TokenID: &jti,
-		UserID:  accessClaims.Sub.ID,
-	}); err != nil {
-		return err
-	}
-
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshClaims.ExpiresAt.Time,
-	}); err != nil {
-		return err
-	}
+	span.SetAttributes(attribute.String("session.id", sess.SessionID.String()))
 
 	return nil
 }
 
-func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.Refresh")
+// Refresh handles the business logic for refreshing a user's tokens.
+// It parses the refresh token, checks if it's revoked, and if not,
+// determines whether to refresh the tokens for a client or a project user.
+func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
+	txOptions := transactions.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+		ReadOnly:  false,
+	}
+
+	var out *inbounds.UserTokensOutput
+	err := uc.tx.WithinTxWithOptions(ctx, txOptions, func(ctx context.Context) error {
+		var err error
+		out, err = uc.refreshInternal(ctx, in)
+		return err
+	})
+
+	return out, err
+}
+
+func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Refresh")
 	defer span.End()
 
 	var err error
@@ -240,45 +261,32 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 	}()
 
 	var refreshToken *auth.RefreshClaims
-	refreshToken, err = utils.ParseRefreshToken(in.RefreshCookie.Value, utils.GoAuthPublicKey)
+	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	var jti uuid.UUID
-	jti, err = uuid.Parse(refreshToken.ID)
-	if err != nil {
-		tokenErr := apierr.ErrInvalidInput.WithMsg("unable to parse refresh token ID").WithID(apierr.TokenInvalidID)
-		apierr.RecordDomainError(span, tokenErr)
-		return nil, tokenErr
-	}
-
-	span.SetAttributes(attribute.String("refresh_token.id", jti.String()))
-
-	var isRevoked bool
-	isRevoked, err = uc.refresh.IsRevoked(ctx, jti)
+	var oldJTI *uuid.UUID
+	oldJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	if isRevoked {
-		revoked, err := uc.refresh.GetByID(ctx, jti)
+	var (
+		newRefreshJTI = uuid.New()
+		refreshExp    = time.Now().Add(7 * 24 * time.Hour)
+	)
 
-		if err != nil {
-			return nil, err
-		}
+	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
+	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-		if revoked.TokenID == jti {
-			tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token revoked").WithID(apierr.TokenRevoked)
-			apierr.RecordDomainError(span, tokenErr)
-			return nil, tokenErr
-		}
-	}
-
-	var sess *session.Session
-	sess, err = uc.sessions.GetByTokenID(ctx, jti)
-	if err != nil {
+	sess, err := uc.sessions.RotateToken(ctx, *oldJTI, newRefreshJTI, refreshExp)
+	if apierr.IsNotFound(err) {
+		// sql.ErrNoRows → raced / reused / revoked
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
+		return nil, tokenErr
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -289,52 +297,29 @@ func (uc *UseCase) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOut
 		attribute.String("session.user_type", sess.UserType),
 	)
 
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
-
-	var tokens *UserTokensOutput
 	if sess.ProjectID == nil {
-		tokens, err = uc.RefreshClient(ctx, sess, in, jti, refreshToken)
-		span.SetAttributes(attribute.String("refresh.flow", "client"))
-	} else {
-		tokens, err = uc.RefreshProjectUser(ctx, sess, in, jti, refreshToken)
-		span.SetAttributes(attribute.String("refresh.flow", "project"))
+		return uc.finishClientRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 	}
 
-	return tokens, err
+	return uc.finishProjectUserRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 }
 
-func (uc *UseCase) RefreshClient(
+func (uc *UseCase) finishClientRefresh(
 	ctx context.Context,
 	sess *session.Session,
-	in RefreshInput,
-	jti uuid.UUID,
-	refreshToken *auth.RefreshClaims,
-) (
-	*UserTokensOutput,
-	error,
-) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshClient")
+	in inbounds.RefreshInput,
+	refreshJTI uuid.UUID,
+	refreshExpiresAt time.Time,
+) (*inbounds.UserTokensOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.finishClientRefresh")
 	defer span.End()
 
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("refresh_client.success", err == nil))
+			span.SetAttributes(attribute.Bool("finishClientRefresh.success", err == nil))
 		}
 	}()
-
-	span.SetAttributes(
-		attribute.String("refresh_client.session.token_id", sess.TokenID.String()),
-		attribute.String("refresh_client.session.id", sess.SessionID.String()),
-		attribute.String("refresh_client.session.user_id", sess.UserID.String()),
-		attribute.String("refresh_client.session.user_type", sess.UserType),
-	)
-
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
 
 	var u *user.User
 	u, err = uc.users.GetUserByID(ctx, sess.UserID)
@@ -342,161 +327,157 @@ func (uc *UseCase) RefreshClient(
 		return nil, err
 	}
 
-	var newAccessTokenStr string
-	var accessJTI uuid.UUID
+	newAccessJTI := uuid.New()
+	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	newAccessTokenStr, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-
-	var newRefreshTokenStr string
-	newRefreshTokenStr, err = newRefreshToken(accessJTI, refreshJti, refreshExpiresAt)
+	var refreshTokenStr string
+	refreshTokenStr, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	if err = uc.sessions.Update(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIp:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		TokenID:   refreshJti,
-		SessionID: sess.SessionID,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshToken.ExpiresAt.Time,
-	}); err != nil {
-		return nil, err
-	}
-
-	span.AddEvent("refresh_client.revoked",
-		trace.WithAttributes(
-			attribute.Int64("revoked.expires_at", refreshToken.ExpiresAt.Time.Unix()),
-			attribute.String("revoked.token_id", jti.String()),
-		),
-	)
-
-	return &UserTokensOutput{
-		AccessTokenString:  newAccessTokenStr,
-		RefreshTokenString: newRefreshTokenStr,
+	return &inbounds.UserTokensOutput{
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
 }
 
-func (uc *UseCase) RefreshProjectUser(
+func (uc *UseCase) finishProjectUserRefresh(
 	ctx context.Context,
 	sess *session.Session,
-	in RefreshInput,
-	jti uuid.UUID,
-	refreshToken *auth.RefreshClaims,
-) (
-	*UserTokensOutput,
-	error,
-) {
-	ctx, span := usecaseTracer.Start(ctx, "Auth.RefreshProjectUser")
+	in inbounds.RefreshInput,
+	refreshJTI uuid.UUID,
+	refreshExpiresAt time.Time,
+) (*inbounds.UserTokensOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.finishProjectUserRefresh")
 	defer span.End()
 
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("refresh_project_user.success", err == nil))
+			span.SetAttributes(attribute.Bool("finishProjectUserRefresh.success", err == nil))
 		}
 	}()
 
-	span.SetAttributes(
-		attribute.String("refresh_project_user.session.token_id", sess.TokenID.String()),
-		attribute.String("refresh_project_user.session.id", sess.SessionID.String()),
-		attribute.String("refresh_project_user.session.user_id", sess.UserID.String()),
-		attribute.String("refresh_project_user.session.user_type", sess.UserType),
-	)
-
-	if sess.ProjectID != nil {
-		span.SetAttributes(attribute.String("session.project_id", sess.ProjectID.String()))
-	}
-
-	var projectUser *project_users.ProjectUser
-	projectUser, err = uc.projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
+	projectUser, err := uc.projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	var newAccessTokenStr string
-	var accessJTI uuid.UUID
+	var privKey string
+	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var decodedKey ed25519.PrivateKey
+	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	newAccessJTI := uuid.New()
+	var keyID = "project:" + sess.ProjectID.String() + ":v1"
+	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	newAccessTokenStr, accessJTI, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, newAccessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	refreshJti := uuid.New()
-
-	var newRefreshTokenStr string
-	newRefreshTokenStr, err = newRefreshToken(accessJTI, refreshJti, refreshExpiresAt)
+	var refreshTokenStr string
+	refreshTokenStr, err = newRefreshToken(keyID, decodedKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
-	if err = uc.sessions.Update(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIp:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		TokenID:   refreshJti,
-		SessionID: sess.SessionID,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err = uc.refresh.Revoke(ctx, revoked_refreshes.RevokedRefreshToken{
-		TokenID:   jti,
-		ExpiresAt: refreshToken.ExpiresAt.Time,
-	}); err != nil {
-		return nil, err
-	}
-
-	span.AddEvent("refresh_project_user.revoked",
-		trace.WithAttributes(
-			attribute.Int64("revoked.expires_at", refreshToken.ExpiresAt.Time.Unix()),
-			attribute.String("revoked.token_id", jti.String()),
-		),
-	)
-
-	return &UserTokensOutput{
-		AccessTokenString:  newAccessTokenStr,
-		RefreshTokenString: newRefreshTokenStr,
+	return &inbounds.UserTokensOutput{
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
 }
 
-func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterInput) error {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.RegisterProjectUser",
+// RegisterProjectUser handles the business logic for creating a new project user.
+// It validates the input, hashes the password, and then attempts to create the user in the database.
+func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerProjectUserInternal(ctx, in)
+	})
+}
+
+func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()
 
-	pid, err := uuid.Parse(in.ProjectID)
-	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+	if in.FlowID == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if in.SchemaType == "" {
+		apiErr := apierr.ErrInvalidInput.WithMsg("schema type can't be empty").WithID(apierr.SchemaInvalidSchemaType)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
+	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
+	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
+
+	pid, err := validation.RequireProjectID(span, &in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !schema.IsValidSchemaType(in.SchemaType) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("invalid schema type").WithID(apierr.SchemaInvalidSchemaType)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	// FlowIDs cannot be the same as schema types so if this matches we error out
+	if schema.IsValidSchemaType(in.FlowID) {
+		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+
+	empty := json.RawMessage(`{}`)
+	customFields := &empty
+
+	// Validate and construct metadata for non-core or non-reserved flows
+	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
+	if !isCoreWithReservedFlow {
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, *pid, in.SchemaType, in.FlowID, in.CustomFields)
+		if err != nil {
+			return err
+		}
+		if validatedMetadata != nil {
+			customFields = validatedMetadata
+		}
+	}
 
 	if len(in.Password) > 72 {
 		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)
@@ -512,13 +493,13 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterIn
 
 	var usr *project_users.ProjectUser
 	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
-		ProjectID:    pid,
+		ProjectID:    *pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
-		Metadata:     &in.CustomFields,
+		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
+		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
 	} else if err != nil {
 		return err
 	}
@@ -532,27 +513,28 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in ProjectRegisterIn
 	return nil
 }
 
+// LoginProjectUser handles the business logic for logging in a project user.
+// It finds the user by email, compares the password, and if successful,
+// creates a new session and returns a new set of access and refresh tokens.
 func (uc *UseCase) LoginProjectUser(
 	ctx context.Context,
-	in ProjectLoginInput,
+	in inbounds.ProjectLoginInput,
 ) (
-	*UserTokensOutput,
+	*inbounds.UserTokensOutput,
 	error,
 ) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.LoginProjectUser",
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.LoginProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)
 	defer span.End()
 
-	pid, err := uuid.Parse(in.ProjectID)
+	pid, err := validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+		return nil, err
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, pid, in.Email)
+	usr, err := uc.projectUsers.GetByEmailInternal(ctx, *pid, in.Email)
 	if apierr.IsNotFound(err) {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
@@ -572,29 +554,43 @@ func (uc *UseCase) LoginProjectUser(
 	sess, err := uc.sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
-		UserIp:    in.IP,
+		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
-		ProjectID: &pid,
+		ProjectID: pid,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	var privKey string
+	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var decodedKey ed25519.PrivateKey
+	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	keyID := "project:" + sess.ProjectID.String() + ":v1"
+	accessJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, accessJTI, err := newProjectAccessToken(*usr, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	refreshToken, err := newRefreshToken(accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err := newRefreshToken(keyID, decodedKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	return &UserTokensOutput{
+	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessToken,
 		RefreshTokenString: refreshToken,
 		AccessExpiresAt:    accessExpiresAt,

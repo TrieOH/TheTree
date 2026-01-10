@@ -41,10 +41,10 @@ func fromPQError(pqErr *pq.Error, cause error) *Error {
 
 	// ---------- constraints ----------
 	case "23505": // unique_violation
-		return ErrConflict.
-			WithMsg("resource already exists").
-			WithID(DBUniqueViolation).
-			WithCause(cause)
+		return fromUniqueViolation(pqErr, cause)
+
+	case "23514":
+		return fromCheckViolation(pqErr, cause)
 
 	case "23503": // foreign_key_violation
 		return ErrInvalidInput.

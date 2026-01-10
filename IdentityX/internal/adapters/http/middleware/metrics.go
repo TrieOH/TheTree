@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"GoAuth/internal/utils"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -19,6 +19,7 @@ var (
 		[]string{"path", "method", "status"},
 	)
 
+	// HttpRequestDuration is a histogram of the duration of HTTP requests.
 	HttpRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
@@ -35,6 +36,7 @@ func init() {
 	prometheus.MustRegister(HttpRequestsTotal, HttpRequestDuration)
 }
 
+// Metrics is a middleware that records Prometheus metrics for HTTP requests.
 func Metrics(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/metrics" || strings.HasPrefix(r.URL.Path, "/swagger") {
@@ -48,10 +50,15 @@ func Metrics(next http.Handler) http.Handler {
 
 		duration := time.Since(start).Seconds()
 
-		route := utils.NormalizePath(r)
+		routePattern := "not_found"
+		if rctx := chi.RouteContext(r.Context()); rctx != nil {
+			if pattern := rctx.RoutePattern(); pattern != "" {
+				routePattern = pattern
+			}
+		}
 
-		HttpRequestsTotal.WithLabelValues(route, r.Method, http.StatusText(ww.status)).Inc()
-		HttpRequestDuration.WithLabelValues(route).Observe(duration)
+		HttpRequestsTotal.WithLabelValues(routePattern, r.Method, http.StatusText(ww.status)).Inc()
+		HttpRequestDuration.WithLabelValues(routePattern).Observe(duration)
 	})
 }
 
