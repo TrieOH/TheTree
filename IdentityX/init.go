@@ -77,6 +77,9 @@ func init() {
 	_, err = scheduler.NewJob(
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
 		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
+
 			queries := sqlc.New(db)
 
 			revoked, err := queries.RevokeExpiredSessions(ctx)

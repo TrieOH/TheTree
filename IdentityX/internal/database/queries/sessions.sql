@@ -58,6 +58,7 @@ SET
     updated_at = NOW()
 WHERE token_id = sqlc.arg(old_token_id)::UUID
   AND revoked_at IS NULL
+  AND expires_at > NOW()
     RETURNING *;
 
 -- ============================

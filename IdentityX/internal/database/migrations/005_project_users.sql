@@ -11,9 +11,9 @@ CREATE TABLE project_users (
     password_hash VARCHAR(255) NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT True,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    last_login_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ,
     UNIQUE (project_id, email)
 );
 

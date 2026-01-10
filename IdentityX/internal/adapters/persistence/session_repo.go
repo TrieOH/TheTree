@@ -235,6 +235,11 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, 
 		return nil, sqlcErr
 	}
 
+	span.SetAttributes(
+		attribute.String("session.session_id", sqlcSession.SessionID.String()),
+		attribute.String("session.user_id", sqlcSession.UserID.String()),
+	)
+
 	var rotatedSession session.Session
 	mapSessionFromDB(&rotatedSession, &sqlcSession)
 	return &rotatedSession, nil
@@ -264,7 +269,7 @@ func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, 
 	return &revokedSession, nil
 }
 
-func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error) {
+func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session.Filter) (int, error) {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByFilter",
 		trace.WithAttributes(
 			attribute.String("user_id", filter.UserID.String()),
@@ -289,18 +294,11 @@ func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return 0, sqlcErr
 	}
 
 	span.SetAttributes(attribute.Int("revoke.count", len(sqlcSessions)))
 	span.SetAttributes(attribute.String("revoke.type", revokeType))
 
-	sessions := make([]session.Session, 0, len(sqlcSessions))
-	for _, sqlcSession := range sqlcSessions {
-		var sess session.Session
-		mapSessionFromDB(&sess, &sqlcSession)
-		sessions = append(sessions, sess)
-	}
-
-	return sessions, nil
+	return len(sqlcSessions), nil
 }
