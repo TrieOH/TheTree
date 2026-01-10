@@ -22,6 +22,14 @@ services:
 
   go-auth-test-database:
     image: postgres:18
+    command:
+      - postgres
+      - -c
+      - log_statement=none
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - log_min_error_statement=fatal
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

@@ -24,7 +24,7 @@ func MapAPIError(e *Error) *resp.Response {
 
 func respFromCode(code Code) *resp.Response {
 	switch code {
-	case InvalidInput:
+	case InvalidInput, BadRequest:
 		return resp.BadRequest()
 
 	case Unauthorized:

@@ -11,12 +11,12 @@ import (
 
 func testRefresh(t *testing.T, suite *TestSuite) {
 	client := suite.NewClient(t)
-	user := client.NewUser("refresh@mail.com", ValidPassword).Register().Login()
+	user := client.WithCredentials("refresh@mail.com", ValidPassword).Register().Login()
 
 	oldAccess := user.auth.AccessToken
 	oldRefresh := user.auth.RefreshToken
 
-	oldClient := client.Auth(&AuthContext{
+	oldClient := client.WithAuth(&AuthContext{
 		AccessToken:  oldAccess,
 		RefreshToken: oldRefresh,
 	})
@@ -49,7 +49,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 
 	t.Run("ConcurrentRefresh", func(t *testing.T) {
 		// New user for this test
-		concUser := client.NewUser("concurrent_refresh@mail.com", ValidPassword).Register().Login()
+		concUser := client.WithCredentials("concurrent_refresh@mail.com", ValidPassword).Register().Login()
 		refreshToken := concUser.auth.RefreshToken
 
 		concurrency := 5

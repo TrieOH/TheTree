@@ -11,13 +11,13 @@ import (
 
 func testSchemas(t *testing.T, suite *TestSuite) {
 	client := suite.NewClient(t)
-	user := client.NewUser("schemas@mail.com", ValidPassword).
+	user := client.WithCredentials("schemas@mail.com", ValidPassword).
 		Register().
 		Login().
 		CreateProject("schema testing")
 
 	var projectID string
-	projectID = user.ProjectID
+	projectID = user.projectID
 
 	rid, err := uuid.NewRandom()
 	if err != nil {
@@ -25,7 +25,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	}
 
 	t.Run("PublishSchemaRandomID", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + rid.String() + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaNotOwnedByPrincipal).
@@ -34,7 +34,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -60,7 +60,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftAnother", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -86,7 +86,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftSameFlowIDAndType", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -99,7 +99,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftReservedFlowID", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -112,7 +112,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftFlowIDSameAsType", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -125,7 +125,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftValidation", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 
 		t.Run("InvalidType", func(t *testing.T) {
 			authClient.POST("/projects/" + projectID + "/schemas").
@@ -154,7 +154,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishSchemaNoVersion", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaNoPublishedVersion).
@@ -162,7 +162,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersionNoDraft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionDraftDoesntExist).
@@ -171,7 +171,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 	var schemaVersion1ID string
 	t.Run("DraftVersion", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
 			RequireDataValue()
@@ -186,7 +186,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -205,7 +205,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaHasOnlyDraftVersion).
@@ -213,7 +213,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DraftVersionError", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionDraftOnNonPublished).
@@ -221,7 +221,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersionFieldsError", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionPublishWithNoFields).
@@ -229,7 +229,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFieldsSamePosition", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -263,7 +263,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFieldsSameKey", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -297,7 +297,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFields", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -344,14 +344,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema version")
 	})
 
 	t.Run("PublishVersionAlreadyPublished", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionTryingToPublishPublished).
@@ -359,14 +359,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema")
 	})
 
 	t.Run("PublishSchemaAlreadyPublished", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaTryingToPublishPublished).
@@ -375,7 +375,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 	var schemaVersion2ID string
 	t.Run("DraftVersion2", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
 			RequireDataValue()
@@ -390,7 +390,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CheckSchemaVersionAfterV2Draft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -409,7 +409,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersion2NoChanges", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.SchemaVersionNoChanges).
@@ -417,7 +417,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -439,7 +439,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("AddFieldToV2Success", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -478,7 +478,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFieldDuplicateInherited", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -500,7 +500,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFieldDuplicateInDraft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -522,14 +522,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersion2Success", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema version")
 	})
 
 	t.Run("GetSchemaVerbose", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		schema := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -652,11 +652,11 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 
 	t.Run("ProjectUserAccessDenied", func(t *testing.T) {
 		// Register a project user
-		projUser := client.NewUser("proj-user-schema@mail.com", ValidPassword).
-			ProjectRegister(user.ProjectID).
-			ProjectLogin(user.ProjectID)
+		projUser := client.WithCredentials("proj-user-schema@mail.com", ValidPassword).
+			ProjectRegister(user.projectID).
+			ProjectLogin(user.projectID)
 
-		authClient := suite.NewClient(t).Auth(projUser.auth)
+		authClient := suite.NewClient(t).WithAuth(projUser.auth)
 
 		// Try Draft
 		authClient.POST("/projects/" + projectID + "/schemas").

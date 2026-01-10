@@ -101,7 +101,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	var u *user.User
 	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
+		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
 	} else if err != nil {
 		return err
 	}
@@ -481,7 +481,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.UserAlreadyExists).WithCause(errors.New("email already in use"))
+		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
 	} else if err != nil {
 		return err
 	}

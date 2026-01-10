@@ -8,11 +8,11 @@ import (
 
 func testProjects(t *testing.T, suite *TestSuite) {
 	client := suite.NewClient(t)
-	user := client.NewUser("projects@mail.com", ValidPassword).Register().Login()
+	user := client.WithCredentials("projects@mail.com", ValidPassword).Register().Login()
 
 	var projectID string
 	t.Run("CreateProject", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects").
 			WithBody(map[string]interface{}{
 				"project_name": "Test Project",
@@ -38,7 +38,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("ValidationCreateProject", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects").
 			WithBody(map[string]interface{}{
 				"project_name": "", // Empty name
@@ -50,7 +50,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("ListProjects", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects").
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -73,7 +73,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("GetProject", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects/" + projectID).
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -95,8 +95,8 @@ func testProjects(t *testing.T, suite *TestSuite) {
 
 	t.Run("CrossUserAccess", func(t *testing.T) {
 		// Create a second user
-		attacker := client.NewUser("attacker@mail.com", ValidPassword).Register().Login()
-		attackerClient := suite.NewClient(t).Auth(attacker.auth)
+		attacker := client.WithCredentials("attacker@mail.com", ValidPassword).Register().Login()
+		attackerClient := suite.NewClient(t).WithAuth(attacker.auth)
 
 		// Try to GET project owned by first user
 		attackerClient.GET("/projects/" + projectID).
@@ -120,13 +120,13 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			HasMessage("cannot delete a project you don't own")
 
 		// Ensure it was NOT actually deleted from the perspective of the owner
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.GET("/projects/" + projectID).
 			Expect(http.StatusOK)
 	})
 
 	t.Run("UpdateProject", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.PATCH("/projects/" + projectID).
 			WithBody(map[string]interface{}{
 				"project_name": "Updated Project",
@@ -160,7 +160,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("DeleteProject", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.DELETE("/projects/" + projectID).
 			Expect(http.StatusOK).
 			HasMessage("Deleted project")

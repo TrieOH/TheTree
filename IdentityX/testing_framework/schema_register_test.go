@@ -8,15 +8,15 @@ import (
 
 func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	client := suite.NewClient(t)
-	user := client.NewUser("schemas_register@mail.com", ValidPassword).
+	user := client.WithCredentials("schemas_register@mail.com", ValidPassword).
 		Register().
 		Login().
 		CreateProject("schema testing")
 
-	projectID := user.ProjectID
+	projectID := user.projectID
 	var schemaID string
 	t.Run("Draft", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
 				"schema_type": "context",
@@ -43,7 +43,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 
 	var schemaVersion1ID string
 	t.Run("DraftVersion", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
 			RequireDataValue()
@@ -58,7 +58,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CheckSchemaVersion", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -77,7 +77,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("CreateFields", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
 			WithBody(map[string]interface{}{
 				"fields": []interface{}{
@@ -138,14 +138,14 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema version")
 	})
 
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
-		authClient := suite.NewClient(t).Auth(user.auth)
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema")
@@ -296,8 +296,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 
 	t.Run("SchemaUserSessionInfo", func(t *testing.T) {
 		client := suite.NewClient(t)
-		schemaUser := client.NewUser("client@email.com", ValidPassword).ProjectLogin(user.ProjectID)
-		data := schemaUser.AuthedClient().GET("/sessions/me").
+		schemaUser := client.WithCredentials("client@email.com", ValidPassword).ProjectLogin(user.projectID)
+		data := schemaUser.GET("/sessions/me").
 			Expect(http.StatusOK).
 			RequireDataValue()
 
@@ -337,13 +337,13 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 	t.Run("SchemaStateEdgeCases", func(t *testing.T) {
 		client := suite.NewClient(t)
 		// New user/project for this isolation
-		user := client.NewUser("schema_state@mail.com", ValidPassword).
+		user := client.WithCredentials("schema_state@mail.com", ValidPassword).
 			Register().
 			Login().
 			CreateProject("Schema State Project")
 
-		projectID := user.ProjectID
-		authClient := suite.NewClient(t).Auth(user.auth)
+		projectID := user.projectID
+		authClient := suite.NewClient(t).WithAuth(user.auth)
 
 		// 1. Create a schema but don't create any version
 		var schemaID string
@@ -369,7 +369,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.SchemaNoPublishedVersion).
-				HasMessage("something")
+				HasMessage("schema has no published version")
 		})
 
 		// 2. Create a version but don't publish it
@@ -405,8 +405,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaNoPublishedVersion).
-				HasMessage("something")
+				HasErrID(apierr.ProjectUserRegisterOnSchemaDraft).
+				HasMessage("can't register to a draft schema")
 		})
 
 		// 3. Publish the version but not the schema
@@ -425,9 +425,9 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 						"test": "val",
 					},
 				}).
-				Expect(http.StatusBadRequest).                // Should be BadRequest or NotFound depending on implementation
-				HasMessage("schema has no published version") // Or specific error if schema is draft
-			// TODO: Fix error messages for these tests
+				Expect(http.StatusBadRequest).
+				HasErrID(apierr.ProjectUserRegisterOnSchemaDraft).
+				HasMessage("can't register to a draft schema")
 		})
 	})
 }

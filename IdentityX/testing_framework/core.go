@@ -1,11 +1,15 @@
 package testing
 
 import (
+	"GoAuth/internal/adapters/http/router"
+	"GoAuth/internal/database"
 	"GoAuth/internal/utils"
 	"database/sql"
 	"log"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/gavv/httpexpect/v2"
@@ -81,4 +85,26 @@ func (s *TestSuite) NewClient(t *testing.T) *Client {
 		}),
 		t: t,
 	}
+}
+
+// ============================================================================
+// HELPER FUNCTIONS - Keep these minimal
+// ============================================================================
+
+func setupDatabase() (*sql.DB, error) {
+	db, err := database.WaitForDB(30 * time.Second)
+	if err != nil {
+		log.Fatalf("Failed to connect DB: %v", err)
+	}
+	if err = database.RunMigrations(db, "../internal/database/migrations"); err != nil {
+		log.Fatalf("Failed migrations: %v", err)
+	}
+	if err = database.SetJWTMasterKey(db); err != nil {
+		log.Fatal(err)
+	}
+	return db, nil
+}
+
+func createTestRouter(db *sql.DB) http.Handler {
+	return router.CreateTestRouter(db)
 }
