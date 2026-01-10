@@ -332,7 +332,7 @@ func (uc *UseCase) finishClientRefresh(
 	}
 
 	newAccessJTI := uuid.New()
-	if oldAccessJTI.String() == newAccessJTI.String() {
+	if oldAccessJTI == newAccessJTI {
 		err = apierr.ErrConflict.WithMsg("new access token ID matched old one, please retry").WithID(apierr.TokenAccessIDMatched)
 		apierr.RecordDomainError(span, err)
 		return nil, err
@@ -397,7 +397,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	}
 
 	newAccessJTI := uuid.New()
-	if oldAccessJTI.String() == newAccessJTI.String() {
+	if oldAccessJTI == newAccessJTI {
 		err = apierr.ErrConflict.WithMsg("new access token ID matched old one, please retry").WithID(apierr.TokenAccessIDMatched)
 		apierr.RecordDomainError(span, err)
 		return nil, err

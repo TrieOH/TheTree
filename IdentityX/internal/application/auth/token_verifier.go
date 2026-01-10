@@ -34,7 +34,7 @@ func (uc *TokenVerifier) VerifyAccessToken(
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, apierr.ErrUnauthorized.WithMsg("missing kid")
+			return nil, apierr.ErrUnauthorized.WithMsg("missing kid").WithID(apierr.TokenMissingKid)
 		}
 
 		return uc.resolvePublicKey(ctx, kid)
@@ -45,7 +45,7 @@ func (uc *TokenVerifier) VerifyAccessToken(
 	}
 
 	if !token.Valid {
-		return nil, apierr.ErrUnauthorized.WithMsg("invalid access token")
+		return nil, apierr.ErrUnauthorized.WithMsg("invalid access token").WithID(apierr.TokenInvalid)
 	}
 
 	return claims, nil
@@ -61,7 +61,7 @@ func (uc *TokenVerifier) VerifyRefreshToken(
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, apierr.ErrUnauthorized.WithMsg("missing kid")
+			return nil, apierr.ErrUnauthorized.WithMsg("missing kid").WithID(apierr.TokenMissingKid)
 		}
 
 		return uc.resolvePublicKey(ctx, kid)
@@ -72,7 +72,7 @@ func (uc *TokenVerifier) VerifyRefreshToken(
 	}
 
 	if !token.Valid {
-		return nil, apierr.ErrUnauthorized.WithMsg("invalid refresh token")
+		return nil, apierr.ErrUnauthorized.WithMsg("invalid refresh token").WithID(apierr.TokenInvalid)
 	}
 
 	return claims, nil
@@ -105,7 +105,7 @@ func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid string) (ed25
 		var decodedKey ed25519.PublicKey
 		decodedKey, err = utils.ParseEd25519PublicKey(pubKey)
 		if err != nil {
-			return nil, err
+			return nil, apierr.ErrInternal.WithMsg("failed to parse project public key").WithCause(err).WithID(apierr.ProjectFailedToParseKey)
 		}
 
 		return decodedKey, nil

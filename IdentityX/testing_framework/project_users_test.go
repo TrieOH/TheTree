@@ -446,12 +446,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
 			return projectPubKey, nil
 		})
-
-		// EXPECTATION: It SHOULD pass if the token was signed with Project Priv Key.
-		// ACTUAL: It will likely fail because it's signed with Master Priv Key.
-		if err != nil {
-			t.Errorf("⚠️ BUG CONFIRMED: Token for project %s cannot be verified with its own JWKS: %v", projectID, err)
-		}
+		require.NoError(t, err, "⚠️ BUG CONFIRMED: Token for project %s cannot be verified with its own JWKS: %v", projectID, err)
 
 		// 4. Try verifying with Master Pub Key
 		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {

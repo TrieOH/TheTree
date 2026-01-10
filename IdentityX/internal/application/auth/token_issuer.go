@@ -63,7 +63,7 @@ func newRefreshToken(keyID string, privKey ed25519.PrivateKey, accessJTI, refres
 	return tokenStr, nil
 }
 
-func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI, keyID string, sessionId uuid.UUID, expiresAt time.Time, privKey ed25519.PrivateKey) (string, error) {
+func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time, privKey ed25519.PrivateKey) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
 			ID:        user.ID,
@@ -71,7 +71,7 @@ func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI,
 			ProjectID: &user.ProjectID,
 			Metadata:  user.Metadata,
 			Email:     user.Email,
-			SessionID: sessionId,
+			SessionID: sessionID,
 			UserAgent: agent,
 			UserIP:    ip,
 		},

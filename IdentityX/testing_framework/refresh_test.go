@@ -108,17 +108,12 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		require.NotEqual(t, auth1.AccessToken, auth2.AccessToken)
 
 		// 2. Attack: Use Access Token from Session 1 with Refresh Token from Session 2
-		resp := suite.NewClient(t).GET("/sessions/me").
+		suite.NewClient(t).GET("/sessions/me").
 			WithCookie("access_token", auth1.AccessToken).
 			WithCookie("refresh_token", auth2.RefreshToken).
 			Expect(http.StatusUnauthorized).
-			HasMessage("access token does not belong to this refresh token").
 			HasErrID(apierr.TokenMismatchDuringAuth).
-			Resp()
-
-		if resp.Raw().StatusCode == http.StatusOK {
-			t.Error("⚠️ Linkage Weakness: Old Access Token still usable with New Refresh Token for different sessions.")
-		}
+			HasMessage("access token does not belong to this refresh token")
 
 		// 3. Real linkage test: Old Access Token + New Refresh Token (Same Session)
 		client3 := suite.NewClient(t).WithCredentials("linkage3@mail.com", ValidPassword)
@@ -141,16 +136,11 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		// NOTE: GoAuth currently does NOT enforce AccessJTI linkage in AuthMiddleware.
 		// It only checks if the RefreshToken's session is active and matches AccessToken's session.
 
-		resp = suite.NewClient(t).GET("/sessions/me").
+		suite.NewClient(t).GET("/sessions/me").
 			WithCookie("access_token", oldAuth.AccessToken).
 			WithCookie("refresh_token", newAuth.RefreshToken).
 			Expect(http.StatusUnauthorized).
-			HasMessage("access token does not belong to this refresh token").
 			HasErrID(apierr.TokenMismatchDuringAuth).
-			Resp()
-
-		if resp.Raw().StatusCode == http.StatusOK {
-			t.Error("⚠️ Linkage Weakness: Old Access Token still usable with New Refresh Token for the same session.")
-		}
+			HasMessage("access token does not belong to this refresh token")
 	})
 }

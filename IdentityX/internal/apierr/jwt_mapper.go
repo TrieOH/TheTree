@@ -19,7 +19,7 @@ func FromJWTError(err error, tokenType string) error {
 	case errors.Is(err, jwt.ErrTokenMalformed):
 		return ErrUnauthorized.WithMsg("malformed " + tokenType + " token").WithID(TokenMalformed)
 	case errors.Is(err, jwt.ErrTokenInvalidClaims):
-		return ErrUnauthorized.WithMsg("invalid " + tokenType + " claims").WithID(TokenInvalidClaims)
+		return ErrUnauthorized.WithMsg("invalid " + tokenType + " claims").WithID(TokenInvalidAccessClaims)
 	case errors.Is(err, jwt.ErrTokenNotValidYet):
 		return ErrUnauthorized.WithMsg(tokenType + " not yet valid").WithID(TokenNotYetValid)
 	case errors.Is(err, jwt.ErrTokenUsedBeforeIssued):
@@ -31,7 +31,10 @@ func FromJWTError(err error, tokenType string) error {
 	case errors.Is(err, jwt.ErrTokenInvalidAudience):
 		return ErrUnauthorized.WithMsg(tokenType + " has invalid audience").WithID(TokenInvalidAudience)
 	case errors.Is(err, jwt.ErrTokenInvalidId):
-		return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenRefreshInvalidID)
+		if tokenType == "refresh token" {
+			return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenRefreshInvalidID)
+		}
+		return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenAccessInvalidID)
 	}
 
 	return ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(TokenInvalid).WithCause(err)
