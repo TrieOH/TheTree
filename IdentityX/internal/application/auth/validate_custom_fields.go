@@ -40,6 +40,12 @@ func (uc *UseCase) validateAndConstructMetadata(
 		return nil, apiErr
 	}
 
+	if registerSchema.Status == schema.StatusArchived {
+		apiErr := apierr.ErrBadRequest.WithMsg("can't register to an archived schema").WithID(apierr.ProjectUserRegisterOnSchemaArchived)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
+	}
+
 	var registerVersion *schema.Version
 	registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID)
 	if err != nil {
@@ -48,6 +54,12 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	if registerVersion.Status == schema.VersionStatusDraft {
 		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionDraft)
+		apierr.RecordDomainError(span, apiErr)
+		return nil, apiErr
+	}
+
+	if registerVersion.Status == schema.VersionStatusArchived {
+		apiErr := apierr.ErrBadRequest.WithMsg("can't register to an archived schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionArchived)
 		apierr.RecordDomainError(span, apiErr)
 		return nil, apiErr
 	}
@@ -118,10 +130,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	schemaPayload["schema_id"] = registerSchema.ID.String()
 	schemaPayload["schema_version_id"] = registerVersion.ID.String()
-
-	for k, v := range validated {
-		schemaPayload[k] = v
-	}
+	schemaPayload["fields"] = validated
 
 	flowMap := map[string]any{
 		flowID: schemaPayload,

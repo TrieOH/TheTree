@@ -21,7 +21,7 @@ type schemaVersionRepo struct {
 }
 
 func (repo *schemaVersionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok {
+	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
@@ -149,6 +149,26 @@ func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID
 	defer span.End()
 
 	latest, err := repo.queries(ctx).GetLatestSchemaVersion(ctx, schemaID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var found schema.Version
+	mapSchemaVersionFromDB(&found, &latest)
+	return &found, nil
+}
+
+func (repo *schemaVersionRepo) GetLatestForUpdate(ctx context.Context, schemaID uuid.UUID) (*schema.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetLatestForUpdate",
+		trace.WithAttributes(
+			attribute.String("version.schema_id", schemaID.String()),
+		),
+	)
+	defer span.End()
+
+	latest, err := repo.queries(ctx).GetLatestSchemaVersionForUpdate(ctx, schemaID)
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)

@@ -12,11 +12,21 @@ type Type string
 const (
 	String   Type = "string"
 	Int      Type = "int"
+	Email    Type = "email"
 	Select   Type = "select"
 	Radio    Type = "radio"
 	Checkbox Type = "checkbox"
 	Bool     Type = "bool"
 )
+
+func IsValidFieldType(t string) bool {
+	switch Type(t) {
+	case String, Int, Email, Select, Radio, Checkbox, Bool:
+		return true
+	default:
+		return false
+	}
+}
 
 type Owner string
 
@@ -25,6 +35,15 @@ const (
 	Admin  Owner = "admin"
 	User   Owner = "user"
 )
+
+func IsValidOwnerType(t string) bool {
+	switch Owner(t) {
+	case System, Admin, User:
+		return true
+	default:
+		return false
+	}
+}
 
 type Field struct {
 	ObjectID        uuid.UUID

@@ -5,7 +5,6 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/user"
-	"GoAuth/internal/utils"
 	"crypto/ed25519"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func newAccessToken(user user.User, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time) (string, error) {
+func newAccessToken(user user.User, key ed25519.PrivateKey, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
 			ID:        user.ID,
@@ -34,7 +33,7 @@ func newAccessToken(user user.User, ip, agent, accessJTI, keyID string, sessionI
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
 	accessToken.Header["kid"] = keyID
-	tokenStr, err := accessToken.SignedString(utils.GoAuthPrivateKey)
+	tokenStr, err := accessToken.SignedString(key)
 	if err != nil {
 		return "", apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
 	}

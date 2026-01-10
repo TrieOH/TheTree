@@ -426,9 +426,11 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 							"estudante": map[string]interface{}{
 								"schema_id":         schemaID,
 								"schema_version_id": schemaVersion1ID,
-								"curso":             "Ciência da Computação",
-								"matricula":         "20221100033",
-								"periodo":           4,
+								"fields": map[string]interface{}{
+									"curso":     "Ciência da Computação",
+									"matricula": "20221100033",
+									"periodo":   4,
+								},
 							},
 						},
 					},

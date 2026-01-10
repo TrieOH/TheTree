@@ -101,9 +101,11 @@ const (
 )
 
 const (
-	ProjectUserInvalidMetadata              ID = "PROJ_USR_001"
-	ProjectUserRegisterOnSchemaVersionDraft ID = "PROJ_USR_002"
-	ProjectUserRegisterOnSchemaDraft        ID = "PROJ_USR_003"
+	ProjectUserInvalidMetadata                 ID = "PROJ_USR_001"
+	ProjectUserRegisterOnSchemaVersionDraft    ID = "PROJ_USR_002"
+	ProjectUserRegisterOnSchemaDraft           ID = "PROJ_USR_003"
+	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
+	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
 )
 
 const (
@@ -146,6 +148,8 @@ const (
 	FieldTypeMismatch                  ID = "FIELD_005"
 	FieldSameKeyForMultipleFields      ID = "FIELD_006"
 	FieldRequiredMissing               ID = "FIELD_007"
+	FieldInvalidType                   ID = "FIELD_008"
+	FieldInvalidOwner                  ID = "FIELD_009"
 )
 
 const (

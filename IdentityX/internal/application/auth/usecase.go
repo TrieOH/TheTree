@@ -179,7 +179,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	var accessToken string
 	accessJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, err = newAccessToken(*u, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
+	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
@@ -330,7 +330,7 @@ func (uc *UseCase) finishClientRefresh(
 	newAccessJTI := uuid.New()
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, err = newAccessToken(*u, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err

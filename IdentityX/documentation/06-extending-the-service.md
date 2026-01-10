@@ -164,7 +164,7 @@ Now we need to initialize our new handler and register the route.
             r.Use(authMW.Auth())
     
             r.Get("/users/{user_id}", h.GetUser)
-        }
+        })
     }
     ```
 

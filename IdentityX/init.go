@@ -1,12 +1,14 @@
 package main
 
 import (
+	http2 "GoAuth/internal/adapters/http"
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/utils"
 	"context"
 	"database/sql"
 	"log"
+	"strings"
 	"time"
 
 	"GoAuth/internal/database"
@@ -27,6 +29,10 @@ var scheduler gocron.Scheduler
 // connects to the database, runs migrations, sets the JWT master key, and schedules cron jobs.
 func init() {
 	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	if err := http2.LoadProxyConfig(); err != nil {
+		log.Fatalf("LoadProxyConfig failed: %v", err.Error())
+	}
 
 	if iss := viper.GetString("ISSUER"); iss == "" {
 		log.Fatalf("ISSUER environment variable not set.")

@@ -41,11 +41,6 @@ SELECT *
 FROM schemas
 WHERE id = $1 AND project_id = $2;
 
--- name: GetSchemaByFlowID :one
-SELECT *
-FROM schemas
-WHERE flow_id = $1 AND project_id = $2;
-
 -- name: GetSchemaByFlowIDAndType :one
 SELECT *
 FROM schemas
@@ -94,6 +89,14 @@ WHERE schema_id = $1
 ORDER BY version DESC
 LIMIT 1;
 
+-- name: GetLatestSchemaVersionForUpdate :one
+SELECT *
+FROM schema_versions
+WHERE schema_id = $1
+ORDER BY version DESC
+    LIMIT 1
+FOR UPDATE;
+
 -- name: GetCurrentSchemaVersion :one
 SELECT sv.*
 FROM schemas s
@@ -108,13 +111,20 @@ WHERE schema_id = $1
 ORDER BY version DESC;
 
 -- name: CopyVersionOnDraft :one
+WITH locked AS (
+    SELECT *
+    FROM schema_versions sv
+    WHERE sv.id = $1
+      AND status = 'published'
+    FOR UPDATE
+    )
 INSERT INTO schema_versions (schema_id, version, status, based_on_version_id)
 SELECT
-    sv.schema_id,
-    sv.version + 1,
+    locked.schema_id,
+    locked.version + 1,
     'draft',
-    sv.id
-FROM schema_versions sv
-WHERE sv.id = $1 AND sv.status = 'published'
+    locked.id
+FROM locked
 RETURNING *;
+
 

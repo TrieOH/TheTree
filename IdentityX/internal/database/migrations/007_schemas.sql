@@ -224,7 +224,7 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
 
 
 ALTER TABLE sessions
-    ADD COLUMN revoked_at TIMESTAMP NULL;
+    ADD COLUMN revoked_at TIMESTAMPTZ NULL;
 
 -- +goose Down
 ALTER TABLE sessions DROP COLUMN IF EXISTS revoked_at;

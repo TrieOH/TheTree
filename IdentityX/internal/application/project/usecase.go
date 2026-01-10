@@ -139,8 +139,8 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]an
 
 	parsedKey, err := utils.ParseEd25519PublicKey(pubKey)
 	if err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("error parsing project public key").WithID(apierr.ProjectErrorParsingKeys).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
+		apiErr := apierr.ErrInternal.WithMsg("error parsing project public key").WithID(apierr.ProjectErrorParsingKeys).WithCause(err)
+		apierr.RecordSystemError(span, apiErr)
 		return nil, apiErr
 	}
 
