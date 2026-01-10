@@ -260,6 +260,11 @@ func (rb *RequestBuilder) WithQuery(key, value string) *RequestBuilder {
 	return rb
 }
 
+func (rb *RequestBuilder) WithCookie(key, value string) *RequestBuilder {
+	rb.req = rb.req.WithCookie(key, value)
+	return rb
+}
+
 func (rb *RequestBuilder) Expect(status int) *Response {
 	rb.t.Helper()
 
@@ -379,7 +384,17 @@ func (r *Response) AuthCookies() *AuthContext {
 	}
 }
 
-func (r *Response) JSON() *httpexpect.Object {
+func (r *Response) Resp() *httpexpect.Response {
+	r.t.Helper()
+	return r.resp
+}
+
+func (r *Response) JSON() *httpexpect.Value {
+	r.t.Helper()
+	return r.resp.JSON()
+}
+
+func (r *Response) JSONObj() *httpexpect.Object {
 	r.t.Helper()
 	return r.resp.JSON().Object()
 }

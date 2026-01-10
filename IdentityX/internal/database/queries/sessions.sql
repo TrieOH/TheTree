@@ -23,6 +23,8 @@ WHERE token_id = $1
   AND expires_at > NOW();
 
 -- name: ListUserSessions :many
+-- FIXME: This query should also filter by user_type to prevent theoretical session leakage 
+-- if a client user and a project user share the same UUID (which is technically possible as they are in different tables).
 SELECT *
 FROM sessions
 WHERE user_id = $1

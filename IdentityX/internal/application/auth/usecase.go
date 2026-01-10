@@ -10,9 +10,11 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
+	authport "GoAuth/internal/ports/auth"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
+	"crypto/ed25519"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -33,13 +35,15 @@ var (
 )
 
 type UseCase struct {
-	users        outbound.UserRepository
-	sessions     outbound.SessionRepository
-	schemas      outbound.SchemaRepository
-	versions     outbound.SchemaVersionRepository
-	fields       outbound.SchemaFieldsRepository
-	projectUsers outbound.ProjectUserRepository
-	tx           transactions.TxRunner
+	users         outbound.UserRepository
+	sessions      outbound.SessionRepository
+	schemas       outbound.SchemaRepository
+	versions      outbound.SchemaVersionRepository
+	fields        outbound.SchemaFieldsRepository
+	projects      outbound.ProjectRepository
+	projectUsers  outbound.ProjectUserRepository
+	tokenVerifier authport.TokenVerifier
+	tx            transactions.TxRunner
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -50,17 +54,21 @@ func New(
 	schemas outbound.SchemaRepository,
 	versions outbound.SchemaVersionRepository,
 	fields outbound.SchemaFieldsRepository,
+	projects outbound.ProjectRepository,
 	projectUsers outbound.ProjectUserRepository,
+	tokenVerifier authport.TokenVerifier,
 	tx transactions.TxRunner,
 ) inbounds.AuthService {
 	return &UseCase{
-		users:        users,
-		sessions:     sessions,
-		schemas:      schemas,
-		versions:     versions,
-		fields:       fields,
-		projectUsers: projectUsers,
-		tx:           tx,
+		users:         users,
+		sessions:      sessions,
+		schemas:       schemas,
+		versions:      versions,
+		fields:        fields,
+		projects:      projects,
+		projectUsers:  projectUsers,
+		tokenVerifier: tokenVerifier,
+		tx:            tx,
 	}
 }
 
@@ -169,16 +177,16 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	}
 
 	var accessToken string
-	var accessJTI uuid.UUID
+	accessJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessToken, err = newAccessToken(*u, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
 	var refreshToken string
-	refreshToken, err = newRefreshToken(accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
@@ -253,7 +261,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	}()
 
 	var refreshToken *auth.RefreshClaims
-	refreshToken, err = utils.ParseRefreshToken(in.RefreshCookie.Value, utils.GoAuthPublicKey)
+	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
@@ -319,17 +327,17 @@ func (uc *UseCase) finishClientRefresh(
 		return nil, err
 	}
 
+	newAccessJTI := uuid.New()
 	var accessTokenStr string
-	var accessJTI uuid.UUID
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, accessJTI, err = newAccessToken(*u, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = newAccessToken(*u, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
 	var refreshTokenStr string
-	refreshTokenStr, err = newRefreshToken(accessJTI, refreshJTI, refreshExpiresAt)
+	refreshTokenStr, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
@@ -365,17 +373,30 @@ func (uc *UseCase) finishProjectUserRefresh(
 		return nil, err
 	}
 
+	var privKey string
+	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var decodedKey ed25519.PrivateKey
+	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	newAccessJTI := uuid.New()
+	var keyID = "project:" + sess.ProjectID.String() + ":v1"
 	var accessTokenStr string
-	var accessJTI uuid.UUID
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, accessJTI, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, newAccessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
 	}
 
 	var refreshTokenStr string
-	refreshTokenStr, err = newRefreshToken(accessJTI, refreshJTI, refreshExpiresAt)
+	refreshTokenStr, err = newRefreshToken(keyID, decodedKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordSystemError(span, err)
 		return nil, err
@@ -542,14 +563,28 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
+	var privKey string
+	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var decodedKey ed25519.PrivateKey
+	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	keyID := "project:" + sess.ProjectID.String() + ":v1"
+	accessJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, accessJTI, err := newProjectAccessToken(*usr, in.IP, in.Agent, sess.SessionID, accessExpiresAt)
+	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	refreshToken, err := newRefreshToken(accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err := newRefreshToken(keyID, decodedKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
 		return nil, err

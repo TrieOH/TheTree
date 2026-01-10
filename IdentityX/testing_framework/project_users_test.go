@@ -2,10 +2,13 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"crypto/ed25519"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -391,7 +394,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			jwksClient := suite.NewClient(t)
 			jwksClient.GET("/projects/" + user.projectID + "/.well-known/jwks.json").
 				Expect(http.StatusOK).
-				JSON().Value("keys").
+				JSONObj().Value("keys").
 				Array().NotEmpty()
 		})
 
@@ -402,5 +405,53 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
+	})
+
+	t.Run("CryptographicIsolation", func(t *testing.T) {
+		client := suite.NewClient(t)
+		user := client.WithCredentials("crypto@mail.com", ValidPassword).
+			Register().
+			Login().
+			CreateProject("Crypto Project")
+
+		projectID := user.projectID
+		projectUser := client.WithCredentials("user@crypto.com", ValidPassword).
+			ProjectRegister(projectID).
+			ProjectLogin(projectID)
+
+		accessToken := projectUser.auth.AccessToken
+
+		// 1. Get Project JWKS (Raw)
+		jwksResp := client.GET("/projects/" + projectID + "/.well-known/jwks.json").
+			Expect(http.StatusOK).
+			JSONObj()
+
+		// Extract public key from JWKS
+		xBase64 := jwksResp.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
+		xBytes, err := base64.RawURLEncoding.DecodeString(xBase64)
+		require.NoError(t, err)
+		projectPubKey := ed25519.PublicKey(xBytes)
+
+		// 2. Get Global JWKS (Master - Wrapped in Data)
+		globalJwksResp := client.GET("/.well-known/jwks.json").
+			Expect(http.StatusOK).
+			RequireDataObject()
+
+		gxBase64 := globalJwksResp.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
+		gxBytes, err := base64.RawURLEncoding.DecodeString(gxBase64)
+		require.NoError(t, err)
+		masterPubKey := ed25519.PublicKey(gxBytes)
+
+		// 3. Try verifying with Project Pub Key
+		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+			return projectPubKey, nil
+		})
+		require.NoError(t, err, "Token for project %s should be verifiable with its own project JWKS", projectID)
+
+		// 4. Try verifying with Master Pub Key
+		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
+			return masterPubKey, nil
+		})
+		require.Error(t, err, "Token MUST NOT be verifiable by Master Pub Key")
 	})
 }

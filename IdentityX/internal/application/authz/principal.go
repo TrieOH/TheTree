@@ -35,20 +35,20 @@ func NewPrincipal(
 	refresh *auth.RefreshClaims,
 ) (*Principal, error) {
 	if access == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("access claims required").WithID(apierr.TokenInvalidID)
+		return nil, apierr.ErrUnauthorized.WithMsg("access claims required").WithID(apierr.TokenInvalidAccessClaims)
 	}
 	if refresh == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("refresh claims required").WithID(apierr.TokenInvalidID)
+		return nil, apierr.ErrUnauthorized.WithMsg("refresh claims required").WithID(apierr.TokenInvalidRefreshClaims)
 	}
 
 	accessJTI, err := uuid.Parse(access.ID)
 	if err != nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse access JTI").WithID(apierr.TokenInvalidID).WithCause(err)
+		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse access JTI").WithID(apierr.TokenAccessInvalidID).WithCause(err)
 	}
 
 	refreshJTI, err := uuid.Parse(refresh.ID)
 	if err != nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse refresh JTI").WithID(apierr.TokenInvalidID).WithCause(err)
+		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse refresh JTI").WithID(apierr.TokenRefreshInvalidID).WithCause(err)
 
 	}
 
