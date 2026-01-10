@@ -91,7 +91,7 @@ func RequireSessionID(span trace.Span, sessionID *string) (*uuid.UUID, error) {
 func ParseRefreshJTI(span trace.Span, refreshJTI string) (*uuid.UUID, error) {
 	jti, err := uuid.Parse(refreshJTI)
 	if err != nil {
-		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid refresh token id").WithID(apierr.TokenInvalidID)
+		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid refresh token id").WithID(apierr.TokenRefreshInvalidID)
 		apierr.RecordDomainError(span, tokenErr)
 		return nil, tokenErr
 	}
@@ -100,7 +100,7 @@ func ParseRefreshJTI(span trace.Span, refreshJTI string) (*uuid.UUID, error) {
 
 func RefreshJTINotNull(span trace.Span, refreshJTI *string) error {
 	if refreshJTI == nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("refresh token id is required").WithID(apierr.TokenIDMissing)
+		apiErr := apierr.ErrInvalidInput.WithMsg("refresh token id is required").WithID(apierr.TokenRefreshIDMissing)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
@@ -113,4 +113,31 @@ func RequireRefreshJTI(span trace.Span, refreshJTI *string) (*uuid.UUID, error) 
 		return nil, err
 	}
 	return ParseRefreshJTI(span, *refreshJTI)
+}
+
+func ParseAccessJTI(span trace.Span, refreshJTI string) (*uuid.UUID, error) {
+	jti, err := uuid.Parse(refreshJTI)
+	if err != nil {
+		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid access token id").WithID(apierr.TokenAccessInvalidID)
+		apierr.RecordDomainError(span, tokenErr)
+		return nil, tokenErr
+	}
+	return &jti, nil
+}
+
+func AccessJTINotNull(span trace.Span, refreshJTI *string) error {
+	if refreshJTI == nil {
+		apiErr := apierr.ErrInvalidInput.WithMsg("refresh token id is required").WithID(apierr.TokenAccessIDMissing)
+		apierr.RecordDomainError(span, apiErr)
+		return apiErr
+	}
+	return nil
+}
+
+func RequireAccessJTI(span trace.Span, refreshJTI *string) (*uuid.UUID, error) {
+	err := AccessJTINotNull(span, refreshJTI)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAccessJTI(span, *refreshJTI)
 }

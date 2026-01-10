@@ -186,4 +186,77 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusOK).
 			RequireDataArray().Length().IsEqual(1)
 	})
+
+	t.Run("SessionLeakage", func(t *testing.T) {
+		// This test simulates a UUID collision between a Client User and a Project User.
+		// While unlikely with UUIDv4, it checks if the session list is correctly filtered by user type.
+
+		// 1. Manually insert a Client User with a specific ID
+		collisionID := "00000000-0000-0000-0000-000000000001"
+		clientEmail := "collision_client@mail.com"
+		projectEmail := "collision_project@mail.com"
+
+		client := suite.NewClient(t)
+
+		// Create Client User
+		client.WithCredentials(clientEmail, ValidPassword).Register()
+
+		// Create Project & Project User
+		userP := client.WithCredentials(projectEmail, ValidPassword).
+			Register().
+			Login().
+			CreateProject("Collision Project")
+		projectID := userP.projectID
+
+		client.WithCredentials(projectEmail, ValidPassword).
+			ProjectRegister(projectID)
+
+		// 2. Force IDs to be the same in DB
+		// ...
+
+		// Update Client User ID
+		_, err := suite.DB.Exec(`UPDATE users SET id = $1 WHERE email = $2`, collisionID, clientEmail)
+		if err != nil {
+			t.Fatalf("Failed to force client user ID: %v", err)
+		}
+
+		// Update Project User ID
+		_, err = suite.DB.Exec(`UPDATE project_users SET id = $1 WHERE email = $2 AND project_id = $3`, collisionID, projectEmail, projectID)
+		if err != nil {
+			t.Fatalf("Failed to force project user ID: %v", err)
+		}
+
+		// 3. Create Sessions for both
+		// Login as Client (ID=collisionID, Type=client)
+		clientLogin := client.WithCredentials(clientEmail, ValidPassword).Login()
+
+		// Login as Project User (ID=collisionID, Type=project)
+		client.WithCredentials(projectEmail, ValidPassword).ProjectLogin(projectID)
+
+		// 4. List Sessions as Client
+		// Should ONLY see Client session
+		sessions := clientLogin.GET("/sessions").
+			Expect(http.StatusOK).
+			RequireDataArray()
+		// Analyze results
+		// If leakage exists, we see 2 sessions.
+		// If isolated, we see 1.
+
+		count := int(sessions.Length().Raw())
+		if count > 1 {
+
+			t.Logf("⚠️ SESSION LEAKAGE DETECTED: Found %d sessions for user ID %s (should be 1). Mixed user types?", count, collisionID)
+
+			// Optional: Inspect types
+			for i := 0; i < count; i++ {
+				obj := sessions.Value(i).Object()
+				uType := obj.Value("user_type").String().Raw()
+				t.Logf("Session %d: user_type=%s", i, uType)
+			}
+
+			t.Fail()
+		} else {
+			t.Log("Session isolation verified (no leakage by ID collision).")
+		}
+	})
 }

@@ -31,7 +31,7 @@ func FromJWTError(err error, tokenType string) error {
 	case errors.Is(err, jwt.ErrTokenInvalidAudience):
 		return ErrUnauthorized.WithMsg(tokenType + " has invalid audience").WithID(TokenInvalidAudience)
 	case errors.Is(err, jwt.ErrTokenInvalidId):
-		return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenInvalidID)
+		return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenRefreshInvalidID)
 	}
 
 	return ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(TokenInvalid).WithCause(err)

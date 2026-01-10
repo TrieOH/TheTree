@@ -154,7 +154,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		jwksClient := suite.NewClient(t)
 		obj := jwksClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
 			Expect(http.StatusOK).
-			JSON()
+			JSONObj()
 
 		obj.Value("keys").Array().NotEmpty()
 	})

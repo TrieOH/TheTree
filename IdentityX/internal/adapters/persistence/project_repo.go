@@ -254,3 +254,21 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 
 	return nil
 }
+
+func (repo *projectRepo) GetPrivateKeyByIDInternal(ctx context.Context, projectID uuid.UUID) (string, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectRepo.GetPrivateKeyByIDInternal",
+		trace.WithAttributes(
+			attribute.String("project.id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	privKey, err := repo.queries(ctx).GetProjectPrivateKeyByIDInternal(ctx, projectID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return "", sqlcErr
+	}
+
+	return privKey, nil
+}

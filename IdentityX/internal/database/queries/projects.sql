@@ -24,6 +24,11 @@ SELECT pub_key
 FROM projects
 WHERE id = $1;
 
+-- name: GetProjectPrivateKeyByIDInternal :one
+SELECT pgp_sym_decrypt(priv_key::bytea, current_setting('app.jwt_master_key')) AS priv_key
+FROM projects
+WHERE id = $1;
+
 -- name: ListProjects :many
 SELECT 
   id, project_name, owner_id, metadata, is_active, created_at, updated_at

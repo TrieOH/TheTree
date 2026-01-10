@@ -113,6 +113,16 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 						"mutable":     true,
 						"position":    2,
 					},
+					map[string]interface{}{
+						"key":         "ativo",
+						"type":        "bool",
+						"owner":       "user",
+						"title":       "Ativo",
+						"description": "Se o aluno está ativo",
+						"required":    false,
+						"mutable":     true,
+						"position":    3,
+					},
 				},
 			}).
 			Expect(http.StatusCreated).
@@ -120,6 +130,10 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			RequireDataValue()
 
 		spec := []interface{}{
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"id":        AnyUUID{},
+			},
 			map[string]interface{}{
 				"object_id": AnyUUID{},
 				"id":        AnyUUID{},
@@ -256,6 +270,97 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldTypeMismatch).
 			HasMessage("invalid field type")
+	})
+
+	t.Run("RegisterOnSchemaTypeFloatOnInt", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "float_on_int@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4.5,
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
+	})
+
+	t.Run("RegisterOnSchemaTypeStringOnBool", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "string_on_bool@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4,
+					"ativo":     "true",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
+	})
+
+	t.Run("RegisterOnSchemaTypeIntOnBool", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "int_on_bool@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4,
+					"ativo":     1,
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
+	})
+
+	t.Run("RegisterOnSchemaTypeBoolOnString", func(t *testing.T) {
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "bool_on_string@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": true,
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldTypeMismatch).
+			HasMessage("invalid field type")
+	})
+
+	t.Run("RegisterOnSchemaTypeFloatZeroOnInt", func(t *testing.T) {
+		// Should succeed because 4.0 is a valid integer representation in JSON
+		client.POST("/projects/"+projectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "estudante").
+			WithBody(map[string]interface{}{
+				"email":    "float_zero@email.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"matricula": "20221100033",
+					"curso":     "Ciência da Computação",
+					"periodo":   4.0,
+					"ativo":     true,
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
 	})
 
 	t.Run("RegisterOnSchemaSuccess", func(t *testing.T) {
@@ -428,6 +533,72 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.ProjectUserRegisterOnSchemaDraft).
 				HasMessage("can't register to a draft schema")
+		})
+	})
+
+	t.Run("UnimplementedFieldTypes", func(t *testing.T) {
+		clientU := suite.NewClient(t)
+		userU := clientU.WithCredentials("unimplemented@mail.com", ValidPassword).
+			Register().
+			Login().
+			CreateProject("Unimplemented Project")
+
+		projectID := userU.projectID
+		authClient := suite.NewClient(t).WithAuth(userU.auth)
+
+		// Create Schema with 'email' type (valid ENUM but unimplemented in validator)
+		var schemaIDU string
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "Email Schema",
+				"flow_id":     "emailsync",
+			}).
+			Expect(http.StatusCreated).
+			RequireDataValue()
+
+		Validate(t, data, map[string]interface{}{
+			"id": StoreString{Into: &schemaIDU, Matcher: AnyUUID{}},
+		})
+
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaIDU + "/versions/draft").
+			Expect(http.StatusCreated)
+
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaIDU + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "contact",
+						"type":     "email",
+						"owner":    "user",
+						"title":    "Contact Email",
+						"position": 0,
+						"required": true,
+					},
+				},
+			}).
+			Expect(http.StatusCreated)
+
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaIDU + "/versions/publish").
+			Expect(http.StatusOK)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaIDU + "/publish").
+			Expect(http.StatusOK)
+
+		t.Run("RegisterFailsDueToUnimplementedType", func(t *testing.T) {
+			// This will fail because validateFieldType defaults to false for 'email'
+			clientU.POST("/projects/"+projectID+"/register").
+				WithQuery("schema_type", "context").
+				WithQuery("flow_id", "emailsync").
+				WithBody(map[string]interface{}{
+					"email":    "user@unimplemented.com",
+					"password": ValidPassword,
+					"custom_fields": map[string]interface{}{
+						"contact": "test@example.com",
+					},
+				}).
+				Expect(http.StatusBadRequest).
+				HasErrID(apierr.FieldTypeMismatch).
+				HasMessage("invalid field type")
 		})
 	})
 }

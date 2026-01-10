@@ -95,4 +95,62 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		require.Equal(t, 1, successCount, "Only one refresh request should succeed")
 		require.Equal(t, concurrency-1, failCount, "All other refresh requests should fail")
 	})
+
+	t.Run("TokenLinkage", func(t *testing.T) {
+		// 1. Setup: User with two sessions
+		client1 := suite.NewClient(t).WithCredentials("linkage1@mail.com", ValidPassword)
+		user1 := client1.Register().Login()
+		auth1 := user1.auth
+
+		user2 := client1.Login()
+		auth2 := user2.auth
+
+		require.NotEqual(t, auth1.AccessToken, auth2.AccessToken)
+
+		// 2. Attack: Use Access Token from Session 1 with Refresh Token from Session 2
+		resp := suite.NewClient(t).GET("/sessions/me").
+			WithCookie("access_token", auth1.AccessToken).
+			WithCookie("refresh_token", auth2.RefreshToken).
+			Expect(http.StatusUnauthorized).
+			HasMessage("access token does not belong to this refresh token").
+			HasErrID(apierr.TokenMismatchDuringAuth).
+			Resp()
+
+		if resp.Raw().StatusCode == http.StatusOK {
+			t.Error("⚠️ Linkage Weakness: Old Access Token still usable with New Refresh Token for different sessions.")
+		}
+
+		// 3. Real linkage test: Old Access Token + New Refresh Token (Same Session)
+		client3 := suite.NewClient(t).WithCredentials("linkage3@mail.com", ValidPassword)
+		user3 := client3.Register().Login()
+		oldAuth := *user3.auth
+
+		// Refresh once
+		refreshed := user3.Refresh()
+		newAuth := refreshed.auth
+
+		// Now we have:
+		// S3: { Access-Old (valid for 15m), Access-New }
+		// S3: { Refresh-Old (revoked), Refresh-New (valid) }
+
+		// Using Access-Old with Refresh-New
+		// Both have SessionID = S3.
+		// Refresh-New was issued specifically to replace Access-Old.
+		// If linkage is enforced, Refresh-New should only work with Access-New (or at least check AccessJTI).
+
+		// NOTE: GoAuth currently does NOT enforce AccessJTI linkage in AuthMiddleware.
+		// It only checks if the RefreshToken's session is active and matches AccessToken's session.
+
+		resp = suite.NewClient(t).GET("/sessions/me").
+			WithCookie("access_token", oldAuth.AccessToken).
+			WithCookie("refresh_token", newAuth.RefreshToken).
+			Expect(http.StatusUnauthorized).
+			HasMessage("access token does not belong to this refresh token").
+			HasErrID(apierr.TokenMismatchDuringAuth).
+			Resp()
+
+		if resp.Raw().StatusCode == http.StatusOK {
+			t.Error("⚠️ Linkage Weakness: Old Access Token still usable with New Refresh Token for the same session.")
+		}
+	})
 }
