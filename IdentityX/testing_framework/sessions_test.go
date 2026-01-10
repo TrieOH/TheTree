@@ -160,7 +160,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		client := suite.NewClient(t)
 		user := client.WithCredentials("revoked@mail.com", ValidPassword).Register().Login()
 
-		// Manually insert an expired session for this user
+		// Manually insert a revoked session for this user
 		_, err := suite.DB.Exec(`
 			INSERT INTO sessions (
 				user_id, issued_at, user_agent, user_ip, revoked_at, user_type, created_at, updated_at, expires_at
@@ -177,7 +177,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			)
 		`)
 		if err != nil {
-			t.Fatalf("Failed to insert expired session: %v", err)
+			t.Fatalf("Failed to insert revoked session: %v", err)
 		}
 
 		// Verify that the revoked session is NOT in the list
