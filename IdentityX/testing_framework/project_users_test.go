@@ -66,7 +66,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			}
 		})
 
-		t.Run("ValidationProjectRegister", func(t *testing.T) {
+		t.Run("WeakPasswordValidationProjectRegister", func(t *testing.T) {
 			for i, spec := range WeakPasswordTests {
 				spec := spec
 				i := i
@@ -317,12 +317,12 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 	t.Run("ProjectUserRefresh", func(t *testing.T) {
 		client := suite.NewClient(t)
-		refreshUSer := client.WithCredentials("refresh@mail.com", ValidPassword).
+		refreshUser := client.WithCredentials("refresh@mail.com", ValidPassword).
 			ProjectRegister(user.projectID).
 			ProjectLogin(user.projectID)
 
-		oldAccess := refreshUSer.auth.AccessToken
-		oldRefresh := refreshUSer.auth.RefreshToken
+		oldAccess := refreshUser.auth.AccessToken
+		oldRefresh := refreshUser.auth.RefreshToken
 
 		// Old tokens should be invalid
 		oldClient := client.WithAuth(&AuthContext{
@@ -330,10 +330,10 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			RefreshToken: oldRefresh,
 		})
 
-		refreshUSer = refreshUSer.Refresh()
+		refreshUser = refreshUser.Refresh()
 
-		require.NotEqual(t, oldClient.auth.AccessToken, refreshUSer.auth.AccessToken, "Access token should change after refresh")
-		require.NotEqual(t, oldClient.auth.RefreshToken, refreshUSer.auth.RefreshToken, "Refresh token should change after refresh")
+		require.NotEqual(t, oldClient.auth.AccessToken, refreshUser.auth.AccessToken, "Access token should change after refresh")
+		require.NotEqual(t, oldClient.auth.RefreshToken, refreshUser.auth.RefreshToken, "Refresh token should change after refresh")
 
 		oldClient.GET("/sessions").
 			Expect(http.StatusUnauthorized).

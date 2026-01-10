@@ -94,7 +94,7 @@ const (
 const (
 	ProjectUserInvalidMetadata              ID = "PROJ_USR_001"
 	ProjectUserRegisterOnSchemaVersionDraft ID = "PROJ_USR_002"
-	ProjectUserRegisterOnSchemaDraft        ID = "PROJ_USR_002"
+	ProjectUserRegisterOnSchemaDraft        ID = "PROJ_USR_003"
 )
 
 const (

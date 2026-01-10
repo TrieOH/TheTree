@@ -165,7 +165,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			INSERT INTO sessions (
 				user_id, issued_at, user_agent, user_ip, revoked_at, user_type, created_at, updated_at, expires_at
 			) VALUES (
-				(SELECT id FROM users WHERE email = 'expired@mail.com'),
+				(SELECT id FROM users WHERE email = 'revoked@mail.com'),
 				NOW() - INTERVAL '2 days',
 				'Expired Agent',
 				'127.0.0.1',

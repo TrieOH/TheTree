@@ -149,6 +149,11 @@ func (c *Client) Logout() *Client {
 func (c *Client) Refresh() *Client {
 	c.t.Helper()
 
+	if c.auth == nil {
+		c.t.Fatal("Refresh called on unauthenticated client")
+		return c
+	}
+
 	req := c.expect.POST("/auth/refresh").
 		WithCookie("refresh_token", c.auth.RefreshToken)
 

@@ -36,7 +36,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	if registerSchema.Status == schema.StatusDraft {
 		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema").WithID(apierr.ProjectUserRegisterOnSchemaDraft)
-		apierr.RecordSystemError(span, apiErr)
+		apierr.RecordDomainError(span, apiErr)
 		return nil, apiErr
 	}
 
@@ -48,7 +48,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	if registerVersion.Status == schema.VersionStatusDraft {
 		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionDraft)
-		apierr.RecordSystemError(span, apiErr)
+		apierr.RecordDomainError(span, apiErr)
 		return nil, apiErr
 	}
 
