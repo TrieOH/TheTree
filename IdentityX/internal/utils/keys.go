@@ -10,6 +10,8 @@ import (
 	"os"
 )
 
+// FIXME: Implement apierr in this file
+
 func GenerateEd25519Keys() (pubKeyPEM, privKeyPEM string, err error) {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

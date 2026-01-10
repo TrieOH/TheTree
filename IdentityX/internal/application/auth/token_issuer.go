@@ -84,7 +84,6 @@ func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI,
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-
 	accessToken.Header["kid"] = keyID
 	tokenStr, err := accessToken.SignedString(privKey)
 	if err != nil {

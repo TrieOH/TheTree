@@ -134,14 +134,17 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		// Refresh-New was issued specifically to replace Access-Old.
 		// If linkage is enforced, Refresh-New should only work with Access-New (or at least check AccessJTI).
 
-		// NOTE: GoAuth currently does NOT enforce AccessJTI linkage in AuthMiddleware.
-		// It only checks if the RefreshToken's session is active and matches AccessToken's session.
-
 		suite.NewClient(t).GET("/sessions/me").
 			WithCookie("access_token", oldAuth.AccessToken).
 			WithCookie("refresh_token", newAuth.RefreshToken).
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.TokenMismatchDuringAuth).
 			HasMessage("access token does not belong to this refresh token")
+
+		// 4. Positive case: New Access Token + New Refresh Token should work
+		suite.NewClient(t).GET("/sessions/me").
+			WithCookie("access_token", newAuth.AccessToken).
+			WithCookie("refresh_token", newAuth.RefreshToken).
+			Expect(http.StatusOK)
 	})
 }

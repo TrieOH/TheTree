@@ -118,7 +118,7 @@ func RequireRefreshJTI(span trace.Span, refreshJTI *string) (*uuid.UUID, error) 
 func ParseAccessJTI(span trace.Span, accessJTI string) (*uuid.UUID, error) {
 	jti, err := uuid.Parse(accessJTI)
 	if err != nil {
-		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid access token id").WithID(apierr.TokenAccessInvalidID)
+		tokenErr := apierr.ErrInvalidInput.WithMsg("invalid access token id").WithID(apierr.TokenAccessInvalidID).WithCause(err)
 		apierr.RecordDomainError(span, tokenErr)
 		return nil, tokenErr
 	}

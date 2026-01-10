@@ -298,17 +298,16 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	)
 
 	if sess.ProjectID == nil {
-		return uc.finishClientRefresh(ctx, sess, in, refreshToken.Sub.AccessJTI, newRefreshJTI, refreshExp)
+		return uc.finishClientRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 	}
 
-	return uc.finishProjectUserRefresh(ctx, sess, in, refreshToken.Sub.AccessJTI, newRefreshJTI, refreshExp)
+	return uc.finishProjectUserRefresh(ctx, sess, in, newRefreshJTI, refreshExp)
 }
 
 func (uc *UseCase) finishClientRefresh(
 	ctx context.Context,
 	sess *session.Session,
 	in inbounds.RefreshInput,
-	oldAccessJTI uuid.UUID,
 	refreshJTI uuid.UUID,
 	refreshExpiresAt time.Time,
 ) (*inbounds.UserTokensOutput, error) {
@@ -329,12 +328,6 @@ func (uc *UseCase) finishClientRefresh(
 	}
 
 	newAccessJTI := uuid.New()
-	if oldAccessJTI == newAccessJTI {
-		err = apierr.ErrConflict.WithMsg("new access token ID matched old one, please retry").WithID(apierr.TokenAccessIDMatched)
-		apierr.RecordDomainError(span, err)
-		return nil, err
-	}
-
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessTokenStr, err = newAccessToken(*u, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
@@ -362,7 +355,6 @@ func (uc *UseCase) finishProjectUserRefresh(
 	ctx context.Context,
 	sess *session.Session,
 	in inbounds.RefreshInput,
-	oldAccessJTI uuid.UUID,
 	refreshJTI uuid.UUID,
 	refreshExpiresAt time.Time,
 ) (*inbounds.UserTokensOutput, error) {
@@ -394,12 +386,6 @@ func (uc *UseCase) finishProjectUserRefresh(
 	}
 
 	newAccessJTI := uuid.New()
-	if oldAccessJTI == newAccessJTI {
-		err = apierr.ErrConflict.WithMsg("new access token ID matched old one, please retry").WithID(apierr.TokenAccessIDMatched)
-		apierr.RecordDomainError(span, err)
-		return nil, err
-	}
-
 	var keyID = "project:" + sess.ProjectID.String() + ":v1"
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)

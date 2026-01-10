@@ -446,7 +446,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
 			return projectPubKey, nil
 		})
-		require.NoError(t, err, "⚠️ BUG CONFIRMED: Token for project %s cannot be verified with its own JWKS: %v", projectID, err)
+		require.NoError(t, err, "Token for project %s should be verifiable with its own project JWKS", projectID)
 
 		// 4. Try verifying with Master Pub Key
 		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {
