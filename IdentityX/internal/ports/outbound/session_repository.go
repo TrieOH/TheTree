@@ -16,5 +16,5 @@ type SessionRepository interface {
 	Update(ctx context.Context, toUpdate session.Session) error
 	RotateToken(ctx context.Context, oldTokenID uuid.UUID, newTokenID uuid.UUID, expiresAt time.Time) (*session.Session, error)
 	MarkRevokedByID(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) (*session.Session, error)
-	MarkRevokedByFilter(ctx context.Context, filter session.Filter) ([]session.Session, error)
+	MarkRevokedByFilter(ctx context.Context, filter session.Filter) (int, error)
 }

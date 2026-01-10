@@ -226,14 +226,8 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
 ALTER TABLE sessions
     ADD COLUMN revoked_at TIMESTAMP NULL;
 
-CREATE INDEX sessions_active_idx
-    ON sessions (session_id)
-    WHERE revoked_at IS NULL;
-
-
 -- +goose Down
-ALTER TABLE DROP COLUMN IF EXISTS revoked_at;
-DROP INDEX IF EXISTS sessions_active_idx;
+ALTER TABLE sessions DROP COLUMN IF EXISTS revoked_at;
 DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
 

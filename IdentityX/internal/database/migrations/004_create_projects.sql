@@ -11,8 +11,8 @@ CREATE TABLE projects (
     is_active BOOLEAN NOT NULL DEFAULT True,
     pub_key TEXT NOT NULL,
     priv_key BYTEA NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE sessions

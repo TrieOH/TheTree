@@ -165,17 +165,6 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 		return nil, err
 	}
 
-	isOwner, err := uc.projects.IsOwnerOf(ctx, *pid, principal.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot update a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
-		apierr.RecordDomainError(span, err)
-		return nil, err
-	}
-
 	span.SetAttributes(attribute.String("project.id", *in.ProjectID))
 
 	newProject, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
@@ -217,17 +206,6 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 
 	pid, err := validation.RequireProjectID(span, &projectID)
 	if err != nil {
-		return err
-	}
-
-	isOwner, err := uc.projects.IsOwnerOf(ctx, *pid, principal.UserID)
-	if err != nil {
-		return err
-	}
-
-	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot delete a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
-		apierr.RecordDomainError(span, err)
 		return err
 	}
 

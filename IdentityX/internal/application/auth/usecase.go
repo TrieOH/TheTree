@@ -209,7 +209,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("logout.success", err == nil))
 		}
 	}()
 
@@ -281,16 +281,13 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	sess, err := uc.sessions.RotateToken(
-		ctx,
-		*oldJTI,
-		newRefreshJTI,
-		refreshExp,
-	)
-	if err != nil {
+	sess, err := uc.sessions.RotateToken(ctx, *oldJTI, newRefreshJTI, refreshExp)
+	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid)
+		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
 		return nil, tokenErr
+	} else if err != nil {
+		return nil, err
 	}
 
 	span.SetAttributes(
@@ -321,7 +318,7 @@ func (uc *UseCase) finishClientRefresh(
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("finishClientRefresh.success", err == nil))
 		}
 	}()
 
@@ -375,7 +372,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var err error
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("success", err == nil))
+			span.SetAttributes(attribute.Bool("finishProjectUserRefresh.success", err == nil))
 		}
 	}()
 

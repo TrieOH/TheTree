@@ -43,8 +43,9 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 			Expect().
 			Status(http.StatusUnauthorized)
 
-		resp.JSON().Object().Value("error_id").String().IsEqual(string(apierr.TokenInvalid))
-		resp.JSON().Object().Value("message").String().IsEqual("refresh token is invalid")
+		obj := resp.JSON().Object()
+		obj.Value("error_id").String().IsEqual(string(apierr.TokenInvalid))
+		obj.Value("message").String().IsEqual("refresh token is invalid")
 	})
 
 	t.Run("ConcurrentRefresh", func(t *testing.T) {
