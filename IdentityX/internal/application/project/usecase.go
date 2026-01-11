@@ -2,7 +2,7 @@ package project
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/ports/inbounds"
@@ -38,7 +38,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.Out
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID string) (*inbounds.Out
 	if err != nil {
 		return nil, err
 	}
-	proj, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
+	proj, err := uc.projects.GetByID(ctx, pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID string) (map[string]an
 	if err != nil {
 		return nil, err
 	}
-	pubKey, err := uc.projects.GetPublicKeyByID(ctx, *pid)
+	pubKey, err := uc.projects.GetPublicKeyByID(ctx, pid)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 
 	span.SetAttributes(attribute.String("project.id", *in.ProjectID))
 
-	newProject, err := uc.projects.GetByID(ctx, *pid, principal.UserID)
+	newProject, err := uc.projects.GetByID(ctx, pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (uc *UseCase) Delete(ctx context.Context, projectID string) error {
 		return err
 	}
 
-	err = uc.projects.Delete(ctx, *pid, principal.UserID)
+	err = uc.projects.Delete(ctx, pid, principal.UserID)
 	if err != nil {
 		return err
 	}

@@ -223,13 +223,11 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     WHERE status = 'draft';
 
 
-ALTER TABLE sessions
-    ADD COLUMN revoked_at TIMESTAMPTZ NULL;
-
 -- +goose Down
-ALTER TABLE sessions DROP COLUMN IF EXISTS revoked_at;
 DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
+DROP INDEX IF EXISTS uniq_published_schema_versions;
+DROP INDEX IF EXISTS idx_schema_versions_schema_id;
 
 ALTER TABLE schemas
 DROP CONSTRAINT IF EXISTS fk_current_schema_version;
@@ -238,8 +236,10 @@ DROP TABLE IF EXISTS schema_field_required_rules;
 DROP TABLE IF EXISTS schema_field_visibility_rules;
 DROP TYPE IF EXISTS rule_operator;
 
+DROP INDEX IF EXISTS idx_schema_field_options_field_id;
 DROP TABLE IF EXISTS schema_field_options;
 
+DROP INDEX IF EXISTS idx_schema_fields_schema_version_id;
 DROP TABLE IF EXISTS schema_fields;
 DROP TYPE IF EXISTS field_owner;
 DROP TYPE IF EXISTS field_type;

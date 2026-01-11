@@ -22,6 +22,10 @@ func NewTxRunner(db *sql.DB) *TxRunner {
 	return &TxRunner{db: db}
 }
 
+// WithinTx executes fn inside a transaction using default options
+// (database default isolation, read-write).
+//
+// Nested calls are not supported and will return an error.
 func (r *TxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	return r.WithinTxWithOptions(ctx, transactions.TxOptions{}, fn)
 }
@@ -32,6 +36,8 @@ func (r *TxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) error {
 	if ctx.Value(txKeyValue) != nil {
+		// Nested transactions are explicitly not supported to avoid implicit
+		// transaction reuse or savepoint semantics.
 		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBNestedTXNotAllowed)
 	}
 

@@ -2,7 +2,7 @@ package session
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
@@ -36,7 +36,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.List")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -67,13 +67,13 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
 		return err
 	}
 
-	if principal.SessionID == *sid {
+	if principal.SessionID == sid {
 		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
 
-	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, *sid)
+	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, sid)
 	if apierr.IsNotFound(err) {
 		apiErr := apierr.ErrNotFound.WithMsg("session not found or revoked").WithID(apierr.SessionNotFound)
 		return apiErr
@@ -97,7 +97,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeAll")
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -137,6 +137,10 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 }
 
 // Me returns the principal of the authenticated user.
-func (uc *UseCase) Me(ctx context.Context) (*authz.Principal, error) {
-	return authz.RequirePrincipal(ctx)
+func (uc *UseCase) Me(ctx context.Context) (*inbounds.PrincipalOutput, error) {
+	principal, err := auth.RequirePrincipal(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return inbounds.PrincipalToPrincipalOutput(*principal), nil
 }

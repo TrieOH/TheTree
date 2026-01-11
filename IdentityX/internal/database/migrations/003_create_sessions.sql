@@ -9,6 +9,7 @@ CREATE TABLE sessions (
     user_agent TEXT NOT NULL,
     user_ip VARCHAR(64) NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -16,6 +17,13 @@ CREATE TABLE sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id
     ON sessions(user_id);
 
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+    ON sessions(expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_revoked_at
+    ON sessions(revoked_at);
 -- +goose Down
+DROP INDEX IF EXISTS idx_sessions_revoked_at;
+DROP INDEX IF EXISTS idx_sessions_expires_at;
 DROP INDEX IF EXISTS idx_sessions_user_id;
 DROP TABLE IF EXISTS sessions;

@@ -48,7 +48,7 @@ func mapSchemaVersionFromDB(dst *schema.Version, src *sqlc.SchemaVersion) {
 }
 
 func (repo *schemaVersionRepo) Draft(ctx context.Context, toDraft schema.Version) (*schema.Version, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaVersionRepo.Draft",
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.Draft",
 		trace.WithAttributes(
 			attribute.String("version.schema_id", toDraft.SchemaID.String()),
 			attribute.Int("version.version", toDraft.VersionNumber),
@@ -93,7 +93,9 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish schema.Ver
 	}
 
 	if affectedRows == 0 {
-		return apierr.ErrNotFound.WithMsg("schema version not found or not in draft status").WithID(apierr.SchemaVersionNotDraft)
+		err := apierr.ErrNotFound.WithMsg("schema version not found or not in draft status").WithID(apierr.SchemaVersionNotDraft)
+		apierr.RecordSQLCError(span, err)
+		return err
 	}
 
 	return nil

@@ -2,10 +2,10 @@ package auth
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
@@ -214,7 +214,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	}()
 
 	var principal *authz.Principal
-	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 		return nil, err
 	}
 
-	var oldJTI *uuid.UUID
+	var oldJTI uuid.UUID
 	oldJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	sess, err := uc.sessions.RotateToken(ctx, *oldJTI, newRefreshJTI, refreshExp)
+	sess, err := uc.sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
 		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
@@ -470,7 +470,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, *pid, in.SchemaType, in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}
@@ -493,7 +493,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 
 	var usr *project_users.ProjectUser
 	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
-		ProjectID:    *pid,
+		ProjectID:    pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
 		Metadata:     customFields,
@@ -534,7 +534,7 @@ func (uc *UseCase) LoginProjectUser(
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, *pid, in.Email)
+	usr, err := uc.projectUsers.GetByEmailInternal(ctx, pid, in.Email)
 	if apierr.IsNotFound(err) {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
@@ -557,7 +557,7 @@ func (uc *UseCase) LoginProjectUser(
 		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
-		ProjectID: pid,
+		ProjectID: &pid,
 	})
 	if err != nil {
 		return nil, err

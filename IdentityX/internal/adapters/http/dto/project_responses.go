@@ -25,6 +25,9 @@ func ProjectSliceToProjectResponseSlice(src []inbounds.OutputProject) []ProjectR
 }
 
 func ProjectToResponse(r *inbounds.OutputProject) ProjectResponse {
+	if r == nil {
+		return ProjectResponse{}
+	}
 	return ProjectResponse{
 		ID:          r.ID.String(),
 		ProjectName: r.ProjectName,

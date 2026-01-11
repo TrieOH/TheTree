@@ -16,6 +16,7 @@ import (
 	"database/sql"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 )
 
@@ -50,7 +51,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	schemaVersionHandler := http2.NewSchemaVersionHandler(schemaVersionUC)
 	schemaFieldsHandler := http2.NewSchemaFieldsHandler(schemaFieldUC)
 
-	authMW := middleware.NewAuthMiddleware(sessionRepo, tokenVerifier, authMWTracer)
+	authMW := middleware.NewAuthMiddleware(sessionRepo, tokenVerifier, authMWTracer, viper.GetString("ISSUER"))
 
 	registerAuthRoutes(r, authHandler, authMW)
 	registerSessionRoutes(r, sessionHandler, authMW)

@@ -58,10 +58,6 @@ func (repo *projectUserRepo) Register(ctx context.Context, toRegister project_us
 	)
 	defer span.End()
 
-	if toRegister.Metadata == nil {
-		return nil, apierr.ErrInvalidInput.WithMsg("metadata must be at least an empty json object on register").WithID(apierr.ProjectUserInvalidMetadata)
-	}
-
 	sqlcUser, err := repo.queries(ctx).RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
 		ProjectID:    toRegister.ProjectID,
 		Email:        toRegister.Email,
