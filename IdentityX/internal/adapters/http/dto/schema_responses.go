@@ -47,10 +47,6 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 	}
 
 	baseResponse := SchemaOutputToResponse(&out.SchemaOutput)
-	if baseResponse == nil {
-		return nil
-	}
-
 	schemaDTO := &VerboseSchemaResponse{
 		SchemaResponse: *baseResponse,
 	}

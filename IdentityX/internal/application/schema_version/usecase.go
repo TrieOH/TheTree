@@ -142,7 +142,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if latest.Status != schema.VersionStatusPublished {
-		err = apierr.ErrUnauthorized.WithMsg("new versions can only be drafted from published versions").WithID(apierr.SchemaVersionDraftOnNonPublished)
+		err = apierr.ErrBadRequest.WithMsg("new versions can only be drafted from published versions").WithID(apierr.SchemaVersionDraftOnNonPublished)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}

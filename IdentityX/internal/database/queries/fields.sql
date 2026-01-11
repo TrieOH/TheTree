@@ -65,7 +65,7 @@ INSERT INTO schema_fields (
     updated_at
 )
 SELECT
-    gen_random_uuid(),
+    uuidv7(),
     f.id,
     dv.schema_id,
     dv.id,

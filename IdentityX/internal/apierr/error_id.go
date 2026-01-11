@@ -158,8 +158,10 @@ const (
 )
 
 const (
-	SystemInternalError  ID = "SYS_001"
-	SystemMisconfigured  ID = "SYS_002"
-	SystemDependencyDown ID = "SYS_003"
-	SystemUnimplemented  ID = "SYS_004"
+	SystemInternalError            ID = "SYS_001"
+	SystemMisconfigured            ID = "SYS_002"
+	SystemDependencyDown           ID = "SYS_003"
+	SystemUnimplemented            ID = "SYS_004"
+	SystemTransactionWithNoContext ID = "SYS_005"
+	SystemErrorGeneratingUUID      ID = "SYS_006"
 )

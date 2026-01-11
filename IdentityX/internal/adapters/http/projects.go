@@ -149,7 +149,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 			zap.Error(err),
 			zap.String("project_id", projectID),
 		)
-		apiErr := apierr.ErrInternal.WithMsg("Failed to encode JWKS").WithID(apierr.SystemInternalError).WithCause(err)
+		apiErr := apierr.ErrInternal.WithMsg("Failed to encode JWKS").WithCause(err)
 		ErrToResp(apiErr).Send(w)
 		return
 	}

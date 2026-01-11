@@ -35,6 +35,10 @@ func (r *TxRunner) WithinTxWithOptions(
 	opts transactions.TxOptions,
 	fn func(ctx context.Context) error,
 ) (err error) {
+	if ctx == nil {
+		return apierr.ErrInternal.WithMsg("cannot create transactions with a nil context").WithID(apierr.SystemTransactionWithNoContext)
+	}
+
 	if ctx.Value(txKeyValue) != nil {
 		// Nested transactions are explicitly not supported to avoid implicit
 		// transaction reuse or savepoint semantics.
@@ -57,7 +61,10 @@ func (r *TxRunner) WithinTxWithOptions(
 	defer func() {
 		if p := recover(); p != nil {
 			if !committed {
-				_ = tx.Rollback()
+				rbErr := tx.Rollback()
+				if rbErr != nil {
+					logs.L().Error("error during tx rollback after panic", zap.Error(rbErr))
+				}
 			}
 			logs.L().Error("transaction function panicked", zap.Any("panic", p))
 			err = apierr.ErrInternal.
@@ -71,14 +78,16 @@ func (r *TxRunner) WithinTxWithOptions(
 	if err = fn(ctx); err != nil {
 		rbErr := tx.Rollback()
 		if rbErr != nil {
-			logs.L().Error("error during tx rollback", zap.Error(rbErr))
+			logs.L().Error("error during tx rollback after usecase error", zap.Error(rbErr))
 		}
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		_ = tx.Rollback()
 		logs.L().Error("error during tx commit", zap.Error(err))
+		if rbErr := tx.Rollback(); rbErr != nil {
+			logs.L().Error("error during tx rollback after commit failure", zap.Error(rbErr))
+		}
 		return apierr.ErrInternal.
 			WithMsg("transaction commit failed").
 			WithID(apierr.DBCommitTXFailed).

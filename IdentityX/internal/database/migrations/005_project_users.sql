@@ -2,7 +2,7 @@
 -- Created at 2025-11-04T15:25:15-03:00
 
 CREATE TABLE project_users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     user_type TEXT NOT NULL DEFAULT 'project',
     project_id UUID NOT NULL REFERENCES projects(id)
         ON DELETE CASCADE
