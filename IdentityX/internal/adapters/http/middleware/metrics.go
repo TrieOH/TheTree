@@ -16,7 +16,7 @@ var (
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests",
 		},
-		[]string{"path", "method", "status"},
+		[]string{"route", "method", "status"},
 	)
 
 	// HttpRequestDuration is a histogram of the duration of HTTP requests.
@@ -28,7 +28,7 @@ var (
 			// starts at 250µs (0.00025s), multiplies by 2, 16 buckets:
 			// 250µs, 500µs, 1000µs, 2.0ms, 4.0ms, ... up to ~8s
 		},
-		[]string{"path"},
+		[]string{"route"},
 	)
 )
 

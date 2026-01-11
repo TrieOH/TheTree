@@ -149,11 +149,13 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 			zap.Error(err),
 			zap.String("project_id", projectID),
 		)
-		resp.InternalServerError("Failed to encode JWKS").Send(w)
+		apiErr := apierr.ErrInternal.WithMsg("Failed to encode JWKS").WithID(apierr.SystemInternalError).WithCause(err)
+		ErrToResp(apiErr).Send(w)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=7200")
 	w.WriteHeader(http.StatusOK)
 	if _, err = w.Write(data); err != nil {
 		logs.L().Error("Failed to write JWKS response",

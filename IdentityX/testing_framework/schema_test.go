@@ -16,9 +16,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Login().
 		CreateProject("schema testing")
 
-	var projectID string
-	projectID = user.projectID
-
+	projectID := user.projectID
 	rid, err := uuid.NewRandom()
 	if err != nil {
 		t.Fatalf("Couldn't generate random uuid for test: %v", err)

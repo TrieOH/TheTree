@@ -10,6 +10,6 @@ type CreateProjectRequest struct {
 }
 
 type UpdateProjectRequest struct {
-	ProjectName string          `json:"project_name" validate:"required,max=255"`
+	ProjectName string          `json:"project_name" validate:"max=255"`
 	Metadata    json.RawMessage `json:"metadata"`
 }

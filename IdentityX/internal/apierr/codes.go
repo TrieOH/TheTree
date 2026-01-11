@@ -15,6 +15,9 @@ const (
 // As converts an error to an API error.
 // It returns the API error and true if the error is an API error, otherwise it returns nil and false.
 func As(err error) (*Error, bool) {
+	if err == nil {
+		return nil, false
+	}
 	var apiErr *Error
 	if errors.As(err, &apiErr) {
 		return apiErr, true

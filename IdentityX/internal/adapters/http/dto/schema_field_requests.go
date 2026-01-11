@@ -6,7 +6,7 @@ import (
 )
 
 type CreateFieldRequest struct {
-	Fields []FieldParam `json:"fields"`
+	Fields []FieldParam `json:"fields" validate:"required"`
 }
 
 type FieldParam struct {

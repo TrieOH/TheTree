@@ -3,6 +3,7 @@ package testing
 import (
 	"GoAuth/internal/apierr"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -58,8 +59,11 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 
 		httpClient := &http.Client{Timeout: 5 * time.Second}
 
+		var wg sync.WaitGroup
 		for i := 0; i < concurrency; i++ {
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				req, err := http.NewRequest("POST", suite.Server.URL+"/auth/refresh", nil)
 				if err != nil {
 					results <- 0
@@ -76,6 +80,11 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 				results <- resp.StatusCode
 			}()
 		}
+
+		go func() {
+			wg.Wait()
+			close(results)
+		}()
 
 		successCount := 0
 		failCount := 0

@@ -1,6 +1,7 @@
-package authz
+package auth
 
 import (
+	"GoAuth/internal/domain/authz"
 	"context"
 
 	"GoAuth/internal/apierr"
@@ -15,17 +16,17 @@ const (
 	principalKey ctxKey = "principal"
 )
 
-func WithPrincipal(ctx context.Context, p *Principal) context.Context {
+func WithPrincipal(ctx context.Context, p *authz.Principal) context.Context {
 	return context.WithValue(ctx, principalKey, p)
 }
 
-func RequirePrincipal(ctx context.Context) (*Principal, error) {
+func RequirePrincipal(ctx context.Context) (*authz.Principal, error) {
 	val := ctx.Value(principalKey)
 	if val == nil {
 		return nil, apierr.ErrUnauthorized.WithMsg("authentication required").WithID(apierr.AuthMissingPrincipal)
 	}
 
-	p, ok := val.(*Principal)
+	p, ok := val.(*authz.Principal)
 	if !ok {
 		return nil, apierr.ErrInternal.WithMsg("invalid principal in context").WithID(apierr.AuthInvalidPrincipal)
 	}
@@ -33,8 +34,8 @@ func RequirePrincipal(ctx context.Context) (*Principal, error) {
 	return p, nil
 }
 
-func RequirePrincipalAndAnnotate(ctx context.Context, span trace.Span) (*Principal, error) {
-	var principal *Principal
+func RequirePrincipalAndAnnotate(ctx context.Context, span trace.Span) (*authz.Principal, error) {
+	var principal *authz.Principal
 	principal, err := RequirePrincipal(ctx)
 	if err != nil {
 		apierr.RecordDomainError(span, err)
@@ -47,7 +48,7 @@ func RequirePrincipalAndAnnotate(ctx context.Context, span trace.Span) (*Princip
 }
 
 // AnnotatePrincipal annotates a span with the principal's information.
-func AnnotatePrincipal(span trace.Span, principal *Principal) {
+func AnnotatePrincipal(span trace.Span, principal *authz.Principal) {
 	if span == nil || principal == nil {
 		return
 	}
