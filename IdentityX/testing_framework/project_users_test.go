@@ -357,7 +357,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"project_name": "Test Project",
 					"metadata":     map[string]string{"env": "test"},
 				}).
-				Expect(http.StatusUnauthorized).
+				Expect(http.StatusForbidden).
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
@@ -365,7 +365,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		t.Run("ListProjects", func(t *testing.T) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.GET("/projects").
-				Expect(http.StatusUnauthorized).
+				Expect(http.StatusForbidden).
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
@@ -373,7 +373,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		t.Run("GetProject", func(t *testing.T) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.GET("/projects/" + user.projectID).
-				Expect(http.StatusUnauthorized).
+				Expect(http.StatusForbidden).
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
@@ -385,7 +385,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"project_name": "Updated Project",
 					"metadata":     map[string]string{"env": "prod"},
 				}).
-				Expect(http.StatusUnauthorized).
+				Expect(http.StatusForbidden).
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
@@ -401,7 +401,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		t.Run("DeleteProject", func(t *testing.T) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.DELETE("/projects/" + user.projectID).
-				Expect(http.StatusUnauthorized).
+				Expect(http.StatusForbidden).
 				HasErrID(apierr.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})

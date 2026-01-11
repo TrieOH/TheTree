@@ -158,14 +158,6 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 		return nil, err
 	}
 
-	if err = uc.schemas.SetVersion(ctx, schema.Schema{
-		ID:               sid,
-		ProjectID:        pid,
-		CurrentVersionID: &newVersionDraft.ID,
-	}); err != nil {
-		return nil, err
-	}
-
 	return inbounds.SchemaVersionToOutput(newVersionDraft), nil
 }
 
@@ -283,6 +275,14 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	if err = uc.versions.Publish(ctx, schema.Version{
 		SchemaID: sid,
 		ID:       latest.ID,
+	}); err != nil {
+		return err
+	}
+
+	if err := uc.schemas.SetVersion(ctx, schema.Schema{
+		ID:               sid,
+		ProjectID:        pid,
+		CurrentVersionID: &latest.ID,
 	}); err != nil {
 		return err
 	}
