@@ -55,7 +55,7 @@ WHERE project_id = $1;
 UPDATE schemas
 SET
     current_version_id = $1
-WHERE id = $2 AND project_id = $3 AND status = 'published';
+WHERE id = $2 AND project_id = $3;
 
 -- /////////////////////////////// --
 -- //// -- Schema Versions -- //// --
