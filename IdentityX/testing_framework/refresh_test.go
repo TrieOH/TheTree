@@ -90,8 +90,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		failCount := 0
 		otherCount := 0
 
-		for i := 0; i < concurrency; i++ {
-			status := <-results
+		for status := range results {
 			if status == http.StatusOK {
 				successCount++
 			} else if status == http.StatusUnauthorized {

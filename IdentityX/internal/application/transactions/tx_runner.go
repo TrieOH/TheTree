@@ -6,8 +6,8 @@ import (
 )
 
 // TxOptions defines transaction behavior.
-// Zero values result in database defaults:
-//   - Isolation: sql.LevelDefault
+// Zero values result in explicit default options being passed:
+//   - Isolation: sql.LevelDefault (driver-defined default isolation)
 //   - ReadOnly: false
 type TxOptions struct {
 	Isolation sql.IsolationLevel

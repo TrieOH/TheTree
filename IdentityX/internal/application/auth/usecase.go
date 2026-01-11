@@ -177,7 +177,13 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	}
 
 	var accessToken string
-	accessJTI := uuid.New()
+	var accessJTI uuid.UUID
+	accessJTI, err = uuid.NewV7()
+	if err != nil {
+		apiErr := apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/Login").WithID(apierr.SystemErrorGeneratingUUID)
+		apierr.RecordSystemError(span, apiErr)
+		return nil, apiErr
+	}
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
@@ -273,10 +279,16 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 		return nil, err
 	}
 
-	var (
-		newRefreshJTI = uuid.New()
-		refreshExp    = time.Now().Add(7 * 24 * time.Hour)
-	)
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/refreshInternal").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	var newRefreshJTI = uid
+	var refreshExp = time.Now().Add(7 * 24 * time.Hour)
 
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
@@ -327,7 +339,15 @@ func (uc *UseCase) finishClientRefresh(
 		return nil, err
 	}
 
-	newAccessJTI := uuid.New()
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishClientRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	newAccessJTI := uid
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
@@ -385,7 +405,15 @@ func (uc *UseCase) finishProjectUserRefresh(
 		return nil, err
 	}
 
-	newAccessJTI := uuid.New()
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishProjectUserRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	newAccessJTI := uid
 	var keyID = "project:" + sess.ProjectID.String() + ":v1"
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
@@ -575,8 +603,16 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/LoginProjectUser").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
 	keyID := "project:" + sess.ProjectID.String() + ":v1"
-	accessJTI := uuid.New()
+	accessJTI := uid
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
