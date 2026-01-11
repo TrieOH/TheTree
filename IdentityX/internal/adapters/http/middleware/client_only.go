@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/auth"
 	"net/http"
 )
 
@@ -11,14 +11,14 @@ func ClientOnly() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			principal, err := authz.RequirePrincipal(ctx)
+			principal, err := auth.RequirePrincipal(ctx)
 			if err != nil {
 				ErrToResp(err).WithModule("ClientOnlyMW").Send(w)
 				return
 			}
 
 			if principal.ProjectID != nil {
-				mwErr := apierr.ErrUnauthorized.WithMsg("only clients can access this endpoint").WithID(apierr.AuthNotClient)
+				mwErr := apierr.ErrForbidden.WithMsg("only clients can access this endpoint").WithID(apierr.AuthNotClient)
 				ErrToResp(mwErr).WithModule("ClientOnlyMW").Send(w)
 				return
 			}

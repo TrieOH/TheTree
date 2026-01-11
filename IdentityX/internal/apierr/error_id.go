@@ -31,16 +31,7 @@ const (
 	AuthMissingPrincipal     ID = "AUTH_020"
 	AuthNotClient            ID = "AUTH_021"
 	AuthInvalidPrincipal     ID = "AUTH_022"
-)
-
-const (
-	UserRequiredID         ID = "USER_001"
-	UserNotFound           ID = "USER_002"
-	UserAlreadyExists      ID = "USER_003"
-	UserEmailNotVerified   ID = "USER_004"
-	UserPasswordTooWeak    ID = "USER_005"
-	UserInvalidID          ID = "USER_006"
-	UserEmailAlreadyExists ID = "USER_007"
+	AuthNotProjectUser       ID = "AUTH_023"
 )
 
 const (
@@ -86,6 +77,7 @@ const (
 	TokenUnknownKid           ID = "TOKEN_026"
 	TokenMissingKid           ID = "TOKEN_027"
 	TokenInvalidRefreshClaims ID = "TOKEN_028"
+	TokenUnverifiable         ID = "TOKEN_029"
 )
 
 const (
@@ -166,8 +158,10 @@ const (
 )
 
 const (
-	SystemInternalError  ID = "SYS_001"
-	SystemMisconfigured  ID = "SYS_002"
-	SystemDependencyDown ID = "SYS_003"
-	SystemUnimplemented  ID = "SYS_004"
+	SystemInternalError            ID = "SYS_001"
+	SystemMisconfigured            ID = "SYS_002"
+	SystemDependencyDown           ID = "SYS_003"
+	SystemUnimplemented            ID = "SYS_004"
+	SystemTransactionWithNoContext ID = "SYS_005"
+	SystemErrorGeneratingUUID      ID = "SYS_006"
 )

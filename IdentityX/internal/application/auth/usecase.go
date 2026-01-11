@@ -2,10 +2,10 @@ package auth
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
 	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
@@ -177,7 +177,13 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	}
 
 	var accessToken string
-	accessJTI := uuid.New()
+	var accessJTI uuid.UUID
+	accessJTI, err = uuid.NewV7()
+	if err != nil {
+		apiErr := apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/Login").WithID(apierr.SystemErrorGeneratingUUID)
+		apierr.RecordSystemError(span, apiErr)
+		return nil, apiErr
+	}
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
@@ -214,7 +220,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	}()
 
 	var principal *authz.Principal
-	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -267,21 +273,27 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 		return nil, err
 	}
 
-	var oldJTI *uuid.UUID
+	var oldJTI uuid.UUID
 	oldJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		newRefreshJTI = uuid.New()
-		refreshExp    = time.Now().Add(7 * 24 * time.Hour)
-	)
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/refreshInternal").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	var newRefreshJTI = uid
+	var refreshExp = time.Now().Add(7 * 24 * time.Hour)
 
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	sess, err := uc.sessions.RotateToken(ctx, *oldJTI, newRefreshJTI, refreshExp)
+	sess, err := uc.sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
 		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
@@ -327,7 +339,15 @@ func (uc *UseCase) finishClientRefresh(
 		return nil, err
 	}
 
-	newAccessJTI := uuid.New()
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishClientRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	newAccessJTI := uid
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
@@ -385,7 +405,15 @@ func (uc *UseCase) finishProjectUserRefresh(
 		return nil, err
 	}
 
-	newAccessJTI := uuid.New()
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishProjectUserRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
+	newAccessJTI := uid
 	var keyID = "project:" + sess.ProjectID.String() + ":v1"
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
@@ -470,7 +498,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, *pid, in.SchemaType, in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}
@@ -493,7 +521,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 
 	var usr *project_users.ProjectUser
 	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
-		ProjectID:    *pid,
+		ProjectID:    pid,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
 		Metadata:     customFields,
@@ -534,7 +562,7 @@ func (uc *UseCase) LoginProjectUser(
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, *pid, in.Email)
+	usr, err := uc.projectUsers.GetByEmailInternal(ctx, pid, in.Email)
 	if apierr.IsNotFound(err) {
 		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
 		apierr.RecordDomainError(span, authErr)
@@ -557,7 +585,7 @@ func (uc *UseCase) LoginProjectUser(
 		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
-		ProjectID: pid,
+		ProjectID: &pid,
 	})
 	if err != nil {
 		return nil, err
@@ -575,8 +603,16 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
+	var uid uuid.UUID
+	uid, err = uuid.NewV7()
+	if err != nil {
+		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/LoginProjectUser").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+		apierr.RecordSystemError(span, err)
+		return nil, err
+	}
+
 	keyID := "project:" + sess.ProjectID.String() + ":v1"
-	accessJTI := uuid.New()
+	accessJTI := uid
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {

@@ -463,7 +463,10 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusCreated).
 			RequireDataValue()
 
-		schemaID = data.Path("$.id").String().Raw()
+		spec := map[string]interface{}{
+			"id": StoreString{Into: &schemaID, Matcher: AnyUUID{}},
+		}
+		Validate(t, data, spec)
 
 		t.Run("RegisterFailsNoVersion", func(t *testing.T) {
 			client.POST("/projects/"+projectID+"/register").

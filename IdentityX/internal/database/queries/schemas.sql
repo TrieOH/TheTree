@@ -8,18 +8,18 @@ UPDATE schemas
 SET
     status = 'published',
     updated_at = NOW()
-WHERE id = $1 AND project_id = $2;
+WHERE id = $1 AND project_id = $2 AND status = 'draft';
 
 -- name: ArchiveSchema :exec
 UPDATE schemas
 SET
     status = 'archived',
     updated_at = NOW()
-WHERE id = $1 AND project_id = $2;
+WHERE id = $1 AND project_id = $2 AND status = 'published';
 
 -- name: DeleteSchema :exec
 DELETE FROM schemas
-WHERE id = $1 AND project_id = $2;
+WHERE id = $1 AND project_id = $2 AND status = 'archived';
 
 -- name: SchemaExists :one
 SELECT EXISTS (
@@ -80,7 +80,7 @@ UPDATE schema_versions
 SET
     status = 'archived',
     updated_at = NOW()
-WHERE id = $1 AND schema_id = $2;
+WHERE id = $1 AND schema_id = $2 AND status = 'published';
 
 -- name: GetLatestSchemaVersion :one
 SELECT *

@@ -46,18 +46,9 @@ func VerboseSchemaOutputToResponse(out *inbounds.SchemaVerboseOutput) *VerboseSc
 		return nil
 	}
 
+	baseResponse := SchemaOutputToResponse(&out.SchemaOutput)
 	schemaDTO := &VerboseSchemaResponse{
-		SchemaResponse: SchemaResponse{
-			ID:               out.ID,
-			ProjectID:        out.ProjectID,
-			Title:            out.Title,
-			FlowID:           out.FlowID,
-			Type:             out.Type,
-			CurrentVersionID: out.CurrentVersionID,
-			Status:           out.Status,
-			CreatedAt:        out.CreatedAt,
-			UpdatedAt:        out.UpdatedAt,
-		},
+		SchemaResponse: *baseResponse,
 	}
 
 	versionsDTO := make([]VersionVerboseResponse, 0, len(out.Versions))

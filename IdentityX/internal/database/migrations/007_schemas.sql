@@ -39,7 +39,7 @@ CREATE TYPE rule_operator AS ENUM (
 -- =========================
 
 CREATE TABLE schemas (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     title VARCHAR(255) NOT NULL DEFAULT 'Unnamed Schema',
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     flow_id VARCHAR(63) NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE schemas (
 -- =========================
 
 CREATE TABLE schema_versions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     schema_id UUID NOT NULL REFERENCES schemas(id) ON DELETE CASCADE,
     version INT NOT NULL,
     status schema_version_status NOT NULL DEFAULT 'draft',
@@ -76,19 +76,15 @@ CREATE INDEX idx_schema_versions_schema_id
 CREATE INDEX idx_schema_versions_based_on_version_id
     ON schema_versions(based_on_version_id);
 
-CREATE UNIQUE INDEX uniq_published_schema_versions
-    ON schema_versions (schema_id, version)
-    WHERE status = 'published';
-
 -- =========================
 -- FIELDS
 -- =========================
 
 CREATE TABLE schema_fields (
-    object_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    object_id UUID PRIMARY KEY DEFAULT uuidv7(),
 
     -- Stable logical identity of a field within a schema
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id UUID NOT NULL DEFAULT uuidv7(),
 
     -- (identity scope)
     schema_id UUID NOT NULL
@@ -137,7 +133,7 @@ CREATE INDEX idx_schema_fields_schema_version_id
 -- =========================
 
 CREATE TABLE schema_field_options (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
     field_id UUID NOT NULL REFERENCES schema_fields(object_id) ON DELETE CASCADE,
 
     value VARCHAR(255) NOT NULL,
@@ -155,7 +151,7 @@ CREATE INDEX idx_schema_field_options_field_id
 -- =========================
 
 CREATE TABLE schema_field_visibility_rules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
 
     field_id UUID NOT NULL
         REFERENCES schema_fields(object_id)
@@ -184,7 +180,7 @@ CREATE INDEX idx_visibility_rules_depends_on
 -- =========================
 
 CREATE TABLE schema_field_required_rules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
 
     field_id UUID NOT NULL
         REFERENCES schema_fields(object_id)
@@ -223,23 +219,28 @@ CREATE UNIQUE INDEX one_version_draft_per_schema
     WHERE status = 'draft';
 
 
-ALTER TABLE sessions
-    ADD COLUMN revoked_at TIMESTAMPTZ NULL;
-
 -- +goose Down
-ALTER TABLE sessions DROP COLUMN IF EXISTS revoked_at;
 DROP INDEX IF EXISTS idx_schema_versions_based_on_version_id;
 DROP INDEX IF EXISTS one_version_draft_per_schema;
+DROP INDEX IF EXISTS idx_schema_versions_schema_id;
 
 ALTER TABLE schemas
 DROP CONSTRAINT IF EXISTS fk_current_schema_version;
 
+DROP INDEX IF EXISTS idx_required_rules_field_id;
+DROP INDEX IF EXISTS idx_required_rules_depends_on;
 DROP TABLE IF EXISTS schema_field_required_rules;
+
+DROP INDEX IF EXISTS idx_visibility_rules_field_id;
+DROP INDEX IF EXISTS idx_visibility_rules_depends_on;
 DROP TABLE IF EXISTS schema_field_visibility_rules;
 DROP TYPE IF EXISTS rule_operator;
 
+
+DROP INDEX IF EXISTS idx_schema_field_options_field_id;
 DROP TABLE IF EXISTS schema_field_options;
 
+DROP INDEX IF EXISTS idx_schema_fields_schema_version_id;
 DROP TABLE IF EXISTS schema_fields;
 DROP TYPE IF EXISTS field_owner;
 DROP TYPE IF EXISTS field_type;

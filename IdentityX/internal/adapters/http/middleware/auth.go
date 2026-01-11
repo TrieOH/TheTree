@@ -2,16 +2,16 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
+	auth2 "GoAuth/internal/application/auth"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
+	authz2 "GoAuth/internal/domain/authz"
 	authport "GoAuth/internal/ports/auth"
 	"GoAuth/internal/ports/outbound"
 	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -20,17 +20,20 @@ type AuthMiddleware struct {
 	sessions      outbound.SessionRepository
 	tokenVerifier authport.TokenVerifier
 	tracer        trace.Tracer
+	issuer        string
 }
 
 func NewAuthMiddleware(
 	sessions outbound.SessionRepository,
 	tokenVerifier authport.TokenVerifier,
 	tracer trace.Tracer,
+	issuer string,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
 		sessions:      sessions,
 		tokenVerifier: tokenVerifier,
 		tracer:        tracer,
+		issuer:        issuer,
 	}
 }
 
@@ -99,15 +102,14 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			issuer := viper.GetString("ISSUER")
-			if accessToken.Issuer != issuer || refreshToken.Issuer != issuer {
+			if accessToken.Issuer != mw.issuer || refreshToken.Issuer != mw.issuer {
 				mwErr := apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
 				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, mwErr)
 				return
 			}
 
-			var refreshTokenJTI *uuid.UUID
+			var refreshTokenJTI uuid.UUID
 			refreshTokenJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
 			if err != nil {
 				ErrToResp(err).WithModule("AuthMW").Send(w)
@@ -115,7 +117,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			var accessTokenJTI *uuid.UUID
+			var accessTokenJTI uuid.UUID
 			accessTokenJTI, err = validation.RequireAccessJTI(span, &accessToken.ID)
 			if err != nil {
 				ErrToResp(err).WithModule("AuthMW").Send(w)
@@ -123,14 +125,14 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			if *accessTokenJTI != refreshToken.Sub.AccessJTI {
+			if accessTokenJTI != refreshToken.Sub.AccessJTI {
 				err = apierr.ErrUnauthorized.WithMsg("access token does not belong to this refresh token").WithID(apierr.TokenMismatchDuringAuth)
 				apierr.RecordDomainError(span, err)
 				ErrToResp(err).WithModule("AuthMW").Send(w)
 				return
 			}
 
-			sess, err := mw.sessions.GetByTokenID(ctx, *refreshTokenJTI)
+			sess, err := mw.sessions.GetByTokenID(ctx, refreshTokenJTI)
 			if err != nil {
 				if apierr.IsNotFound(err) {
 					mwErr := apierr.ErrUnauthorized.WithMsg("session not found or revoked").WithID(apierr.SessionUnauthorized).WithCause(err)
@@ -165,15 +167,15 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
 			)
 
-			var principal *authz.Principal
-			principal, err = authz.NewPrincipal(accessToken, refreshToken)
+			var principal *authz2.Principal
+			principal, err = authz2.NewPrincipal(accessToken, refreshToken)
 			if err != nil {
 				ErrToResp(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
 
-			ctx = authz.WithPrincipal(ctx, principal)
+			ctx = auth2.WithPrincipal(ctx, principal)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

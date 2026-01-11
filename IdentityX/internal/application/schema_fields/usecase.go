@@ -2,9 +2,10 @@ package schema_fields
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/authz"
+	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/application/validation"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/inbounds"
@@ -67,25 +68,25 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}()
 
 	var principal *authz.Principal
-	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
 
-	var pid *uuid.UUID
+	var pid uuid.UUID
 	pid, err = validation.RequireProjectID(span, &in.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	var sid *uuid.UUID
+	var sid uuid.UUID
 	sid, err = validation.RequireSchemaID(span, &in.SchemaID)
 	if err != nil {
 		return nil, err
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, *pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +99,8 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 
 	var belongs bool
 	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
-		ProjectID: *pid,
-		ID:        *sid,
+		ProjectID: pid,
+		ID:        sid,
 	})
 	if err != nil {
 		return nil, err
@@ -112,7 +113,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var latest *schema.Version
-	latest, err = uc.versions.GetLatest(ctx, *sid)
+	latest, err = uc.versions.GetLatest(ctx, sid)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		}
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
-			SchemaID:        *sid,
+			SchemaID:        sid,
 			SchemaVersionID: latest.ID,
 			Key:             f.Key,
 			Type:            field.Type(f.Type),

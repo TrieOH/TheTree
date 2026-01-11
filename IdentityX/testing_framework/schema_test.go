@@ -16,12 +16,10 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Login().
 		CreateProject("schema testing")
 
-	var projectID string
-	projectID = user.projectID
-
-	rid, err := uuid.NewRandom()
+	projectID := user.projectID
+	rid, err := uuid.NewV7()
 	if err != nil {
-		t.Fatalf("Couldn't generate random uuid for test: %v", err)
+		t.Fatalf("Couldn't generate uuid for test: %v", err)
 	}
 
 	t.Run("PublishSchemaRandomID", func(t *testing.T) {
@@ -215,7 +213,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	t.Run("DraftVersionError", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusBadRequest).
 			HasErrID(apierr.SchemaVersionDraftOnNonPublished).
 			HasMessage("new versions can only be drafted from published versions")
 	})
@@ -402,7 +400,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			"flow_id":            "scti-register",
 			"type":               "context",
 			"status":             "published",
-			"current_version_id": AsString{schemaVersion2ID, AnyUUID{}},
+			"current_version_id": AsString{schemaVersion1ID, AnyUUID{}},
 		}
 
 		Validate(t, data, spec)
@@ -665,31 +663,31 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"title":       "forbidden",
 				"flow_id":     "forbidden",
 			}).
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusForbidden).
 			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Publish
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusForbidden).
 			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Get
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusForbidden).
 			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try GetVerbose
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusForbidden).
 			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Draft Version
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusForbidden).
 			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 	})

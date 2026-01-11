@@ -30,7 +30,11 @@ func main() {
 	}()
 
 	defer func() {
-		err := scheduler.Shutdown()
+		err := scheduler.StopJobs()
+		if err != nil {
+			log.Printf("Error stopping jobs: %v", err)
+		}
+		err = scheduler.Shutdown()
 		if err != nil {
 			log.Fatal(err)
 		}

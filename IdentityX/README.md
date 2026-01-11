@@ -1,5 +1,8 @@
 # GoAuth
 
+## Requirements
+1. Postgres 18+
+
 ### Generate the keys
 
 `mkdir keys && cd keys`

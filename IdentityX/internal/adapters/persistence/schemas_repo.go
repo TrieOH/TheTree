@@ -210,7 +210,7 @@ func (repo *schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projec
 	return &foundSchema, nil
 }
 
-func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID, schemaType string, projectID uuid.UUID) (*schema.Schema, error) {
+func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID string, schemaType schema.Type, projectID uuid.UUID) (*schema.Schema, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.FindByFlowIDAndType",
 		trace.WithAttributes(
 			attribute.String("schema.project_id", projectID.String()),

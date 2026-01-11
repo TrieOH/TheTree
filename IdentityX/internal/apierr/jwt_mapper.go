@@ -35,6 +35,8 @@ func FromJWTError(err error, tokenType string) error {
 			return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenRefreshInvalidID)
 		}
 		return ErrUnauthorized.WithMsg(tokenType + " has invalid id").WithID(TokenAccessInvalidID)
+	case errors.Is(err, jwt.ErrTokenUnverifiable):
+		return ErrUnauthorized.WithMsg("unverifiable " + tokenType).WithID(TokenUnverifiable)
 	}
 
 	return ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(TokenInvalid).WithCause(err)

@@ -33,7 +33,10 @@ func validateFieldType(fieldType field.Type, value any) bool {
 			if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
 				return false
 			}
-			if float32(math.Trunc(float64(v))) != v {
+			if v > math.MaxInt32 || v < math.MinInt32 {
+				return false
+			}
+			if v != float32(int32(v)) {
 				return false
 			}
 			return true
