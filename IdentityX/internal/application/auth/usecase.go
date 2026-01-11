@@ -470,7 +470,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, in.SchemaType, in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}

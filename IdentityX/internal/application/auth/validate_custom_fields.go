@@ -18,7 +18,8 @@ func (uc *UseCase) validateAndConstructMetadata(
 	ctx context.Context,
 	span trace.Span,
 	projectID uuid.UUID,
-	schemaType, flowID string,
+	schemaType schema.Type,
+	flowID string,
 	customFields *json.RawMessage,
 ) (*json.RawMessage, error) {
 	var err error
@@ -136,7 +137,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 		flowID: schemaPayload,
 	}
 
-	metadata[schemaType] = flowMap
+	metadata[string(schemaType)] = flowMap
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
