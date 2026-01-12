@@ -38,7 +38,7 @@ func (handler *SchemaVersionHandler) Draft(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	res, err := handler.versions.Draft(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (handler *SchemaVersionHandler) Publish(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	err := handler.versions.Publish(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 

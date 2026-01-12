@@ -2,13 +2,12 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/utils"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/FastUtilitiesNet/validation"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -33,8 +32,8 @@ func NewAuthHandler(uc inbounds.AuthService) *AuthHandler {
 // @Router /auth/register [post]
 func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterUserRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -44,7 +43,7 @@ func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := handler.auth.Register(r.Context(), in); err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -67,8 +66,8 @@ func (handler *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 // @Router /auth/login [post]
 func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginUserRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -82,7 +81,7 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	tokens, err := handler.auth.Login(r.Context(), in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -111,7 +110,7 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	err := handler.auth.Logout(r.Context())
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -159,7 +158,7 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	tokens, err := handler.auth.Refresh(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -209,8 +208,8 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 	}
 
 	var req dto.RegisterProjectUserRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -228,7 +227,7 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 
 	ctx := r.Context()
 	if err := handler.auth.RegisterProjectUser(ctx, in); err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -258,8 +257,8 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	}
 
 	var req dto.LoginProjectUserRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -277,7 +276,7 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	tokens, err := handler.auth.LoginProjectUser(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 

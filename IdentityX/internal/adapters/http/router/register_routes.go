@@ -76,10 +76,18 @@ func registerAuthRoutes(
 
 		r.Get("/.well-known/jwks.json", h.JWKS)
 
+		// FIXME: Create another endpoint for the register that contains SchemaID
 		r.With(
 			middleware.DefaultQueryParam("schema_type", "core"),
 			middleware.DefaultQueryParam("flow_id", "none"),
+			middleware.DefaultQueryParam("version", "0"),
 		).Post("/projects/{project_id}/register", h.ProjectRegister)
+
+		/*r.With(
+			middleware.DefaultQueryParam("schema_type", "core"),
+			middleware.DefaultQueryParam("flow_id", "none"),
+			middleware.DefaultQueryParam("version", "0"),
+		).Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
 
 		r.Post("/projects/{project_id}/login", h.ProjectLogin)
 	})
@@ -133,6 +141,14 @@ func registerSchemaRoutes(
 
 		r.Post("/projects/{project_id}/schemas", schemas.Draft)
 		r.Get("/projects/{project_id}/schemas/{schema_id}", schemas.GetByID)
+		/* r.With(
+			middleware.DefaultQueryParam("schema_type", "context"),
+			middleware.DefaultQueryParam("flow_id", "none"),
+		).Get("/projects/{project_id}/schemas/{schema_id}/latest", schemas.GetLatestForm)
+		r.With(
+			middleware.DefaultQueryParam("schema_type", "context"),
+			middleware.DefaultQueryParam("flow_id", "none"),
+		).Get("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificForm) */
 		r.Get("/projects/{project_id}/schemas/{schema_id}/verbose", schemas.GetVerbose)
 		r.Post("/projects/{project_id}/schemas/{schema_id}/publish", schemas.Publish)
 	})
