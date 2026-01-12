@@ -26,7 +26,7 @@ var (
 			Name:   "NoEmail",
 			Email:  "",
 			Pass:   ValidPassword,
-			Errors: []string{"(email) is required"},
+			Errors: []string{"email is required"},
 		},
 		{
 			Name:   "InvalidEmail",
@@ -38,7 +38,7 @@ var (
 			Name:   "NoPassword",
 			Email:  "test@mail.com",
 			Pass:   "",
-			Errors: []string{"(password) is required"},
+			Errors: []string{"password is required"},
 		},
 	}
 

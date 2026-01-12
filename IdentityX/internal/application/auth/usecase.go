@@ -76,12 +76,6 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
-	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		return uc.registerInternal(ctx, in)
-	})
-}
-
-func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -441,12 +435,6 @@ func (uc *UseCase) finishProjectUserRefresh(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
-	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		return uc.registerProjectUserInternal(ctx, in)
-	})
-}
-
-func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
 	)

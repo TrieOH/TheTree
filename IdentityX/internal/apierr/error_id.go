@@ -4,8 +4,9 @@ const (
 	RequestMissingQueryParamValue    ID = "REQ_001"
 	RequestMissingQueryParam         ID = "REQ_002"
 	RequestMissingSchemaCustomFields ID = "REQ_003"
-	RequestInvalidJSON               ID = "REQ_004"
+	RequestInvalidJSONFormat         ID = "REQ_004"
 	RequestValidationError           ID = "REQ_005"
+	RequestNotApplicationJSON        ID = "REQ_006"
 )
 
 const (
@@ -142,6 +143,7 @@ const (
 	FieldRequiredMissing               ID = "FIELD_007"
 	FieldInvalidType                   ID = "FIELD_008"
 	FieldInvalidOwner                  ID = "FIELD_009"
+	FieldValidationErrSchemaRegister   ID = "FIELD_010"
 )
 
 const (

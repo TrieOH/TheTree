@@ -7,6 +7,7 @@ import (
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
@@ -112,7 +113,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 		return nil, err
 	}
 
-	var latest *schema.Version
+	var latest *version.Version
 	latest, err = uc.versions.GetLatestForUpdate(ctx, sid)
 
 	if err != nil && !apierr.IsNotFound(err) {
@@ -120,7 +121,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if apierr.IsNotFound(err) {
-		newVersion := &schema.Version{
+		newVersion := &version.Version{
 			SchemaID:      sid,
 			VersionNumber: 1,
 		}
@@ -141,13 +142,13 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 		return inbounds.SchemaVersionToOutput(newVersion), nil
 	}
 
-	if latest.Status != schema.VersionStatusPublished {
+	if latest.Status != version.StatusPublished {
 		err = apierr.ErrBadRequest.WithMsg("new versions can only be drafted from published versions").WithID(apierr.SchemaVersionDraftOnNonPublished)
 		apierr.RecordDomainError(span, err)
 		return nil, err
 	}
 
-	var newVersionDraft *schema.Version
+	var newVersionDraft *version.Version
 	newVersionDraft, err = uc.versions.CopyOnDraft(ctx, latest.ID)
 	if err != nil {
 		return nil, err
@@ -215,7 +216,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	var latest *schema.Version
+	var latest *version.Version
 	latest, err = uc.versions.GetLatest(ctx, sid)
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
@@ -227,11 +228,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	if latest.Status != schema.VersionStatusDraft {
-		if latest.Status == schema.VersionStatusPublished {
+	if latest.Status != version.StatusDraft {
+		if latest.Status == version.StatusPublished {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version that isn't a draft").WithID(apierr.SchemaVersionTryingToPublishPublished)
 			apierr.RecordDomainError(span, err)
-		} else if latest.Status == schema.VersionStatusArchived {
+		} else if latest.Status == version.StatusArchived {
 			err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema version that isn't a draft").WithID(apierr.SchemaVersionTryingToPublishArchived)
 			apierr.RecordDomainError(span, err)
 		} else {
@@ -246,7 +247,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 			return err
 		}
 
-		if err = uc.versions.Publish(ctx, schema.Version{
+		if err = uc.versions.Publish(ctx, version.Version{
 			SchemaID: sid,
 			ID:       latest.ID,
 		}); err != nil {
@@ -272,7 +273,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	if err = uc.versions.Publish(ctx, schema.Version{
+	if err = uc.versions.Publish(ctx, version.Version{
 		SchemaID: sid,
 		ID:       latest.ID,
 	}); err != nil {

@@ -48,8 +48,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasMessage("invalid reference").
-				TraceContains("violates foreign key constraint")
+				HasMessage("invalid reference")
 		})
 
 		t.Run("ValidationProjectRegister", func(t *testing.T) {

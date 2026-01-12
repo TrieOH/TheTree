@@ -12,7 +12,7 @@ import (
 // FIXME: Implement other field types when they are implemented in the API.
 // Currently, types like 'email', 'select', 'radio', 'checkbox' will always return false,
 // making them unusable for project user registration.
-func validateFieldType(fieldType field.Type, value any) bool {
+func validateFieldValue(fieldType field.Type, value any) bool {
 	switch fieldType {
 
 	case field.String:

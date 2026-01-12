@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
@@ -112,7 +113,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		return nil, err
 	}
 
-	var latest *schema.Version
+	var latest *version.Version
 	latest, err = uc.versions.GetLatest(ctx, sid)
 	if err != nil {
 		return nil, err
@@ -124,7 +125,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		return nil, err
 	}
 
-	if latest.Status != schema.VersionStatusDraft {
+	if latest.Status != version.StatusDraft {
 		err = apierr.ErrConflict.WithMsg("cannot add fields to a non-draft version").WithID(apierr.SchemaVersionNotDraft)
 		apierr.RecordDomainError(span, err)
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
@@ -219,7 +220,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return err
 	}
 
-	var latest *schema.Version
+	var latest *version.Version
 	latest, err = uc.versions.GetLatest(ctx, sid)
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
@@ -231,13 +232,13 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return err
 	}
 
-	if latest.VersionNumber == 1 && latest.Status == schema.VersionStatusDraft {
+	if latest.VersionNumber == 1 && latest.Status == version.StatusDraft {
 		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema with only draft versions").WithID(apierr.SchemaHasOnlyDraftVersion)
 		apierr.RecordDomainError(span, err)
 		return err
 	}
 
-	if latest.VersionNumber == 1 && latest.Status == schema.VersionStatusArchived {
+	if latest.VersionNumber == 1 && latest.Status == version.StatusArchived {
 		err = apierr.ErrUnauthorized.WithMsg("cannot publish a schema with only archived versions").WithID(apierr.SchemaHasOnlyArchivedVersion)
 		apierr.RecordDomainError(span, err)
 		return err
@@ -371,7 +372,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 		},
 	}
 
-	var versionsPart []schema.Version
+	var versionsPart []version.Version
 	versionsPart, err = uc.versions.List(ctx, sid)
 	if err != nil {
 		return nil, err

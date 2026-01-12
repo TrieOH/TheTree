@@ -54,7 +54,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.RequestValidationError).
-			ValidationError("(password)")
+			ValidationError("password must be at most 72 characters long")
 	})
 
 	// FIXME: Current validation package does not consider trailing spaces as a valid email, fix it and start using the trailing spaces email

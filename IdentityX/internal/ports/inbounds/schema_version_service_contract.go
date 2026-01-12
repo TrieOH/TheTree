@@ -1,7 +1,7 @@
 package inbounds
 
 import (
-	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,12 +22,12 @@ type SchemaVersionOutput struct {
 	SchemaID         uuid.UUID
 	BasedOnVersionID *uuid.UUID
 	VersionNumber    int
-	Status           schema.VersionStatus
+	Status           version.Status
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
 
-func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
+func SchemaVersionToOutput(out *version.Version) *SchemaVersionOutput {
 	if out == nil {
 		return nil
 	}
