@@ -11,8 +11,8 @@ type SchemaServiceInput struct {
 	SchemaType string
 	Title      string
 	FlowID     string
-	ProjectID  string
-	SchemaID   string
+	ProjectID  uuid.UUID
+	SchemaID   uuid.UUID
 }
 
 type SchemaVerboseOutput struct {

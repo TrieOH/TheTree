@@ -3,12 +3,12 @@ package session
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
-	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbound"
 	"context"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -38,7 +38,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	sessions, err := uc.sessions.List(ctx, principal.UserID)
@@ -53,27 +53,22 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *UseCase) RevokeByID(ctx context.Context, sessionID string) error {
+func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
-	sid, err := validation.RequireSessionID(span, &sessionID)
-	if err != nil {
-		return err
-	}
-
-	if principal.SessionID == sid {
+	if principal.SessionID == sessionID {
 		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}
 
-	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, sid)
+	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID)
 	if apierr.IsNotFound(err) {
 		apiErr := apierr.ErrNotFound.WithMsg("session not found or revoked").WithID(apierr.SessionNotFound)
 		return apiErr
@@ -99,7 +94,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
@@ -121,7 +116,7 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{

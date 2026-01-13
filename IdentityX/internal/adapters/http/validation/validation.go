@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 var validate = validator.New()
@@ -60,6 +61,17 @@ func isPasswordField(fieldName, structFieldName string) bool {
 func init() {
 	// Register custom validators
 	_ = validate.RegisterValidation("passwd", passwordValidator)
+
+	_ = validate.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
+		v := fl.Field().String()
+
+		u, err := uuid.Parse(v)
+		if err != nil {
+			return false
+		}
+
+		return u.Version() == 7
+	})
 
 	// Use JSON field names for better API responses
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -122,6 +134,8 @@ func formatValidationMessage(err validator.FieldError, fieldName string, value i
 		return fmt.Sprintf("%s must be a valid email address (got %s)", field, val)
 	case "uuid":
 		return fmt.Sprintf("%s must be a valid UUID (got %s)", field, val)
+	case "uuid7":
+		return fmt.Sprintf("%s must be a valid UUIDv7 (got %s)", field, val)
 	case "min":
 		if err.Kind() == reflect.String {
 			return fmt.Sprintf("%s must be at least %s characters long", field, err.Param())

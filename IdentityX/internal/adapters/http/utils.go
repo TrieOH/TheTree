@@ -1,6 +1,8 @@
 package http
 
 import (
+	"GoAuth/internal/adapters/http/validation"
+	"GoAuth/internal/apierr"
 	"errors"
 	"fmt"
 	"net"
@@ -9,8 +11,24 @@ import (
 	"strings"
 	"time"
 
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
+
+func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
+	projectIDStr := chi.URLParam(r, fieldName)
+	if err := validation.ValidateRule(projectIDStr, "required,uuid7", fieldName); err != nil {
+		return uuid.Nil, resp.FromError(err)
+	}
+
+	projectID, err := validation.ParseUUID(projectIDStr, fieldName)
+	if err != nil {
+		return uuid.Nil, resp.FromError(apierr.FromHandler(err))
+	}
+	return projectID, nil
+}
 
 func SetTrustProxyHeaders() {
 	HTTPProxyConfig.TrustProxyHeaders = viper.GetBool("TRUST_PROXY_HEADERS")

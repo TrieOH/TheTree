@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RegisterUserInput struct {
@@ -31,7 +33,7 @@ type ProjectRegisterInput struct {
 	Email        string
 	Password     string
 	CustomFields *json.RawMessage
-	ProjectID    string
+	ProjectID    uuid.UUID
 	SchemaType   string
 	FlowID       string
 }
@@ -39,7 +41,7 @@ type ProjectRegisterInput struct {
 type ProjectLoginInput struct {
 	Email     string
 	Password  string
-	ProjectID string
+	ProjectID uuid.UUID
 	IP        string
 	Agent     string
 }

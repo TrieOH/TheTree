@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/go-chi/chi/v5"
 )
 
 type AuthHandler struct {
@@ -201,9 +200,9 @@ func (handler *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/register [post]
 func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "project_id")
-	if projectId == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -220,7 +219,7 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 		Email:        req.Email,
 		Password:     req.Password,
 		CustomFields: req.CustomFields,
-		ProjectID:    projectId,
+		ProjectID:    projectID,
 		SchemaType:   schemaType,
 		FlowID:       flowID,
 	}
@@ -250,9 +249,9 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/login [post]
 func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "project_id")
-	if projectId == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -268,7 +267,7 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	in := inbounds.ProjectLoginInput{
 		Email:     req.Email,
 		Password:  req.Password,
-		ProjectID: projectId,
+		ProjectID: projectID,
 		IP:        ip,
 		Agent:     agent,
 	}

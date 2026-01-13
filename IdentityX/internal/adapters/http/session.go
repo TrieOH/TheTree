@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/go-chi/chi/v5"
 )
 
 type SessionHandler struct {
@@ -55,7 +54,13 @@ func (handler *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.R
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
 func (handler *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
-	err := handler.sessions.RevokeByID(r.Context(), chi.URLParam(r, "session_id"))
+	sessionID, rs := getUUID(r, "session_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	err := handler.sessions.RevokeByID(r.Context(), sessionID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

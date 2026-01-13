@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	auth2 "GoAuth/internal/application/auth"
+	appauth "GoAuth/internal/application/auth"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
-	authz2 "GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/session"
 	authport "GoAuth/internal/ports/auth"
 	"GoAuth/internal/ports/outbound"
@@ -105,14 +105,14 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			if accessToken.Issuer != mw.issuer || refreshToken.Issuer != mw.issuer {
-				mwErr := apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
+				err = apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
 				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, mwErr)
+				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			var refreshTokenJTI uuid.UUID
-			refreshTokenJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
+			refreshTokenJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
 			if err != nil {
 				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
@@ -120,7 +120,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			var accessTokenJTI uuid.UUID
-			accessTokenJTI, err = validation.RequireAccessJTI(span, &accessToken.ID)
+			accessTokenJTI, err = validation.RequireAccessJTI(&accessToken.ID)
 			if err != nil {
 				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
@@ -170,15 +170,14 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
 			)
 
-			var principal *authz2.Principal
-			principal, err = authz2.NewPrincipal(accessToken, refreshToken)
+			var principal *authz.Principal
+			principal, err = authz.NewPrincipal(accessToken, refreshToken)
 			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
+				resp.FromError(apierr.FromService(span, err)).WithModule("AuthMW").Send(w)
 				return
 			}
 
-			ctx = auth2.WithPrincipal(ctx, principal)
+			ctx = appauth.WithPrincipal(ctx, principal)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

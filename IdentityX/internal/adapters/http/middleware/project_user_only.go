@@ -13,7 +13,7 @@ func ProjectUserOnly(next http.Handler) http.Handler {
 		ctx := r.Context()
 		principal, err := auth.RequirePrincipal(ctx)
 		if err != nil {
-			resp.FromError(err).WithModule("ProjectUserOnlyMW").Send(w)
+			resp.FromError(apierr.FromService(nil, err)).WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 

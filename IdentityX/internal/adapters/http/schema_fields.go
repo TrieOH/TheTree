@@ -20,15 +20,15 @@ func NewSchemaFieldsHandler(uc inbounds.SchemaFieldsService) *SchemaFieldsHandle
 }
 
 func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
-	schemaID := chi.URLParam(r, "schema_id")
-	if schemaID == "" {
-		resp.BadRequest("missing schema id parameter").Send(w)
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 

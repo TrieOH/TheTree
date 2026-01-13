@@ -8,8 +8,8 @@ import (
 )
 
 type SchemaVersionServiceInput struct {
-	SchemaID  string
-	ProjectID string
+	SchemaID  uuid.UUID
+	ProjectID uuid.UUID
 }
 
 type VersionVerboseOutput struct {

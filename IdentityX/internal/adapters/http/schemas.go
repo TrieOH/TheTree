@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/go-chi/chi/v5"
 )
 
 type SchemaHandler struct {
@@ -19,9 +18,9 @@ func NewSchemaHandler(uc inbounds.SchemaService) *SchemaHandler {
 }
 
 func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -51,15 +50,15 @@ func (handler *SchemaHandler) Draft(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *SchemaHandler) Publish(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
-	schemaID := chi.URLParam(r, "schema_id")
-	if schemaID == "" {
-		resp.BadRequest("missing schema id parameter").Send(w)
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -78,15 +77,15 @@ func (handler *SchemaHandler) Publish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
-	schemaID := chi.URLParam(r, "schema_id")
-	if schemaID == "" {
-		resp.BadRequest("missing schema id parameter").Send(w)
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -108,15 +107,15 @@ func (handler *SchemaHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
-	schemaID := chi.URLParam(r, "schema_id")
-	if schemaID == "" {
-		resp.BadRequest("missing schema id parameter").Send(w)
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 

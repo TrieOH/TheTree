@@ -9,8 +9,8 @@ import (
 )
 
 type SchemaFieldInput struct {
-	SchemaID      string
-	ProjectID     string
+	SchemaID      uuid.UUID
+	ProjectID     uuid.UUID
 	VersionNumber int
 	Fields        []InputField
 }

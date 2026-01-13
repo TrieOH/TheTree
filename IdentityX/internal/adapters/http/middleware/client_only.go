@@ -15,7 +15,7 @@ func ClientOnly() func(http.Handler) http.Handler {
 			ctx := r.Context()
 			principal, err := auth.RequirePrincipal(ctx)
 			if err != nil {
-				resp.FromError(err).WithModule("ClientOnlyMW").Send(w)
+				resp.FromError(apierr.FromService(nil, err)).WithModule("ClientOnlyMW").Send(w)
 				return
 			}
 

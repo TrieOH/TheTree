@@ -4,7 +4,6 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/transactions"
-	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
@@ -71,23 +70,11 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, err
-	}
-
-	var pid uuid.UUID
-	pid, err = validation.RequireProjectID(span, &in.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	var sid uuid.UUID
-	sid, err = validation.RequireSchemaID(span, &in.SchemaID)
-	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +87,8 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 
 	var belongs bool
 	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
-		ProjectID: pid,
-		ID:        sid,
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
 	})
 	if err != nil {
 		return nil, err
@@ -114,7 +101,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	var latest *version.Version
-	latest, err = uc.versions.GetLatestForUpdate(ctx, sid)
+	latest, err = uc.versions.GetLatestForUpdate(ctx, in.SchemaID)
 
 	if err != nil && !apierr.IsNotFound(err) {
 		return nil, err
@@ -122,7 +109,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 
 	if apierr.IsNotFound(err) {
 		newVersion := &version.Version{
-			SchemaID:      sid,
+			SchemaID:      in.SchemaID,
 			VersionNumber: 1,
 		}
 
@@ -132,8 +119,8 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 		}
 
 		if err = uc.schemas.SetVersion(ctx, schema.Schema{
-			ID:               sid,
-			ProjectID:        pid,
+			ID:               in.SchemaID,
+			ProjectID:        in.ProjectID,
 			CurrentVersionID: &newVersion.ID,
 		}); err != nil {
 			return nil, err
@@ -174,23 +161,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return err
-	}
-
-	var pid uuid.UUID
-	pid, err = validation.RequireProjectID(span, &in.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	var sid uuid.UUID
-	sid, err = validation.RequireSchemaID(span, &in.SchemaID)
-	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return err
 	}
@@ -203,8 +178,8 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 
 	var belongs bool
 	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
-		ProjectID: pid,
-		ID:        sid,
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
 	})
 	if err != nil {
 		return err
@@ -217,7 +192,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	var latest *version.Version
-	latest, err = uc.versions.GetLatest(ctx, sid)
+	latest, err = uc.versions.GetLatest(ctx, in.SchemaID)
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -248,7 +223,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		}
 
 		if err = uc.versions.Publish(ctx, version.Version{
-			SchemaID: sid,
+			SchemaID: in.SchemaID,
 			ID:       latest.ID,
 		}); err != nil {
 			return err
@@ -274,15 +249,15 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if err = uc.versions.Publish(ctx, version.Version{
-		SchemaID: sid,
+		SchemaID: in.SchemaID,
 		ID:       latest.ID,
 	}); err != nil {
 		return err
 	}
 
 	if err := uc.schemas.SetVersion(ctx, schema.Schema{
-		ID:               sid,
-		ProjectID:        pid,
+		ID:               in.SchemaID,
+		ProjectID:        in.ProjectID,
 		CurrentVersionID: &latest.ID,
 	}); err != nil {
 		return err

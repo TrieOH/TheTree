@@ -4,7 +4,6 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/transactions"
-	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
@@ -13,7 +12,6 @@ import (
 	"GoAuth/internal/ports/outbound"
 	"context"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -71,23 +69,11 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, err
-	}
-
-	var pid uuid.UUID
-	pid, err = validation.RequireProjectID(span, &in.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	var sid uuid.UUID
-	sid, err = validation.RequireSchemaID(span, &in.SchemaID)
-	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, pid, principal.UserID)
+	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +86,8 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 
 	var belongs bool
 	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
-		ProjectID: pid,
-		ID:        sid,
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
 	})
 	if err != nil {
 		return nil, err
@@ -114,7 +100,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var latest *version.Version
-	latest, err = uc.versions.GetLatest(ctx, sid)
+	latest, err = uc.versions.GetLatest(ctx, in.SchemaID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +131,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		}
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
-			SchemaID:        sid,
+			SchemaID:        in.SchemaID,
 			SchemaVersionID: latest.ID,
 			Key:             f.Key,
 			Type:            field.Type(f.Type),

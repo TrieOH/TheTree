@@ -9,7 +9,7 @@ import (
 )
 
 type ProjectServiceInput struct {
-	ProjectID   *string
+	ProjectID   uuid.UUID
 	ProjectName string
 	Metadata    json.RawMessage
 }
