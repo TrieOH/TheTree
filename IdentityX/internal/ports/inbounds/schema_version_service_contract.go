@@ -41,3 +41,45 @@ func SchemaVersionToOutput(out *version.Version) *SchemaVersionOutput {
 		UpdatedAt:        out.UpdatedAt,
 	}
 }
+
+type ErrDraftVersionOnNonPublished struct{}
+
+func (e ErrDraftVersionOnNonPublished) Error() string {
+	return "new versions can only be drafted from published versions"
+}
+
+type ErrPublishNonExistentVersionDraft struct{}
+
+func (e ErrPublishNonExistentVersionDraft) Error() string {
+	return "cannot publish a schema version draft that doesn't exist"
+}
+
+type ErrPublishVersionPublished struct{}
+
+func (e ErrPublishVersionPublished) Error() string {
+	return "cannot publish a schema version that isn't a draft"
+}
+
+type ErrPublishVersionArchived struct{}
+
+func (e ErrPublishVersionArchived) Error() string {
+	return "cannot publish a schema version that isn't a draft"
+}
+
+type ErrPublishVersionInvalidStatus struct{}
+
+func (e ErrPublishVersionInvalidStatus) Error() string {
+	return "CATASTROPHIC: schema version found with no valid status"
+}
+
+type ErrPublishVersionNoChanges struct{}
+
+func (e ErrPublishVersionNoChanges) Error() string {
+	return "cannot publish a version with no changes"
+}
+
+type ErrPublishVersionNoFields struct{}
+
+func (e ErrPublishVersionNoFields) Error() string {
+	return "cannot publish a schema version with no fields"
+}

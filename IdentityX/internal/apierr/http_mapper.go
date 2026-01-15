@@ -231,6 +231,34 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidOwner)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrDraftVersionOnNonPublished:
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionDraftOnNonPublished)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishNonExistentVersionDraft:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionDraftDoesntExist)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionPublished:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishPublished)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionArchived:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishArchived)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionInvalidStatus:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionNoValidStatus)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionNoChanges:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionNoChanges)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionNoFields:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""

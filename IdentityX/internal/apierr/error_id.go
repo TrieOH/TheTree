@@ -132,7 +132,7 @@ const (
 	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
 	SchemaVersionMismatch                 ID = "SCM_VER_007"
 	SchemaVersionNotDraft                 ID = "SCM_VER_008"
-	SchemaVersionNoValidType              ID = "SCM_VER_009"
+	SchemaVersionNoValidStatus            ID = "SCM_VER_009"
 	SchemaVersionDraftOnNonPublished      ID = "SCM_VER_010"
 	SchemaVersionNoChanges                ID = "SCM_VER_011"
 )
