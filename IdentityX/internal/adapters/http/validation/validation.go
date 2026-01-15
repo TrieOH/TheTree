@@ -60,9 +60,11 @@ func isPasswordField(fieldName, structFieldName string) bool {
 
 func init() {
 	// Register custom validators
-	_ = validate.RegisterValidation("passwd", passwordValidator)
+	if err := validate.RegisterValidation("passwd", passwordValidator); err != nil {
+		panic("failed to register passwd validator: " + err.Error())
+	}
 
-	_ = validate.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
+	if err := validate.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
 		v := fl.Field().String()
 
 		u, err := uuid.Parse(v)
@@ -71,7 +73,9 @@ func init() {
 		}
 
 		return u.Version() == 7
-	})
+	}); err != nil {
+		panic("failed to register uuid7 validator: " + err.Error())
+	}
 
 	// Use JSON field names for better API responses
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
@@ -94,7 +98,11 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 	}
 
 	verr := apierr.ErrInvalidInput.WithMsg("Validation failed")
-	for _, e := range err.(validator.ValidationErrors) {
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if !ok {
+		return apierr.ErrInvalidInput.WithMsg("Validation failed").WithCause(err).WithID(apierr.RequestValidationError)
+	}
+	for _, e := range validationErrors {
 		msg := formatValidationMessage(e, fieldName, value)
 		verr = verr.WithCause(errors.New(msg))
 	}
@@ -161,7 +169,11 @@ func ValidateStruct(s interface{}) error {
 	}
 
 	verr := apierr.ErrInvalidInput.WithMsg("Validation failed")
-	for _, err := range err.(validator.ValidationErrors) {
+	var validationErrors validator.ValidationErrors
+	if !errors.As(err, &validationErrors) {
+		return apierr.ErrInvalidInput.WithMsg("Validation failed").WithCause(err)
+	}
+	for _, err := range validationErrors {
 		structFieldName := err.StructField()
 		fieldName := structFieldName
 		var msg string
@@ -190,7 +202,11 @@ func ValidateStruct(s interface{}) error {
 
 		// Handle password validation specially
 		if err.Tag() == "passwd" {
-			password := err.Value().(string)
+			password, ok := err.Value().(string)
+			if !ok {
+				verr = verr.WithCause(errors.New(fieldName + " must be a valid string"))
+				continue
+			}
 			var hasUpper, hasNumber, hasSymbol bool
 
 			for _, c := range password {
@@ -226,7 +242,7 @@ func ValidateStruct(s interface{}) error {
 // ValidateInto validates JSON into a provided pointer
 func ValidateInto[T any](r *http.Request, target *T) error {
 	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
+	if !strings.HasPrefix(contentType, "application/json") {
 		return apierr.ErrBadRequest.WithMsg("Content-Type must be application/json").WithID(apierr.RequestNotApplicationJSON)
 	}
 

@@ -289,10 +289,11 @@ func FromHandler(err error) *Error {
 	}
 	switch e := err.(type) {
 	case validation.ErrParseUUID:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
 		return httpErr
 	default:
-		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
+		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(SystemInternalError)
+		logs.L().Error("unmapped handler error", zap.Error(httpErr), zap.String("cause", err.Error()))
 		return httpErr
 	}
 }

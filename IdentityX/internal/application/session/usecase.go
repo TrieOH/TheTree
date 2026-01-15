@@ -130,9 +130,11 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 
 // Me returns the principal of the authenticated user.
 func (uc *UseCase) Me(ctx context.Context) (*inbounds.PrincipalOutput, error) {
-	principal, err := auth.RequirePrincipal(ctx)
+	ctx, span := usecaseTracer.Start(ctx, "SessionService.Me")
+	defer span.End()
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 	return inbounds.PrincipalToPrincipalOutput(*principal), nil
 }

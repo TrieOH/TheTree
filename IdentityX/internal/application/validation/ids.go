@@ -17,26 +17,40 @@ func (e ErrParseUUID) Error() string {
 	return fmt.Sprintf("invalid uuid field: %s", e.FieldName)
 }
 
+type ErrUUIDWasNil struct {
+	FieldName string
+}
+
+func (e ErrUUIDWasNil) Error() string {
+	return e.FieldName + " field is nil"
+}
+
 func ParseRefreshJTI(refreshJTI string) (uuid.UUID, error) {
 	jti, err := uuid.Parse(refreshJTI)
 	if err != nil {
-		return uuid.Nil, ErrParseUUID{FieldName: "refreshJTI"}
+		return uuid.Nil, ErrParseUUID{FieldName: "refreshJTI", Cause: err}
 	}
 	return jti, nil
 }
 
 func RequireRefreshJTI(refreshJTI *string) (uuid.UUID, error) {
+	if refreshJTI == nil {
+		return uuid.Nil, ErrUUIDWasNil{FieldName: "refreshJTI"}
+	}
 	return ParseRefreshJTI(*refreshJTI)
 }
 
-func ParseAccessJTI(refreshJTI string) (uuid.UUID, error) {
-	jti, err := uuid.Parse(refreshJTI)
+func ParseAccessJTI(accessJTI string) (uuid.UUID, error) {
+	jti, err := uuid.Parse(accessJTI)
 	if err != nil {
-		return uuid.Nil, ErrParseUUID{FieldName: "accessJTI"}
+		return uuid.Nil, ErrParseUUID{FieldName: "accessJTI", Cause: err}
 	}
 	return jti, nil
 }
 
-func RequireAccessJTI(refreshJTI *string) (uuid.UUID, error) {
-	return ParseAccessJTI(*refreshJTI)
+func RequireAccessJTI(accessJTI *string) (uuid.UUID, error) {
+	if accessJTI == nil {
+		return uuid.Nil, ErrUUIDWasNil{FieldName: "accessJTI"}
+	}
+	return ParseAccessJTI(*accessJTI)
 }

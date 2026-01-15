@@ -2,6 +2,7 @@ package apierr
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -34,7 +35,7 @@ func (e Error) Error() string {
 	// Multiple causes
 	msg := string(e.ID) + ": " + e.Message
 	for i, cause := range e.Causes {
-		msg += "; CAUSE[" + string(rune('0'+i)) + "] (" + cause.Error() + ")"
+		msg += fmt.Sprintf("; CAUSE[%d] (%s)", i, cause.Error())
 	}
 	return msg
 }

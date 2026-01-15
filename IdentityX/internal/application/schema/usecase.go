@@ -272,7 +272,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	if !belongs {
-		return nil, apierr.FromService(span, inbounds.ErrSchemaNoPublishedVersions{Msg: "cannot get a schema you don't own"})
+		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get a schema you don't own"})
 	}
 
 	var schemaPart *schema.Schema

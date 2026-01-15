@@ -17,8 +17,8 @@ type SchemaFieldInput struct {
 
 type InputField struct {
 	Key             string
-	SchemaID        string
-	SchemaVersionID string
+	SchemaID        uuid.UUID
+	SchemaVersionID uuid.UUID
 	Type            string
 	Owner           string
 	Title           string
