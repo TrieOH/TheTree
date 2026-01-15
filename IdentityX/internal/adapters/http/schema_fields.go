@@ -19,6 +19,22 @@ func NewSchemaFieldsHandler(uc inbounds.SchemaFieldsService) *SchemaFieldsHandle
 	return &SchemaFieldsHandler{fields: uc}
 }
 
+// Create godoc
+// @Summary Create fields for a schema version
+// @Description Creates fields for a specific version of a schema.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param fieldInfo body dto.CreateFieldRequest true "Field creation information"
+// @Success 201 {array} dto.FieldResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version} [post]
 func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {

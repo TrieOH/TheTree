@@ -70,11 +70,5 @@ func (s Schema) CanRegister() error {
 }
 
 func (s Schema) IsVersion(versionID uuid.UUID) bool {
-	if s.CurrentVersionID == nil {
-		return false
-	}
-	if *s.CurrentVersionID != versionID {
-		return false
-	}
-	return true
+	return s.CurrentVersionID != nil && *s.CurrentVersionID == versionID
 }

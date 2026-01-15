@@ -85,7 +85,7 @@ func FromService(span trace.Span, err error) *Error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case auth.ErrSigningToken:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenCouldNotSign).WithCause(e.Cause)
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(TokenCouldNotSign).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case utils.ErrParseProjectKey:

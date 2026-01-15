@@ -252,8 +252,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var refreshToken *auth.RefreshClaims
 	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var oldJTI uuid.UUID

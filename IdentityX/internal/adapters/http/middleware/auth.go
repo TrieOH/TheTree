@@ -144,7 +144,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 					return
 				}
 				resp.FromError(err).WithModule("AuthMW").Send(w) // unexpected DB / infra error
-				apierr.RecordDomainError(span, err)
+				apierr.RecordSystemError(span, err)
 				return
 			}
 
