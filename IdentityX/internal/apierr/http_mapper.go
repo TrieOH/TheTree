@@ -215,6 +215,22 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaHasOnlyArchivedVersion)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrSchemaVersionMismatchLatest:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrAddFieldsToNonDraftVersion:
+		httpErr := ErrConflict.WithMsg(e.Error()).WithID(SchemaVersionNotDraft)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidFieldType:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidType)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidFieldOwner:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidOwner)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""

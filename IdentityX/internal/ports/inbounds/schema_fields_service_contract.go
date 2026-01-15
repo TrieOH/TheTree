@@ -80,3 +80,33 @@ func FieldToOutputField(f *field.Field) *OutputField {
 		UpdatedAt:       f.UpdatedAt,
 	}
 }
+
+type ErrSchemaVersionMismatchLatest struct{}
+
+func (e ErrSchemaVersionMismatchLatest) Error() string {
+	return "version number does not match latest version"
+}
+
+type ErrAddFieldsToNonDraftVersion struct{}
+
+func (e ErrAddFieldsToNonDraftVersion) Error() string {
+	return "cannot add fields to a non-draft version"
+}
+
+type ErrInvalidFieldType struct {
+	Type string
+	Key  string
+}
+
+func (e ErrInvalidFieldType) Error() string {
+	return "invalid field type (" + e.Type + ") for field: " + e.Key
+}
+
+type ErrInvalidFieldOwner struct {
+	Owner string
+	Key   string
+}
+
+func (e ErrInvalidFieldOwner) Error() string {
+	return "invalid owner type (" + e.Owner + ") for field: " + e.Key
+}

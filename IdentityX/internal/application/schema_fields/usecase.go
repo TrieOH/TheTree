@@ -79,9 +79,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !isOwner {
-		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for schema versions in a project you don't own").WithID(apierr.ProjectNotOwnedByPrincipal)
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot create fields for schema versions in a project you don't own"})
 	}
 
 	var belongs bool
@@ -94,9 +92,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !belongs {
-		err = apierr.ErrUnauthorized.WithMsg("cannot create fields for a schema you don't own").WithID(apierr.SchemaNotOwnedByPrincipal)
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot create fields for a schema you don't own"})
 	}
 
 	var latest *version.Version
@@ -106,28 +102,20 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if latest.VersionNumber != in.VersionNumber {
-		err = apierr.ErrInvalidInput.WithMsg("version number does not match latest version").WithID(apierr.SchemaVersionMismatch)
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrSchemaVersionMismatchLatest{})
 	}
 
 	if latest.Status != version.StatusDraft {
-		err = apierr.ErrConflict.WithMsg("cannot add fields to a non-draft version").WithID(apierr.SchemaVersionNotDraft)
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrAddFieldsToNonDraftVersion{})
 	}
 
 	createdFields := make([]field.Field, 0, len(in.Fields))
 	for _, f := range in.Fields {
 		if !field.IsValidFieldType(f.Type) {
-			err = apierr.ErrInvalidInput.WithMsg("invalid field type (" + f.Type + ") for field: " + f.Key).WithID(apierr.FieldInvalidType)
-			apierr.RecordDomainError(span, err)
-			return nil, err
+			return nil, apierr.FromService(span, inbounds.ErrInvalidFieldType{Type: f.Type, Key: f.Key})
 		}
 		if !field.IsValidOwnerType(f.Owner) {
-			err = apierr.ErrInvalidInput.WithMsg("invalid owner type (" + f.Owner + ") for field: " + f.Key).WithID(apierr.FieldInvalidOwner)
-			apierr.RecordDomainError(span, err)
-			return nil, err
+			return nil, apierr.FromService(span, inbounds.ErrInvalidFieldOwner{Key: f.Key, Owner: f.Owner})
 		}
 		var created *field.Field
 		created, err = uc.fields.Create(ctx, field.Field{
