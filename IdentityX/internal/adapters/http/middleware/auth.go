@@ -2,15 +2,17 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	auth2 "GoAuth/internal/application/auth"
+	appauth "GoAuth/internal/application/auth"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
-	authz2 "GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/session"
 	authport "GoAuth/internal/ports/auth"
 	"GoAuth/internal/ports/outbound"
 	"errors"
 	"net/http"
 
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -57,12 +59,12 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
 					err = apierr.ErrUnauthorized.WithMsg("missing access_token cookie").WithID(apierr.AuthMissingAccessCookie).WithCause(err)
-					ErrToResp(err).WithModule("AuthMW").Send(w)
+					resp.FromError(err).WithModule("AuthMW").Send(w)
 					apierr.RecordDomainError(span, err)
 					return
 				}
 				err = apierr.ErrUnauthorized.WithMsg("invalid access_token cookie").WithID(apierr.AuthInvalidAccessCookie).WithCause(err)
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
@@ -72,12 +74,12 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
 					err = apierr.ErrUnauthorized.WithMsg("missing refresh_token cookie").WithID(apierr.AuthMissingRefreshCookie).WithCause(err)
-					ErrToResp(err).WithModule("AuthMW").Send(w)
+					resp.FromError(err).WithModule("AuthMW").Send(w)
 					apierr.RecordDomainError(span, err)
 					return
 				}
 				err = apierr.ErrUnauthorized.WithMsg("invalid refresh_token cookie").WithID(apierr.AuthInvalidRefreshCookie).WithCause(err)
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
@@ -85,7 +87,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			var accessToken *auth.AccessClaims
 			accessToken, err = mw.tokenVerifier.VerifyAccessToken(ctx, accessTokenCookie.Value)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
@@ -97,30 +99,30 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			var refreshToken *auth.RefreshClaims
 			refreshToken, err = mw.tokenVerifier.VerifyRefreshToken(ctx, refreshTokenCookie.Value)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			if accessToken.Issuer != mw.issuer || refreshToken.Issuer != mw.issuer {
-				mwErr := apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
-				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, mwErr)
+				err = apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
+				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			var refreshTokenJTI uuid.UUID
-			refreshTokenJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
+			refreshTokenJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			var accessTokenJTI uuid.UUID
-			accessTokenJTI, err = validation.RequireAccessJTI(span, &accessToken.ID)
+			accessTokenJTI, err = validation.RequireAccessJTI(&accessToken.ID)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				apierr.RecordDomainError(span, err)
 				return
 			}
@@ -128,36 +130,37 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			if accessTokenJTI != refreshToken.Sub.AccessJTI {
 				err = apierr.ErrUnauthorized.WithMsg("access token does not belong to this refresh token").WithID(apierr.TokenMismatchDuringAuth)
 				apierr.RecordDomainError(span, err)
-				ErrToResp(err).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				return
 			}
 
-			sess, err := mw.sessions.GetByTokenID(ctx, refreshTokenJTI)
+			var sess *session.Session
+			sess, err = mw.sessions.GetByTokenID(ctx, refreshTokenJTI)
 			if err != nil {
 				if apierr.IsNotFound(err) {
-					mwErr := apierr.ErrUnauthorized.WithMsg("session not found or revoked").WithID(apierr.SessionUnauthorized).WithCause(err)
-					ErrToResp(mwErr).WithModule("AuthMW").Send(w)
-					apierr.RecordDomainError(span, mwErr)
+					err = apierr.ErrUnauthorized.WithMsg("session not found or revoked").WithID(apierr.SessionUnauthorized).WithCause(err)
+					resp.FromError(err).WithModule("AuthMW").Send(w)
+					apierr.RecordDomainError(span, err)
 					return
 				}
-				ErrToResp(err).WithModule("AuthMW").Send(w) // unexpected DB / infra error
+				resp.FromError(err).WithModule("AuthMW").Send(w) // unexpected DB / infra error
 				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			if sess.SessionID != accessToken.Sub.SessionID {
-				mwErr := apierr.ErrUnauthorized.WithMsg("token/session mismatch").WithID(apierr.TokenSessionMismatch)
-				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, mwErr)
+				err = apierr.ErrUnauthorized.WithMsg("token/session mismatch").WithID(apierr.TokenSessionMismatch)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
+				apierr.RecordDomainError(span, err)
 				return
 			}
 
 			if sess.RevokedAt != nil {
 				// should never happen due to query guarding against this, just being defensive
 				// system error for appropriate priority if it happens, since it should never happen
-				mwErr := apierr.ErrUnauthorized.WithMsg("session revoked").WithID(apierr.SessionRevoked)
-				ErrToResp(mwErr).WithModule("AuthMW").Send(w)
-				apierr.RecordSystemError(span, mwErr)
+				err = apierr.ErrUnauthorized.WithMsg("session revoked").WithID(apierr.SessionRevoked)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
+				apierr.RecordSystemError(span, err)
 				return
 			}
 
@@ -167,15 +170,14 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
 			)
 
-			var principal *authz2.Principal
-			principal, err = authz2.NewPrincipal(accessToken, refreshToken)
+			var principal *authz.Principal
+			principal, err = authz.NewPrincipal(accessToken, refreshToken)
 			if err != nil {
-				ErrToResp(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
+				resp.FromError(apierr.FromService(span, err)).WithModule("AuthMW").Send(w)
 				return
 			}
 
-			ctx = auth2.WithPrincipal(ctx, principal)
+			ctx = appauth.WithPrincipal(ctx, principal)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

@@ -2,6 +2,7 @@ package testing
 
 import (
 	"GoAuth/internal/adapters/http/router"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/database"
 	"GoAuth/internal/utils"
 	"database/sql"
@@ -56,6 +57,7 @@ func (s *TestSuite) setup() {
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        "go-auth-test",
+		ErrorHandler:         apierr.ErrToResp,
 	})
 
 	var err error

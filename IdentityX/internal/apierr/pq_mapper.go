@@ -9,25 +9,25 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 		return ErrConflict.
 			WithMsg("a draft schema version already exists").
 			WithID(SchemaVersionDraftAlreadyExists).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	case "schema_fields_schema_version_id_position_key":
 		return ErrConflict.
 			WithMsg("two fields can't occupy the same position").
 			WithID(FieldSamePositionForMultipleFields).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	case "schema_fields_schema_version_id_key_key":
 		return ErrConflict.
 			WithMsg("two fields can't have the same key").
 			WithID(FieldSameKeyForMultipleFields).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	default:
 		return ErrConflict.
 			WithMsg("resource already exists").
 			WithID(DBUniqueViolation).
-			WithCause(cause)
+			WithDebugCause(cause)
 	}
 }
 
@@ -38,12 +38,12 @@ func fromCheckViolation(pqErr *pq.Error, cause error) *Error {
 		return ErrInvalidInput.
 			WithMsg("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores").
 			WithID(FieldInvalidCharactersInKey).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	default:
 		return ErrInvalidInput.
 			WithMsg("invalid value violates a database constraint").
 			WithID(DBCheckViolation).
-			WithCause(cause)
+			WithDebugCause(cause)
 	}
 }

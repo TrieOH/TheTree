@@ -4,6 +4,8 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
 	"net/http"
+
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 func ProjectUserOnly(next http.Handler) http.Handler {
@@ -11,13 +13,13 @@ func ProjectUserOnly(next http.Handler) http.Handler {
 		ctx := r.Context()
 		principal, err := auth.RequirePrincipal(ctx)
 		if err != nil {
-			ErrToResp(err).WithModule("ProjectUserOnlyMW").Send(w)
+			resp.FromError(apierr.FromService(nil, err)).WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 
 		if principal.ProjectID == nil {
-			mwErr := apierr.ErrForbidden.WithMsg("only project users can access this endpoint").WithID(apierr.AuthNotProjectUser)
-			ErrToResp(mwErr).WithModule("ProjectUserOnlyMW").Send(w)
+			err = apierr.ErrForbidden.WithMsg("only project users can access this endpoint").WithID(apierr.AuthNotProjectUser)
+			resp.FromError(err).WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 

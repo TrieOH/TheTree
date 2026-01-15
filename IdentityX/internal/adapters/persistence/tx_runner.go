@@ -36,12 +36,14 @@ func (r *TxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
+		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("cannot create transactions with a nil context").WithID(apierr.SystemTransactionWithNoContext)
 	}
 
 	if ctx.Value(txKeyValue) != nil {
 		// Nested transactions are explicitly not supported to avoid implicit
 		// transaction reuse or savepoint semantics.
+		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBNestedTXNotAllowed)
 	}
 
@@ -53,6 +55,7 @@ func (r *TxRunner) WithinTxWithOptions(
 	var tx *sql.Tx
 	tx, err = r.db.BeginTx(ctx, sqlOpts)
 	if err != nil {
+		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("cannot begin transaction").WithID(apierr.DBBeginTXFailed).WithCause(err)
 	}
 
@@ -67,6 +70,7 @@ func (r *TxRunner) WithinTxWithOptions(
 				}
 			}
 			logs.L().Error("transaction function panicked", zap.Any("panic", p))
+			// FIXME make me a generic error
 			err = apierr.ErrInternal.
 				WithMsg("transaction function panicked").
 				WithID(apierr.SystemInternalError)
@@ -88,6 +92,7 @@ func (r *TxRunner) WithinTxWithOptions(
 		if rbErr := tx.Rollback(); rbErr != nil {
 			logs.L().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
+		// FIXME make me a generic error
 		return apierr.ErrInternal.
 			WithMsg("transaction commit failed").
 			WithID(apierr.DBCommitTXFailed).

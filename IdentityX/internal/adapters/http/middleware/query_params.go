@@ -3,6 +3,8 @@ package middleware
 import (
 	"GoAuth/internal/apierr"
 	"net/http"
+
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
@@ -13,12 +15,12 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 			for _, p := range params {
 				if !q.Has(p) {
 					err := apierr.ErrInvalidInput.WithMsg("missing query parameter: " + p).WithID(apierr.RequestMissingQueryParam)
-					ErrToResp(err).WithModule("RequireQueryParamsMW").Send(w)
+					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
 					err := apierr.ErrInvalidInput.WithMsg("missing query parameter value for: " + p).WithID(apierr.RequestMissingQueryParamValue)
-					ErrToResp(err).WithModule("RequireQueryParamsMW").Send(w)
+					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 			}

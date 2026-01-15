@@ -76,12 +76,6 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
-	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		return uc.registerInternal(ctx, in)
-	})
-}
-
-func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -94,22 +88,19 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
-		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)
+		return apierr.FromService(span, apierr.ErrPasswordTooLong{})
 	}
 
 	var hashedPassword []byte
 	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		hashErr := apierr.ErrInternal.WithMsg("error hashing user password").WithID(apierr.SystemInternalError).WithCause(err)
-		span.SetAttributes(attribute.Bool("password.hashing.failed", true))
-		apierr.RecordSystemError(span, hashErr)
-		return hashErr
+		return apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
 	}
 
 	var u *user.User
 	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
+		return apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
 	} else if err != nil {
 		return err
 	}
@@ -141,9 +132,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	var u *user.User
 	u, err = uc.users.GetUserByEmail(ctx, in.Email)
 	if apierr.IsNotFound(err) {
-		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
-		apierr.RecordDomainError(span, authErr)
-		return nil, authErr
+		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
 	} else if err != nil {
 		return nil, err
 	}
@@ -156,9 +145,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password))
 	if err != nil {
-		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
-		apierr.RecordDomainError(span, authErr)
-		return nil, authErr
+		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
@@ -180,22 +167,18 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
-		apiErr := apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/Login").WithID(apierr.SystemErrorGeneratingUUID)
-		apierr.RecordSystemError(span, apiErr)
-		return nil, apiErr
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/login"})
 	}
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshToken string
 	refreshToken, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	return &inbounds.UserTokensOutput{
@@ -222,7 +205,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	var sess *session.Session
@@ -274,7 +257,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	}
 
 	var oldJTI uuid.UUID
-	oldJTI, err = validation.RequireRefreshJTI(span, &refreshToken.ID)
+	oldJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -282,9 +265,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/refreshInternal").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/refreshInternal"})
 	}
 
 	var newRefreshJTI = uid
@@ -296,8 +277,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	sess, err := uc.sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
-		tokenErr := apierr.ErrUnauthorized.WithMsg("refresh token is invalid").WithID(apierr.TokenInvalid).WithCause(err)
-		return nil, tokenErr
+		return nil, apierr.FromService(span, inbounds.ErrTokenInvalid{TokenType: "refresh"})
 	} else if err != nil {
 		return nil, err
 	}
@@ -342,9 +322,7 @@ func (uc *UseCase) finishClientRefresh(
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishClientRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishClientRefresh"})
 	}
 
 	newAccessJTI := uid
@@ -352,15 +330,13 @@ func (uc *UseCase) finishClientRefresh(
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshTokenStr string
 	refreshTokenStr, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	return &inbounds.UserTokensOutput{
@@ -408,9 +384,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/finishProjectUserRefresh").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishProjectUserRefresh"})
 	}
 
 	newAccessJTI := uid
@@ -419,15 +393,13 @@ func (uc *UseCase) finishProjectUserRefresh(
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessTokenStr, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, newAccessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshTokenStr string
 	refreshTokenStr, err = newRefreshToken(keyID, decodedKey, newAccessJTI, refreshJTI, refreshExpiresAt)
 	if err != nil {
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	return &inbounds.UserTokensOutput{
@@ -441,55 +413,34 @@ func (uc *UseCase) finishProjectUserRefresh(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
-	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		return uc.registerProjectUserInternal(ctx, in)
-	})
-}
-
-func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
-		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
+		trace.WithAttributes(attribute.String("project.id", in.ProjectID.String())),
 	)
 	defer span.End()
 
 	if in.FlowID == "" {
-		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be empty").WithID(apierr.SchemaInvalidFlowID)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrEmptyFlowID{})
 	}
 
 	if in.SchemaType == "" {
-		apiErr := apierr.ErrInvalidInput.WithMsg("schema type can't be empty").WithID(apierr.SchemaInvalidSchemaType)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrEmptySchemaType{})
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
-	pid, err := validation.RequireProjectID(span, &in.ProjectID)
-	if err != nil {
-		return err
-	}
-
 	if !schema.IsValidSchemaType(in.SchemaType) {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid schema type").WithID(apierr.SchemaInvalidSchemaType)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
 	}
 
 	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
-		apiErr := apierr.ErrInvalidInput.WithMsg("flow id can't be the same as a schema type").WithID(apierr.SchemaInvalidFlowID)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
 	}
 
 	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("custom fields are not allowed for core schema").WithID(apierr.SchemaMetadataNotAllowed)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrCustomFieldsNotAllowed{})
 	}
 
 	empty := json.RawMessage(`{}`)
@@ -498,7 +449,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, pid, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
 			return err
 		}
@@ -508,26 +459,23 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	}
 
 	if len(in.Password) > 72 {
-		return apierr.ErrInvalidInput.WithMsg("password length exceeds 72 bytes").WithID(apierr.AuthInvalidPassword)
+		return apierr.FromService(span, apierr.ErrPasswordTooLong{})
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		hashErr := apierr.ErrInternal.WithMsg("error hashing user password").WithID(apierr.SystemInternalError).WithCause(err)
-		span.SetAttributes(attribute.Bool("password.hashing.failed", true))
-		apierr.RecordSystemError(span, hashErr)
-		return hashErr
+		return apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
 	}
 
 	var usr *project_users.ProjectUser
 	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
-		ProjectID:    pid,
+		ProjectID:    in.ProjectID,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
 		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
-		return apierr.ErrConflict.WithMsg("error registering user").WithID(apierr.AuthEmailAlreadyUsed).WithCause(errors.New("email already in use"))
+		return apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
 	} else if err != nil {
 		return err
 	}
@@ -552,30 +500,21 @@ func (uc *UseCase) LoginProjectUser(
 	error,
 ) {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.LoginProjectUser",
-		trace.WithAttributes(attribute.String("project.id", in.ProjectID)),
+		trace.WithAttributes(attribute.String("project.id", in.ProjectID.String())),
 	)
 	defer span.End()
 
-	pid, err := validation.RequireProjectID(span, &in.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, pid, in.Email)
+	usr, err := uc.projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
 	if apierr.IsNotFound(err) {
-		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
-		apierr.RecordDomainError(span, authErr)
-		return nil, authErr
+		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
 	} else if err != nil {
 		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(in.Password))
 	if err != nil {
-		authErr := apierr.ErrUnauthorized.WithMsg("invalid email or password").WithID(apierr.AuthInvalidCredentials).WithCause(err)
-		apierr.RecordDomainError(span, authErr)
-		return nil, authErr
+		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
@@ -585,7 +524,7 @@ func (uc *UseCase) LoginProjectUser(
 		UserIP:    in.IP,
 		ExpiresAt: refreshExpiresAt,
 		UserID:    usr.ID,
-		ProjectID: &pid,
+		ProjectID: &in.ProjectID,
 	})
 	if err != nil {
 		return nil, err
@@ -606,9 +545,7 @@ func (uc *UseCase) LoginProjectUser(
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		err = apierr.ErrInternal.WithMsg("error generating UUID V7 at auth/LoginProjectUser").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
-		apierr.RecordSystemError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/LoginProjectUser"})
 	}
 
 	keyID := "project:" + sess.ProjectID.String() + ":v1"
@@ -616,14 +553,12 @@ func (uc *UseCase) LoginProjectUser(
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	refreshToken, err := newRefreshToken(keyID, decodedKey, accessJTI, sess.TokenID, refreshExpiresAt)
 	if err != nil {
-		apierr.RecordDomainError(span, err)
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	return &inbounds.UserTokensOutput{

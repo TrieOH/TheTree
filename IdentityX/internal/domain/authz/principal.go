@@ -1,7 +1,6 @@
 package authz
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
 	"encoding/json"
 
@@ -35,20 +34,20 @@ func NewPrincipal(
 	refresh *auth.RefreshClaims,
 ) (*Principal, error) {
 	if access == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("access claims required").WithID(apierr.TokenInvalidAccessClaims)
+		return nil, ErrMissingAccessClaims{}
 	}
 	if refresh == nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("refresh claims required").WithID(apierr.TokenInvalidRefreshClaims)
+		return nil, ErrMissingRefreshClaims{}
 	}
 
 	accessJTI, err := uuid.Parse(access.ID)
 	if err != nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse access JTI").WithID(apierr.TokenAccessInvalidID).WithCause(err)
+		return nil, ErrInvalidAccessJTI{Cause: err}
 	}
 
 	refreshJTI, err := uuid.Parse(refresh.ID)
 	if err != nil {
-		return nil, apierr.ErrUnauthorized.WithMsg("couldn't parse refresh JTI").WithID(apierr.TokenRefreshInvalidID).WithCause(err)
+		return nil, ErrInvalidRefreshJTI{Cause: err}
 
 	}
 

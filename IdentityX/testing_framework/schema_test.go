@@ -134,7 +134,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.RequestValidationError).
-				ValidationError("(schema_type)")
+				ValidationError("schema_type must be one of: core, context, sub-context")
 		})
 
 		t.Run("FlowIDTooLong", func(t *testing.T) {
@@ -147,7 +147,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.RequestValidationError).
-				ValidationError("(flow_id)")
+				ValidationError("flow_id must be at most 63 characters long")
 		})
 	})
 

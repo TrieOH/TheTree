@@ -179,6 +179,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 		return sqlcErr
 	}
 
+	// FIXME make me a generic error
 	if affectedRows == 0 {
 		apiErr := apierr.ErrNotFound.WithMsg("no affected rows").WithID(apierr.FieldNoAffectedRowsOnClone)
 		apierr.RecordDomainError(span, apiErr)

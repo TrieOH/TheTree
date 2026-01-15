@@ -3,11 +3,11 @@ package auth
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/field"
+	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -22,58 +22,28 @@ func (uc *UseCase) validateAndConstructMetadata(
 	flowID string,
 	customFields *json.RawMessage,
 ) (*json.RawMessage, error) {
+	var ok bool
 	var err error
 	var registerSchema *schema.Schema
-	registerSchema, err = uc.schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID)
-	if err != nil {
+	if registerSchema, err = uc.schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID); err != nil {
 		return nil, err
 	}
-
-	if registerSchema.CurrentVersionID == nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("schema has no published version").WithID(apierr.SchemaNoPublishedVersion)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+	if err = registerSchema.CanRegister(); err != nil {
+		return nil, apierr.FromService(span, err)
 	}
-
-	if registerSchema.Status == schema.StatusDraft {
-		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema").WithID(apierr.ProjectUserRegisterOnSchemaDraft)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
-	}
-
-	if registerSchema.Status == schema.StatusArchived {
-		apiErr := apierr.ErrBadRequest.WithMsg("can't register to an archived schema").WithID(apierr.ProjectUserRegisterOnSchemaArchived)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
-	}
-
-	var registerVersion *schema.Version
-	registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID)
-	if err != nil {
+	var registerVersion *version.Version
+	if registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID); err != nil {
 		return nil, err
 	}
-
-	if registerVersion.Status == schema.VersionStatusDraft {
-		apiErr := apierr.ErrBadRequest.WithMsg("can't register to a draft schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionDraft)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+	if err = registerVersion.CanRegister(); err != nil {
+		return nil, apierr.FromService(span, err)
 	}
-
-	if registerVersion.Status == schema.VersionStatusArchived {
-		apiErr := apierr.ErrBadRequest.WithMsg("can't register to an archived schema version").WithID(apierr.ProjectUserRegisterOnSchemaVersionArchived)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
-	}
-
-	if registerVersion.ID != *registerSchema.CurrentVersionID {
-		apiErr := apierr.ErrInternal.WithMsg("schema version and retrieved version mismatch").WithID(apierr.SchemaVersionMismatch)
-		apierr.RecordSystemError(span, apiErr)
-		return nil, apiErr
+	if ok = registerSchema.IsVersion(registerVersion.ID); !ok {
+		return nil, apierr.FromService(span, schema.ErrSchemaVersionMismatch{})
 	}
 
 	var registerFields []field.Field
-	registerFields, err = uc.fields.GetByVersionID(ctx, registerVersion.ID)
-	if err != nil {
+	if registerFields, err = uc.fields.GetByVersionID(ctx, registerVersion.ID); err != nil {
 		return nil, err
 	}
 
@@ -83,47 +53,13 @@ func (uc *UseCase) validateAndConstructMetadata(
 	}
 
 	var custom map[string]any
-
-	if customFields == nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("the schema custom fields are required on a schema register").WithID(apierr.RequestMissingSchemaCustomFields)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
+	if custom, err = parseCustomFields(customFields); err != nil {
+		return nil, apierr.FromService(span, err)
 	}
 
-	if err := json.Unmarshal(*customFields, &custom); err != nil {
-		apiErr := apierr.ErrInvalidInput.WithMsg("invalid custom fields JSON").WithID(apierr.RequestInvalidJSON).WithCause(err)
-		apierr.RecordDomainError(span, apiErr)
-		return nil, apiErr
-	}
-
-	validated := make(map[string]any)
-	for key, value := range custom {
-		f, ok := fieldDefs[key]
-		if !ok {
-			apiErr := apierr.ErrInvalidInput.WithMsg("unknown custom field").WithID(apierr.FieldNotDefinedInSchema).WithCause(errors.New("unknown field: " + key))
-			apierr.RecordDomainError(span, apiErr)
-			return nil, apiErr
-		}
-
-		if !validateFieldType(f.Type, value) {
-			apiErr := apierr.ErrInvalidInput.WithMsg("invalid field type").WithID(apierr.FieldTypeMismatch).WithCause(fmt.Errorf("field %q expects %s, got %T", key, f.Type, value))
-			apierr.RecordDomainError(span, apiErr)
-			return nil, apiErr
-		}
-
-		validated[key] = value
-	}
-
-	for _, f := range registerFields {
-		if !f.Required {
-			continue
-		}
-
-		if _, ok := validated[f.Key]; !ok {
-			apiErr := apierr.ErrInvalidInput.WithMsg("missing required field").WithID(apierr.FieldRequiredMissing).WithCause(errors.New("missing field: " + f.Key))
-			apierr.RecordDomainError(span, apiErr)
-			return nil, apiErr
-		}
+	validated, fieldsErr := validateFields(custom, fieldDefs, registerFields)
+	if len(fieldsErr.FieldErrors) > 0 {
+		return nil, apierr.FromService(span, fieldsErr)
 	}
 
 	metadata := make(map[string]any)
@@ -141,11 +77,52 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
-		apiErr := apierr.ErrInternal.WithID(apierr.SystemInternalError).WithCause(err)
-		apierr.RecordSystemError(span, apiErr)
-		return nil, apiErr
+		return nil, apierr.FromService(span, project_users.ErrEncodingProjectUserMetadata{Cause: err})
 	}
 
 	rawMetadata := json.RawMessage(marshalledMetadata)
 	return &rawMetadata, nil
+}
+
+func validateFields(custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, field.ErrFieldsValidation) {
+	var ok bool
+	var fieldErr field.ErrFieldsValidation
+	validated := make(map[string]any)
+	for key, value := range custom {
+		var f field.Field
+		f, ok = fieldDefs[key]
+		if !ok {
+			fieldErr.FieldErrors = append(fieldErr.FieldErrors, field.ErrFieldNotDefined{Key: key})
+			continue
+		}
+
+		if !validateFieldValue(f.Type, value) {
+			fieldErr.FieldErrors = append(fieldErr.FieldErrors, field.ErrInvalidFieldType{Key: key, Expected: string(f.Type), Got: value})
+			continue
+		}
+
+		validated[key] = value
+	}
+
+	for _, f := range registerFields {
+		if !f.Required {
+			continue
+		}
+
+		if _, ok := validated[f.Key]; !ok {
+			fieldErr.FieldErrors = append(fieldErr.FieldErrors, field.ErrMissingRequiredFields{Key: f.Key})
+			continue
+		}
+	}
+	return validated, fieldErr
+}
+
+func parseCustomFields(customFields *json.RawMessage) (custom map[string]any, err error) {
+	if customFields == nil {
+		return nil, apierr.ErrMissingCustomFields{}
+	}
+	if err = json.Unmarshal(*customFields, &custom); err != nil {
+		return nil, apierr.ErrInvalidCustomFieldsJSON{Cause: err}
+	}
+	return custom, nil
 }

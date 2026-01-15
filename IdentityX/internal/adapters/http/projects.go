@@ -2,6 +2,7 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
@@ -9,8 +10,6 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/FastUtilitiesNet/validation"
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
@@ -37,8 +36,8 @@ func NewProjectHandler(uc inbounds.ProjectService) *ProjectHandler {
 // @Router /projects [post]
 func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProjectRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -50,7 +49,7 @@ func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	res, err := handler.projects.Create(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -74,16 +73,16 @@ func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Requ
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [get]
 func (handler *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	proj, err := handler.projects.GetByID(ctx, projectID)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -106,7 +105,7 @@ func (handler *ProjectHandler) GetProjectByID(w http.ResponseWriter, r *http.Req
 func (handler *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	projects, err := handler.projects.List(r.Context())
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -127,15 +126,15 @@ func (handler *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/.well-known/jwks.json [get]
 func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
 	jwks, err := handler.projects.GetJWKS(r.Context(), projectID)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -147,10 +146,10 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		logs.L().Error("Failed to encode response",
 			zap.Error(err),
-			zap.String("project_id", projectID),
+			zap.String("project_id", projectID.String()),
 		)
 		apiErr := apierr.ErrInternal.WithMsg("Failed to encode JWKS").WithCause(err)
-		ErrToResp(apiErr).Send(w)
+		resp.FromError(apiErr).Send(w)
 		return
 	}
 
@@ -160,7 +159,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 	if _, err = w.Write(data); err != nil {
 		logs.L().Error("Failed to write JWKS response",
 			zap.Error(err),
-			zap.String("project_id", projectID),
+			zap.String("project_id", projectID.String()),
 		)
 	}
 }
@@ -181,20 +180,20 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [patch]
 func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
 	var req dto.UpdateProjectRequest
-	if rs := validation.ValidateInto(r, &req); rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
 	in := inbounds.ProjectServiceInput{
-		ProjectID:   &projectID,
+		ProjectID:   projectID,
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
 	}
@@ -202,7 +201,7 @@ func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	proj, err := handler.projects.Update(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -226,16 +225,16 @@ func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [delete]
 func (handler *ProjectHandler) DeleteProjectByID(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	err := handler.projects.Delete(ctx, projectID)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 

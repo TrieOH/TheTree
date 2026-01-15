@@ -4,8 +4,9 @@ const (
 	RequestMissingQueryParamValue    ID = "REQ_001"
 	RequestMissingQueryParam         ID = "REQ_002"
 	RequestMissingSchemaCustomFields ID = "REQ_003"
-	RequestInvalidJSON               ID = "REQ_004"
+	RequestInvalidJSONFormat         ID = "REQ_004"
 	RequestValidationError           ID = "REQ_005"
+	RequestNotApplicationJSON        ID = "REQ_006"
 )
 
 const (
@@ -78,6 +79,8 @@ const (
 	TokenMissingKid           ID = "TOKEN_027"
 	TokenInvalidRefreshClaims ID = "TOKEN_028"
 	TokenUnverifiable         ID = "TOKEN_029"
+	TokenMissingAccessClaims  ID = "TOKEN_030"
+	TokenMissingRefreshClaims ID = "TOKEN_031"
 )
 
 const (
@@ -110,12 +113,14 @@ const (
 	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
 	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
 	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
-	SchemaNoValidType               ID = "SCHEMA_010"
+	SchemaNoValidStatus             ID = "SCHEMA_010"
 	SchemaInvalidFlowID             ID = "SCHEMA_011"
 	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
 	SchemaInvalidMetadata           ID = "SCHEMA_013"
 	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
 	SchemaMissingID                 ID = "SCHEMA_015"
+	SchemaEmptySchemaType           ID = "SCHEMA_016"
+	SchemaEmptyFlowID               ID = "SCHEMA_017"
 )
 
 const (
@@ -127,7 +132,7 @@ const (
 	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
 	SchemaVersionMismatch                 ID = "SCM_VER_007"
 	SchemaVersionNotDraft                 ID = "SCM_VER_008"
-	SchemaVersionNoValidType              ID = "SCM_VER_009"
+	SchemaVersionNoValidStatus            ID = "SCM_VER_009"
 	SchemaVersionDraftOnNonPublished      ID = "SCM_VER_010"
 	SchemaVersionNoChanges                ID = "SCM_VER_011"
 )
@@ -142,6 +147,7 @@ const (
 	FieldRequiredMissing               ID = "FIELD_007"
 	FieldInvalidType                   ID = "FIELD_008"
 	FieldInvalidOwner                  ID = "FIELD_009"
+	FieldValidationErrSchemaRegister   ID = "FIELD_010"
 )
 
 const (
@@ -164,4 +170,5 @@ const (
 	SystemUnimplemented            ID = "SYS_004"
 	SystemTransactionWithNoContext ID = "SYS_005"
 	SystemErrorGeneratingUUID      ID = "SYS_006"
+	SystemErrorBCryptHashingFailed ID = "SYS_007"
 )

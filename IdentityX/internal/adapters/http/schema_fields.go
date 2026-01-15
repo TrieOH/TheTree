@@ -2,13 +2,12 @@ package http
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/ports/inbounds"
 	"net/http"
 	"strconv"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/FastUtilitiesNet/validation"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -21,15 +20,15 @@ func NewSchemaFieldsHandler(uc inbounds.SchemaFieldsService) *SchemaFieldsHandle
 }
 
 func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "project_id")
-	if projectID == "" {
-		resp.BadRequest("missing project id parameter").Send(w)
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
-	schemaID := chi.URLParam(r, "schema_id")
-	if schemaID == "" {
-		resp.BadRequest("missing schema id parameter").Send(w)
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
 		return
 	}
 
@@ -51,9 +50,8 @@ func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req dto.CreateFieldRequest
-	rs := validation.ValidateInto(r, &req)
-	if rs != nil {
-		rs.WithErrID(string(apierr.RequestValidationError)).Send(w)
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
 		return
 	}
 
@@ -67,7 +65,7 @@ func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	res, err := handler.fields.Create(ctx, in)
 	if err != nil {
-		ErrToResp(err).Send(w)
+		resp.FromError(err).Send(w)
 		return
 	}
 

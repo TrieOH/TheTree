@@ -1,6 +1,7 @@
 package http
 
 import (
+	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/apierr"
 	"errors"
 	"fmt"
@@ -11,26 +12,22 @@ import (
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
-// ErrToResp converts an error to a response.
-// It handles API errors and returns a formatted response.
-// For unhandled errors, it returns an internal server error response.
-func ErrToResp(err error) *resp.Response {
-	if err == nil {
-		return nil
+func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
+	projectIDStr := chi.URLParam(r, fieldName)
+	if err := validation.ValidateRule(projectIDStr, "required,uuid7", fieldName); err != nil {
+		return uuid.Nil, resp.FromError(err)
 	}
 
-	var ae *apierr.Error
-	if errors.As(err, &ae) {
-		return apierr.MapAPIError(ae)
+	projectID, err := validation.ParseUUID(projectIDStr, fieldName)
+	if err != nil {
+		return uuid.Nil, resp.FromError(apierr.FromHandler(err))
 	}
-
-	// unknown error = 500
-	return resp.InternalServerError().
-		WithTracePrefix("unhandled-error").
-		AddTrace(err.Error())
+	return projectID, nil
 }
 
 func SetTrustProxyHeaders() {
