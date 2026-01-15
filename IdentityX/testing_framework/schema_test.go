@@ -353,7 +353,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionTryingToPublishPublished).
-			HasMessage("cannot publish a schema version that isn't a draft")
+			HasMessage("cannot publish a schema version that is already published")
 	})
 
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
@@ -368,7 +368,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaTryingToPublishPublished).
-			HasMessage("cannot publish a schema that isn't a draft")
+			HasMessage("cannot publish a schema that is already published")
 	})
 
 	var schemaVersion2ID string

@@ -107,14 +107,12 @@ func RecordSQLCError(span trace.Span, err error) {
 	)
 
 	if IsSystemError(apiErr) {
-		// system failure
 		span.SetStatus(codes.Error, apiErr.Message)
-		if apiErr.Cause != nil {
-			span.RecordError(apiErr.Cause)
-		} else {
-			span.RecordError(apiErr)
+		for _, subErr := range apiErr.DebugCauses {
+			if subErr != nil {
+				span.RecordError(subErr)
+			}
 		}
-		return
 	}
 
 	// domain-level DB error

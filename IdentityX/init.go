@@ -39,7 +39,8 @@ func init() {
 		log.Fatalf("ISSUER environment variable not set.")
 	}
 
-	if viper.GetString("ENV") != "production" {
+	env := viper.GetString("ENV")
+	if env != "" && env != "production" {
 		apierr.IncludeDebugCauses = true
 	}
 

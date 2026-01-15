@@ -116,7 +116,10 @@ type ErrInvalidFlowID struct {
 }
 
 func (e ErrInvalidFlowID) Error() string {
-	return e.Why
+	if e.Why == "" {
+		return "invalid flow ID"
+	}
+	return "invalid flow ID: " + e.Why
 }
 
 type ErrCustomFieldsNotAllowed struct{}

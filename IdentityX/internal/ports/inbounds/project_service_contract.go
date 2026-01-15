@@ -93,13 +93,13 @@ func (e ErrSchemaNotOwned) Error() string {
 type ErrPublishSchemaPublished struct{}
 
 func (e ErrPublishSchemaPublished) Error() string {
-	return "cannot publish a schema that isn't a draft"
+	return "cannot publish a schema that is already published"
 }
 
 type ErrPublishSchemaArchived struct{}
 
 func (e ErrPublishSchemaArchived) Error() string {
-	return "cannot publish a schema that isn't a draft"
+	return "cannot publish a schema that is archived"
 }
 
 type ErrSchemaInvalidStatus struct {

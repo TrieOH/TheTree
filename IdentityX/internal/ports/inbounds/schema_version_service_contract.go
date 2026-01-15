@@ -57,13 +57,13 @@ func (e ErrPublishNonExistentVersionDraft) Error() string {
 type ErrPublishVersionPublished struct{}
 
 func (e ErrPublishVersionPublished) Error() string {
-	return "cannot publish a schema version that isn't a draft"
+	return "cannot publish a schema version that is already published"
 }
 
 type ErrPublishVersionArchived struct{}
 
 func (e ErrPublishVersionArchived) Error() string {
-	return "cannot publish a schema version that isn't a draft"
+	return "cannot publish a schema version that is archived"
 }
 
 type ErrPublishVersionInvalidStatus struct{}
