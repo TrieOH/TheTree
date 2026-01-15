@@ -113,7 +113,7 @@ const (
 	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
 	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
 	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
-	SchemaNoValidType               ID = "SCHEMA_010"
+	SchemaNoValidStatus             ID = "SCHEMA_010"
 	SchemaInvalidFlowID             ID = "SCHEMA_011"
 	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
 	SchemaInvalidMetadata           ID = "SCHEMA_013"

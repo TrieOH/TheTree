@@ -175,6 +175,46 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectErrorParsingKeys).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
 		return httpErr
+	case inbounds.ErrNotProjectOwner:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ProjectNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrFlowIDIsReserved:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaFlowIDIsReserved)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrFlowIDSchemaTypeConflict:
+		httpErr := ErrConflict.WithMsg(e.Error()).WithID(SchemaFlowIDAlreadyExistsInType)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSchemaNotOwned:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishSchemaPublished:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaTryingToPublishPublished)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishSchemaArchived:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaTryingToPublishArchived)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSchemaInvalidStatus:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SchemaNoValidStatus)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSchemaNoPublishedVersions:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaNoPublishedVersion)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSchemaOnlyDraft:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaHasOnlyDraftVersion)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSchemaOnlyArchived:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaHasOnlyArchivedVersion)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""
