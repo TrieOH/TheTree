@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/utils"
 
 	"go.opentelemetry.io/otel/trace"
@@ -117,6 +118,53 @@ func FromService(span trace.Span, err error) *Error {
 		return httpErr
 	case authz.ErrInvalidRefreshJTI:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(TokenRefreshInvalidID).WithCause(e.Cause)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case ErrPasswordTooLong:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(AuthInvalidPassword)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrHashingPassword:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorBCryptHashingFailed).WithCause(e.Cause)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmailAlreadyInUse:
+		httpErr := ErrConflict.WithMsg(e.Error()).WithID(AuthEmailAlreadyUsed).WithCause(e.Cause)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidCredentials:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthInvalidCredentials)
+		if e.Cause != nil {
+			httpErr = httpErr.WithCause(e.Cause)
+		}
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrGeneratingUUID:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorGeneratingUUID).WithCause(e.Cause)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrTokenInvalid:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalid)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmptyFlowID:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaEmptyFlowID)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmptySchemaType:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaEmptySchemaType)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidSchemaType:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaInvalidSchemaType)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidFlowID:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaInvalidFlowID)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrCustomFieldsNotAllowed:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaMetadataNotAllowed)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:

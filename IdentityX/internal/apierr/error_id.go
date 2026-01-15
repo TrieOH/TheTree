@@ -119,6 +119,8 @@ const (
 	SchemaInvalidMetadata           ID = "SCHEMA_013"
 	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
 	SchemaMissingID                 ID = "SCHEMA_015"
+	SchemaEmptySchemaType           ID = "SCHEMA_016"
+	SchemaEmptyFlowID               ID = "SCHEMA_017"
 )
 
 const (
@@ -168,4 +170,5 @@ const (
 	SystemUnimplemented            ID = "SYS_004"
 	SystemTransactionWithNoContext ID = "SYS_005"
 	SystemErrorGeneratingUUID      ID = "SYS_006"
+	SystemErrorBCryptHashingFailed ID = "SYS_007"
 )
