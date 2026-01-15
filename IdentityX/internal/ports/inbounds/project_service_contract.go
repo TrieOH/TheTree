@@ -43,3 +43,19 @@ func OutputProjectFromProject(p *project.Project) *OutputProject {
 		UpdatedAt:   p.UpdatedAt,
 	}
 }
+
+type ErrGeneratingProjectKeys struct {
+	Cause error
+}
+
+func (e ErrGeneratingProjectKeys) Error() string {
+	return "error generating project keys"
+}
+
+type ErrParsingProjectPublicKey struct {
+	Cause error
+}
+
+func (e ErrParsingProjectPublicKey) Error() string {
+	return "error parsing project public key"
+}

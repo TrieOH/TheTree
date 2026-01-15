@@ -45,9 +45,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 
 	pubKey, privKey, err := utils.GenerateEd25519Keys()
 	if err != nil {
-		apiErr := apierr.ErrInternal.WithMsg("error generating project keys").WithID(apierr.ProjectErrorGeneratingKeys).WithCause(err)
-		apierr.RecordSystemError(span, apiErr)
-		return nil, apiErr
+		return nil, apierr.FromService(span, inbounds.ErrGeneratingProjectKeys{Cause: err})
 	}
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
@@ -131,9 +129,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 
 	parsedKey, err := utils.ParseEd25519PublicKey(pubKey)
 	if err != nil {
-		apiErr := apierr.ErrInternal.WithMsg("error parsing project public key").WithID(apierr.ProjectErrorParsingKeys).WithCause(err)
-		apierr.RecordSystemError(span, apiErr)
-		return nil, apiErr
+		return nil, apierr.FromService(span, inbounds.ErrParsingProjectPublicKey{Cause: err})
 	}
 
 	jwks := utils.PublicKeyToJWK(parsedKey)

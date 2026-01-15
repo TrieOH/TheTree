@@ -167,6 +167,14 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaMetadataNotAllowed)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrGeneratingProjectKeys:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectErrorGeneratingKeys).WithCause(e.Cause)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrParsingProjectPublicKey:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectErrorParsingKeys).WithCause(e.Cause)
+		RecordSystemError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""
