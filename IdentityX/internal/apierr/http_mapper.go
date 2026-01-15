@@ -259,6 +259,14 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrRevokeCurrentSession:
+		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(SessionSelfRevokeForbidden)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSessionNotFound:
+		httpErr := ErrNotFound.WithMsg(e.Error()).WithID(SessionNotFound)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""

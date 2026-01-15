@@ -63,15 +63,12 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	}
 
 	if principal.SessionID == sessionID {
-		apiErr := apierr.ErrForbidden.WithMsg("cannot revoke the currently active session").WithID(apierr.SessionSelfRevokeForbidden)
-		apierr.RecordDomainError(span, apiErr)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrRevokeCurrentSession{})
 	}
 
 	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID)
 	if apierr.IsNotFound(err) {
-		apiErr := apierr.ErrNotFound.WithMsg("session not found or revoked").WithID(apierr.SessionNotFound)
-		return apiErr
+		return apierr.FromService(span, inbounds.ErrSessionNotFound{})
 	} else if err != nil {
 		return err
 	}

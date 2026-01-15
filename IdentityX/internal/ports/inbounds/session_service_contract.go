@@ -77,3 +77,15 @@ func PrincipalToPrincipalOutput(p authz.Principal) *PrincipalOutput {
 		RefreshClaims: p.RefreshClaims,
 	}
 }
+
+type ErrRevokeCurrentSession struct{}
+
+func (e ErrRevokeCurrentSession) Error() string {
+	return "cannot revoke the currently active session"
+}
+
+type ErrSessionNotFound struct{}
+
+func (e ErrSessionNotFound) Error() string {
+	return "session not found or revoked"
+}
