@@ -16,14 +16,6 @@ import (
 
 var validate = validator.New()
 
-// PasswordValidationResult holds detailed password validation info
-type PasswordValidationResult struct {
-	HasUpper  bool
-	HasNumber bool
-	HasSymbol bool
-	IsValid   bool
-}
-
 // Custom password validation - requires uppercase, number, and symbol
 func passwordValidator(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
