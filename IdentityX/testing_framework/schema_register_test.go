@@ -175,11 +175,11 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.RequestMissingSchemaCustomFields).
-			HasMessage("the schema custom fields are required on a schema register")
+			HasMessage("schema custom fields are required on a schema register")
 	})
 
 	t.Run("RegisterOnSchemaEmptyCustomFields", func(t *testing.T) {
-		client.POST("/projects/"+projectID+"/register").
+		client.WithT(t).POST("/projects/"+projectID+"/register").
 			WithQuery("schema_type", "context").
 			WithQuery("flow_id", "estudante").
 			WithBody(map[string]interface{}{
@@ -188,12 +188,13 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"custom_fields": map[string]interface{}{},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldRequiredMissing).
-			HasMessage("missing required field")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasMessage("error validating fields for schema register").
+			TraceContains("Missing required field: matricula", "Missing required field: curso", "Missing required field: periodo")
 	})
 
 	t.Run("RegisterOnSchemaNoCursoField", func(t *testing.T) {
-		client.POST("/projects/"+projectID+"/register").
+		client.WithT(t).POST("/projects/"+projectID+"/register").
 			WithQuery("schema_type", "context").
 			WithQuery("flow_id", "estudante").
 			WithBody(map[string]interface{}{
@@ -204,12 +205,13 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldRequiredMissing).
-			HasMessage("missing required field")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasMessage("error validating fields for schema register").
+			TraceContains("Missing required field: curso", "Missing required field: periodo")
 	})
 
 	t.Run("RegisterOnSchemaNoMatriculaField", func(t *testing.T) {
-		client.POST("/projects/"+projectID+"/register").
+		client.WithT(t).POST("/projects/"+projectID+"/register").
 			WithQuery("schema_type", "context").
 			WithQuery("flow_id", "estudante").
 			WithBody(map[string]interface{}{
@@ -220,8 +222,9 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldRequiredMissing).
-			HasMessage("missing required field")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasMessage("error validating fields for schema register").
+			TraceContains("Missing required field: matricula", "Missing required field: periodo")
 	})
 
 	t.Run("RegisterOnSchemaUnknownField", func(t *testing.T) {
@@ -233,11 +236,13 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 				"custom_fields": map[string]interface{}{
 					"valor": "4",
+					"bing":  "bong",
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldNotDefinedInSchema).
-			HasMessage("unknown custom field")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field not defined in schema: valor").
+			TraceContains("field not defined in schema: bing")
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeStringOnInt", func(t *testing.T) {
@@ -252,8 +257,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"periodo\" expects type int, got string")
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeIntOnString", func(t *testing.T) {
@@ -268,8 +273,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"matricula\" expects type string, got float64")
 	})
 
 	t.Run("RegisterOnSchemaTypeFloatOnInt", func(t *testing.T) {
@@ -286,8 +291,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"periodo\" expects type int, got float64")
 	})
 
 	t.Run("RegisterOnSchemaTypeStringOnBool", func(t *testing.T) {
@@ -305,8 +310,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"ativo\" expects type bool, got string")
 	})
 
 	t.Run("RegisterOnSchemaTypeIntOnBool", func(t *testing.T) {
@@ -324,8 +329,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"ativo\" expects type bool, got float64")
 	})
 
 	t.Run("RegisterOnSchemaTypeBoolOnString", func(t *testing.T) {
@@ -340,8 +345,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldTypeMismatch).
-			HasMessage("invalid field type")
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("field \"matricula\" expects type string, got bool")
 	})
 
 	t.Run("RegisterOnSchemaTypeFloatZeroOnInt", func(t *testing.T) {
@@ -602,8 +607,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.FieldTypeMismatch).
-				HasMessage("invalid field type")
+				HasErrID(apierr.FieldValidationErrSchemaRegister).
+				TraceContains("field \"contact\" expects type email, got string")
 		})
 	})
 }

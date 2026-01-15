@@ -9,7 +9,7 @@ import (
 )
 
 type ProjectServiceInput struct {
-	ProjectID   *string
+	ProjectID   uuid.UUID
 	ProjectName string
 	Metadata    json.RawMessage
 }
@@ -42,4 +42,94 @@ func OutputProjectFromProject(p *project.Project) *OutputProject {
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
 	}
+}
+
+type ErrGeneratingProjectKeys struct {
+	Cause error
+}
+
+func (e ErrGeneratingProjectKeys) Error() string {
+	return "error generating project keys"
+}
+
+type ErrParsingProjectPublicKey struct {
+	Cause error
+}
+
+func (e ErrParsingProjectPublicKey) Error() string {
+	return "error parsing project public key"
+}
+
+type ErrNotProjectOwner struct {
+	Msg string
+}
+
+func (e ErrNotProjectOwner) Error() string {
+	return e.Msg
+}
+
+type ErrFlowIDIsReserved struct {
+	Reserved string
+}
+
+func (e ErrFlowIDIsReserved) Error() string {
+	return "flow id can't be the reserved keyword '" + e.Reserved + "'"
+}
+
+type ErrFlowIDSchemaTypeConflict struct{}
+
+func (e ErrFlowIDSchemaTypeConflict) Error() string {
+	return "schema with this flow ID already exists in this type"
+}
+
+type ErrSchemaNotOwned struct {
+	Msg string
+}
+
+func (e ErrSchemaNotOwned) Error() string {
+	return e.Msg
+}
+
+type ErrPublishSchemaPublished struct{}
+
+func (e ErrPublishSchemaPublished) Error() string {
+	return "cannot publish a schema that is already published"
+}
+
+type ErrPublishSchemaArchived struct{}
+
+func (e ErrPublishSchemaArchived) Error() string {
+	return "cannot publish a schema that is archived"
+}
+
+type ErrSchemaInvalidStatus struct {
+	Status string
+}
+
+func (e ErrSchemaInvalidStatus) Error() string {
+	return "CATASTROPHIC: schema found with no valid status: " + e.Status
+}
+
+type ErrSchemaNoPublishedVersions struct {
+	Msg string
+}
+
+func (e ErrSchemaNoPublishedVersions) Error() string {
+	return e.Msg
+}
+
+type ErrSchemaOnlyDraft struct {
+	Msg string
+}
+
+func (e ErrSchemaOnlyDraft) Error() string {
+	return e.Msg
+}
+
+type ErrSchemaOnlyArchived struct {
+	Msg string
+}
+
+func (e ErrSchemaOnlyArchived) Error() string {
+	return e.Msg
 }

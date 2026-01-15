@@ -4,6 +4,7 @@ import (
 	http2 "GoAuth/internal/adapters/http"
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/utils"
 	"context"
 	"database/sql"
@@ -38,6 +39,11 @@ func init() {
 		log.Fatalf("ISSUER environment variable not set.")
 	}
 
+	env := viper.GetString("ENV")
+	if env != "" && env != "production" {
+		apierr.IncludeDebugCauses = true
+	}
+
 	err := utils.LoadEd25519Keys(
 		viper.GetString("JWT_PRIVATE_KEY"),
 		viper.GetString("JWT_PUBLIC_KEY"),
@@ -58,6 +64,7 @@ func init() {
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        "GoAuth-module",
+		ErrorHandler:         apierr.ErrToResp,
 	})
 
 	DB, err = database.WaitForDB(30 * time.Second)

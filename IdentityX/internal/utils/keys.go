@@ -6,21 +6,20 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
-	"errors"
 	"os"
 )
 
-// FIXME: Implement apierr in this file
+// FIXME find a better place for this file that isn't the global utils folder
 
 func GenerateEd25519Keys() (pubKeyPEM, privKeyPEM string, err error) {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return "", "", err
+		return "", "", ErrGeneratingEd25519Key{Cause: err}
 	}
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return "", "", err
+		return "", "", ErrMarshalingPKCS8PrivateKey{Cause: err}
 	}
 
 	privPEM := pem.EncodeToMemory(&pem.Block{
@@ -30,7 +29,7 @@ func GenerateEd25519Keys() (pubKeyPEM, privKeyPEM string, err error) {
 
 	pubBytes, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
-		return "", "", err
+		return "", "", ErrMarshalingPKIXPublicKey{Cause: err}
 	}
 
 	pubPEM := pem.EncodeToMemory(&pem.Block{
@@ -44,21 +43,21 @@ func GenerateEd25519Keys() (pubKeyPEM, privKeyPEM string, err error) {
 func ParseEd25519PrivateKey(pemStr string) (ed25519.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(pemStr))
 	if block == nil {
-		return nil, errors.New("invalid PEM private key")
+		return nil, ErrInvalidPEMPrivKey{}
 	}
 
 	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, ErrParsingPKCS8PrivKey{Cause: err}
 	}
 
 	priv, ok := key.(ed25519.PrivateKey)
 	if !ok {
-		return nil, errors.New("not an Ed25519 private key")
+		return nil, ErrNotED25519PrivKey{}
 	}
 
 	if len(priv) != ed25519.PrivateKeySize {
-		return nil, errors.New("invalid private key length")
+		return nil, ErrInvalidPrivKeyLength{}
 	}
 
 	return priv, nil
@@ -67,21 +66,21 @@ func ParseEd25519PrivateKey(pemStr string) (ed25519.PrivateKey, error) {
 func ParseEd25519PublicKey(pemStr string) (ed25519.PublicKey, error) {
 	block, _ := pem.Decode([]byte(pemStr))
 	if block == nil {
-		return nil, errors.New("invalid PEM public key")
+		return nil, ErrInvalidPEMPubKey{}
 	}
 
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, ErrParsingPKIXPubKey{Cause: err}
 	}
 
 	pub, ok := key.(ed25519.PublicKey)
 	if !ok {
-		return nil, errors.New("not an Ed25519 public key")
+		return nil, ErrNotED25519PubKey{}
 	}
 
 	if len(pub) != ed25519.PublicKeySize {
-		return nil, errors.New("invalid public key length")
+		return nil, ErrInvalidPubKeyLength{}
 	}
 
 	return pub, nil
@@ -128,4 +127,89 @@ func PublicKeyToJWK(key ed25519.PublicKey) map[string]any {
 		"kid": "goauth-ed25519",
 		"x":   base64.RawURLEncoding.EncodeToString(key),
 	}
+}
+
+type ErrParseProjectKey struct {
+	KeyType string
+	Cause   error
+}
+
+func (e ErrParseProjectKey) Error() string {
+	return "failed to parse project " + e.KeyType + " key"
+}
+
+type ErrInvalidPEMPubKey struct{}
+
+func (e ErrInvalidPEMPubKey) Error() string {
+	return "invalid PEM public key"
+}
+
+type ErrInvalidPEMPrivKey struct{}
+
+func (e ErrInvalidPEMPrivKey) Error() string {
+	return "invalid PEM private key"
+}
+
+type ErrParsingPKIXPubKey struct {
+	Cause error
+}
+
+func (e ErrParsingPKIXPubKey) Error() string {
+	return "failed to parse PKIX public key"
+}
+
+type ErrParsingPKCS8PrivKey struct {
+	Cause error
+}
+
+func (e ErrParsingPKCS8PrivKey) Error() string {
+	return "failed to parse PKCS8 private key"
+}
+
+type ErrNotED25519PubKey struct{}
+
+func (e ErrNotED25519PubKey) Error() string {
+	return "not an ED25519 public key"
+}
+
+type ErrNotED25519PrivKey struct{}
+
+func (e ErrNotED25519PrivKey) Error() string {
+	return "not an ED25519 private key"
+}
+
+type ErrInvalidPubKeyLength struct{}
+
+func (e ErrInvalidPubKeyLength) Error() string {
+	return "invalid public key length"
+}
+
+type ErrInvalidPrivKeyLength struct{}
+
+func (e ErrInvalidPrivKeyLength) Error() string {
+	return "invalid private key length"
+}
+
+type ErrGeneratingEd25519Key struct {
+	Cause error
+}
+
+func (e ErrGeneratingEd25519Key) Error() string {
+	return "failed to generate ed25519 key"
+}
+
+type ErrMarshalingPKCS8PrivateKey struct {
+	Cause error
+}
+
+func (e ErrMarshalingPKCS8PrivateKey) Error() string {
+	return "failed to marshal private key"
+}
+
+type ErrMarshalingPKIXPublicKey struct {
+	Cause error
+}
+
+func (e ErrMarshalingPKIXPublicKey) Error() string {
+	return "failed to marshal PKIX public key"
 }

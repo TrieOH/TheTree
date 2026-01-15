@@ -134,7 +134,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.RequestValidationError).
-				ValidationError("(schema_type)")
+				ValidationError("schema_type must be one of: core, context, sub-context")
 		})
 
 		t.Run("FlowIDTooLong", func(t *testing.T) {
@@ -147,7 +147,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusBadRequest).
 				HasErrID(apierr.RequestValidationError).
-				ValidationError("(flow_id)")
+				ValidationError("flow_id must be at most 63 characters long")
 		})
 	})
 
@@ -353,7 +353,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionTryingToPublishPublished).
-			HasMessage("cannot publish a schema version that isn't a draft")
+			HasMessage("cannot publish a schema version that is already published")
 	})
 
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
@@ -368,7 +368,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaTryingToPublishPublished).
-			HasMessage("cannot publish a schema that isn't a draft")
+			HasMessage("cannot publish a schema that is already published")
 	})
 
 	var schemaVersion2ID string

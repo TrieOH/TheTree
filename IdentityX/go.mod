@@ -3,12 +3,13 @@ module GoAuth
 go 1.25.3
 
 require (
-	github.com/MintzyG/FastUtilitiesNet v0.3.7
+	github.com/MintzyG/FastUtilitiesNet v0.5.1
 	github.com/XSAM/otelsql v0.41.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/go-co-op/gocron/v2 v2.17.0
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/goforj/godump v1.9.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
@@ -49,7 +50,6 @@ require (
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.27.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect

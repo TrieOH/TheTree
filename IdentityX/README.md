@@ -3,6 +3,9 @@
 ## Requirements
 1. Postgres 18+
 
+## Invariants
+1. Only apierr package is allowed to wrap errors
+
 ### Generate the keys
 
 `mkdir keys && cd keys`

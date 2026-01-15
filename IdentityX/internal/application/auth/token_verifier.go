@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
 	authport "GoAuth/internal/ports/auth"
@@ -11,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type TokenVerifier struct {
@@ -34,18 +34,18 @@ func (uc *TokenVerifier) VerifyAccessToken(
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, apierr.ErrUnauthorized.WithMsg("missing kid").WithID(apierr.TokenMissingKid)
+			return nil, auth.ErrTokenMissingKID{TokenType: "access"}
 		}
 
-		return uc.resolvePublicKey(ctx, kid)
+		return uc.resolvePublicKey(ctx, kid, "access")
 	})
 
 	if err != nil {
-		return nil, apierr.FromJWTError(err, "access token")
+		return nil, apierr.FromJWTError(err, "access")
 	}
 
 	if !token.Valid {
-		return nil, apierr.ErrUnauthorized.WithMsg("invalid access token").WithID(apierr.TokenInvalid)
+		return nil, auth.ErrInvalidToken{TokenType: "access"}
 	}
 
 	return claims, nil
@@ -61,24 +61,24 @@ func (uc *TokenVerifier) VerifyRefreshToken(
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok || kid == "" {
-			return nil, apierr.ErrUnauthorized.WithMsg("missing kid").WithID(apierr.TokenMissingKid)
+			return nil, auth.ErrTokenMissingKID{TokenType: "refresh"}
 		}
 
-		return uc.resolvePublicKey(ctx, kid)
+		return uc.resolvePublicKey(ctx, kid, "refresh")
 	})
 
 	if err != nil {
-		return nil, apierr.FromJWTError(err, "refresh token")
+		return nil, apierr.FromJWTError(err, "refresh")
 	}
 
 	if !token.Valid {
-		return nil, apierr.ErrUnauthorized.WithMsg("invalid refresh token").WithID(apierr.TokenInvalid)
+		return nil, auth.ErrInvalidToken{TokenType: "refresh"}
 	}
 
 	return claims, nil
 }
 
-func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid string) (ed25519.PublicKey, error) {
+func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid, tokenType string) (ed25519.PublicKey, error) {
 	switch {
 	case kid == "goauth:v1":
 		return utils.GoAuthPublicKey, nil
@@ -86,12 +86,12 @@ func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid string) (ed25
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) != 3 {
-			return nil, apierr.ErrInvalidInput.WithMsg("invalid token kid").WithID(apierr.TokenInvalidKid)
+			return nil, auth.ErrTokenInvalidKID{TokenType: tokenType}
 		}
 
-		projectID, err := uuid.Parse(parts[1])
+		projectID, err := validation.ParseUUID(parts[1], "project_id")
 		if err != nil {
-			return nil, apierr.ErrInvalidInput.WithMsg("invalid project id").WithID(apierr.ProjectInvalidID).WithCause(err)
+			return nil, err
 		}
 
 		// TODO: Implement key rotation for projects, only then start using versioned keys
@@ -101,16 +101,13 @@ func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid string) (ed25
 		if err != nil {
 			return nil, err
 		}
-
 		var decodedKey ed25519.PublicKey
 		decodedKey, err = utils.ParseEd25519PublicKey(pubKey)
 		if err != nil {
-			return nil, apierr.ErrInternal.WithMsg("failed to parse project public key").WithCause(err).WithID(apierr.ProjectFailedToParseKey)
+			return nil, utils.ErrParseProjectKey{KeyType: "public", Cause: err}
 		}
-
 		return decodedKey, nil
-
 	default:
-		return nil, apierr.ErrUnauthorized.WithMsg("unknown kid").WithID(apierr.TokenUnknownKid)
+		return nil, auth.ErrTokenUnknownKID{TokenType: tokenType}
 	}
 }

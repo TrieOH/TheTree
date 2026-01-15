@@ -46,7 +46,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.RequestValidationError).
-			ValidationError("(project_name) is required")
+			ValidationError("project_name is required")
 	})
 
 	t.Run("ListProjects", func(t *testing.T) {

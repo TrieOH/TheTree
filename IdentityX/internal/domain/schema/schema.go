@@ -56,20 +56,19 @@ type Schema struct {
 	UpdatedAt        time.Time
 }
 
-type VersionStatus string
+func (s Schema) CanRegister() error {
+	if s.CurrentVersionID == nil {
+		return ErrSchemaNoPublishedVersion{}
+	}
+	if s.Status == StatusDraft {
+		return ErrRegisterOnSchemaDraft{}
+	}
+	if s.Status == StatusArchived {
+		return ErrRegisterOnSchemaArchive{}
+	}
+	return nil
+}
 
-const (
-	VersionStatusDraft     VersionStatus = "draft"
-	VersionStatusPublished VersionStatus = "published"
-	VersionStatusArchived  VersionStatus = "archived"
-)
-
-type Version struct {
-	ID               uuid.UUID
-	SchemaID         uuid.UUID
-	VersionNumber    int
-	Status           VersionStatus
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	BasedOnVersionID *uuid.UUID
+func (s Schema) IsVersion(versionID uuid.UUID) bool {
+	return s.CurrentVersionID != nil && *s.CurrentVersionID == versionID
 }

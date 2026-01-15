@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/user"
@@ -35,7 +34,7 @@ func newAccessToken(user user.User, key ed25519.PrivateKey, ip, agent, accessJTI
 	accessToken.Header["kid"] = keyID
 	tokenStr, err := accessToken.SignedString(key)
 	if err != nil {
-		return "", apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
+		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
 	}
 	return tokenStr, nil
 }
@@ -57,7 +56,7 @@ func newRefreshToken(keyID string, privKey ed25519.PrivateKey, accessJTI, refres
 	refreshToken.Header["kid"] = keyID
 	tokenStr, err := refreshToken.SignedString(privKey)
 	if err != nil {
-		return "", apierr.ErrInternal.WithMsg("error signing refresh token").WithID(apierr.TokenCouldNotSign).WithCause(err)
+		return "", auth.ErrSigningToken{TokenType: "refresh", Cause: err}
 	}
 	return tokenStr, nil
 }
@@ -86,7 +85,7 @@ func newProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI,
 	accessToken.Header["kid"] = keyID
 	tokenStr, err := accessToken.SignedString(privKey)
 	if err != nil {
-		return "", apierr.ErrInternal.WithMsg("error signing access token").WithID(apierr.TokenCouldNotSign).WithCause(err)
+		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
 	}
 	return tokenStr, nil
 }

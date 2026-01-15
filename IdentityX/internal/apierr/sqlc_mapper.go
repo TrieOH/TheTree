@@ -20,7 +20,7 @@ func FromSQLC(err error) *Error {
 		return ErrNotFound.
 			WithMsg("resource not found").
 			WithID(DBNotFound).
-			WithCause(err)
+			WithDebugCause(err)
 	}
 
 	// postgres error
@@ -33,7 +33,7 @@ func FromSQLC(err error) *Error {
 	return ErrInternal.
 		WithMsg("internal database error").
 		WithID(SystemInternalError).
-		WithCause(err)
+		WithDebugCause(err)
 }
 
 func fromPQError(pqErr *pq.Error, cause error) *Error {
@@ -50,41 +50,41 @@ func fromPQError(pqErr *pq.Error, cause error) *Error {
 		return ErrInvalidInput.
 			WithMsg("invalid reference").
 			WithID(DBForeignKeyViolation).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	case "23502": // not_null_violation
 		return ErrInvalidInput.
 			WithMsg("missing required field").
 			WithID(DBNotNullViolation).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	// ---------- data ----------
 	case "22001": // string_data_right_truncation
 		return ErrInvalidInput.
 			WithMsg("value too long").
 			WithID(DBValueTooLong).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	// ---------- concurrency ----------
 	case "40001": // serialization_failure
 		return ErrConflict.
 			WithMsg("transaction conflict, retry").
 			WithID(DBSerializationFailure).
-			WithCause(cause)
+			WithDebugCause(cause)
 
 	// ---------- connection ----------
 	case "08006", "08001":
 		return ErrInternal.
 			WithMsg("database connection error").
 			WithID(SystemDependencyDown).
-			WithCause(cause)
+			WithDebugCause(cause)
 	}
 
 	// unknown postgres error
 	return ErrInternal.
 		WithMsg("database error").
 		WithID(SystemInternalError).
-		WithCause(cause)
+		WithDebugCause(cause)
 }
 
 func RecordSQLCError(span trace.Span, err error) {
@@ -107,14 +107,12 @@ func RecordSQLCError(span trace.Span, err error) {
 	)
 
 	if IsSystemError(apiErr) {
-		// system failure
 		span.SetStatus(codes.Error, apiErr.Message)
-		if apiErr.Cause != nil {
-			span.RecordError(apiErr.Cause)
-		} else {
-			span.RecordError(apiErr)
+		for _, subErr := range apiErr.DebugCauses {
+			if subErr != nil {
+				span.RecordError(subErr)
+			}
 		}
-		return
 	}
 
 	// domain-level DB error

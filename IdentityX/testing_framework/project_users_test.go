@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,21 +36,23 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ProjectInvalidID).
-				HasMessage("invalid project id")
+				HasErrID(apierr.RequestValidationError).
+				HasMessage("Validation failed")
 		})
 
-		var nonexistentID = "d917a262-199a-41b1-af43-930ea8da1c75"
 		t.Run("InvalidProjectRegister", func(t *testing.T) {
+			nonexistentID, err := uuid.NewV7()
+			if err != nil {
+				t.Fatal(err)
+			}
 			client := suite.NewClient(t)
-			client.POST("/projects/" + nonexistentID + "/register").
+			client.POST("/projects/" + nonexistentID.String() + "/register").
 				WithBody(map[string]interface{}{
 					"email":    user.email,
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasMessage("invalid reference").
-				TraceContains("violates foreign key constraint")
+				HasMessage("invalid reference")
 		})
 
 		t.Run("ValidationProjectRegister", func(t *testing.T) {

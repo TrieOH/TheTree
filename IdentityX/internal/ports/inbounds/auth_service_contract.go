@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type RegisterUserInput struct {
@@ -31,7 +33,7 @@ type ProjectRegisterInput struct {
 	Email        string
 	Password     string
 	CustomFields *json.RawMessage
-	ProjectID    string
+	ProjectID    uuid.UUID
 	SchemaType   string
 	FlowID       string
 }
@@ -39,7 +41,7 @@ type ProjectRegisterInput struct {
 type ProjectLoginInput struct {
 	Email     string
 	Password  string
-	ProjectID string
+	ProjectID uuid.UUID
 	IP        string
 	Agent     string
 }
@@ -48,4 +50,80 @@ type RefreshInput struct {
 	RefreshCookie *http.Cookie
 	Agent         string
 	IP            string
+}
+
+type ErrHashingPassword struct {
+	Cause error
+}
+
+func (e ErrHashingPassword) Error() string {
+	return "error hashing user password"
+}
+
+type ErrEmailAlreadyInUse struct {
+	Cause error
+}
+
+func (e ErrEmailAlreadyInUse) Error() string {
+	return "error registering user"
+}
+
+type ErrInvalidCredentials struct {
+	Cause error
+}
+
+func (e ErrInvalidCredentials) Error() string {
+	return "invalid email or password"
+}
+
+type ErrGeneratingUUID struct {
+	Cause    error
+	Location string
+}
+
+func (e ErrGeneratingUUID) Error() string {
+	return "error generating UUID V7 at " + e.Location
+}
+
+type ErrTokenInvalid struct {
+	TokenType string
+}
+
+func (e ErrTokenInvalid) Error() string {
+	return e.TokenType + " token is invalid"
+}
+
+type ErrEmptyFlowID struct{}
+
+func (e ErrEmptyFlowID) Error() string {
+	return "flow id can't be empty"
+}
+
+type ErrEmptySchemaType struct{}
+
+func (e ErrEmptySchemaType) Error() string {
+	return "schema type can't be empty"
+}
+
+type ErrInvalidSchemaType struct{}
+
+func (e ErrInvalidSchemaType) Error() string {
+	return "invalid schema type"
+}
+
+type ErrInvalidFlowID struct {
+	Why string
+}
+
+func (e ErrInvalidFlowID) Error() string {
+	if e.Why == "" {
+		return "invalid flow ID"
+	}
+	return "invalid flow ID: " + e.Why
+}
+
+type ErrCustomFieldsNotAllowed struct{}
+
+func (e ErrCustomFieldsNotAllowed) Error() string {
+	return "custom fields are not allowed for core schema"
 }

@@ -1,15 +1,15 @@
 package inbounds
 
 import (
-	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type SchemaVersionServiceInput struct {
-	SchemaID  string
-	ProjectID string
+	SchemaID  uuid.UUID
+	ProjectID uuid.UUID
 }
 
 type VersionVerboseOutput struct {
@@ -22,12 +22,12 @@ type SchemaVersionOutput struct {
 	SchemaID         uuid.UUID
 	BasedOnVersionID *uuid.UUID
 	VersionNumber    int
-	Status           schema.VersionStatus
+	Status           version.Status
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
 
-func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
+func SchemaVersionToOutput(out *version.Version) *SchemaVersionOutput {
 	if out == nil {
 		return nil
 	}
@@ -40,4 +40,46 @@ func SchemaVersionToOutput(out *schema.Version) *SchemaVersionOutput {
 		CreatedAt:        out.CreatedAt,
 		UpdatedAt:        out.UpdatedAt,
 	}
+}
+
+type ErrDraftVersionOnNonPublished struct{}
+
+func (e ErrDraftVersionOnNonPublished) Error() string {
+	return "new versions can only be drafted from published versions"
+}
+
+type ErrPublishNonExistentVersionDraft struct{}
+
+func (e ErrPublishNonExistentVersionDraft) Error() string {
+	return "cannot publish a schema version draft that doesn't exist"
+}
+
+type ErrPublishVersionPublished struct{}
+
+func (e ErrPublishVersionPublished) Error() string {
+	return "cannot publish a schema version that is already published"
+}
+
+type ErrPublishVersionArchived struct{}
+
+func (e ErrPublishVersionArchived) Error() string {
+	return "cannot publish a schema version that is archived"
+}
+
+type ErrPublishVersionInvalidStatus struct{}
+
+func (e ErrPublishVersionInvalidStatus) Error() string {
+	return "CATASTROPHIC: schema version found with no valid status"
+}
+
+type ErrPublishVersionNoChanges struct{}
+
+func (e ErrPublishVersionNoChanges) Error() string {
+	return "cannot publish a version with no changes"
+}
+
+type ErrPublishVersionNoFields struct{}
+
+func (e ErrPublishVersionNoFields) Error() string {
+	return "cannot publish a schema version with no fields"
 }
