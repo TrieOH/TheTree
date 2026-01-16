@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/version"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"database/sql"
 
@@ -21,15 +22,15 @@ type schemaVersionRepo struct {
 }
 
 func (repo *schemaVersionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-var _ outbound.SchemaVersionRepository = (*schemaVersionRepo)(nil)
+var _ outbounds.SchemaVersionRepository = (*schemaVersionRepo)(nil)
 
-func NewSchemaVersionRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound.SchemaVersionRepository {
+func NewSchemaVersionRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbounds.SchemaVersionRepository {
 	return &schemaVersionRepo{
 		q:      q,
 		log:    l,

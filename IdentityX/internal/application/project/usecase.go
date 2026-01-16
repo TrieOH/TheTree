@@ -5,7 +5,7 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"GoAuth/internal/utils"
 	"context"
 
@@ -20,15 +20,20 @@ var (
 )
 
 type UseCase struct {
-	projects outbound.ProjectRepository
+	projects outbounds.ProjectRepository
+	tx       inbounds.TxRunner
 }
 
 var _ inbounds.ProjectService = (*UseCase)(nil)
 
 func New(
-	projects outbound.ProjectRepository,
+	projects outbounds.ProjectRepository,
+	tx inbounds.TxRunner,
 ) inbounds.ProjectService {
-	return &UseCase{projects: projects}
+	return &UseCase{
+		projects: projects,
+		tx:       tx,
+	}
 }
 
 // Create handles the business logic for creating a new project.

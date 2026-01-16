@@ -7,6 +7,7 @@ const (
 	RequestInvalidJSONFormat         ID = "REQ_004"
 	RequestValidationError           ID = "REQ_005"
 	RequestNotApplicationJSON        ID = "REQ_006"
+	RequestEmptyCookie               ID = "REQ_007"
 )
 
 const (
@@ -167,7 +168,7 @@ const (
 	SystemInternalError            ID = "SYS_001"
 	SystemMisconfigured            ID = "SYS_002"
 	SystemDependencyDown           ID = "SYS_003"
-	SystemUnimplemented            ID = "SYS_004"
+	SystemNotImplemented           ID = "SYS_004"
 	SystemTransactionWithNoContext ID = "SYS_005"
 	SystemErrorGeneratingUUID      ID = "SYS_006"
 	SystemErrorBCryptHashingFailed ID = "SYS_007"
