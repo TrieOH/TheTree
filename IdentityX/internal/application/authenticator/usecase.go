@@ -52,7 +52,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	if accessToken.Sub.ProjectID != nil {
@@ -61,7 +61,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	refreshToken, err := tokenVerifier.VerifyRefreshToken(ctx, in.RefreshToken)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	// FIXME, later swap this out for checking the issuer of the project if authenticating a project user
@@ -74,12 +74,12 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	refreshTokenJTI, err := validation.RequireRefreshJTI(&refreshToken.ID)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	accessTokenJTI, err := validation.RequireAccessJTI(&accessToken.ID)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 
 	if accessTokenJTI != refreshToken.Sub.AccessJTI {
@@ -95,7 +95,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	}
 
 	if sess.SessionID != accessToken.Sub.SessionID {
-		return nil, inbounds.ErrTokenSessionMismatch{}
+		return nil, apierr.FromService(span, inbounds.ErrTokenSessionMismatch{})
 	}
 
 	if sess.RevokedAt != nil {
@@ -113,7 +113,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	var principal *authz.Principal
 	principal, err = authz.NewPrincipal(accessToken, refreshToken)
 	if err != nil {
-		return nil, err
+		return nil, apierr.FromService(span, err)
 	}
 	return principal, nil
 }
