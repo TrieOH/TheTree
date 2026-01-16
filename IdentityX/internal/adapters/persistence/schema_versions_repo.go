@@ -123,6 +123,26 @@ func (repo *schemaVersionRepo) Archive(ctx context.Context, toArchive version.Ve
 	return nil
 }
 
+func (repo *schemaVersionRepo) GetByID(ctx context.Context, versionID uuid.UUID) (*version.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetByID",
+		trace.WithAttributes(
+			attribute.String("version.version_id", versionID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcVersion, err := repo.queries(ctx).GetVersionByID(ctx, versionID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var found version.Version
+	mapSchemaVersionFromDB(&found, &sqlcVersion)
+	return &found, nil
+}
+
 func (repo *schemaVersionRepo) GetCurrent(ctx context.Context, schemaID uuid.UUID) (*version.Version, error) {
 	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetCurrent",
 		trace.WithAttributes(
@@ -228,4 +248,28 @@ func (repo *schemaVersionRepo) CopyOnDraft(ctx context.Context, schemaVersionID 
 	var copied version.Version
 	mapSchemaVersionFromDB(&copied, &sqlcVersion)
 	return &copied, nil
+}
+
+func (repo *schemaVersionRepo) GetByVersionNumber(ctx context.Context, schemaID uuid.UUID, versionNumber int) (*version.Version, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.GetByVersionNumber",
+		trace.WithAttributes(
+			attribute.String("version.id", schemaID.String()),
+			attribute.Int("version.number", versionNumber),
+		),
+	)
+	defer span.End()
+
+	sqlcVersion, err := repo.queries(ctx).GetVersionByNumber(ctx, sqlc.GetVersionByNumberParams{
+		SchemaID: schemaID,
+		Version:  versionNumber,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var found version.Version
+	mapSchemaVersionFromDB(&found, &sqlcVersion)
+	return &found, nil
 }

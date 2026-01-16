@@ -268,3 +268,154 @@ func (uc *UseCase) validateVersionHasFields(ctx context.Context, span trace.Span
 	}
 	return nil
 }
+
+func (uc *UseCase) GetCurrent(ctx context.Context, in inbounds.SchemaVersionServiceInput) (*inbounds.SchemaVersionOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.GetCurrent",
+		trace.WithAttributes(
+			attribute.String("project_id", in.ProjectID.String()),
+			attribute.String("schema_id", in.SchemaID.String()),
+		),
+	)
+	defer span.End()
+
+	projects := uc.deps.Projects
+	versions := uc.deps.Versions
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the current schema version for a project you don't own"})
+	}
+
+	current, err := versions.GetCurrent(ctx, in.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.SchemaVersionToOutput(current), nil
+}
+
+func (uc *UseCase) GetLatest(ctx context.Context, in inbounds.SchemaVersionServiceInput) (*inbounds.SchemaVersionOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.GetLatest",
+		trace.WithAttributes(
+			attribute.String("project_id", in.ProjectID.String()),
+			attribute.String("schema_id", in.SchemaID.String()),
+		),
+	)
+	defer span.End()
+
+	projects := uc.deps.Projects
+	versions := uc.deps.Versions
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the latest schema version for a project you don't own"})
+	}
+
+	latest, err := versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.SchemaVersionToOutput(latest), nil
+}
+
+func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaVersionServiceInput) (*inbounds.VersionVerboseOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaVersionService.GetVerbose",
+		trace.WithAttributes(
+			attribute.String("project_id", in.ProjectID.String()),
+			attribute.String("schema_id", in.SchemaID.String()),
+			attribute.Int("version", in.VersionNumber),
+		),
+	)
+	defer span.End()
+
+	projects := uc.deps.Projects
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the latest schema version for a project you don't own"})
+	}
+
+	var foundVersion *version.Version
+	if in.VersionID == nil {
+		foundVersion, err = versions.GetByVersionNumber(ctx, in.SchemaID, in.VersionNumber)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		foundVersion, err = versions.GetByID(ctx, *in.VersionID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	versionFields, err := fields.ListFromVersion(ctx, in.SchemaID, foundVersion.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	out := inbounds.VersionVerboseOutput{
+		SchemaVersionOutput: inbounds.SchemaVersionOutput{
+			ID:               foundVersion.ID,
+			SchemaID:         foundVersion.SchemaID,
+			BasedOnVersionID: foundVersion.BasedOnVersionID,
+			VersionNumber:    foundVersion.VersionNumber,
+			Status:           foundVersion.Status,
+			CreatedAt:        foundVersion.CreatedAt,
+			UpdatedAt:        foundVersion.UpdatedAt,
+		},
+		Fields: nil,
+	}
+
+	for _, f := range versionFields {
+		out.Fields = append(out.Fields, inbounds.OutputField{
+			ObjectID:        f.ObjectID,
+			ID:              f.ID,
+			Key:             f.Key,
+			SchemaID:        f.SchemaID,
+			SchemaVersionID: f.SchemaVersionID,
+			Type:            string(f.Type),
+			Owner:           string(f.Owner),
+			Title:           f.Title,
+			Description:     f.Description,
+			Placeholder:     f.Placeholder,
+			Required:        f.Required,
+			Mutable:         f.Mutable,
+			DefaultValue:    f.DefaultValue,
+			Position:        f.Position,
+			CreatedAt:       f.CreatedAt,
+			UpdatedAt:       f.UpdatedAt,
+		})
+	}
+
+	return &out, nil
+}

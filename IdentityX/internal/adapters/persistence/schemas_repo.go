@@ -288,3 +288,21 @@ func (repo *schemaRepo) SetVersion(ctx context.Context, toUpdate schema.Schema) 
 
 	return nil
 }
+
+func (repo *schemaRepo) GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID) ([]uuid.UUID, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaRepo.GetIDsFromProjectID",
+		trace.WithAttributes(attribute.String("project_id", projectID.String())),
+	)
+	defer span.End()
+
+	IDs, err := repo.queries(ctx).GetSchemaIDsFromProjectID(ctx, projectID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("schema.count", len(IDs)))
+
+	return IDs, nil
+}

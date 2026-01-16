@@ -315,6 +315,12 @@ func FromHandler(err error) *Error {
 	case validation.ErrParseUUID:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
 		return httpErr
+	case ErrParsingNumber:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
+		return httpErr
+	case ErrMissingParam:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(SystemInternalError)
 		logs.L().Error("unmapped handler error", zap.Error(httpErr), zap.String("cause", err.Error()))

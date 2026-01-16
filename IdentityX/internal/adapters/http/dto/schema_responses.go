@@ -19,6 +19,28 @@ type SchemaResponse struct {
 	UpdatedAt        time.Time  `json:"updated_at"`
 }
 
+func SchemaOutputSliceToResponse(out []inbounds.SchemaOutput) []SchemaResponse {
+	if out == nil {
+		return nil
+	}
+
+	outSlice := make([]SchemaResponse, 0, len(out))
+	for _, schema := range out {
+		outSlice = append(outSlice, SchemaResponse{
+			ID:               schema.ID,
+			ProjectID:        schema.ProjectID,
+			Title:            schema.Title,
+			FlowID:           schema.FlowID,
+			Type:             schema.Type,
+			CurrentVersionID: schema.CurrentVersionID,
+			Status:           schema.Status,
+			CreatedAt:        schema.CreatedAt,
+			UpdatedAt:        schema.UpdatedAt,
+		})
+	}
+	return outSlice
+}
+
 func SchemaOutputToResponse(out *inbounds.SchemaOutput) *SchemaResponse {
 	if out == nil {
 		return nil
