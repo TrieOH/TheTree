@@ -126,7 +126,7 @@ func (repo *schemaFieldsRepo) GetByVersionID(ctx context.Context, schemaVersionI
 }
 
 func (repo *schemaFieldsRepo) ListFromSchema(ctx context.Context, schemaID uuid.UUID) ([]field.Field, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.List",
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.ListFromSchema",
 		trace.WithAttributes(
 			attribute.String("field.schema_id", schemaID.String()),
 		),
@@ -152,7 +152,7 @@ func (repo *schemaFieldsRepo) ListFromSchema(ctx context.Context, schemaID uuid.
 }
 
 func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, versionID uuid.UUID) ([]field.Field, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.List",
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.ListFromVersion",
 		trace.WithAttributes(
 			attribute.String("field.schema_id", schemaID.String()),
 			attribute.String("field.version_id", versionID.String()),
