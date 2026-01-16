@@ -288,7 +288,7 @@ func FromService(span trace.Span, err error) *Error {
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrEmptyCookie:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SessionRevoked)
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(RequestEmptyCookie)
 		RecordSystemError(span, httpErr)
 		return httpErr
 	default:

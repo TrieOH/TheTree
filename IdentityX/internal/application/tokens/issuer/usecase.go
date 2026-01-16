@@ -2,14 +2,10 @@ package issuer
 
 import (
 	"GoAuth/internal/domain/auth"
-	"GoAuth/internal/domain/project_users"
-	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/inbounds"
-	"crypto/ed25519"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -21,78 +17,78 @@ func NewTokenIssuer() inbounds.TokenIssuer {
 	return &UseCase{}
 }
 
-func (uc *UseCase) NewAccessToken(user user.User, key ed25519.PrivateKey, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time) (string, error) {
+func (uc *UseCase) NewAccessToken(in inbounds.NewAccessTokenInput) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
-			ID:        user.ID,
-			UserType:  user.UserType,
-			Email:     user.Email,
-			SessionID: sessionID,
-			UserAgent: agent,
-			UserIP:    ip,
+			ID:        in.User.ID,
+			UserType:  in.User.UserType,
+			Email:     in.User.Email,
+			SessionID: in.SessionID,
+			UserAgent: in.Agent,
+			UserIP:    in.IP,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
 			Issuer:    viper.GetString("ISSUER"),
-			ID:        accessJTI,
+			ID:        in.AccessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	accessToken.Header["kid"] = keyID
-	tokenStr, err := accessToken.SignedString(key)
+	accessToken.Header["kid"] = in.KeyID
+	tokenStr, err := accessToken.SignedString(in.PrivateKey)
 	if err != nil {
 		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
 	}
 	return tokenStr, nil
 }
 
-func (uc *UseCase) NewRefreshToken(keyID string, privKey ed25519.PrivateKey, accessJTI, refreshJTI uuid.UUID, expiresAt time.Time) (string, error) {
+func (uc *UseCase) NewRefreshToken(in inbounds.NewRefreshTokenInput) (string, error) {
 	claims := auth.RefreshClaims{
 		Sub: auth.RefreshSubJWT{
-			AccessJTI: accessJTI,
+			AccessJTI: in.AccessJTI,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
 			Issuer:    viper.GetString("ISSUER"),
-			ID:        refreshJTI.String(),
+			ID:        in.RefreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	refreshToken.Header["kid"] = keyID
-	tokenStr, err := refreshToken.SignedString(privKey)
+	refreshToken.Header["kid"] = in.KeyID
+	tokenStr, err := refreshToken.SignedString(in.PrivateKey)
 	if err != nil {
 		return "", auth.ErrSigningToken{TokenType: "refresh", Cause: err}
 	}
 	return tokenStr, nil
 }
 
-func (uc *UseCase) NewProjectAccessToken(user project_users.ProjectUser, ip, agent, accessJTI, keyID string, sessionID uuid.UUID, expiresAt time.Time, privKey ed25519.PrivateKey) (string, error) {
+func (uc *UseCase) NewProjectAccessToken(in inbounds.NewProjectAccessTokenInput) (string, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSubJWT{
-			ID:        user.ID,
-			UserType:  user.UserType,
-			ProjectID: &user.ProjectID,
-			Metadata:  user.Metadata,
-			Email:     user.Email,
-			SessionID: sessionID,
-			UserAgent: agent,
-			UserIP:    ip,
+			ID:        in.User.ID,
+			UserType:  in.User.UserType,
+			ProjectID: &in.User.ProjectID,
+			Metadata:  in.User.Metadata,
+			Email:     in.User.Email,
+			SessionID: in.SessionID,
+			UserAgent: in.Agent,
+			UserIP:    in.IP,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
 			Issuer:    viper.GetString("ISSUER"),
-			ID:        accessJTI,
+			ID:        in.AccessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	accessToken.Header["kid"] = keyID
-	tokenStr, err := accessToken.SignedString(privKey)
+	accessToken.Header["kid"] = in.KeyID
+	tokenStr, err := accessToken.SignedString(in.PrivateKey)
 	if err != nil {
 		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
 	}
