@@ -36,3 +36,45 @@ func SchemaVersionOutputToResponse(out *inbounds.SchemaVersionOutput) *SchemaVer
 		UpdatedAt:        out.UpdatedAt,
 	}
 }
+
+func VerboseVersionOutputToResponse(out *inbounds.VersionVerboseOutput) *VersionVerboseResponse {
+	if out == nil {
+		return nil
+	}
+
+	res := &VersionVerboseResponse{
+		SchemaVersionResponse: SchemaVersionResponse{
+			ID:               out.ID,
+			SchemaID:         out.SchemaID,
+			BasedOnVersionID: out.BasedOnVersionID,
+			VersionNumber:    out.VersionNumber,
+			Status:           string(out.Status),
+			CreatedAt:        out.CreatedAt,
+			UpdatedAt:        out.UpdatedAt,
+		},
+		Fields: nil,
+	}
+
+	res.Fields = make([]FieldResponse, 0, len(out.Fields))
+	for _, f := range out.Fields {
+		res.Fields = append(res.Fields, FieldResponse{
+			ObjectID:        f.ObjectID,
+			ID:              f.ID,
+			Key:             f.Key,
+			SchemaID:        f.SchemaID,
+			SchemaVersionID: f.SchemaVersionID,
+			Type:            f.Type,
+			Owner:           f.Owner,
+			Title:           f.Title,
+			Description:     f.Description,
+			Placeholder:     f.Placeholder,
+			Required:        f.Required,
+			Mutable:         f.Mutable,
+			DefaultValue:    f.DefaultValue,
+			Position:        f.Position,
+			CreatedAt:       f.CreatedAt,
+			UpdatedAt:       f.UpdatedAt,
+		})
+	}
+	return res
+}

@@ -57,6 +57,11 @@ SET
     current_version_id = $1
 WHERE id = $2 AND project_id = $3;
 
+-- name: GetSchemaIDsFromProjectID :many
+SELECT id
+FROM schemas
+WHERE project_id = $1;
+
 -- /////////////////////////////// --
 -- //// -- Schema Versions -- //// --
 -- /////////////////////////////// --
@@ -81,6 +86,11 @@ SET
     status = 'archived',
     updated_at = NOW()
 WHERE id = $1 AND schema_id = $2 AND status = 'published';
+
+-- name: GetVersionByID :one
+SELECT *
+FROM schema_versions
+WHERE id = $1;
 
 -- name: GetLatestSchemaVersion :one
 SELECT *
@@ -127,4 +137,7 @@ SELECT
 FROM locked
 RETURNING *;
 
-
+-- name: GetVersionByNumber :one
+SELECT *
+FROM schema_versions
+WHERE version = $1 AND schema_id = $2;

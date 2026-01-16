@@ -45,6 +45,12 @@ FROM schema_fields
 WHERE schema_id = $1
 ORDER BY schema_version_id, position;
 
+-- name: ListFieldsFromVersion :many
+SELECT *
+FROM schema_fields
+WHERE schema_id = $1 AND schema_version_id = $2
+ORDER BY position;
+
 -- name: CloneFields :execrows
 INSERT INTO schema_fields (
     object_id,

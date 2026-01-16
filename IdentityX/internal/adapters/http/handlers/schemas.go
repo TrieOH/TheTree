@@ -191,3 +191,63 @@ func (handler *SchemaHandler) GetVerbose(w http.ResponseWriter, r *http.Request)
 		WithData(dto.VerboseSchemaOutputToResponse(res)).
 		Send(w)
 }
+
+// GetIDsFromProjectID godoc
+// @Summary Get schema IDs from a project
+// @Description Retrieves all schema IDs for a given project.
+// @Tags schemas
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Success 200 {array} string
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/ids [get]
+func (handler *SchemaHandler) GetIDsFromProjectID(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	IDs, err := handler.schemas.GetIDsFromProjectID(ctx, projectID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(IDs).Send(w)
+}
+
+// List godoc
+// @Summary List schemas
+// @Description Retrieves all schemas for a given project.
+// @Tags schemas
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Success 200 {array} dto.SchemaResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas [get]
+func (handler *SchemaHandler) List(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	schemas, err := handler.schemas.List(ctx, projectID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.SchemaOutputSliceToResponse(schemas)).Send(w)
+}

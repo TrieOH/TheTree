@@ -32,6 +32,28 @@ type SchemaOutput struct {
 	UpdatedAt        time.Time
 }
 
+func SchemaSliceToSchemaOutputSlice(out []schema.Schema) []SchemaOutput {
+	if out == nil {
+		return nil
+	}
+
+	outSlice := make([]SchemaOutput, 0, len(out))
+	for _, s := range out {
+		outSlice = append(outSlice, SchemaOutput{
+			ID:               s.ID,
+			ProjectID:        s.ProjectID,
+			Title:            s.Title,
+			FlowID:           s.FlowID,
+			Type:             string(s.Type),
+			CurrentVersionID: s.CurrentVersionID,
+			Status:           string(s.Status),
+			CreatedAt:        s.CreatedAt,
+			UpdatedAt:        s.UpdatedAt,
+		})
+	}
+	return outSlice
+}
+
 func SchemaToSchemaOutput(out *schema.Schema) *SchemaOutput {
 	if out == nil {
 		return nil
