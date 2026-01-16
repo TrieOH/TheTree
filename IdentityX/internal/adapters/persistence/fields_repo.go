@@ -125,8 +125,8 @@ func (repo *schemaFieldsRepo) GetByVersionID(ctx context.Context, schemaVersionI
 	return fields, nil
 }
 
-func (repo *schemaFieldsRepo) List(ctx context.Context, schemaID uuid.UUID) ([]field.Field, error) {
-	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.List",
+func (repo *schemaFieldsRepo) ListFromSchema(ctx context.Context, schemaID uuid.UUID) ([]field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.ListFromSchema",
 		trace.WithAttributes(
 			attribute.String("field.schema_id", schemaID.String()),
 		),
@@ -134,6 +134,36 @@ func (repo *schemaFieldsRepo) List(ctx context.Context, schemaID uuid.UUID) ([]f
 	defer span.End()
 
 	sqlcFields, err := repo.queries(ctx).ListFieldsFromSchema(ctx, schemaID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("count", len(sqlcFields)))
+
+	fields := make([]field.Field, 0, len(sqlcFields))
+	for _, sqlcField := range sqlcFields {
+		var newSchemaField field.Field
+		mapSchemaFieldFromDB(&newSchemaField, &sqlcField)
+		fields = append(fields, newSchemaField)
+	}
+	return fields, nil
+}
+
+func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, versionID uuid.UUID) ([]field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.ListFromVersion",
+		trace.WithAttributes(
+			attribute.String("field.schema_id", schemaID.String()),
+			attribute.String("field.version_id", versionID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcFields, err := repo.queries(ctx).ListFieldsFromVersion(ctx, sqlc.ListFieldsFromVersionParams{
+		SchemaID:        schemaID,
+		SchemaVersionID: versionID,
+	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
 		apierr.RecordSQLCError(span, sqlcErr)

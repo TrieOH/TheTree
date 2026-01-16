@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,16 +19,29 @@ import (
 )
 
 func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
-	projectIDStr := chi.URLParam(r, fieldName)
-	if err := validation.ValidateRule(projectIDStr, "required,uuid7", fieldName); err != nil {
+	IDStr := chi.URLParam(r, fieldName)
+	if err := validation.ValidateRule(IDStr, "required,uuid7", fieldName); err != nil {
 		return uuid.Nil, resp.FromError(err)
 	}
 
-	projectID, err := validation.ParseUUID(projectIDStr, fieldName)
+	ID, err := validation.ParseUUID(IDStr, fieldName)
 	if err != nil {
 		return uuid.Nil, resp.FromError(apierr.FromHandler(err))
 	}
-	return projectID, nil
+	return ID, nil
+}
+
+func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
+	numberStr := chi.URLParam(r, fieldName)
+	if numberStr == "" {
+		return 0, resp.FromError(apierr.ErrMissingParam{Param: fieldName})
+	}
+
+	number, err := strconv.Atoi(numberStr)
+	if err != nil {
+		return 0, resp.FromError(apierr.FromHandler(apierr.ErrParsingNumber{Cause: err}))
+	}
+	return number, nil
 }
 
 func SetTrustProxyHeaders() {

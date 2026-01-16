@@ -18,4 +18,5 @@ type SchemaRepository interface {
 	FindByFlowIDAndType(ctx context.Context, flowID string, schemaType schema.Type, projectID uuid.UUID) (*schema.Schema, error)
 	List(ctx context.Context, projectID uuid.UUID) ([]schema.Schema, error)
 	SetVersion(ctx context.Context, toUpdate schema.Schema) error
+	GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID) ([]uuid.UUID, error)
 }

@@ -115,6 +115,8 @@ func registerSchemaRoutes(
 		r.Use(middleware.ClientOnly())
 
 		r.Post("/projects/{project_id}/schemas", schemas.Draft)
+		r.Get("/projects/{project_id}/schemas", schemas.List)
+		r.Get("/projects/{project_id}/schemas/ids", schemas.GetIDsFromProjectID)
 		r.Get("/projects/{project_id}/schemas/{schema_id}", schemas.GetByID)
 		/* r.With(
 			middleware.DefaultQueryParam("schema_type", "context"),
@@ -140,6 +142,9 @@ func registerSchemaVersionRoutes(
 
 		r.Post("/projects/{project_id}/schemas/{schema_id}/versions/draft", h.Draft)
 		r.Post("/projects/{project_id}/schemas/{schema_id}/versions/publish", h.Publish)
+		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/current", h.GetCurrent)
+		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/latest", h.GetLatest)
+		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/v{version:[0-9]+}", h.GetVerbose)
 	})
 }
 

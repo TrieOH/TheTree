@@ -12,8 +12,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -337,7 +339,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	schemaOutput.Versions = versionsOutput
 
 	var fieldsPart []field.Field
-	fieldsPart, err = fields.List(ctx, in.SchemaID)
+	fieldsPart, err = fields.ListFromSchema(ctx, in.SchemaID)
 	if err != nil {
 		return nil, err
 	}
@@ -370,4 +372,68 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	return schemaOutput, nil
+}
+
+func (uc *UseCase) GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID) ([]uuid.UUID, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetIDsFromProjectID",
+		trace.WithAttributes(attribute.String("projectID", projectID.String())),
+	)
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, projectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get schema IDs from a project you don't own"})
+	}
+
+	IDs, err := schemas.GetIDsFromProjectID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("schema.count", len(IDs)))
+
+	return IDs, nil
+}
+
+func (uc *UseCase) List(ctx context.Context, projectID uuid.UUID) ([]inbounds.SchemaOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.List",
+		trace.WithAttributes(attribute.String("projectID", projectID.String())),
+	)
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, projectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get schemas from a project you don't own"})
+	}
+
+	schemasOutput, err := schemas.List(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.SchemaSliceToSchemaOutputSlice(schemasOutput), nil
 }
