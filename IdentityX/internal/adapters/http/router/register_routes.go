@@ -1,17 +1,13 @@
 package router
 
 import (
-	http2 "GoAuth/internal/adapters/http"
+	"GoAuth/internal/adapters/http/handlers"
 	"GoAuth/internal/adapters/http/middleware"
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/adapters/persistence"
 	"GoAuth/internal/adapters/persistence/sqlc"
-	"GoAuth/internal/application/auth"
-	"GoAuth/internal/application/project"
-	"GoAuth/internal/application/schema"
-	"GoAuth/internal/application/schema_fields"
-	"GoAuth/internal/application/schema_version"
-	"GoAuth/internal/application/session"
+	"GoAuth/internal/adapters/persistence/transactions"
+	"GoAuth/internal/application"
+	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/infrastructure/telemetry"
 	"database/sql"
 
@@ -22,50 +18,29 @@ import (
 
 func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
-	txRunner := persistence.NewTxRunner(db)
+	txRunner := transactions.NewTxRunner(db)
+	tracer := otel.Tracer(string(telemetry.GoAuthTracer))
+	infra := infrastructure.NewInfra(db, queries, txRunner, logs.L(), tracer)
 
-	tracer := otel.Tracer(string(telemetry.RepoTracerName))
-	authMWTracer := otel.Tracer(string(telemetry.AuthMWTracerName))
-	logging := logs.L()
+	app := application.NewApplication(infra)
 
-	userRepo := persistence.NewUserRepo(queries, logging, tracer)
-	sessionRepo := persistence.NewSessionRepo(queries, logging, tracer)
-	projectRepo := persistence.NewProjectRepo(queries, logging, tracer)
-	projectUserRepo := persistence.NewProjectUserRepo(queries, logging, tracer)
-	schemaRepo := persistence.NewSchemaRepo(queries, logging, tracer)
-	schemaVersionRepo := persistence.NewSchemaVersionRepo(queries, logging, tracer)
-	fieldsRepo := persistence.NewFieldsRepo(queries, logging, tracer)
+	handlerBundle := handlers.New(app)
 
-	tokenVerifier := auth.NewTokenVerifier(projectRepo)
-	authUC := auth.New(userRepo, sessionRepo, schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, projectUserRepo, tokenVerifier, txRunner)
-	projectUC := project.New(projectRepo)
-	sessionUC := session.New(sessionRepo)
-	schemaUC := schema.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo)
-	schemaVersionUC := schema_version.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
-	schemaFieldUC := schema_fields.New(schemaRepo, schemaVersionRepo, fieldsRepo, projectRepo, txRunner)
+	authMW := middleware.NewAuthMiddleware(app.Authenticator, tracer, viper.GetString("ISSUER"))
 
-	authHandler := http2.NewAuthHandler(authUC)
-	projectHandler := http2.NewProjectHandler(projectUC)
-	sessionHandler := http2.NewSessionHandler(sessionUC)
-	schemaHandler := http2.NewSchemaHandler(schemaUC)
-	schemaVersionHandler := http2.NewSchemaVersionHandler(schemaVersionUC)
-	schemaFieldsHandler := http2.NewSchemaFieldsHandler(schemaFieldUC)
-
-	authMW := middleware.NewAuthMiddleware(sessionRepo, tokenVerifier, authMWTracer, viper.GetString("ISSUER"))
-
-	registerAuthRoutes(r, authHandler, authMW)
-	registerSessionRoutes(r, sessionHandler, authMW)
-	registerProjectRoutes(r, projectHandler, authMW)
-	registerSchemaRoutes(r, schemaHandler, authMW)
-	registerSchemaVersionRoutes(r, schemaVersionHandler, authMW)
-	registerSchemaFieldsRoutes(r, schemaFieldsHandler, authMW)
+	registerAuthRoutes(r, handlerBundle.AuthHandler, authMW)
+	registerSessionRoutes(r, handlerBundle.SessionHandler, authMW)
+	registerProjectRoutes(r, handlerBundle.ProjectHandler, authMW)
+	registerSchemaRoutes(r, handlerBundle.SchemaHandler, authMW)
+	registerSchemaVersionRoutes(r, handlerBundle.SchemaVersionHandler, authMW)
+	registerSchemaFieldsRoutes(r, handlerBundle.SchemaFieldsHandler, authMW)
 
 	return r
 }
 
 func registerAuthRoutes(
 	r *chi.Mux,
-	h *http2.AuthHandler,
+	h *handlers.AuthHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -95,7 +70,7 @@ func registerAuthRoutes(
 
 func registerSessionRoutes(
 	r *chi.Mux,
-	h *http2.SessionHandler,
+	h *handlers.SessionHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -111,7 +86,7 @@ func registerSessionRoutes(
 
 func registerProjectRoutes(
 	r *chi.Mux,
-	h *http2.ProjectHandler,
+	h *handlers.ProjectHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -132,7 +107,7 @@ func registerProjectRoutes(
 
 func registerSchemaRoutes(
 	r *chi.Mux,
-	schemas *http2.SchemaHandler,
+	schemas *handlers.SchemaHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -156,7 +131,7 @@ func registerSchemaRoutes(
 
 func registerSchemaVersionRoutes(
 	r *chi.Mux,
-	h *http2.SchemaVersionHandler,
+	h *handlers.SchemaVersionHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -170,7 +145,7 @@ func registerSchemaVersionRoutes(
 
 func registerSchemaFieldsRoutes(
 	r *chi.Mux,
-	h *http2.SchemaFieldsHandler,
+	h *handlers.SchemaFieldsHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {

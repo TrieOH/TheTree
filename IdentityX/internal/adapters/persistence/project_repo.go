@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/project"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"database/sql"
 
@@ -20,9 +21,9 @@ type projectRepo struct {
 	tracer trace.Tracer
 }
 
-var _ outbound.ProjectRepository = (*projectRepo)(nil)
+var _ outbounds.ProjectRepository = (*projectRepo)(nil)
 
-func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.ProjectRepository {
+func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbounds.ProjectRepository {
 	return &projectRepo{
 		q:      q,
 		log:    log,
@@ -31,7 +32,7 @@ func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbo
 }
 
 func (repo *projectRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q

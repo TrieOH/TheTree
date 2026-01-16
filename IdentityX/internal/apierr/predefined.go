@@ -42,4 +42,10 @@ var (
 		Message: "internal error",
 		ID:      SystemInternalError,
 	}
+
+	ErrNotImplemented = Error{
+		Code:    Internal,
+		Message: "functionality not implemented",
+		ID:      SystemNotImplemented,
+	}
 )

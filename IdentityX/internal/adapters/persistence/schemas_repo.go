@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/schema"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"database/sql"
 
@@ -21,15 +22,15 @@ type schemaRepo struct {
 }
 
 func (repo *schemaRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-var _ outbound.SchemaRepository = (*schemaRepo)(nil)
+var _ outbounds.SchemaRepository = (*schemaRepo)(nil)
 
-func NewSchemaRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound.SchemaRepository {
+func NewSchemaRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbounds.SchemaRepository {
 	return &schemaRepo{
 		q:      q,
 		log:    l,

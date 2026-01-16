@@ -42,10 +42,10 @@ import (
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
-// @response 400 {object} http.ErrorResponse "Standard error response for bad requests"
-// @response 401 {object} http.ErrorResponse "Standard error response for unauthorized requests"
-// @response 404 {object} http.ErrorResponse "Standard error response for not found errors"
-// @response 500 {object} http.ErrorResponse "Standard error response for internal server errors"
+// @response 400 {object} handlers.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} handlers.ErrorResponse "Standard error response for unauthorized requests"
+// @response 404 {object} handlers.ErrorResponse "Standard error response for not found errors"
+// @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
 func CreateRouter(db *sql.DB) http.Handler {
 	r := chi.NewRouter()
 

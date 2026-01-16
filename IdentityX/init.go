@@ -1,7 +1,7 @@
 package main
 
 import (
-	http2 "GoAuth/internal/adapters/http"
+	http2 "GoAuth/internal/adapters/http/handlers"
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/apierr"

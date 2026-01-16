@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/session"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"database/sql"
 	"time"
@@ -23,15 +24,15 @@ type sessionRepo struct {
 }
 
 func (repo *sessionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-var _ outbound.SessionRepository = (*sessionRepo)(nil)
+var _ outbounds.SessionRepository = (*sessionRepo)(nil)
 
-func NewSessionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbound.SessionRepository {
+func NewSessionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbounds.SessionRepository {
 	return &sessionRepo{
 		q:      q,
 		log:    log,
