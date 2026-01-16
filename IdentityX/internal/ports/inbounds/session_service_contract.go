@@ -89,3 +89,9 @@ type ErrSessionNotFound struct{}
 func (e ErrSessionNotFound) Error() string {
 	return "session not found or revoked"
 }
+
+type ErrSessionUnauthorized struct{}
+
+func (e ErrSessionUnauthorized) Error() string {
+	return "session not found or revoked"
+}

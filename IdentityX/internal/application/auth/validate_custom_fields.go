@@ -25,14 +25,19 @@ func (uc *UseCase) validateAndConstructMetadata(
 	var ok bool
 	var err error
 	var registerSchema *schema.Schema
-	if registerSchema, err = uc.schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID); err != nil {
+
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	if registerSchema, err = schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID); err != nil {
 		return nil, err
 	}
 	if err = registerSchema.CanRegister(); err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 	var registerVersion *version.Version
-	if registerVersion, err = uc.versions.GetCurrent(ctx, registerSchema.ID); err != nil {
+	if registerVersion, err = versions.GetCurrent(ctx, registerSchema.ID); err != nil {
 		return nil, err
 	}
 	if err = registerVersion.CanRegister(); err != nil {
@@ -43,7 +48,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 	}
 
 	var registerFields []field.Field
-	if registerFields, err = uc.fields.GetByVersionID(ctx, registerVersion.ID); err != nil {
+	if registerFields, err = fields.GetByVersionID(ctx, registerVersion.ID); err != nil {
 		return nil, err
 	}
 

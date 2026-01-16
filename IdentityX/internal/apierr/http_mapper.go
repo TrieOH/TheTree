@@ -264,8 +264,32 @@ func FromService(span trace.Span, err error) *Error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrSessionNotFound:
-		httpErr := ErrNotFound.WithMsg(e.Error()).WithID(SessionNotFound)
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SessionNotFound)
 		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrSessionUnauthorized:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SessionUnauthorized)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrInvalidIssuer:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalidIssuer)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrTokenIDMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenMismatchDuringAuth)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrTokenSessionMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenSessionMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrAuthSessionRevoked:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SessionRevoked)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmptyCookie:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(RequestEmptyCookie)
+		RecordSystemError(span, httpErr)
 		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)

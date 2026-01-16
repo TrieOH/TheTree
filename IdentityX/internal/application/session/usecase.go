@@ -5,7 +5,7 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 
 	"github.com/google/uuid"
@@ -18,16 +18,19 @@ var (
 )
 
 type UseCase struct {
-	sessions outbound.SessionRepository
+	sessions outbounds.SessionRepository
+	tx       inbounds.TxRunner
 }
 
 var _ inbounds.SessionService = (*UseCase)(nil)
 
 func New(
-	sessions outbound.SessionRepository,
+	sessions outbounds.SessionRepository,
+	tx inbounds.TxRunner,
 ) inbounds.SessionService {
 	return &UseCase{
 		sessions: sessions,
+		tx:       tx,
 	}
 }
 
@@ -41,6 +44,8 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 		return nil, apierr.FromService(span, err)
 	}
 
+	// FIXME: This is a security vulnerability. The user_type from the principal must be passed to the session repository
+	// to prevent session leakage between client and project users who might have the same UUID.
 	sessions, err := uc.sessions.List(ctx, principal.UserID)
 	if err != nil {
 		return nil, err

@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"strings"
 
@@ -21,25 +21,26 @@ var (
 )
 
 type UseCase struct {
-	schemas  outbound.SchemaRepository
-	versions outbound.SchemaVersionRepository
-	fields   outbound.SchemaFieldsRepository
-	projects outbound.ProjectRepository
+	deps Deps
+	tx   inbounds.TxRunner
+}
+
+type Deps struct {
+	Schemas  outbounds.SchemaRepository
+	Versions outbounds.SchemaVersionRepository
+	Fields   outbounds.SchemaFieldsRepository
+	Projects outbounds.ProjectRepository
 }
 
 var _ inbounds.SchemaService = (*UseCase)(nil)
 
 func New(
-	schemas outbound.SchemaRepository,
-	versions outbound.SchemaVersionRepository,
-	fields outbound.SchemaFieldsRepository,
-	projects outbound.ProjectRepository,
+	deps Deps,
+	tx inbounds.TxRunner,
 ) inbounds.SchemaService {
 	return &UseCase{
-		schemas:  schemas,
-		versions: versions,
-		fields:   fields,
-		projects: projects,
+		deps: deps,
+		tx:   tx,
 	}
 }
 
@@ -51,6 +52,9 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	defer func() {
 		span.SetAttributes(attribute.Bool("draft.success", err == nil))
 	}()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
 
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
@@ -70,7 +74,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +99,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	validSchemaType := schema.Type(in.SchemaType)
 
 	var exists bool
-	exists, err = uc.schemas.Exists(ctx, schema.Schema{
+	exists, err = schemas.Exists(ctx, schema.Schema{
 		FlowID:    in.FlowID,
 		ProjectID: in.ProjectID,
 		Type:      validSchemaType,
@@ -109,7 +113,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	}
 
 	var drafted *schema.Schema
-	drafted, err = uc.schemas.Draft(ctx, schema.Schema{
+	drafted, err = schemas.Draft(ctx, schema.Schema{
 		ProjectID: in.ProjectID,
 		Title:     in.Title,
 		FlowID:    in.FlowID,
@@ -131,6 +135,10 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 		span.SetAttributes(attribute.Bool("publish.success", err == nil))
 	}()
 
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
@@ -138,7 +146,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return err
 	}
@@ -148,7 +156,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	var belongs bool
-	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
 		ProjectID: in.ProjectID,
 		ID:        in.SchemaID,
 	})
@@ -161,7 +169,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	var toPublish *schema.Schema
-	toPublish, err = uc.schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
+	toPublish, err = schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -178,7 +186,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	var latest *version.Version
-	latest, err = uc.versions.GetLatest(ctx, in.SchemaID)
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
 	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
@@ -195,7 +203,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return apierr.FromService(span, inbounds.ErrSchemaOnlyArchived{Msg: "cannot publish a schema with only archived versions"})
 	}
 
-	if err = uc.schemas.Publish(ctx, schema.Schema{
+	if err = schemas.Publish(ctx, schema.Schema{
 		ID:        in.SchemaID,
 		ProjectID: in.ProjectID,
 	}); err != nil {
@@ -209,12 +217,15 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetByID")
 	defer span.End()
 
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	isOwner, err := uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +235,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	var belongs bool
-	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
 		ProjectID: in.ProjectID,
 		ID:        in.SchemaID,
 	})
@@ -236,7 +247,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get a schema you don't own"})
 	}
 
-	found, err := uc.schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
+	found, err := schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +259,17 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetVerbose")
 	defer span.End()
 
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	isOwner, err := uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +279,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	var belongs bool
-	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
 		ProjectID: in.ProjectID,
 		ID:        in.SchemaID,
 	})
@@ -276,7 +292,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	var schemaPart *schema.Schema
-	schemaPart, err = uc.schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
+	schemaPart, err = schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +312,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	var versionsPart []version.Version
-	versionsPart, err = uc.versions.List(ctx, in.SchemaID)
+	versionsPart, err = versions.List(ctx, in.SchemaID)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +337,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	schemaOutput.Versions = versionsOutput
 
 	var fieldsPart []field.Field
-	fieldsPart, err = uc.fields.List(ctx, in.SchemaID)
+	fieldsPart, err = fields.List(ctx, in.SchemaID)
 	if err != nil {
 		return nil, err
 	}

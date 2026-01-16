@@ -2,9 +2,10 @@ package persistence
 
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
+	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/field"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"database/sql"
 
@@ -21,15 +22,15 @@ type schemaFieldsRepo struct {
 }
 
 func (repo *schemaFieldsRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(txKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-var _ outbound.SchemaFieldsRepository = (*schemaFieldsRepo)(nil)
+var _ outbounds.SchemaFieldsRepository = (*schemaFieldsRepo)(nil)
 
-func NewFieldsRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbound.SchemaFieldsRepository {
+func NewFieldsRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) outbounds.SchemaFieldsRepository {
 	return &schemaFieldsRepo{
 		q:      q,
 		log:    l,
@@ -152,12 +153,12 @@ func (repo *schemaFieldsRepo) List(ctx context.Context, schemaID uuid.UUID) ([]f
 
 func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
+	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemUnimplemented)
+	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, toVersionID uuid.UUID) error {

@@ -3,37 +3,29 @@ package middleware
 import (
 	"GoAuth/internal/apierr"
 	appauth "GoAuth/internal/application/auth"
-	"GoAuth/internal/application/validation"
-	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
-	"GoAuth/internal/domain/session"
-	authport "GoAuth/internal/ports/auth"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/inbounds"
 	"errors"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthMiddleware struct {
-	sessions      outbound.SessionRepository
-	tokenVerifier authport.TokenVerifier
+	authenticator inbounds.RequestAuthenticator
 	tracer        trace.Tracer
 	issuer        string
 }
 
 func NewAuthMiddleware(
-	sessions outbound.SessionRepository,
-	tokenVerifier authport.TokenVerifier,
+	authenticator inbounds.RequestAuthenticator,
 	tracer trace.Tracer,
 	issuer string,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
-		sessions:      sessions,
-		tokenVerifier: tokenVerifier,
+		authenticator: authenticator,
 		tracer:        tracer,
 		issuer:        issuer,
 	}
@@ -84,96 +76,16 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			var accessToken *auth.AccessClaims
-			accessToken, err = mw.tokenVerifier.VerifyAccessToken(ctx, accessTokenCookie.Value)
-			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
+			in := inbounds.AuthenticateRequestInput{
+				AccessToken:  accessTokenCookie.Value,
+				RefreshToken: refreshTokenCookie.Value,
+				Issuer:       mw.issuer,
 			}
-
-			if accessToken.Sub.ProjectID != nil {
-				span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
-			}
-
-			var refreshToken *auth.RefreshClaims
-			refreshToken, err = mw.tokenVerifier.VerifyRefreshToken(ctx, refreshTokenCookie.Value)
-			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
-			}
-
-			if accessToken.Issuer != mw.issuer || refreshToken.Issuer != mw.issuer {
-				err = apierr.ErrUnauthorized.WithMsg("invalid issuer").WithID(apierr.TokenInvalidIssuer)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
-			}
-
-			var refreshTokenJTI uuid.UUID
-			refreshTokenJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
-			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
-			}
-
-			var accessTokenJTI uuid.UUID
-			accessTokenJTI, err = validation.RequireAccessJTI(&accessToken.ID)
-			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
-			}
-
-			if accessTokenJTI != refreshToken.Sub.AccessJTI {
-				err = apierr.ErrUnauthorized.WithMsg("access token does not belong to this refresh token").WithID(apierr.TokenMismatchDuringAuth)
-				apierr.RecordDomainError(span, err)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				return
-			}
-
-			var sess *session.Session
-			sess, err = mw.sessions.GetByTokenID(ctx, refreshTokenJTI)
-			if err != nil {
-				if apierr.IsNotFound(err) {
-					err = apierr.ErrUnauthorized.WithMsg("session not found or revoked").WithID(apierr.SessionUnauthorized).WithCause(err)
-					resp.FromError(err).WithModule("AuthMW").Send(w)
-					apierr.RecordDomainError(span, err)
-					return
-				}
-				resp.FromError(err).WithModule("AuthMW").Send(w) // unexpected DB / infra error
-				apierr.RecordSystemError(span, err)
-				return
-			}
-
-			if sess.SessionID != accessToken.Sub.SessionID {
-				err = apierr.ErrUnauthorized.WithMsg("token/session mismatch").WithID(apierr.TokenSessionMismatch)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
-				return
-			}
-
-			if sess.RevokedAt != nil {
-				// should never happen due to query guarding against this, just being defensive
-				// system error for appropriate priority if it happens, since it should never happen
-				err = apierr.ErrUnauthorized.WithMsg("session revoked").WithID(apierr.SessionRevoked)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordSystemError(span, err)
-				return
-			}
-
-			span.SetAttributes(
-				attribute.String("user.type", accessToken.Sub.UserType),
-				attribute.String("user.id", accessToken.Sub.ID.String()),
-				attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
-			)
 
 			var principal *authz.Principal
-			principal, err = authz.NewPrincipal(accessToken, refreshToken)
+			principal, err = mw.authenticator.AuthenticateRequest(ctx, in)
 			if err != nil {
-				resp.FromError(apierr.FromService(span, err)).WithModule("AuthMW").Send(w)
+				resp.FromError(err).WithModule("AuthMW").Send(w)
 				return
 			}
 

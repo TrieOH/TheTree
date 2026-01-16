@@ -1,8 +1,9 @@
 package auth
 
 import (
+	"GoAuth/internal/adapters/email"
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/transactions"
+	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
@@ -10,9 +11,9 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
-	authport "GoAuth/internal/ports/auth"
+	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 	"crypto/ed25519"
 	"database/sql"
@@ -35,40 +36,39 @@ var (
 )
 
 type UseCase struct {
-	users         outbound.UserRepository
-	sessions      outbound.SessionRepository
-	schemas       outbound.SchemaRepository
-	versions      outbound.SchemaVersionRepository
-	fields        outbound.SchemaFieldsRepository
-	projects      outbound.ProjectRepository
-	projectUsers  outbound.ProjectUserRepository
-	tokenVerifier authport.TokenVerifier
-	tx            transactions.TxRunner
+	deps          Deps
+	tokenIssuer   inbounds.TokenIssuer
+	tokenVerifier inbounds.TokenVerifier
+	mailRenderer  outbounds.EmailRenderer
+	mailSender    outbounds.Mailer
+	tx            inbounds.TxRunner
+}
+
+type Deps struct {
+	Users        outbounds.UserRepository
+	Sessions     outbounds.SessionRepository
+	Schemas      outbounds.SchemaRepository
+	Versions     outbounds.SchemaVersionRepository
+	Fields       outbounds.SchemaFieldsRepository
+	Projects     outbounds.ProjectRepository
+	ProjectUsers outbounds.ProjectUserRepository
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
 
 func New(
-	users outbound.UserRepository,
-	sessions outbound.SessionRepository,
-	schemas outbound.SchemaRepository,
-	versions outbound.SchemaVersionRepository,
-	fields outbound.SchemaFieldsRepository,
-	projects outbound.ProjectRepository,
-	projectUsers outbound.ProjectUserRepository,
-	tokenVerifier authport.TokenVerifier,
-	tx transactions.TxRunner,
+	repos Deps,
+	infra infrastructure.Infra,
+	tokenBundle tokens.TokenBundle,
+	mailBundle email.MailBundle,
 ) inbounds.AuthService {
 	return &UseCase{
-		users:         users,
-		sessions:      sessions,
-		schemas:       schemas,
-		versions:      versions,
-		fields:        fields,
-		projects:      projects,
-		projectUsers:  projectUsers,
-		tokenVerifier: tokenVerifier,
-		tx:            tx,
+		deps:          repos,
+		tokenIssuer:   tokenBundle.Issuer,
+		tokenVerifier: tokenBundle.Verifier,
+		mailRenderer:  mailBundle.Renderer,
+		mailSender:    mailBundle.Mailer,
+		tx:            infra.Tx,
 	}
 }
 
@@ -85,6 +85,8 @@ func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) 
 		}
 	}()
 
+	users := uc.deps.Users
+
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
@@ -98,7 +100,7 @@ func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) 
 	}
 
 	var u *user.User
-	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword))
+	u, err = users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
 		return apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
 	} else if err != nil {
@@ -129,8 +131,11 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 		}
 	}()
 
+	users := uc.deps.Users
+	sessions := uc.deps.Sessions
+
 	var u *user.User
-	u, err = uc.users.GetUserByEmail(ctx, in.Email)
+	u, err = users.GetUserByEmail(ctx, in.Email)
 	if apierr.IsNotFound(err) {
 		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
 	} else if err != nil {
@@ -151,7 +156,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	var sess *session.Session
-	sess, err = uc.sessions.Create(ctx, session.Session{
+	sess, err = sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
 		UserIP:    in.IP,
@@ -170,13 +175,28 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/login"})
 	}
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, accessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
+	accessToken, err = uc.tokenIssuer.NewAccessToken(inbounds.NewAccessTokenInput{
+		User:       *u,
+		PrivateKey: utils.GoAuthPrivateKey,
+		IP:         in.IP,
+		Agent:      in.Agent,
+		AccessJTI:  accessJTI.String(),
+		KeyID:      "goauth:v1",
+		SessionID:  sess.SessionID,
+		ExpiresAt:  accessExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshToken string
-	refreshToken, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KeyID:      "goauth:v1",
+		PrivateKey: utils.GoAuthPrivateKey,
+		AccessJTI:  accessJTI,
+		RefreshJTI: sess.TokenID,
+		ExpiresAt:  refreshExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
@@ -202,6 +222,8 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		}
 	}()
 
+	sessions := uc.deps.Sessions
+
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
@@ -209,7 +231,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	}
 
 	var sess *session.Session
-	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID)
+	sess, err = sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID)
 	if err != nil {
 		return err
 	}
@@ -223,7 +245,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
 func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
-	txOptions := transactions.TxOptions{
+	txOptions := inbounds.TxOptions{
 		Isolation: sql.LevelReadCommitted,
 		ReadOnly:  false,
 	}
@@ -249,6 +271,8 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 		}
 	}()
 
+	sessions := uc.deps.Sessions
+
 	var refreshToken *auth.RefreshClaims
 	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
 	if err != nil {
@@ -273,7 +297,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	sess, err := uc.sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
+	sess, err := sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
 		return nil, apierr.FromService(span, inbounds.ErrTokenInvalid{TokenType: "refresh"})
@@ -312,8 +336,10 @@ func (uc *UseCase) finishClientRefresh(
 		}
 	}()
 
+	users := uc.deps.Users
+
 	var u *user.User
-	u, err = uc.users.GetUserByID(ctx, sess.UserID)
+	u, err = users.GetUserByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -327,13 +353,28 @@ func (uc *UseCase) finishClientRefresh(
 	newAccessJTI := uid
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, err = newAccessToken(*u, utils.GoAuthPrivateKey, in.IP, in.Agent, newAccessJTI.String(), "goauth:v1", sess.SessionID, accessExpiresAt)
+	accessTokenStr, err = uc.tokenIssuer.NewAccessToken(inbounds.NewAccessTokenInput{
+		User:       *u,
+		PrivateKey: utils.GoAuthPrivateKey,
+		IP:         in.IP,
+		Agent:      in.Agent,
+		AccessJTI:  newAccessJTI.String(),
+		KeyID:      "goauth:v1",
+		SessionID:  sess.SessionID,
+		ExpiresAt:  accessExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshTokenStr string
-	refreshTokenStr, err = newRefreshToken("goauth:v1", utils.GoAuthPrivateKey, newAccessJTI, refreshJTI, refreshExpiresAt)
+	refreshTokenStr, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KeyID:      "goauth:v1",
+		PrivateKey: utils.GoAuthPrivateKey,
+		AccessJTI:  newAccessJTI,
+		RefreshJTI: refreshJTI,
+		ExpiresAt:  refreshExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
@@ -363,13 +404,16 @@ func (uc *UseCase) finishProjectUserRefresh(
 		}
 	}()
 
-	projectUser, err := uc.projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
+	projectUsers := uc.deps.ProjectUsers
+	projects := uc.deps.Projects
+
+	projectUser, err := projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
 	var privKey string
-	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	privKey, err = projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -390,13 +434,28 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var keyID = "project:" + sess.ProjectID.String() + ":v1"
 	var accessTokenStr string
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, err = newProjectAccessToken(*projectUser, in.IP, in.Agent, newAccessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
+	accessTokenStr, err = uc.tokenIssuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
+		User:       *projectUser,
+		IP:         in.IP,
+		Agent:      in.Agent,
+		AccessJTI:  newAccessJTI.String(),
+		KeyID:      keyID,
+		SessionID:  sess.SessionID,
+		ExpiresAt:  accessExpiresAt,
+		PrivateKey: decodedKey,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
 	var refreshTokenStr string
-	refreshTokenStr, err = newRefreshToken(keyID, decodedKey, newAccessJTI, refreshJTI, refreshExpiresAt)
+	refreshTokenStr, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KeyID:      keyID,
+		PrivateKey: decodedKey,
+		AccessJTI:  newAccessJTI,
+		RefreshJTI: refreshJTI,
+		ExpiresAt:  refreshExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
@@ -416,6 +475,8 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID.String())),
 	)
 	defer span.End()
+
+	projectUsers := uc.deps.ProjectUsers
 
 	if in.FlowID == "" {
 		return apierr.FromService(span, inbounds.ErrEmptyFlowID{})
@@ -467,7 +528,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	}
 
 	var usr *project_users.ProjectUser
-	usr, err = uc.projectUsers.Register(ctx, project_users.ProjectUser{
+	usr, err = projectUsers.Register(ctx, project_users.ProjectUser{
 		ProjectID:    in.ProjectID,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
@@ -503,8 +564,12 @@ func (uc *UseCase) LoginProjectUser(
 	)
 	defer span.End()
 
+	projectUsers := uc.deps.ProjectUsers
+	projects := uc.deps.Projects
+	sessions := uc.deps.Sessions
+
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := uc.projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
+	usr, err := projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
 	if apierr.IsNotFound(err) {
 		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
 	} else if err != nil {
@@ -517,7 +582,7 @@ func (uc *UseCase) LoginProjectUser(
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	sess, err := uc.sessions.Create(ctx, session.Session{
+	sess, err := sessions.Create(ctx, session.Session{
 		IssuedAt:  time.Now(),
 		UserAgent: in.Agent,
 		UserIP:    in.IP,
@@ -530,7 +595,7 @@ func (uc *UseCase) LoginProjectUser(
 	}
 
 	var privKey string
-	privKey, err = uc.projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
+	privKey, err = projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -550,12 +615,27 @@ func (uc *UseCase) LoginProjectUser(
 	keyID := "project:" + sess.ProjectID.String() + ":v1"
 	accessJTI := uid
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, err := newProjectAccessToken(*usr, in.IP, in.Agent, accessJTI.String(), keyID, sess.SessionID, accessExpiresAt, decodedKey)
+	accessToken, err := uc.tokenIssuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
+		User:       *usr,
+		IP:         in.IP,
+		Agent:      in.Agent,
+		AccessJTI:  accessJTI.String(),
+		KeyID:      keyID,
+		SessionID:  sess.SessionID,
+		ExpiresAt:  accessExpiresAt,
+		PrivateKey: decodedKey,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	refreshToken, err := newRefreshToken(keyID, decodedKey, accessJTI, sess.TokenID, refreshExpiresAt)
+	refreshToken, err := uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KeyID:      keyID,
+		PrivateKey: decodedKey,
+		AccessJTI:  accessJTI,
+		RefreshJTI: sess.TokenID,
+		ExpiresAt:  refreshExpiresAt,
+	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}

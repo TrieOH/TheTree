@@ -3,13 +3,12 @@ package schema_fields
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
-	"GoAuth/internal/application/transactions"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbound"
+	"GoAuth/internal/ports/outbounds"
 	"context"
 
 	"go.opentelemetry.io/otel"
@@ -21,28 +20,26 @@ var (
 )
 
 type UseCase struct {
-	schemas  outbound.SchemaRepository
-	versions outbound.SchemaVersionRepository
-	fields   outbound.SchemaFieldsRepository
-	projects outbound.ProjectRepository
-	tx       transactions.TxRunner
+	deps Deps
+	tx   inbounds.TxRunner
+}
+
+type Deps struct {
+	Schemas  outbounds.SchemaRepository
+	Versions outbounds.SchemaVersionRepository
+	Fields   outbounds.SchemaFieldsRepository
+	Projects outbounds.ProjectRepository
 }
 
 var _ inbounds.SchemaFieldsService = (*UseCase)(nil)
 
 func New(
-	schemas outbound.SchemaRepository,
-	versions outbound.SchemaVersionRepository,
-	fields outbound.SchemaFieldsRepository,
-	projects outbound.ProjectRepository,
-	tx transactions.TxRunner,
+	deps Deps,
+	tx inbounds.TxRunner,
 ) inbounds.SchemaFieldsService {
 	return &UseCase{
-		schemas:  schemas,
-		versions: versions,
-		fields:   fields,
-		projects: projects,
-		tx:       tx,
+		deps: deps,
+		tx:   tx,
 	}
 }
 
@@ -66,6 +63,11 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
@@ -73,7 +75,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var isOwner bool
-	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +85,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var belongs bool
-	belongs, err = uc.schemas.BelongsToProject(ctx, schema.Schema{
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
 		ProjectID: in.ProjectID,
 		ID:        in.SchemaID,
 	})
@@ -96,7 +98,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	var latest *version.Version
-	latest, err = uc.versions.GetLatest(ctx, in.SchemaID)
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +120,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 			return nil, apierr.FromService(span, inbounds.ErrInvalidFieldOwner{Key: f.Key, Owner: f.Owner})
 		}
 		var created *field.Field
-		created, err = uc.fields.Create(ctx, field.Field{
+		created, err = fields.Create(ctx, field.Field{
 			SchemaID:        in.SchemaID,
 			SchemaVersionID: latest.ID,
 			Key:             f.Key,
