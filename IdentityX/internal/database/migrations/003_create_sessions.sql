@@ -3,7 +3,7 @@
 
 CREATE TABLE sessions (
     session_id UUID PRIMARY KEY DEFAULT uuidv7(),
-    user_id UUID NOT NULL,
+    family_id UUID NOT NULL DEFAULT uuidv7(),
     token_id UUID UNIQUE NOT NULL DEFAULT uuidv7(),
     issued_at TIMESTAMPTZ NOT NULL,
     user_agent TEXT NOT NULL,
@@ -13,12 +13,8 @@ CREATE TABLE sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CHECK (revoked_at <= NOW()),
-    CHECK (revoked_at >= issued_at)
+    CHECK (revoked_at IS NULL OR revoked_at >= issued_at)
 );
-
-CREATE INDEX IF NOT EXISTS idx_sessions_user_id
-    ON sessions(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
     ON sessions(expires_at);

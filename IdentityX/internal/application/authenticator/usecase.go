@@ -86,7 +86,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		return nil, apierr.FromService(span, inbounds.ErrTokenIDMismatch{})
 	}
 
-	sess, err := sessions.GetByTokenID(ctx, refreshTokenJTI)
+	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			return nil, apierr.FromService(span, inbounds.ErrSessionUnauthorized{})
@@ -96,6 +96,15 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	if sess.SessionID != accessToken.Sub.SessionID {
 		return nil, apierr.FromService(span, inbounds.ErrTokenSessionMismatch{})
+	}
+
+	// FIXME add occurrence to the audit when its implemented
+	if sess.TokenID != refreshTokenJTI {
+		err = sessions.MarkRevokedByFamilyID(ctx, refreshToken.Sub.FamilyID)
+		if err != nil {
+			apierr.RecordDomainError(span, err)
+		}
+		return nil, apierr.FromService(span, inbounds.ErrTokenReuseNotAllowed{TokenType: "refresh"})
 	}
 
 	if sess.RevokedAt != nil {

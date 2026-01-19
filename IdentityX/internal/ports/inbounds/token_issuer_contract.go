@@ -22,6 +22,7 @@ type NewRefreshTokenInput struct {
 	PrivateKey            ed25519.PrivateKey
 	AccessJTI, RefreshJTI uuid.UUID
 	ExpiresAt             time.Time
+	FamilyID              uuid.UUID
 }
 
 type NewProjectAccessTokenInput struct {

@@ -42,8 +42,9 @@ func NewSessionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbo
 
 func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.SessionID = src.SessionID
+	dst.IdentityID = src.IdentityID
+	dst.FamilyID = src.FamilyID
 	dst.ProjectID = src.ProjectID
-	dst.UserID = src.UserID
 	dst.TokenID = src.TokenID
 	dst.IssuedAt = src.IssuedAt
 	dst.UserAgent = src.UserAgent
@@ -55,21 +56,28 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.UserType = src.UserType
 }
 
+func mapSessionIdentityFromDB(dst *session.Identity, src *sqlc.SessionIdentity) {
+	dst.ID = src.ID
+	dst.IdentityType = session.IdentityType(src.Type)
+	dst.EntityID = src.EntityID
+	dst.CreatedAt = src.CreatedAt
+}
+
 func (repo *sessionRepo) Create(ctx context.Context, toCreate session.Session) (*session.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.Create",
 		trace.WithAttributes(
-			attribute.String("session.user_id", toCreate.UserID.String()),
+			attribute.String("session.identity_id", toCreate.IdentityID.String()),
 		),
 	)
 	defer span.End()
 
 	sqlcSession, err := repo.queries(ctx).CreateUserSession(ctx, sqlc.CreateUserSessionParams{
-		UserID:    toCreate.UserID,
-		IssuedAt:  toCreate.IssuedAt,
-		UserAgent: toCreate.UserAgent,
-		UserIp:    toCreate.UserIP,
-		ExpiresAt: toCreate.ExpiresAt,
-		ProjectID: toCreate.ProjectID,
+		IdentityID: toCreate.IdentityID,
+		IssuedAt:   toCreate.IssuedAt,
+		UserAgent:  toCreate.UserAgent,
+		UserIp:     toCreate.UserIP,
+		ExpiresAt:  toCreate.ExpiresAt,
+		ProjectID:  toCreate.ProjectID,
 	})
 
 	if err != nil {
@@ -113,7 +121,6 @@ func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*ses
 	}
 
 	span.SetAttributes(
-		attribute.String("session.user_id", sqlcSession.UserID.String()),
 		attribute.String("session.token_id", sqlcSession.TokenID.String()),
 		attribute.String("session.user_type", sqlcSession.UserType),
 	)
@@ -146,7 +153,6 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 
 	span.SetAttributes(
 		attribute.String("session.session_id", sqlcSession.SessionID.String()),
-		attribute.String("session.user_id", sqlcSession.UserID.String()),
 		attribute.String("session.user_type", sqlcSession.UserType),
 	)
 
@@ -160,15 +166,44 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 	return &sess, nil
 }
 
-func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.Session, error) {
-	ctx, span := repo.tracer.Start(ctx, "SessionRepo.List",
+func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) (*session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetByFamilyID",
 		trace.WithAttributes(
-			attribute.String("user_id", userID.String()),
+			attribute.String("session.family_id", familyID.String()),
 		),
 	)
 	defer span.End()
 
-	sqlcSessions, err := repo.queries(ctx).ListUserSessions(ctx, userID)
+	sqlcSession, err := repo.queries(ctx).GetSessionByFamilyID(ctx, familyID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.String("session.session_id", sqlcSession.SessionID.String()))
+	if sqlcSession.ProjectID != nil {
+		span.SetAttributes(attribute.String("session.project_id", sqlcSession.ProjectID.String()))
+	}
+
+	var sess session.Session
+	mapSessionFromDB(&sess, &sqlcSession)
+	return &sess, nil
+}
+
+func (repo *sessionRepo) List(ctx context.Context, entityID uuid.UUID, identityType session.IdentityType) ([]session.Session, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.List",
+		trace.WithAttributes(
+			attribute.String("entity_id", entityID.String()),
+			attribute.String("identity_type", string(identityType)),
+		),
+	)
+	defer span.End()
+
+	sqlcSessions, err := repo.queries(ctx).ListSessions(ctx, sqlc.ListSessionsParams{
+		Type:     sqlc.IdentityType(identityType),
+		EntityID: entityID,
+	})
 
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -188,18 +223,20 @@ func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID) ([]session.
 	return sessions, nil
 }
 
-func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session) error {
+func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session, entityID uuid.UUID, identityType session.IdentityType) error {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.Update",
 		trace.WithAttributes(
-			attribute.String("session.user_id", toUpdate.UserID.String()),
+			attribute.String("session.identity_id", toUpdate.IdentityID.String()),
 			attribute.String("session.token_id", toUpdate.TokenID.String()),
 			attribute.String("session.session_id", toUpdate.SessionID.String()),
 		),
 	)
 	defer span.End()
 
-	err := repo.queries(ctx).UpdateUserSession(ctx, sqlc.UpdateUserSessionParams{
+	err := repo.queries(ctx).UpdateSession(ctx, sqlc.UpdateSessionParams{
 		SessionID: toUpdate.SessionID,
+		Type:      sqlc.IdentityType(identityType),
+		EntityID:  entityID,
 		IssuedAt:  toUpdate.IssuedAt,
 		UserAgent: toUpdate.UserAgent,
 		UserIp:    toUpdate.UserIP,
@@ -216,11 +253,12 @@ func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session) e
 	return nil
 }
 
-func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, newTokenID uuid.UUID, expiresAt time.Time) (*session.Session, error) {
+func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, newTokenID uuid.UUID, oldTokenID uuid.UUID, expiresAt time.Time) (*session.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.RotateToken",
 		trace.WithAttributes(
-			attribute.String("old_token_id", oldTokenID.String()),
+			attribute.String("family_id", familyID.String()),
 			attribute.String("new_token_id", newTokenID.String()),
+			attribute.String("old_token_id", oldTokenID.String()),
 		),
 	)
 	defer span.End()
@@ -229,6 +267,7 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, 
 		ExpiresAt:  expiresAt,
 		NewTokenID: newTokenID,
 		OldTokenID: oldTokenID,
+		FamilyID:   familyID,
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -238,7 +277,6 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, 
 
 	span.SetAttributes(
 		attribute.String("session.session_id", sqlcSession.SessionID.String()),
-		attribute.String("session.user_id", sqlcSession.UserID.String()),
 	)
 
 	var rotatedSession session.Session
@@ -246,18 +284,19 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, oldTokenID uuid.UUID, 
 	return &rotatedSession, nil
 }
 
-func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID) (*session.Session, error) {
+func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, entityID uuid.UUID, sessionID uuid.UUID, identityType session.IdentityType) (*session.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByID",
 		trace.WithAttributes(
 			attribute.String("session_id", sessionID.String()),
-			attribute.String("user_id", userID.String()),
+			attribute.String("entity_id", entityID.String()),
 		),
 	)
 	defer span.End()
 
 	sqlcSession, err := repo.queries(ctx).RevokeSessionByID(ctx, sqlc.RevokeSessionByIDParams{
 		SessionID: sessionID,
-		UserID:    userID,
+		Type:      sqlc.IdentityType(identityType),
+		EntityID:  entityID,
 	})
 	if err != nil {
 		sqlcErr := apierr.FromSQLC(err)
@@ -270,10 +309,27 @@ func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, 
 	return &revokedSession, nil
 }
 
+func (repo *sessionRepo) MarkRevokedByFamilyID(ctx context.Context, familyID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByFamilyID",
+		trace.WithAttributes(
+			attribute.String("family_id", familyID.String()),
+		),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).RevokeSessionByFamilyID(ctx, familyID); err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
 func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session.Filter) (int, error) {
 	ctx, span := repo.tracer.Start(ctx, "SessionRepo.MarkRevokedByFilter",
 		trace.WithAttributes(
-			attribute.String("user_id", filter.UserID.String()),
+			attribute.String("user_id", filter.EntityID.String()),
 		),
 	)
 	defer span.End()
@@ -284,12 +340,16 @@ func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session
 	if filter.ExcludeID != nil {
 		revokeType = "other"
 		sqlcSessions, err = repo.queries(ctx).RevokeOtherSessions(ctx, sqlc.RevokeOtherSessionsParams{
-			UserID:    filter.UserID,
+			Type:      sqlc.IdentityType(filter.IdentityType),
+			EntityID:  filter.EntityID,
 			SessionID: *filter.ExcludeID,
 		})
 	} else {
 		revokeType = "all"
-		sqlcSessions, err = repo.queries(ctx).RevokeAllSessions(ctx, filter.UserID)
+		sqlcSessions, err = repo.queries(ctx).RevokeAllSessions(ctx, sqlc.RevokeAllSessionsParams{
+			Type:     sqlc.IdentityType(filter.IdentityType),
+			EntityID: filter.EntityID,
+		})
 	}
 
 	if err != nil {
@@ -302,4 +362,80 @@ func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session
 	span.SetAttributes(attribute.String("revoke.type", revokeType))
 
 	return len(sqlcSessions), nil
+}
+
+func (repo *sessionRepo) CreateIdentity(ctx context.Context, identityType session.IdentityType, entityID uuid.UUID) (*session.Identity, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.CreateIdentity",
+		trace.WithAttributes(
+			attribute.String("entity_id", entityID.String()),
+			attribute.String("identity_type", string(identityType)),
+		),
+	)
+	defer span.End()
+
+	sqlcIdentity, err := repo.queries(ctx).CreateSessionIdentity(ctx, sqlc.CreateSessionIdentityParams{
+		Type:     sqlc.IdentityType(identityType),
+		EntityID: entityID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.String("identity_id", sqlcIdentity.ID.String()))
+
+	var foundIdentity session.Identity
+	mapSessionIdentityFromDB(&foundIdentity, &sqlcIdentity)
+	return &foundIdentity, nil
+}
+
+func (repo *sessionRepo) GetIdentityByEntityIDAndType(ctx context.Context, entityID uuid.UUID, identityType session.IdentityType) (*session.Identity, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetByEntityIDAndType",
+		trace.WithAttributes(
+			attribute.String("entity_id", entityID.String()),
+			attribute.String("identity_type", string(identityType)),
+		),
+	)
+	defer span.End()
+
+	sqlcIdentity, err := repo.queries(ctx).GetSessionIdentityByEntityIDAndType(ctx, sqlc.GetSessionIdentityByEntityIDAndTypeParams{
+		Type:     sqlc.IdentityType(identityType),
+		EntityID: entityID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.String("identity_id", sqlcIdentity.ID.String()))
+
+	var foundIdentity session.Identity
+	mapSessionIdentityFromDB(&foundIdentity, &sqlcIdentity)
+	return &foundIdentity, nil
+}
+
+func (repo *sessionRepo) GetIdentityByIDAndType(ctx context.Context, identityID uuid.UUID, identityType session.IdentityType) (*session.Identity, error) {
+	ctx, span := repo.tracer.Start(ctx, "SessionRepo.GetByIDAndType",
+		trace.WithAttributes(
+			attribute.String("identity_id", identityID.String()),
+			attribute.String("identity_type", string(identityType)),
+		),
+	)
+	defer span.End()
+
+	sqlcIdentity, err := repo.queries(ctx).GetSessionIdentityByIDAndType(ctx, sqlc.GetSessionIdentityByIDAndTypeParams{
+		Type: sqlc.IdentityType(identityType),
+		ID:   identityID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	var foundIdentity session.Identity
+	mapSessionIdentityFromDB(&foundIdentity, &sqlcIdentity)
+	return &foundIdentity, nil
 }
