@@ -291,6 +291,10 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(RequestEmptyCookie)
 		RecordSystemError(span, httpErr)
 		return httpErr
+	case inbounds.ErrTokenReuseNotAllowed:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenReuseIdentified)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""

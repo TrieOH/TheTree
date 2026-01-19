@@ -48,6 +48,7 @@ func (uc *UseCase) NewRefreshToken(in inbounds.NewRefreshTokenInput) (string, er
 	claims := auth.RefreshClaims{
 		Sub: auth.RefreshSubJWT{
 			AccessJTI: in.AccessJTI,
+			FamilyID:  in.FamilyID,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
