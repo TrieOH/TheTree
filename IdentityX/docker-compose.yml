@@ -19,7 +19,7 @@ services:
       CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
       ISSUER: ${ISSUER:-GoAuth}
-      ENV: ${ENV:-production}
+      ENV: ${ENV:-development}
 
   go-auth-database:
     image: postgres:18

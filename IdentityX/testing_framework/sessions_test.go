@@ -122,29 +122,51 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Session should be invalid
 		user.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionUnauthorized).
+			HasErrID(apierr.SessionRevoked).
 			HasMessage("session not found or revoked")
 	})
 
+	// ExpiredSessionNotListed tests that expired sessions are not returned when listing active sessions.
+	// This ensures that only currently valid sessions are visible to the user.
+	// The test manually inserts an expired session directly into the database for a registered user.
+	// It then attempts to list sessions for that user, expecting only the active session (created by login)
+	// to be returned, and not the manually inserted expired one.
 	t.Run("ExpiredSessionNotListed", func(t *testing.T) {
 		client := suite.NewClient(t)
 		user := client.WithCredentials("expired@mail.com", ValidPassword).Register().Login()
 
 		// Manually insert an expired session for this user
-		_, err := suite.DB.Exec(`
+		var userID string
+		err := suite.DB.QueryRow("SELECT id FROM users WHERE email = 'expired@mail.com'").Scan(&userID)
+		if err != nil {
+			t.Fatalf("Failed to get user ID: %v", err)
+		}
+
+		var identityID string
+		err = suite.DB.QueryRow(`
+			INSERT INTO session_identities (type, entity_id)
+			VALUES ('client', $1)
+			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
+			RETURNING id
+		`, userID).Scan(&identityID)
+		if err != nil {
+			t.Fatalf("Failed to create session identity: %v", err)
+		}
+
+		_, err = suite.DB.Exec(`
 			INSERT INTO sessions (
-				user_id, issued_at, user_agent, user_ip, expires_at, user_type, created_at, updated_at
+				identity_id, issued_at, user_agent, user_ip, expires_at, created_at, updated_at, user_type
 			) VALUES (
-				(SELECT id FROM users WHERE email = 'expired@mail.com'),
+				$1,
 				NOW() - INTERVAL '2 days',
 				'Expired Agent',
 				'127.0.0.1',
 				NOW() - INTERVAL '1 day',
-				'client',
 				NOW(),
-				NOW()
+				NOW(),
+				'client'
 			)
-		`)
+		`, identityID)
 		if err != nil {
 			t.Fatalf("Failed to insert expired session: %v", err)
 		}
@@ -156,26 +178,48 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			RequireDataArray().Length().IsEqual(1)
 	})
 
+	// RevokedSessionNotListed tests that manually revoked sessions are not returned when listing active sessions.
+	// This verifies that sessions explicitly marked as revoked are correctly filtered out.
+	// The test manually inserts a revoked session directly into the database for a registered user.
+	// It then lists sessions for that user, expecting only the active session (created by login)
+	// to be returned, and not the manually inserted revoked one.
 	t.Run("RevokedSessionNotListed", func(t *testing.T) {
 		client := suite.NewClient(t)
 		user := client.WithCredentials("revoked@mail.com", ValidPassword).Register().Login()
 
 		// Manually insert a revoked session for this user
-		_, err := suite.DB.Exec(`
+		var userID string
+		err := suite.DB.QueryRow("SELECT id FROM users WHERE email = 'revoked@mail.com'").Scan(&userID)
+		if err != nil {
+			t.Fatalf("Failed to get user ID: %v", err)
+		}
+
+		var identityID string
+		err = suite.DB.QueryRow(`
+			INSERT INTO session_identities (type, entity_id)
+			VALUES ('client', $1)
+			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
+			RETURNING id
+		`, userID).Scan(&identityID)
+		if err != nil {
+			t.Fatalf("Failed to create session identity: %v", err)
+		}
+
+		_, err = suite.DB.Exec(`
 			INSERT INTO sessions (
-				user_id, issued_at, user_agent, user_ip, revoked_at, user_type, created_at, updated_at, expires_at
+				identity_id, issued_at, user_agent, user_ip, revoked_at, created_at, updated_at, expires_at, user_type
 			) VALUES (
-				(SELECT id FROM users WHERE email = 'revoked@mail.com'),
+				$1,
 				NOW() - INTERVAL '2 days',
 				'Expired Agent',
 				'127.0.0.1',
 				NOW() - INTERVAL '1 day',
-				'client',
 				NOW(),
 				NOW(),
-				NOW() + INTERVAL '1 day'
+				NOW() + INTERVAL '1 day',
+				'client'
 			)
-		`)
+		`, identityID)
 		if err != nil {
 			t.Fatalf("Failed to insert revoked session: %v", err)
 		}
@@ -187,76 +231,45 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			RequireDataArray().Length().IsEqual(1)
 	})
 
+	// SessionLeakage tests that session isolation is correctly enforced between different identity types (client vs. project user).
+	// This is a critical security test to prevent one user type from accessing or even seeing sessions belonging to another type,
+	// even if both identity types might logically be linked to the same underlying individual or email.
+	// The test creates a client user and a project user (both potentially using the same email).
+	// It then logs in as each user, creating separate sessions for each identity type.
+	// Finally, it attempts to list sessions while authenticated as the client user,
+	// expecting to see only the client user's session and ensuring that the project user's session is not exposed.
 	t.Run("SessionLeakage", func(t *testing.T) {
-		// This test simulates a UUID collision between a Client User and a Project User.
-		// While unlikely with UUIDv4, it checks if the session list is correctly filtered by user type.
+		// This test ensures that a user with a 'client' identity cannot see sessions
+		// from a 'project' identity, even if they are logically the same user.
 
-		// 1. Manually insert a Client User with a specific ID
-		collisionID := "00000000-0000-0000-0000-000000000001"
-		clientEmail := "collision_client@mail.com"
-		projectEmail := "collision_project@mail.com"
+		// 1. Create a client user
+		clientUser := suite.NewClient(t).WithCredentials("leakage-client@mail.com", ValidPassword)
+		clientUser.Register()
 
-		client := suite.NewClient(t)
+		// 2. Create a project and a project user with the same email
+		projectOwner := suite.NewClient(t).WithCredentials("leakage-project-owner@mail.com", ValidPassword)
+		project := projectOwner.Register().Login().CreateProject("Leakage Test Project")
 
-		// Create Client User
-		client.WithCredentials(clientEmail, ValidPassword).Register()
+		projectUser := suite.NewClient(t).WithCredentials("leakage-client@mail.com", ValidPassword)
+		projectUser.ProjectRegister(project.projectID)
 
-		// Create Project & Project User
-		userP := client.WithCredentials(projectEmail, ValidPassword).
-			Register().
-			Login().
-			CreateProject("Collision Project")
-		projectID := userP.projectID
+		// 3. Log in as both the client and project user to create two separate sessions
+		clientSession := clientUser.Login()
+		projectUser.ProjectLogin(project.projectID) // This creates a session for the project user
 
-		client.WithCredentials(projectEmail, ValidPassword).
-			ProjectRegister(projectID)
-
-		// 2. Force IDs to be the same in DB
-		// ...
-
-		// Update Client User ID
-		_, err := suite.DB.Exec(`UPDATE users SET id = $1 WHERE email = $2`, collisionID, clientEmail)
-		if err != nil {
-			t.Fatalf("Failed to force client user ID: %v", err)
-		}
-
-		// Update Project User ID
-		_, err = suite.DB.Exec(`UPDATE project_users SET id = $1 WHERE email = $2 AND project_id = $3`, collisionID, projectEmail, projectID)
-		if err != nil {
-			t.Fatalf("Failed to force project user ID: %v", err)
-		}
-
-		// 3. Create Sessions for both
-		// Login as Client (ID=collisionID, Type=client)
-		clientLogin := client.WithCredentials(clientEmail, ValidPassword).Login()
-
-		// Login as Project User (ID=collisionID, Type=project)
-		client.WithCredentials(projectEmail, ValidPassword).ProjectLogin(projectID)
-
-		// 4. List Sessions as Client
-		// Should ONLY see Client session
-		sessions := clientLogin.GET("/sessions").
+		// 4. As the client user, list the sessions
+		// We expect to only see the client user's session, not the project user's.
+		sessions := clientSession.GET("/sessions").
 			Expect(http.StatusOK).
 			RequireDataArray()
-		// Analyze results
-		// If leakage exists, we see 2 sessions.
-		// If isolated, we see 1.
 
-		count := int(sessions.Length().Raw())
-		if count > 1 {
+		// 5. Verify that only one session is returned
+		sessions.Length().IsEqual(1)
 
-			t.Logf("⚠️ SESSION LEAKAGE DETECTED: Found %d sessions for user ID %s (should be 1). Mixed user types?", count, collisionID)
-
-			// Optional: Inspect types
-			for i := 0; i < count; i++ {
-				obj := sessions.Value(i).Object()
-				uType := obj.Value("user_type").String().Raw()
-				t.Logf("Session %d: user_type=%s", i, uType)
-			}
-
-			t.Fail()
-		} else {
-			t.Log("Session isolation verified (no leakage by ID collision).")
+		// Optional: Verify the user_type of the returned session
+		sessionType := sessions.Value(0).Object().Value("user_type").String().Raw()
+		if sessionType != "client" {
+			t.Errorf("Expected user_type to be 'client', but got '%s'", sessionType)
 		}
 	})
 }

@@ -76,6 +76,12 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
+	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.registerInternal(ctx, in)
+	})
+}
+
+func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -86,6 +92,7 @@ func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) 
 	}()
 
 	users := uc.deps.Users
+	sessions := uc.deps.Sessions
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
@@ -111,6 +118,17 @@ func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) 
 		attribute.String("user.id", u.ID.String()),
 		attribute.Int64("user.created_at", u.CreatedAt.Unix()),
 		attribute.String("user.type", u.UserType),
+	)
+
+	var identity *session.Identity
+	identity, err = sessions.CreateIdentity(ctx, session.ClientIdentity, u.ID)
+	if err != nil {
+		return err
+	}
+
+	span.SetAttributes(
+		attribute.String("user.identity.id", identity.ID.String()),
+		attribute.String("user.identity.type", string(identity.IdentityType)),
 	)
 
 	return nil
@@ -155,13 +173,19 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
+	var identity *session.Identity
+	identity, err = sessions.GetIdentityByEntityIDAndType(ctx, u.ID, session.ClientIdentity)
+	if err != nil {
+		return nil, err
+	}
+
 	var sess *session.Session
 	sess, err = sessions.Create(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIP:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		UserID:    u.ID,
+		IdentityID: identity.ID,
+		IssuedAt:   time.Now(),
+		UserAgent:  in.Agent,
+		UserIP:     in.IP,
+		ExpiresAt:  refreshExpiresAt,
 	})
 
 	if err != nil {
@@ -196,6 +220,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
+		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
@@ -230,8 +255,15 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 		return apierr.FromService(span, err)
 	}
 
+	var identityType session.IdentityType
+	if principal.ProjectID == nil {
+		identityType = session.ClientIdentity
+	} else {
+		identityType = session.ProjectIdentity
+	}
+
 	var sess *session.Session
-	sess, err = sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID)
+	sess, err = sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID, identityType)
 	if err != nil {
 		return err
 	}
@@ -297,10 +329,32 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	sess, err := sessions.RotateToken(ctx, oldJTI, newRefreshJTI, refreshExp)
+	var sess *session.Session
+	sess, err = sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
+	if err != nil {
+		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+	}
+
+	now := time.Now()
+	if sess.ExpiresAt.Before(now) || sess.RevokedAt != nil {
+		// FIXME Record suspicious behaviour on audit when it is implemented
+		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+	}
+
+	// should revoke the session because of replay attacks
+	// FIXME Add suspicious behaviour to audit when it is implemented
+	if sess.TokenID != oldJTI {
+		err = sessions.MarkRevokedByFamilyID(ctx, sess.FamilyID)
+		if err != nil {
+			apierr.RecordDomainError(span, err)
+		}
+		return nil, apierr.FromService(span, inbounds.ErrTokenReuseNotAllowed{TokenType: "refresh"})
+	}
+
+	sess, err = sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
-		return nil, apierr.FromService(span, inbounds.ErrTokenInvalid{TokenType: "refresh"})
+		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
 	} else if err != nil {
 		return nil, err
 	}
@@ -308,7 +362,6 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	span.SetAttributes(
 		attribute.String("session.id", sess.SessionID.String()),
 		attribute.String("session.token_id", sess.TokenID.String()),
-		attribute.String("session.user_id", sess.UserID.String()),
 		attribute.String("session.user_type", sess.UserType),
 	)
 
@@ -337,9 +390,16 @@ func (uc *UseCase) finishClientRefresh(
 	}()
 
 	users := uc.deps.Users
+	sessions := uc.deps.Sessions
+
+	var identity *session.Identity
+	identity, err = sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, session.ClientIdentity)
+	if err != nil {
+		return nil, err
+	}
 
 	var u *user.User
-	u, err = users.GetUserByID(ctx, sess.UserID)
+	u, err = users.GetUserByID(ctx, identity.EntityID)
 	if err != nil {
 		return nil, err
 	}
@@ -374,6 +434,7 @@ func (uc *UseCase) finishClientRefresh(
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
 		ExpiresAt:  refreshExpiresAt,
+		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
@@ -406,8 +467,15 @@ func (uc *UseCase) finishProjectUserRefresh(
 
 	projectUsers := uc.deps.ProjectUsers
 	projects := uc.deps.Projects
+	sessions := uc.deps.Sessions
 
-	projectUser, err := projectUsers.GetByIDInternal(ctx, sess.UserID, *sess.ProjectID)
+	var identity *session.Identity
+	identity, err = sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, session.ProjectIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	projectUser, err := projectUsers.GetByIDInternal(ctx, identity.EntityID, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -455,6 +523,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
 		ExpiresAt:  refreshExpiresAt,
+		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
@@ -477,6 +546,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	defer span.End()
 
 	projectUsers := uc.deps.ProjectUsers
+	sessions := uc.deps.Sessions
 
 	if in.FlowID == "" {
 		return apierr.FromService(span, inbounds.ErrEmptyFlowID{})
@@ -546,6 +616,17 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		attribute.String("user.type", usr.UserType),
 	)
 
+	var identity *session.Identity
+	identity, err = sessions.CreateIdentity(ctx, session.ProjectIdentity, usr.ID)
+	if err != nil {
+		return err
+	}
+
+	span.SetAttributes(
+		attribute.String("user.identity.id", identity.ID.String()),
+		attribute.String("user.identity.type", string(identity.IdentityType)),
+	)
+
 	return nil
 }
 
@@ -581,14 +662,20 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
 	}
 
+	var identity *session.Identity
+	identity, err = sessions.GetIdentityByEntityIDAndType(ctx, usr.ID, session.ProjectIdentity)
+	if err != nil {
+		return nil, err
+	}
+
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 	sess, err := sessions.Create(ctx, session.Session{
-		IssuedAt:  time.Now(),
-		UserAgent: in.Agent,
-		UserIP:    in.IP,
-		ExpiresAt: refreshExpiresAt,
-		UserID:    usr.ID,
-		ProjectID: &in.ProjectID,
+		IssuedAt:   time.Now(),
+		UserAgent:  in.Agent,
+		UserIP:     in.IP,
+		ExpiresAt:  refreshExpiresAt,
+		IdentityID: identity.ID,
+		ProjectID:  &in.ProjectID,
 	})
 	if err != nil {
 		return nil, err
@@ -635,6 +722,7 @@ func (uc *UseCase) LoginProjectUser(
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
+		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)

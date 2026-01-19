@@ -1,5 +1,5 @@
 -- name: CreateUserSession :one
-INSERT INTO sessions (user_id, issued_at, user_agent, user_ip, expires_at, project_id, user_type, created_at, updated_at)
+INSERT INTO sessions (identity_id, issued_at, user_agent, user_ip, expires_at, project_id, user_type, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6,
         CASE
             WHEN $6::UUID IS NULL THEN 'client'
@@ -15,6 +15,11 @@ WHERE session_id = $1
   AND revoked_at IS NULL
   AND expires_at > NOW();
 
+-- name: GetSessionByFamilyID :one
+SELECT *
+FROM sessions
+WHERE family_id = $1;
+
 -- name: GetUserSessionByTokenID :one
 SELECT *
 FROM sessions
@@ -22,27 +27,31 @@ WHERE token_id = $1
   AND revoked_at IS NULL
   AND expires_at > NOW();
 
--- name: ListUserSessions :many
--- FIXME: This query should also filter by user_type to prevent theoretical session leakage 
--- if a client user and a project user share the same UUID (which is technically possible as they are in different tables).
-SELECT *
-FROM sessions
-WHERE user_id = $1
-  AND revoked_at IS NULL
-  AND expires_at > NOW()
-ORDER BY created_at DESC;
+-- name: ListSessions :many
+SELECT s.*
+FROM sessions s
+JOIN session_identities i ON i.id = s.identity_id
+WHERE i.type = $1
+    AND i.entity_id = $2
+    AND s.revoked_at IS NULL
+    AND s.expires_at > NOW()
+ORDER BY s.created_at DESC;
 
--- name: UpdateUserSession :exec
-UPDATE sessions
+-- name: UpdateSession :exec
+UPDATE sessions s
 SET
-    issued_at  = $2,
-    user_agent = $3,
-    user_ip    = $4,
-    expires_at = $5,
-    token_id   = $6,
+    issued_at  = $4,
+    user_agent = $5,
+    user_ip    = $6,
+    expires_at = $7,
+    token_id   = $8,
     updated_at = NOW()
-WHERE session_id = $1
-  AND revoked_at IS NULL;
+    FROM session_identities i
+WHERE s.session_id = $1
+  AND s.identity_id = i.id
+  AND i.type = $2
+  AND i.entity_id = $3
+  AND s.revoked_at IS NULL;
 
 -- name: DeleteRevokedSessions :many
 DELETE FROM sessions
@@ -52,11 +61,12 @@ WHERE revoked_at IS NOT NULL
 -- name: RotateSessionToken :one
 UPDATE sessions
 SET
-    token_id   = sqlc.arg(new_token_id)::UUID,
     expires_at = $1,
+    token_id   = sqlc.arg(new_token_id)::UUID,
     issued_at  = NOW(),
     updated_at = NOW()
-WHERE token_id = sqlc.arg(old_token_id)::UUID
+WHERE family_id = $2
+  AND token_id = sqlc.arg(old_token_id)::UUID
   AND revoked_at IS NULL
   AND expires_at > NOW()
     RETURNING *;
@@ -66,33 +76,50 @@ WHERE token_id = sqlc.arg(old_token_id)::UUID
 -- ============================
 
 -- name: RevokeSessionByID :one
-UPDATE sessions
+UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-WHERE session_id = $1
-  AND user_id = $2
-  AND revoked_at IS NULL
-    RETURNING *;
+    FROM session_identities i
+WHERE s.session_id = $1
+  AND s.identity_id = i.id
+  AND i.type = $2
+  AND i.entity_id = $3
+  AND s.revoked_at IS NULL
+    RETURNING s.*;
+
+-- name: RevokeSessionByFamilyID :exec
+UPDATE sessions s
+SET
+    revoked_at = NOW(),
+    updated_at = NOW()
+WHERE family_id = $1
+AND s.revoked_at IS NULL;
 
 -- name: RevokeOtherSessions :many
-UPDATE sessions
+UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-WHERE user_id = $1
-  AND session_id != $2
-  AND revoked_at IS NULL
-RETURNING *;
+FROM session_identities i
+WHERE s.identity_id = i.id
+AND i.type = $1
+AND i.entity_id = $2
+AND s.session_id != $3
+AND s.revoked_at IS NULL
+RETURNING s.*;
 
 -- name: RevokeAllSessions :many
-UPDATE sessions
+UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-WHERE user_id = $1
-  AND revoked_at IS NULL
-    RETURNING *;
+FROM session_identities i
+WHERE s.identity_id = i.id
+AND i.type = $1
+AND i.entity_id = $2
+AND s.revoked_at IS NULL
+RETURNING s.*;
 
 -- name: RevokeExpiredSessions :many
 UPDATE sessions
@@ -100,5 +127,20 @@ SET
     revoked_at = NOW(),
     updated_at = NOW()
 WHERE expires_at < NOW()
-  AND revoked_at IS NULL
-    RETURNING *;
+AND revoked_at IS NULL
+RETURNING *;
+
+-- name: CreateSessionIdentity :one
+INSERT INTO session_identities (type, entity_id, created_at)
+VALUES ($1, $2, NOW())
+RETURNING *;
+
+-- name: GetSessionIdentityByEntityIDAndType :one
+SELECT *
+FROM session_identities
+WHERE entity_id = $1 AND type = $2;
+
+-- name: GetSessionIdentityByIDAndType :one
+SELECT *
+FROM session_identities
+WHERE id = $1 AND type = $2;

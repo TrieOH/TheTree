@@ -44,9 +44,14 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 		return nil, apierr.FromService(span, err)
 	}
 
-	// FIXME: This is a security vulnerability. The user_type from the principal must be passed to the session repository
-	// to prevent session leakage between client and project users who might have the same UUID.
-	sessions, err := uc.sessions.List(ctx, principal.UserID)
+	var identityType session.IdentityType
+	if principal.ProjectID == nil {
+		identityType = session.ClientIdentity
+	} else {
+		identityType = session.ProjectIdentity
+	}
+
+	sessions, err := uc.sessions.List(ctx, principal.UserID, identityType)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +76,15 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 		return apierr.FromService(span, inbounds.ErrRevokeCurrentSession{})
 	}
 
-	sess, err := uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID)
+	var identityType session.IdentityType
+	if principal.ProjectID == nil {
+		identityType = session.ClientIdentity
+	} else {
+		identityType = session.ProjectIdentity
+	}
+
+	var sess *session.Session
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
 	if apierr.IsNotFound(err) {
 		return apierr.FromService(span, inbounds.ErrSessionNotFound{})
 	} else if err != nil {
@@ -99,9 +112,17 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 		return apierr.FromService(span, err)
 	}
 
+	var identityType session.IdentityType
+	if principal.ProjectID == nil {
+		identityType = session.ClientIdentity
+	} else {
+		identityType = session.ProjectIdentity
+	}
+
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
-		UserID:    principal.UserID,
-		ExcludeID: &principal.SessionID,
+		IdentityType: identityType,
+		EntityID:     principal.UserID,
+		ExcludeID:    &principal.SessionID,
 	})
 	if err != nil {
 		return err
@@ -121,8 +142,16 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 		return apierr.FromService(span, err)
 	}
 
+	var identityType session.IdentityType
+	if principal.ProjectID == nil {
+		identityType = session.ClientIdentity
+	} else {
+		identityType = session.ProjectIdentity
+	}
+
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
-		UserID: principal.UserID,
+		IdentityType: identityType,
+		EntityID:     principal.UserID,
 	})
 	if err != nil {
 		return err

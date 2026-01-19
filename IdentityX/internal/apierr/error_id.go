@@ -82,6 +82,7 @@ const (
 	TokenUnverifiable         ID = "TOKEN_029"
 	TokenMissingAccessClaims  ID = "TOKEN_030"
 	TokenMissingRefreshClaims ID = "TOKEN_031"
+	TokenReuseIdentified      ID = "TOKEN_032"
 )
 
 const (

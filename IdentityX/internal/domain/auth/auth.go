@@ -25,6 +25,7 @@ type AccessClaims struct {
 
 type RefreshSubJWT struct {
 	AccessJTI uuid.UUID `json:"access_jti"`
+	FamilyID  uuid.UUID `json:"family_id"`
 }
 
 type RefreshClaims struct {

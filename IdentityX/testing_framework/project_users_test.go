@@ -189,7 +189,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Try using revoked session
 			loggedInUser.POST("/auth/logout").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionUnauthorized).
+				HasErrID(apierr.SessionRevoked).
 				HasMessage("session not found or revoked")
 		})
 	})
@@ -316,12 +316,12 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Session should be invalid
 			revoked.GET("/sessions").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionUnauthorized).
+				HasErrID(apierr.SessionRevoked).
 				HasMessage("session not found or revoked")
 		})
 	})
 
-	t.Run("ProjectUserRefresh", func(t *testing.T) {
+	t.Run("ProjectUserRefreshReuse", func(t *testing.T) {
 		client := suite.NewClient(t)
 		refreshUser := client.WithCredentials("refresh@mail.com", ValidPassword).
 			ProjectRegister(user.projectID).
@@ -343,8 +343,8 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		oldClient.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionUnauthorized).
-			HasMessage("session not found or revoked")
+			HasErrID(apierr.TokenReuseIdentified).
+			HasMessage("refresh token reuse not allowed")
 	})
 
 	t.Run("ProjectUsersProjects", func(t *testing.T) {
