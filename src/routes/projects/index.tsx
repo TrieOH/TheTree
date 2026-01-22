@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+// import { env } from '@/env'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/projects/')({
@@ -6,6 +7,7 @@ export const Route = createFileRoute('/projects/')({
 })
 
 function RouteComponent() {
+  // console.log(env.VITE_API_URL)
   return (
     <main className="w-full bg-background">
       <div>
