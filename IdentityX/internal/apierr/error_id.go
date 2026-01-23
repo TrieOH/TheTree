@@ -35,6 +35,7 @@ const (
 	AuthInvalidPrincipal     ID = "AUTH_022"
 	AuthNotProjectUser       ID = "AUTH_023"
 	AuthNotVerified          ID = "AUTH_024"
+	AuthAlreadyVerified      ID = "AUTH_025"
 )
 
 const (

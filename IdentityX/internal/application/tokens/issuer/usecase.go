@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -107,6 +108,7 @@ func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) (
 			Subject: in.Subject,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
 			Issuer:    viper.GetString("ISSUER"),
 			IssuedAt:  jwt.NewNumericDate(now),

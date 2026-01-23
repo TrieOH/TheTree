@@ -304,3 +304,14 @@ func (handler *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK("user verified, please refresh").Send(w)
 }
+
+func (handler *AuthHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	err := handler.auth.ResendVerificationEmail(ctx)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("verification email resent successfully").Send(w)
+}
