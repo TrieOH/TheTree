@@ -935,7 +935,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		Locale: "en",
 	})
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	err = uc.mailSender.Send(ctx, verificationEmail)
