@@ -3,6 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/projects/')({
+  staticData: {
+    components: {
+      header: {
+        isAuthenticated: false,
+      }
+    }
+  },
   component: RouteComponent,
 })
 
