@@ -848,6 +848,9 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 
 	var claims *auth.VerificationClaims
 	claims, err = uc.tokenVerifier.VerifyVerificationToken(token)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
 
 	if claims.Sub.Subject != principal.UserID {
 		return apierr.FromService(span, inbounds.ErrTokenUserMismatch{TokenType: "verification"})

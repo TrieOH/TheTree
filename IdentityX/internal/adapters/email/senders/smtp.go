@@ -61,6 +61,7 @@ func (s *SMTPSender) Send(ctx context.Context, email outbounds.Email) error {
 }
 
 func (s *SMTPSender) worker() {
+	// FIXME Worker goroutine has no graceful shutdown mechanism. If the application stops, queued emails will be lost.
 	for email := range s.queue {
 		ctx, span := s.tracer.Start(context.Background(), "email.smtp.send")
 

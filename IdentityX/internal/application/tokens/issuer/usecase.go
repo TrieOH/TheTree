@@ -115,9 +115,9 @@ func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) (
 		},
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	accessToken.Header["kid"] = "email-verification"
-	tokenStr, err := accessToken.SignedString(in.PrivateKey)
+	verification := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	verification.Header["kid"] = "email-verification"
+	tokenStr, err := verification.SignedString(in.PrivateKey)
 	if err != nil {
 		return "", auth.ErrSigningToken{TokenType: "verification", Cause: err}
 	}

@@ -166,7 +166,7 @@ const (
 	DBBeginTXFailed        ID = "DB_007"
 	DBNestedTXNotAllowed   ID = "DB_008"
 	DBCheckViolation       ID = "DB_009"
-	DBTransactionPanicked  ID = "DB_0010"
+	DBTransactionPanicked  ID = "DB_010"
 )
 
 const (
