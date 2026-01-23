@@ -130,6 +130,21 @@ code {
   --font-inter: 'Inter Variable', sans-serif;
 }
 
+@theme {
+
+  --animate-underline: underline-in 0.3s ease-out;
+  --breakpoint-xs: 30rem;
+
+  @keyframes underline-in {
+    0% {
+      width: 0px;
+    }
+    100$ {
+      width: 100%;
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -137,4 +152,21 @@ code {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer components {
+  .custom-underline::after {
+    content: '';
+    display: block;
+    width: 0;
+    height: 1px;
+    background: var(--primary);
+    transition: 300ms;
+    margin-left: -4px;
+  }
+
+  .custom-underline:hover::after {
+    width: calc(100% + 8px);
+  }
+
 }
