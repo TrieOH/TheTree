@@ -7,6 +7,16 @@ services:
     working_dir: /app
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST_TEST}:${POSTGRES_PORT}/${POSTGRES_TEST_DB}?sslmode=disable"
+
+      # SMTP (MailHog)
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: "noreply@goauth.local"
+      SMTP_TLS: "false"
+      SMTP_STARTTLS: "false"
+
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_MASTER_KEY: ${JWT_MASTER_KEY}
@@ -15,8 +25,14 @@ services:
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
       ISSUER: ${ISSUER:-GoAuth}
       ENV: ${ENV:-development}
+      API_URL: ${API_URL:-http://localhost:8080}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      
     depends_on:
-      - go-auth-test-database
+      mailhog:
+        condition: service_healthy
+      go-auth-test-database:
+        condition: service_started
     networks:
       - testnet
     command: ["go", "test", "-v", "./testing_framework/..."]
@@ -39,6 +55,21 @@ services:
       - "5433:5432"
     networks:
       - testnet
+
+  mailhog:
+    image: mailhog/mailhog
+    command: > 
+      sh -c "MailHog >/dev/null 2>&1"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - testnet
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8025" ]
+      interval: 2s
+      timeout: 1s
+      retries: 10
 
 networks:
   testnet:

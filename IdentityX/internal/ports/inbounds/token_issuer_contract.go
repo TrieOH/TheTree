@@ -32,3 +32,9 @@ type NewProjectAccessTokenInput struct {
 	ExpiresAt                   time.Time
 	PrivateKey                  ed25519.PrivateKey
 }
+
+type NewVerificationTokenInput struct {
+	Subject    uuid.UUID
+	ExpiresAt  time.Time
+	PrivateKey ed25519.PrivateKey
+}

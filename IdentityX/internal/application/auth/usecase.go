@@ -76,14 +76,36 @@ func New(
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
 func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) error {
-	return uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		return uc.registerInternal(ctx, in)
-	})
-}
-
-func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) error {
 	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Register")
+	defer span.End()
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("register.success", err == nil))
+		}
+	}()
+
+	var verificationEmail outbounds.Email
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		verificationEmail, err = uc.registerInternal(ctx, in)
+		return err
+	})
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	err = uc.mailSender.Send(ctx, verificationEmail)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	return nil
+}
+
+func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUserInput) (outbounds.Email, error) {
+	var err error
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.registerInternal")
 	defer span.End()
 	defer func() {
 		if span != nil {
@@ -97,21 +119,21 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
-		return apierr.FromService(span, apierr.ErrPasswordTooLong{})
+		return outbounds.Email{}, apierr.ErrPasswordTooLong{}
 	}
 
 	var hashedPassword []byte
 	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
+		return outbounds.Email{}, inbounds.ErrHashingPassword{Cause: err}
 	}
 
 	var u *user.User
 	u, err = users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
-		return apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
+		return outbounds.Email{}, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")}
 	} else if err != nil {
-		return err
+		return outbounds.Email{}, err
 	}
 
 	span.SetAttributes(
@@ -123,7 +145,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	var identity *session.Identity
 	identity, err = sessions.CreateIdentity(ctx, session.ClientIdentity, u.ID)
 	if err != nil {
-		return err
+		return outbounds.Email{}, err
 	}
 
 	span.SetAttributes(
@@ -131,7 +153,28 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 		attribute.String("user.identity.type", string(identity.IdentityType)),
 	)
 
-	return nil
+	var verificationToken string
+	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		Subject:    u.ID,
+		ExpiresAt:  time.Now().Add(15 * time.Minute),
+		PrivateKey: utils.GoAuthPrivateKey,
+	})
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	var verificationEmail outbounds.Email
+	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+		UserID: u.ID,
+		Email:  u.Email,
+		Token:  verificationToken,
+		Locale: "en",
+	})
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	return verificationEmail, nil
 }
 
 // Login handles the business logic for logging in a user.
@@ -540,7 +583,35 @@ func (uc *UseCase) finishProjectUserRefresh(
 // RegisterProjectUser handles the business logic for creating a new project user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectRegisterInput) error {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser",
+	var err error
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.RegisterProjectUser")
+	defer span.End()
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("register.success", err == nil))
+		}
+	}()
+
+	var verificationEmail outbounds.Email
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		verificationEmail, err = uc.registerProjectUserInternal(ctx, in)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	err = uc.mailSender.Send(ctx, verificationEmail)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	return nil
+}
+
+func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.ProjectRegisterInput) (outbounds.Email, error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.registerProjectUserInternal",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID.String())),
 	)
 	defer span.End()
@@ -549,11 +620,11 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	sessions := uc.deps.Sessions
 
 	if in.FlowID == "" {
-		return apierr.FromService(span, inbounds.ErrEmptyFlowID{})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptyFlowID{})
 	}
 
 	if in.SchemaType == "" {
-		return apierr.FromService(span, inbounds.ErrEmptySchemaType{})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptySchemaType{})
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
@@ -561,16 +632,16 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	if !schema.IsValidSchemaType(in.SchemaType) {
-		return apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
 	}
 
 	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
-		return apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
 	}
 
 	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
-		return apierr.FromService(span, inbounds.ErrCustomFieldsNotAllowed{})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrCustomFieldsNotAllowed{})
 	}
 
 	empty := json.RawMessage(`{}`)
@@ -581,7 +652,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	if !isCoreWithReservedFlow {
 		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
-			return err
+			return outbounds.Email{}, err
 		}
 		if validatedMetadata != nil {
 			customFields = validatedMetadata
@@ -589,12 +660,12 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	}
 
 	if len(in.Password) > 72 {
-		return apierr.FromService(span, apierr.ErrPasswordTooLong{})
+		return outbounds.Email{}, apierr.FromService(span, apierr.ErrPasswordTooLong{})
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
 	}
 
 	var usr *project_users.ProjectUser
@@ -605,9 +676,9 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
-		return apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
+		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
 	} else if err != nil {
-		return err
+		return outbounds.Email{}, err
 	}
 
 	span.SetAttributes(
@@ -619,7 +690,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 	var identity *session.Identity
 	identity, err = sessions.CreateIdentity(ctx, session.ProjectIdentity, usr.ID)
 	if err != nil {
-		return err
+		return outbounds.Email{}, err
 	}
 
 	span.SetAttributes(
@@ -627,7 +698,28 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 		attribute.String("user.identity.type", string(identity.IdentityType)),
 	)
 
-	return nil
+	var verificationToken string
+	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		Subject:    usr.ID,
+		ExpiresAt:  time.Now().Add(15 * time.Minute),
+		PrivateKey: utils.GoAuthPrivateKey,
+	})
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	var verificationEmail outbounds.Email
+	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+		UserID: usr.ID,
+		Email:  usr.Email,
+		Token:  verificationToken,
+		Locale: "en",
+	})
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	return verificationEmail, nil
 }
 
 // LoginProjectUser handles the business logic for logging in a project user.
@@ -734,4 +826,53 @@ func (uc *UseCase) LoginProjectUser(
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
+}
+
+func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Verify")
+	defer span.End()
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("verify.success", err == nil))
+		}
+	}()
+
+	users := uc.deps.Users
+	projectUsers := uc.deps.ProjectUsers
+
+	var principal *authz.Principal
+	principal, err = RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var claims *auth.VerificationClaims
+	claims, err = uc.tokenVerifier.VerifyVerificationToken(token)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	if claims.Sub.Subject != principal.UserID {
+		return apierr.FromService(span, inbounds.ErrTokenUserMismatch{TokenType: "verification"})
+	}
+
+	var wasAlreadyVerified bool
+	if principal.ProjectID == nil {
+		span.SetAttributes(attribute.String("user.type", "client"))
+		wasAlreadyVerified, err = users.Verify(ctx, claims.Sub.Subject)
+		if err != nil {
+			return err
+		}
+	} else {
+		span.SetAttributes(attribute.String("user.type", "project"))
+		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
+		wasAlreadyVerified, err = projectUsers.Verify(ctx, claims.Sub.Subject)
+		if err != nil {
+			return err
+		}
+	}
+
+	span.SetAttributes(attribute.Bool("user.was_already_verified", wasAlreadyVerified))
+
+	return nil
 }

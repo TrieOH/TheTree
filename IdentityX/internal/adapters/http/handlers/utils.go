@@ -44,6 +44,14 @@ func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 	return number, nil
 }
 
+func getString(r *http.Request, fieldName string) (string, *resp.Response) {
+	fieldStr := r.URL.Query().Get(fieldName)
+	if fieldStr == "" {
+		return "", resp.FromError(apierr.ErrMissingParam{Param: fieldName})
+	}
+	return fieldStr, nil
+}
+
 func SetTrustProxyHeaders() {
 	HTTPProxyConfig.TrustProxyHeaders = viper.GetBool("TRUST_PROXY_HEADERS")
 }

@@ -70,10 +70,7 @@ func (r *TxRunner) WithinTxWithOptions(
 				}
 			}
 			logs.L().Error("transaction function panicked", zap.Any("panic", p))
-			// FIXME make me a generic error
-			err = apierr.ErrInternal.
-				WithMsg("transaction function panicked").
-				WithID(apierr.SystemInternalError)
+			err = inbounds.ErrTXPanicked{Panic: p}
 		}
 	}()
 

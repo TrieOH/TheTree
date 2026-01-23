@@ -135,3 +135,11 @@ type ErrTokenReuseNotAllowed struct {
 func (e ErrTokenReuseNotAllowed) Error() string {
 	return e.TokenType + " token reuse not allowed"
 }
+
+type ErrTokenUserMismatch struct {
+	TokenType string
+}
+
+func (e ErrTokenUserMismatch) Error() string {
+	return e.TokenType + " token user mismatch"
+}
