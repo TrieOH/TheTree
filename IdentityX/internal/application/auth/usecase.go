@@ -878,11 +878,11 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 }
 
 func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
-	ctx, span := usecaseTracer.Start(ctx, "AuthService.Verify")
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.ResendVerificationEmail")
 	defer span.End()
 	defer func() {
 		if span != nil {
-			span.SetAttributes(attribute.Bool("verify.success", err == nil))
+			span.SetAttributes(attribute.Bool("resend_verification.success", err == nil))
 		}
 	}()
 
