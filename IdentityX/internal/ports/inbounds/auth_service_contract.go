@@ -143,3 +143,9 @@ type ErrTokenUserMismatch struct {
 func (e ErrTokenUserMismatch) Error() string {
 	return e.TokenType + " token user mismatch"
 }
+
+type ErrUserAlreadyVerified struct{}
+
+func (e ErrUserAlreadyVerified) Error() string {
+	return "user already verified"
+}

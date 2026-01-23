@@ -876,3 +876,72 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 
 	return nil
 }
+
+func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.Verify")
+	defer span.End()
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("verify.success", err == nil))
+		}
+	}()
+
+	users := uc.deps.Users
+	projectUsers := uc.deps.ProjectUsers
+
+	var principal *authz.Principal
+	principal, err = RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	if principal.IsVerified == true {
+		return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+	}
+
+	if principal.ProjectID != nil {
+		u, err := projectUsers.GetByIDInternal(ctx, principal.UserID, *principal.ProjectID)
+		if err != nil {
+			return err
+		}
+		if u.IsVerified == true {
+			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+		}
+	} else {
+		u, err := users.GetUserByID(ctx, principal.UserID)
+		if err != nil {
+			return err
+		}
+		if u.IsVerified == true {
+			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+		}
+	}
+
+	var verificationToken string
+	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		Subject:    principal.UserID,
+		ExpiresAt:  time.Now().Add(15 * time.Minute),
+		PrivateKey: utils.GoAuthPrivateKey,
+	})
+	if err != nil {
+		return err
+	}
+
+	var verificationEmail outbounds.Email
+	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+		UserID: principal.UserID,
+		Email:  principal.Email,
+		Token:  verificationToken,
+		Locale: "en",
+	})
+	if err != nil {
+		return err
+	}
+
+	err = uc.mailSender.Send(ctx, verificationEmail)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	return nil
+}

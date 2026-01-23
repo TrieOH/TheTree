@@ -312,6 +312,11 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenUserMismatch)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrUserAlreadyVerified:
+		// Used to block resending verification email only
+		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(AuthAlreadyVerified)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""
