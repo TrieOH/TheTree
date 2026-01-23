@@ -16,7 +16,6 @@ interface InterceptorConfig {
 
 export class AuthInterceptor {
   private baseURL: string;
-  private apiKey: string;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
@@ -24,23 +23,14 @@ export class AuthInterceptor {
 
   constructor(config?: InterceptorConfig) {
     this.baseURL = config?.baseURL || env.BASE_URL;
-    this.apiKey = config?.apiKey || env.API_KEY;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
-
-    if (!this.apiKey) {
-      console.warn("[TRIEOH SDK] API_KEY not found");
-      throw new Error("[TRIEOH SDK] API_KEY not found");
-    }
   }
 
   private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
     const response = await fetch(`${this.baseURL}/sessions/me`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
     });
 
@@ -65,10 +55,7 @@ export class AuthInterceptor {
       try {
         const response = await fetch(`${this.baseURL}/auth/refresh`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.apiKey}`,
-          },
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
 
@@ -83,7 +70,7 @@ export class AuthInterceptor {
         this.onTokenRefreshed?.(claims);
         console.log("[TRIEOH SDK] Token refreshed successfully");
       } catch (error) {
-        console.error("[TRIEOH SDK] Failed to refresh token:", error);
+        console.warn("[TRIEOH SDK] Failed to refresh token:", error);
         clearAuthTokens();
         this.onRefreshFailed?.(error as Error);
         throw error;
@@ -107,7 +94,7 @@ export class AuthInterceptor {
       try {
         await this.refreshToken();
       } catch (error) {
-        console.error("[TRIEOH SDK] Refresh interceptor failed:", error);
+        console.warn("[TRIEOH SDK] Refresh interceptor failed:", error);
       }
     }
   }
