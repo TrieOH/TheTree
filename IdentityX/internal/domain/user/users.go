@@ -11,6 +11,8 @@ type User struct {
 	Email        string
 	PasswordHash string `json:"-"`
 	UserType     string
+	IsVerified   bool
+	VerifiedAt   *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

@@ -49,6 +49,8 @@ func mapProjectUserFromDB(dst *project_users.ProjectUser, src *sqlc.ProjectUser)
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 	dst.LastLoginAt = src.LastLoginAt
+	dst.IsVerified = src.IsVerified
+	dst.VerifiedAt = src.VerifiedAt
 }
 
 func (repo *projectUserRepo) Register(ctx context.Context, toRegister project_users.ProjectUser) (*project_users.ProjectUser, error) {
@@ -321,4 +323,24 @@ func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectI
 	span.SetAttributes(attribute.Bool("project_user.deleted", true))
 
 	return nil
+}
+
+func (repo *projectUserRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Verify",
+		trace.WithAttributes(
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	wasVerified, err := repo.queries(ctx).VerifyProjectUser(ctx, userID)
+	if err != nil {
+		sqlErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlErr)
+		return false, sqlErr
+	}
+
+	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
+
+	return !wasVerified, nil
 }

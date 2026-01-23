@@ -13,7 +13,9 @@
 `openssl pkey -in ed25519-private.pem -pubout -out ed25519-public.pem`
 
 ## How to run tests
-1. `docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from go-auth-test`
-2. `docker compose -f docker-compose.test.yml down -v`
+1. `docker compose -f docker-compose.test.yml down -v && docker compose -f docker-compose.test.yml up --build --attach go-auth-test`
+
+## How to run CI
+1. `docker compose -f docker-compose.test.yml down -v && docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from go-auth-test --attach go-auth-test`
 
 Always run`down -v` when running tests

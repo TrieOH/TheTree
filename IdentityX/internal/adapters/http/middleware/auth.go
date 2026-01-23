@@ -94,3 +94,26 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func IsVerified() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			var err error
+			var principal *authz.Principal
+			principal, err = appauth.RequirePrincipalAndAnnotate(ctx, nil)
+			if err != nil {
+				resp.FromError(err).WithModule("IsVerified").Send(w)
+				return
+			}
+
+			if !principal.IsVerified {
+				err = apierr.ErrUnauthorized.WithMsg("user must be verified to use this endpoint").WithID(apierr.AuthNotVerified)
+				resp.FromError(err).WithModule("IsVerified").Send(w)
+				apierr.RecordDomainError(nil, err)
+				return
+			}
+		})
+	}
+}

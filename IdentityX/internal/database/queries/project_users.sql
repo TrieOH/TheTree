@@ -60,3 +60,19 @@ WHERE pu.id = $1
   AND pu.project_id = $2
   AND p.id = pu.project_id
   AND p.owner_id = $3;
+
+-- name: VerifyProjectUser :one
+WITH updated AS (
+UPDATE project_users AS u
+SET
+    is_verified = TRUE,
+    verified_at = NOW()
+WHERE u.id = sqlc.arg(user_id)
+  AND u.is_verified = FALSE
+    RETURNING TRUE
+)
+SELECT
+    COALESCE(
+            (SELECT TRUE FROM updated),
+            FALSE
+    )::boolean;

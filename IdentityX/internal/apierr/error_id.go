@@ -34,6 +34,7 @@ const (
 	AuthNotClient            ID = "AUTH_021"
 	AuthInvalidPrincipal     ID = "AUTH_022"
 	AuthNotProjectUser       ID = "AUTH_023"
+	AuthNotVerified          ID = "AUTH_024"
 )
 
 const (
@@ -83,6 +84,7 @@ const (
 	TokenMissingAccessClaims  ID = "TOKEN_030"
 	TokenMissingRefreshClaims ID = "TOKEN_031"
 	TokenReuseIdentified      ID = "TOKEN_032"
+	TokenUserMismatch         ID = "TOKEN_033"
 )
 
 const (
@@ -103,6 +105,7 @@ const (
 	ProjectUserRegisterOnSchemaDraft           ID = "PROJ_USR_003"
 	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
 	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
+	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
 )
 
 const (
@@ -163,6 +166,7 @@ const (
 	DBBeginTXFailed        ID = "DB_007"
 	DBNestedTXNotAllowed   ID = "DB_008"
 	DBCheckViolation       ID = "DB_009"
+	DBTransactionPanicked  ID = "DB_0010"
 )
 
 const (
@@ -173,4 +177,6 @@ const (
 	SystemTransactionWithNoContext ID = "SYS_005"
 	SystemErrorGeneratingUUID      ID = "SYS_006"
 	SystemErrorBCryptHashingFailed ID = "SYS_007"
+	SystemServiceUnavailable       ID = "SYS_008"
+	SystemErrorRenderingEmail      ID = "SYS_009"
 )

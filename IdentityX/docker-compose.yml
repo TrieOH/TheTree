@@ -11,6 +11,15 @@ services:
       - go-auth-database
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_TLS: ${SMTP_TLS}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       JWT_MASTER_KEY: ${JWT_MASTER_KEY}
@@ -19,6 +28,8 @@ services:
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
       ISSUER: ${ISSUER:-GoAuth}
       ENV: ${ENV:-development}
+      API_URL: ${APU_URL:-localhost:8080}
+      APP_URL: ${APP_URL:-localhost:8080}
 
   go-auth-database:
     image: postgres:18
