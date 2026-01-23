@@ -257,7 +257,7 @@ func (s SameAs) Match(t *testing.T, val *httpexpect.Value) interface{} {
 	return actual
 }
 
-// ByKey - for arrays of objects, index by a key fiel
+// ByKey - for arrays of objects, index by a key field
 // silently overwrites on duplicate keys, if a fail on duplicates is needed please implement a new version
 type ByKey struct {
 	Key        string                 // the field to use as key (e.g. "key", "id")

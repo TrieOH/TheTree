@@ -61,6 +61,8 @@ type PrincipalOutput struct {
 	RefreshJTI    uuid.UUID
 	AccessClaims  *auth.AccessClaims
 	RefreshClaims *auth.RefreshClaims
+	IsVerified    bool
+	VerifiedAt    *time.Time
 }
 
 func PrincipalToPrincipalOutput(p authz.Principal) *PrincipalOutput {
@@ -77,6 +79,8 @@ func PrincipalToPrincipalOutput(p authz.Principal) *PrincipalOutput {
 		RefreshJTI:    p.RefreshJTI,
 		AccessClaims:  p.AccessClaims,
 		RefreshClaims: p.RefreshClaims,
+		IsVerified:    p.IsVerified,
+		VerifiedAt:    p.VerifiedAt,
 	}
 }
 

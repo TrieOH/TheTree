@@ -10,6 +10,7 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
+	"GoAuth/internal/ports/outbounds"
 	"GoAuth/internal/utils"
 
 	"go.opentelemetry.io/otel/trace"
@@ -20,7 +21,6 @@ import (
 // only apierr wraps errors. Do not use errors.As here.
 func FromService(span trace.Span, err error) *Error {
 	if err == nil {
-		logs.L().Warn("apierr.FromService called with a nil error")
 		return nil
 	}
 	switch e := err.(type) {
@@ -65,7 +65,7 @@ func FromService(span trace.Span, err error) *Error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case project_users.ErrEncodingProjectUserMetadata:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemInternalError).WithCause(e.Cause)
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectUserErrorEncodingMetadata).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case auth.ErrTokenMissingKID:
@@ -293,6 +293,23 @@ func FromService(span trace.Span, err error) *Error {
 		return httpErr
 	case inbounds.ErrTokenReuseNotAllowed:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenReuseIdentified)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case outbounds.ErrServiceUnavailable:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SystemServiceUnavailable)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case outbounds.ErrRenderingEmail:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorRenderingEmail)
+		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrTXPanicked:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(DBTransactionPanicked)
+		RecordSystemError(span, httpErr)
+		logs.L().Error("Transaction panicked", zap.Any("panic", e.Panic))
+		return httpErr
+	case inbounds.ErrTokenUserMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenUserMismatch)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:

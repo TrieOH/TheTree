@@ -26,3 +26,19 @@ RETURNING *;
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;
+
+-- name: VerifyUser :one
+WITH updated AS (
+UPDATE users AS u
+SET
+    is_verified = TRUE,
+    verified_at = NOW()
+WHERE u.id = sqlc.arg(user_id)
+  AND u.is_verified = FALSE
+    RETURNING TRUE
+)
+SELECT
+    COALESCE(
+            (SELECT TRUE FROM updated),
+            FALSE
+    )::boolean;

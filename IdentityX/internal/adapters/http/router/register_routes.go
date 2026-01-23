@@ -48,6 +48,9 @@ func registerAuthRoutes(
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth()).Post("/auth/logout", h.Logout)
+		r.With(authMW.Auth()).
+			With(middleware.RequireQueryParams("token")).
+			Post("/auth/verify", h.Verify)
 
 		r.Get("/.well-known/jwks.json", h.JWKS)
 
@@ -92,10 +95,7 @@ func registerProjectRoutes(
 	r.Group(func(r chi.Router) {
 		r.Get("/projects/{project_id}/.well-known/jwks.json", h.GetProjectJWKS)
 
-		r.Group(func(r chi.Router) {
-			r.Use(authMW.Auth())
-			r.Use(middleware.ClientOnly())
-
+		r.With(authMW.Auth(), middleware.ClientOnly()).Group(func(r chi.Router) {
 			r.Post("/projects", h.CreateProject)
 			r.Get("/projects", h.ListProjects)
 			r.Get("/projects/{project_id}", h.GetProjectByID)

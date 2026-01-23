@@ -42,4 +42,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Schema Register", func(t *testing.T) {
 		testSchemaRegister(t, suite)
 	})
+
+	t.Run("Verification", func(t *testing.T) {
+		testVerification(t, suite)
+	})
 }

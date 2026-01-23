@@ -287,3 +287,20 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 
 	resp.OK("Logged in").Send(w)
 }
+
+func (handler *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
+	token, rs := getString(r, "token")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	err := handler.auth.Verify(ctx, token)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("user verified, please refresh").Send(w)
+}

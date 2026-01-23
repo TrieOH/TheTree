@@ -110,3 +110,28 @@ func (uc *TokenVerifier) resolvePublicKey(ctx context.Context, kid, tokenType st
 		return nil, auth.ErrTokenUnknownKID{TokenType: tokenType}
 	}
 }
+
+func (uc *TokenVerifier) VerifyVerificationToken(
+	tokenStr string,
+) (*auth.VerificationClaims, error) {
+	claims := &auth.VerificationClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		kid, ok := token.Header["kid"].(string)
+		if !ok || kid == "" {
+			return nil, auth.ErrTokenMissingKID{TokenType: "verification"}
+		}
+
+		return utils.GoAuthPublicKey, nil
+	})
+
+	if err != nil {
+		return nil, apierr.FromJWTError(err, "verification")
+	}
+
+	if !token.Valid {
+		return nil, auth.ErrInvalidToken{TokenType: "verification"}
+	}
+
+	return claims, nil
+}

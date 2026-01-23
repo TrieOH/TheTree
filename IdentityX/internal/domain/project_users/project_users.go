@@ -18,4 +18,6 @@ type ProjectUser struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	LastLoginAt  *time.Time
+	IsVerified   bool
+	VerifiedAt   *time.Time
 }

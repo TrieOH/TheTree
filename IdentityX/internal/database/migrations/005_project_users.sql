@@ -14,6 +14,8 @@ CREATE TABLE project_users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_login_at TIMESTAMPTZ,
+    is_verified BOOL NOT NULL DEFAULT False,
+    verified_at TIMESTAMPTZ NULL,
     UNIQUE (project_id, email)
 );
 

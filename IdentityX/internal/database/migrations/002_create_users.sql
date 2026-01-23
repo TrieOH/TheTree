@@ -8,7 +8,9 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_verified BOOL NOT NULL DEFAULT False,
+    verified_at TIMESTAMPTZ NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_id

@@ -3,17 +3,20 @@ package authz
 import (
 	"GoAuth/internal/domain/auth"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type Principal struct {
 	// ===== Identity =====
-	UserID    uuid.UUID
-	Email     string
-	UserType  string
-	ProjectID *uuid.UUID
-	Metadata  *json.RawMessage
+	UserID     uuid.UUID
+	Email      string
+	UserType   string
+	ProjectID  *uuid.UUID
+	Metadata   *json.RawMessage
+	IsVerified bool
+	VerifiedAt *time.Time
 
 	// ===== Session =====
 	SessionID uuid.UUID
@@ -52,11 +55,13 @@ func NewPrincipal(
 	}
 
 	return &Principal{
-		UserID:    access.Sub.ID,
-		Email:     access.Sub.Email,
-		UserType:  access.Sub.UserType,
-		ProjectID: access.Sub.ProjectID,
-		Metadata:  access.Sub.Metadata,
+		UserID:     access.Sub.ID,
+		Email:      access.Sub.Email,
+		UserType:   access.Sub.UserType,
+		ProjectID:  access.Sub.ProjectID,
+		Metadata:   access.Sub.Metadata,
+		IsVerified: access.Sub.IsVerified,
+		VerifiedAt: access.Sub.VerifiedAt,
 
 		SessionID: access.Sub.SessionID,
 		UserAgent: access.Sub.UserAgent,

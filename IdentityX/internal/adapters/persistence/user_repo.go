@@ -45,6 +45,8 @@ func copyUserFromDB(dst *user.User, src *sqlc.User) {
 	dst.UserType = src.UserType
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+	dst.IsVerified = src.IsVerified
+	dst.VerifiedAt = src.VerifiedAt
 }
 
 func (repo *userRepo) Register(ctx context.Context, email, password string) (*user.User, error) {
@@ -123,4 +125,24 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.U
 	copyUserFromDB(&usr, &sqlcUser)
 
 	return &usr, nil
+}
+
+func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.Verify",
+		trace.WithAttributes(
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
+	if err != nil {
+		sqlErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlErr)
+		return false, sqlErr
+	}
+
+	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
+
+	return !wasVerified, nil
 }
