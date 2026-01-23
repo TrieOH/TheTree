@@ -924,7 +924,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		PrivateKey: utils.GoAuthPrivateKey,
 	})
 	if err != nil {
-		return err
+		return apierr.FromService(span, err)
 	}
 
 	var verificationEmail outbounds.Email
