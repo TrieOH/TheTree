@@ -47,10 +47,13 @@ func registerAuthRoutes(
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/refresh", h.Refresh)
-		r.With(authMW.Auth()).Post("/auth/logout", h.Logout)
+		r.With(authMW.Auth()).
+			Post("/auth/logout", h.Logout)
 		r.With(authMW.Auth()).
 			With(middleware.RequireQueryParams("token")).
 			Post("/auth/verify", h.Verify)
+		r.With(authMW.Auth()).
+			Post("/auth/verify/resend", h.ResendVerificationEmail)
 
 		r.Get("/.well-known/jwks.json", h.JWKS)
 

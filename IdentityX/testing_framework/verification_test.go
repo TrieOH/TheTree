@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -8,6 +9,8 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func testVerification(t *testing.T, suite *TestSuite) {
@@ -30,6 +33,30 @@ func testVerification(t *testing.T, suite *TestSuite) {
 		t.Fatalf("Failed parsing verification link: %v", err)
 	}
 
+	t.Run("ResendVerificationEmail", func(t *testing.T) {
+		user.WithT(t).POST("/auth/verify/resend").
+			Expect(http.StatusOK).
+			HasMessage("verification email resent successfully")
+
+		time.Sleep(time.Millisecond * 100)
+
+		link2, err2 := GetLatestVerificationLink()
+		if err2 != nil {
+			t.Fatalf("Failed getting verification link: %v", err2.Error())
+		}
+
+		if link2 == "" {
+			t.Fatalf("Verification link is empty")
+		}
+
+		u2, err2 := url.Parse(link2)
+		if err2 != nil {
+			t.Fatalf("Failed parsing verification link: %v", err2)
+		}
+
+		assert.NotEqualf(t, u2.Query().Get("token"), u.Query().Get("token"), "tokens shouldn't be equal")
+	})
+
 	t.Run("VerifyUser", func(t *testing.T) {
 		user.WithT(t).POST(u.Path).
 			WithQuery("token", u.Query().Get("token")).
@@ -42,6 +69,13 @@ func testVerification(t *testing.T, suite *TestSuite) {
 			WithQuery("token", u.Query().Get("token")).
 			Expect(http.StatusOK).
 			HasMessage("user verified, please refresh")
+	})
+
+	t.Run("ResendVerificationEmailNotAllowed", func(t *testing.T) {
+		user.WithT(t).POST("/auth/verify/resend").
+			Expect(http.StatusForbidden).
+			HasErrID(apierr.AuthAlreadyVerified).
+			HasMessage("user already verified")
 	})
 
 	t.Run("SessionInfoBeforeRefreshed", func(t *testing.T) {
@@ -109,7 +143,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 	})
 
 	var projectUser *Client
-	projectUser = client.WithCredentials("verification@mail.com", ValidPassword).ProjectRegister(user.projectID).ProjectLogin(user.projectID)
+	projectUser = client.WithCredentials("verification-project@mail.com", ValidPassword).ProjectRegister(user.projectID).ProjectLogin(user.projectID)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -127,6 +161,30 @@ func testVerification(t *testing.T, suite *TestSuite) {
 		t.Fatalf("Failed parsing verification link: %v", err)
 	}
 
+	t.Run("ResendVerificationEmailProjectUser", func(t *testing.T) {
+		projectUser.WithT(t).POST("/auth/verify/resend").
+			Expect(http.StatusOK).
+			HasMessage("verification email resent successfully")
+
+		time.Sleep(time.Millisecond * 100)
+
+		link3, err2 := GetLatestVerificationLink()
+		if err2 != nil {
+			t.Fatalf("Failed getting verification link: %v", err2.Error())
+		}
+
+		if link3 == "" {
+			t.Fatalf("Verification link is empty")
+		}
+
+		u3, err2 := url.Parse(link3)
+		if err2 != nil {
+			t.Fatalf("Failed parsing verification link: %v", err2)
+		}
+
+		assert.NotEqualf(t, u3.Query().Get("token"), u2.Query().Get("token"), "tokens shouldn't be equal")
+	})
+
 	t.Run("VerifyProjectUser", func(t *testing.T) {
 		projectUser.WithT(t).POST(u2.Path).
 			WithQuery("token", u2.Query().Get("token")).
@@ -139,6 +197,13 @@ func testVerification(t *testing.T, suite *TestSuite) {
 			WithQuery("token", u2.Query().Get("token")).
 			Expect(http.StatusOK).
 			HasMessage("user verified, please refresh")
+	})
+
+	t.Run("ResendVerificationEmailNotAllowedProjectUser", func(t *testing.T) {
+		projectUser.WithT(t).POST("/auth/verify/resend").
+			Expect(http.StatusForbidden).
+			HasErrID(apierr.AuthAlreadyVerified).
+			HasMessage("user already verified")
 	})
 
 	t.Run("ProjUserSessionInfoBeforeRefreshed", func(t *testing.T) {
@@ -155,7 +220,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 				"jti": AnyUUID{},
 				"sub": map[string]interface{}{
 					"id":          AnyUUID{},
-					"email":       "verification@mail.com",
+					"email":       "verification-project@mail.com",
 					"project_id":  AsString{Value: user.projectID, Matcher: AnyUUID{}},
 					"user_type":   "project",
 					"metadata":    map[string]interface{}{},
@@ -172,7 +237,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("ProjUserSessionInfoRefreshed", func(t *testing.T) {
-		projectUser := suite.NewClient(t).WithCredentials("verification@mail.com", ValidPassword).ProjectLogin(user.projectID)
+		projectUser := suite.NewClient(t).WithCredentials("verification-project@mail.com", ValidPassword).ProjectLogin(user.projectID)
 
 		data := projectUser.GET("/sessions/me").
 			Expect(http.StatusOK).
@@ -187,7 +252,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 				"jti": AnyUUID{},
 				"sub": map[string]interface{}{
 					"id":          AnyUUID{},
-					"email":       "verification@mail.com",
+					"email":       "verification-project@mail.com",
 					"project_id":  AsString{Value: user.projectID, Matcher: AnyUUID{}},
 					"user_type":   "project",
 					"metadata":    map[string]interface{}{},
