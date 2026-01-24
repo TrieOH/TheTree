@@ -138,11 +138,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	payload := map[string]any{
-		"keys": []any{jwks},
-	}
-
-	data, err := json.Marshal(payload)
+	data, err := json.Marshal(jwks)
 	if err != nil {
 		logs.L().Error("Failed to encode response",
 			zap.Error(err),

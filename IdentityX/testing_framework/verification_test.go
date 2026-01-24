@@ -214,7 +214,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"refresh_expire_date": AnyNumber{},
 			"access": map[string]interface{}{
-				"iss": "GoAuth",
+				"iss": AsString{Value: user.projectID, Matcher: AnyUUID{}},
 				"exp": AnyNumber{},
 				"iat": AnyNumber{},
 				"jti": AnyUUID{},
@@ -246,7 +246,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"refresh_expire_date": AnyNumber{},
 			"access": map[string]interface{}{
-				"iss": "GoAuth",
+				"iss": AsString{Value: user.projectID, Matcher: AnyUUID{}},
 				"exp": AnyNumber{},
 				"iat": AnyNumber{},
 				"jti": AnyUUID{},

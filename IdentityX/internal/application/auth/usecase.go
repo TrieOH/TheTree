@@ -2,11 +2,13 @@ package auth
 
 import (
 	"GoAuth/internal/adapters/email"
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
@@ -15,19 +17,17 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"crypto/ed25519"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"strings"
 	"time"
 
-	"GoAuth/internal/utils"
-
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,6 +37,7 @@ var (
 
 type UseCase struct {
 	deps          Deps
+	keys          inbounds.KeysService
 	tokenIssuer   inbounds.TokenIssuer
 	tokenVerifier inbounds.TokenVerifier
 	mailRenderer  outbounds.EmailRenderer
@@ -52,6 +53,7 @@ type Deps struct {
 	Fields       outbounds.SchemaFieldsRepository
 	Projects     outbounds.ProjectRepository
 	ProjectUsers outbounds.ProjectUserRepository
+	Keys         outbounds.KeysRepository
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -59,11 +61,13 @@ var _ inbounds.AuthService = (*UseCase)(nil)
 func New(
 	repos Deps,
 	infra infrastructure.Infra,
+	keys inbounds.KeysService,
 	tokenBundle tokens.TokenBundle,
 	mailBundle email.MailBundle,
 ) inbounds.AuthService {
 	return &UseCase{
 		deps:          repos,
+		keys:          keys,
 		tokenIssuer:   tokenBundle.Issuer,
 		tokenVerifier: tokenBundle.Verifier,
 		mailRenderer:  mailBundle.Renderer,
@@ -115,6 +119,8 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 
 	users := uc.deps.Users
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
@@ -153,21 +159,35 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 		attribute.String("user.identity.type", string(identity.IdentityType)),
 	)
 
-	var verificationToken string
-	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
-		Subject:    u.ID,
-		ExpiresAt:  time.Now().Add(15 * time.Minute),
-		PrivateKey: utils.GoAuthPrivateKey,
+	var SigningKid string
+	SigningKid, err = keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	var verificationPayload []byte
+	verificationPayload, err = issuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		KID:       SigningKid,
+		Subject:   u.ID,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
 		return outbounds.Email{}, err
 	}
 
+	var verificationSig []byte
+	verificationSig, err = keys.SignGoAuth(ctx, verificationPayload)
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	verificationTokenStr := issuer.AssembleJWT(verificationPayload, verificationSig)
+
 	var verificationEmail outbounds.Email
 	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
 		UserID: u.ID,
 		Email:  u.Email,
-		Token:  verificationToken,
+		Token:  verificationTokenStr,
 		Locale: "en",
 	})
 	if err != nil {
@@ -180,10 +200,9 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
 // creates a new session and returns a new set of access and refresh tokens.
-func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbounds.UserTokensOutput, error) {
+func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (tokens *inbounds.UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
-	var err error
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 	defer func() {
@@ -194,6 +213,8 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 
 	users := uc.deps.Users
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	var u *user.User
 	u, err = users.GetUserByEmail(ctx, in.Email)
@@ -235,31 +256,44 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 		return nil, err
 	}
 
-	var accessToken string
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
 		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/login"})
 	}
+
+	var SigningKid string
+	SigningKid, err = keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, err = uc.tokenIssuer.NewAccessToken(inbounds.NewAccessTokenInput{
-		User:       *u,
-		PrivateKey: utils.GoAuthPrivateKey,
-		IP:         in.IP,
-		Agent:      in.Agent,
-		AccessJTI:  accessJTI.String(),
-		KeyID:      "goauth:v1",
-		SessionID:  sess.SessionID,
-		ExpiresAt:  accessExpiresAt,
+	var accessPayload []byte
+	accessPayload, err = issuer.NewAccessToken(inbounds.NewAccessTokenInput{
+		KID:       SigningKid,
+		User:      *u,
+		IP:        in.IP,
+		Agent:     in.Agent,
+		AccessJTI: accessJTI.String(),
+		SessionID: sess.SessionID,
+		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	var refreshToken string
-	refreshToken, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
-		KeyID:      "goauth:v1",
-		PrivateKey: utils.GoAuthPrivateKey,
+	var accessSig []byte
+	accessSig, err = keys.SignGoAuth(ctx, accessPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := issuer.AssembleJWT(accessPayload, accessSig)
+
+	var refreshPayload []byte
+	refreshPayload, err = issuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KID:        SigningKid,
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
@@ -269,9 +303,17 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (*inbo
 		return nil, apierr.FromService(span, err)
 	}
 
+	var refreshSig []byte
+	refreshSig, err = keys.SignGoAuth(ctx, refreshPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
+
 	return &inbounds.UserTokensOutput{
-		AccessTokenString:  accessToken,
-		RefreshTokenString: refreshToken,
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
@@ -421,11 +463,10 @@ func (uc *UseCase) finishClientRefresh(
 	in inbounds.RefreshInput,
 	refreshJTI uuid.UUID,
 	refreshExpiresAt time.Time,
-) (*inbounds.UserTokensOutput, error) {
+) (tokens *inbounds.UserTokensOutput, err error) {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.finishClientRefresh")
 	defer span.End()
 
-	var err error
 	defer func() {
 		if span != nil {
 			span.SetAttributes(attribute.Bool("finishClientRefresh.success", err == nil))
@@ -434,6 +475,8 @@ func (uc *UseCase) finishClientRefresh(
 
 	users := uc.deps.Users
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	var identity *session.Identity
 	identity, err = sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, session.ClientIdentity)
@@ -447,33 +490,46 @@ func (uc *UseCase) finishClientRefresh(
 		return nil, err
 	}
 
-	var uid uuid.UUID
-	uid, err = uuid.NewV7()
+	var newAccessJTI uuid.UUID
+	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
 		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishClientRefresh"})
 	}
 
-	newAccessJTI := uid
-	var accessTokenStr string
+	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, err = uc.tokenIssuer.NewAccessToken(inbounds.NewAccessTokenInput{
-		User:       *u,
-		PrivateKey: utils.GoAuthPrivateKey,
-		IP:         in.IP,
-		Agent:      in.Agent,
-		AccessJTI:  newAccessJTI.String(),
-		KeyID:      "goauth:v1",
-		SessionID:  sess.SessionID,
-		ExpiresAt:  accessExpiresAt,
+	var accessPayload []byte
+	accessPayload, err = issuer.NewAccessToken(inbounds.NewAccessTokenInput{
+		KID:       SigningKid,
+		User:      *u,
+		IP:        in.IP,
+		Agent:     in.Agent,
+		AccessJTI: newAccessJTI.String(),
+		SessionID: sess.SessionID,
+		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	var refreshTokenStr string
-	refreshTokenStr, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
-		KeyID:      "goauth:v1",
-		PrivateKey: utils.GoAuthPrivateKey,
+	var accessSig []byte
+	accessSig, err = keys.SignGoAuth(ctx, accessPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := issuer.AssembleJWT(
+		accessPayload,
+		accessSig,
+	)
+
+	var refreshPayload []byte
+	refreshPayload, err = issuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KID:        SigningKid,
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
 		ExpiresAt:  refreshExpiresAt,
@@ -482,6 +538,17 @@ func (uc *UseCase) finishClientRefresh(
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
+
+	var refreshSig []byte
+	refreshSig, err = keys.SignGoAuth(ctx, refreshPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenStr := issuer.AssembleJWT(
+		refreshPayload,
+		refreshSig,
+	)
 
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
@@ -509,8 +576,9 @@ func (uc *UseCase) finishProjectUserRefresh(
 	}()
 
 	projectUsers := uc.deps.ProjectUsers
-	projects := uc.deps.Projects
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	var identity *session.Identity
 	identity, err = sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, session.ProjectIdentity)
@@ -523,46 +591,43 @@ func (uc *UseCase) finishProjectUserRefresh(
 		return nil, err
 	}
 
-	var privKey string
-	privKey, err = projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	var decodedKey ed25519.PrivateKey
-	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var uid uuid.UUID
-	uid, err = uuid.NewV7()
+	var newAccessJTI uuid.UUID
+	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
 		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishProjectUserRefresh"})
 	}
 
-	newAccessJTI := uid
-	var keyID = "project:" + sess.ProjectID.String() + ":v1"
-	var accessTokenStr string
+	SigningKid, err := keys.GetActiveProjectSigningKID(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var accessPayload []byte
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessTokenStr, err = uc.tokenIssuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
-		User:       *projectUser,
-		IP:         in.IP,
-		Agent:      in.Agent,
-		AccessJTI:  newAccessJTI.String(),
-		KeyID:      keyID,
-		SessionID:  sess.SessionID,
-		ExpiresAt:  accessExpiresAt,
-		PrivateKey: decodedKey,
+	accessPayload, err = issuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
+		KID:       SigningKid,
+		User:      *projectUser,
+		IP:        in.IP,
+		Agent:     in.Agent,
+		AccessJTI: newAccessJTI.String(),
+		SessionID: sess.SessionID,
+		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	var refreshTokenStr string
-	refreshTokenStr, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
-		KeyID:      keyID,
-		PrivateKey: decodedKey,
+	var accessSig []byte
+	accessSig, err = keys.SignProject(ctx, *sess.ProjectID, accessPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := issuer.AssembleJWT(accessPayload, accessSig)
+
+	var refreshPayload []byte
+	refreshPayload, err = issuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KID:        SigningKid,
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
 		ExpiresAt:  refreshExpiresAt,
@@ -571,6 +636,14 @@ func (uc *UseCase) finishProjectUserRefresh(
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
+
+	var refreshSig []byte
+	refreshSig, err = keys.SignProject(ctx, *sess.ProjectID, refreshPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
 
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
@@ -618,6 +691,8 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 
 	projectUsers := uc.deps.ProjectUsers
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	if in.FlowID == "" {
 		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptyFlowID{})
@@ -698,21 +773,37 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		attribute.String("user.identity.type", string(identity.IdentityType)),
 	)
 
-	var verificationToken string
-	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
-		Subject:    usr.ID,
-		ExpiresAt:  time.Now().Add(15 * time.Minute),
-		PrivateKey: utils.GoAuthPrivateKey,
+	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	var verificationPayload []byte
+	verificationPayload, err = issuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		KID:       SigningKid,
+		Subject:   usr.ID,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
 		return outbounds.Email{}, err
 	}
 
+	var verificationSig []byte
+	verificationSig, err = keys.SignGoAuth(ctx, verificationPayload)
+	if err != nil {
+		return outbounds.Email{}, err
+	}
+
+	verificationTokenStr := issuer.AssembleJWT(
+		verificationPayload,
+		verificationSig,
+	)
+
 	var verificationEmail outbounds.Email
 	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
 		UserID: usr.ID,
 		Email:  usr.Email,
-		Token:  verificationToken,
+		Token:  verificationTokenStr,
 		Locale: "en",
 	})
 	if err != nil {
@@ -729,8 +820,8 @@ func (uc *UseCase) LoginProjectUser(
 	ctx context.Context,
 	in inbounds.ProjectLoginInput,
 ) (
-	*inbounds.UserTokensOutput,
-	error,
+	tokens *inbounds.UserTokensOutput,
+	err error,
 ) {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.LoginProjectUser",
 		trace.WithAttributes(attribute.String("project.id", in.ProjectID.String())),
@@ -738,11 +829,14 @@ func (uc *UseCase) LoginProjectUser(
 	defer span.End()
 
 	projectUsers := uc.deps.ProjectUsers
-	projects := uc.deps.Projects
 	sessions := uc.deps.Sessions
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
-	usr, err := projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
+
+	var usr *project_users.ProjectUser
+	usr, err = projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
 	if apierr.IsNotFound(err) {
 		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
 	} else if err != nil {
@@ -761,7 +855,8 @@ func (uc *UseCase) LoginProjectUser(
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
-	sess, err := sessions.Create(ctx, session.Session{
+	var sess *session.Session
+	sess, err = sessions.Create(ctx, session.Session{
 		IssuedAt:   time.Now(),
 		UserAgent:  in.Agent,
 		UserIP:     in.IP,
@@ -773,44 +868,44 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
-	var privKey string
-	privKey, err = projects.GetPrivateKeyByIDInternal(ctx, *sess.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	var decodedKey ed25519.PrivateKey
-	decodedKey, err = utils.ParseEd25519PrivateKey(privKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var uid uuid.UUID
-	uid, err = uuid.NewV7()
+	var accessJTI uuid.UUID
+	accessJTI, err = uuid.NewV7()
 	if err != nil {
 		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/LoginProjectUser"})
 	}
 
-	keyID := "project:" + sess.ProjectID.String() + ":v1"
-	accessJTI := uid
+	var SigningKid string
+	SigningKid, err = keys.GetActiveProjectSigningKID(ctx, in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessToken, err := uc.tokenIssuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
-		User:       *usr,
-		IP:         in.IP,
-		Agent:      in.Agent,
-		AccessJTI:  accessJTI.String(),
-		KeyID:      keyID,
-		SessionID:  sess.SessionID,
-		ExpiresAt:  accessExpiresAt,
-		PrivateKey: decodedKey,
+	var accessPayload []byte
+	accessPayload, err = issuer.NewProjectAccessToken(inbounds.NewProjectAccessTokenInput{
+		KID:       SigningKid,
+		User:      *usr,
+		IP:        in.IP,
+		Agent:     in.Agent,
+		AccessJTI: accessJTI.String(),
+		SessionID: sess.SessionID,
+		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 
-	refreshToken, err := uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
-		KeyID:      keyID,
-		PrivateKey: decodedKey,
+	var accessSig []byte
+	accessSig, err = keys.SignProject(ctx, in.ProjectID, accessPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := issuer.AssembleJWT(accessPayload, accessSig)
+
+	var refreshPayload []byte
+	refreshPayload, err = uc.tokenIssuer.NewRefreshToken(inbounds.NewRefreshTokenInput{
+		KID:        SigningKid,
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
@@ -820,9 +915,17 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, apierr.FromService(span, err)
 	}
 
+	var refreshSig []byte
+	refreshSig, err = keys.SignProject(ctx, in.ProjectID, refreshPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
+
 	return &inbounds.UserTokensOutput{
-		AccessTokenString:  accessToken,
-		RefreshTokenString: refreshToken,
+		AccessTokenString:  accessTokenStr,
+		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 	}, nil
@@ -847,7 +950,7 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 	}
 
 	var claims *auth.VerificationClaims
-	claims, err = uc.tokenVerifier.VerifyVerificationToken(token)
+	claims, err = uc.tokenVerifier.VerifyVerificationToken(ctx, token)
 	if err != nil {
 		return apierr.FromService(span, err)
 	}
@@ -888,6 +991,8 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 
 	users := uc.deps.Users
 	projectUsers := uc.deps.ProjectUsers
+	keys := uc.keys
+	issuer := uc.tokenIssuer
 
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
@@ -917,21 +1022,34 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		}
 	}
 
-	var verificationToken string
-	verificationToken, err = uc.tokenIssuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
-		Subject:    principal.UserID,
-		ExpiresAt:  time.Now().Add(15 * time.Minute),
-		PrivateKey: utils.GoAuthPrivateKey,
+	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return err
+	}
+
+	var verificationPayload []byte
+	verificationPayload, err = issuer.NewVerificationToken(inbounds.NewVerificationTokenInput{
+		KID:       SigningKid,
+		Subject:   principal.UserID,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
 		return apierr.FromService(span, err)
 	}
 
+	var verificationSig []byte
+	verificationSig, err = keys.SignGoAuth(ctx, verificationPayload)
+	if err != nil {
+		return err
+	}
+
+	verificationTokenStr := issuer.AssembleJWT(verificationPayload, verificationSig)
+
 	var verificationEmail outbounds.Email
 	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
 		UserID: principal.UserID,
 		Email:  principal.Email,
-		Token:  verificationToken,
+		Token:  verificationTokenStr,
 		Locale: "en",
 	})
 	if err != nil {
@@ -944,4 +1062,21 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+func (uc *UseCase) GetJWKS(ctx context.Context) map[string]any {
+	keys, err := uc.deps.Keys.ListGoAuthPublicKeys(ctx)
+	if err != nil {
+		logs.L().Error("Failed listing GoAuth public keys", zap.Error(err))
+		return map[string]any{"keys": []any{}}
+	}
+
+	jwkKeys := make([]any, len(keys))
+	for i, k := range keys {
+		jwkKeys[i] = key.PublicKeyToJWK(k)
+	}
+
+	return map[string]any{
+		"keys": jwkKeys,
+	}
 }

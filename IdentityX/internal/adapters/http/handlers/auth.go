@@ -4,7 +4,7 @@ import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/utils"
+	"context"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -170,7 +170,7 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Refreshed tokens").Send(w)
 }
 
-// JWKS godoc
+// GetJWKS godoc
 // @Summary Exposes the public key using a JWKS endpoint
 // @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by the authentication service.
 // @Tags auth
@@ -179,11 +179,9 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
-func (handler *AuthHandler) JWKS(w http.ResponseWriter, _ *http.Request) {
-	jwks := map[string]any{
-		"keys": []any{utils.PublicKeyToJWK(utils.GoAuthPublicKey)},
-	}
-
+func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, _ *http.Request) {
+	ctx := context.Background()
+	jwks := handler.auth.GetJWKS(ctx)
 	resp.OK().WithData(jwks).Send(w)
 }
 

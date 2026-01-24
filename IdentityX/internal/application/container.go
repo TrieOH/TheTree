@@ -5,6 +5,7 @@ import (
 	"GoAuth/internal/adapters/persistence"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
+	"GoAuth/internal/application/keys"
 	"GoAuth/internal/application/project"
 	"GoAuth/internal/application/schema"
 	"GoAuth/internal/application/schema_fields"
@@ -28,8 +29,9 @@ type Application struct {
 func NewApplication(infra infrastructure.Infra) *Application {
 	repos := persistence.NewRepositories(infra)
 
+	keyService := keys.New(repos.Keys)
 	mailBundle := email.NewBundle(infra)
-	tokensBundle := tokens.NewBundle(repos)
+	tokensBundle := tokens.NewBundle(keyService)
 
 	return &Application{
 		Auth: auth.New(auth.Deps{
@@ -40,8 +42,9 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Fields:       repos.SchemaFields,
 			Projects:     repos.Projects,
 			ProjectUsers: repos.ProjectUsers,
-		}, infra, tokensBundle, mailBundle),
-		Project: project.New(repos.Projects, infra.Tx),
+			Keys:         repos.Keys,
+		}, infra, keyService, tokensBundle, mailBundle),
+		Project: project.New(repos.Projects, repos.Keys, infra.Tx),
 		Schema: schema.New(schema.Deps{
 			Schemas:  repos.Schemas,
 			Versions: repos.SchemaVersions,

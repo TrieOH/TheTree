@@ -3,6 +3,7 @@ package authenticator
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/validation"
+	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
@@ -21,6 +22,7 @@ var _ inbounds.RequestAuthenticator = (*UseCase)(nil)
 
 type Deps struct {
 	Session       outbounds.SessionRepository
+	Project       outbounds.ProjectRepository
 	TokenVerifier inbounds.TokenVerifier
 }
 
@@ -39,6 +41,7 @@ func New(
 // Leaving this responsibility up to the AuthMW
 func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.AuthenticateRequestInput) (*authz.Principal, error) {
 	ctx, span := uc.tracer.Start(ctx, "Authenticator.AuthenticateRequest")
+	defer span.End()
 
 	tokenVerifier := uc.deps.TokenVerifier
 	sessions := uc.deps.Session
@@ -64,12 +67,8 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		return nil, apierr.FromService(span, err)
 	}
 
-	// FIXME, later swap this out for checking the issuer of the project if authenticating a project user
-	if accessToken.Issuer != in.Issuer {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidIssuer{TokenType: "access"})
-	}
-	if refreshToken.Issuer != in.Issuer {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidIssuer{TokenType: "refresh"})
+	if err = validateIssuers(in, accessToken, refreshToken); err != nil {
+		return nil, apierr.FromService(span, err)
 	}
 
 	refreshTokenJTI, err := validation.RequireRefreshJTI(&refreshToken.ID)
@@ -125,4 +124,24 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		return nil, apierr.FromService(span, err)
 	}
 	return principal, nil
+}
+
+func validateIssuers(
+	in inbounds.AuthenticateRequestInput,
+	access *auth.AccessClaims,
+	refresh *auth.RefreshClaims,
+) error {
+	if access.Sub.ProjectID != nil {
+		if access.Issuer != access.Sub.ProjectID.String() {
+			return inbounds.ErrInvalidIssuer{TokenType: "access"}
+		}
+	} else if access.Issuer != in.Issuer {
+		return inbounds.ErrInvalidIssuer{TokenType: "access"}
+	}
+
+	if refresh.Issuer != in.Issuer {
+		return inbounds.ErrInvalidIssuer{TokenType: "refresh"}
+	}
+
+	return nil
 }

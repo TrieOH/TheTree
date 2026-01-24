@@ -2,9 +2,11 @@ package testing
 
 import (
 	"GoAuth/internal/adapters/http/router"
+	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/crypto"
 	"GoAuth/internal/database"
-	"GoAuth/internal/utils"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -15,6 +17,7 @@ import (
 
 	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/oklog/ulid/v2"
 	"github.com/spf13/viper"
 )
 
@@ -42,13 +45,6 @@ func NewTestSuite(t *testing.T) *TestSuite {
 
 func (s *TestSuite) setup() {
 	viper.AutomaticEnv()
-
-	if err := utils.LoadEd25519Keys(
-		viper.GetString("JWT_PRIVATE_KEY"),
-		viper.GetString("JWT_PUBLIC_KEY"),
-	); err != nil {
-		log.Fatal(err)
-	}
 
 	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
@@ -105,9 +101,60 @@ func setupDatabase() (*sql.DB, error) {
 	if err = database.SetJWTMasterKey(db); err != nil {
 		return nil, err
 	}
+
+	queries := sqlc.New(db)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = queries.GetActiveSigningKeyForGoAuth(ctx)
+	if err != nil {
+		if apierr.IsNotFound(apierr.FromSQLC(err)) {
+			// create new signing key
+			pub, priv, err := crypto.GenerateEd25519()
+			if err != nil {
+				log.Fatalf("failed to generate GoAuth key: %v", err)
+			}
+			defer zero(priv)
+
+			kid := "goauth:" + ulid.Make().String()
+			expiresAt := time.Now().Add(90 * 24 * time.Hour)
+
+			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
+				Kid:        kid,
+				ProjectID:  nil,
+				KeyType:    "goauth",
+				Algorithm:  "EdDSA",
+				PublicKey:  pub,
+				PrivateKey: priv,
+				Usage:      "sign",
+				Status:     "active",
+				ExpiresAt:  expiresAt,
+			})
+
+			if err != nil {
+				// rely on DB uniqueness as safety net
+				if apierr.IsUniqueViolation(err) {
+					log.Println("GoAuth signing key already created by another instance")
+				} else {
+					log.Fatalf("failed to create GoAuth signing key: %v", err)
+				}
+			} else {
+				log.Println("Created GoAuth signing key")
+			}
+		} else {
+			log.Fatalf("failed checking GoAuth signing key: %v", err)
+		}
+	}
 	return db, nil
 }
 
 func createTestRouter(db *sql.DB) http.Handler {
 	return router.CreateTestRouter(db)
+}
+
+func zero(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
 }

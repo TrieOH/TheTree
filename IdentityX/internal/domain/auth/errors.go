@@ -40,3 +40,27 @@ type ErrSigningToken struct {
 func (e ErrSigningToken) Error() string {
 	return "error signing " + e.TokenType + " token"
 }
+
+type ErrTokenInvalidAlg struct {
+	TokenType string
+}
+
+func (e ErrTokenInvalidAlg) Error() string {
+	return "invalid " + e.TokenType + " token alg"
+}
+
+type ErrTokenInvalidFormat struct {
+	TokenType string
+}
+
+func (e ErrTokenInvalidFormat) Error() string {
+	return "invalid " + e.TokenType + " token format"
+}
+
+type ErrTokenUntrusted struct {
+	TokenType string
+}
+
+func (e ErrTokenUntrusted) Error() string {
+	return "untrusted " + e.TokenType + " token"
+}

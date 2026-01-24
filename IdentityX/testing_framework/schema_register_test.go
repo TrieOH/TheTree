@@ -414,7 +414,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"refresh_expire_date": AnyNumber{},
 			"access": map[string]interface{}{
-				"iss": "GoAuth",
+				"iss": AsString{projectID, AnyUUID{}},
 				"exp": AnyNumber{},
 				"iat": AnyNumber{},
 				"jti": AnyUUID{},

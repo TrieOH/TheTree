@@ -57,7 +57,7 @@ const (
 	TokenExpired              ID = "TOKEN_002"
 	TokenMalformed            ID = "TOKEN_003"
 	TokenSignatureInvalid     ID = "TOKEN_004"
-	TokenUnsupportedAlg       ID = "TOKEN_005"
+	TokenInvalidAlg           ID = "TOKEN_005"
 	TokenRequiredID           ID = "TOKEN_006"
 	TokenCouldNotSign         ID = "TOKEN_007"
 	TokenMissingRefresh       ID = "TOKEN_008"
@@ -86,6 +86,8 @@ const (
 	TokenMissingRefreshClaims ID = "TOKEN_031"
 	TokenReuseIdentified      ID = "TOKEN_032"
 	TokenUserMismatch         ID = "TOKEN_033"
+	TokenInvalidFormat        ID = "TOKEN_034"
+	TokenUntrusted            ID = "TOKEN_035"
 )
 
 const (
