@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
+import { getTokenClaims } from "../utils/token-utils";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -25,18 +25,14 @@ export function AuthProvider({
 
   useEffect(() => {
     const loadAuthStatus = async () => {
-      if(isRefreshSessionExpired()) {
-        console.warn("[AuthProvider] Persistent session is expired. Skipping refresh request.");
-        setReady(true);
-        return;
-      } else if(getTokenClaims()) {
+      if(getTokenClaims()) {
         setIsAuthenticated(true);
         setReady(true);
         return;
       }
       console.log("[TRIEOH SDK] Attempting to refresh session...");
       try {
-        const res = await auth.refresh();
+        const res = await auth.refreshProfileInfo();
         if (res.code === 200) {
           setIsAuthenticated(true);
           console.log("[TRIEOH SDK] Session restored successfully.");
@@ -45,8 +41,8 @@ export function AuthProvider({
           console.warn("[TRIEOH SDK] Session restoration failed/no session.");
         }
       } catch(error) {
+        console.warn("[TRIEOH SDK] Unable to verify session (offline?)");
         setIsAuthenticated(false);
-        console.error("[TRIEOH SDK] Session bootstrap error:", error);
       } finally { setReady(true); }
     }
     loadAuthStatus();
