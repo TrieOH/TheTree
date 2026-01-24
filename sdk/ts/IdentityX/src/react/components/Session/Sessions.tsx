@@ -20,7 +20,14 @@ export function Sessions({
 
   const fetchSessions = async () => {
     const res = await auth.sessions();
-    setSessions(res.data || []);
+    const currentSessionId = auth.profile()?.session_id;
+
+    const sessions = (res.data || []).sort((a, b) => {
+      if (a.session_id === currentSessionId) return -1;
+      if (b.session_id === currentSessionId) return 1;
+      return 0;
+    });
+    setSessions(sessions);
   }
 
   useEffect(() => {

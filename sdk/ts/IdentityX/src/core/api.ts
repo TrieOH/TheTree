@@ -17,27 +17,15 @@ interface RequestOptions extends RequestInit {
 
 export class Api {
   private baseURL: string;
-  private apiKey: string;
   private authInterceptor: AuthInterceptor;
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || env.BASE_URL;
-    this.apiKey = env.API_KEY;
-    if (!this.apiKey) {
-      console.warn("[TRIEOH SDK] API_KEY not found, verify your .env file");
-      throw new Error("[TRIEOH SDK] API_KEY not found, verify your .env file");
-    }
-    this.authInterceptor = new AuthInterceptor({
-      baseURL: this.baseURL,
-      apiKey: this.apiKey,
-    });
+    this.authInterceptor = new AuthInterceptor({ baseURL: this.baseURL });
   }
 
   private get headers() {
-    return {
-      "Content-Type": "application/json",
-      ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
-    };
+    return { "Content-Type": "application/json" };
   }
 
   private buildUrl(path: string) {
