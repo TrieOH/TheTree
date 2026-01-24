@@ -10,6 +10,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+func IsUniqueViolation(err error) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		if pqErr.Code == "23505" {
+			return true
+		}
+		return false
+	}
+	return false
+}
+
 func FromSQLC(err error) *Error {
 	if err == nil {
 		return nil

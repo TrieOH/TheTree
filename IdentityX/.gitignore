@@ -1,5 +1,3 @@
-keys/
-keys/*
 internal/adapters/persistence/sqlc/
 internal/adapters/persistence/sqlc/*
 docs/

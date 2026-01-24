@@ -4,7 +4,6 @@ import (
 	"log"
 	"sync"
 
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -16,11 +15,7 @@ var (
 func Init() {
 	once.Do(func() {
 		var err error
-		if viper.GetString("DEV_MODE") == "true" {
-			logger, err = zap.NewDevelopment()
-		} else {
-			logger, err = zap.NewProduction()
-		}
+		logger, err = zap.NewProduction()
 		if err != nil {
 			log.Fatalf(err.Error())
 		}

@@ -149,3 +149,11 @@ type ErrUserAlreadyVerified struct{}
 func (e ErrUserAlreadyVerified) Error() string {
 	return "user already verified"
 }
+
+type ErrFailedToRetrieveJWKS struct {
+	Cause error
+}
+
+func (e ErrFailedToRetrieveJWKS) Error() string {
+	return "failed to retrieve JWKS"
+}

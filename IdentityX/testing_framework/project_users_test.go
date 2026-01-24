@@ -3,6 +3,7 @@ package testing
 import (
 	"GoAuth/internal/apierr"
 	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -12,6 +13,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
+
+// parseJWKXToEd25519PublicKey parses a DER-encoded public key (from JWK 'x' field) into ed25519.PublicKey
+func parseJWKXToEd25519PublicKey(t *testing.T, derBytes []byte) ed25519.PublicKey {
+	t.Helper()
+	pub, err := x509.ParsePKIXPublicKey(derBytes)
+	require.NoError(t, err, "Failed to parse PKIX public key")
+
+	edPubKey, ok := pub.(ed25519.PublicKey)
+	require.True(t, ok, "Parsed public key is not an Ed25519 public key")
+
+	return edPubKey
+}
 
 func testProjectUsers(t *testing.T, suite *TestSuite) {
 	// Create user in parent test context
@@ -279,7 +292,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			spec := map[string]interface{}{
 				"refresh_expire_date": AnyNumber{},
 				"access": map[string]interface{}{
-					"iss": "GoAuth",
+					"iss": AsString{user.projectID, AnyUUID{}},
 					"exp": AnyNumber{},
 					"iat": AnyNumber{},
 					"jti": AnyUUID{},
@@ -433,7 +446,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		xBase64 := jwksResp.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
 		xBytes, err := base64.RawURLEncoding.DecodeString(xBase64)
 		require.NoError(t, err)
-		projectPubKey := ed25519.PublicKey(xBytes)
+		projectPubKey := parseJWKXToEd25519PublicKey(t, xBytes)
 
 		// 2. Get Global JWKS (Master - Wrapped in Data)
 		globalJwksResp := client.GET("/.well-known/jwks.json").
@@ -443,7 +456,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		gxBase64 := globalJwksResp.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
 		gxBytes, err := base64.RawURLEncoding.DecodeString(gxBase64)
 		require.NoError(t, err)
-		masterPubKey := ed25519.PublicKey(gxBytes)
+		masterPubKey := parseJWKXToEd25519PublicKey(t, gxBytes)
 
 		// 3. Try verifying with Project Pub Key
 		_, err = jwt.Parse(accessToken, func(token *jwt.Token) (interface{}, error) {

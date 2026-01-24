@@ -11,7 +11,6 @@ import (
 	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
-	"GoAuth/internal/utils"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -88,7 +87,7 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(TokenCouldNotSign).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
 		return httpErr
-	case utils.ErrParseProjectKey:
+	case inbounds.ErrParseProjectKey:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectFailedToParseKey).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
@@ -316,6 +315,22 @@ func FromService(span trace.Span, err error) *Error {
 		// Used to block resending verification email only
 		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(AuthAlreadyVerified)
 		RecordDomainError(span, httpErr)
+		return httpErr
+	case auth.ErrTokenInvalidAlg:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalidAlg)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case auth.ErrTokenInvalidFormat:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalidFormat)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case auth.ErrTokenUntrusted:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenUntrusted)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrFailedToRetrieveJWKS:
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemJWKSRetrievalFailed).WithCause(e.Cause)
+		RecordSystemError(span, httpErr)
 		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
