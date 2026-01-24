@@ -107,7 +107,7 @@ func init() {
 			defer zero(priv)
 
 			kid := "goauth:" + ulid.Make().String()
-			expiresAt := time.Now().Add(90 * 24 * time.Hour)
+			expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 				Kid:        kid,
@@ -243,7 +243,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	}
 
 	kid := "goauth:" + ulid.Make().String()
-	expiresAt := time.Now().Add(90 * 24 * time.Hour)
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:        kid,
@@ -301,7 +301,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	}
 
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
-	expiresAt := time.Now().Add(90 * 24 * time.Hour)
+	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:        kid,
