@@ -55,7 +55,7 @@ func registerAuthRoutes(
 		r.With(authMW.Auth()).
 			Post("/auth/verify/resend", h.ResendVerificationEmail)
 
-		r.Get("/.well-known/jwks.json", h.JWKS)
+		r.Get("/.well-known/jwks.json", h.GetJWKS)
 
 		// FIXME: Create another endpoint for the register that contains SchemaID
 		r.With(

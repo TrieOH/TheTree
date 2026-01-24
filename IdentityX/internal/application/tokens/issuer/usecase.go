@@ -3,6 +3,7 @@ package issuer
 import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/ports/inbounds"
+	"encoding/base64"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +19,7 @@ func NewTokenIssuer() inbounds.TokenIssuer {
 	return &UseCase{}
 }
 
-func (uc *UseCase) NewAccessToken(in inbounds.NewAccessTokenInput) (string, error) {
+func (uc *UseCase) NewAccessToken(in inbounds.NewAccessTokenInput) ([]byte, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSub{
 			ID:         in.User.ID,
@@ -38,16 +39,18 @@ func (uc *UseCase) NewAccessToken(in inbounds.NewAccessTokenInput) (string, erro
 		},
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	accessToken.Header["kid"] = in.KeyID
-	tokenStr, err := accessToken.SignedString(in.PrivateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
 	if err != nil {
-		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
+		return nil, err
 	}
-	return tokenStr, nil
+
+	return []byte(payload), nil
 }
 
-func (uc *UseCase) NewRefreshToken(in inbounds.NewRefreshTokenInput) (string, error) {
+func (uc *UseCase) NewRefreshToken(in inbounds.NewRefreshTokenInput) ([]byte, error) {
 	claims := auth.RefreshClaims{
 		Sub: auth.RefreshSub{
 			AccessJTI: in.AccessJTI,
@@ -61,16 +64,18 @@ func (uc *UseCase) NewRefreshToken(in inbounds.NewRefreshTokenInput) (string, er
 		},
 	}
 
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	refreshToken.Header["kid"] = in.KeyID
-	tokenStr, err := refreshToken.SignedString(in.PrivateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
 	if err != nil {
-		return "", auth.ErrSigningToken{TokenType: "refresh", Cause: err}
+		return nil, err
 	}
-	return tokenStr, nil
+
+	return []byte(payload), nil
 }
 
-func (uc *UseCase) NewProjectAccessToken(in inbounds.NewProjectAccessTokenInput) (string, error) {
+func (uc *UseCase) NewProjectAccessToken(in inbounds.NewProjectAccessTokenInput) ([]byte, error) {
 	claims := auth.AccessClaims{
 		Sub: auth.AccessSub{
 			ID:         in.User.ID,
@@ -86,22 +91,24 @@ func (uc *UseCase) NewProjectAccessToken(in inbounds.NewProjectAccessTokenInput)
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    in.User.ProjectID.String(),
 			ID:        in.AccessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	accessToken.Header["kid"] = in.KeyID
-	tokenStr, err := accessToken.SignedString(in.PrivateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
 	if err != nil {
-		return "", auth.ErrSigningToken{TokenType: "access", Cause: err}
+		return nil, err
 	}
-	return tokenStr, nil
+
+	return []byte(payload), nil
 }
 
-func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) (string, error) {
+func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) ([]byte, error) {
 	now := time.Now()
 	claims := auth.VerificationClaims{
 		Sub: auth.VerificationSub{
@@ -117,11 +124,17 @@ func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) (
 		},
 	}
 
-	verification := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	verification.Header["kid"] = "email-verification"
-	tokenStr, err := verification.SignedString(in.PrivateKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
 	if err != nil {
-		return "", auth.ErrSigningToken{TokenType: "verification", Cause: err}
+		return nil, err
 	}
-	return tokenStr, nil
+
+	return []byte(payload), nil
+}
+
+func (uc *UseCase) AssembleJWT(payload []byte, sig []byte) string {
+	return string(payload) + "." + base64.RawURLEncoding.EncodeToString(sig)
 }

@@ -3,13 +3,17 @@ package project
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
+	"GoAuth/internal/crypto"
+	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
-	"GoAuth/internal/utils"
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -21,6 +25,7 @@ var (
 
 type UseCase struct {
 	projects outbounds.ProjectRepository
+	keys     outbounds.KeysRepository
 	tx       inbounds.TxRunner
 }
 
@@ -28,10 +33,12 @@ var _ inbounds.ProjectService = (*UseCase)(nil)
 
 func New(
 	projects outbounds.ProjectRepository,
+	keys outbounds.KeysRepository,
 	tx inbounds.TxRunner,
 ) inbounds.ProjectService {
 	return &UseCase{
 		projects: projects,
+		keys:     keys,
 		tx:       tx,
 	}
 }
@@ -48,21 +55,47 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 		return nil, apierr.FromService(span, err)
 	}
 
-	pubKey, privKey, err := utils.GenerateEd25519Keys()
-	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingProjectKeys{Cause: err})
-	}
-
 	createdProject, err := uc.projects.Create(ctx, project.Project{
 		ProjectName: in.ProjectName,
 		OwnerID:     principal.UserID,
 		Metadata:    in.Metadata,
 		IsActive:    true,
-		PubKey:      pubKey,
-		PrivKey:     []byte(privKey),
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	pub, priv, err := crypto.GenerateEd25519()
+	if err != nil {
+		return nil, apierr.FromService(
+			span,
+			inbounds.ErrGeneratingProjectKeys{Cause: err},
+		)
+	}
+	defer zero(priv)
+
+	kid := fmt.Sprintf(
+		"project:%s:%s",
+		createdProject.ID.String(),
+		ulid.Make().String(),
+	)
+
+	_, err = uc.keys.CreateKeyPair(ctx, key.Pair{
+		KID:        kid,
+		ProjectID:  &createdProject.ID,
+		KeyType:    key.TypeProject,
+		Algorithm:  key.AlgEdDSA,
+		PublicKey:  pub,
+		PrivateKey: priv,
+		Usage:      key.UsageSign,
+		Status:     key.StatusActive,
+		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
+	})
+	if err != nil {
+		return nil, apierr.FromService(
+			span,
+			inbounds.ErrGeneratingProjectKeys{Cause: err},
+		)
 	}
 
 	span.SetAttributes(
@@ -86,7 +119,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID uuid.UUID) (*inbounds.
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
-	proj, err := uc.projects.GetByID(ctx, projectID, principal.UserID)
+	proj, err := uc.projects.GetByIDExternal(ctx, projectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,23 +155,22 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
 // GetJWKS handles the business logic for retrieving the JWKS for a project.
 // It retrieves the public key for the project and converts it to a JWK set.
 func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string]any, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS",
-		trace.WithAttributes(attribute.String("project.id", projectID.String())),
-	)
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS")
 	defer span.End()
 
-	pubKey, err := uc.projects.GetPublicKeyByID(ctx, projectID)
+	keys, err := uc.keys.ListProjectPublicKeys(ctx, projectID)
 	if err != nil {
-		return nil, err
+		return map[string]any{"keys": []any{}}, err
 	}
 
-	parsedKey, err := utils.ParseEd25519PublicKey(pubKey)
-	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrParsingProjectPublicKey{Cause: err})
+	jwkKeys := make([]any, len(keys))
+	for i, k := range keys {
+		jwkKeys[i] = key.PublicKeyToJWK(k)
 	}
 
-	jwks := utils.PublicKeyToJWK(parsedKey)
-	return jwks, nil
+	return map[string]any{
+		"keys": jwkKeys,
+	}, nil
 }
 
 // Update handles the business logic for updating a project.
@@ -155,7 +187,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 
 	span.SetAttributes(attribute.String("project.id", in.ProjectID.String()))
 
-	newProject, err := uc.projects.GetByID(ctx, in.ProjectID, principal.UserID)
+	newProject, err := uc.projects.GetByIDExternal(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -198,4 +230,10 @@ func (uc *UseCase) Delete(ctx context.Context, projectID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func zero(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
 }

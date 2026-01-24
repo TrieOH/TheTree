@@ -46,4 +46,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Verification", func(t *testing.T) {
 		testVerification(t, suite)
 	})
+
+	t.Run("Key Rotation", func(t *testing.T) {
+		testKeyRotation(t, suite)
+	})
 }

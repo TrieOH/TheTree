@@ -9,8 +9,6 @@ CREATE TABLE projects (
         ON UPDATE CASCADE,
     metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT True,
-    pub_key TEXT NOT NULL,
-    priv_key BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
