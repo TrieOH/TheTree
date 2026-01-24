@@ -181,7 +181,11 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Router /.well-known/jwks.json [get]
 func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, _ *http.Request) {
 	ctx := context.Background()
-	jwks := handler.auth.GetJWKS(ctx)
+	jwks, err := handler.auth.GetJWKS(ctx)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
 	resp.OK().WithData(jwks).Send(w)
 }
 

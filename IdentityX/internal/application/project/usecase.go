@@ -84,7 +84,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 		KID:        kid,
 		ProjectID:  &createdProject.ID,
 		KeyType:    key.TypeProject,
-		Algorithm:  key.AlgEd25519,
+		Algorithm:  key.AlgEdDSA,
 		PublicKey:  pub,
 		PrivateKey: priv,
 		Usage:      key.UsageSign,

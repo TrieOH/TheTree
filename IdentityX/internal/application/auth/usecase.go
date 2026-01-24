@@ -1064,11 +1064,11 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	return nil
 }
 
-func (uc *UseCase) GetJWKS(ctx context.Context) map[string]any {
+func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 	keys, err := uc.deps.Keys.ListGoAuthPublicKeys(ctx)
 	if err != nil {
 		logs.L().Error("Failed listing GoAuth public keys", zap.Error(err))
-		return map[string]any{"keys": []any{}}
+		return nil, inbounds.ErrFailedToRetrieveJWKS{Cause: err}
 	}
 
 	jwkKeys := make([]any, len(keys))
@@ -1078,5 +1078,5 @@ func (uc *UseCase) GetJWKS(ctx context.Context) map[string]any {
 
 	return map[string]any{
 		"keys": jwkKeys,
-	}
+	}, nil
 }

@@ -182,4 +182,5 @@ const (
 	SystemErrorBCryptHashingFailed ID = "SYS_007"
 	SystemServiceUnavailable       ID = "SYS_008"
 	SystemErrorRenderingEmail      ID = "SYS_009"
+	SystemJWKSRetrievalFailed      ID = "SYS_010"
 )

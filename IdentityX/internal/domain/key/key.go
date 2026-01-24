@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	AlgEd25519 Algorithm = "Ed25519"
+	AlgEdDSA Algorithm = "EdDSA"
 )
 
 type Pair struct {
