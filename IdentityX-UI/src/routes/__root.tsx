@@ -3,6 +3,7 @@ import {
   Scripts,
   createRootRouteWithContext,
   useMatches,
+  useRouter,
 } from '@tanstack/react-router'
 
 import appCss from '../styles.css?url'
@@ -10,9 +11,11 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import Header from '@/components/Header'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/types/route-types'
-
+import { AuthProvider, useAuth } from '@trieoh/node-auth-sdk/react'
+import { useEffect, useState } from 'react'
 interface MyRouterContext {
   queryClient: QueryClient
+  auth?: ReturnType<typeof useAuth>
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -45,18 +48,45 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootDocument({ children }: { children: React.ReactNode }) {
   const matches = useMatches();
   const routeConfig = getRouteConfig(matches);
+  
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body className='min-w-xs'>
-        <Header {...routeConfig.components.header}/>
-        {children}
+      <body className='min-w-xs' suppressHydrationWarning>
+        <AuthProvider baseURL="http://localhost:8080">
+          <AuthSyncronizer>
+            {/* <PHProvider> */}
+              <Header {...routeConfig.components.header} />
+              {children}
+            {/* </PHProvider> */}
+          </AuthSyncronizer>
+        </AuthProvider>
         <Scripts />
       </body>
     </html>
   )
+}
+
+function AuthSyncronizer({ children }: { children: React.ReactNode }) {
+  const auth = useAuth() 
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if(router.options.context.auth?.isAuthenticated !== auth.isAuthenticated) {
+      router.update({
+        context: { ...router.options.context, auth: auth },
+      })
+      setIsLoading(false);
+      router.invalidate()
+    }
+  }, [auth.isAuthenticated, router])
+
+  if(isLoading) return null; // change to guard
+  
+  return <>{children}</>
 }
 
 function getRouteConfig(matches: ReturnType<typeof useMatches>) {

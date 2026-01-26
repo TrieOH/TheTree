@@ -6,7 +6,7 @@ export const Route = createFileRoute('/projects/')({
   staticData: {
     components: {
       header: {
-        isAuthenticated: false,
+        test: false,
       }
     }
   },

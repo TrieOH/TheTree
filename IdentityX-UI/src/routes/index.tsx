@@ -4,7 +4,7 @@ export const Route = createFileRoute('/')({
   staticData: {
     components: {
       header: {
-        isAuthenticated: true,
+        test: true,
       }
     }
   },
@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div className="bg-background">
-
+      
     </div>
   )
 }

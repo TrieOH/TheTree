@@ -3,11 +3,11 @@ export interface RouteStaticConfigI {
 }
 
 export interface HeaderConfigI {
-  isAuthenticated: boolean
+  test: boolean
 }
 
 export const RouteComponentTemplate: RouteStaticConfigI = {
   header: {
-    isAuthenticated: false,
+    test: false,
   }
 }

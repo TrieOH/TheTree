@@ -4,9 +4,10 @@ interface PropsI {
   value?: string;
   leftIcon?: React.ReactNode;
   className?: string;
+  onClick: () => void;
 }
 
-export function ShadowButton({ value, leftIcon, className }: PropsI) {
+export function ShadowButton({ value, leftIcon, className, onClick }: PropsI) {
   return (
     <button 
       className={cn(
@@ -26,6 +27,7 @@ export function ShadowButton({ value, leftIcon, className }: PropsI) {
         "transition-all duration-300 ease-out",
         className
       )}
+      onClick={onClick}
     >
       {leftIcon}
       {value}
