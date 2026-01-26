@@ -4,8 +4,8 @@ package router
 
 import (
 	"GoAuth/internal/adapters/http/middleware"
-	"GoAuth/internal/adapters/observability/logs"
 	"database/sql"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -51,6 +52,17 @@ func CreateRouter(db *sql.DB) http.Handler {
 
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.Timeout(60 * time.Second))
+
+	if !viper.GetBool("DISABLE_RATE_LIMIT") {
+		r.Use(httprate.Limit(
+			400,
+			1*time.Minute,
+			httprate.WithKeyFuncs(httprate.KeyByIP),
+		))
+	}
+
+	r.Use(middleware.MaxBodySize(1 << 20)) // 1 MB
+
 	r.Use(cors.Handler(GetCORSOptions()))
 
 	r.Use(middleware.RequestID)
@@ -95,9 +107,7 @@ func GetCORSOptions() cors.Options {
 
 	// Never default origins to "*"
 	if allowedOrigins == nil {
-		logs.L().Warn(
-			"CORS_ALLOWED_ORIGINS is not set; cross-origin requests will be rejected",
-		)
+		log.Fatalf("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
 	}
 
 	if allowedMethods == nil {

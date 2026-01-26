@@ -1,12 +1,10 @@
 package database
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -93,30 +91,5 @@ func RunMigrations(db *sql.DB, mPath string) error {
 		return err
 	}
 	log.Println("Migrations applied successfully")
-	return nil
-}
-
-func SetJWTMasterKey(db *sql.DB) error {
-	masterKey := viper.GetString("JWT_MASTER_KEY")
-	if masterKey == "" {
-		return errors.New("missing JWT_MASTER_KEY in config")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	query := fmt.Sprintf("SET app.jwt_master_key = '%s'", strings.ReplaceAll(masterKey, "'", "''"))
-
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to set app.jwt_master_key: %w", err)
-	}
-
-	query = fmt.Sprintf("ALTER ROLE CURRENT_USER SET app.jwt_master_key = '%s'", strings.ReplaceAll(masterKey, "'", "''"))
-	if _, err := db.ExecContext(ctx, query); err != nil {
-		return fmt.Errorf("failed to set persistent master key: %w", err)
-	}
-
-	log.Println("session variable app.jwt_master_key set successfully")
 	return nil
 }

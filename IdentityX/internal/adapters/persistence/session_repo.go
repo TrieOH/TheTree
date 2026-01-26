@@ -56,7 +56,7 @@ func mapSessionFromDB(dst *session.Session, src *sqlc.Session) {
 	dst.UserType = src.UserType
 }
 
-func mapSessionIdentityFromDB(dst *session.Identity, src *sqlc.SessionIdentity) {
+func mapSessionIdentityFromDB(dst *session.Identity, src *sqlc.Identity) {
 	dst.ID = src.ID
 	dst.IdentityType = session.IdentityType(src.Type)
 	dst.EntityID = src.EntityID
