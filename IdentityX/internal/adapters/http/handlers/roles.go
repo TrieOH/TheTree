@@ -82,9 +82,6 @@ func (handler *RoleHandler) GetByName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.URL.Query().Get("name")
-	if name == "" {
-
-	}
 
 	in := inbounds.GetRoleInput{
 		ProjectID: &projectID,

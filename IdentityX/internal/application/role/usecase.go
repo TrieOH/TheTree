@@ -153,7 +153,7 @@ func (uc *UseCase) GetByName(ctx context.Context, in inbounds.GetRoleInput) (*in
 }
 
 func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetRoleInput) ([]inbounds.RoleOutput, error) {
-	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetByName")
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.ListByProject")
 	defer span.End()
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
