@@ -36,6 +36,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	registerSchemaRoutes(r, handlerBundle.SchemaHandler, authMW)
 	registerSchemaVersionRoutes(r, handlerBundle.SchemaVersionHandler, authMW)
 	registerSchemaFieldsRoutes(r, handlerBundle.SchemaFieldsHandler, authMW)
+	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
 
 	return r
 }
@@ -175,5 +176,20 @@ func registerSchemaFieldsRoutes(
 		r.Use(middleware.ClientOnly())
 
 		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
+	})
+}
+
+func registerScopeRoutes(
+	r *chi.Mux,
+	h *handlers.ScopeHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+
+		r.Post("/projects/{project_id}/scopes", h.Create)
+		r.Get("/projects/{project_id}/scopes", h.GetProjectScopes)
+		r.Get("/projects/{project_id}/scopes/{scope_id}", h.GetByID)
 	})
 }

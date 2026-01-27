@@ -50,4 +50,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Key Rotation", func(t *testing.T) {
 		testKeyRotation(t, suite)
 	})
+
+	t.Run("Scopes", func(t *testing.T) {
+		testScopes(t, suite)
+	})
 }

@@ -11,31 +11,31 @@ const (
 )
 
 const (
-	AuthInvalidEmail         ID = "AUTH_001"
-	AuthInvalidPassword      ID = "AUTH_002"
-	AuthWrongPassword        ID = "AUTH_003"
-	AuthUserNotFound         ID = "AUTH_004"
-	AuthEmailAlreadyUsed     ID = "AUTH_005"
-	AuthAccountDisabled      ID = "AUTH_006"
-	AuthTokenInvalid         ID = "AUTH_007"
-	AuthTokenExpired         ID = "AUTH_008"
-	AuthRefreshInvalid       ID = "AUTH_009"
-	AuthRefreshRevoked       ID = "AUTH_010"
-	AuthMissingAccessClaims  ID = "AUTH_011"
-	AuthInvalidAccessClaims  ID = "AUTH_012"
-	AuthMissingRefreshClaims ID = "AUTH_013"
-	AuthInvalidRefreshClaims ID = "AUTH_014"
-	AuthInvalidCredentials   ID = "AUTH_015"
-	AuthInvalidRefreshCookie ID = "AUTH_016"
-	AuthInvalidAccessCookie  ID = "AUTH_017"
-	AuthMissingRefreshCookie ID = "AUTH_018"
-	AuthMissingAccessCookie  ID = "AUTH_019"
-	AuthMissingPrincipal     ID = "AUTH_020"
-	AuthNotClient            ID = "AUTH_021"
-	AuthInvalidPrincipal     ID = "AUTH_022"
-	AuthNotProjectUser       ID = "AUTH_023"
-	AuthNotVerified          ID = "AUTH_024"
-	AuthAlreadyVerified      ID = "AUTH_025"
+	AuthInvalidEmail          ID = "AUTH_001"
+	AuthInvalidPassword       ID = "AUTH_002"
+	AuthWrongPassword         ID = "AUTH_003"
+	AuthUserNotFound          ID = "AUTH_004"
+	AuthEmailAlreadyUsed      ID = "AUTH_005"
+	AuthAccountDisabled       ID = "AUTH_006"
+	AuthTokenInvalid          ID = "AUTH_007"
+	AuthTokenExpired          ID = "AUTH_008"
+	AuthRefreshInvalid        ID = "AUTH_009"
+	AuthRefreshRevoked        ID = "AUTH_010"
+	AuthMissingAccessClaims   ID = "AUTH_011"
+	AuthInvalidAccessClaims   ID = "AUTH_012"
+	AuthMissingRefreshClaims  ID = "AUTH_013"
+	AuthInvalidRefreshClaims  ID = "AUTH_014"
+	AuthInvalidCredentials    ID = "AUTH_015"
+	AuthInvalidRefreshCookie  ID = "AUTH_016"
+	AuthInvalidAccessCookie   ID = "AUTH_017"
+	AuthMissingRefreshCookie  ID = "AUTH_018"
+	AuthMissingAccessCookie   ID = "AUTH_019"
+	AuthInvalidPrincipal      ID = "AUTH_020"
+	AuthNotClient             ID = "AUTH_021"
+	AuthNotProjectUser        ID = "AUTH_022"
+	AuthNotVerified           ID = "AUTH_023"
+	AuthAlreadyVerified       ID = "AUTH_024"
+	AuthPrincipalNotInContext ID = "AUTH_025"
 )
 
 const (
@@ -156,6 +156,12 @@ const (
 	FieldInvalidType                   ID = "FIELD_008"
 	FieldInvalidOwner                  ID = "FIELD_009"
 	FieldValidationErrSchemaRegister   ID = "FIELD_010"
+)
+
+const (
+	ScopeEmptyName                  ID = "SCP_001"
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
 )
 
 const (

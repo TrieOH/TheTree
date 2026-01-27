@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/database"
+	"GoAuth/internal/domain/scopes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -143,6 +144,23 @@ func setupDatabase() (*sql.DB, error) {
 			log.Fatalf("failed checking GoAuth signing key: %v", err)
 		}
 	}
+
+	_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
+		Type:       string(scopes.ScopeTypeGlobal),
+		ProjectID:  nil,
+		Name:       nil,
+		ExternalID: nil,
+	})
+	if err != nil {
+		if apierr.IsUniqueViolation(err) {
+			log.Println("GoAuth Global scope already created by another instance")
+		} else {
+			log.Fatalf("Failed to create GoAuth Global scope: %v", err)
+		}
+	} else {
+		log.Println("Created GoAuth Global scope")
+	}
+
 	return db, nil
 }
 

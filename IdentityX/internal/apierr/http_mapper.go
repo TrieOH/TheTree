@@ -95,12 +95,12 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case authz.ErrMissingPrincipal:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthMissingPrincipal)
+	case authz.ErrInvalidPrincipal:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthInvalidPrincipal)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrPrincipalMissingInContext:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthMissingPrincipal)
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthPrincipalNotInContext)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrMissingAccessClaims:
@@ -331,6 +331,10 @@ func FromService(span trace.Span, err error) *Error {
 	case inbounds.ErrFailedToRetrieveJWKS:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemJWKSRetrievalFailed).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmptyScopeName:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)
+		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)

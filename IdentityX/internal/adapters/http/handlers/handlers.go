@@ -11,6 +11,7 @@ type HandlerBundle struct {
 	SchemaHandler        *SchemaHandler
 	SchemaVersionHandler *SchemaVersionHandler
 	SchemaFieldsHandler  *SchemaFieldsHandler
+	ScopeHandler         *ScopeHandler
 }
 
 func New(app *application.Application) *HandlerBundle {
@@ -21,5 +22,6 @@ func New(app *application.Application) *HandlerBundle {
 		SchemaHandler:        NewSchemaHandler(app.Schema),
 		SchemaVersionHandler: NewSchemaVersionHandler(app.SchemaVersions),
 		SchemaFieldsHandler:  NewSchemaFieldsHandler(app.SchemaFields),
+		ScopeHandler:         NewScopeHandler(app.Scope),
 	}
 }
