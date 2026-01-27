@@ -69,7 +69,9 @@ export function isRefreshSessionExpired(): boolean {
 
 export function isAuthenticated(): boolean {
   const claims = getTokenClaims();
-  return claims !== null;
+  if (!claims) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return claims.access.exp > now;
 }
 
 export function clearAuthTokens(): void {
