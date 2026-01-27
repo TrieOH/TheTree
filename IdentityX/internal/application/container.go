@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/application/keys"
 	"GoAuth/internal/application/permission"
 	"GoAuth/internal/application/project"
+	"GoAuth/internal/application/role"
 	"GoAuth/internal/application/schema"
 	"GoAuth/internal/application/schema_fields"
 	"GoAuth/internal/application/schema_version"
@@ -27,6 +28,7 @@ type Application struct {
 	Session        inbounds.SessionService
 	Authenticator  inbounds.RequestAuthenticator
 	Permission     inbounds.PermissionService
+	Role           inbounds.RoleService
 	Scope          inbounds.ScopeService
 }
 
@@ -78,6 +80,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
 		Permission: permission.New(repos.Permissions, repos.Projects, infra.Tx),
+		Role:       role.New(repos.Roles, repos.Projects, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}
 }

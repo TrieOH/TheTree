@@ -13,6 +13,7 @@ type HandlerBundle struct {
 	SchemaFieldsHandler  *SchemaFieldsHandler
 	ScopeHandler         *ScopeHandler
 	PermissionHandler    *PermissionHandler
+	RoleHandler          *RoleHandler
 }
 
 func New(app *application.Application) *HandlerBundle {
@@ -25,5 +26,6 @@ func New(app *application.Application) *HandlerBundle {
 		SchemaFieldsHandler:  NewSchemaFieldsHandler(app.SchemaFields),
 		ScopeHandler:         NewScopeHandler(app.Scope),
 		PermissionHandler:    NewPermissionHandler(app.Permission),
+		RoleHandler:          NewRoleHandler(app.Role),
 	}
 }

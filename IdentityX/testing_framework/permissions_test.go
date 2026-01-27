@@ -11,7 +11,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	user := client.WithCredentials("permissions@mail.com", ValidPassword).
 		Register().
 		Login().
-		CreateProject("schema testing")
+		CreateProject("permissions testing")
 
 	projectID := user.projectID
 	var permissionID string

@@ -15,6 +15,7 @@ type Repositories struct {
 	SchemaFields   outbounds.SchemaFieldsRepository
 	Scopes         outbounds.ScopeRepository
 	Permissions    outbounds.PermissionRepository
+	Roles          outbounds.RoleRepository
 	Keys           outbounds.KeysRepository
 }
 
@@ -29,6 +30,7 @@ func NewRepositories(infra infrastructure.Infra) *Repositories {
 		SchemaFields:   NewFieldsRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Scopes:         NewScopeRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Permissions:    NewPermissionRepo(infra.Queries, infra.Logger, infra.Tracer),
+		Roles:          NewRoleRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Keys:           NewKeyRepo(infra.Queries, infra.Logger, infra.Tracer),
 	}
 }
