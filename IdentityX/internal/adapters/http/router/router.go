@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// CreateRouter creates a new Chi router and registers all the routes.
 // CreateRouter godoc
+// CreateRouter creates a new Chi router and registers all the routes.
 // @title GoAuth API
-// @version 0.7.2
+// @version 0.11.0
 // @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
 // @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
 // @contact.name TrieOH
@@ -45,7 +45,10 @@ import (
 // @response 200 {object} object "Standard success response"
 // @response 400 {object} handlers.ErrorResponse "Standard error response for bad requests"
 // @response 401 {object} handlers.ErrorResponse "Standard error response for unauthorized requests"
+// @response 403 {object} handlers.ErrorResponse "Standard error response for forbidden requests"
 // @response 404 {object} handlers.ErrorResponse "Standard error response for not found errors"
+// @response 413 {object} handlers.ErrorResponse "Standard error response for payload too large 1MB"
+// @response 429 {object} handlers.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
 func CreateRouter(db *sql.DB) http.Handler {
 	r := chi.NewRouter()
@@ -57,7 +60,7 @@ func CreateRouter(db *sql.DB) http.Handler {
 		r.Use(httprate.Limit(
 			400,
 			1*time.Minute,
-			httprate.WithKeyFuncs(httprate.KeyByIP),
+			httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		))
 	}
 

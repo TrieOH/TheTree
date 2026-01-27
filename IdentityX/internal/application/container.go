@@ -10,6 +10,7 @@ import (
 	"GoAuth/internal/application/schema"
 	"GoAuth/internal/application/schema_fields"
 	"GoAuth/internal/application/schema_version"
+	"GoAuth/internal/application/scope"
 	"GoAuth/internal/application/session"
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/infrastructure"
@@ -24,6 +25,7 @@ type Application struct {
 	SchemaFields   inbounds.SchemaFieldsService
 	Session        inbounds.SessionService
 	Authenticator  inbounds.RequestAuthenticator
+	Scope          inbounds.ScopeService
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
@@ -44,7 +46,12 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			ProjectUsers: repos.ProjectUsers,
 			Keys:         repos.Keys,
 		}, infra, keyService, tokensBundle, mailBundle),
-		Project: project.New(repos.Projects, repos.Keys, infra.Tx),
+		Project: project.New(
+			repos.Projects,
+			repos.Scopes,
+			repos.Keys,
+			infra.Tx,
+		),
 		Schema: schema.New(schema.Deps{
 			Schemas:  repos.Schemas,
 			Versions: repos.SchemaVersions,
@@ -68,5 +75,6 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
+		Scope: scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}
 }

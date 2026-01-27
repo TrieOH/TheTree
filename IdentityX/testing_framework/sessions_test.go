@@ -144,7 +144,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 
 		var identityID string
 		err = suite.DB.QueryRow(`
-			INSERT INTO session_identities (type, entity_id)
+			INSERT INTO identities (type, entity_id)
 			VALUES ('client', $1)
 			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
 			RETURNING id
@@ -196,7 +196,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 
 		var identityID string
 		err = suite.DB.QueryRow(`
-			INSERT INTO session_identities (type, entity_id)
+			INSERT INTO identities (type, entity_id)
 			VALUES ('client', $1)
 			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
 			RETURNING id
