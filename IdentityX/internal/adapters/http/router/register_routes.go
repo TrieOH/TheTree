@@ -37,6 +37,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	registerSchemaVersionRoutes(r, handlerBundle.SchemaVersionHandler, authMW)
 	registerSchemaFieldsRoutes(r, handlerBundle.SchemaFieldsHandler, authMW)
 	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
+	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
 
 	return r
 }
@@ -96,7 +97,6 @@ func registerSessionRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
-
 		r.Get("/sessions", h.ListUserSessions)
 		r.Get("/sessions/me", h.Me)
 		r.Delete("/sessions/{session_id}", h.RevokeUserSessionByID)
@@ -112,7 +112,6 @@ func registerProjectRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Get("/projects/{project_id}/.well-known/jwks.json", h.GetProjectJWKS)
-
 		r.With(authMW.Auth(), middleware.ClientOnly()).Group(func(r chi.Router) {
 			r.Post("/projects", h.CreateProject)
 			r.Get("/projects", h.ListProjects)
@@ -131,21 +130,22 @@ func registerSchemaRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
-
-		r.Post("/projects/{project_id}/schemas", schemas.Draft)
-		r.Get("/projects/{project_id}/schemas", schemas.List)
-		r.Get("/projects/{project_id}/schemas/ids", schemas.GetIDsFromProjectID)
-		r.Get("/projects/{project_id}/schemas/{schema_id}", schemas.GetByID)
-		/* r.With(
-			middleware.DefaultQueryParam("schema_type", "context"),
-			middleware.DefaultQueryParam("flow_id", "none"),
-		).Get("/projects/{project_id}/schemas/{schema_id}/latest", schemas.GetLatestForm)
-		r.With(
-			middleware.DefaultQueryParam("schema_type", "context"),
-			middleware.DefaultQueryParam("flow_id", "none"),
-		).Get("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificForm) */
-		r.Get("/projects/{project_id}/schemas/{schema_id}/verbose", schemas.GetVerbose)
-		r.Post("/projects/{project_id}/schemas/{schema_id}/publish", schemas.Publish)
+		r.Route("/projects/{project_id}/schemas", func(r chi.Router) {
+			r.Post("/", schemas.Draft)
+			r.Get("/", schemas.List)
+			r.Get("/ids", schemas.GetIDsFromProjectID)
+			r.Get("/{schema_id}", schemas.GetByID)
+			/* r.With(
+				middleware.DefaultQueryParam("schema_type", "context"),
+				middleware.DefaultQueryParam("flow_id", "none"),
+			).Get("/{schema_id}/latest", schemas.GetLatestForm)
+			r.With(
+				middleware.DefaultQueryParam("schema_type", "context"),
+				middleware.DefaultQueryParam("flow_id", "none"),
+			).Get("/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificForm) */
+			r.Get("/{schema_id}/verbose", schemas.GetVerbose)
+			r.Post("/{schema_id}/publish", schemas.Publish)
+		})
 	})
 }
 
@@ -157,12 +157,13 @@ func registerSchemaVersionRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
-
-		r.Post("/projects/{project_id}/schemas/{schema_id}/versions/draft", h.Draft)
-		r.Post("/projects/{project_id}/schemas/{schema_id}/versions/publish", h.Publish)
-		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/current", h.GetCurrent)
-		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/latest", h.GetLatest)
-		r.Get("/projects/{project_id}/schemas/{schema_id}/versions/v{version:[0-9]+}", h.GetVerbose)
+		r.Route("/projects/{project_id}/schemas/{schema_id}/versions", func(r chi.Router) {
+			r.Post("/draft", h.Draft)
+			r.Post("/publish", h.Publish)
+			r.Get("/current", h.GetCurrent)
+			r.Get("/latest", h.GetLatest)
+			r.Get("/v{version:[0-9]+}", h.GetVerbose)
+		})
 	})
 }
 
@@ -174,7 +175,6 @@ func registerSchemaFieldsRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
-
 		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
 	})
 }
@@ -187,9 +187,27 @@ func registerScopeRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
+		r.Route("/projects/{project_id}/scopes", func(r chi.Router) {
+			r.Post("/", h.Create)
+			r.Get("/", h.GetProjectScopes)
+			r.Get("/{scope_id}", h.GetByID)
+		})
+	})
+}
 
-		r.Post("/projects/{project_id}/scopes", h.Create)
-		r.Get("/projects/{project_id}/scopes", h.GetProjectScopes)
-		r.Get("/projects/{project_id}/scopes/{scope_id}", h.GetByID)
+func registerPermissionRoutes(
+	r *chi.Mux,
+	h *handlers.PermissionHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+		r.Route("/projects/{project_id}/permissions", func(r chi.Router) {
+			r.Post("/", h.Create)
+			r.Get("/{permission_id}", h.GetByID)
+			r.With(middleware.AllowOnlyQueryParams("object", "action")).
+				Get("/", h.ListByProject)
+		})
 	})
 }

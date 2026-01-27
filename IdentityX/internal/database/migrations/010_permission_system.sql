@@ -1,6 +1,6 @@
 -- +goose Up
 
--- FIXME Add deleted_at later for scope deprecation (soft_delete)
+-- FIXME Add deprecated_at later for scope deprecation (soft_delete)
 CREATE TABLE scopes (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -8,7 +8,7 @@ CREATE TABLE scopes (
     type TEXT NOT NULL CHECK (type IN ('global', 'project_root', 'project_scope')),
 
     -- Tenant boundary (NULL only for global)
-    project_id UUID,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
 
     -- Namespace inside a project (NULL for global + project_root)
     name TEXT,
@@ -93,14 +93,28 @@ CREATE UNIQUE INDEX scopes_unique_project_resource_scopes
 --- User X Can edit activities on event 123
 
 CREATE TABLE permissions (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     object TEXT NOT NULL, -- e.g. "event:*", "event:123", "event:123/activity"
     action TEXT NOT NULL, -- e.g. "create", "edit", "delete", "attendance:mark"
     conditions JSONB,     -- optional ABAC rules
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 
-    UNIQUE (object, action)
+    CHECK (length(object) BETWEEN 1 AND 255),
+    CHECK (length(action) BETWEEN 1 AND 100),
+
+    -- allow only safe characters
+    CHECK (object ~ '^[a-zA-Z0-9:_/*-]+$'),
+    CHECK (action ~ '^[a-zA-Z0-9:_*-]+$')
 );
+
+CREATE UNIQUE INDEX permissions_idp_unique
+    ON permissions (object, action)
+    WHERE project_id IS NULL;
+
+CREATE UNIQUE INDEX permissions_project_unique
+    ON permissions (project_id, object, action)
+    WHERE project_id IS NOT NULL;
 
 CREATE TABLE roles (
     id UUID PRIMARY KEY,
@@ -161,6 +175,8 @@ DROP TABLE IF EXISTS identity_permissions;
 DROP TABLE IF EXISTS identity_roles;
 DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS roles;
+DROP INDEX IF EXISTS permissions_project_unique;
+DROP INDEX IF EXISTS permissions_idp_unique;
 DROP TABLE IF EXISTS permissions;
 DROP INDEX IF EXISTS scopes_unique_project_resource_scopes;
 DROP INDEX IF EXISTS scopes_unique_project_named_scopes;

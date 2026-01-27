@@ -8,6 +8,7 @@ const (
 	RequestValidationError           ID = "REQ_005"
 	RequestNotApplicationJSON        ID = "REQ_006"
 	RequestEmptyCookie               ID = "REQ_007"
+	RequestUnknownQueryParam         ID = "REQ_008"
 )
 
 const (
@@ -162,6 +163,11 @@ const (
 	ScopeEmptyName                  ID = "SCP_001"
 	ScopeDuplicateNameAndExternalID ID = "SCP_002"
 	ScopeInvalid                    ID = "SCP_003"
+)
+
+const (
+	PermissionInvalidObject ID = "PERM_001"
+	PermissionInvalidAction ID = "PERM_002"
 )
 
 const (
