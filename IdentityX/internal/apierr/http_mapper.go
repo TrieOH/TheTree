@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
@@ -334,6 +335,14 @@ func FromService(span trace.Span, err error) *Error {
 		return httpErr
 	case inbounds.ErrEmptyScopeName:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInvalidPermissionObject:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidObject)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInvalidPermissionAction:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidAction)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
