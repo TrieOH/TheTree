@@ -13,6 +13,7 @@ import Header from '@/components/Header'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/types/route-types'
 import { AuthProvider, useAuth } from '@trieoh/node-auth-sdk/react'
 import { useEffect, useState } from 'react'
+
 interface MyRouterContext {
   queryClient: QueryClient
   auth?: ReturnType<typeof useAuth>
