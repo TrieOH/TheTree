@@ -164,7 +164,6 @@ DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS permissions;
 DROP INDEX IF EXISTS scopes_unique_project_resource_scopes;
 DROP INDEX IF EXISTS scopes_unique_project_named_scopes;
-DROP INDEX IF EXISTS scopes_unique_typed_external;
 DROP INDEX IF EXISTS scopes_one_project_root_per_project;
 DROP INDEX IF EXISTS scopes_one_global;
 DROP TABLE IF EXISTS scopes;

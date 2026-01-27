@@ -99,7 +99,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 }
 
 func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.GetScopeInput) ([]inbounds.ScopeOutput, error) {
-	ctx, span := usecaseTracer.Start(ctx, "ScopeService.GetByIDExternal")
+	ctx, span := usecaseTracer.Start(ctx, "ScopeService.GetProjectScopesExternal")
 	defer span.End()
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
