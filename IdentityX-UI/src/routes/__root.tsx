@@ -76,13 +76,15 @@ function AuthSyncronizer({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if(router.options.context.auth?.isAuthenticated !== auth.isAuthenticated) {
-      router.update({
-        context: { ...router.options.context, auth: auth },
-      })
-      setIsLoading(false);
-      router.invalidate()
+    const updateAuthContext = async () => {
+      if(router.options.context.auth?.isAuthenticated !== auth.isAuthenticated) {
+        router.update({ context: { ...router.options.context, auth } })
+        await router.invalidate()
+        setIsLoading(false);
+      }
     }
+
+    updateAuthContext();
   }, [auth.isAuthenticated, router])
 
   if(isLoading) return null; // change to guard
