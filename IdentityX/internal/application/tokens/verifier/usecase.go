@@ -83,10 +83,14 @@ func verifyToken[T jwt.Claims](
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
+		methodAlg := ""
+		if token.Method != nil {
+			methodAlg = token.Method.Alg()
+		}
 		return claims, auth.ErrTokenInvalidAlg{
 			TokenType: tokenType,
 			Expected:  jwt.SigningMethodEdDSA.Alg(),
-			Got:       token.Method.Alg(),
+			Got:       methodAlg,
 		}
 	}
 
