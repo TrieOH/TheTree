@@ -87,10 +87,6 @@ func init() {
 		log.Fatalf("Failed migrations: %v", err)
 	}
 
-	if err := database.SetJWTMasterKey(DB); err != nil {
-		log.Fatal(err)
-	}
-
 	queries := sqlc.New(DB)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
