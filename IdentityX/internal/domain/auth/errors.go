@@ -43,10 +43,12 @@ func (e ErrSigningToken) Error() string {
 
 type ErrTokenInvalidAlg struct {
 	TokenType string
+	Expected  string
+	Got       string
 }
 
 func (e ErrTokenInvalidAlg) Error() string {
-	return "invalid " + e.TokenType + " token alg"
+	return "invalid " + e.TokenType + " token alg, expected \"" + e.Expected + "\" but got \"" + e.Got + "\""
 }
 
 type ErrTokenInvalidFormat struct {
