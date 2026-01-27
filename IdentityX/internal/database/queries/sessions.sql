@@ -30,7 +30,7 @@ WHERE token_id = $1
 -- name: ListSessions :many
 SELECT s.*
 FROM sessions s
-JOIN session_identities i ON i.id = s.identity_id
+JOIN identities i ON i.id = s.identity_id
 WHERE i.type = $1
     AND i.entity_id = $2
     AND s.revoked_at IS NULL
@@ -46,7 +46,7 @@ SET
     expires_at = $7,
     token_id   = $8,
     updated_at = NOW()
-    FROM session_identities i
+    FROM identities i
 WHERE s.session_id = $1
   AND s.identity_id = i.id
   AND i.type = $2
@@ -80,7 +80,7 @@ UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-    FROM session_identities i
+    FROM identities i
 WHERE s.session_id = $1
   AND s.identity_id = i.id
   AND i.type = $2
@@ -101,7 +101,7 @@ UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-FROM session_identities i
+FROM identities i
 WHERE s.identity_id = i.id
 AND i.type = $1
 AND i.entity_id = $2
@@ -114,7 +114,7 @@ UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-FROM session_identities i
+FROM identities i
 WHERE s.identity_id = i.id
 AND i.type = $1
 AND i.entity_id = $2
@@ -129,18 +129,3 @@ SET
 WHERE expires_at < NOW()
 AND revoked_at IS NULL
 RETURNING *;
-
--- name: CreateSessionIdentity :one
-INSERT INTO session_identities (type, entity_id, created_at)
-VALUES ($1, $2, NOW())
-RETURNING *;
-
--- name: GetSessionIdentityByEntityIDAndType :one
-SELECT *
-FROM session_identities
-WHERE entity_id = $1 AND type = $2;
-
--- name: GetSessionIdentityByIDAndType :one
-SELECT *
-FROM session_identities
-WHERE id = $1 AND type = $2;

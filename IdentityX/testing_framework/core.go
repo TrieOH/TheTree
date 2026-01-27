@@ -98,9 +98,6 @@ func setupDatabase() (*sql.DB, error) {
 	if err = database.RunMigrations(db, "../internal/database/migrations"); err != nil {
 		return nil, fmt.Errorf("failed migrations: %w", err)
 	}
-	if err = database.SetJWTMasterKey(db); err != nil {
-		return nil, err
-	}
 
 	queries := sqlc.New(db)
 

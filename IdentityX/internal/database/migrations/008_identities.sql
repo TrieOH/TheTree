@@ -2,7 +2,7 @@
 
 CREATE TYPE identity_type AS ENUM ('client', 'project');
 
-CREATE TABLE session_identities (
+CREATE TABLE identities (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     type identity_type NOT NULL,
     entity_id UUID NOT NULL,
@@ -13,19 +13,19 @@ CREATE TABLE session_identities (
 
 ALTER TABLE sessions
     ADD COLUMN identity_id UUID NOT NULL
-        REFERENCES session_identities(id)
+        REFERENCES identities(id)
             ON DELETE CASCADE;
 
-CREATE INDEX idx_sessions_identity_id
+CREATE INDEX idx_identity_id
     ON sessions(identity_id);
 
 -- +goose Down
 
-DROP INDEX IF EXISTS idx_sessions_identity_id;
+DROP INDEX IF EXISTS idx_identity_id;
 
 ALTER TABLE sessions
 DROP COLUMN IF EXISTS identity_id;
 
-DROP TABLE IF EXISTS session_identities;
+DROP TABLE IF EXISTS identities;
 
 DROP TYPE IF EXISTS identity_type;

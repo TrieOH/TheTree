@@ -10,8 +10,10 @@ import (
 	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/infrastructure/telemetry"
 	"database/sql"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 )
@@ -45,7 +47,14 @@ func registerAuthRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Post("/auth/register", h.Register)
-		r.Post("/auth/login", h.Login)
+
+		if !viper.GetBool("DISABLE_RATE_LIMIT") {
+			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+				Post("/auth/login", h.Login)
+		} else {
+			r.Post("/auth/login", h.Login)
+		}
+
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth()).
 			Post("/auth/logout", h.Logout)
@@ -70,7 +79,12 @@ func registerAuthRoutes(
 			middleware.DefaultQueryParam("version", "0"),
 		).Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
 
-		r.Post("/projects/{project_id}/login", h.ProjectLogin)
+		if !viper.GetBool("DISABLE_RATE_LIMIT") {
+			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+				Post("/projects/{project_id}/login", h.ProjectLogin)
+		} else {
+			r.Post("/projects/{project_id}/login", h.ProjectLogin)
+		}
 	})
 }
 
