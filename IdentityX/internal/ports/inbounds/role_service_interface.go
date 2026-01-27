@@ -10,4 +10,9 @@ type RoleService interface {
 	GetByIDExternal(ctx context.Context, in GetRoleInput) (*RoleOutput, error)
 	GetByName(ctx context.Context, in GetRoleInput) (*RoleOutput, error)
 	ListByProject(ctx context.Context, in GetRoleInput) ([]RoleOutput, error)
+
+	AddPermission(ctx context.Context, in RolePermissionInput) error
+	RemovePermission(ctx context.Context, in RolePermissionInput) error
+
+	GetPermissions(ctx context.Context, in RolePermissionInput) ([]PermissionOutput, error)
 }

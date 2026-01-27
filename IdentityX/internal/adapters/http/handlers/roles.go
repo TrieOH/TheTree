@@ -153,3 +153,101 @@ func (handler *RoleHandler) ListByProject(w http.ResponseWriter, r *http.Request
 
 	resp.OK().WithData(dto.RoleOutputSliceToRoleResponseSlice(role)).Send(w)
 }
+
+func (handler *RoleHandler) AddPermission(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	roleID, rs := getUUID(r, "role_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	permissionID, rs := getUUID(r, "permission_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.RolePermissionInput{
+		ProjectID:    &projectID,
+		RoleID:       roleID,
+		PermissionID: permissionID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.AddPermission(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Added permission to role").Send(w)
+}
+
+func (handler *RoleHandler) RemovePermission(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	roleID, rs := getUUID(r, "role_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	permissionID, rs := getUUID(r, "permission_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.RolePermissionInput{
+		ProjectID:    &projectID,
+		RoleID:       roleID,
+		PermissionID: permissionID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.RemovePermission(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Removed permission from role").Send(w)
+}
+
+func (handler *RoleHandler) GetPermissions(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	roleID, rs := getUUID(r, "role_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.RolePermissionInput{
+		ProjectID: &projectID,
+		RoleID:    roleID,
+	}
+
+	ctx := r.Context()
+	permissions, err := handler.role.GetPermissions(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(permissions)).Send(w)
+}

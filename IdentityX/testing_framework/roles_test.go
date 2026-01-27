@@ -110,7 +110,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			HasMessage("resource already exists")
 	})
 
-	var roleNoDescriptionID string
+	var userRoleID string
 	t.Run("CreateRoleNoDescription", func(t *testing.T) {
 		val := suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles").
 			WithBody(map[string]interface{}{
@@ -121,7 +121,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			RequireDataValue()
 
 		spec := map[string]interface{}{
-			"id":          StoreString{Into: &roleNoDescriptionID, Matcher: AnyUUID{}},
+			"id":          StoreString{Into: &userRoleID, Matcher: AnyUUID{}},
 			"project_id":  AsString{Value: projectID, Matcher: AnyUUID{}},
 			"name":        "user",
 			"description": nil,
@@ -139,7 +139,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 
 		spec := []interface{}{
 			map[string]interface{}{
-				"id":          StoreString{Into: &roleNoDescriptionID, Matcher: AnyUUID{}},
+				"id":          StoreString{Into: &userRoleID, Matcher: AnyUUID{}},
 				"project_id":  AsString{Value: projectID, Matcher: AnyUUID{}},
 				"name":        "user",
 				"description": nil,
@@ -176,5 +176,167 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.RequestUnknownQueryParam).
 			HasMessage("unknown query parameter: something_else")
+	})
+
+	var createEventPermissionID string
+	t.Run("CreateEventPermission", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		val := authClient.POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object":     "event:*",
+				"action":     "create",
+				"conditions": nil,
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created").
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":         StoreString{Into: &createEventPermissionID, Matcher: AnyUUID{}},
+			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+			"object":     "event:*",
+			"action":     "create",
+			"conditions": nil,
+			"created_at": AnyDate{},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	var markAttendancePermissionID string
+	t.Run("CreateAttendanceMarkPermission", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		val := authClient.POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object":     "event:123/activity:*",
+				"action":     "attendance:mark",
+				"conditions": nil,
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created").
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":         StoreString{Into: &markAttendancePermissionID, Matcher: AnyUUID{}},
+			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+			"object":     "event:123/activity:*",
+			"action":     "attendance:mark",
+			"conditions": nil,
+			"created_at": AnyDate{},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	var attendActivity321PermissionID string
+	t.Run("CreateActivityAttendancePermission", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		val := authClient.POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object":     "event:123/activity:321",
+				"action":     "attend",
+				"conditions": nil,
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created").
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":         StoreString{Into: &attendActivity321PermissionID, Matcher: AnyUUID{}},
+			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+			"object":     "event:123/activity:321",
+			"action":     "attend",
+			"conditions": nil,
+			"created_at": AnyDate{},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	t.Run("AddAdminPermissions", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles/" + adminRoleID + "/permissions/" + createEventPermissionID).
+			Expect(http.StatusOK).
+			HasMessage("Added permission to role")
+
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles/" + adminRoleID + "/permissions/" + markAttendancePermissionID).
+			Expect(http.StatusOK).
+			HasMessage("Added permission to role")
+	})
+
+	t.Run("AddUserPermissions", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles/" + userRoleID + "/permissions/" + attendActivity321PermissionID).
+			Expect(http.StatusOK).
+			HasMessage("Added permission to role")
+	})
+
+	t.Run("GetAdminPermissions", func(t *testing.T) {
+		val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/" + projectID + "/roles/" + adminRoleID + "/permissions").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":         AsString{Value: markAttendancePermissionID, Matcher: AnyUUID{}},
+				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+				"object":     "event:123/activity:*",
+				"action":     "attendance:mark",
+				"conditions": nil,
+				"created_at": AnyDate{},
+			},
+			map[string]interface{}{
+				"id":         AsString{Value: createEventPermissionID, Matcher: AnyUUID{}},
+				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+				"object":     "event:*",
+				"action":     "create",
+				"conditions": nil,
+				"created_at": AnyDate{},
+			},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	t.Run("GetUserPermissions", func(t *testing.T) {
+		val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/" + projectID + "/roles/" + userRoleID + "/permissions").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":         AsString{Value: attendActivity321PermissionID, Matcher: AnyUUID{}},
+				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+				"object":     "event:123/activity:321",
+				"action":     "attend",
+				"conditions": nil,
+				"created_at": AnyDate{},
+			},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	t.Run("RemoveAdminPermission", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/roles/" + adminRoleID + "/permissions/" + createEventPermissionID).
+			Expect(http.StatusOK).
+			HasMessage("Removed permission from role")
+	})
+
+	t.Run("GetAdminPermissionsAgain", func(t *testing.T) {
+		val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/" + projectID + "/roles/" + adminRoleID + "/permissions").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":         AsString{Value: markAttendancePermissionID, Matcher: AnyUUID{}},
+				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+				"object":     "event:123/activity:*",
+				"action":     "attendance:mark",
+				"conditions": nil,
+				"created_at": AnyDate{},
+			},
+		}
+
+		Validate(t, val, spec)
 	})
 }

@@ -345,6 +345,14 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidAction)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case inbounds.ErrRoleNotOwned:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RoleNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPermissionNotOwned:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""

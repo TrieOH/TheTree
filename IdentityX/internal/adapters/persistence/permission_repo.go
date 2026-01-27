@@ -151,3 +151,25 @@ func (repo *permissionRepo) ListByProject(ctx context.Context, object, action *s
 	}
 	return outPermissions, nil
 }
+
+func (repo *permissionRepo) BelongsToProject(ctx context.Context, id, projectID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.BelongsToProject",
+		trace.WithAttributes(
+			attribute.String("permission.id", id.String()),
+			attribute.String("permission.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	belongs, err := repo.queries(ctx).PermissionBelongsToProject(ctx, sqlc.PermissionBelongsToProjectParams{
+		ID:        id,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return belongs, nil
+}

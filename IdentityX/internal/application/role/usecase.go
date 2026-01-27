@@ -16,22 +16,25 @@ var (
 )
 
 type UseCase struct {
-	roles    outbounds.RoleRepository
-	projects outbounds.ProjectRepository
-	tx       inbounds.TxRunner
+	roles       outbounds.RoleRepository
+	permissions outbounds.PermissionRepository
+	projects    outbounds.ProjectRepository
+	tx          inbounds.TxRunner
 }
 
 var _ inbounds.RoleService = (*UseCase)(nil)
 
 func New(
 	roles outbounds.RoleRepository,
+	permissions outbounds.PermissionRepository,
 	projects outbounds.ProjectRepository,
 	tx inbounds.TxRunner,
 ) inbounds.RoleService {
 	return &UseCase{
-		roles:    roles,
-		projects: projects,
-		tx:       tx,
+		roles:       roles,
+		permissions: permissions,
+		projects:    projects,
+		tx:          tx,
 	}
 }
 
@@ -177,4 +180,123 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetRoleInput) 
 	}
 
 	return inbounds.RoleSliceToRoleOutputSlice(foundRoles), nil
+}
+
+func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.AddPermission")
+	defer span.End()
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot add edit a project you don't own"})
+	}
+
+	var roleBelongs bool
+	roleBelongs, err = uc.roles.BelongsToProject(ctx, in.RoleID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !roleBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.PermissionID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return apierr.FromService(span, inbounds.ErrPermissionNotOwned{Msg: "cannot add permission to a role you don't own"})
+	}
+
+	if err = uc.roles.AddPermission(ctx, in.RoleID, in.PermissionID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) RemovePermission(ctx context.Context, in inbounds.RolePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.RemovePermission")
+	defer span.End()
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+	}
+
+	var roleBelongs bool
+	roleBelongs, err = uc.roles.BelongsToProject(ctx, in.RoleID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !roleBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.PermissionID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return apierr.FromService(span, inbounds.ErrPermissionNotOwned{Msg: "cannot remove permission from a role you don't own"})
+	}
+
+	if err = uc.roles.RemovePermission(ctx, in.RoleID, in.PermissionID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) GetPermissions(ctx context.Context, in inbounds.RolePermissionInput) ([]inbounds.PermissionOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetPermissions")
+	defer span.End()
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot fetch from a project you don't own"})
+	}
+
+	permissions, err := uc.roles.GetPermissions(ctx, in.RoleID, *in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.PermissionSliceToPermissionOutputSlice(permissions), nil
 }

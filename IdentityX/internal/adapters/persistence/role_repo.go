@@ -4,6 +4,7 @@ import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/roles"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -192,4 +193,100 @@ func (repo *roleRepo) ListByProject(ctx context.Context, projectID uuid.UUID) ([
 		outRoles = append(outRoles, outRole)
 	}
 	return outRoles, nil
+}
+
+func (repo *roleRepo) BelongsToProject(ctx context.Context, id, projectID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.BelongsToProject",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	belongs, err := repo.queries(ctx).RoleBelongsToProject(ctx, sqlc.RoleBelongsToProjectParams{
+		ID:        id,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return belongs, nil
+}
+
+func (repo *roleRepo) AddPermission(ctx context.Context, id uuid.UUID, permissionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.AddPermission",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.permission_id", permissionID.String()),
+		),
+	)
+	defer span.End()
+
+	err := repo.queries(ctx).AddPermissionToRole(ctx, sqlc.AddPermissionToRoleParams{
+		RoleID:       id,
+		PermissionID: permissionID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
+func (repo *roleRepo) RemovePermission(ctx context.Context, id uuid.UUID, permissionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.RemovePermission",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.permission_id", permissionID.String()),
+		),
+	)
+	defer span.End()
+
+	err := repo.queries(ctx).RemovePermissionFromRole(ctx, sqlc.RemovePermissionFromRoleParams{
+		RoleID:       id,
+		PermissionID: permissionID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
+func (repo *roleRepo) GetPermissions(ctx context.Context, id, projectID uuid.UUID) ([]permissions.Permission, error) {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.GetPermissions",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcPermissions, err := repo.queries(ctx).GetRolePermissions(ctx, sqlc.GetRolePermissionsParams{
+		RoleID:    id,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))
+
+	outPermissions := make([]permissions.Permission, 0, len(sqlcPermissions))
+	for _, sqlcPermission := range sqlcPermissions {
+		var outPermission permissions.Permission
+		mapPermissionFromDB(&outPermission, &sqlcPermission)
+		outPermissions = append(outPermissions, outPermission)
+	}
+	return outPermissions, nil
 }

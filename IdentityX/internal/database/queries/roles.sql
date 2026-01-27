@@ -32,3 +32,30 @@ SELECT *
 FROM roles
 WHERE project_id = $1
 ORDER BY created_at DESC;
+
+-- name: RoleBelongsToProject :one
+SELECT EXISTS (
+    SELECT 1
+    FROM roles
+    WHERE id = $1
+      AND project_id = $2
+);
+
+------------------------------
+------ Role Permissions ------
+------------------------------
+
+-- name: AddPermissionToRole :exec
+INSERT INTO role_permissions (role_id, permission_id)
+VALUES ($1, $2);
+
+-- name: RemovePermissionFromRole :exec
+DELETE FROM role_permissions
+WHERE role_id = $1 and permission_id = $2;
+
+-- name: GetRolePermissions :many
+SELECT p.*
+FROM permissions p
+INNER JOIN role_permissions rp ON rp.permission_id = p.id
+WHERE rp.role_id = $1 AND p.project_id = $2
+ORDER BY created_at DESC;
