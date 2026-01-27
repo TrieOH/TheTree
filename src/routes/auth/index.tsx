@@ -1,12 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { requireGuest } from '@/hooks/auth-guard';
+import { createFileRoute } from '@tanstack/react-router'
 import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/auth/')({
-  beforeLoad: async ({context}) => {
-    console.log(context.auth?.isAuthenticated);
-    if(context.auth?.isAuthenticated) throw redirect({to: "/projects"})
-  },
+  beforeLoad: requireGuest,
   staticData: {
     components: {
       header: {

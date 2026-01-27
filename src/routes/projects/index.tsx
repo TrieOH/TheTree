@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-// import { env } from '@/env'
+import { requireAuth } from '@/hooks/auth-guard'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/projects/')({
+  beforeLoad: requireAuth,
   staticData: {
     components: {
       header: {
