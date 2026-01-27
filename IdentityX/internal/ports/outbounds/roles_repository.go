@@ -1,6 +1,7 @@
 package outbounds
 
 import (
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/roles"
 	"context"
 
@@ -14,4 +15,11 @@ type RoleRepository interface {
 	GetByIDExternal(ctx context.Context, id, projectID uuid.UUID) (*roles.Role, error)
 	GetByName(ctx context.Context, name string, projectID *uuid.UUID) (*roles.Role, error)
 	ListByProject(ctx context.Context, projectID uuid.UUID) ([]roles.Role, error)
+
+	BelongsToProject(ctx context.Context, id, projectID uuid.UUID) (bool, error)
+
+	AddPermission(ctx context.Context, id uuid.UUID, permissionID uuid.UUID) error
+	RemovePermission(ctx context.Context, id uuid.UUID, permissionID uuid.UUID) error
+
+	GetPermissions(ctx context.Context, id, projectID uuid.UUID) ([]permissions.Permission, error)
 }

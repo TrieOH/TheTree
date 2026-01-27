@@ -80,7 +80,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
 		Permission: permission.New(repos.Permissions, repos.Projects, infra.Tx),
-		Role:       role.New(repos.Roles, repos.Projects, infra.Tx),
+		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}
 }

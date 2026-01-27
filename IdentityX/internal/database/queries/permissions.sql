@@ -32,3 +32,11 @@ WHERE
         OR action = sqlc.narg(action)
     )
 ORDER BY created_at DESC;
+
+-- name: PermissionBelongsToProject :one
+SELECT EXISTS(
+    SELECT 1
+    FROM permissions
+    WHERE id = $1
+        AND project_id = $2
+);

@@ -166,12 +166,14 @@ const (
 )
 
 const (
-	PermissionInvalidObject ID = "PERM_001"
-	PermissionInvalidAction ID = "PERM_002"
+	PermissionInvalidObject       ID = "PERM_001"
+	PermissionInvalidAction       ID = "PERM_002"
+	PermissionNotOwnedByPrincipal ID = "PERM_003"
 )
 
 const (
-	RoleEmptyName ID = "ROLE_001"
+	RoleEmptyName           ID = "ROLE_001"
+	RoleNotOwnedByPrincipal ID = "ROLE_002"
 )
 
 const (

@@ -228,6 +228,11 @@ func registerRoleRoutes(
 			r.Get("/", h.ListByProject)
 			r.With(middleware.RequireOnlyQueryParams("name")).
 				Get("/search", h.GetByName)
+			r.Route("/{role_id}/permissions", func(r chi.Router) {
+				r.Get("/", h.GetPermissions)
+				r.Post("/{permission_id}", h.AddPermission)
+				r.Delete("/{permission_id}", h.RemovePermission)
+			})
 		})
 	})
 }

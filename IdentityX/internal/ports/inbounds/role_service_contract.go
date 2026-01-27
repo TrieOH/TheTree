@@ -19,6 +19,12 @@ type GetRoleInput struct {
 	Name      string
 }
 
+type RolePermissionInput struct {
+	ProjectID    *uuid.UUID
+	RoleID       uuid.UUID
+	PermissionID uuid.UUID
+}
+
 type RoleOutput struct {
 	Role roles.Role
 }
@@ -37,4 +43,12 @@ func RoleSliceToRoleOutputSlice(roles []roles.Role) []RoleOutput {
 		out = append(out, RoleOutput{role})
 	}
 	return out
+}
+
+type ErrRoleNotOwned struct {
+	Msg string
+}
+
+func (e ErrRoleNotOwned) Error() string {
+	return e.Msg
 }
