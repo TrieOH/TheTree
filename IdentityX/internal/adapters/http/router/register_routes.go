@@ -38,6 +38,7 @@ func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
 	registerSchemaFieldsRoutes(r, handlerBundle.SchemaFieldsHandler, authMW)
 	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
 	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
+	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
 
 	return r
 }
@@ -208,6 +209,25 @@ func registerPermissionRoutes(
 			r.Get("/{permission_id}", h.GetByID)
 			r.With(middleware.AllowOnlyQueryParams("object", "action")).
 				Get("/", h.ListByProject)
+		})
+	})
+}
+
+func registerRoleRoutes(
+	r *chi.Mux,
+	h *handlers.RoleHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+		r.Route("/projects/{project_id}/roles", func(r chi.Router) {
+			r.Post("/", h.Create)
+			r.Get("/{role_id}", h.GetByID)
+			r.Patch("/{role_id}", h.UpdateDescription)
+			r.Get("/", h.ListByProject)
+			r.With(middleware.RequireOnlyQueryParams("name")).
+				Get("/search", h.GetByName)
 		})
 	})
 }

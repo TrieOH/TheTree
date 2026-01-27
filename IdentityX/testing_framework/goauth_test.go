@@ -58,4 +58,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("Permissions", func(t *testing.T) {
 		testPermissions(t, suite)
 	})
+
+	t.Run("Roles", func(t *testing.T) {
+		testRoles(t, suite)
+	})
 }

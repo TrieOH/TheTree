@@ -16,7 +16,7 @@ CREATE TABLE scopes (
     -- Optional reference to a specific resource inside that namespace
     external_id TEXT,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT scope_shape_check CHECK (
 
@@ -98,29 +98,30 @@ CREATE TABLE permissions (
     object TEXT NOT NULL, -- e.g. "event:*", "event:123", "event:123/activity"
     action TEXT NOT NULL, -- e.g. "create", "edit", "delete", "attendance:mark"
     conditions JSONB,     -- optional ABAC rules
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CHECK (length(object) BETWEEN 1 AND 255),
     CHECK (length(action) BETWEEN 1 AND 100),
-
-    -- allow only safe characters
     CHECK (object ~ '^[a-zA-Z0-9:_/*-]+$'),
-    CHECK (action ~ '^[a-zA-Z0-9:_*-]+$')
+    CHECK (action ~ '^[a-zA-Z0-9:_*-]+$'),
+
+    UNIQUE NULLS NOT DISTINCT (project_id, object, action)
 );
 
-CREATE UNIQUE INDEX permissions_idp_unique
-    ON permissions (object, action)
-    WHERE project_id IS NULL;
-
-CREATE UNIQUE INDEX permissions_project_unique
-    ON permissions (project_id, object, action)
-    WHERE project_id IS NOT NULL;
-
 CREATE TABLE roles (
-    id UUID PRIMARY KEY,
-    name VARCHAR(64) NOT NULL, -- admin | editor | staff
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+
+    -- null = IdP role, not null = project role
+    project_id UUID NULL REFERENCES projects(id) ON DELETE CASCADE,
+
+    name VARCHAR(64) NOT NULL,
     description TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- unique: (admin, null) once, (admin, proj-a) once, (admin, proj-b) once...
+    UNIQUE NULLS NOT DISTINCT (name, project_id)
 );
 
 CREATE TABLE role_permissions (
@@ -134,7 +135,7 @@ CREATE TABLE identity_roles (
     identity_id UUID NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
     scope_id UUID NOT NULL REFERENCES scopes(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY (identity_id, role_id, scope_id)
 );
@@ -143,7 +144,7 @@ CREATE TABLE identity_permissions (
     identity_id UUID NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
     scope_id UUID NOT NULL REFERENCES scopes(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY (identity_id, permission_id, scope_id)
 );
@@ -154,7 +155,7 @@ CREATE TABLE permission_audit_log (
     target_identity_id UUID REFERENCES identities(id),
     action TEXT NOT NULL, -- grant_role | revoke_role | grant_permission
     details JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_identity_roles_identity_scope
