@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 interface PropsI {
   value?: string;
@@ -9,7 +9,8 @@ interface PropsI {
 
 export function ShadowButton({ value, leftIcon, className, onClick }: PropsI) {
   return (
-    <button 
+    <button
+      type="button"
       className={cn(
         "flex cursor-pointer gap-2 font-extralight bg-primary-foreground text-card-foreground",
         "border border-primary rounded-sm p-2",

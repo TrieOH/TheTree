@@ -1,10 +1,9 @@
-import type { HeaderConfigI } from "@/types/route-types";
 import { Link, useNavigate, useRouteContext } from "@tanstack/react-router";
-import { ShadowButton } from "./Basic/ShadowButton";
-
 import { LogIn, Menu, User, X } from 'lucide-react';
-import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { cn } from "@/shared/lib/utils";
+import type { HeaderConfigI } from "@/shared/types/route-types";
+import { ShadowButton } from "../../buttons/ShadowButton";
 
 export default function Header({  }: HeaderConfigI) {
   const navigate = useNavigate();
@@ -19,7 +18,8 @@ export default function Header({  }: HeaderConfigI) {
         )}
       >
         <h2 className="text-2xl font-semibold text-foreground md:block hidden">TrieAuth</h2>
-        <div
+        <button
+          type="button"
           className={cn(
             "md:hidden block active:scale-95 active:translate-y-px",
             "cursor-pointer transition-transform duration-100 ease-out"
@@ -27,7 +27,7 @@ export default function Header({  }: HeaderConfigI) {
           onClick={() => setIsMenuOpen(v => !v)}
         >
           { isMenuOpen ? <X size={24} /> : <Menu size={24} /> }
-        </div>
+        </button>
         <div className="md:flex justify-center gap-6 text-lg hidden">
           <Link
             to="/"

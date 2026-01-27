@@ -1,6 +1,6 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { requireAuth } from '@/hooks/auth-guard'
 import { createFileRoute } from '@tanstack/react-router'
+import { requireAuth } from '@/features/auth/lib/route-guard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs'
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -15,7 +15,6 @@ export const Route = createFileRoute('/projects/')({
 })
 
 function RouteComponent() {
-  // console.log(env.VITE_API_URL)
   return (
     <main className="w-full bg-background">
       <div>

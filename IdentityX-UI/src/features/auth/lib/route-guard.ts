@@ -1,13 +1,13 @@
-import { type ParsedLocation, redirect } from '@tanstack/react-router'
-import { type useAuth } from '@trieoh/node-auth-sdk/react';
+import { type AnySchema, type ParsedLocation, redirect } from '@tanstack/react-router'
+import type { useAuth } from '@trieoh/node-auth-sdk/react';
 
 interface BeforeLoadArgs {
-  location: ParsedLocation<{}>;
+  location: ParsedLocation<AnySchema>;
   context: { auth?: ReturnType<typeof useAuth> }
 }
 
 export const requireAuth = ({ context, location }: BeforeLoadArgs) => {
-  if (!context.auth?.isAuthenticated) {
+  if (context.auth?.isAuthenticated === false) {
     throw redirect({
       to: '/auth',
       search: { redirect: location.pathname, }

@@ -1,10 +1,9 @@
-import { requireGuest } from '@/hooks/auth-guard';
 import { createFileRoute, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react'
-import { useState } from 'react'
-
 import { motion } from "motion/react";
+import { useState } from 'react'
 import z from 'zod';
+import { requireGuest } from '@/features/auth/lib/route-guard';
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
@@ -31,16 +30,19 @@ function RouteComponent() {
   const search = useSearch({ from: '/auth/' })
 
   const handleSuccess = async () => {
-    router.update({ 
-      context: { 
-        ...router.options.context, 
-        auth: {...router.options.context.auth!, isAuthenticated: true },
-      },
-    })
-    await router.invalidate()
+    const auth = router.options.context.auth
+    if(auth) {
+      router.update({ 
+        context: { 
+          ...router.options.context, 
+          auth: {...auth, isAuthenticated: true },
+        },
+      })
 
-    const destination = search.redirect || '/projects'
-    await navigate({ to: destination, replace: true })
+      const destination = search.redirect || '/projects'
+      await navigate({ to: destination, replace: true })
+    }
+    console.error("Auth Failed:")
   }
 
   const handleFailure = async (message: string) => {
