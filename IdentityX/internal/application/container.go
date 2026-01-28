@@ -79,7 +79,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
-		Permission: permission.New(repos.Permissions, repos.Projects, infra.Tx),
+		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
 		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}

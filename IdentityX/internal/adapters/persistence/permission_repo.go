@@ -173,3 +173,59 @@ func (repo *permissionRepo) BelongsToProject(ctx context.Context, id, projectID 
 
 	return belongs, nil
 }
+
+func (repo *permissionRepo) GiveDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.GiveDirectPermission",
+		trace.WithAttributes(
+			attribute.String("permission.id", id.String()),
+			attribute.String("permission.identity_id", identityID.String()),
+		),
+	)
+
+	if scopeID != nil {
+		span.SetAttributes(attribute.String("permission.scope_id", scopeID.String()))
+	}
+
+	defer span.End()
+
+	err := repo.queries(ctx).GiveDirectPermission(ctx, sqlc.GiveDirectPermissionParams{
+		PermissionID: id,
+		IdentityID:   identityID,
+		ScopeID:      scopeID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
+func (repo *permissionRepo) TakeDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.TakeDirectPermission",
+		trace.WithAttributes(
+			attribute.String("permission.id", id.String()),
+			attribute.String("permission.identity_id", identityID.String()),
+		),
+	)
+
+	if scopeID != nil {
+		span.SetAttributes(attribute.String("permission.scope_id", scopeID.String()))
+	}
+
+	defer span.End()
+
+	err := repo.queries(ctx).TakeDirectPermission(ctx, sqlc.TakeDirectPermissionParams{
+		PermissionID: id,
+		IdentityID:   identityID,
+		ScopeID:      scopeID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}

@@ -5,11 +5,13 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/permissions"
+	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var (
@@ -17,9 +19,11 @@ var (
 )
 
 type UseCase struct {
-	permissions outbounds.PermissionRepository
-	projects    outbounds.ProjectRepository
-	tx          inbounds.TxRunner
+	permissions  outbounds.PermissionRepository
+	projects     outbounds.ProjectRepository
+	projectUsers outbounds.ProjectUserRepository
+	sessions     outbounds.SessionRepository
+	tx           inbounds.TxRunner
 }
 
 var _ inbounds.PermissionService = (*UseCase)(nil)
@@ -27,12 +31,16 @@ var _ inbounds.PermissionService = (*UseCase)(nil)
 func New(
 	permissions outbounds.PermissionRepository,
 	projects outbounds.ProjectRepository,
+	projectUsers outbounds.ProjectUserRepository,
+	sessions outbounds.SessionRepository,
 	tx inbounds.TxRunner,
 ) inbounds.PermissionService {
 	return &UseCase{
-		permissions: permissions,
-		projects:    projects,
-		tx:          tx,
+		permissions:  permissions,
+		projects:     projects,
+		projectUsers: projectUsers,
+		sessions:     sessions,
+		tx:           tx,
 	}
 }
 
@@ -142,4 +150,112 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetPermissionI
 	}
 
 	return inbounds.PermissionSliceToPermissionOutputSlice(foundPermissions), nil
+}
+
+func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.GiveDirect")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.PermissionID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a permission you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.permissions.GiveDirect(ctx, in.PermissionID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.TakeDirect")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.PermissionID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a permission you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.permissions.TakeDirect(ctx, in.PermissionID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -41,6 +41,12 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 			WithID(RoleAlreadyGranted).
 			WithDebugCause(cause)
 
+	case "identity_permissions_identity_id_permission_id_scope_id_key":
+		return ErrConflict.
+			WithMsg("user already has this permission in the specified scope").
+			WithID(PermissionAlreadyGranted).
+			WithDebugCause(cause)
+
 	default:
 		return ErrConflict.
 			WithMsg("resource already exists").

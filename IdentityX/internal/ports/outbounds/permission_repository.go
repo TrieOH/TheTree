@@ -18,4 +18,7 @@ type PermissionRepository interface {
 	ListByProject(ctx context.Context, object, action *string, projectID uuid.UUID) ([]permissions.Permission, error)
 
 	BelongsToProject(ctx context.Context, id, projectID uuid.UUID) (bool, error)
+
+	GiveDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
+	TakeDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
 }

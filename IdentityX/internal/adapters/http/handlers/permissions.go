@@ -100,3 +100,75 @@ func (handler *PermissionHandler) ListByProject(w http.ResponseWriter, r *http.R
 
 	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(perm)).Send(w)
 }
+
+func (handler *PermissionHandler) GiveDirect(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserPermissionRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManagePermissionInput{
+		ProjectID:    &projectID,
+		PermissionID: req.PermissionID,
+		EntityID:     entityID,
+		ScopeID:      req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.GiveDirect(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Added permission to user").Send(w)
+}
+
+func (handler *PermissionHandler) TakeDirect(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserPermissionRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManagePermissionInput{
+		ProjectID:    &projectID,
+		PermissionID: req.PermissionID,
+		EntityID:     entityID,
+		ScopeID:      req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.TakeDirect(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Removed permission from user").Send(w)
+}
