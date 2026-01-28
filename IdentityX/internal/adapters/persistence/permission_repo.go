@@ -229,3 +229,42 @@ func (repo *permissionRepo) TakeDirect(ctx context.Context, id, identityID uuid.
 
 	return nil
 }
+
+func (repo *permissionRepo) GetEffective(ctx context.Context, identityID uuid.UUID, projectID, scopeID *uuid.UUID) ([]permissions.Permission, error) {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.GetEffective",
+		trace.WithAttributes(
+			attribute.String("identity_id", identityID.String()),
+		),
+	)
+
+	if scopeID != nil {
+		span.SetAttributes(attribute.String("scope_id", scopeID.String()))
+	}
+
+	if projectID != nil {
+		span.SetAttributes(attribute.String("project_id", projectID.String()))
+	}
+
+	defer span.End()
+
+	sqlcPermissions, err := repo.queries(ctx).GetEffectivePermissions(ctx, sqlc.GetEffectivePermissionsParams{
+		ProjectID:  projectID,
+		IdentityID: identityID,
+		ScopeID:    scopeID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))
+
+	outPermissions := make([]permissions.Permission, 0, len(sqlcPermissions))
+	for _, sqlcPermission := range sqlcPermissions {
+		var outPermission permissions.Permission
+		mapPermissionFromDB(&outPermission, &sqlcPermission)
+		outPermissions = append(outPermissions, outPermission)
+	}
+	return outPermissions, nil
+}

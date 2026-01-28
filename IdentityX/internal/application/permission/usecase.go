@@ -259,3 +259,47 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 
 	return nil
 }
+
+func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissionInput) (perms []inbounds.PermissionOutput, err error) {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.GetEffective")
+	defer span.End()
+
+	var principal *authz.Principal
+	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get permissions for a project you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !userBelongs {
+		return nil, apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	var foundPermissions []permissions.Permission
+	foundPermissions, err = uc.permissions.GetEffective(ctx, userIdentity.ID, in.ProjectID, in.ScopeID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.PermissionSliceToPermissionOutputSlice(foundPermissions), nil
+}
