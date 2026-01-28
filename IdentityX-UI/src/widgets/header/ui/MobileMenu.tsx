@@ -1,7 +1,6 @@
 import { cn } from '@/shared/lib/utils';
 import type { HeaderAction } from '../model/header.types'
 import HeaderActionRenderer from './HeaderActionRenderer';
-import { useEffect } from 'react';
 
 export default function MobileMenu({
   actions,
@@ -10,21 +9,6 @@ export default function MobileMenu({
   actions: { left: HeaderAction[]; center: HeaderAction[]; right: HeaderAction[] }
   onClose: () => void
 }) {
-
-  useEffect(() => {
-    // lock body scroll
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const hasAny =
     (actions.left && actions.left.length) ||
