@@ -13,4 +13,8 @@ type Role struct {
 	Description *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+
+	ScopeID    *uuid.UUID
+	ScopeName  *string
+	ExternalID *string
 }

@@ -14,6 +14,7 @@ type RoleInput struct {
 }
 
 type GetRoleInput struct {
+	EntityID  uuid.UUID
 	RoleID    uuid.UUID
 	ProjectID *uuid.UUID
 	Name      string
@@ -23,6 +24,13 @@ type RolePermissionInput struct {
 	ProjectID    *uuid.UUID
 	RoleID       uuid.UUID
 	PermissionID uuid.UUID
+}
+
+type ManageRoleInput struct {
+	RoleID    uuid.UUID
+	EntityID  uuid.UUID
+	ScopeID   *uuid.UUID
+	ProjectID *uuid.UUID
 }
 
 type RoleOutput struct {
@@ -51,4 +59,10 @@ type ErrRoleNotOwned struct {
 
 func (e ErrRoleNotOwned) Error() string {
 	return e.Msg
+}
+
+type ErrProjectUserNotFromProject struct{}
+
+func (e ErrProjectUserNotFromProject) Error() string {
+	return "project user not from project"
 }

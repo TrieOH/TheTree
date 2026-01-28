@@ -221,18 +221,20 @@ func registerRoleRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
-		r.Route("/projects/{project_id}/roles", func(r chi.Router) {
-			r.Post("/", h.Create)
-			r.Get("/{role_id}", h.GetByID)
-			r.Patch("/{role_id}", h.UpdateDescription)
-			r.Get("/", h.ListByProject)
-			r.With(middleware.RequireOnlyQueryParams("name")).
-				Get("/search", h.GetByName)
-			r.Route("/{role_id}/permissions", func(r chi.Router) {
-				r.Get("/", h.GetPermissions)
-				r.Post("/{permission_id}", h.AddPermission)
-				r.Delete("/{permission_id}", h.RemovePermission)
-			})
-		})
+
+		r.Post("/projects/{project_id}/roles", h.Create)
+		r.Get("/projects/{project_id}/roles/{role_id}", h.GetByID)
+		r.Patch("/projects/{project_id}/roles/{role_id}", h.UpdateDescription)
+		r.Get("/projects/{project_id}/roles", h.ListByProject)
+		r.With(middleware.RequireOnlyQueryParams("name")).
+			Get("/projects/{project_id}/roles/search", h.GetByName)
+
+		r.Get("/projects/{project_id}/roles/{role_id}/permissions", h.GetPermissions)
+		r.Post("/projects/{project_id}/roles/{role_id}/permissions/{permission_id}", h.AddPermission)
+		r.Delete("/projects/{project_id}/roles/{role_id}/permissions/{permission_id}", h.RemovePermission)
+
+		r.Get("/projects/{project_id}/identities/{entity_id}/roles", h.GetUserRoles)
+		r.Post("/projects/{project_id}/identities/{entity_id}/roles", h.GiveRole)
+		r.Delete("/projects/{project_id}/identities/{entity_id}/roles", h.TakeRole)
 	})
 }

@@ -134,10 +134,10 @@ CREATE TABLE role_permissions (
 CREATE TABLE identity_roles (
     identity_id UUID NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    scope_id UUID NOT NULL REFERENCES scopes(id) ON DELETE CASCADE,
+    scope_id UUID REFERENCES scopes(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    PRIMARY KEY (identity_id, role_id, scope_id)
+    UNIQUE NULLS NOT DISTINCT (identity_id, role_id, scope_id)
 );
 
 CREATE TABLE identity_permissions (

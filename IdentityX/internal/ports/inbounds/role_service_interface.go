@@ -15,4 +15,9 @@ type RoleService interface {
 	RemovePermission(ctx context.Context, in RolePermissionInput) error
 
 	GetPermissions(ctx context.Context, in RolePermissionInput) ([]PermissionOutput, error)
+
+	GiveRole(ctx context.Context, in ManageRoleInput) error
+	TakeRole(ctx context.Context, in ManageRoleInput) error
+
+	GetUserRoles(ctx context.Context, in GetRoleInput) ([]RoleOutput, error)
 }

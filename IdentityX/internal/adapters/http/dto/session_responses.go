@@ -1,9 +1,11 @@
 package dto
 
 import (
+	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/ports/inbounds"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -42,5 +44,17 @@ func SessionResponseFromSessionOutput(s inbounds.OutputSession) SessionResponse 
 		CreatedAt:  s.CreatedAt,
 		UpdatedAt:  s.UpdatedAt,
 		UserType:   s.UserType,
+	}
+}
+
+type PrincipalResponse struct {
+	RefreshExpireDate *jwt.NumericDate  `json:"refresh_expire_date"`
+	AccessClaims      auth.AccessClaims `json:"access"`
+}
+
+func PrincipalOutputToPrincipalResponse(in inbounds.PrincipalOutput) PrincipalResponse {
+	return PrincipalResponse{
+		RefreshExpireDate: in.RefreshClaims.ExpiresAt,
+		AccessClaims:      *in.AccessClaims,
 	}
 }

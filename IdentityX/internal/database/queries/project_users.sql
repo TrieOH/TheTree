@@ -76,3 +76,11 @@ SELECT
             (SELECT TRUE FROM updated),
             FALSE
     )::boolean;
+
+-- name: ProjectUserBelongsToProject :one
+SELECT EXISTS (
+    SELECT 1
+    FROM project_users
+    WHERE project_id = $1
+     AND id = $2
+);

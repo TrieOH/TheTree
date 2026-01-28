@@ -29,6 +29,18 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 			WithID(ScopeDuplicateNameAndExternalID).
 			WithDebugCause(cause)
 
+	case "roles_name_project_id_key":
+		return ErrConflict.
+			WithMsg("role name already taken").
+			WithID(RoleNameTaken).
+			WithDebugCause(cause)
+
+	case "identity_roles_identity_id_role_id_scope_id_key":
+		return ErrConflict.
+			WithMsg("user already has this role in the specified scope").
+			WithID(RoleAlreadyGranted).
+			WithDebugCause(cause)
+
 	default:
 		return ErrConflict.
 			WithMsg("resource already exists").

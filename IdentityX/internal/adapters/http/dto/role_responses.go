@@ -14,6 +14,10 @@ type RoleResponse struct {
 	Description *string    `json:"description"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+
+	ScopeID    *uuid.UUID `json:"scope_id"`
+	ScopeName  *string    `json:"scope_name"`
+	ExternalID *string    `json:"external_id"`
 }
 
 func RoleOutputToRoleResponse(role inbounds.RoleOutput) *RoleResponse {
@@ -24,6 +28,9 @@ func RoleOutputToRoleResponse(role inbounds.RoleOutput) *RoleResponse {
 		Description: role.Role.Description,
 		CreatedAt:   role.Role.CreatedAt,
 		UpdatedAt:   role.Role.UpdatedAt,
+		ScopeID:     role.Role.ScopeID,
+		ScopeName:   role.Role.ScopeName,
+		ExternalID:  role.Role.ExternalID,
 	}
 }
 
@@ -41,6 +48,9 @@ func RoleOutputSliceToRoleResponseSlice(in []inbounds.RoleOutput) []RoleResponse
 			Description: role.Role.Description,
 			CreatedAt:   role.Role.CreatedAt,
 			UpdatedAt:   role.Role.UpdatedAt,
+			ScopeID:     role.Role.ScopeID,
+			ScopeName:   role.Role.ScopeName,
+			ExternalID:  role.Role.ExternalID,
 		})
 	}
 	return out
