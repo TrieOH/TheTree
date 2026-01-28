@@ -21,7 +21,7 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     titlePosition: 'none',
     disableMobileMenu: true,
     leftActions: [{ type: 'back', visibleOn: "fixed", to: "/" }],
-    // rightActions: [{ type: 'createProject' }],
+    rightActions: [{ type: 'createProject', visibleOn: "fixed" }],
   },
   auth: { variant: 'auth' },
   none: { variant: 'none' }

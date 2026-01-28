@@ -3,6 +3,7 @@ import type { HeaderAction } from '../model/header.types'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import AuthButton from '@/features/auth/ui/AuthButton'
 import BackButton from '@/features/navigation/ui/BackButton'
+import CreateProjectButton from '@/features/project/ui/CreateProjectButton'
 
 export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
   
@@ -17,6 +18,11 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
     case 'button':
       return (
         <ShadowButton value={action.label} leftIcon={action.icon} onClick={action.onClick} />
+      )
+
+    case 'createProject':
+      return (
+        <CreateProjectButton />
       )
 
     case 'back':
