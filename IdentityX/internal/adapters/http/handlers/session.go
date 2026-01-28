@@ -129,8 +129,5 @@ func (handler *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK().WithData(map[string]interface{}{
-		"access":              principal.AccessClaims,
-		"refresh_expire_date": principal.RefreshClaims.ExpiresAt,
-	}).Send(w)
+	resp.OK().WithData(dto.PrincipalOutputToPrincipalResponse(*principal)).Send(w)
 }

@@ -251,3 +251,103 @@ func (handler *RoleHandler) GetPermissions(w http.ResponseWriter, r *http.Reques
 
 	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(permissions)).Send(w)
 }
+
+func (handler *RoleHandler) GiveRole(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserRoleRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManageRoleInput{
+		ProjectID: &projectID,
+		RoleID:    req.RoleID,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.GiveRole(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Added role to user").Send(w)
+}
+
+func (handler *RoleHandler) TakeRole(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserRoleRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManageRoleInput{
+		ProjectID: &projectID,
+		RoleID:    req.RoleID,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.TakeRole(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Removed role from user").Send(w)
+}
+
+func (handler *RoleHandler) GetUserRoles(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.GetRoleInput{
+		ProjectID: &projectID,
+		EntityID:  entityID,
+	}
+
+	ctx := r.Context()
+	roles, err := handler.role.GetUserRoles(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.RoleOutputSliceToRoleResponseSlice(roles)).Send(w)
+}

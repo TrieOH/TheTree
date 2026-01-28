@@ -4,11 +4,13 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/roles"
+	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var (
@@ -16,10 +18,12 @@ var (
 )
 
 type UseCase struct {
-	roles       outbounds.RoleRepository
-	permissions outbounds.PermissionRepository
-	projects    outbounds.ProjectRepository
-	tx          inbounds.TxRunner
+	roles        outbounds.RoleRepository
+	permissions  outbounds.PermissionRepository
+	projects     outbounds.ProjectRepository
+	projectUsers outbounds.ProjectUserRepository
+	sessions     outbounds.SessionRepository
+	tx           inbounds.TxRunner
 }
 
 var _ inbounds.RoleService = (*UseCase)(nil)
@@ -28,13 +32,17 @@ func New(
 	roles outbounds.RoleRepository,
 	permissions outbounds.PermissionRepository,
 	projects outbounds.ProjectRepository,
+	projectUsers outbounds.ProjectUserRepository,
+	sessions outbounds.SessionRepository,
 	tx inbounds.TxRunner,
 ) inbounds.RoleService {
 	return &UseCase{
-		roles:       roles,
-		permissions: permissions,
-		projects:    projects,
-		tx:          tx,
+		roles:        roles,
+		permissions:  permissions,
+		projects:     projects,
+		projectUsers: projectUsers,
+		sessions:     sessions,
+		tx:           tx,
 	}
 }
 
@@ -299,4 +307,154 @@ func (uc *UseCase) GetPermissions(ctx context.Context, in inbounds.RolePermissio
 	}
 
 	return inbounds.PermissionSliceToPermissionOutputSlice(permissions), nil
+}
+
+func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.GiveRole")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("role.project_global", isProjectGlobal))
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+	}
+
+	var roleBelongs bool
+	roleBelongs, err = uc.roles.BelongsToProject(ctx, in.RoleID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !roleBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.roles.GiveRole(ctx, in.RoleID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.TakeRole")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("role.project_global", isProjectGlobal))
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+	}
+
+	var roleBelongs bool
+	roleBelongs, err = uc.roles.BelongsToProject(ctx, in.RoleID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !roleBelongs {
+		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.roles.TakeRole(ctx, in.RoleID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) ([]inbounds.RoleOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetUserRoles")
+	defer span.End()
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot fetch from a project you don't own"})
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !userBelongs {
+		return nil, apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	foundRoles, err := uc.roles.GetUserRoles(ctx, userIdentity.ID, *in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.RoleSliceToRoleOutputSlice(foundRoles), nil
 }

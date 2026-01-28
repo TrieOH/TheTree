@@ -22,4 +22,9 @@ type RoleRepository interface {
 	RemovePermission(ctx context.Context, id uuid.UUID, permissionID uuid.UUID) error
 
 	GetPermissions(ctx context.Context, id, projectID uuid.UUID) ([]permissions.Permission, error)
+
+	GiveRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
+	TakeRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
+
+	GetUserRoles(ctx context.Context, identityID, projectID uuid.UUID) ([]roles.Role, error)
 }

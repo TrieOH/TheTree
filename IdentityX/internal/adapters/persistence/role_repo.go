@@ -48,6 +48,18 @@ func mapRoleFromDB(dst *roles.Role, src *sqlc.Role) {
 	dst.UpdatedAt = src.UpdatedAt
 }
 
+func mapGetUserRolesRowFromDB(dst *roles.Role, src *sqlc.GetUserRolesRow) {
+	dst.ID = src.ID
+	dst.ProjectID = src.ProjectID
+	dst.Name = src.Name
+	dst.Description = src.Description
+	dst.CreatedAt = src.CreatedAt
+	dst.UpdatedAt = src.UpdatedAt
+	dst.ScopeName = src.ScopeName
+	dst.ScopeID = src.ScopeID
+	dst.ExternalID = src.ExternalID
+}
+
 func (repo *roleRepo) Create(ctx context.Context, toCreate roles.Role) (*roles.Role, error) {
 	ctx, span := repo.tracer.Start(ctx, "RoleRepo.Create")
 	defer span.End()
@@ -289,4 +301,90 @@ func (repo *roleRepo) GetPermissions(ctx context.Context, id, projectID uuid.UUI
 		outPermissions = append(outPermissions, outPermission)
 	}
 	return outPermissions, nil
+}
+
+func (repo *roleRepo) GiveRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.GiveRole",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.identity_id", identityID.String()),
+		),
+	)
+
+	if scopeID != nil {
+		span.SetAttributes(attribute.String("role.scope_id", scopeID.String()))
+	}
+
+	defer span.End()
+
+	err := repo.queries(ctx).GiveRole(ctx, sqlc.GiveRoleParams{
+		RoleID:     id,
+		IdentityID: identityID,
+		ScopeID:    scopeID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
+func (repo *roleRepo) TakeRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.TakeRole",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+			attribute.String("role.identity_id", identityID.String()),
+		),
+	)
+
+	if scopeID != nil {
+		span.SetAttributes(attribute.String("role.scope_id", scopeID.String()))
+	}
+
+	defer span.End()
+
+	err := repo.queries(ctx).TakeRole(ctx, sqlc.TakeRoleParams{
+		RoleID:     id,
+		IdentityID: identityID,
+		ScopeID:    scopeID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return sqlcErr
+	}
+
+	return nil
+}
+
+func (repo *roleRepo) GetUserRoles(ctx context.Context, identityID, projectID uuid.UUID) ([]roles.Role, error) {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.GetUserRoles",
+		trace.WithAttributes(
+			attribute.String("user_id", identityID.String()),
+			attribute.String("project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcRoles, err := repo.queries(ctx).GetUserRoles(ctx, sqlc.GetUserRolesParams{
+		IdentityID: identityID,
+		ProjectID:  &projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return nil, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Int("roles.count", len(sqlcRoles)))
+
+	outRoles := make([]roles.Role, 0, len(sqlcRoles))
+	for _, sqlcRole := range sqlcRoles {
+		var outRole roles.Role
+		mapGetUserRolesRowFromDB(&outRole, &sqlcRole)
+		outRoles = append(outRoles, outRole)
+	}
+	return outRoles, nil
 }

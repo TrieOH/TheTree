@@ -344,3 +344,25 @@ func (repo *projectUserRepo) Verify(ctx context.Context, userID uuid.UUID) (bool
 
 	return !wasVerified, nil
 }
+
+func (repo *projectUserRepo) BelongsToProject(ctx context.Context, userID, projectID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.BelongsToProject",
+		trace.WithAttributes(
+			attribute.String("user.id", userID.String()),
+			attribute.String("user.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	belongs, err := repo.queries(ctx).ProjectUserBelongsToProject(ctx, sqlc.ProjectUserBelongsToProjectParams{
+		ID:        userID,
+		ProjectID: projectID,
+	})
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	return belongs, nil
+}

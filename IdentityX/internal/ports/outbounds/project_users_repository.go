@@ -18,4 +18,5 @@ type ProjectUserRepository interface {
 	Update(ctx context.Context, toUpdate project_users.ProjectUser, ownerID uuid.UUID) (*project_users.ProjectUser, error)
 	Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error
 	Verify(ctx context.Context, userID uuid.UUID) (bool, error)
+	BelongsToProject(ctx context.Context, userID, projectID uuid.UUID) (bool, error)
 }

@@ -110,6 +110,7 @@ const (
 	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
 	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
 	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
+	ProjectUserNotFromProject                  ID = "PROJ_USR_007"
 )
 
 const (
@@ -174,6 +175,8 @@ const (
 const (
 	RoleEmptyName           ID = "ROLE_001"
 	RoleNotOwnedByPrincipal ID = "ROLE_002"
+	RoleNameTaken           ID = "ROLE_003"
+	RoleAlreadyGranted      ID = "ROLE_004"
 )
 
 const (

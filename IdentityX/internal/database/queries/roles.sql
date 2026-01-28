@@ -59,3 +59,28 @@ FROM permissions p
 INNER JOIN role_permissions rp ON rp.permission_id = p.id
 WHERE rp.role_id = $1 AND p.project_id = $2
 ORDER BY created_at DESC;
+
+------------------------------------
+------- Role User Management -------
+------------------------------------
+
+-- name: GiveRole :exec
+INSERT INTO identity_roles (identity_id, role_id, scope_id)
+VALUES ($1, $2, $3);
+
+-- name: TakeRole :exec
+DELETE FROM identity_roles
+WHERE identity_id = $1 AND role_id = $2 AND scope_id IS NOT DISTINCT FROM $3;
+
+-- name: GetUserRoles :many
+SELECT r.*, ir.scope_id, s.name as scope_name, s.external_id
+FROM roles r
+INNER JOIN identity_roles ir ON ir.role_id = r.id
+LEFT JOIN scopes s ON s.id = ir.scope_id
+WHERE ir.identity_id = $1
+  AND r.project_id = $2
+ORDER BY
+    r.name,
+    ir.scope_id IS NULL DESC,  -- Project-wide roles first (NULL scope_id)
+    s.name NULLS FIRST,        -- project_root scopes before named scopes (if applicable)
+    s.external_id NULLS FIRST; -- Master scopes (NULL) before specific resources
