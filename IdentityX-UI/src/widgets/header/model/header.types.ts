@@ -6,7 +6,7 @@ export type HeaderAction =
   | { type: 'link'; label: string; to: string; visibleOn?: VisibleOn, collapseToMenu?: boolean }
   | { type: 'button'; label?: string; icon?: React.ReactNode; onClick: () => void; visibleOn?: VisibleOn, collapseToMenu?: boolean }
   | { type: 'authButton'; visibleOn?: VisibleOn, collapseToMenu?: boolean }
-  | { type: 'back'; visibleOn?: VisibleOn, collapseToMenu?: boolean }
+  | { type: 'back'; visibleOn?: VisibleOn, collapseToMenu?: boolean, to?: string; }
 
 export interface HeaderConfigI {
   variant: HeaderVariant

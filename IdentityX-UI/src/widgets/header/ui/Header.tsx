@@ -56,7 +56,7 @@ export default function Header() {
           "bg-background/80 backdrop-blur-sm select-none min-h-16"
         )}
       >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {showHamburger && (
             <button
               type="button"
