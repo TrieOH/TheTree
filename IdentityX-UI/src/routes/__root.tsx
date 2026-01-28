@@ -3,14 +3,12 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
-  useMatches,
 } from '@tanstack/react-router'
 import { AuthProvider, type useAuth } from '@trieoh/node-auth-sdk/react'
-import { useMemo } from 'react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
-import { RouteComponentTemplate, type RouteStaticConfigI } from '@/shared/types/route-types'
-import Header from '@/shared/ui/navigation/header/Header'
+import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
+import Header from '@/widgets/header/ui/Header'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -32,10 +30,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   staticData: { components: RouteComponentTemplate }
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {
-  const matches = useMatches();
-  const routeConfig = useMemo(() => getRouteConfig(matches), [matches]);
-  
+function RootDocument({ children }: { children: React.ReactNode }) {    
   return (
     <html lang="en">
       <head>
@@ -45,7 +40,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AuthProvider baseURL="http://localhost:8080">
           <AuthSynchronizer>
             {/* <PHProvider> */}
-              <Header {...routeConfig.components.header} />
+              <Header />
               {children}
             {/* </PHProvider> */}
           </AuthSynchronizer>
@@ -54,14 +49,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
-}
-
-function getRouteConfig(matches: ReturnType<typeof useMatches>) {
-  return matches.reduce((acc, match) => {
-    const route = match.staticData;
-    if(!route) return acc;
-    return route;
-  }, { components: RouteComponentTemplate });
 }
 
 declare module '@tanstack/react-router' {

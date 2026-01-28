@@ -13,7 +13,7 @@ export function ShadowButton({ value, leftIcon, className, onClick }: PropsI) {
       type="button"
       className={cn(
         "flex cursor-pointer gap-2 font-extralight bg-primary-foreground text-card-foreground",
-        "border border-primary rounded-sm p-2",
+        "border border-primary rounded-sm p-2 items-center md:text-base text-sm ",
 
         // base state
         "shadow-[1px_1px_0_0_var(--color-primary)]",
