@@ -875,7 +875,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			HasMessage("user already has this role in the specified scope")
 	})
 
-	// FIXME right now taking a role a user doesnt have succeeds with OK because how DELETE works in SQL
+	// FIXME right now taking a role from a user succeeds with OK because of how DELETE works in SQL
 	// FIXME Switch to :execrows and if no row was modified return and error warning user already doesnt have the role
 	t.Run("TakeRoleAlreadyTaken", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/roles").
@@ -885,5 +885,58 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusOK).
 			HasMessage("Removed role from user")
+	})
+
+	t.Run("GiveUserDirectEventPermissionNoScope", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
+			WithBody(map[string]interface{}{
+				"permission_id": createEventPermissionID,
+				"scope_id":      nil,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Added permission to user")
+	})
+
+	t.Run("GiveUserDirectEventPermissionWithEventScope", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
+			WithBody(map[string]interface{}{
+				"permission_id": createEventPermissionID,
+				"scope_id":      eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Added permission to user")
+	})
+
+	t.Run("GiveUserDirectDuplicateEventPermissionNoScope", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
+			WithBody(map[string]interface{}{
+				"permission_id": createEventPermissionID,
+				"scope_id":      nil,
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(apierr.PermissionAlreadyGranted).
+			HasMessage("user already has this permission in the specified scope")
+	})
+
+	t.Run("TakeDirectEventPermissionWithEventScopeFromUser", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
+			WithBody(map[string]interface{}{
+				"permission_id": createEventPermissionID,
+				"scope_id":      eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Removed permission from user")
+	})
+
+	// FIXME right now taking a permission from a user succeeds with OK because of how DELETE works in SQL
+	// FIXME Switch to :execrows and if no row was modified return and error warning user already doesnt have the permission
+	t.Run("TakeDirectEventPermissionWithEventScopeFromUserAlreadyTaken", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
+			WithBody(map[string]interface{}{
+				"permission_id": createEventPermissionID,
+				"scope_id":      eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Removed permission from user")
 	})
 }

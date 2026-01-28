@@ -40,3 +40,15 @@ SELECT EXISTS(
     WHERE id = $1
         AND project_id = $2
 );
+
+----------------------------------------------
+------------- Direct Permissions -------------
+----------------------------------------------
+
+-- name: GiveDirectPermission :exec
+INSERT INTO identity_permissions (identity_id, permission_id, scope_id)
+VALUES ($1, $2, $3);
+
+-- name: TakeDirectPermission :exec
+DELETE FROM identity_permissions
+WHERE identity_id = $1 AND permission_id = $2 AND scope_id IS NOT DISTINCT FROM $3;

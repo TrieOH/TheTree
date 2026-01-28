@@ -108,6 +108,9 @@ CREATE TABLE permissions (
     UNIQUE NULLS NOT DISTINCT (project_id, object, action)
 );
 
+CREATE INDEX idx_permissions_object_action
+    ON permissions(object, action);
+
 CREATE TABLE roles (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
@@ -140,14 +143,20 @@ CREATE TABLE identity_roles (
     UNIQUE NULLS NOT DISTINCT (identity_id, role_id, scope_id)
 );
 
+CREATE INDEX idx_identity_roles_identity_scope
+    ON identity_roles(identity_id, scope_id);
+
 CREATE TABLE identity_permissions (
     identity_id UUID NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-    scope_id UUID NOT NULL REFERENCES scopes(id) ON DELETE CASCADE,
+    scope_id UUID REFERENCES scopes(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    PRIMARY KEY (identity_id, permission_id, scope_id)
+    UNIQUE NULLS NOT DISTINCT (identity_id, permission_id, scope_id)
 );
+
+CREATE INDEX idx_identity_permissions_identity_scope
+    ON identity_permissions(identity_id, scope_id);
 
 CREATE TABLE permission_audit_log (
     id UUID PRIMARY KEY,
@@ -158,26 +167,15 @@ CREATE TABLE permission_audit_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_identity_roles_identity_scope
-    ON identity_roles (identity_id, scope_id);
-
-CREATE INDEX idx_identity_permissions_identity_scope
-    ON identity_permissions (identity_id, scope_id);
-
-CREATE INDEX idx_permissions_object_action
-    ON permissions (object, action);
-
 -- +goose Down
-DROP INDEX IF EXISTS idx_permissions_object_action;
-DROP INDEX IF EXISTS idx_identity_permissions_identity_scope;
-DROP INDEX IF EXISTS idx_identity_roles_identity_scope;
 DROP TABLE IF EXISTS permission_audit_log;
+DROP INDEX IF EXISTS idx_identity_permissions_identity_scope;
 DROP TABLE IF EXISTS identity_permissions;
+DROP INDEX IF EXISTS idx_identity_roles_identity_scope;
 DROP TABLE IF EXISTS identity_roles;
 DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS roles;
-DROP INDEX IF EXISTS permissions_project_unique;
-DROP INDEX IF EXISTS permissions_idp_unique;
+DROP INDEX IF EXISTS idx_permissions_object_action;
 DROP TABLE IF EXISTS permissions;
 DROP INDEX IF EXISTS scopes_unique_project_resource_scopes;
 DROP INDEX IF EXISTS scopes_unique_project_named_scopes;

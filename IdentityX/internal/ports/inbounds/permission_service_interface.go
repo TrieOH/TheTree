@@ -11,4 +11,7 @@ type PermissionService interface {
 
 	GetByIDExternal(ctx context.Context, in GetPermissionInput) (*PermissionOutput, error)
 	ListByProject(ctx context.Context, in GetPermissionInput) ([]PermissionOutput, error)
+
+	GiveDirect(ctx context.Context, in ManagePermissionInput) error
+	TakeDirect(ctx context.Context, in ManagePermissionInput) error
 }
