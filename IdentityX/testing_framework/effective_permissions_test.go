@@ -22,12 +22,14 @@ var (
 	freeActivity2AttendPermission specType
 	paidActivityAttendPermission  specType
 	buyEventProductsPermission    specType
+	buyTicketsPermission          specType
 
 	activity1AttendanceMarkPermission      specType
 	activity2AttendanceCheckPermission     specType
 	allActivitiesAttendanceMarkPermission  specType
 	allActivitiesAttendanceCheckPermission specType
 	coordinateEventPermission              specType
+	coordinatorDashboardPermission         specType
 
 	createActivityPermission    specType
 	editActivityPermission      specType
@@ -218,11 +220,11 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 	var event1ParticipatePermissionID string
 	var freeActivity1AttendPermissionID, freeActivity2AttendPermissionID string
 	var paidActivityAttendPermissionID string
-	var buyEventProductsPermissionID string
+	var buyEventProductsPermissionID, buyTicketsPermissionID string
 
 	var activity1AttendanceMarkPermissionID, activity2AttendanceCheckPermissionID string
 	var allActivitiesAttendanceMarkPermissionID, allActivitiesAttendanceCheckPermissionID string
-	var coordinateEventPermissionID string
+	var coordinateEventPermissionID, coordinatorDashboardPermissionID string
 
 	var createActivityPermissionID, editActivityPermissionID, deleteActivityPermissionID, assignEventRolePermissionID string
 	var administrateEventPermissionID string
@@ -348,6 +350,30 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 
 				Validate(t, val, map[string]interface{}(buyEventProductsPermission))
 			})
+
+			t.Run("CreateBuyTicketsPermission", func(t *testing.T) {
+				authClient := suite.NewClient(t).WithAuth(user.auth)
+				val := authClient.POST("/projects/" + projectID + "/permissions").
+					WithBody(map[string]interface{}{
+						"object":     "events:*",
+						"action":     "tickets:buy",
+						"conditions": nil,
+					}).
+					Expect(http.StatusCreated).
+					HasMessage("Permission Created").
+					RequireDataValue()
+
+				buyTicketsPermission = map[string]interface{}{
+					"id":         StoreString{Into: &buyTicketsPermissionID, Matcher: AnyUUID{}},
+					"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+					"object":     "events:*",
+					"action":     "tickets:buy",
+					"conditions": nil,
+					"created_at": AnyDate{},
+				}
+
+				Validate(t, val, map[string]interface{}(buyTicketsPermission))
+			})
 		})
 
 		t.Run("CreateStaffPermissions", func(t *testing.T) {
@@ -468,6 +494,30 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 				}
 
 				Validate(t, val, map[string]interface{}(allActivitiesAttendanceCheckPermission))
+			})
+
+			t.Run("CreateCoordinatorDashboardPermission", func(t *testing.T) {
+				authClient := suite.NewClient(t).WithAuth(user.auth)
+				val := authClient.POST("/projects/" + projectID + "/permissions").
+					WithBody(map[string]interface{}{
+						"object":     "event:*",
+						"action":     "coordinator_dashboard:access",
+						"conditions": nil,
+					}).
+					Expect(http.StatusCreated).
+					HasMessage("Permission Created").
+					RequireDataValue()
+
+				coordinatorDashboardPermission = map[string]interface{}{
+					"id":         StoreString{Into: &coordinatorDashboardPermissionID, Matcher: AnyUUID{}},
+					"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
+					"object":     "event:*",
+					"action":     "coordinator_dashboard:access",
+					"conditions": nil,
+					"created_at": AnyDate{},
+				}
+
+				Validate(t, val, map[string]interface{}(coordinatorDashboardPermission))
 			})
 		})
 
@@ -819,6 +869,14 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 
 				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff1.projectUserID + "/permissions").
 					WithBody(map[string]interface{}{
+						"permission_id": coordinatorDashboardPermissionID,
+						"scope_id":      eventsScopeID,
+					}).
+					Expect(http.StatusOK).
+					HasMessage("Added permission to user")
+
+				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff1.projectUserID + "/permissions").
+					WithBody(map[string]interface{}{
 						"permission_id": activity1AttendanceMarkPermissionID,
 						"scope_id":      activitiesScopeID,
 					}).
@@ -842,6 +900,14 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					}).
 					Expect(http.StatusOK).
 					HasMessage("Added role to user")
+
+				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff2.projectUserID + "/permissions").
+					WithBody(map[string]interface{}{
+						"permission_id": coordinatorDashboardPermissionID,
+						"scope_id":      eventsScopeID,
+					}).
+					Expect(http.StatusOK).
+					HasMessage("Added permission to user")
 
 				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff2.projectUserID + "/permissions").
 					WithBody(map[string]interface{}{
@@ -871,6 +937,14 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 
 				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff3.projectUserID + "/permissions").
 					WithBody(map[string]interface{}{
+						"permission_id": coordinatorDashboardPermissionID,
+						"scope_id":      eventsScopeID,
+					}).
+					Expect(http.StatusOK).
+					HasMessage("Added permission to user")
+
+				suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *staff3.projectUserID + "/permissions").
+					WithBody(map[string]interface{}{
 						"permission_id": allActivitiesAttendanceMarkPermissionID,
 						"scope_id":      activitiesScopeID,
 					}).
@@ -895,6 +969,14 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 						}).
 						Expect(http.StatusOK).
 						HasMessage("Added role to user")
+
+					suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *participant1.projectUserID + "/permissions").
+						WithBody(map[string]interface{}{
+							"permission_id": buyTicketsPermissionID,
+							"scope_id":      nil,
+						}).
+						Expect(http.StatusOK).
+						HasMessage("Added permission to user")
 				})
 				t.Run("Participant2RegistersAndBuysActivity3", func(t *testing.T) {
 					suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *participant2.projectUserID + "/roles").
@@ -904,6 +986,14 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 						}).
 						Expect(http.StatusOK).
 						HasMessage("Added role to user")
+
+					suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *participant2.projectUserID + "/permissions").
+						WithBody(map[string]interface{}{
+							"permission_id": buyTicketsPermissionID,
+							"scope_id":      nil,
+						}).
+						Expect(http.StatusOK).
+						HasMessage("Added permission to user")
 
 					suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + *participant2.projectUserID + "/permissions").
 						WithBody(map[string]interface{}{
@@ -930,9 +1020,10 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(freeActivity1AttendPermission),
 					map[string]interface{}(freeActivity2AttendPermission),
 					map[string]interface{}(buyEventProductsPermission),
+					map[string]interface{}(buyTicketsPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyParticipant2EffectivePermissions", func(t *testing.T) {
@@ -947,22 +1038,35 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(freeActivity2AttendPermission),
 					map[string]interface{}(paidActivityAttendPermission),
 					map[string]interface{}(buyEventProductsPermission),
+					map[string]interface{}(buyTicketsPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyStaff1EffectivePermissions", func(t *testing.T) {
 				val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff1.projectUserID+"/permissions").
-					WithQuery("scope_id", event1ScopeID).
+					WithQuery("scope_id", eventsScopeID).
 					Expect(http.StatusOK).
 					RequireDataValue()
 
 				spec := []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
+				}
+
+				ValidateExact(t, val, spec)
+
+				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff1.projectUserID+"/permissions").
+					WithQuery("scope_id", event1ScopeID).
+					Expect(http.StatusOK).
+					RequireDataValue()
+
+				spec = []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
 					map[string]interface{}(coordinateEventPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 
 				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff1.projectUserID+"/permissions").
 					WithQuery("scope_id", activitiesScopeID).
@@ -974,20 +1078,32 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(activity2AttendanceCheckPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyStaff2EffectivePermissions", func(t *testing.T) {
 				val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff2.projectUserID+"/permissions").
-					WithQuery("scope_id", event1ScopeID).
+					WithQuery("scope_id", eventsScopeID).
 					Expect(http.StatusOK).
 					RequireDataValue()
 
 				spec := []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
+				}
+
+				ValidateExact(t, val, spec)
+
+				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff2.projectUserID+"/permissions").
+					WithQuery("scope_id", event1ScopeID).
+					Expect(http.StatusOK).
+					RequireDataValue()
+
+				spec = []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
 					map[string]interface{}(coordinateEventPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 
 				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff2.projectUserID+"/permissions").
 					WithQuery("scope_id", activitiesScopeID).
@@ -999,20 +1115,32 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(activity1AttendanceMarkPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyStaff3EffectivePermissions", func(t *testing.T) {
 				val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff3.projectUserID+"/permissions").
-					WithQuery("scope_id", event1ScopeID).
+					WithQuery("scope_id", eventsScopeID).
 					Expect(http.StatusOK).
 					RequireDataValue()
 
 				spec := []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
+				}
+
+				ValidateExact(t, val, spec)
+
+				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff3.projectUserID+"/permissions").
+					WithQuery("scope_id", event1ScopeID).
+					Expect(http.StatusOK).
+					RequireDataValue()
+
+				spec = []interface{}{
+					map[string]interface{}(coordinatorDashboardPermission),
 					map[string]interface{}(coordinateEventPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 
 				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*staff3.projectUserID+"/permissions").
 					WithQuery("scope_id", activitiesScopeID).
@@ -1024,7 +1152,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(allActivitiesAttendanceMarkPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyUntrustedAdminEffectivePermissions", func(t *testing.T) {
@@ -1038,7 +1166,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(createActivityPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyTrustedAdminEffectivePermissions", func(t *testing.T) {
@@ -1055,7 +1183,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(editActivityPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 
 			t.Run("VerifyOwnerEffectivePermissions", func(t *testing.T) {
@@ -1068,7 +1196,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					map[string]interface{}(createEventPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 
 				val = suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/identities/"+*owner.projectUserID+"/permissions").
 					WithQuery("scope_id", event1ScopeID).
@@ -1076,10 +1204,11 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					RequireDataValue()
 
 				spec = []interface{}{
+					map[string]interface{}(createEventPermission),
 					map[string]interface{}(fullEventAccessPermission),
 				}
 
-				Validate(t, val, spec)
+				ValidateExact(t, val, spec)
 			})
 		})
 	})

@@ -58,33 +58,68 @@ WHERE identity_id = $1 AND permission_id = $2 AND scope_id IS NOT DISTINCT FROM 
 -----------------------------------------------
 
 -- name: GetEffectivePermissions :many
-WITH effective_ids AS (
-    -- Direct permission assignments (scope-specific + inherited global WITHIN same realm)
-    SELECT ip.permission_id AS id
-    FROM identity_permissions ip
-    WHERE ip.identity_id = $1
-        AND (
-            ip.scope_id IS NOT DISTINCT FROM $2
-                OR ($2 IS NOT NULL AND ip.scope_id IS NULL)
-            )
+WITH target_scope AS (
+    SELECT
+        s.id,
+        s.project_id,
+        s.name,
+        s.external_id
+    FROM scopes s
+    WHERE s.id = sqlc.narg('scope_id')::uuid
+    AND sqlc.narg('scope_id')::uuid IS NOT NULL
+),
+master_scope AS (
+    SELECT s2.id
+    FROM target_scope ts
+        JOIN scopes s2 ON s2.project_id = ts.project_id
+        AND s2.name = ts.name
+        AND s2.external_id IS NULL
+    WHERE ts.external_id IS NOT NULL
+),
+scope_family AS (
+    -- The specific scope itself
+    SELECT id FROM target_scope
+    UNION
+    -- Its parent master scope (same name, no external_id)
+    SELECT id FROM master_scope
+)
+SELECT DISTINCT p.*
+FROM permissions p
+WHERE p.id IN (
+    -- Role-derived permissions
+    SELECT rp.permission_id
+    FROM identity_roles ir
+    JOIN role_permissions rp ON rp.role_id = ir.role_id
+    WHERE ir.identity_id = sqlc.arg('identity_id')::uuid
+    AND (
+        -- Querying nil scope: only nil scope assignments
+        (sqlc.narg('scope_id')::uuid IS NULL AND ir.scope_id IS NULL)
+        OR
+        -- Querying specific scope: hierarchy + nil scope fallback
+        (sqlc.narg('scope_id')::uuid IS NOT NULL AND (
+            ir.scope_id IN (SELECT id FROM scope_family)
+            OR ir.scope_id IS NULL
+        ))
+    )
 
     UNION
 
-    -- Role-based permission assignments (scope-specific + inherited global WITHIN same realm)
-    SELECT rp.permission_id AS id
-    FROM identity_roles ir
-    JOIN role_permissions rp ON rp.role_id = ir.role_id
-    WHERE ir.identity_id = $1
-        AND (
-            ir.scope_id IS NOT DISTINCT FROM $2
-                OR ($2 IS NOT NULL AND ir.scope_id IS NULL)
-            )
+    -- Direct permission assignments
+    SELECT ip.permission_id
+    FROM identity_permissions ip
+    WHERE ip.identity_id = sqlc.arg('identity_id')::uuid
+    AND (
+        (sqlc.narg('scope_id')::uuid IS NULL AND ip.scope_id IS NULL)
+        OR
+        (sqlc.narg('scope_id')::uuid IS NOT NULL AND (
+            ip.scope_id IN (SELECT id FROM scope_family)
+            OR ip.scope_id IS NULL
+        ))
+    )
 )
-SELECT p.*
-FROM permissions p
-JOIN effective_ids e ON p.id = e.id
-WHERE
-    -- STRICT isolation: IdP and Project permissions never mix
-    (sqlc.narg(project_id)::UUID IS NULL AND p.project_id IS NULL)      -- IdP realm only
-    OR (sqlc.narg(project_id)::UUID IS NOT NULL AND p.project_id = sqlc.narg(project_id)::UUID)  -- Project realm only
-ORDER BY p.object, p.action, p.id;
+AND (
+    -- Strict IdP/Project isolation
+    (sqlc.narg('project_id')::uuid IS NULL AND p.project_id IS NULL)
+    OR (sqlc.narg('project_id')::uuid IS NOT NULL AND p.project_id = sqlc.narg('project_id')::uuid)
+)
+ORDER BY p.object, p.action;
