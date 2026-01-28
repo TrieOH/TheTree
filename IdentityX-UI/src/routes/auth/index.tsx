@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { useState } from 'react'
 import z from 'zod';
 import { requireGuest } from '@/features/auth/lib/route-guard';
+import { toast } from 'sonner';
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
@@ -27,7 +28,7 @@ function RouteComponent() {
   const router = useRouter()
   const search = useSearch({ from: '/auth/' })
 
-  const handleSuccess = async () => {
+  const handleLoginSuccess = async () => {
     const auth = router.options.context.auth
     if(auth) {
       router.update({ 
@@ -39,12 +40,18 @@ function RouteComponent() {
 
       const destination = search.redirect || '/projects'
       await navigate({ to: destination, replace: true })
-    }
-    console.error("Auth Failed:")
+      toast.success("Login successful!")
+    } else toast.error("Auth Initialization Failed")
   }
 
-  const handleFailure = async (message: string) => {
-    console.error("Auth Failed:", message)
+  const handleSignUpSuccess = async () => {
+    setIsLogin(true);
+    toast.success("Account successfully created!")
+  }
+
+  const handleFailure = async (message: string, trace?: string[]) => {
+    const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
+    toast.warning("Auth Failed: " + message, {description: traceMsg})
   }
 
   return (
@@ -59,13 +66,13 @@ function RouteComponent() {
         {isLogin ? (
           <SignIn 
             signUpRedirect={() => setIsLogin(false)} 
-            onSuccess={handleSuccess}
+            onSuccess={handleLoginSuccess}
             onFailed={handleFailure}
           />
         ) : (
           <SignUp 
             loginRedirect={() => setIsLogin(true)} 
-            onSuccess={async () => setIsLogin(true)}
+            onSuccess={handleSignUpSuccess}
             onFailed={handleFailure}
           />
         )}

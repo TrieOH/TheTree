@@ -9,6 +9,7 @@ import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
 import Header from '@/widgets/header/ui/Header'
+import { Toaster } from 'sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -45,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             {/* </PHProvider> */}
           </AuthSynchronizer>
         </AuthProvider>
+        <Toaster />
         <Scripts />
       </body>
     </html>
