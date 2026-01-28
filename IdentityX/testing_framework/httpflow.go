@@ -10,6 +10,7 @@ import (
 	"github.com/gavv/httpexpect/v2"
 	"github.com/goforj/godump"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // ============================================================================
@@ -22,9 +23,10 @@ type Client struct {
 	auth   *AuthContext
 
 	// Credentials for re-authentication
-	email     string
-	password  string
-	projectID string
+	email         string
+	password      string
+	projectID     string
+	projectUserID *string
 }
 
 type AuthContext struct {
@@ -39,35 +41,38 @@ type AuthContext struct {
 // WithCredentials creates a new client with credentials (unauthenticated initially)
 func (c *Client) WithCredentials(email, password string) *Client {
 	return &Client{
-		expect:    c.expect,
-		t:         c.t,
-		email:     email,
-		password:  password,
-		projectID: c.projectID,
+		expect:        c.expect,
+		t:             c.t,
+		email:         email,
+		password:      password,
+		projectID:     c.projectID,
+		projectUserID: c.projectUserID,
 	}
 }
 
 // WithAuth creates a new client with the given auth context
 func (c *Client) WithAuth(auth *AuthContext) *Client {
 	return &Client{
-		expect:    c.expect,
-		t:         c.t,
-		auth:      auth,
-		email:     c.email,
-		password:  c.password,
-		projectID: c.projectID,
+		expect:        c.expect,
+		t:             c.t,
+		auth:          auth,
+		email:         c.email,
+		password:      c.password,
+		projectID:     c.projectID,
+		projectUserID: c.projectUserID,
 	}
 }
 
 // WithT creates a new client with a different testing.T (for subtests)
 func (c *Client) WithT(t *testing.T) *Client {
 	return &Client{
-		expect:    c.expect,
-		t:         t,
-		auth:      c.auth,
-		email:     c.email,
-		password:  c.password,
-		projectID: c.projectID,
+		expect:        c.expect,
+		t:             t,
+		auth:          c.auth,
+		email:         c.email,
+		password:      c.password,
+		projectID:     c.projectID,
+		projectUserID: c.projectUserID,
 	}
 }
 
@@ -131,6 +136,14 @@ func (c *Client) ProjectLogin(projectID string) *Client {
 		HasModule("go-auth-test").
 		HasMessage("Logged in").
 		AuthCookies()
+
+	meValue := c.WithAuth(auth).GET("/sessions/me").
+		Expect(http.StatusOK).
+		RequireDataObject()
+
+	puID := meValue.Value("access").Object().Value("sub").Object().Value("id").String().NotEmpty().Raw()
+	require.NotEmpty(c.t, puID, "project user id was empty")
+	c.projectUserID = &puID
 
 	return c.WithAuth(auth)
 }

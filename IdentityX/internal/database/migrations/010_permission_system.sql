@@ -146,6 +146,9 @@ CREATE TABLE identity_roles (
 CREATE INDEX idx_identity_roles_identity_scope
     ON identity_roles(identity_id, scope_id);
 
+CREATE INDEX idx_identity_roles_lookup
+    ON identity_roles(identity_id, scope_id, role_id);
+
 CREATE TABLE identity_permissions (
     identity_id UUID NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
     permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
@@ -158,6 +161,9 @@ CREATE TABLE identity_permissions (
 CREATE INDEX idx_identity_permissions_identity_scope
     ON identity_permissions(identity_id, scope_id);
 
+CREATE INDEX idx_identity_permissions_lookup
+    ON identity_permissions(identity_id, scope_id, permission_id);
+
 CREATE TABLE permission_audit_log (
     id UUID PRIMARY KEY,
     identity_id UUID NOT NULL REFERENCES identities(id),
@@ -169,8 +175,10 @@ CREATE TABLE permission_audit_log (
 
 -- +goose Down
 DROP TABLE IF EXISTS permission_audit_log;
+DROP INDEX IF EXISTS idx_identity_permissions_lookup;
 DROP INDEX IF EXISTS idx_identity_permissions_identity_scope;
 DROP TABLE IF EXISTS identity_permissions;
+DROP INDEX IF EXISTS idx_identity_roles_lookup;
 DROP INDEX IF EXISTS idx_identity_roles_identity_scope;
 DROP TABLE IF EXISTS identity_roles;
 DROP TABLE IF EXISTS role_permissions;

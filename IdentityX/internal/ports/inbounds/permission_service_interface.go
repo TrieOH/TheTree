@@ -14,4 +14,6 @@ type PermissionService interface {
 
 	GiveDirect(ctx context.Context, in ManagePermissionInput) error
 	TakeDirect(ctx context.Context, in ManagePermissionInput) error
+
+	GetEffective(ctx context.Context, in ManagePermissionInput) ([]PermissionOutput, error)
 }

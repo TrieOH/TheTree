@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/google/uuid"
 )
 
 type PermissionHandler struct {
@@ -92,13 +93,13 @@ func (handler *PermissionHandler) ListByProject(w http.ResponseWriter, r *http.R
 	}
 
 	ctx := r.Context()
-	perm, err := handler.permission.ListByProject(ctx, in)
+	perms, err := handler.permission.ListByProject(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(perm)).Send(w)
+	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(perms)).Send(w)
 }
 
 func (handler *PermissionHandler) GiveDirect(w http.ResponseWriter, r *http.Request) {
@@ -171,4 +172,46 @@ func (handler *PermissionHandler) TakeDirect(w http.ResponseWriter, r *http.Requ
 	}
 
 	resp.OK("Removed permission from user").Send(w)
+}
+
+func (handler *PermissionHandler) GetEffective(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var scopeID *uuid.UUID
+	scopeIDStr := r.URL.Query().Get("scope_id")
+	if scopeIDStr != "" {
+		scopeIDParsed, err := uuid.Parse(scopeIDStr)
+		if err != nil {
+			resp.FromError(err).Send(w)
+			return
+		}
+		scopeID = &scopeIDParsed
+	} else {
+		scopeID = nil
+	}
+
+	in := inbounds.ManagePermissionInput{
+		ProjectID: &projectID,
+		ScopeID:   scopeID,
+		EntityID:  entityID,
+	}
+
+	ctx := r.Context()
+	perms, err := handler.permission.GetEffective(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(perms)).Send(w)
 }

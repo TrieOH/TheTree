@@ -21,4 +21,6 @@ type PermissionRepository interface {
 
 	GiveDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
 	TakeDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
+
+	GetEffective(ctx context.Context, identityID uuid.UUID, projectID, scopeID *uuid.UUID) ([]permissions.Permission, error)
 }
