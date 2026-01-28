@@ -1,38 +1,30 @@
-import { HeaderConfigI } from "./header.types";
+import type { HeaderConfigI, HeaderVariant } from "./header.types";
 
-export const headerRegistry: Record<string, HeaderConfigI> = {
+export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
   landing: {
     variant: 'landing',
     title: 'TrieAuth',
-    centerActions: [ // center is the only who visibleOn always or empty transfer to menu
-      { type: 'link', label: 'Features', to: '/' },
-      { type: 'link', label: 'Pricing', to: '/' },
-      { type: 'link', label: 'Docs', to: '/' },
-    ],
-    rightActions: [
-      { type: 'authButton', visibleOn: 'desktop' }, 
-      // { type: 'authButton', visibleOn: 'mobile' }
-    ],
-  },
-
-  auth: {
-    variant: 'auth',
-    title: 'TrieAuth',
+    titlePosition: 'left',
     centerActions: [
       { type: 'link', label: 'Features', to: '/' },
       { type: 'link', label: 'Pricing', to: '/' },
       { type: 'link', label: 'Docs', to: '/' },
     ],
     rightActions: [
-      { type: 'authButton', visibleOn: 'desktop' }, 
-      { type: 'authButton', visibleOn: 'mobile' }
+      { type: 'authButton', visibleOn: 'fixed' },
     ],
   },
 
   projects: {
     variant: 'projects',
     title: 'Projects',
+    titlePosition: 'none',
+    disableMobileMenu: true,
     leftActions: [{ type: 'back' }],
     // rightActions: [{ type: 'createProject' }],
   },
-} satisfies Record<string, HeaderConfigI>
+  auth: { variant: 'auth' },
+  none: { variant: 'none' }
+} satisfies Record<HeaderVariant, HeaderConfigI>
+
+headerRegistry.auth = {...headerRegistry.landing, variant: 'auth' }
