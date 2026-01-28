@@ -206,7 +206,7 @@ func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermission
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot add edit a project you don't own"})
+		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
 	}
 
 	var roleBelongs bool
