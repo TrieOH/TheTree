@@ -1,46 +1,32 @@
 import { Link } from '@tanstack/react-router'
-import { HeaderAction as HeaderActionType } from '../model/header.types'
+import type { HeaderAction } from '../model/header.types'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import { ArrowLeft } from 'lucide-react'
 import AuthButton from '@/features/auth/ui/AuthButton'
 
-export function actionVisibilityClass(visibleOn?: 'mobile'|'desktop'|'always') {
-  if (!visibleOn || visibleOn === 'always') return ''
-  if (visibleOn === 'desktop') return 'hidden md:flex'
-  return 'flex md:hidden' // mobile
-}
-
-export default function HeaderAction({ action }: { action: HeaderActionType }) {
-
-  const cls = actionVisibilityClass(action.visibleOn)
+export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
   
   switch (action.type) {
     case 'link':
       return (
-        <Link to={action.to} className={`${cls} custom-underline`}>
+        <Link to={action.to} className="custom-underline">
           {action.label}
         </Link>
       )
 
     case 'button':
       return (
-        <div className={cls}>
-          <ShadowButton value={action.label} leftIcon={action.icon} onClick={action.onClick} />
-        </div>
+        <ShadowButton value={action.label} leftIcon={action.icon} onClick={action.onClick} />
       )
 
     case 'back':
       return (
-        <div className={cls}>
-          <ShadowButton leftIcon={<ArrowLeft size={18} />} onClick={() => history.back()} />
-        </div>
+        <ShadowButton leftIcon={<ArrowLeft size={18} />} onClick={() => history.back()} />
       )
 
     case 'authButton':
       return (
-        <div className={cls}>
-          <AuthButton />
-        </div>
+        <AuthButton />
       )
 
     default:
