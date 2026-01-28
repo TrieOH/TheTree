@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import type { HeaderAction } from '../model/header.types'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
-import { ArrowLeft } from 'lucide-react'
 import AuthButton from '@/features/auth/ui/AuthButton'
+import BackButton from '@/features/navigation/ui/BackButton'
 
 export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
   
@@ -21,7 +21,7 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
 
     case 'back':
       return (
-        <ShadowButton leftIcon={<ArrowLeft size={18} />} onClick={() => history.back()} />
+        <BackButton value='Back' to={action.to} />
       )
 
     case 'authButton':
