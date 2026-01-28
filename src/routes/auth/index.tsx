@@ -14,9 +14,7 @@ export const Route = createFileRoute('/auth/')({
   beforeLoad: requireGuest,
   staticData: {
     components: {
-      header: {
-        test: false,
-      }
+      header: "auth"
     }
   },
   component: RouteComponent,

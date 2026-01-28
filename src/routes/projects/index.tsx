@@ -6,9 +6,7 @@ export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
   staticData: {
     components: {
-      header: {
-        test: false,
-      }
+      header: "projects"
     }
   },
   component: RouteComponent,

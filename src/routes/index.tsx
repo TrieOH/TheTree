@@ -3,9 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 export const Route = createFileRoute('/')({ 
   staticData: {
     components: {
-      header: {
-        test: true,
-      }
+      header: "landing"
     }
   },
   component: App
