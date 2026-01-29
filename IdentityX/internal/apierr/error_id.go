@@ -167,13 +167,14 @@ const (
 )
 
 const (
-	PermissionInvalidObject       ID = "PERM_001"
-	PermissionInvalidAction       ID = "PERM_002"
-	PermissionNotOwnedByPrincipal ID = "PERM_003"
-	PermissionAlreadyGranted      ID = "PERM_004"
-	PermissionObjectMismatch      ID = "PERM_005"
-	PermissionActionMismatch      ID = "PERM_006"
-	PermissionInsufficient        ID = "PERM_007"
+	PermissionInvalidObject            ID = "PERM_001"
+	PermissionInvalidAction            ID = "PERM_002"
+	PermissionNotOwnedByPrincipal      ID = "PERM_003"
+	PermissionAlreadyGranted           ID = "PERM_004"
+	PermissionObjectMismatch           ID = "PERM_005"
+	PermissionActionMismatch           ID = "PERM_006"
+	PermissionInsufficient             ID = "PERM_007"
+	PermissionConditionValidationError ID = "PERM_008"
 )
 
 const (

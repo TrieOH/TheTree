@@ -9,6 +9,8 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -67,7 +69,12 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 		return nil, apierr.FromService(span, err)
 	}
 
-	permission, err := uc.permissions.Create(ctx, permissions.Permission{
+	_, err = permissions.DecodeAndValidateCondition(in.Conditions)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	permission, err := uc.permissions.Create(ctx, outbounds.CreatePermissionInput{
 		ProjectID:  in.ProjectID,
 		Object:     in.Object,
 		Action:     in.Action,
@@ -373,6 +380,35 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	for _, p := range perms {
 		if permissions.ObjectMatch(p.Object, in.Object) &&
 			permissions.ActionMatch(p.Action, in.Action) {
+
+			if p.Conditions != nil {
+				if in.Resource == nil {
+					// FIXME when conditions exist but no resource provided, error message unclear
+					// FIXME user doesn't know which permission requires resource data
+					return false, errors.New("can't check conditions without resource")
+				}
+				evalCtx := permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id": userIdentity.ID,
+					},
+					Resource: *in.Resource,
+					Environment: map[string]interface{}{
+						"now": time.Now().UTC(),
+					},
+				}
+
+				var ok bool
+				var motive permissions.Motive
+				ok, motive, err = p.Conditions.Evaluate(ctx, &evalCtx)
+				if err != nil {
+					return false, err
+				}
+				if !ok {
+					span.SetAttributes(attribute.String("denial.motive", motive.Code))
+					continue
+				}
+			}
+
 			// PHASE 7: Conditions ignored for now
 			span.SetAttributes(attribute.Bool("permission.found", true))
 			return true, nil

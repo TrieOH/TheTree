@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"encoding/json"
 	"regexp"
 	"time"
 
@@ -9,12 +8,13 @@ import (
 )
 
 type Permission struct {
-	ID         uuid.UUID
-	ProjectID  *uuid.UUID
-	Object     string
-	Action     string
-	Conditions *json.RawMessage
-	CreatedAt  time.Time
+	ID        uuid.UUID
+	ProjectID *uuid.UUID
+	Object    string
+	Action    string
+	CreatedAt time.Time
+
+	Conditions *Condition
 }
 
 var (

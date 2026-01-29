@@ -229,6 +229,7 @@ func (handler *PermissionHandler) Check(w http.ResponseWriter, r *http.Request) 
 		EntityID:  req.EntityID,
 		Object:    req.Object,
 		Action:    req.Action,
+		Resource:  req.Resource,
 	}
 
 	ctx := r.Context()
