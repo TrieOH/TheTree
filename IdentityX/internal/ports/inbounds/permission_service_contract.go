@@ -28,6 +28,14 @@ type ManagePermissionInput struct {
 	ProjectID    *uuid.UUID
 }
 
+type CheckPermissionInput struct {
+	EntityID  uuid.UUID
+	ProjectID *uuid.UUID
+	ScopeID   *uuid.UUID
+	Object    string
+	Action    string
+}
+
 type PermissionOutput struct {
 	Permission permissions.Permission
 }

@@ -25,3 +25,27 @@ func (e ErrInvalidPermissionAction) Error() string {
 	}
 	return fmt.Sprintf("invalid permission action: %s", e.Action)
 }
+
+type ErrObjectMismatch struct {
+	Expected string
+	Actual   string
+}
+
+func (e ErrObjectMismatch) Error() string {
+	return fmt.Sprintf("object mismatch: permission=%s, request=%s", e.Expected, e.Actual)
+}
+
+type ErrActionMismatch struct {
+	Expected string
+	Actual   string
+}
+
+func (e ErrActionMismatch) Error() string {
+	return fmt.Sprintf("action mismatch: permission=%s, request=%s", e.Expected, e.Actual)
+}
+
+type ErrInsufficientPermissions struct{}
+
+func (e ErrInsufficientPermissions) Error() string {
+	return "insufficient permissions"
+}

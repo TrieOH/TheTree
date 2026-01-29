@@ -215,3 +215,33 @@ func (handler *PermissionHandler) GetEffective(w http.ResponseWriter, r *http.Re
 
 	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(perms)).Send(w)
 }
+
+func (handler *PermissionHandler) Check(w http.ResponseWriter, r *http.Request) {
+	var req dto.CheckRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.CheckPermissionInput{
+		ProjectID: req.ProjectID,
+		ScopeID:   req.ScopeID,
+		EntityID:  req.EntityID,
+		Object:    req.Object,
+		Action:    req.Action,
+	}
+
+	ctx := r.Context()
+	hasPermission, err := handler.permission.Check(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	if hasPermission {
+		resp.OK("Permission Granted").WithData(map[string]bool{"allowed": hasPermission}).Send(w)
+		return
+	}
+
+	resp.Forbidden("Permission Denied").WithData(map[string]bool{"allowed": hasPermission}).Send(w)
+}

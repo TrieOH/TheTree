@@ -204,6 +204,7 @@ func registerPermissionRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
+		r.Post("/authz/check", h.Check)
 		r.With(middleware.AllowOnlyQueryParams("scope_id")).
 			Get("/projects/{project_id}/identities/{entity_id}/permissions", h.GetEffective)
 		r.Post("/projects/{project_id}/identities/{entity_id}/permissions", h.GiveDirect)

@@ -63,35 +63,6 @@ CREATE UNIQUE INDEX scopes_unique_project_resource_scopes
     ON scopes (project_id, name, external_id)
     WHERE type = 'project_scope' AND external_id IS NOT NULL;
 
-
---- object: object:specifier (/ path)
---- object: object:specifier/object:specifier
---- having no specifier is the same as specifying *
-
---- action: domain:verb
---- or action: verb
---- action: attendance:mark
---- action: edit
---- actions should not have specifiers
-
---- Examples
---- object: event:123/activity:456
---- action: attendance:mark
---- User X Can mark attendance on activity 456 on event 123
-
---- object: event:123/activity:*
---- action: attendance:mark
---- User X Can mark attendance on all activities on event 123
-
---- object: event:123/activity
---- action: create
---- User X Can create activities on event 123
-
---- forbidden edit requires either all or specific
---- object: event:123/activity
---- action: edit
---- User X Can edit activities on event 123
-
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,

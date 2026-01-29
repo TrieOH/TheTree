@@ -395,12 +395,12 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
 				"object":     "event:*",
-				"action":     "what:*",
+				"action":     "what:",
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.PermissionInvalidAction).
-			HasMessage("invalid permission action: what:*")
+			HasMessage("invalid permission action: what:")
 	})
 
 	t.Run("NotAllowedQueryParam", func(t *testing.T) {
