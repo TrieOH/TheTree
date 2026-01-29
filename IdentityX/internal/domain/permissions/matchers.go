@@ -100,13 +100,51 @@ func ActionMatch(permissionAction, requestAction string) bool {
 		return true
 	}
 
-	if strings.HasSuffix(permissionAction, ":*") {
-		prefix := permissionAction[:len(permissionAction)-1]
-		// Must have content after the colon AND match prefix
-		return len(requestAction) > len(prefix) && strings.HasPrefix(requestAction, prefix)
+	// Reject empty request segments immediately
+	if strings.HasSuffix(requestAction, ":") || strings.Contains(requestAction, "::") {
+		return false
 	}
 
-	return permissionAction == requestAction
+	permParts := strings.Split(permissionAction, ":")
+	reqParts := strings.Split(requestAction, ":")
+
+	return matchActionParts(permParts, reqParts, 0, 0)
+}
+
+func matchActionParts(perm, req []string, pIdx, rIdx int) bool {
+	// Consumed all permission segments
+	if pIdx >= len(perm) {
+		return rIdx >= len(req)
+	}
+
+	pSeg := perm[pIdx]
+
+	// ** matches zero or more segments (recursive)
+	if pSeg == "**" {
+		for i := rIdx; i <= len(req); i++ {
+			if matchActionParts(perm, req, pIdx+1, i) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Consumed all request but permission remains (and it's not **)
+	if rIdx >= len(req) {
+		return false
+	}
+
+	// * matches exactly one segment (any content)
+	if pSeg == "*" {
+		return matchActionParts(perm, req, pIdx+1, rIdx+1)
+	}
+
+	// Exact match required
+	if pSeg != req[rIdx] {
+		return false
+	}
+
+	return matchActionParts(perm, req, pIdx+1, rIdx+1)
 }
 
 // MustMatch is a validation helper for clean error messages

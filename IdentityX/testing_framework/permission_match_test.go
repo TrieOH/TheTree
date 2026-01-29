@@ -76,8 +76,8 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			// Prefix wildcards (domain:*)
 			{"WildcardPrefixMatchesNested", "attendance:*", "attendance:mark", true},
 			{"WildcardPrefixMatchesCheck", "attendance:*", "attendance:check", true},
-			{"WildcardPrefixMatchesDeeplyNested", "admin:*", "admin:user:create", true},
-			{"WildcardPrefixMatchesTripleNested", "admin:*", "admin:role:delete:permanent", true},
+			{"WildcardPrefixNoMatchDeeplyNested", "admin:*", "admin:user:create", false},
+			{"WildcardPrefixNoMatchTripleNested", "admin:*", "admin:role:delete:permanent", false},
 			{"WildcardPrefixMatchesSingleSegment", "coordination:*", "coordination:start", true},
 			{"WildcardPrefixNoMatchDifferentNamespace", "attendance:*", "session:mark", false},
 			{"WildcardPrefixNoMatchDifferentAction", "attendance:*", "participation:mark", false},
@@ -104,6 +104,26 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			{"SingleCharSegments", "a:b:c", "a:b:c", true},
 			{"WildcardVersusLiteralStar", "*", "*", true},       // Both are global wildcard
 			{"LiteralStarDoesntMatchAction", "*", "edit", true}, // Star matches everything
+
+			// Star Segment
+			{"StarMatchesSegment", "attendance:*", "attendance:mark", true},
+			{"StarMatchesDifferent", "attendance:*", "attendance:check", true},
+			{"StarDoesNotMatchNested", "attendance:*", "attendance:mark:verify", false},
+			{"StarMiddleMatch", "admin:*:create", "admin:user:create", true},
+			{"StarMiddleMismatch", "admin:*:create", "admin:user:delete", false},
+
+			// Double wildcard (**) - recursive
+			{"DoubleStarMatchesSelf", "admin:**", "admin", true},
+			{"DoubleStarMatchesOne", "admin:**", "admin:create", true},
+			{"DoubleStarMatchesDeep", "admin:**", "admin:user:role:create", true},
+			{"DoubleStarAfterSpecific", "admin:user:**", "admin:user:create", true},
+			{"DoubleStarAfterSpecificDeep", "admin:user:**", "admin:user:role:assign:permanent", true},
+			{"DoubleStarWrongPrefix", "admin:**", "user:create", false},
+
+			// Mixed patterns
+			{"StarThenDoubleStar", "action:*:**", "action:custom:deep:nested", true},
+			{"MultipleStars", "a:*:b:*:c", "a:1:b:2:c", true},
+			{"MultipleStarsFail", "a:*:b:*:c", "a:1:b:2:d", false},
 		}
 
 		for _, tt := range tests {

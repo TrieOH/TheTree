@@ -2,6 +2,7 @@ package testing
 
 import (
 	"testing"
+	"time"
 )
 
 // ============================================================================
@@ -70,4 +71,6 @@ func TestGoAuth(t *testing.T) {
 	t.Run("PermissionMatching", func(t *testing.T) {
 		testPermissionMatching(t, suite)
 	})
+
+	time.Sleep(1 * time.Second)
 }

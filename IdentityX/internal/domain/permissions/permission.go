@@ -19,7 +19,7 @@ type Permission struct {
 
 var (
 	objectRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z][a-zA-Z0-9_]*:(?:[a-zA-Z0-9_]+|\*)(?:/[a-zA-Z][a-zA-Z0-9_]*:(?:[a-zA-Z0-9_]+|\*))*(?:/(?:\*|\*\*))?)$`)
-	actionRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z0-9_]+(?::(?:[a-zA-Z0-9_]+|\*))*)$`)
+	actionRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z0-9_]+(?::(?:[a-zA-Z0-9_]+|\*))*(?::\*\*)?)$`)
 )
 
 func ValidateObject(object string) error {
