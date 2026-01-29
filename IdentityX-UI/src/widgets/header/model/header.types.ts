@@ -13,8 +13,11 @@ export interface HeaderConfigI {
   variant: HeaderVariant
   title?: string
   titlePosition?: TitlePosition
+
   leftActions?: HeaderAction[]
   centerActions?: HeaderAction[]
   rightActions?: HeaderAction[]
+
   disableMobileMenu?: boolean // if true never show the menu button
+  showUserMenu?: boolean
 }

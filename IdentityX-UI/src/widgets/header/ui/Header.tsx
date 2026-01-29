@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react"
 import HeaderActionRenderer from "./HeaderActionRenderer"
 import { cn } from "@/shared/lib/utils"
 import type { HeaderAction, VisibleOn } from "../model/header.types"
+import UserMenu from "@/widgets/user-menu/ui/UserMenu"
 
 function visibilityClass(visibleOn?: VisibleOn) {
   if (!visibleOn || visibleOn === 'fixed') return ''
@@ -74,7 +75,7 @@ export default function Header() {
           {/* left actions (e.g., back) */}
           <div className="flex items-center gap-2">
             {left.map((a, i) => (
-              <div className={visibilityClass(a.visibleOn)}>
+              <div className={visibilityClass(a.visibleOn)} key={`leftD-${i}`}>
                 <HeaderActionRenderer key={`left-${i}`} action={a} />
               </div>
             ))}
@@ -95,7 +96,7 @@ export default function Header() {
         {/* center desktop nav */}
         <nav className="hidden md:flex gap-6 items-center">
           {center.map((a, i) => (
-            <div className={visibilityClass(a.visibleOn)}>
+            <div className={visibilityClass(a.visibleOn)} key={`centerD-${i}`}>
               <HeaderActionRenderer key={`center-${i}`} action={a} />
             </div>
           ))}
@@ -104,10 +105,11 @@ export default function Header() {
         {/* right actions */}
         <div className="flex items-center gap-2">
           {right.map((a, i) => (
-            <div className={visibilityClass(a.visibleOn)}>
+            <div className={visibilityClass(a.visibleOn)} key={`rightD-${i}`}>
               <HeaderActionRenderer key={`right-${i}`} action={a} />
             </div>
           ))}
+          {header.showUserMenu && <UserMenu />}
         </div>
       </div>
 
