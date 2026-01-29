@@ -488,6 +488,10 @@ func evalIn(item, container interface{}) (bool, Motive, error) {
 }
 
 func resolvePath(evalCtx *ConditionContext, path string) (interface{}, error) {
+	if path == "" {
+		return nil, fmt.Errorf("empty path")
+	}
+
 	parts := strings.Split(path, ".")
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid path: %s", path)
@@ -507,23 +511,75 @@ func resolvePath(evalCtx *ConditionContext, path string) (interface{}, error) {
 		return nil, fmt.Errorf("unknown source: %s", parts[0])
 	}
 
-	// Navigate nested maps
 	current := source
 	for i := 1; i < len(parts); i++ {
-		val, ok := current[parts[i]]
-		if !ok {
-			return nil, fmt.Errorf("key not found: %s", parts[i])
-		}
+		part := parts[i]
 
-		if i == len(parts)-1 {
-			return val, nil
-		}
+		// Check for array indexing syntax: key[index]
+		openBracket := strings.Index(part, "[")
+		closeBracket := strings.Index(part, "]")
 
-		// Try to go deeper
-		if nextMap, ok := val.(map[string]interface{}); ok {
-			current = nextMap
+		if openBracket != -1 && closeBracket != -1 && openBracket < closeBracket {
+			// Parse array access
+			key := part[:openBracket]
+			indexStr := part[openBracket+1 : closeBracket]
+
+			// Get the array/slice from the map
+			val, ok := current[key]
+			if !ok {
+				return nil, fmt.Errorf("key not found: %s", key)
+			}
+
+			// Parse index
+			var index int
+			if _, err := fmt.Sscanf(indexStr, "%d", &index); err != nil {
+				return nil, fmt.Errorf("invalid array index '%s' in path: %s", indexStr, path)
+			}
+
+			// Handle different array/slice types
+			switch arr := val.(type) {
+			case []interface{}:
+				if index < 0 || index >= len(arr) {
+					return nil, fmt.Errorf("array index out of bounds: %d (array length: %d)", index, len(arr))
+				}
+				val = arr[index]
+			case []string:
+				if index < 0 || index >= len(arr) {
+					return nil, fmt.Errorf("array index out of bounds: %d (array length: %d)", index, len(arr))
+				}
+				val = arr[index]
+			default:
+				return nil, fmt.Errorf("cannot index into type %T at %s", val, key)
+			}
+
+			// If this is the last part, return the value
+			if i == len(parts)-1 {
+				return val, nil
+			}
+
+			// Otherwise, continue traversing from this value
+			if nextMap, ok := val.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				return nil, fmt.Errorf("cannot traverse into type %T at %s", val, part)
+			}
 		} else {
-			return nil, fmt.Errorf("cannot traverse into non-map at %s", parts[i])
+			// Regular map key access
+			val, ok := current[part]
+			if !ok {
+				return nil, fmt.Errorf("key not found: %s", part)
+			}
+
+			if i == len(parts)-1 {
+				return val, nil
+			}
+
+			// Continue traversing
+			if nextMap, ok := val.(map[string]interface{}); ok {
+				current = nextMap
+			} else {
+				return nil, fmt.Errorf("cannot traverse into type %T at %s", val, part)
+			}
 		}
 	}
 
