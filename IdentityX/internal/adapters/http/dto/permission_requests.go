@@ -18,9 +18,10 @@ type UserPermissionRequest struct {
 }
 
 type CheckRequest struct {
-	ProjectID *uuid.UUID `json:"project_id"`
-	ScopeID   *uuid.UUID `json:"scope_id"`
-	EntityID  uuid.UUID  `json:"entity_id" validate:"required"`
-	Object    string     `json:"object" validate:"required"`
-	Action    string     `json:"action" validate:"required"`
+	ProjectID *uuid.UUID              `json:"project_id"`
+	ScopeID   *uuid.UUID              `json:"scope_id"`
+	EntityID  uuid.UUID               `json:"entity_id" validate:"required"`
+	Object    string                  `json:"object" validate:"required"`
+	Action    string                  `json:"action" validate:"required"`
+	Resource  *map[string]interface{} `json:"resource"`
 }

@@ -43,11 +43,12 @@ func mapPermissionFromDB(dst *permissions.Permission, src *sqlc.Permission) {
 	dst.ProjectID = src.ProjectID
 	dst.Object = src.Object
 	dst.Action = src.Action
-	dst.Conditions = src.Conditions
 	dst.CreatedAt = src.CreatedAt
+	// FIXME deal with error
+	dst.Conditions, _ = permissions.DecodeCondition(src.Conditions)
 }
 
-func (repo *permissionRepo) Create(ctx context.Context, toCreate permissions.Permission) (*permissions.Permission, error) {
+func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.CreatePermissionInput) (*permissions.Permission, error) {
 	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.Create")
 	defer span.End()
 

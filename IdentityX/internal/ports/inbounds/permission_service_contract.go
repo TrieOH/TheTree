@@ -34,6 +34,7 @@ type CheckPermissionInput struct {
 	ScopeID   *uuid.UUID
 	Object    string
 	Action    string
+	Resource  *map[string]interface{}
 }
 
 type PermissionOutput struct {

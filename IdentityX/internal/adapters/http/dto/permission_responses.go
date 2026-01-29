@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"time"
@@ -18,12 +19,15 @@ type PermissionResponse struct {
 }
 
 func PermissionOutputToPermissionResponse(in inbounds.PermissionOutput) PermissionResponse {
+	// FIXME Deal with error
+	condition, _ := permissions.EncodeCondition(in.Permission.Conditions)
+
 	return PermissionResponse{
 		ID:         in.Permission.ID,
 		ProjectID:  in.Permission.ProjectID,
 		Object:     in.Permission.Object,
 		Action:     in.Permission.Action,
-		Conditions: in.Permission.Conditions,
+		Conditions: condition,
 		CreatedAt:  in.Permission.CreatedAt,
 	}
 }
