@@ -210,7 +210,7 @@
   width: 100%;
   max-width: 30rem;
   min-width: 15rem;
-  max-height: 75dvh; 
+  max-height: max(75dvh, 32rem); 
   overflow: hidden;
   gap: 1.25rem;
   align-items: center;
