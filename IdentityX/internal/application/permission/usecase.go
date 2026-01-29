@@ -328,7 +328,7 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 			return false, err
 		}
 		if !isOwner {
-			return false, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot check permissions permissions in a project you don't own"})
+			return false, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot check permissions in a project you don't own"})
 		}
 	}
 
