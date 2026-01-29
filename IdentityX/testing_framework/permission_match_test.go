@@ -3,7 +3,6 @@ package testing
 import (
 	"GoAuth/internal/domain/permissions"
 	"testing"
-	"time"
 )
 
 func testPermissionMatching(t *testing.T, _ *TestSuite) {
@@ -57,8 +56,6 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			})
 		}
 	})
-
-	time.Sleep(100 * time.Millisecond)
 
 	t.Run("TestActionMatching", func(t *testing.T) {
 		tests := []struct {
@@ -136,6 +133,4 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			})
 		}
 	})
-
-	time.Sleep(200 * time.Millisecond)
 }

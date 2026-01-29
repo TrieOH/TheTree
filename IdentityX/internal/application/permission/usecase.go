@@ -308,6 +308,10 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	ctx, span := usecaseTracer.Start(ctx, "PermissionService.Check")
 	defer span.End()
 
+	if err = permissions.ValidatePermission(in.Object, in.Action); err != nil {
+		return false, apierr.FromService(span, err)
+	}
+
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return false, apierr.FromService(span, err)
