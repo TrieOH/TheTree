@@ -13,7 +13,7 @@
 }
 
 .trieoh-input__label {
-  font-size: var(--trieoh-text-xl);
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -33,14 +33,15 @@
 .trieoh-input__container-field {
   min-width: 10rem;
   flex: 1;
+  font-size: var(--trieoh-text-base);
+  font-weight: 300;
+  color: var(--trieoh-neutral2);
   -webkit-appearance: none;
   background: none;
   outline: none;
   border: none;
   box-shadow: none !important;
-  color: var(--trieoh-neutral2);
-  font-size: var(--trieoh-text-xl);
-  font-weight: 300;
+  padding: 0.125rem 0;
 }
 
 .trieoh-input__container-icon {
@@ -51,7 +52,7 @@
 }
 
 .trieoh-input__hint {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #6b7280;
   transition: opacity 0.2s ease-in-out;
 }
@@ -59,6 +60,7 @@
 .trieoh-input__hint .hint-part {
   transition: color 0.12s ease, text-decoration 0.12s ease, opacity 0.12s ease;
   opacity: 0.95;
+  margin: 0.25rem;
 }
 
 .trieoh-input__hint .hint-part.passed {
@@ -77,26 +79,26 @@
 
 .trieoh-button {
   --trieoh-button-color: var(--trieoh-neutral2);
+  width: 100%;
+  height: 3.25rem;
+  font-size: var(--trieoh-text-xl);
+  font-weight: 600;
+  color: var(--trieoh-button-color);
   outline: none;
   background: none;
   position: relative;
   overflow: hidden;
-  width: 100%;
-  height: 5rem;
   min-width: 10rem;
   flex-shrink: 0;
   border: 0.125rem solid var(--trieoh-button-color);
-  color: var(--trieoh-button-color);
   cursor: pointer;
   padding: 0 1.5rem;
-
-  font-size: var(--trieoh-text-3xl);
-  font-weight: 600;
   transition: transform 500ms;
 }
 
 .trieoh-button--all-rounded {
-  border-radius: 0.9375rem;
+  /* border-radius: 0.9375rem; */
+  border-radius: 0.25rem;
 }
 
 .trieoh-button:hover {
@@ -144,7 +146,7 @@
   display: flex;
   align-items: end;
   gap: 0.25rem;
-  font-size: var(--trieoh-text-xl);
+  font-size: var(--trieoh-text-base);
   font-weight: 500;
   color: var(--trieoh-button-color);
   transition: transform 0.2s;
@@ -178,17 +180,17 @@
 }
 
 .trieoh-avacard__content {
-  width: 100%;
-  height: 100%;
-  padding: 1rem;
+  width: 64px;
+  height: 64px;
+  padding: 0.625rem;
   background-color: var(--trieoh-neutral1);
   border-radius: var(--trieoh-radius-full);
-  box-shadow: 0 0.25rem 1.5625rem 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0.25rem 1rem rgba(0,0,0,0.25);
 }
 
 .trieoh-avacard__title {
   text-align: center;
-  font-size: var(--trieoh-text-2xl);
+  font-size: var(--trieoh-text-xl);
   font-weight: 500;
   margin: 0;
 }
@@ -197,48 +199,51 @@
   text-align: center;
   font-size: 0.875rem;
   font-weight: 300;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* Card/Form */
 
 .trieoh-card {
   display: flex;
-  width: 100%;
-  max-width: 42rem;
-  min-width: 20rem;
-  max-height: 100vh;
-  overflow: auto;
   flex-direction: column;
-  gap: 2.5rem;
+  width: 100%;
+  max-width: 30rem;
+  min-width: 15rem;
+  max-height: 75dvh; 
+  overflow: hidden;
+  gap: 1.25rem;
   align-items: center;
   background-color: var(--trieoh-neutral1);
   color: var(--trieoh-neutral2);
-  padding: 3.75rem 2.5rem;
+  padding: 1.25rem 1.5rem;
   box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
+  transition: transform 150ms ease;
 }
 
 .trieoh-card--full-rounded {
-  border-radius: 1.25rem;
+  border-radius: 0.25rem;
 }
 
 .trieoh-card__fields {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.875rem;
-  flex: 1;
-  margin-bottom: 2rem;
+  gap: 0.625rem;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .trieoh-card__divider {
   display: flex;
   align-items: center;
-  width: 100%;
   gap: 0.625rem;
-  opacity: 0.6;
-  font-size: var(--trieoh-text-xl);
+  width: 100%;
+  font-size: var(--trieoh-text-base);
   font-weight: 600;
+  opacity: 0.6;
 }
 
 .trieoh-card__divider hr {
@@ -246,7 +251,7 @@
 }
 
 .trieoh-card__other {
-  font-size: var(--trieoh-text-xl);
+  font-size: var(--trieoh-text-base);
   font-weight: 600;
 }
 
@@ -382,7 +387,6 @@
 .trieoh-session__content svg:last-child:active {
   transform: scale(0.95);
 }
-
 
 @container (min-width: 640px) {
   .trieoh-sessions__header {
