@@ -12,18 +12,14 @@ func ValidateCondition(c Condition) error {
 }
 
 func validateConditionRecursive(c Condition, path string) error {
-	currentPath := path
-	if path != "" {
-		currentPath = path + "."
-	}
-
 	// Check logical combinators first
 	if c.And != nil {
 		if len(*c.And) == 0 {
-			return fmt.Errorf("%sand: AND conditions cannot be empty", currentPath)
+			return fmt.Errorf("%sand: AND conditions cannot be empty", formatPathPrefix(path))
 		}
 		for i, cond := range *c.And {
-			if err := validateConditionRecursive(cond, fmt.Sprintf("%sand[%d]", currentPath, i)); err != nil {
+			childPath := fmt.Sprintf("%sand[%d]", path, i)
+			if err := validateConditionRecursive(cond, childPath); err != nil {
 				return err
 			}
 		}
@@ -32,10 +28,11 @@ func validateConditionRecursive(c Condition, path string) error {
 
 	if c.Or != nil {
 		if len(*c.Or) == 0 {
-			return fmt.Errorf("%sor: OR conditions cannot be empty", currentPath)
+			return fmt.Errorf("%sor: OR conditions cannot be empty", formatPathPrefix(path))
 		}
 		for i, cond := range *c.Or {
-			if err := validateConditionRecursive(cond, fmt.Sprintf("%sor[%d]", currentPath, i)); err != nil {
+			childPath := fmt.Sprintf("%sor[%d]", path, i)
+			if err := validateConditionRecursive(cond, childPath); err != nil {
 				return err
 			}
 		}
@@ -43,15 +40,24 @@ func validateConditionRecursive(c Condition, path string) error {
 	}
 
 	if c.Not != nil {
-		return validateConditionRecursive(*c.Not, fmt.Sprintf("%snot", currentPath))
+		childPath := fmt.Sprintf("%snot", path)
+		return validateConditionRecursive(*c.Not, childPath)
 	}
 
-	return validateLeafCondition(c, currentPath)
+	// Leaf node validation
+	return validateLeafCondition(c, path)
+}
+
+func formatPathPrefix(path string) string {
+	if path == "" {
+		return ""
+	}
+	return path + "."
 }
 
 func validateLeafCondition(c Condition, path string) error {
 	if c.Op == "" {
-		return fmt.Errorf("%sop: operator is required", path)
+		return validationError(path, "op: operator is required")
 	}
 
 	// Define valid operator groups
@@ -66,7 +72,7 @@ func validateLeafCondition(c Condition, path string) error {
 	}
 
 	if !temporalOps[c.Op] && !predicateOps[c.Op] {
-		return fmt.Errorf("%sop: unsupported operator '%s'", path, c.Op)
+		return validationError(path, fmt.Sprintf("op: unsupported operator '%s'", c.Op))
 	}
 
 	// Validate based on operator group
@@ -76,39 +82,46 @@ func validateLeafCondition(c Condition, path string) error {
 	return validatePredicateCondition(c, path)
 }
 
+func validationError(path, msg string) error {
+	if path == "" {
+		return fmt.Errorf("%s", msg)
+	}
+	return fmt.Errorf("%s: %s", path, msg)
+}
+
 func validateTemporalCondition(c Condition, path string) error {
 	switch c.Op {
 	case OpGraceBefore, OpGraceAfter, OpGraceAround:
 		if c.Field == "" {
-			return fmt.Errorf("%sfield: required for '%s' operator", path, c.Op)
+			return validationError(path, fmt.Sprintf("field: required for '%s' operator", c.Op))
 		}
 		if c.Margin == "" {
-			return fmt.Errorf("%smargin: required for '%s' operator", path, c.Op)
+			return validationError(path, fmt.Sprintf("margin: required for '%s' operator", c.Op))
 		}
 		if _, err := time.ParseDuration(c.Margin); err != nil {
-			return fmt.Errorf("%smargin: invalid duration '%s': %w", path, c.Margin, err)
+			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %w", c.Margin, err))
 		}
 		// Ensure no conflicting fields
 		if c.Path != "" || c.Value != nil || c.Ref != "" || c.FieldStart != "" || c.FieldEnd != "" {
-			return fmt.Errorf("%s: unexpected fields for grace operator (only field and margin allowed)", path)
+			return validationError(path, "unexpected fields for grace operator (only field and margin allowed)")
 		}
 
 	case OpGraceDuration:
 		if c.FieldStart == "" {
-			return fmt.Errorf("%sfield_start: required for '%s' operator", path, c.Op)
+			return validationError(path, fmt.Sprintf("field_start: required for '%s' operator", c.Op))
 		}
 		if c.FieldEnd == "" {
-			return fmt.Errorf("%sfield_end: required for '%s' operator", path, c.Op)
+			return validationError(path, fmt.Sprintf("field_end: required for '%s' operator", c.Op))
 		}
 		if c.Margin == "" {
-			return fmt.Errorf("%smargin: required for '%s' operator", path, c.Op)
+			return validationError(path, fmt.Sprintf("margin: required for '%s' operator", c.Op))
 		}
 		if _, err := time.ParseDuration(c.Margin); err != nil {
-			return fmt.Errorf("%smargin: invalid duration '%s': %w", path, c.Margin, err)
+			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %w", c.Margin, err))
 		}
 		// Ensure no conflicting fields
 		if c.Path != "" || c.Value != nil || c.Ref != "" || c.Field != "" {
-			return fmt.Errorf("%s: unexpected fields for grace_duration operator (only field_start, field_end, and margin allowed)", path)
+			return validationError(path, "unexpected fields for grace_duration operator (only field_start, field_end, and margin allowed)")
 		}
 	}
 
@@ -117,30 +130,32 @@ func validateTemporalCondition(c Condition, path string) error {
 
 func validatePredicateCondition(c Condition, path string) error {
 	if c.Path == "" {
-		return fmt.Errorf("%spath: required for predicate operator '%s'", path, c.Op)
+		return validationError(path, fmt.Sprintf("path: required for predicate operator '%s'", c.Op))
 	}
 
 	// For 'exists' operator, value/ref are not needed
 	if c.Op == OpExists {
 		if c.Value != nil || c.Ref != "" {
-			return fmt.Errorf("%s: value and ref should not be provided for 'exists' operator", path)
+			return validationError(path, "value and ref should not be provided for 'exists' operator")
 		}
 		return nil
 	}
 
 	// For other operators, need either Value or Ref
 	if c.Value == nil && c.Ref == "" {
-		return fmt.Errorf("%s: either value or ref must be provided for operator '%s'", path, c.Op)
+		return validationError(path, "either value or ref must be provided for operator '"+c.Op+"'")
 	}
 
 	// Check no temporal fields are set
 	if c.Field != "" || c.FieldStart != "" || c.FieldEnd != "" || c.Margin != "" {
-		return fmt.Errorf("%s: temporal fields (field, field_start, field_end, margin) not allowed for predicate operator", path)
+		// Match the exact expected error message from the test
+		return validationError(path, "temporal fields not allowed for predicate operator")
 	}
 
 	return nil
 }
 
+// EncodeCondition encodes a Condition into a json.RawMessage for database storage
 func EncodeCondition(c *Condition) (*json.RawMessage, error) {
 	if c == nil {
 		return nil, nil
@@ -155,8 +170,14 @@ func EncodeCondition(c *Condition) (*json.RawMessage, error) {
 	return &raw, nil
 }
 
+// DecodeCondition decodes a json.RawMessage into a Condition
 func DecodeCondition(raw *json.RawMessage) (*Condition, error) {
 	if raw == nil {
+		return nil, nil
+	}
+
+	// Check for JSON null
+	if string(*raw) == "null" {
 		return nil, nil
 	}
 
@@ -168,6 +189,7 @@ func DecodeCondition(raw *json.RawMessage) (*Condition, error) {
 	return &c, nil
 }
 
+// DecodeAndValidateCondition decodes and validates a condition in one step
 func DecodeAndValidateCondition(raw *json.RawMessage) (*Condition, error) {
 	c, err := DecodeCondition(raw)
 	if err != nil {
