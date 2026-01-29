@@ -282,18 +282,20 @@ func evalSingleGrace(evalCtx *ConditionContext, c Condition) (bool, Motive, erro
 
 	switch c.Op {
 	case OpGraceBefore:
-		// Valid: [timestamp - margin, timestamp]
+		// Valid: [timestamp - margin, timestamp] (inclusive)
 		windowStart := timestamp.Add(-margin)
-		return now.After(windowStart) && now.Before(timestamp) || now.Equal(timestamp), Motive{}, nil
+		return !now.Before(windowStart) && !now.After(timestamp), Motive{}, nil
+
 	case OpGraceAfter:
-		// Valid: [timestamp, timestamp + margin]
+		// Valid: [timestamp, timestamp + margin] (inclusive)
 		windowEnd := timestamp.Add(margin)
-		return (now.After(timestamp) || now.Equal(timestamp)) && now.Before(windowEnd), Motive{}, nil
+		return !now.Before(timestamp) && !now.After(windowEnd), Motive{}, nil
+
 	case OpGraceAround:
-		// Valid: [timestamp - margin, timestamp + margin]
+		// Valid: [timestamp - margin, timestamp + margin] (inclusive)
 		windowStart := timestamp.Add(-margin)
 		windowEnd := timestamp.Add(margin)
-		return now.After(windowStart) && now.Before(windowEnd), Motive{}, nil
+		return !now.Before(windowStart) && !now.After(windowEnd), Motive{}, nil
 	}
 
 	return false, Motive{Code: "UNKNOWN_OP", Message: c.Op}, nil

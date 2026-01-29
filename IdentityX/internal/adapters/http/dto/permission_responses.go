@@ -1,12 +1,14 @@
 package dto
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type PermissionResponse struct {
@@ -20,7 +22,10 @@ type PermissionResponse struct {
 
 func PermissionOutputToPermissionResponse(in inbounds.PermissionOutput) PermissionResponse {
 	// FIXME Deal with error
-	condition, _ := permissions.EncodeCondition(in.Permission.Conditions)
+	condition, err := permissions.EncodeCondition(in.Permission.Conditions)
+	if err != nil {
+		logs.L().Error("error while encoding condition on permission response", zap.Error(err))
+	}
 
 	return PermissionResponse{
 		ID:         in.Permission.ID,

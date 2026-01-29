@@ -1,6 +1,9 @@
 package permissions
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type ErrInvalidPermissionObject struct {
 	Object  string
@@ -48,4 +51,25 @@ type ErrInsufficientPermissions struct{}
 
 func (e ErrInsufficientPermissions) Error() string {
 	return "insufficient permissions"
+}
+
+type ErrConditionValidationError struct {
+	Message string
+	Path    string
+}
+
+func (e ErrConditionValidationError) Error() string {
+	if e.Path == "" {
+		return e.Message
+	}
+	return e.Path + ": " + e.Message
+}
+
+type ErrLogicalConditionValidationError struct {
+	Path     string
+	Operator string
+}
+
+func (e ErrLogicalConditionValidationError) Error() string {
+	return fmt.Sprintf("%s: %s conditions cannot be empty", e.Path, strings.ToUpper(e.Operator))
 }

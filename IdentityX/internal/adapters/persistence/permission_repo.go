@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
@@ -45,7 +46,11 @@ func mapPermissionFromDB(dst *permissions.Permission, src *sqlc.Permission) {
 	dst.Action = src.Action
 	dst.CreatedAt = src.CreatedAt
 	// FIXME deal with error
-	dst.Conditions, _ = permissions.DecodeCondition(src.Conditions)
+	var err error
+	dst.Conditions, err = permissions.DecodeCondition(src.Conditions)
+	if err != nil {
+		logs.L().Error("error while encoding condition in permission repo", zap.Error(err))
+	}
 }
 
 func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.CreatePermissionInput) (*permissions.Permission, error) {

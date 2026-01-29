@@ -2,11 +2,13 @@ package testing
 
 import (
 	"GoAuth/internal/domain/permissions"
+	"context"
 	"encoding/json"
 	"testing"
+	"time"
 )
 
-func TestConditions(t *testing.T) {
+func testConditions(t *testing.T) {
 	t.Run("ValidateConditions", func(t *testing.T) {
 		tests := []struct {
 			name      string
@@ -804,6 +806,464 @@ func TestConditions(t *testing.T) {
 				// Verify structure is preserved
 				if ex.condition.Op != "" && decoded.Op != ex.condition.Op {
 					t.Errorf("Op mismatch after round-trip")
+				}
+			})
+		}
+	})
+
+	t.Run("Complex Resource Tests", func(t *testing.T) {
+		now := time.Now().UTC()
+
+		tests := []struct {
+			name        string
+			condition   permissions.Condition
+			context     permissions.ConditionContext
+			shouldPass  bool
+			description string
+		}{
+			// ==================== PASSING TESTS (Complex Valid Cases) ====================
+			{
+				name: "complex_event_access_with_grace_and_ownership",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							// User owns the event OR is an admin
+							Or: &[]permissions.Condition{
+								{
+									Path: "subject.id",
+									Op:   permissions.OpEq,
+									Ref:  "resource.event.owner.id",
+								},
+								{
+									Path:  "subject.role",
+									Op:    permissions.OpEq,
+									Value: "admin",
+								},
+							},
+						},
+						{
+							// Within 30m grace period before start
+							Field:  "resource.event.start_time",
+							Op:     permissions.OpGraceBefore,
+							Margin: "30m",
+						},
+						{
+							// Event capacity check
+							Path: "resource.event.attendees",
+							Op:   permissions.OpLt,
+							Ref:  "resource.event.max_capacity",
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":   "user-123",
+						"role": "admin",
+					},
+					Resource: map[string]interface{}{
+						"event": map[string]interface{}{
+							"start_time": now.Add(15 * time.Minute),
+							"owner": map[string]interface{}{
+								"id": "user-456",
+							},
+							"attendees":    45,
+							"max_capacity": 50,
+						},
+					},
+					Environment: map[string]interface{}{
+						"now": now,
+					},
+				},
+				shouldPass:  true,
+				description: "Admin user within grace period, capacity available - should pass",
+			},
+			{
+				name: "activity_enrollment_with_prerequisites_and_department",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							// Check if user has prerequisite course
+							Path: "resource.activity.prerequisites",
+							Op:   permissions.OpContains,
+							Ref:  "subject.completed_courses[0]",
+						},
+						{
+							// Check department match
+							Or: &[]permissions.Condition{
+								{
+									Path:  "subject.department",
+									Op:    permissions.OpEq,
+									Value: "engineering",
+								},
+								{
+									Path:  "subject.department",
+									Op:    permissions.OpEq,
+									Value: "training",
+								},
+							},
+						},
+						{
+							// Activity not full
+							Path:  "resource.activity.enrolled",
+							Op:    permissions.OpLt,
+							Value: 30,
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":                "user-789",
+						"department":        "engineering",
+						"completed_courses": []string{"basic-programming", "git-fundamentals"},
+					},
+					Resource: map[string]interface{}{
+						"activity": map[string]interface{}{
+							"prerequisites": []string{"basic-programming"},
+							"enrolled":      25,
+						},
+					},
+				},
+				shouldPass:  true,
+				description: "User has prerequisites and correct department - should pass",
+			},
+			{
+				name: "resource_grace_duration_with_location_constraint",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							// Access during event duration with grace
+							FieldStart: "resource.event.start_time",
+							FieldEnd:   "resource.event.end_time",
+							Op:         permissions.OpGraceDuration,
+							Margin:     "15m",
+						},
+						{
+							// Specific location requirement
+							Path:  "resource.event.location.building",
+							Op:    permissions.OpEq,
+							Value: "HQ",
+						},
+						{
+							Path:  "resource.event.location.floor",
+							Op:    permissions.OpIn,
+							Value: []interface{}{"1", "2", "3"},
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{"id": "user-111"},
+					Resource: map[string]interface{}{
+						"event": map[string]interface{}{
+							"start_time": now.Add(-10 * time.Minute),
+							"end_time":   now.Add(1 * time.Hour),
+							"location": map[string]interface{}{
+								"building": "HQ",
+								"floor":    "2",
+							},
+						},
+					},
+					Environment: map[string]interface{}{
+						"now": now,
+					},
+				},
+				shouldPass:  true,
+				description: "Within grace duration and correct location - should pass",
+			},
+			{
+				name: "nested_logical_with_array_matching",
+				condition: permissions.Condition{
+					Or: &[]permissions.Condition{
+						{
+							And: &[]permissions.Condition{
+								{
+									Path:  "resource.project.status",
+									Op:    permissions.OpEq,
+									Value: "active",
+								},
+								{
+									Path:  "subject.teams",
+									Op:    permissions.OpContains,
+									Value: "team-alpha",
+								},
+							},
+						},
+						{
+							Not: &permissions.Condition{
+								Path:  "resource.project.archived",
+								Op:    permissions.OpEq,
+								Value: true,
+							},
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":    "user-222",
+						"teams": []string{"team-beta", "team-alpha"},
+					},
+					Resource: map[string]interface{}{
+						"project": map[string]interface{}{
+							"status":   "active",
+							"archived": false,
+						},
+					},
+				},
+				shouldPass:  true,
+				description: "User in team-alpha on active project - should pass",
+			},
+			{
+				name: "complex_string_pattern_matching",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							Path:  "resource.document.name",
+							Op:    permissions.OpStartsWith,
+							Value: "CONFIDENTIAL_",
+						},
+						{
+							Path:  "resource.document.name",
+							Op:    permissions.OpEndsWith,
+							Value: "_INTERNAL.pdf",
+						},
+						{
+							Or: &[]permissions.Condition{
+								{
+									Path:  "subject.clearance_level",
+									Op:    permissions.OpGte,
+									Value: 3,
+								},
+								{
+									Path:  "subject.department",
+									Op:    permissions.OpEq,
+									Value: "legal",
+								},
+							},
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":              "user-333",
+						"clearance_level": 4,
+						"department":      "engineering",
+					},
+					Resource: map[string]interface{}{
+						"document": map[string]interface{}{
+							"name": "CONFIDENTIAL_Q3_REPORT_INTERNAL.pdf",
+						},
+					},
+				},
+				shouldPass:  true,
+				description: "High clearance level with matching filename pattern - should pass",
+			},
+
+			// ==================== FAILING TESTS (Complex Invalid Cases) ====================
+			{
+				name: "event_access_outside_grace_period",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							Field:  "resource.event.start_time",
+							Op:     permissions.OpGraceBefore,
+							Margin: "30m",
+						},
+						{
+							Path:  "resource.event.status",
+							Op:    permissions.OpEq,
+							Value: "scheduled",
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{"id": "user-444"},
+					Resource: map[string]interface{}{
+						"event": map[string]interface{}{
+							"start_time": now.Add(45 * time.Minute), // Outside 30m grace
+							"status":     "scheduled",
+						},
+					},
+					Environment: map[string]interface{}{
+						"now": now,
+					},
+				},
+				shouldPass:  false,
+				description: "Outside grace period - should fail",
+			},
+			{
+				name: "activity_missing_prerequisites",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							Path:  "resource.activity.prerequisites",
+							Op:    permissions.OpContainsAll,
+							Value: []interface{}{"advanced-programming", "system-design"},
+						},
+						{
+							Path:  "subject.completed_courses",
+							Op:    permissions.OpContains,
+							Value: "advanced-programming",
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":                "user-555",
+						"completed_courses": []string{"basic-programming", "git-fundamentals"},
+					},
+					Resource: map[string]interface{}{
+						"activity": map[string]interface{}{
+							"prerequisites": []string{"advanced-programming", "system-design"},
+						},
+					},
+				},
+				shouldPass:  false,
+				description: "Missing system-design prerequisite - should fail",
+			},
+			{
+				name: "location_mismatch_with_capacity_full",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							FieldStart: "resource.event.start_time",
+							FieldEnd:   "resource.event.end_time",
+							Op:         permissions.OpGraceDuration,
+							Margin:     "10m",
+						},
+						{
+							Path:  "resource.event.location.room",
+							Op:    permissions.OpEq,
+							Value: "A-101",
+						},
+						{
+							Path:  "resource.event.attendees",
+							Op:    permissions.OpLt,
+							Value: 50,
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{"id": "user-666"},
+					Resource: map[string]interface{}{
+						"event": map[string]interface{}{
+							"start_time": now.Add(-5 * time.Minute),
+							"end_time":   now.Add(1 * time.Hour),
+							"location": map[string]interface{}{
+								"room": "B-205", // Wrong room
+							},
+							"attendees": 60, // Over capacity
+						},
+					},
+					Environment: map[string]interface{}{
+						"now": now,
+					},
+				},
+				shouldPass:  false,
+				description: "Wrong room and over capacity - should fail",
+			},
+			{
+				name: "mixed_nested_conditions_failing_all",
+				condition: permissions.Condition{
+					Or: &[]permissions.Condition{
+						{
+							And: &[]permissions.Condition{
+								{
+									Path:  "resource.project.visibility",
+									Op:    permissions.OpEq,
+									Value: "public",
+								},
+								{
+									Not: &permissions.Condition{
+										Path:  "resource.project.restricted",
+										Op:    permissions.OpEq,
+										Value: true,
+									},
+								},
+							},
+						},
+						{
+							And: &[]permissions.Condition{
+								{
+									Path:  "subject.department",
+									Op:    permissions.OpEq,
+									Value: "engineering",
+								},
+								{
+									Path:  "subject.security_clearance",
+									Op:    permissions.OpGte,
+									Value: 2,
+								},
+							},
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":                 "user-777",
+						"department":         "marketing", // Wrong dept
+						"security_clearance": 1,           // Too low
+					},
+					Resource: map[string]interface{}{
+						"project": map[string]interface{}{
+							"visibility": "private", // Not public
+							"restricted": true,      // Restricted
+						},
+					},
+				},
+				shouldPass:  false,
+				description: "Neither OR branch conditions met - should fail",
+			},
+			{
+				name: "string_pattern_mismatch_with_insufficient_clearance",
+				condition: permissions.Condition{
+					And: &[]permissions.Condition{
+						{
+							Path:  "resource.file.path",
+							Op:    permissions.OpMatches,
+							Value: `^/secure/[a-z]+/classified_.*\.pdf$`,
+						},
+						{
+							Or: &[]permissions.Condition{
+								{
+									Path:  "subject.role",
+									Op:    permissions.OpEq,
+									Value: "security-admin",
+								},
+								{
+									Path:  "subject.clearance_level",
+									Op:    permissions.OpGte,
+									Value: 5,
+								},
+							},
+						},
+					},
+				},
+				context: permissions.ConditionContext{
+					Subject: map[string]interface{}{
+						"id":              "user-888",
+						"clearance_level": 3,               // Too low
+						"role":            "standard-user", // Wrong role
+					},
+					Resource: map[string]interface{}{
+						"file": map[string]interface{}{
+							"path": "/secure/finance/classified_budget.pdf",
+						},
+					},
+				},
+				shouldPass:  false,
+				description: "Pattern matches but insufficient clearance - should fail",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				ok, motive, err := tt.condition.Evaluate(context.Background(), &tt.context)
+				if err != nil {
+					t.Fatalf("Evaluate() unexpected error: %v", err)
+				}
+
+				if ok != tt.shouldPass {
+					t.Errorf("Evaluate() = %v, want %v. Description: %s, Motive: %+v",
+						ok, tt.shouldPass, tt.description, motive)
 				}
 			})
 		}

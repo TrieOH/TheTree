@@ -383,6 +383,8 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 
 			if p.Conditions != nil {
 				if in.Resource == nil {
+					// FIXME when conditions exist but no resource provided, error message unclear
+					// FIXME user doesn't know which permission requires resource data
 					return false, errors.New("can't check conditions without resource")
 				}
 				evalCtx := permissions.ConditionContext{

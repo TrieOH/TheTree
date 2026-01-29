@@ -15,7 +15,11 @@ func validateConditionRecursive(c Condition, path string) error {
 	// Check logical combinators first
 	if c.And != nil {
 		if len(*c.And) == 0 {
-			return fmt.Errorf("%sand: AND conditions cannot be empty", formatPathPrefix(path))
+			location := "and"
+			if path != "" {
+				location = fmt.Sprintf("%sand", path)
+			}
+			return ErrLogicalConditionValidationError{Operator: "and", Path: location}
 		}
 		for i, cond := range *c.And {
 			childPath := fmt.Sprintf("%sand[%d]", path, i)
@@ -28,7 +32,11 @@ func validateConditionRecursive(c Condition, path string) error {
 
 	if c.Or != nil {
 		if len(*c.Or) == 0 {
-			return fmt.Errorf("%sor: OR conditions cannot be empty", formatPathPrefix(path))
+			location := "or"
+			if path != "" {
+				location = fmt.Sprintf("%sor", path)
+			}
+			return ErrLogicalConditionValidationError{Operator: "or", Path: location}
 		}
 		for i, cond := range *c.Or {
 			childPath := fmt.Sprintf("%sor[%d]", path, i)
@@ -84,9 +92,9 @@ func validateLeafCondition(c Condition, path string) error {
 
 func validationError(path, msg string) error {
 	if path == "" {
-		return fmt.Errorf("%s", msg)
+		return ErrConditionValidationError{Message: msg}
 	}
-	return fmt.Errorf("%s: %s", path, msg)
+	return ErrConditionValidationError{Message: msg, Path: path}
 }
 
 func validateTemporalCondition(c Condition, path string) error {
@@ -99,7 +107,7 @@ func validateTemporalCondition(c Condition, path string) error {
 			return validationError(path, fmt.Sprintf("margin: required for '%s' operator", c.Op))
 		}
 		if _, err := time.ParseDuration(c.Margin); err != nil {
-			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %w", c.Margin, err))
+			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %v", c.Margin, err))
 		}
 		// Ensure no conflicting fields
 		if c.Path != "" || c.Value != nil || c.Ref != "" || c.FieldStart != "" || c.FieldEnd != "" {
@@ -117,7 +125,7 @@ func validateTemporalCondition(c Condition, path string) error {
 			return validationError(path, fmt.Sprintf("margin: required for '%s' operator", c.Op))
 		}
 		if _, err := time.ParseDuration(c.Margin); err != nil {
-			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %w", c.Margin, err))
+			return validationError(path, fmt.Sprintf("margin: invalid duration '%s': %v", c.Margin, err))
 		}
 		// Ensure no conflicting fields
 		if c.Path != "" || c.Value != nil || c.Ref != "" || c.Field != "" {

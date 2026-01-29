@@ -70,4 +70,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("PermissionMatching", func(t *testing.T) {
 		testPermissionMatching(t, suite)
 	})
+
+	t.Run("ConditionMatching", func(t *testing.T) {
+		testConditions(t)
+	})
 }
