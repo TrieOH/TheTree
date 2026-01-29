@@ -303,3 +303,78 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 
 	return inbounds.PermissionSliceToPermissionOutputSlice(foundPermissions), nil
 }
+
+func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) (hasPermission bool, err error) {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.Check")
+	defer span.End()
+
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return false, apierr.FromService(span, err)
+	}
+
+	// Optional: Check if caller can query permissions (meta-auth)
+	// Instead of hardcoded owner check, you might want:
+	// if !uc.canCheckPermissions(ctx, principal, in.ProjectID) { ... }
+
+	if in.ProjectID != nil {
+		var isOwner bool
+		isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+		if err != nil {
+			return false, err
+		}
+		if !isOwner {
+			return false, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot check permissions permissions in a project you don't own"})
+		}
+	}
+
+	// Validate target user belongs to project (if scoped)
+	if in.ProjectID != nil {
+		var belongs bool
+		belongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+		if err != nil {
+			return false, err
+		}
+		if !belongs {
+			return false, apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+		}
+	}
+
+	var userIdentity *session.Identity
+	if in.ProjectID != nil {
+		userIdentity, err = uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		userIdentity, err = uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ClientIdentity)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	var perms []permissions.Permission
+	perms, err = uc.permissions.GetEffective(ctx, userIdentity.ID, in.ProjectID, in.ScopeID)
+	if err != nil {
+		return false, err
+	}
+
+	span.SetAttributes(
+		attribute.Int("permissions.checked", len(perms)),
+		attribute.String("check.object", in.Object),
+		attribute.String("check.action", in.Action),
+	)
+
+	// Check each permission - object AND action must match
+	for _, p := range perms {
+		if permissions.ObjectMatch(p.Object, in.Object) &&
+			permissions.ActionMatch(p.Action, in.Action) {
+			// PHASE 7: Conditions ignored for now
+			span.SetAttributes(attribute.Bool("permission.found", true))
+			return true, nil
+		}
+	}
+
+	span.SetAttributes(attribute.Bool("permission.found", false))
+	return false, apierr.FromService(span, permissions.ErrInsufficientPermissions{})
+}

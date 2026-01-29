@@ -1,8 +1,10 @@
 package testing
 
 import (
+	"GoAuth/internal/apierr"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type specType map[string]interface{}
@@ -1212,4 +1214,216 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 			})
 		})
 	})
+
+	t.Run("VerifyAuthorizationChecks", func(t *testing.T) {
+		t.Run("AllowScenario_EventAdminEditsEvent", func(t *testing.T) {
+			// Owner has fullEventAccessPermission (action: *) on event1Scope
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *owner.projectUserID,
+					"object":     "event:1",
+					"action":     "edit",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_TrustedAdminEditsActivity", func(t *testing.T) {
+			// Trusted admin has editActivityPermission on event:1/activity:*
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *trustedAdmin.projectUserID,
+					"object":     "event:1/activity:999",
+					"action":     "edit",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_StaffCoordinatesEvent", func(t *testing.T) {
+			// Staff has coordinateEventPermission on event:1
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *staff1.projectUserID,
+					"object":     "event:1",
+					"action":     "coordinate",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_ParticipantAttendsActivity", func(t *testing.T) {
+			// Participant1 has freeActivity1AttendPermission via role
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *participant1.projectUserID,
+					"object":     "event:1/activity:1",
+					"action":     "attend",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_ParticipantBuysTickets", func(t *testing.T) {
+			// Both participants have buyTicketsPermission at nil scope (inherited anywhere)
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID, // Inherited from nil scope
+					"entity_id":  *participant1.projectUserID,
+					"object":     "events:1",
+					"action":     "tickets:buy",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_StaffAccessesDashboardViaWildcard", func(t *testing.T) {
+			// Staff has coordinatorDashboardPermission on event:*
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *staff1.projectUserID,
+					"object":     "event:1",
+					"action":     "coordinator_dashboard:access",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_StaffMarksAttendanceWithSpecificPermission", func(t *testing.T) {
+			// Staff1 has activity1AttendanceMarkPermission specifically for activity:1
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   activitiesScopeID,
+					"entity_id":  *staff1.projectUserID,
+					"object":     "event:1/activity:1",
+					"action":     "attendance:mark",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("AllowScenario_Staff3MarksAllAttendanceWithWildcard", func(t *testing.T) {
+			// Staff3 has allActivitiesAttendanceMarkPermission (activity:*)
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   activitiesScopeID,
+					"entity_id":  *staff3.projectUserID,
+					"object":     "event:1/activity:999", // Any activity ID
+					"action":     "attendance:mark",
+				}).
+				Expect(http.StatusOK).
+				HasMessage("Permission Granted")
+		})
+
+		t.Run("DenyScenario_RandomUserEditsEvent", func(t *testing.T) {
+			// Participant1 has no edit permissions on event
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *participant1.projectUserID,
+					"object":     "event:1",
+					"action":     "edit",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+
+		t.Run("DenyScenario_ParticipantCannotCoordinate", func(t *testing.T) {
+			// Participant1 has participantRole, no coordinate permission
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *participant1.projectUserID,
+					"object":     "event:1",
+					"action":     "coordinate",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+
+		t.Run("DenyScenario_StaffCannotAdministrate", func(t *testing.T) {
+			// Staff1 has staffRole, not adminRole
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *staff1.projectUserID,
+					"object":     "event:1",
+					"action":     "administrate",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+
+		t.Run("DenyScenario_UntrustedAdminCannotDeleteActivity", func(t *testing.T) {
+			// UntrustedAdmin has createActivityPermission but NOT deleteActivityPermission
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *untrustedAdmin.projectUserID,
+					"object":     "event:1/activity:1",
+					"action":     "delete",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+
+		t.Run("DenyScenario_ParticipantCannotAccessUnpaidActivity", func(t *testing.T) {
+			// Participant1 has freeActivity1 and freeActivity2, not activity:3
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   event1ScopeID,
+					"entity_id":  *participant1.projectUserID,
+					"object":     "event:1/activity:3", // Paid activity
+					"action":     "attend",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+
+		t.Run("DenyScenario_WrongScopeDenial", func(t *testing.T) {
+			// Staff1 has permissions on event1Scope, not eventsScope
+			suite.NewClient(t).WithAuth(user.auth).POST("/authz/check").
+				WithBody(map[string]interface{}{
+					"project_id": projectID,
+					"scope_id":   eventsScopeID, // Master scope (events:*), not event:1
+					"entity_id":  *staff1.projectUserID,
+					"object":     "event:1",
+					"action":     "coordinate",
+				}).
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.PermissionInsufficient).
+				HasMessage("Permission Denied").
+				TraceContains("insufficient permissions")
+		})
+	})
+
+	time.Sleep(100 * time.Millisecond)
 }

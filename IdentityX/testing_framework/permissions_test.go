@@ -395,7 +395,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
 				"object":     "event:*",
-				"action":     "what:*",
+				"action":     "what:**",
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).

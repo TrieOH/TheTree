@@ -171,6 +171,9 @@ const (
 	PermissionInvalidAction       ID = "PERM_002"
 	PermissionNotOwnedByPrincipal ID = "PERM_003"
 	PermissionAlreadyGranted      ID = "PERM_004"
+	PermissionObjectMismatch      ID = "PERM_005"
+	PermissionActionMismatch      ID = "PERM_006"
+	PermissionInsufficient        ID = "PERM_007"
 )
 
 const (

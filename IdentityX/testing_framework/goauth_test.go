@@ -66,4 +66,8 @@ func TestGoAuth(t *testing.T) {
 	t.Run("EffectivePermissions", func(t *testing.T) {
 		testEffectivePermissions(t, suite)
 	})
+
+	t.Run("PermissionMatching", func(t *testing.T) {
+		testPermissionMatching(t, suite)
+	})
 }

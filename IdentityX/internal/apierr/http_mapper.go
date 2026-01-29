@@ -357,6 +357,18 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ProjectUserNotFromProject)
 		RecordDomainError(span, httpErr)
 		return httpErr
+	case permissions.ErrActionMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionActionMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrObjectMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionObjectMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInsufficientPermissions:
+		httpErr := ErrForbidden.WithMsg("Permission Denied").WithID(PermissionInsufficient).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
 		spanID := ""
