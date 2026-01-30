@@ -229,8 +229,10 @@ func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator
 		}
 		var target string
 		if ruleValue != nil {
-			err := json.Unmarshal(*ruleValue, &target)
-			logs.L().Error("error unmarshalling rule in evaluateRuleMatches", zap.Error(err))
+			if err := json.Unmarshal(*ruleValue, &target); err != nil {
+				logs.L().Error("error unmarshalling rule", zap.Error(err))
+				return false
+			}
 		}
 		return strings.Contains(str, target)
 	case field.RuleOperatorIn:
