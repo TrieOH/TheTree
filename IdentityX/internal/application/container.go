@@ -2,6 +2,7 @@ package application
 
 import (
 	"GoAuth/internal/adapters/email"
+	"GoAuth/internal/adapters/memory"
 	"GoAuth/internal/adapters/persistence"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
@@ -44,7 +45,10 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		cacheTTL = time.Hour
 	}
 
-	keyService := keys.New(repos.Keys, cacheTTL)
+	privateCache := memory.NewInMemoryCache(100, cacheTTL)
+	publicCache := memory.NewInMemoryCache(1000, cacheTTL)
+
+	keyService := keys.New(repos.Keys, privateCache, publicCache)
 	mailBundle := email.NewBundle(infra)
 	tokensBundle := tokens.NewBundle(keyService)
 

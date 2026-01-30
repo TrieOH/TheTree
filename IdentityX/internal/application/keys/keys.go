@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"GoAuth/internal/adapters/memory"
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
@@ -9,7 +8,6 @@ import (
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/pem"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -21,17 +19,17 @@ type cachedPublic struct {
 
 type UseCase struct {
 	repo            outbounds.KeysRepository
-	privateKeyCache *memory.LRU[string, ed25519.PrivateKey]
-	publicKeyCache  *memory.LRU[string, cachedPublic]
+	privateKeyCache outbounds.CacheService
+	publicKeyCache  outbounds.CacheService
 }
 
 var _ inbounds.KeysService = (*UseCase)(nil)
 
-func New(repo outbounds.KeysRepository, ttl time.Duration) *UseCase {
+func New(repo outbounds.KeysRepository, privateCache outbounds.CacheService, publicCache outbounds.CacheService) *UseCase {
 	return &UseCase{
 		repo:            repo,
-		privateKeyCache: memory.NewLRU[string, ed25519.PrivateKey](100, ttl),
-		publicKeyCache:  memory.NewLRU[string, cachedPublic](1000, ttl),
+		privateKeyCache: privateCache,
+		publicKeyCache:  publicCache,
 	}
 }
 
@@ -41,8 +39,11 @@ func (uc *UseCase) SignGoAuth(ctx context.Context, payload []byte) ([]byte, erro
 		return nil, err
 	}
 
-	priv, ok := uc.privateKeyCache.Get(pair.KID)
-	if !ok {
+	val, ok := uc.privateKeyCache.Get(ctx, pair.KID)
+	var priv ed25519.PrivateKey
+	if ok {
+		priv = val.(ed25519.PrivateKey)
+	} else {
 		decrypted, err := crypto.Decrypt(pair.PrivateKey)
 		if err != nil {
 			return nil, err
@@ -52,7 +53,7 @@ func (uc *UseCase) SignGoAuth(ctx context.Context, payload []byte) ([]byte, erro
 		if err != nil {
 			return nil, err
 		}
-		uc.privateKeyCache.Put(pair.KID, priv)
+		uc.privateKeyCache.Set(ctx, pair.KID, priv, 0)
 	}
 
 	sig := ed25519.Sign(priv, payload)
@@ -65,8 +66,11 @@ func (uc *UseCase) SignProject(ctx context.Context, projectID uuid.UUID, payload
 		return nil, err
 	}
 
-	priv, ok := uc.privateKeyCache.Get(pair.KID)
-	if !ok {
+	val, ok := uc.privateKeyCache.Get(ctx, pair.KID)
+	var priv ed25519.PrivateKey
+	if ok {
+		priv = val.(ed25519.PrivateKey)
+	} else {
 		decrypted, err := crypto.Decrypt(pair.PrivateKey)
 		if err != nil {
 			return nil, err
@@ -76,7 +80,7 @@ func (uc *UseCase) SignProject(ctx context.Context, projectID uuid.UUID, payload
 		if err != nil {
 			return nil, err
 		}
-		uc.privateKeyCache.Put(pair.KID, priv)
+		uc.privateKeyCache.Set(ctx, pair.KID, priv, 0)
 	}
 
 	sig := ed25519.Sign(priv, payload)
@@ -84,8 +88,9 @@ func (uc *UseCase) SignProject(ctx context.Context, projectID uuid.UUID, payload
 }
 
 func (uc *UseCase) VerifyGoAuth(ctx context.Context, kid string, payload, sig []byte) error {
-	cached, ok := uc.publicKeyCache.Get(kid)
+	val, ok := uc.publicKeyCache.Get(ctx, kid)
 	if ok {
+		cached := val.(cachedPublic)
 		if cached.projectID != nil {
 			return inbounds.ErrKeyProjectMismatch{}
 		}
@@ -105,7 +110,7 @@ func (uc *UseCase) VerifyGoAuth(ctx context.Context, kid string, payload, sig []
 		return err
 	}
 
-	uc.publicKeyCache.Put(kid, cachedPublic{pub: pub, projectID: nil})
+	uc.publicKeyCache.Set(ctx, kid, cachedPublic{pub: pub, projectID: nil}, 0)
 
 	if !ed25519.Verify(pub, payload, sig) {
 		return inbounds.ErrInvalidSignature{}
@@ -115,8 +120,9 @@ func (uc *UseCase) VerifyGoAuth(ctx context.Context, kid string, payload, sig []
 }
 
 func (uc *UseCase) VerifyProject(ctx context.Context, projectID uuid.UUID, kid string, payload, sig []byte) error {
-	cached, ok := uc.publicKeyCache.Get(kid)
+	val, ok := uc.publicKeyCache.Get(ctx, kid)
 	if ok {
+		cached := val.(cachedPublic)
 		if cached.projectID == nil || *cached.projectID != projectID {
 			return inbounds.ErrKeyProjectMismatch{}
 		}
@@ -140,7 +146,7 @@ func (uc *UseCase) VerifyProject(ctx context.Context, projectID uuid.UUID, kid s
 		return err
 	}
 
-	uc.publicKeyCache.Put(kid, cachedPublic{pub: pub, projectID: pair.ProjectID})
+	uc.publicKeyCache.Set(ctx, kid, cachedPublic{pub: pub, projectID: pair.ProjectID}, 0)
 
 	if !ed25519.Verify(pub, payload, sig) {
 		return inbounds.ErrInvalidSignature{}
@@ -162,8 +168,8 @@ func (uc *UseCase) RevokeKey(ctx context.Context, kid string) error {
 		return err
 	}
 
-	uc.privateKeyCache.Remove(kid)
-	uc.publicKeyCache.Remove(kid)
+	uc.privateKeyCache.Delete(ctx, kid)
+	uc.publicKeyCache.Delete(ctx, kid)
 
 	return nil
 }

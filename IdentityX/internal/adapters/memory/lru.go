@@ -7,28 +7,28 @@ import (
 )
 
 type LRU[K comparable, V any] struct {
-	capacity int
-	ttl      time.Duration
-	cache    map[K]*list.Element
-	list     *list.List
-	mu       sync.RWMutex
+	capacity   int
+	defaultTTL time.Duration
+	cache      map[K]*list.Element
+	list       *list.List
+	mu         sync.RWMutex
 }
 
 type entry[K comparable, V any] struct {
 	key       K
 	value     V
 	expiresAt time.Time
+	duration  time.Duration
 }
 
 // NewLRU creates a new LRU cache.
-// If ttl > 0, items will expire after the duration.
-// Accessing an item (Get or Put) refreshes its expiration time.
-func NewLRU[K comparable, V any](capacity int, ttl time.Duration) *LRU[K, V] {
+// defaultTTL is used if Put is called with 0.
+func NewLRU[K comparable, V any](capacity int, defaultTTL time.Duration) *LRU[K, V] {
 	return &LRU[K, V]{
-		capacity: capacity,
-		ttl:      ttl,
-		cache:    make(map[K]*list.Element),
-		list:     list.New(),
+		capacity:   capacity,
+		defaultTTL: defaultTTL,
+		cache:      make(map[K]*list.Element),
+		list:       list.New(),
 	}
 }
 
@@ -45,7 +45,7 @@ func (c *LRU[K, V]) Get(key K) (V, bool) {
 	ent := elem.Value.(*entry[K, V])
 
 	// Check expiration
-	if c.ttl > 0 && time.Now().After(ent.expiresAt) {
+	if ent.duration > 0 && time.Now().After(ent.expiresAt) {
 		c.list.Remove(elem)
 		delete(c.cache, key)
 		var zero V
@@ -54,26 +54,32 @@ func (c *LRU[K, V]) Get(key K) (V, bool) {
 
 	// Move to front and refresh TTL
 	c.list.MoveToFront(elem)
-	if c.ttl > 0 {
-		ent.expiresAt = time.Now().Add(c.ttl)
+	if ent.duration > 0 {
+		ent.expiresAt = time.Now().Add(ent.duration)
 	}
 
 	return ent.value, true
 }
 
-func (c *LRU[K, V]) Put(key K, value V) {
+func (c *LRU[K, V]) Put(key K, value V, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	duration := ttl
+	if duration == 0 {
+		duration = c.defaultTTL
+	}
+
 	var expiresAt time.Time
-	if c.ttl > 0 {
-		expiresAt = time.Now().Add(c.ttl)
+	if duration > 0 {
+		expiresAt = time.Now().Add(duration)
 	}
 
 	if elem, ok := c.cache[key]; ok {
 		c.list.MoveToFront(elem)
 		ent := elem.Value.(*entry[K, V])
 		ent.value = value
+		ent.duration = duration
 		ent.expiresAt = expiresAt
 		return
 	}
@@ -91,6 +97,7 @@ func (c *LRU[K, V]) Put(key K, value V) {
 		key:       key,
 		value:     value,
 		expiresAt: expiresAt,
+		duration:  duration,
 	})
 	c.cache[key] = elem
 }
