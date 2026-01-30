@@ -8,34 +8,35 @@ const (
 	RequestValidationError           ID = "REQ_005"
 	RequestNotApplicationJSON        ID = "REQ_006"
 	RequestEmptyCookie               ID = "REQ_007"
+	RequestUnknownQueryParam         ID = "REQ_008"
 )
 
 const (
-	AuthInvalidEmail         ID = "AUTH_001"
-	AuthInvalidPassword      ID = "AUTH_002"
-	AuthWrongPassword        ID = "AUTH_003"
-	AuthUserNotFound         ID = "AUTH_004"
-	AuthEmailAlreadyUsed     ID = "AUTH_005"
-	AuthAccountDisabled      ID = "AUTH_006"
-	AuthTokenInvalid         ID = "AUTH_007"
-	AuthTokenExpired         ID = "AUTH_008"
-	AuthRefreshInvalid       ID = "AUTH_009"
-	AuthRefreshRevoked       ID = "AUTH_010"
-	AuthMissingAccessClaims  ID = "AUTH_011"
-	AuthInvalidAccessClaims  ID = "AUTH_012"
-	AuthMissingRefreshClaims ID = "AUTH_013"
-	AuthInvalidRefreshClaims ID = "AUTH_014"
-	AuthInvalidCredentials   ID = "AUTH_015"
-	AuthInvalidRefreshCookie ID = "AUTH_016"
-	AuthInvalidAccessCookie  ID = "AUTH_017"
-	AuthMissingRefreshCookie ID = "AUTH_018"
-	AuthMissingAccessCookie  ID = "AUTH_019"
-	AuthMissingPrincipal     ID = "AUTH_020"
-	AuthNotClient            ID = "AUTH_021"
-	AuthInvalidPrincipal     ID = "AUTH_022"
-	AuthNotProjectUser       ID = "AUTH_023"
-	AuthNotVerified          ID = "AUTH_024"
-	AuthAlreadyVerified      ID = "AUTH_025"
+	AuthInvalidEmail          ID = "AUTH_001"
+	AuthInvalidPassword       ID = "AUTH_002"
+	AuthWrongPassword         ID = "AUTH_003"
+	AuthUserNotFound          ID = "AUTH_004"
+	AuthEmailAlreadyUsed      ID = "AUTH_005"
+	AuthAccountDisabled       ID = "AUTH_006"
+	AuthTokenInvalid          ID = "AUTH_007"
+	AuthTokenExpired          ID = "AUTH_008"
+	AuthRefreshInvalid        ID = "AUTH_009"
+	AuthRefreshRevoked        ID = "AUTH_010"
+	AuthMissingAccessClaims   ID = "AUTH_011"
+	AuthInvalidAccessClaims   ID = "AUTH_012"
+	AuthMissingRefreshClaims  ID = "AUTH_013"
+	AuthInvalidRefreshClaims  ID = "AUTH_014"
+	AuthInvalidCredentials    ID = "AUTH_015"
+	AuthInvalidRefreshCookie  ID = "AUTH_016"
+	AuthInvalidAccessCookie   ID = "AUTH_017"
+	AuthMissingRefreshCookie  ID = "AUTH_018"
+	AuthMissingAccessCookie   ID = "AUTH_019"
+	AuthInvalidPrincipal      ID = "AUTH_020"
+	AuthNotClient             ID = "AUTH_021"
+	AuthNotProjectUser        ID = "AUTH_022"
+	AuthNotVerified           ID = "AUTH_023"
+	AuthAlreadyVerified       ID = "AUTH_024"
+	AuthPrincipalNotInContext ID = "AUTH_025"
 )
 
 const (
@@ -109,6 +110,7 @@ const (
 	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
 	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
 	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
+	ProjectUserNotFromProject                  ID = "PROJ_USR_007"
 )
 
 const (
@@ -156,6 +158,30 @@ const (
 	FieldInvalidType                   ID = "FIELD_008"
 	FieldInvalidOwner                  ID = "FIELD_009"
 	FieldValidationErrSchemaRegister   ID = "FIELD_010"
+)
+
+const (
+	ScopeEmptyName                  ID = "SCP_001"
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
+)
+
+const (
+	PermissionInvalidObject            ID = "PERM_001"
+	PermissionInvalidAction            ID = "PERM_002"
+	PermissionNotOwnedByPrincipal      ID = "PERM_003"
+	PermissionAlreadyGranted           ID = "PERM_004"
+	PermissionObjectMismatch           ID = "PERM_005"
+	PermissionActionMismatch           ID = "PERM_006"
+	PermissionInsufficient             ID = "PERM_007"
+	PermissionConditionValidationError ID = "PERM_008"
+)
+
+const (
+	RoleEmptyName           ID = "ROLE_001"
+	RoleNotOwnedByPrincipal ID = "ROLE_002"
+	RoleNameTaken           ID = "ROLE_003"
+	RoleAlreadyGranted      ID = "ROLE_004"
 )
 
 const (

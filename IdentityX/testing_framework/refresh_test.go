@@ -65,7 +65,23 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		refreshToken := user.auth.RefreshToken
 
 		// Manually revoke the session in the database
-		_, err := suite.DB.Exec(`UPDATE sessions SET revoked_at = NOW() WHERE token_id = (SELECT token_id FROM sessions WHERE identity_id = (SELECT id FROM session_identities WHERE entity_id = (SELECT id FROM users WHERE email = 'revoked_refresh_user@mail.com')) LIMIT 1)`)
+		_, err := suite.DB.Exec(`
+			UPDATE sessions 
+			SET revoked_at = NOW() 
+			WHERE token_id = (
+				SELECT token_id 
+				FROM sessions 
+				WHERE identity_id = (
+					SELECT id 
+					FROM identities 
+					WHERE entity_id = (
+						SELECT id 
+						FROM users 
+						WHERE email = 'revoked_refresh_user@mail.com'
+					)
+				) LIMIT 1
+			)
+		`)
 		require.NoError(t, err)
 
 		// Attempt to use the revoked refresh token

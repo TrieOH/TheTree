@@ -6,10 +6,13 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
 	"GoAuth/internal/application/keys"
+	"GoAuth/internal/application/permission"
 	"GoAuth/internal/application/project"
+	"GoAuth/internal/application/role"
 	"GoAuth/internal/application/schema"
 	"GoAuth/internal/application/schema_fields"
 	"GoAuth/internal/application/schema_version"
+	"GoAuth/internal/application/scope"
 	"GoAuth/internal/application/session"
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/infrastructure"
@@ -24,6 +27,9 @@ type Application struct {
 	SchemaFields   inbounds.SchemaFieldsService
 	Session        inbounds.SessionService
 	Authenticator  inbounds.RequestAuthenticator
+	Permission     inbounds.PermissionService
+	Role           inbounds.RoleService
+	Scope          inbounds.ScopeService
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
@@ -44,7 +50,12 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			ProjectUsers: repos.ProjectUsers,
 			Keys:         repos.Keys,
 		}, infra, keyService, tokensBundle, mailBundle),
-		Project: project.New(repos.Projects, repos.Keys, infra.Tx),
+		Project: project.New(
+			repos.Projects,
+			repos.Scopes,
+			repos.Keys,
+			infra.Tx,
+		),
 		Schema: schema.New(schema.Deps{
 			Schemas:  repos.Schemas,
 			Versions: repos.SchemaVersions,
@@ -68,5 +79,8 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
+		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
+		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
+		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}
 }

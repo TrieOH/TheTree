@@ -73,6 +73,27 @@ func verifyToken[T jwt.Claims](
 		return claims, apierr.FromJWTError(err, tokenType)
 	}
 
+	alg, _ := token.Header["alg"].(string)
+	if alg != jwt.SigningMethodEdDSA.Alg() {
+		return claims, auth.ErrTokenInvalidAlg{
+			TokenType: tokenType,
+			Expected:  jwt.SigningMethodEdDSA.Alg(),
+			Got:       alg,
+		}
+	}
+
+	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
+		methodAlg := ""
+		if token.Method != nil {
+			methodAlg = token.Method.Alg()
+		}
+		return claims, auth.ErrTokenInvalidAlg{
+			TokenType: tokenType,
+			Expected:  jwt.SigningMethodEdDSA.Alg(),
+			Got:       methodAlg,
+		}
+	}
+
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
 		return claims, auth.ErrTokenMissingKID{TokenType: tokenType}

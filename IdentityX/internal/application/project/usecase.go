@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project"
+	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -25,6 +26,7 @@ var (
 
 type UseCase struct {
 	projects outbounds.ProjectRepository
+	scopes   outbounds.ScopeRepository
 	keys     outbounds.KeysRepository
 	tx       inbounds.TxRunner
 }
@@ -33,11 +35,13 @@ var _ inbounds.ProjectService = (*UseCase)(nil)
 
 func New(
 	projects outbounds.ProjectRepository,
+	scopes outbounds.ScopeRepository,
 	keys outbounds.KeysRepository,
 	tx inbounds.TxRunner,
 ) inbounds.ProjectService {
 	return &UseCase{
 		projects: projects,
+		scopes:   scopes,
 		keys:     keys,
 		tx:       tx,
 	}
@@ -46,8 +50,28 @@ func New(
 // Create handles the business logic for creating a new project.
 // It requires a valid principal in the context, generates a new key pair for the project,
 // and then creates the project in the database.
-func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
+func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) (project *inbounds.OutputProject, err error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Create")
+	defer span.End()
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("create.success", err == nil))
+		}
+	}()
+
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		project, err = uc.createInternal(ctx, in)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServiceInput) (*inbounds.OutputProject, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.createInternal")
 	defer span.End()
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
@@ -102,6 +126,19 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.ProjectServiceInput) 
 		attribute.String("project.id", createdProject.ID.String()),
 		attribute.String("project.owner_id", createdProject.OwnerID.String()),
 		attribute.String("project.name", createdProject.ProjectName),
+	)
+
+	createdScope, err := uc.scopes.Create(ctx, scopes.Scope{
+		Type:      scopes.ScopeTypeProjectRoot,
+		ProjectID: &createdProject.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(
+		attribute.String("project.scope.id", createdScope.ID.String()),
+		attribute.String("project.scope.type", string(createdScope.Type)),
 	)
 
 	return inbounds.OutputProjectFromProject(createdProject), nil

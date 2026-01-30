@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
@@ -95,12 +96,12 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case authz.ErrMissingPrincipal:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthMissingPrincipal)
+	case authz.ErrInvalidPrincipal:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthInvalidPrincipal)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrPrincipalMissingInContext:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthMissingPrincipal)
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthPrincipalNotInContext)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrMissingAccessClaims:
@@ -331,6 +332,50 @@ func FromService(span trace.Span, err error) *Error {
 	case inbounds.ErrFailedToRetrieveJWKS:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemJWKSRetrievalFailed).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
+		return httpErr
+	case inbounds.ErrEmptyScopeName:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInvalidPermissionObject:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidObject)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInvalidPermissionAction:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidAction)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrRoleNotOwned:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RoleNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPermissionNotOwned:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionNotOwnedByPrincipal)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrProjectUserNotFromProject:
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ProjectUserNotFromProject)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrActionMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionActionMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrObjectMismatch:
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionObjectMismatch)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrInsufficientPermissions:
+		httpErr := ErrForbidden.WithMsg("Permission Denied").WithID(PermissionInsufficient).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrConditionValidationError:
+		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case permissions.ErrLogicalConditionValidationError:
+		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
+		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
