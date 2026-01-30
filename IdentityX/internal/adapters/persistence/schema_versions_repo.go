@@ -5,11 +5,12 @@ import (
 	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -22,7 +23,7 @@ type schemaVersionRepo struct {
 }
 
 func (repo *schemaVersionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
@@ -94,9 +95,7 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish version.Ve
 	}
 
 	if affectedRows == 0 {
-		err := apierr.ErrNotFound.WithMsg("schema version not found or not in draft status").WithID(apierr.SchemaVersionNotDraft)
-		apierr.RecordSQLCError(span, err)
-		return err
+		return apierr.FromService(span, inbounds.ErrPublishVersionNotDraft{})
 	}
 
 	return nil
@@ -272,4 +271,38 @@ func (repo *schemaVersionRepo) GetByVersionNumber(ctx context.Context, schemaID 
 	var found version.Version
 	mapSchemaVersionFromDB(&found, &sqlcVersion)
 	return &found, nil
+}
+
+func (repo *schemaVersionRepo) HasFields(ctx context.Context, versionID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.VersionHasFields",
+		trace.WithAttributes(attribute.String("version_id", versionID.String())),
+	)
+	defer span.End()
+
+	hasFields, err := repo.queries(ctx).VersionHasFields(ctx, versionID)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Bool("has_fields", hasFields))
+	return hasFields, nil
+}
+
+func (repo *schemaVersionRepo) Exists(ctx context.Context, id uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaVersionsRepo.Exists",
+		trace.WithAttributes(attribute.String("id", id.String())),
+	)
+	defer span.End()
+
+	exists, err := repo.queries(ctx).SchemaVersionExists(ctx, id)
+	if err != nil {
+		sqlcErr := apierr.FromSQLC(err)
+		apierr.RecordSQLCError(span, sqlcErr)
+		return false, sqlcErr
+	}
+
+	span.SetAttributes(attribute.Bool("exists", exists))
+	return exists, nil
 }

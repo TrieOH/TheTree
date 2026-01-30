@@ -120,6 +120,13 @@ FROM schema_versions
 WHERE schema_id = $1
 ORDER BY version DESC;
 
+-- name: SchemaVersionExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM schema_versions
+    WHERE id = $1
+);
+
 -- name: CopyVersionOnDraft :one
 WITH locked AS (
     SELECT *
@@ -141,3 +148,9 @@ RETURNING *;
 SELECT *
 FROM schema_versions
 WHERE version = $1 AND schema_id = $2;
+
+-- name: VersionHasFields :one
+SELECT EXISTS(
+    SELECT 1 FROM schema_fields
+    WHERE schema_version_id = $1::UUID
+) as has_fields;

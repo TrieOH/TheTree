@@ -4,30 +4,24 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgconn"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
 func IsUniqueViolation(err error) bool {
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		if pqErr.Code == "23505" {
-			return true
-		}
-		return false
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
 	}
 	return false
 }
 
 func IsCheckViolation(err error) bool {
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		if pqErr.Code == "23514" {
-			return true
-		}
-		return false
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23514"
 	}
 	return false
 }
@@ -37,7 +31,7 @@ func FromSQLC(err error) *Error {
 		return nil
 	}
 
-	// sqlc "not found"
+	// sqlc "not found" - this stays the same
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrNotFound.
 			WithMsg("resource not found").
@@ -45,10 +39,10 @@ func FromSQLC(err error) *Error {
 			WithDebugCause(err)
 	}
 
-	// postgres error
-	var pqErr *pq.Error
-	if errors.As(err, &pqErr) {
-		return fromPQError(pqErr, err)
+	// pgx/postgres error
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return fromPGError(pgErr, err)
 	}
 
 	// fallback
@@ -58,15 +52,16 @@ func FromSQLC(err error) *Error {
 		WithDebugCause(err)
 }
 
-func fromPQError(pqErr *pq.Error, cause error) *Error {
-	switch string(pqErr.Code) {
+// renamed from fromPQError to fromPGError
+func fromPGError(pgErr *pgconn.PgError, cause error) *Error {
+	switch pgErr.Code {
 
 	// ---------- constraints ----------
 	case "23505": // unique_violation
-		return fromUniqueViolation(pqErr, cause)
+		return fromUniqueViolation(pgErr, cause)
 
 	case "23514":
-		return fromCheckViolation(pqErr, cause)
+		return fromCheckViolation(pgErr, cause)
 
 	case "23503": // foreign_key_violation
 		return ErrInvalidInput.
@@ -95,7 +90,7 @@ func fromPQError(pqErr *pq.Error, cause error) *Error {
 			WithDebugCause(cause)
 
 	// ---------- connection ----------
-	case "08006", "08001":
+	case "08006", "08001", "08004":
 		return ErrInternal.
 			WithMsg("database connection error").
 			WithID(SystemDependencyDown).

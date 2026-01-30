@@ -8,7 +8,6 @@ import (
 	"GoAuth/internal/database"
 	"GoAuth/internal/domain/scopes"
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 
 	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/gavv/httpexpect/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/viper"
 )
@@ -29,7 +29,7 @@ import (
 // TestSuite manages the entire test environment
 type TestSuite struct {
 	Server *httptest.Server
-	DB     *sql.DB
+	DB     *pgxpool.Pool
 	t      *testing.T
 }
 
@@ -57,6 +57,8 @@ func (s *TestSuite) setup() {
 		ErrorHandler:         apierr.ErrToResp,
 	})
 
+	apierr.IncludeDebugCauses = viper.GetBool("INCLUDE_DEBUG_CAUSES")
+
 	var err error
 	s.DB, err = setupDatabase()
 	if err != nil {
@@ -72,7 +74,7 @@ func (s *TestSuite) teardown() {
 		s.Server.Close()
 	}
 	if s.DB != nil {
-		_ = s.DB.Close()
+		s.DB.Close()
 	}
 }
 
@@ -91,7 +93,7 @@ func (s *TestSuite) NewClient(t *testing.T) *Client {
 // HELPER FUNCTIONS - Keep these minimal
 // ============================================================================
 
-func setupDatabase() (*sql.DB, error) {
+func setupDatabase() (*pgxpool.Pool, error) {
 	db, err := database.WaitForDB(30 * time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect DB: %w", err)
@@ -164,7 +166,7 @@ func setupDatabase() (*sql.DB, error) {
 	return db, nil
 }
 
-func createTestRouter(db *sql.DB) http.Handler {
+func createTestRouter(db *pgxpool.Pool) http.Handler {
 	return router.CreateTestRouter(db)
 }
 

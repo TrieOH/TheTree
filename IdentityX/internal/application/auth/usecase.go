@@ -17,13 +17,13 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -363,8 +363,8 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 // determines whether to refresh the tokens for a client or a project user.
 func (uc *UseCase) Refresh(ctx context.Context, in inbounds.RefreshInput) (*inbounds.UserTokensOutput, error) {
 	txOptions := inbounds.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  false,
+		Isolation: pgx.ReadCommitted,
+		ReadOnly:  pgx.ReadWrite,
 	}
 
 	var out *inbounds.UserTokensOutput

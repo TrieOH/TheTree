@@ -11,7 +11,7 @@ sql:
         emit_exact_table_names: false
         package: "sqlc"
         out: "internal/adapters/persistence/sqlc"
-        sql_package: "database/sql"
+        sql_package: "pgx/v5"
         overrides:
           - db_type: "pg_catalog.varchar"
             nullable: true
@@ -63,6 +63,26 @@ sql:
               type: "bool"
               pointer: true
           - db_type: "pg_catalog.bool"
+            nullable: false
+            go_type:
+              type: "bool"
+              pointer: false
+          - db_type: "boolean"
+            nullable: true
+            go_type:
+              type: "bool"
+              pointer: true
+          - db_type: "boolean"
+            nullable: false
+            go_type:
+              type: "bool"
+              pointer: false
+          - db_type: "bool"
+            nullable: true
+            go_type:
+              type: "bool"
+              pointer: true
+          - db_type: "bool"
             nullable: false
             go_type:
               type: "bool"

@@ -196,6 +196,9 @@ func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, _ *http.Request) {
 // @Accept json
 // @Produce json
 // @Param project_id path string true "ID of the project to register user"
+// @Param schema_type query string false "Schema type (default: core)"
+// @Param flow_id query string false "Flow ID (default: none)"
+// @Param version query string false "Version (default: 0)"
 // @Param registerInfo body dto.RegisterProjectUserRequest true "User registration information for the project"
 // @Success 201 {object} object "User registered successfully in project"
 // @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or missing project ID"
@@ -290,6 +293,17 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	resp.OK("Logged in").Send(w)
 }
 
+// Verify godoc
+// @Summary Verify user email
+// @Description Verifies a user's email address using a verification token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param token query string true "Verification Token"
+// @Success 200 {object} object "User verified successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing or invalid token"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /auth/verify [get]
 func (handler *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	token, rs := getString(r, "token")
 	if rs != nil {
@@ -307,6 +321,17 @@ func (handler *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	resp.OK("user verified, please refresh").Send(w)
 }
 
+// ResendVerificationEmail godoc
+// @Summary Resend verification email
+// @Description Resends the email verification link to the currently authenticated user.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {object} object "Verification email resent successfully"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /auth/verify/resend [post]
 func (handler *AuthHandler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.auth.ResendVerificationEmail(ctx)

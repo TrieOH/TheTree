@@ -17,6 +17,20 @@ func NewRoleHandler(uc inbounds.RoleService) *RoleHandler {
 	return &RoleHandler{role: uc}
 }
 
+// Create godoc
+// @Summary Create a new role
+// @Description Creates a new role definition for a project.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param roleInfo body dto.CreateRoleRequest true "Role creation information"
+// @Success 201 {object} dto.RoleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles [post]
 func (handler *RoleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -46,6 +60,21 @@ func (handler *RoleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	resp.Created("Role Created").WithData(dto.RoleOutputToRoleResponse(*role)).Send(w)
 }
 
+// GetByID godoc
+// @Summary Get role by ID
+// @Description Retrieves a role definition by its ID.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Success 200 {object} dto.RoleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id} [get]
 func (handler *RoleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -74,6 +103,21 @@ func (handler *RoleHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(dto.RoleOutputToRoleResponse(*role)).Send(w)
 }
 
+// GetByName godoc
+// @Summary Get role by name
+// @Description Retrieves a role definition by its name.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param name query string true "Role Name"
+// @Success 200 {object} dto.RoleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/search [get]
 func (handler *RoleHandler) GetByName(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -98,6 +142,21 @@ func (handler *RoleHandler) GetByName(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(dto.RoleOutputToRoleResponse(*role)).Send(w)
 }
 
+// UpdateDescription godoc
+// @Summary Update role description
+// @Description Updates the description of an existing role.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Param roleInfo body dto.UpdateRoleRequest true "Role update information"
+// @Success 200 {object} object "Role updated"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id} [patch]
 func (handler *RoleHandler) UpdateDescription(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -133,6 +192,19 @@ func (handler *RoleHandler) UpdateDescription(w http.ResponseWriter, r *http.Req
 	resp.OK().Send(w)
 }
 
+// ListByProject godoc
+// @Summary List project roles
+// @Description Retrieves all role definitions for a project.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Success 200 {array} dto.RoleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles [get]
 func (handler *RoleHandler) ListByProject(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -154,6 +226,21 @@ func (handler *RoleHandler) ListByProject(w http.ResponseWriter, r *http.Request
 	resp.OK().WithData(dto.RoleOutputSliceToRoleResponseSlice(role)).Send(w)
 }
 
+// AddPermission godoc
+// @Summary Add permission to role
+// @Description Associates a permission with a role.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Param permission_id path string true "Permission ID"
+// @Success 200 {object} object "Added permission to role"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id}/permissions/{permission_id} [post]
 func (handler *RoleHandler) AddPermission(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -189,6 +276,21 @@ func (handler *RoleHandler) AddPermission(w http.ResponseWriter, r *http.Request
 	resp.OK("Added permission to role").Send(w)
 }
 
+// RemovePermission godoc
+// @Summary Remove permission from role
+// @Description Removes a permission association from a role.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Param permission_id path string true "Permission ID"
+// @Success 200 {object} object "Removed permission from role"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id}/permissions/{permission_id} [delete]
 func (handler *RoleHandler) RemovePermission(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -224,6 +326,20 @@ func (handler *RoleHandler) RemovePermission(w http.ResponseWriter, r *http.Requ
 	resp.OK("Removed permission from role").Send(w)
 }
 
+// GetPermissions godoc
+// @Summary Get role permissions
+// @Description Retrieves all permissions associated with a role.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Success 200 {array} dto.PermissionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id}/permissions [get]
 func (handler *RoleHandler) GetPermissions(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -252,6 +368,21 @@ func (handler *RoleHandler) GetPermissions(w http.ResponseWriter, r *http.Reques
 	resp.OK().WithData(dto.PermissionOutputSliceToPermissionResponseSlice(permissions)).Send(w)
 }
 
+// GiveRole godoc
+// @Summary Assign role to user
+// @Description Assigns a role to a user (entity) within a specific scope.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param roleInfo body dto.UserRoleRequest true "Role assignment details"
+// @Success 200 {object} object "Added role to user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/roles [post]
 func (handler *RoleHandler) GiveRole(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -288,6 +419,21 @@ func (handler *RoleHandler) GiveRole(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Added role to user").Send(w)
 }
 
+// TakeRole godoc
+// @Summary Remove role from user
+// @Description Removes a role assignment from a user (entity).
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param roleInfo body dto.UserRoleRequest true "Role revocation details"
+// @Success 200 {object} object "Removed role from user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/roles [delete]
 func (handler *RoleHandler) TakeRole(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -324,6 +470,20 @@ func (handler *RoleHandler) TakeRole(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Removed role from user").Send(w)
 }
 
+// GetUserRoles godoc
+// @Summary Get user roles
+// @Description Retrieves all roles assigned to a user (entity).
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Success 200 {array} dto.RoleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/roles [get]
 func (handler *RoleHandler) GetUserRoles(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {

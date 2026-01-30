@@ -154,7 +154,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	t.Run("PublishSchemaNoVersion", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusBadRequest).
 			HasErrID(apierr.SchemaNoPublishedVersion).
 			HasMessage("cannot publish a schema with no versions")
 	})
@@ -164,7 +164,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.SchemaVersionDraftDoesntExist).
-			HasMessage("cannot publish a schema version draft that doesn't exist")
+			HasMessage("cannot publish a schema with a version draft that doesn't exist")
 	})
 
 	var schemaVersion1ID string
@@ -202,10 +202,10 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		Validate(t, data, spec)
 	})
 
-	t.Run("PublishSchemaOnlyDraft", func(t *testing.T) {
+	t.Run("PublishSchemaDraftVersion", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusBadRequest).
 			HasErrID(apierr.SchemaHasOnlyDraftVersion).
 			HasMessage("cannot publish a schema with only draft versions")
 	})
@@ -221,7 +221,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 	t.Run("PublishVersionFieldsError", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
-			Expect(http.StatusUnauthorized).
+			Expect(http.StatusBadRequest).
 			HasErrID(apierr.SchemaVersionPublishWithNoFields).
 			HasMessage("cannot publish a schema version with no fields")
 	})
@@ -646,6 +646,722 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		// Field IDs must match between versions
 		require.Equal(t, matriculaV1ID, matriculaV2ID, "matricula field ID changed between versions")
 		require.Equal(t, cursoV1ID, cursoV2ID, "curso field ID changed between versions")
+	})
+
+	var schemaVersion3ID string
+	t.Run("DraftVersion3WithOptionsAndRules", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":                  StoreString{Into: &schemaVersion3ID, Matcher: AnyUUID{}},
+			"schema_id":           AsString{schemaID, AnyUUID{}},
+			"version_number":      3,
+			"status":              "draft",
+			"based_on_version_id": AsString{schemaVersion2ID, AnyUUID{}},
+			"created_at":          AnyDate{},
+			"updated_at":          AnyDate{},
+		}
+
+		ValidateExact(t, data, spec)
+	})
+
+	t.Run("AddFieldsWithOptionsAndRules", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v3").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "user_type",
+						"type":     "select",
+						"owner":    "user",
+						"title":    "Tipo de Usuário",
+						"required": true,
+						"mutable":  true,
+						"position": 3,
+						"options": []interface{}{
+							map[string]interface{}{"value": "student", "label": "Estudante", "position": 0},
+							map[string]interface{}{"value": "professor", "label": "Professor", "position": 1},
+							map[string]interface{}{"value": "visitor", "label": "Visitante", "position": 2},
+						},
+					},
+					map[string]interface{}{
+						"key":      "needs_scholarship",
+						"type":     "bool",
+						"owner":    "user",
+						"title":    "Necessita de Bolsa?",
+						"required": true,
+						"mutable":  true,
+						"position": 4,
+					},
+					map[string]interface{}{
+						"key":         "income",
+						"type":        "int",
+						"owner":       "user",
+						"title":       "Renda Familiar",
+						"description": "Renda mensal familiar em reais",
+						"required":    false,
+						"mutable":     true,
+						"position":    5,
+						"visibility_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "needs_scholarship",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+						"required_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "needs_scholarship",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+					},
+					map[string]interface{}{
+						"key":      "scholarship_type",
+						"type":     "radio",
+						"owner":    "user",
+						"title":    "Tipo de Bolsa",
+						"required": false,
+						"mutable":  true,
+						"position": 6,
+						"options": []interface{}{
+							map[string]interface{}{"value": "full", "label": "Integral", "position": 0},
+							map[string]interface{}{"value": "partial", "label": "Parcial", "position": 1},
+						},
+						"visibility_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "user_type",
+								"operator":             "equals",
+								"value":                "student",
+							},
+							map[string]interface{}{
+								"depends_on_field_key": "needs_scholarship",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("created fields").
+			RequireDataValue()
+
+		// The response doesn't include options/rules in the field creation endpoint
+		// Only verify core fields exist
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id":         AnyUUID{},
+				"id":                AnyUUID{},
+				"schema_id":         AsString{schemaID, AnyUUID{}},
+				"schema_version_id": AsString{schemaVersion3ID, AnyUUID{}},
+				"key":               "user_type",
+				"type":              "select",
+				"owner":             "user",
+				"title":             "Tipo de Usuário",
+				"description":       nil,
+				"placeholder":       nil,
+				"required":          true,
+				"mutable":           true,
+				"default_value":     nil,
+				"position":          3,
+				"created_at":        AnyDate{},
+				"updated_at":        AnyDate{},
+				// Note: options/rules not returned in create response, only in form/get
+			},
+			map[string]interface{}{
+				"object_id":         AnyUUID{},
+				"id":                AnyUUID{},
+				"schema_id":         AsString{schemaID, AnyUUID{}},
+				"schema_version_id": AsString{schemaVersion3ID, AnyUUID{}},
+				"key":               "needs_scholarship",
+				"type":              "bool",
+				"owner":             "user",
+				"title":             "Necessita de Bolsa?",
+				"description":       nil,
+				"placeholder":       nil,
+				"required":          true,
+				"mutable":           true,
+				"default_value":     nil,
+				"position":          4,
+				"created_at":        AnyDate{},
+				"updated_at":        AnyDate{},
+			},
+			map[string]interface{}{
+				"object_id":         AnyUUID{},
+				"id":                AnyUUID{},
+				"schema_id":         AsString{schemaID, AnyUUID{}},
+				"schema_version_id": AsString{schemaVersion3ID, AnyUUID{}},
+				"key":               "income",
+				"type":              "int",
+				"owner":             "user",
+				"title":             "Renda Familiar",
+				"description":       "Renda mensal familiar em reais",
+				"placeholder":       nil,
+				"required":          false,
+				"mutable":           true,
+				"default_value":     nil,
+				"position":          5,
+				"created_at":        AnyDate{},
+				"updated_at":        AnyDate{},
+			},
+			map[string]interface{}{
+				"object_id":         AnyUUID{},
+				"id":                AnyUUID{},
+				"schema_id":         AsString{schemaID, AnyUUID{}},
+				"schema_version_id": AsString{schemaVersion3ID, AnyUUID{}},
+				"key":               "scholarship_type",
+				"type":              "radio",
+				"owner":             "user",
+				"title":             "Tipo de Bolsa",
+				"description":       nil,
+				"placeholder":       nil,
+				"required":          false,
+				"mutable":           true,
+				"default_value":     nil,
+				"position":          6,
+				"created_at":        AnyDate{},
+				"updated_at":        AnyDate{},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+
+	t.Run("PublishVersion3Success", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
+			Expect(http.StatusOK).
+			HasMessage("published schema version")
+	})
+
+	t.Run("GetLatestFormByID", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/latest").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":             AsString{schemaVersion3ID, AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"title":          "scti-register-flow",
+			"flow_id":        "scti-register",
+			"schema_type":    "context",
+			"version_id":     AsString{schemaVersion3ID, AnyUUID{}},
+			"version_number": 3,
+			"status":         "published",
+			"created_at":     AnyDate{},
+			"updated_at":     AnyDate{},
+			"fields": []interface{}{
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "matricula",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Numero da Matrícula",
+					"description":      "Sua matrícula da UENF como aparece no sistema acadêmico",
+					"placeholder":      "20223200045",
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         0,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "curso",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Curso de Matrícula",
+					"description":      "O curso que você está matrículado na UENF",
+					"placeholder":      "Ciência da Computação",
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         1,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "periodo",
+					"type":             "int",
+					"owner":            "user",
+					"title":            "Período Atual",
+					"description":      "O período da sua matéria mais avançada da grade",
+					"placeholder":      nil,
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         2,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "user_type",
+					"type":          "select",
+					"owner":         "user",
+					"title":         "Tipo de Usuário",
+					"description":   nil,
+					"placeholder":   nil,
+					"required":      true,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      3,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options": []interface{}{
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "student",
+							"label":    "Estudante",
+							"position": 0,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "professor",
+							"label":    "Professor",
+							"position": 1,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "visitor",
+							"label":    "Visitante",
+							"position": 2,
+						},
+					},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "needs_scholarship",
+					"type":             "bool",
+					"owner":            "user",
+					"title":            "Necessita de Bolsa?",
+					"description":      nil,
+					"placeholder":      nil,
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         4,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "income",
+					"type":          "int",
+					"owner":         "user",
+					"title":         "Renda Familiar",
+					"description":   "Renda mensal familiar em reais",
+					"placeholder":   nil,
+					"required":      false,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      5,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options":       []interface{}{},
+					"visibility_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+					"required_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "scholarship_type",
+					"type":          "radio",
+					"owner":         "user",
+					"title":         "Tipo de Bolsa",
+					"description":   nil,
+					"placeholder":   nil,
+					"required":      false,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      6,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options": []interface{}{
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "full",
+							"label":    "Integral",
+							"position": 0,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "partial",
+							"label":    "Parcial",
+							"position": 1,
+						},
+					},
+					"visibility_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               "student",
+						},
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+					"required_rules": []interface{}{},
+				},
+			},
+		}
+
+		ValidateExact(t, data, spec)
+	})
+
+	t.Run("GetSpecificFormV2", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":             AsString{schemaVersion2ID, AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"title":          "scti-register-flow",
+			"flow_id":        "scti-register",
+			"schema_type":    "context",
+			"version_id":     AsString{schemaVersion2ID, AnyUUID{}},
+			"version_number": 2,
+			"status":         "published",
+			"created_at":     AnyDate{},
+			"updated_at":     AnyDate{},
+			"fields": []interface{}{
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "matricula",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Numero da Matrícula",
+					"description":      "Sua matrícula da UENF como aparece no sistema acadêmico",
+					"placeholder":      "20223200045",
+					"required":         true,
+					"mutable":          true,
+					"position":         0,
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "curso",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Curso de Matrícula",
+					"description":      "O curso que você está matrículado na UENF",
+					"placeholder":      "Ciência da Computação",
+					"required":         true,
+					"mutable":          true,
+					"position":         1,
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "periodo",
+					"type":             "int",
+					"owner":            "user",
+					"title":            "Período Atual",
+					"description":      "O período da sua matéria mais avançada da grade",
+					"placeholder":      nil,
+					"required":         true,
+					"mutable":          true,
+					"position":         2,
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+
+	t.Run("GetLatestFormByFlowLookup", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		data := authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
+			WithQuery("flow_id", "scti-register").
+			WithQuery("schema_type", "context").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id":             AsString{schemaVersion3ID, AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"title":          "scti-register-flow",
+			"flow_id":        "scti-register",
+			"schema_type":    "context",
+			"version_number": 3,
+			"status":         "published",
+			"created_at":     AnyDate{},
+			"updated_at":     AnyDate{},
+			"fields": []interface{}{
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "matricula",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Numero da Matrícula",
+					"description":      "Sua matrícula da UENF como aparece no sistema acadêmico",
+					"placeholder":      "20223200045",
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         0,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "curso",
+					"type":             "string",
+					"owner":            "user",
+					"title":            "Curso de Matrícula",
+					"description":      "O curso que você está matrículado na UENF",
+					"placeholder":      "Ciência da Computação",
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         1,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "periodo",
+					"type":             "int",
+					"owner":            "user",
+					"title":            "Período Atual",
+					"description":      "O período da sua matéria mais avançada da grade",
+					"placeholder":      nil,
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         2,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "user_type",
+					"type":          "select",
+					"owner":         "user",
+					"title":         "Tipo de Usuário",
+					"description":   nil,
+					"placeholder":   nil,
+					"required":      true,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      3,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options": []interface{}{
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "student",
+							"label":    "Estudante",
+							"position": 0,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "professor",
+							"label":    "Professor",
+							"position": 1,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "visitor",
+							"label":    "Visitante",
+							"position": 2,
+						},
+					},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":               AnyUUID{},
+					"object_id":        AnyUUID{},
+					"key":              "needs_scholarship",
+					"type":             "bool",
+					"owner":            "user",
+					"title":            "Necessita de Bolsa?",
+					"description":      nil,
+					"placeholder":      nil,
+					"required":         true,
+					"mutable":          true,
+					"default_value":    nil,
+					"position":         4,
+					"created_at":       AnyDate{},
+					"updated_at":       AnyDate{},
+					"options":          []interface{}{},
+					"visibility_rules": []interface{}{},
+					"required_rules":   []interface{}{},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "income",
+					"type":          "int",
+					"owner":         "user",
+					"title":         "Renda Familiar",
+					"description":   "Renda mensal familiar em reais",
+					"placeholder":   nil,
+					"required":      false,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      5,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options":       []interface{}{},
+					"visibility_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+					"required_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+				},
+				map[string]interface{}{
+					"id":            AnyUUID{},
+					"object_id":     AnyUUID{},
+					"key":           "scholarship_type",
+					"type":          "radio",
+					"owner":         "user",
+					"title":         "Tipo de Bolsa",
+					"description":   nil,
+					"placeholder":   nil,
+					"required":      false,
+					"mutable":       true,
+					"default_value": nil,
+					"position":      6,
+					"created_at":    AnyDate{},
+					"updated_at":    AnyDate{},
+					"options": []interface{}{
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "full",
+							"label":    "Integral",
+							"position": 0,
+						},
+						map[string]interface{}{
+							"id":       AnyUUID{},
+							"value":    "partial",
+							"label":    "Parcial",
+							"position": 1,
+						},
+					},
+					"visibility_rules": []interface{}{
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               "student",
+						},
+						map[string]interface{}{
+							"id":                  AnyUUID{},
+							"depends_on_field_id": AnyUUID{},
+							"operator":            "equals",
+							"value":               true,
+						},
+					},
+					"required_rules": []interface{}{},
+				},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+
+	t.Run("GetFormByFlowLookupInvalidType", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
+			WithQuery("flow_id", "scti-register").
+			WithQuery("schema_type", "core").
+			Expect(http.StatusNotFound).
+			HasErrID(apierr.DBNotFound).
+			HasMessage("resource not found")
+	})
+
+	t.Run("GetFormByFlowLookupMissingRequiredQuery", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
+			WithQuery("schema_type", "context").
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.RequestMissingQueryParam).
+			HasMessage("missing query parameter: flow_id")
 	})
 
 	t.Run("ProjectUserAccessDenied", func(t *testing.T) {

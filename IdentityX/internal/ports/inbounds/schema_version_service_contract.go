@@ -50,10 +50,10 @@ func (e ErrDraftVersionOnNonPublished) Error() string {
 	return "new versions can only be drafted from published versions"
 }
 
-type ErrPublishNonExistentVersionDraft struct{}
+type ErrPublishSchemaNonExistentVersionDraft struct{}
 
-func (e ErrPublishNonExistentVersionDraft) Error() string {
-	return "cannot publish a schema version draft that doesn't exist"
+func (e ErrPublishSchemaNonExistentVersionDraft) Error() string {
+	return "cannot publish a schema with a version draft that doesn't exist"
 }
 
 type ErrPublishVersionPublished struct{}
@@ -66,6 +66,18 @@ type ErrPublishVersionArchived struct{}
 
 func (e ErrPublishVersionArchived) Error() string {
 	return "cannot publish a schema version that is archived"
+}
+
+type ErrPublishVersionNotDraft struct{}
+
+func (e ErrPublishVersionNotDraft) Error() string {
+	return "cannot publish a schema version that isn't a draft"
+}
+
+type ErrPublishNonExistentVersion struct{}
+
+func (e ErrPublishNonExistentVersion) Error() string {
+	return "cannot publish a non-existent schema version"
 }
 
 type ErrPublishVersionInvalidStatus struct{}

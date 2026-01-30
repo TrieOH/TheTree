@@ -3,6 +3,7 @@ package inbounds
 import (
 	"GoAuth/internal/domain/field"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,6 +29,43 @@ type InputField struct {
 	Mutable         bool
 	DefaultValue    *json.RawMessage
 	Position        int
+	Options         []InputOption
+	VisibilityRules []InputVisibilityRule
+	RequiredRules   []InputRequiredRule
+}
+
+type InputOption struct {
+	Value    string
+	Label    string
+	Position int
+}
+
+type InputVisibilityRule struct {
+	DependsOnFieldKey string
+	Operator          string
+	Value             *json.RawMessage
+}
+
+type InputRequiredRule struct {
+	DependsOnFieldKey string
+	Operator          string
+	Value             *json.RawMessage
+}
+
+type CreateFieldsResult struct {
+	Fields   []OutputField
+	Warnings []error
+}
+
+type ValidationWarning struct {
+	FieldKey string
+	RuleType string // "visibility" or "required"
+	Operator string
+	Message  string
+}
+
+func (e ValidationWarning) Error() string {
+	return fmt.Sprintf("%s validation warning: %s", e.FieldKey, e.Message)
 }
 
 type OutputField struct {
@@ -109,4 +147,12 @@ type ErrInvalidFieldOwner struct {
 
 func (e ErrInvalidFieldOwner) Error() string {
 	return "invalid owner type (" + e.Owner + ") for field: " + e.Key
+}
+
+type ErrFieldNotFound struct {
+	Key string
+}
+
+func (e ErrFieldNotFound) Error() string {
+	return "field not found: " + e.Key
 }

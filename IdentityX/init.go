@@ -9,7 +9,6 @@ import (
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/domain/scopes"
 	"context"
-	"database/sql"
 	"log"
 	"strings"
 	"time"
@@ -19,6 +18,8 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/viper"
@@ -26,12 +27,9 @@ import (
 )
 
 var Port string
-var DB *sql.DB
+var DB *pgxpool.Pool
 var scheduler gocron.Scheduler
 
-// init initializes the application.
-// It loads environment variables, sets up ED25519 keys, configures the response utility,
-// connects to the database, runs migrations, sets the JWT master key, and schedules cron jobs.
 func init() {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -59,10 +57,7 @@ func init() {
 		log.Fatalf("SMTP_FROM environment variable not set.")
 	}
 
-	env := viper.GetString("ENV")
-	if env != "" && env != "production" {
-		apierr.IncludeDebugCauses = true
-	}
+	apierr.IncludeDebugCauses = viper.GetBool("INCLUDE_DEBUG_CAUSES")
 
 	Port = viper.GetString("PORT")
 	if Port == "" {
@@ -70,7 +65,7 @@ func init() {
 	}
 	resp.SetConfig(resp.Config{
 		MaxTraceSize:         50,
-		ResponseSizeLimit:    10 * 1024 * 1024, // 10MB
+		ResponseSizeLimit:    10 * 1024 * 1024,
 		MaxInterceptorAmount: 20,
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
@@ -96,7 +91,6 @@ func init() {
 	_, err = queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
 		if apierr.IsNotFound(apierr.FromSQLC(err)) {
-			// create new signing key
 			pub, priv, err := crypto.GenerateEd25519()
 			if err != nil {
 				log.Fatalf("failed to generate GoAuth key: %v", err)
@@ -119,7 +113,6 @@ func init() {
 			})
 
 			if err != nil {
-				// rely on DB uniqueness as safety net
 				if apierr.IsUniqueViolation(err) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
@@ -149,7 +142,6 @@ func init() {
 		log.Println("Created GoAuth Global scope")
 	}
 
-	// Create the scheduler
 	scheduler, err = gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
@@ -159,11 +151,10 @@ func init() {
 
 	_, err = scheduler.NewJob(
 		gocron.DurationJob(time.Hour),
-		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
-			// Run all key rotations and cleanup inside a single transaction
+		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) { // Changed from *sql.DB
 			if err := txRunner.WithinTx(ctx, func(txCtx context.Context) error {
-				q := sqlc.New(db)           // always create the base queries
-				q = queriesWithTx(txCtx, q) // inject TX from context
+				q := sqlc.New(pool)
+				q = queriesWithTx(txCtx, q)
 
 				if err := tryRotateGoAuthKeys(txCtx, q); err != nil {
 					return err // rollback automatically
@@ -191,14 +182,13 @@ func init() {
 		log.Println("Created RotateKeys cron job")
 	}
 
-	// SessionCleanup scheduled daily at 00:00
 	_, err = scheduler.NewJob(
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
-		gocron.NewTask(func(ctx context.Context, db *sql.DB) {
+		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) {
 			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
 
-			queries := sqlc.New(db)
+			queries := sqlc.New(pool)
 
 			revoked, err := queries.RevokeExpiredSessions(ctx)
 			if err != nil {
@@ -222,7 +212,6 @@ func init() {
 		log.Println("Created SessionCleanup cron job")
 	}
 
-	// Start the scheduler in the background
 	go scheduler.Start()
 	log.Println("Started the cron scheduler")
 }
@@ -337,7 +326,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 }
 
 func queriesWithTx(ctx context.Context, q *sqlc.Queries) *sqlc.Queries {
-	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return q.WithTx(tx)
 	}
 	return q

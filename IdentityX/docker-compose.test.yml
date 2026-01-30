@@ -26,6 +26,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:8080}
 
       DISABLE_RATE_LIMIT: ${DISABLE_RATE_LIMIT:-true}
+      INCLUDE_DEBUG_CAUSES: ${INCLUDE_DEBUG_CAUSES:-true}
 
     depends_on:
       mailhog:

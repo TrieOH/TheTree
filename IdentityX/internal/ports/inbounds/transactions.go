@@ -2,7 +2,8 @@ package inbounds
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // TxOptions defines transaction behavior.
@@ -10,8 +11,8 @@ import (
 //   - Isolation: sql.LevelDefault (driver-defined default isolation)
 //   - ReadOnly: false
 type TxOptions struct {
-	Isolation sql.IsolationLevel
-	ReadOnly  bool
+	Isolation pgx.TxIsoLevel
+	ReadOnly  pgx.TxAccessMode
 }
 
 // TxRunner executes functions within a database transaction.

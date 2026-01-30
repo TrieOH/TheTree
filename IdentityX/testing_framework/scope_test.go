@@ -177,7 +177,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsUniqueViolation(err))
-		assert.Equal(t, "pq: duplicate key value violates unique constraint \"scopes_one_global\"", err.Error())
+		assert.Equal(t, "ERROR: duplicate key value violates unique constraint \"scopes_one_global\" (SQLSTATE 23505)", err.Error())
 
 		pid, err := uuid.Parse(projectID)
 		assert.NoError(t, err)
@@ -194,7 +194,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -205,7 +205,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -216,7 +216,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -227,7 +227,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -238,7 +238,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -249,7 +249,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeGlobal),
@@ -260,7 +260,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 	})
 
 	t.Run("CreateProjectRootScopeError", func(t *testing.T) {
@@ -280,7 +280,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsUniqueViolation(err))
-		assert.Equal(t, "pq: duplicate key value violates unique constraint \"scopes_one_project_root_per_project\"", err.Error())
+		assert.Equal(t, "ERROR: duplicate key value violates unique constraint \"scopes_one_project_root_per_project\" (SQLSTATE 23505)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeProjectRoot),
@@ -291,7 +291,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeProjectRoot),
@@ -302,7 +302,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
 			Type:       string(scopes.ScopeTypeProjectRoot),
@@ -313,7 +313,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 	})
 
 	t.Run("CheckProjectRootScope", func(t *testing.T) {
@@ -343,6 +343,6 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		assert.Error(t, err)
 		assert.True(t, apierr.IsCheckViolation(err))
-		assert.Equal(t, "pq: new row for relation \"scopes\" violates check constraint \"scope_shape_check\"", err.Error())
+		assert.Equal(t, "ERROR: new row for relation \"scopes\" violates check constraint \"scope_shape_check\" (SQLSTATE 23514)", err.Error())
 	})
 }

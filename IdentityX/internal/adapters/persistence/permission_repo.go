@@ -8,9 +8,9 @@ import (
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -23,7 +23,7 @@ type permissionRepo struct {
 }
 
 func (repo *permissionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q

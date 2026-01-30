@@ -7,10 +7,10 @@ import (
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +24,7 @@ type sessionRepo struct {
 }
 
 func (repo *sessionRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q

@@ -12,10 +12,10 @@ func (ErrRegisterOnSchemaArchive) Error() string {
 	return "can't register to an archived schema"
 }
 
-type ErrSchemaNoPublishedVersion struct{}
+type ErrRegisterSchemaNoPublishedVersion struct{}
 
-func (ErrSchemaNoPublishedVersion) Error() string {
-	return "schema has no published version"
+func (ErrRegisterSchemaNoPublishedVersion) Error() string {
+	return "can't register on a schema that has no published version"
 }
 
 type ErrSchemaVersionMismatch struct{}

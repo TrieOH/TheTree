@@ -1,23 +1,11 @@
 package field
 
-import "fmt"
-
 type ErrFieldNotDefined struct {
 	Key string
 }
 
 func (e ErrFieldNotDefined) Error() string {
 	return "field not defined in schema: " + e.Key
-}
-
-type ErrInvalidFieldType struct {
-	Key      string
-	Expected string
-	Got      any
-}
-
-func (e ErrInvalidFieldType) Error() string {
-	return fmt.Sprintf("field %q expects type %s, got %T", e.Key, e.Expected, e.Got)
 }
 
 type ErrMissingRequiredFields struct {
@@ -34,4 +22,14 @@ type ErrFieldsValidation struct {
 
 func (ErrFieldsValidation) Error() string {
 	return "error validating fields"
+}
+
+type ErrInvalidFieldValue struct {
+	Key   string
+	Type  string
+	Value any
+}
+
+func (e ErrInvalidFieldValue) Error() string {
+	return "invalid value for field '" + e.Key + "' of type " + e.Type
 }

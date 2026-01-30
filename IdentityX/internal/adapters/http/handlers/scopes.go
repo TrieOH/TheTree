@@ -17,6 +17,20 @@ func NewScopeHandler(uc inbounds.ScopeService) *ScopeHandler {
 	return &ScopeHandler{scopes: uc}
 }
 
+// Create godoc
+// @Summary Create a new scope
+// @Description Creates a new scope definition for a project.
+// @Tags scopes
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param scopeInfo body dto.CreateScopeRequest true "Scope creation information"
+// @Success 201 {object} dto.ScopeResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/scopes [post]
 func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -46,6 +60,21 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	resp.Created("Scope Created").WithData(dto.ScopeOutputToScopeResponse(scope)).Send(w)
 }
 
+// GetByID godoc
+// @Summary Get scope by ID
+// @Description Retrieves a scope definition by its ID.
+// @Tags scopes
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param scope_id path string true "Scope ID"
+// @Success 200 {object} dto.ScopeResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/scopes/{scope_id} [get]
 func (handler *ScopeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -74,6 +103,19 @@ func (handler *ScopeHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(dto.ScopeOutputToScopeResponse(scope)).Send(w)
 }
 
+// GetProjectScopes godoc
+// @Summary List project scopes
+// @Description Retrieves all scope definitions for a project.
+// @Tags scopes
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Success 200 {array} dto.ScopeResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/scopes [get]
 func (handler *ScopeHandler) GetProjectScopes(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {

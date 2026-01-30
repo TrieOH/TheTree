@@ -10,7 +10,6 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -195,7 +194,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if err != nil && apierr.IsNotFound(err) {
-		return apierr.FromService(span, inbounds.ErrPublishNonExistentVersionDraft{})
+		return apierr.FromService(span, inbounds.ErrPublishSchemaNonExistentVersionDraft{})
 	}
 
 	if latest.Status != version.StatusDraft {
@@ -209,11 +208,17 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	if latest.BasedOnVersionID == nil {
-		if err = uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
-			return err
-		}
+	var hasFields bool
+	hasFields, err = versions.HasFields(ctx, latest.ID)
+	if err != nil {
+		return err
+	}
 
+	if !hasFields {
+		return apierr.FromService(span, inbounds.ErrPublishVersionNoFields{})
+	}
+
+	if latest.BasedOnVersionID == nil {
 		if err = versions.Publish(ctx, version.Version{
 			SchemaID: in.SchemaID,
 			ID:       latest.ID,
@@ -221,21 +226,26 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 			return err
 		}
 
+		if err = schemas.SetVersion(ctx, schema.Schema{
+			ID:               in.SchemaID,
+			ProjectID:        in.ProjectID,
+			CurrentVersionID: &latest.ID,
+		}); err != nil {
+			return err
+		}
+
 		return nil
 	}
 
-	var hasChanges bool
-	hasChanges, err = fields.DiffVersionsState(ctx, *latest.BasedOnVersionID, latest.ID)
+	diff, err := fields.DiffVersionsFullState(ctx, *latest.BasedOnVersionID, latest.ID)
 	if err != nil {
 		return err
 	}
 
-	if !hasChanges {
-		return apierr.FromService(span, inbounds.ErrPublishVersionNoChanges{})
-	}
+	diff.Annotate(span)
 
-	if err = uc.validateVersionHasFields(ctx, span, latest.ID); err != nil {
-		return err
+	if !diff.HasAnyChanges() {
+		return apierr.FromService(span, inbounds.ErrPublishVersionNoChanges{})
 	}
 
 	if err = versions.Publish(ctx, version.Version{
@@ -245,7 +255,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	if err := schemas.SetVersion(ctx, schema.Schema{
+	if err = schemas.SetVersion(ctx, schema.Schema{
 		ID:               in.SchemaID,
 		ProjectID:        in.ProjectID,
 		CurrentVersionID: &latest.ID,
@@ -253,19 +263,6 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
-	return nil
-}
-
-func (uc *UseCase) validateVersionHasFields(ctx context.Context, span trace.Span, versionID uuid.UUID) error {
-	fields := uc.deps.Fields
-	foundFields, err := fields.GetByVersionID(ctx, versionID)
-	if err != nil && !apierr.IsNotFound(err) {
-		return err
-	}
-
-	if apierr.IsNotFound(err) || len(foundFields) == 0 {
-		return apierr.FromService(span, inbounds.ErrPublishVersionNoFields{})
-	}
 	return nil
 }
 

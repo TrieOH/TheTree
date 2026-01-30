@@ -18,4 +18,6 @@ type SchemaVersionRepository interface {
 	GetByVersionNumber(ctx context.Context, schemaID uuid.UUID, versionNumber int) (*version.Version, error)
 	List(ctx context.Context, schemaID uuid.UUID) ([]version.Version, error)
 	CopyOnDraft(ctx context.Context, schemaVersionID uuid.UUID) (*version.Version, error)
+	HasFields(ctx context.Context, versionID uuid.UUID) (bool, error)
+	Exists(ctx context.Context, schemaID uuid.UUID) (bool, error)
 }
