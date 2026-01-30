@@ -32,7 +32,7 @@ export function BasicLogoutButton({
       disabled={loading}
       className={"trieoh trieoh-button--logout"}
     >
-      <ImExit size={32}/> <span>Log out</span>
+      <ImExit size={24}/> <span>Log out</span>
     </button>
   )
 }
