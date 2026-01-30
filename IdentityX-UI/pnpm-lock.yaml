@@ -45,8 +45,8 @@ importers:
         specifier: ^1.132.0
         version: 1.141.7(@tanstack/react-router@1.141.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@trieoh/node-auth-sdk':
-        specifier: 0.3.0
-        version: 0.3.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: 0.3.1
+        version: 0.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1502,8 +1502,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@trieoh/node-auth-sdk@0.3.0':
-    resolution: {integrity: sha512-jxpVY9flwu4bVIkAbnskS2vyTRvJHbbHXiCVENONFYlQNrdOA08dKYomd5eTbb9frePPhKCuFRUM00Kx+Hd7pQ==, tarball: https://npm.pkg.github.com/download/@trieoh/node-auth-sdk/0.3.0/9ab49025a136e1110b4d266aee62d60a52470fac}
+  '@trieoh/node-auth-sdk@0.3.1':
+    resolution: {integrity: sha512-+w0wNnThrXYeHcxCMqDCVxzyZQx7k8LBZZIjiY3L/DdpC6iZO5qQPEDpg5oqPQ+UP6xNFwDNnl7uFRhLQojmOQ==, tarball: https://npm.pkg.github.com/download/@trieoh/node-auth-sdk/0.3.1/28222130d6f66910007e30d660448a5f9e1b4e23}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -4021,7 +4021,7 @@ snapshots:
       '@types/react': 19.2.7
       '@types/react-dom': 19.2.3(@types/react@19.2.7)
 
-  '@trieoh/node-auth-sdk@0.3.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@trieoh/node-auth-sdk@0.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
