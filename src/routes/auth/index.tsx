@@ -55,28 +55,26 @@ function RouteComponent() {
   }
 
   return (
-    <main className='flex justify-center items-center py-2'>
-      <motion.div
-        key={isLogin ? 'signin' : 'signup'}
-        initial={{ opacity: 0, scale: 0.98, y: 5 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        className="w-full max-w-md"
-      >
-        {isLogin ? (
-          <SignIn 
-            signUpRedirect={() => setIsLogin(false)} 
-            onSuccess={handleLoginSuccess}
-            onFailed={handleFailure}
-          />
-        ) : (
-          <SignUp 
-            loginRedirect={() => setIsLogin(true)} 
-            onSuccess={handleSignUpSuccess}
-            onFailed={handleFailure}
-          />
-        )}
-      </motion.div>
-    </main>
+    <motion.main
+      key={isLogin ? 'signin' : 'signup'}
+      initial={{ opacity: 0, scale: 0.8, y: 5 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className='flex justify-center items-center py-2 h-(--screen--minus-header)'
+    >
+      {isLogin ? (
+        <SignIn 
+          signUpRedirect={() => setIsLogin(false)} 
+          onSuccess={handleLoginSuccess}
+          onFailed={handleFailure}
+        />
+      ) : (
+        <SignUp 
+          loginRedirect={() => setIsLogin(true)} 
+          onSuccess={handleSignUpSuccess}
+          onFailed={handleFailure}
+        />
+      )}
+    </motion.main>
   )
 }

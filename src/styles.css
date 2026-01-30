@@ -134,6 +134,7 @@ code {
 
   --animate-underline: underline-in 0.3s ease-out;
   --breakpoint-xs: 30rem;
+  --screen--minus-header: calc(100dvh - 4rem);
 
   @keyframes underline-in {
     0% {
