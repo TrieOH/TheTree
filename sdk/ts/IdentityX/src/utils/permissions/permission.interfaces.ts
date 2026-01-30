@@ -7,7 +7,7 @@ export interface PermissionRoot {
     specifier: ValidateSpecifier<SP>
   ): PermissionObjectBuilder;
 
-  onWildcard<NS extends string>(
+  onAll<NS extends string>(
     namespace: ValidateNamespace<NS>
   ): PermissionObjectBuilder;
 
@@ -20,7 +20,7 @@ export interface PermissionObjectBuilder {
     specifier: SP
   ): PermissionObjectBuilder;
 
-  onWildcard<NS extends string>(
+  onAll<NS extends string>(
     namespace: ValidateNamespace<NS>
   ): PermissionObjectBuilder;
 

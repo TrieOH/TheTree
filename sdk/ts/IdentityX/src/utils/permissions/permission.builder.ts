@@ -42,7 +42,7 @@ export function permission(): PermissionRoot {
       s.commitSegment(nsStr, spStr, []); // actionParts empty until can(...) is called
       return objectBuilder();
     },
-    onWildcard(namespace) {
+    onAll(namespace) {
       const nsStr = namespace as unknown as string;
       assertNamespace(nsStr);
       s.commitSegment(nsStr, "*", []); // specifier '*' but only via explicit API
@@ -64,7 +64,7 @@ export function permission(): PermissionRoot {
         s.commitSegment(nsStr, spStr, []);
         return objectBuilder();
       },
-      onWildcard(namespace) {
+      onAll(namespace) {
         const nsStr = namespace as unknown as string;
         assertNamespace(nsStr);
         s.commitSegment(nsStr, "*", []);
