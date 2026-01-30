@@ -49,21 +49,10 @@ export type ValidateSpecifier<T extends string> =
   T extends "" ? "Specifier cannot be empty" :
   IsValidSequence<T> extends true ? T : "Specifier contains invalid characters";
 
-// export type CannotStartWithNumber<T extends string> =
-//   T extends `${Digit}${string}` ? "The string cannot start with a number or contains!" : T;
 
-// type IsValid<T extends string> = 
-//   T extends `${infer Head}${infer Tail}`
-//     ? Head extends ValidCaracter
-//       ? Tail extends "" 
-//         ? true          // Everything is valid
-//         : IsValid<Tail> // Continue with the rest
-//       : false           // Invalid Caractere
-//     : false;            // Empty string
-
-// export type ValidateSpecifier<T extends string> = 
-//   IsValid<T> extends true 
-//     ? T 
-//     : T extends "" 
-//       ? "he string cannot be empty" 
-//       : "Only a-z, A-Z, 0-9, and _ are permitted.";
+export type ValidateAction<T extends string> = 
+  T extends "" 
+    ? "Action cannot be empty" 
+    : IsValidSequence<T> extends true 
+      ? T 
+      : "Action contains invalid characters (only a-z, A-Z, 0-9 and _)";

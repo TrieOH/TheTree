@@ -1,4 +1,4 @@
-import type { ValidateNamespace, ValidateSpecifier } from "../../types/permission-types";
+import type { ValidateAction, ValidateNamespace, ValidateSpecifier } from "../../types/permission-types";
 import type { PermissionResult } from "./permission.result";
 
 export interface PermissionRoot {
@@ -30,12 +30,12 @@ export interface PermissionObjectBuilder {
 }
 
 export interface PermissionObjectFinal {
-  can<ActionToken extends string>(action: ActionToken): PermissionActionChain;
+  can<Token extends string>(action: ValidateAction<Token>): PermissionActionChain;
   canAnyAction(): PermissionFinal;
 }
 
 export interface PermissionActionChain {
-  and<Part extends string>(part: Part): PermissionActionChain;
+  and<Token extends string>(action: ValidateAction<Token>): PermissionActionChain;
   build(): PermissionResult;
 }
 
