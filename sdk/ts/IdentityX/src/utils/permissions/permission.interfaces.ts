@@ -1,5 +1,5 @@
-import type { ValidateAction, ValidateNamespace, ValidateSpecifier } from "../../types/permission-types";
 import type { PermissionResult } from "./permission.result";
+import type { ValidateAction, ValidateNamespace, ValidateSpecifier } from "./permission.validators";
 
 export interface PermissionRoot {
   on<NS extends string, SP extends string>(
