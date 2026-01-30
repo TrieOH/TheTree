@@ -4,7 +4,7 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
-var IncludeDebugCauses = false
+var IncludeDebugCauses bool
 
 // MapAPIErrorWithTrace maps an API error to a response with full trace information.
 // Debug causes are included based on the global IncludeDebugCauses flag.

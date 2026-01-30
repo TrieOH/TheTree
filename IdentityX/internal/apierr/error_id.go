@@ -111,6 +111,7 @@ const (
 	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
 	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
 	ProjectUserNotFromProject                  ID = "PROJ_USR_007"
+	ProjectUserRegisterOnSchemaNoVersion       ID = "PROJ_USR_008"
 )
 
 const (
@@ -131,20 +132,22 @@ const (
 	SchemaMissingID                 ID = "SCHEMA_015"
 	SchemaEmptySchemaType           ID = "SCHEMA_016"
 	SchemaEmptyFlowID               ID = "SCHEMA_017"
+	SchemaNotFound                  ID = "SCM_018"
 )
 
 const (
-	SchemaVersionDraftAlreadyExists       ID = "SCM_VER_001"
-	SchemaVersionInvalidID                ID = "SCM_VER_002"
-	SchemaVersionPublishWithNoFields      ID = "SCM_VER_003"
-	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
-	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
-	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
-	SchemaVersionMismatch                 ID = "SCM_VER_007"
-	SchemaVersionNotDraft                 ID = "SCM_VER_008"
-	SchemaVersionNoValidStatus            ID = "SCM_VER_009"
-	SchemaVersionDraftOnNonPublished      ID = "SCM_VER_010"
-	SchemaVersionNoChanges                ID = "SCM_VER_011"
+	SchemaVersionDraftAlreadyExists         ID = "SCM_VER_001"
+	SchemaVersionInvalidID                  ID = "SCM_VER_002"
+	SchemaVersionPublishWithNoFields        ID = "SCM_VER_003"
+	SchemaVersionDraftDoesntExist           ID = "SCM_VER_004"
+	SchemaVersionTryingToPublishPublished   ID = "SCM_VER_005"
+	SchemaVersionTryingToPublishArchived    ID = "SCM_VER_006"
+	SchemaVersionMismatch                   ID = "SCM_VER_007"
+	SchemaVersionNotDraft                   ID = "SCM_VER_008"
+	SchemaVersionNoValidStatus              ID = "SCM_VER_009"
+	SchemaVersionDraftOnNonPublished        ID = "SCM_VER_010"
+	SchemaVersionNoChanges                  ID = "SCM_VER_011"
+	SchemaVersionTryingToPublishNonExistant ID = "SCM_VER_012"
 )
 
 const (
@@ -158,6 +161,8 @@ const (
 	FieldInvalidType                   ID = "FIELD_008"
 	FieldInvalidOwner                  ID = "FIELD_009"
 	FieldValidationErrSchemaRegister   ID = "FIELD_010"
+	FieldInvalidValue                  ID = "FIELD_011"
+	FieldNotFound                      ID = "FIELD_012"
 )
 
 const (

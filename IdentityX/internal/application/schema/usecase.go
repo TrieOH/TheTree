@@ -437,3 +437,164 @@ func (uc *UseCase) List(ctx context.Context, projectID uuid.UUID) ([]inbounds.Sc
 
 	return inbounds.SchemaSliceToSchemaOutputSlice(schemasOutput), nil
 }
+
+func (uc *UseCase) GetLatestForm(ctx context.Context, in inbounds.SchemaServiceInput) (*inbounds.FormOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetLatestForm")
+	defer span.End()
+
+	return uc.getForm(ctx, in, 0, span) // 0 indicates "current/latest published"
+}
+
+func (uc *UseCase) GetFormByVersion(ctx context.Context, in inbounds.SchemaServiceInput, versionNumber int) (*inbounds.FormOutput, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetFormByVersion",
+		trace.WithAttributes(attribute.Int("version", versionNumber)),
+	)
+	defer span.End()
+
+	return uc.getForm(ctx, in, versionNumber, span)
+}
+
+func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, versionNumber int, span trace.Span) (*inbounds.FormOutput, error) {
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fieldsRepo := uc.deps.Fields
+
+	// Auth check
+	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, apierr.FromService(span, err)
+	}
+
+	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !isOwner {
+		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get form for a project you don't own"})
+	}
+
+	// Get schema - either by ID or by FlowID+Type
+	var s *schema.Schema
+	if in.SchemaID != uuid.Nil {
+		belongs, err := schemas.BelongsToProject(ctx, schema.Schema{
+			ProjectID: in.ProjectID,
+			ID:        in.SchemaID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !belongs {
+			return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get form for a schema you don't own"})
+		}
+
+		s, err = schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Lookup by FlowID + Type (e.g., flow_id="login", type="core")
+		s, err = schemas.FindByFlowIDAndType(ctx, in.FlowID, schema.Type(in.SchemaType), in.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Get the specific version
+	var v *version.Version
+	if versionNumber == 0 {
+		// Get current published version
+		if s.CurrentVersionID == nil {
+			return nil, apierr.FromService(span, inbounds.ErrSchemaNoPublishedVersions{})
+		}
+		v, err = versions.GetByID(ctx, *s.CurrentVersionID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		v, err = versions.GetByVersionNumber(ctx, s.ID, versionNumber)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Ensure version is published (for forms we don't want to expose drafts)
+	if v.Status != version.StatusPublished {
+		return nil, apierr.FromService(span, inbounds.ErrVersionNotPublished{})
+	}
+
+	// Get all fields for this version
+	// Note: You'll need to ensure your fields repository loads options and rules
+	domainFields, err := fieldsRepo.ListFromVersionWithRelations(ctx, s.ID, v.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Map to output
+	form := &inbounds.FormOutput{
+		SchemaID:      s.ID,
+		Title:         s.Title,
+		FlowID:        s.FlowID,
+		SchemaType:    string(s.Type),
+		VersionID:     v.ID,
+		VersionNumber: v.VersionNumber,
+		Status:        string(v.Status),
+		CreatedAt:     v.CreatedAt,
+		UpdatedAt:     v.UpdatedAt,
+		Fields:        make([]inbounds.FormField, 0, len(domainFields)),
+	}
+
+	for _, f := range domainFields {
+		ff := inbounds.FormField{
+			ID:              f.ID,
+			ObjectID:        f.ObjectID,
+			Key:             f.Key,
+			Type:            string(f.Type),
+			Owner:           string(f.Owner),
+			Title:           f.Title,
+			Description:     f.Description,
+			Placeholder:     f.Placeholder,
+			Required:        f.Required,
+			Mutable:         f.Mutable,
+			DefaultValue:    f.DefaultValue,
+			Position:        f.Position,
+			CreatedAt:       f.CreatedAt,
+			UpdatedAt:       f.UpdatedAt,
+			Options:         make([]inbounds.FormOption, 0),
+			VisibilityRules: make([]inbounds.FormRule, 0),
+			RequiredRules:   make([]inbounds.FormRule, 0),
+		}
+
+		// Map options if present (select, radio, checkbox)
+		for _, opt := range f.Options {
+			ff.Options = append(ff.Options, inbounds.FormOption{
+				ID:       opt.ID,
+				Value:    opt.Value,
+				Label:    opt.Label,
+				Position: opt.Position,
+			})
+		}
+
+		// Map rules
+		for _, r := range f.VisibilityRules {
+			ff.VisibilityRules = append(ff.VisibilityRules, inbounds.FormRule{
+				ID:               r.ID,
+				DependsOnFieldID: r.DependsOnFieldID,
+				Operator:         string(r.Operator),
+				Value:            r.Value,
+			})
+		}
+		for _, r := range f.RequiredRules {
+			ff.RequiredRules = append(ff.RequiredRules, inbounds.FormRule{
+				ID:               r.ID,
+				DependsOnFieldID: r.DependsOnFieldID,
+				Operator:         string(r.Operator),
+				Value:            r.Value,
+			})
+		}
+
+		form.Fields = append(form.Fields, ff)
+	}
+
+	return form, nil
+}

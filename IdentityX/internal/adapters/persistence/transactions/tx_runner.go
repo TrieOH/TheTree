@@ -5,8 +5,9 @@ import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"context"
-	"database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
@@ -15,17 +16,15 @@ type TxKey struct{}
 var TxKeyValue = TxKey{}
 
 type TxRunner struct {
-	db *sql.DB
+	pool *pgxpool.Pool // Changed from *sql.DB
 }
 
-func NewTxRunner(db *sql.DB) inbounds.TxRunner {
-	return &TxRunner{db: db}
+func NewTxRunner(pool *pgxpool.Pool) inbounds.TxRunner {
+	return &TxRunner{pool: pool}
 }
 
 // WithinTx executes fn inside a transaction using default options
-// (database default isolation, read-write).
-//
-// Nested calls are not supported and will return an error.
+// (serializable isolation, read-write).
 func (r *TxRunner) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	return r.WithinTxWithOptions(ctx, inbounds.TxOptions{}, fn)
 }
@@ -36,24 +35,20 @@ func (r *TxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("cannot create transactions with a nil context").WithID(apierr.SystemTransactionWithNoContext)
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		// Nested transactions are explicitly not supported to avoid implicit
-		// transaction reuse or savepoint semantics.
-		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("nested transactions are not supported").WithID(apierr.DBNestedTXNotAllowed)
 	}
 
-	sqlOpts := &sql.TxOptions{
-		Isolation: opts.Isolation,
-		ReadOnly:  opts.ReadOnly,
+	pgxOpts := pgx.TxOptions{
+		IsoLevel:   opts.Isolation,
+		AccessMode: opts.ReadOnly,
 	}
 
-	var tx *sql.Tx
-	tx, err = r.db.BeginTx(ctx, sqlOpts)
+	var tx pgx.Tx
+	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
 		// FIXME make me a generic error
 		return apierr.ErrInternal.WithMsg("cannot begin transaction").WithID(apierr.DBBeginTXFailed).WithCause(err)
@@ -64,7 +59,7 @@ func (r *TxRunner) WithinTxWithOptions(
 	defer func() {
 		if p := recover(); p != nil {
 			if !committed {
-				rbErr := tx.Rollback()
+				rbErr := tx.Rollback(ctx)
 				if rbErr != nil {
 					logs.L().Error("error during tx rollback after panic", zap.Error(rbErr))
 				}
@@ -77,19 +72,18 @@ func (r *TxRunner) WithinTxWithOptions(
 	ctx = context.WithValue(ctx, TxKeyValue, tx)
 
 	if err = fn(ctx); err != nil {
-		rbErr := tx.Rollback()
+		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
 			logs.L().Error("error during tx rollback after usecase error", zap.Error(rbErr))
 		}
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		logs.L().Error("error during tx commit", zap.Error(err))
-		if rbErr := tx.Rollback(); rbErr != nil {
+		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			logs.L().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		// FIXME make me a generic error
 		return apierr.ErrInternal.
 			WithMsg("transaction commit failed").
 			WithID(apierr.DBCommitTXFailed).

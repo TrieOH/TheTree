@@ -28,6 +28,16 @@ func IsValidFieldType(t string) bool {
 	}
 }
 
+// IsOptionType returns true if the field type requires options
+func (t Type) IsOptionType() bool {
+	switch t {
+	case Select, Radio, Checkbox:
+		return true
+	default:
+		return false
+	}
+}
+
 type Owner string
 
 const (
@@ -62,6 +72,11 @@ type Field struct {
 	Position        int
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+
+	// Relations - populated when using WithRelations methods
+	Options         []Option
+	VisibilityRules []VisibilityRule
+	RequiredRules   []RequiredRule
 }
 
 type Option struct {
@@ -81,7 +96,22 @@ const (
 	RuleOperatorNotIn     RuleOperator = "not_in"
 	RuleOperatorExists    RuleOperator = "exists"
 	RuleOperatorNotExists RuleOperator = "not_exists"
+	RuleOperatorGt        RuleOperator = "greater_than"
+	RuleOperatorGte       RuleOperator = "greater_than_equal"
+	RuleOperatorLt        RuleOperator = "lower_than"
+	RuleOperatorLte       RuleOperator = "lower_than_equal"
+	RuleOperatorContains  RuleOperator = "contains"
 )
+
+func IsValidRuleOperator(op string) bool {
+	switch RuleOperator(op) {
+	case RuleOperatorEquals, RuleOperatorNotEquals, RuleOperatorExists, RuleOperatorNotExists, RuleOperatorGt, RuleOperatorGte,
+		RuleOperatorLt, RuleOperatorLte, RuleOperatorContains, RuleOperatorIn, RuleOperatorNotIn:
+		return true
+	default:
+		return false
+	}
+}
 
 type RequiredRule struct {
 	ID               uuid.UUID

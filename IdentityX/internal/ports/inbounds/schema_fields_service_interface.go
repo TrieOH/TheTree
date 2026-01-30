@@ -5,5 +5,5 @@ import (
 )
 
 type SchemaFieldsService interface {
-	Create(ctx context.Context, in SchemaFieldInput) ([]OutputField, error)
+	Create(ctx context.Context, in SchemaFieldInput) (CreateFieldsResult, error)
 }

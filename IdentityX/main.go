@@ -11,6 +11,8 @@ import (
 func main() {
 	ctx := context.Background()
 
+	defer DB.Close()
+
 	shutdown, err := telemetry.InitTracer(ctx)
 	if err != nil {
 		log.Fatal(err)
@@ -21,13 +23,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}(ctx)
-
-	defer func() {
-		err := DB.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	defer func() {
 		err := scheduler.StopJobs()

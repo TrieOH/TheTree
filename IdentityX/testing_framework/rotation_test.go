@@ -81,7 +81,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// --- Start Key Lifecycle Tests ---
 
 		// 7. Manually expire the old key
-		_, err = suite.DB.Exec("UPDATE key_pair SET expires_at = $1 WHERE kid = $2", time.Now().Add(-1*time.Hour), preRotationKID)
+		_, err = suite.DB.Exec(ctx, "UPDATE key_pair SET expires_at = $1 WHERE kid = $2", time.Now().Add(-1*time.Hour), preRotationKID)
 		require.NoError(t, err, "Failed to manually expire old key")
 
 		// 8. Verify old token still works (token's own expiry is what matters)
@@ -182,7 +182,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// --- Start Key Lifecycle Tests ---
 
 		// 8. Manually expire the old key
-		_, err = suite.DB.Exec("UPDATE key_pair SET expires_at = $1 WHERE kid = $2", time.Now().Add(-1*time.Hour), preRotationKID)
+		_, err = suite.DB.Exec(ctx, "UPDATE key_pair SET expires_at = $1 WHERE kid = $2", time.Now().Add(-1*time.Hour), preRotationKID)
 		require.NoError(t, err, "Failed to manually expire old key")
 
 		// 9. Verify old token still works

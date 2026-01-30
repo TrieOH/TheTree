@@ -40,8 +40,8 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaArchived)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case schema.ErrSchemaNoPublishedVersion:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaNoPublishedVersion)
+	case schema.ErrRegisterSchemaNoPublishedVersion:
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaNoVersion)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case schema.ErrSchemaVersionMismatch:
@@ -204,11 +204,11 @@ func FromService(span trace.Span, err error) *Error {
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrSchemaNoPublishedVersions:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaNoPublishedVersion)
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaNoPublishedVersion)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrSchemaOnlyDraft:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaHasOnlyDraftVersion)
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaHasOnlyDraftVersion)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrSchemaOnlyArchived:
@@ -235,7 +235,7 @@ func FromService(span trace.Span, err error) *Error {
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionDraftOnNonPublished)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrPublishNonExistentVersionDraft:
+	case inbounds.ErrPublishSchemaNonExistentVersionDraft:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionDraftDoesntExist)
 		RecordDomainError(span, httpErr)
 		return httpErr
@@ -256,7 +256,7 @@ func FromService(span trace.Span, err error) *Error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrPublishVersionNoFields:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrRevokeCurrentSession:
@@ -375,6 +375,18 @@ func FromService(span trace.Span, err error) *Error {
 		return httpErr
 	case permissions.ErrLogicalConditionValidationError:
 		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishVersionNotDraft:
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionNotDraft).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrPublishNonExistentVersion:
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishNonExistant).WithCause(e)
+		RecordDomainError(span, httpErr)
+		return httpErr
+	case inbounds.ErrFieldNotFound:
+		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(FieldNotFound).WithCause(e)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
