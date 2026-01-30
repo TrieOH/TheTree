@@ -68,13 +68,14 @@ export default function UserMenu() {
         )}>
           <button
             className={cn(
-              "w-full flex items-center gap-2 text-popover-foreground px-3 font-medium",
-              "hover:scale-105 active:scale-[0.98] duration-200 cursor-pointer"
+              "w-full flex items-end text-popover-foreground px-3 ",
+              "gap-1 cursor-pointer text-sm font-medium",
+              "hover:scale-105 active:scale-[0.98] duration-200"
             )}
             onClick={() => navigate({ to: '/' })}
           >
             <Settings size={24} />
-            Settings
+            <span>Settings</span>
           </button>
           <hr className='w-full border-t border-border'/>
           <div className='w-full px-3'>
