@@ -36,6 +36,8 @@ export interface PermissionObjectFinal {
 
 export interface PermissionActionChain {
   and<Token extends string>(action: ValidateAction<Token>): PermissionActionChain;
+  andAnyChild(): PermissionActionChain;
+  andAnyDescendant(): PermissionFinal;
   build(): PermissionResult;
 }
 

@@ -142,6 +142,18 @@ export function permission(): PermissionRoot {
           next.segments[lastIdx].actionParts.push(p);
           return actionChainFor(next);
         },
+        andAnyChild() {
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          next.segments[lastIdx].actionParts.push('*');
+          return actionChainFor(next);
+        },
+        andAnyDescendant() {
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          next.segments[lastIdx].actionParts.push('**');
+          return final(next);
+        },
         build() {
           const next = currentS.clone();
           const domain = next.buildStructured();
