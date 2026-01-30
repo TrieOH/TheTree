@@ -341,7 +341,18 @@ func (handler *SchemaHandler) GetLatestFormByFlow(w http.ResponseWriter, r *http
 	resp.OK().WithData(dto.FormOutputToFormToResponse(form)).Send(w)
 }
 
-// GetSpecificFormByID handles versioned form by UUID
+// GetSpecificFormByID godoc
+// @Summary Get specific form version by schema ID
+// @Description Retrieves a specific version of a form using the schema UUID.
+// @Tags schemas
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema UUID"
+// @Param version path int true "Version Number"
+// @Success 200 {object} dto.FormResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version} [get]
 func (handler *SchemaHandler) GetSpecificFormByID(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -377,7 +388,19 @@ func (handler *SchemaHandler) GetSpecificFormByID(w http.ResponseWriter, r *http
 	resp.OK().WithData(dto.FormOutputToFormToResponse(form)).Send(w)
 }
 
-// GetSpecificFormByFlow handles versioned form by flow lookup
+// GetSpecificFormByFlow godoc
+// @Summary Get specific form version by flow ID
+// @Description Retrieves a specific version of a form using the flow identifier.
+// @Tags schemas
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param version path int true "Version Number"
+// @Param flow_id query string true "Flow ID (e.g., estudante, professor)"
+// @Param schema_type query string false "Schema type" Enums(core, context, sub-context) default(context)
+// @Success 200 {object} dto.FormResponse
+// @Router /projects/{project_id}/schemas/lookup/v{version} [get]
 func (handler *SchemaHandler) GetSpecificFormByFlow(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
