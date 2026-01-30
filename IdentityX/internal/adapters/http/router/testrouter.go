@@ -1,6 +1,7 @@
 package router
 
 import (
+	"GoAuth/internal/application"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -8,8 +9,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func CreateTestRouter(db *pgxpool.Pool) http.Handler {
+func CreateTestRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
 	r := chi.NewRouter()
-	r = registerRoutes(db, r)
-	return r
+	r, app := registerRoutes(db, r)
+	return r, app
 }

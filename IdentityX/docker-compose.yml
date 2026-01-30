@@ -30,6 +30,7 @@ services:
 
       DISABLE_RATE_LIMIT: false
       INCLUDE_DEBUG_CAUSES: ${INCLUDE_DEBUG_CAUSES:-false}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-1d5be275ff0376f9311c564868f7f4ba550753e5e46ad9acfe48fee7fd2de1ba}
 
   go-auth-database:
     image: postgres:18

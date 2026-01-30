@@ -21,4 +21,8 @@ type KeysService interface {
 
 	GetActiveGoAuthSigningKID(ctx context.Context) (string, error)
 	GetActiveProjectSigningKID(ctx context.Context, projectID uuid.UUID) (string, error)
+
+	// --- Management ---
+
+	RevokeKey(ctx context.Context, kid string) error
 }

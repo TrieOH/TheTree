@@ -35,7 +35,7 @@ func main() {
 		}
 	}()
 
-	mux := router.CreateRouter(DB)
+	mux, _ := router.CreateRouter(DB)
 
 	log.Printf("GoAuth listening on :%s", Port)
 	log.Fatal(http.ListenAndServe(":"+Port, mux))

@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"GoAuth/internal/application"
 	"GoAuth/internal/adapters/http/router"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/apierr"
@@ -29,6 +30,7 @@ import (
 // TestSuite manages the entire test environment
 type TestSuite struct {
 	Server *httptest.Server
+	App    *application.Application
 	DB     *pgxpool.Pool
 	t      *testing.T
 }
@@ -65,7 +67,8 @@ func (s *TestSuite) setup() {
 		s.t.Fatalf("DB setup failed: %v", err)
 	}
 
-	r := createTestRouter(s.DB)
+	r, app := createTestRouter(s.DB)
+	s.App = app
 	s.Server = httptest.NewServer(r)
 }
 
@@ -117,6 +120,11 @@ func setupDatabase() (*pgxpool.Pool, error) {
 			}
 			defer zero(priv)
 
+			encryptedPriv, err := crypto.Encrypt(priv)
+			if err != nil {
+				log.Fatalf("failed to encrypt GoAuth key: %v", err)
+			}
+
 			kid := "goauth:" + ulid.Make().String()
 			expiresAt := time.Now().Add(90 * 24 * time.Hour)
 
@@ -126,7 +134,7 @@ func setupDatabase() (*pgxpool.Pool, error) {
 				KeyType:    "goauth",
 				Algorithm:  "EdDSA",
 				PublicKey:  pub,
-				PrivateKey: priv,
+				PrivateKey: encryptedPriv,
 				Usage:      "sign",
 				Status:     "active",
 				ExpiresAt:  expiresAt,
@@ -166,7 +174,7 @@ func setupDatabase() (*pgxpool.Pool, error) {
 	return db, nil
 }
 
-func createTestRouter(db *pgxpool.Pool) http.Handler {
+func createTestRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
 	return router.CreateTestRouter(db)
 }
 

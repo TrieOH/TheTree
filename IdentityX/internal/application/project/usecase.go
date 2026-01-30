@@ -98,6 +98,14 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 	}
 	defer zero(priv)
 
+	encryptedPriv, err := crypto.Encrypt(priv)
+	if err != nil {
+		return nil, apierr.FromService(
+			span,
+			inbounds.ErrGeneratingProjectKeys{Cause: err},
+		)
+	}
+
 	kid := fmt.Sprintf(
 		"project:%s:%s",
 		createdProject.ID.String(),
@@ -110,7 +118,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		KeyType:    key.TypeProject,
 		Algorithm:  key.AlgEdDSA,
 		PublicKey:  pub,
-		PrivateKey: priv,
+		PrivateKey: encryptedPriv,
 		Usage:      key.UsageSign,
 		Status:     key.StatusActive,
 		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
