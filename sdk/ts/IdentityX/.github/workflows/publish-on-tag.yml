@@ -39,4 +39,4 @@ jobs:
       - name: Publish using npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish --access restricted
+        run: npm publish --access public
