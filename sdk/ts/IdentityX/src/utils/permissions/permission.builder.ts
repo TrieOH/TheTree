@@ -8,6 +8,14 @@ class Impl {
   suffix: ObjSuffix = null;
   wildcardOnly = false;
 
+  clone(): Impl {
+    const newImpl = new Impl();
+    newImpl.segments = structuredClone(this.segments);
+    newImpl.suffix = this.suffix;
+    newImpl.wildcardOnly = this.wildcardOnly;
+    return newImpl;
+  }
+
   commitSegment(ns: string, spec: string, actionParts: string[]) {
     this.segments.push({ namespace: ns, specifier: spec, actionParts });
   }
@@ -31,110 +39,125 @@ class Impl {
 
 export function permission(): PermissionRoot {
   const s = new Impl();
-
-  const root: PermissionRoot = {
-    on(namespace, specifier) {
-      const nsStr = namespace as unknown as string;
-      const spStr = specifier as unknown as string;
-      assertNamespace(nsStr);
-      assertSpecifier(spStr);
-      // start a fresh segment but do not commit actionParts yet
-      s.commitSegment(nsStr, spStr, []); // actionParts empty until can(...) is called
-      return objectBuilder();
-    },
-    onAll(namespace) {
-      const nsStr = namespace as unknown as string;
-      assertNamespace(nsStr);
-      s.commitSegment(nsStr, "*", []); // specifier '*' but only via explicit API
-      return objectBuilder();
-    },
-    any() {
-      s.wildcardOnly = true;
-      return final();
-    }
-  };
-
-  function objectBuilder(): PermissionObjectBuilder {
-    return {
+  function createWorkflow(s: Impl): PermissionRoot {
+    const root: PermissionRoot = {
       on(namespace, specifier) {
         const nsStr = namespace as unknown as string;
         const spStr = specifier as unknown as string;
         assertNamespace(nsStr);
         assertSpecifier(spStr);
-        s.commitSegment(nsStr, spStr, []);
-        return objectBuilder();
+
+        const next = s.clone();
+        // start a fresh segment but do not commit actionParts yet
+        next.commitSegment(nsStr, spStr, []); // actionParts empty until can(...) is called
+        return objectBuilder(next);
       },
       onAll(namespace) {
         const nsStr = namespace as unknown as string;
         assertNamespace(nsStr);
-        s.commitSegment(nsStr, "*", []);
-        return objectBuilder();
+
+        const next = s.clone();
+        next.commitSegment(nsStr, "*", []); // specifier '*' but only via explicit API
+        return objectBuilder(next);
       },
-      forAnyChild() {
-        if (s.suffix) throw new Error("Suffix already set");
-        s.suffix = '*';
-        return objectFinal();
-      },
-      forAnyDescendant() {
-        if (s.suffix) throw new Error("Suffix already set");
-        s.suffix = '**';
-        return objectFinal();
-      },
-      done() {
-        return objectFinal();
+      any() {
+        const next = s.clone();
+        next.wildcardOnly = true;
+        return final(next);
       }
     };
-  }
 
-  function objectFinal(): PermissionObjectFinal {
-    return {
-      can(action) {
-        const a = action as unknown as string;
-        // validate first token
-        const parts = a.split(':').filter(Boolean);
-        if (parts.length === 0) throw new Error("Action must be non-empty");
-        assertActionPart(parts[0]);
-        // store into the last committed segment's actionParts
-        const lastIdx = s.segments.length - 1;
-        if (lastIdx < 0) throw new Error("No object segment to attach action to");
-        // push initial parts
-        s.segments[lastIdx].actionParts = parts.slice();
-        return actionChainFor();
-      },
-      canAnyAction() {
-        // set actionParts = ['*'] on last segment and finalize
-        const lastIdx = s.segments.length - 1;
-        if (lastIdx < 0) throw new Error("No object segment to attach action to");
-        s.segments[lastIdx].actionParts = ['*'];
-        return final();
-      }
-    };
-  }
+    function objectBuilder(currentS: Impl): PermissionObjectBuilder {
+      return {
+        on(namespace, specifier) {
+          const nsStr = namespace as unknown as string;
+          const spStr = specifier as unknown as string;
+          assertNamespace(nsStr);
+          assertSpecifier(spStr);
+          const next = currentS.clone();
+          next.commitSegment(nsStr, spStr, []);
+          return objectBuilder(next);
+        },
+        onAll(namespace) {
+          const nsStr = namespace as unknown as string;
+          assertNamespace(nsStr);
 
-  function actionChainFor(): PermissionActionChain {
-    return {
-      and(part) {
-        const p = part as unknown as string;
-        assertActionPart(p);
-        const lastIdx = s.segments.length - 1;
-        s.segments[lastIdx].actionParts.push(p);
-        return actionChainFor();
-      },
-      build() {
-        const domain = s.buildStructured();
-        return new PermissionResult(domain);
-      }
-    };
-  }
+          const next = currentS.clone();
+          next.commitSegment(nsStr, "*", []);
+          return objectBuilder(next);
+        },
+        forAnyChild() {
+          const next = currentS.clone();
+          if (next.suffix) throw new Error("Suffix already set");
+          next.suffix = '*';
+          return objectFinal(next);
+        },
+        forAnyDescendant() {
+          const next = currentS.clone();
+          if (next.suffix) throw new Error("Suffix already set");
+          next.suffix = '**';
+          return objectFinal(next);
+        },
+        done() {
+          return objectFinal(currentS.clone());
+        }
+      };
+    }
 
-  function final(): PermissionFinal {
-    return {
-      build() {
-        const domain = s.buildStructured();
-        return new PermissionResult(domain);
-      }
-    };
-  }
+    function objectFinal(currentS: Impl): PermissionObjectFinal {
+      return {
+        can(action) {
+          const a = action as unknown as string;
+          // validate first token
+          const parts = a.split(':').filter(Boolean);
+          if (parts.length === 0) throw new Error("Action must be non-empty");
+          assertActionPart(parts[0]);
 
-  return root;
+          // store into the last committed segment's actionParts
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          // push initial parts
+          next.segments[lastIdx].actionParts = parts.slice();
+          return actionChainFor(next);
+        },
+        canAnyAction() {
+          // set actionParts = ['*'] on last segment and finalize
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          next.segments[lastIdx].actionParts = ['*'];
+          return final(next);
+        }
+      };
+    }
+
+    function actionChainFor(currentS: Impl): PermissionActionChain {
+      return {
+        and(part) {
+          const p = part as unknown as string;
+          assertActionPart(p);
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          next.segments[lastIdx].actionParts.push(p);
+          return actionChainFor(next);
+        },
+        build() {
+          const next = currentS.clone();
+          const domain = next.buildStructured();
+          return new PermissionResult(domain);
+        }
+      };
+    }
+
+    function final(currentS: Impl): PermissionFinal {
+      return {
+        build() {
+          return new PermissionResult(currentS.buildStructured());
+        }
+      };
+    }
+    return root;
+  }
+  return createWorkflow(new Impl());
 }
