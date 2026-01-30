@@ -2,6 +2,7 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"context"
 	"net/http"
 	"testing"
 )
@@ -135,15 +136,17 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		client := suite.NewClient(t)
 		user := client.WithCredentials("expired@mail.com", ValidPassword).Register().Login()
 
+		ctx := context.Background()
+
 		// Manually insert an expired session for this user
 		var userID string
-		err := suite.DB.QueryRow("SELECT id FROM users WHERE email = 'expired@mail.com'").Scan(&userID)
+		err := suite.DB.QueryRow(ctx, "SELECT id FROM users WHERE email = 'expired@mail.com'").Scan(&userID)
 		if err != nil {
 			t.Fatalf("Failed to get user ID: %v", err)
 		}
 
 		var identityID string
-		err = suite.DB.QueryRow(`
+		err = suite.DB.QueryRow(ctx, `
 			INSERT INTO identities (type, entity_id)
 			VALUES ('client', $1)
 			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
@@ -153,7 +156,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			t.Fatalf("Failed to create session identity: %v", err)
 		}
 
-		_, err = suite.DB.Exec(`
+		_, err = suite.DB.Exec(ctx, `
 			INSERT INTO sessions (
 				identity_id, issued_at, user_agent, user_ip, expires_at, created_at, updated_at, user_type
 			) VALUES (
@@ -187,15 +190,17 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		client := suite.NewClient(t)
 		user := client.WithCredentials("revoked@mail.com", ValidPassword).Register().Login()
 
+		ctx := context.Background()
+
 		// Manually insert a revoked session for this user
 		var userID string
-		err := suite.DB.QueryRow("SELECT id FROM users WHERE email = 'revoked@mail.com'").Scan(&userID)
+		err := suite.DB.QueryRow(ctx, "SELECT id FROM users WHERE email = 'revoked@mail.com'").Scan(&userID)
 		if err != nil {
 			t.Fatalf("Failed to get user ID: %v", err)
 		}
 
 		var identityID string
-		err = suite.DB.QueryRow(`
+		err = suite.DB.QueryRow(ctx, `
 			INSERT INTO identities (type, entity_id)
 			VALUES ('client', $1)
 			ON CONFLICT (type, entity_id) DO UPDATE SET type = 'client'
@@ -205,7 +210,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 			t.Fatalf("Failed to create session identity: %v", err)
 		}
 
-		_, err = suite.DB.Exec(`
+		_, err = suite.DB.Exec(ctx, `
 			INSERT INTO sessions (
 				identity_id, issued_at, user_agent, user_ip, revoked_at, created_at, updated_at, expires_at, user_type
 			) VALUES (

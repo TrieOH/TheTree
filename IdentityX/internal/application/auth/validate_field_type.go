@@ -6,18 +6,44 @@ import (
 	"encoding/json"
 	"math"
 
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
-// FIXME: Implement other field types when they are implemented in the API.
-// Currently, types like 'email', 'select', 'radio', 'checkbox' will always return false,
-// making them unusable for project user registration.
-func validateFieldValue(fieldType field.Type, value any) bool {
+var validate = validator.New()
+
+func isValidEmail(email string) bool {
+	// Uses RFC 5322 compliant validation with internationalized email support
+	return validate.Var(email, "required,email") == nil
+}
+
+// validateFieldValue validates a value against field type and options
+func validateFieldValue(f field.Field, value any) bool {
+	// First check basic type validation
+	if !validateFieldType(f.Type, value) {
+		return false
+	}
+
+	// For option types (select, radio, checkbox), validate the value is allowed
+	if f.Type.IsOptionType() {
+		return validateOptionValue(f, value)
+	}
+
+	return true
+}
+
+func validateFieldType(fieldType field.Type, value any) bool {
 	switch fieldType {
 
 	case field.String:
 		_, ok := value.(string)
 		return ok
+	case field.Email:
+		str, ok := value.(string)
+		if !ok {
+			return false
+		}
+		return isValidEmail(str)
 
 	case field.Bool:
 		_, ok := value.(bool)
@@ -41,16 +67,13 @@ func validateFieldValue(fieldType field.Type, value any) bool {
 			}
 			return true
 		case float64:
-			// Reject special float values
 			if math.IsNaN(v) || math.IsInf(v, 0) {
 				return false
 			}
-			// JSON numbers default to float64
 			if math.Trunc(v) != v {
 				return false
 			}
-			// Check if within int64 range (with safer bounds accounting for float64 precision)
-			const maxSafeInt64 float64 = 1<<53 - 1 // 2^53 - 1, largest precise integer in float64
+			const maxSafeInt64 float64 = 1<<53 - 1
 			const minSafeInt64 float64 = -(1 << 53)
 			if v > maxSafeInt64 || v < minSafeInt64 {
 				logs.L().Debug(
@@ -67,7 +90,77 @@ func validateFieldValue(fieldType field.Type, value any) bool {
 			return false
 		}
 
+	// FIXME implement multiple select
+	case field.Select, field.Radio:
+		// These should be string values (single selection)
+		_, ok := value.(string)
+		return ok
+
+	case field.Checkbox:
+		// FIXME implement checkbox correctly (single check or list)
+		// Checkbox is an array of bools
+		switch value.(type) {
+		case bool:
+			return true
+		case []any, []string:
+			return true
+		default:
+			return false
+		}
+
 	default:
 		return false
 	}
+}
+
+// validateOptionValue checks if the submitted value is in the allowed options
+func validateOptionValue(f field.Field, value any) bool {
+	if len(f.Options) == 0 {
+		return false
+	}
+
+	// Build allowed set
+	allowed := make(map[string]bool)
+	for _, opt := range f.Options {
+		allowed[opt.Value] = true
+	}
+
+	switch f.Type {
+	case field.Select, field.Radio:
+		strVal, ok := value.(string)
+		if !ok {
+			return false
+		}
+		return allowed[strVal]
+
+	case field.Checkbox:
+		// Handle array of values for multi-checkbox
+		switch v := value.(type) {
+		case []any:
+			for _, item := range v {
+				strItem, ok := item.(string)
+				if !ok || !allowed[strItem] {
+					return false
+				}
+			}
+			return len(v) > 0 // Must select at least one
+		case []string:
+			for _, item := range v {
+				if !allowed[item] {
+					return false
+				}
+			}
+			return len(v) > 0
+		case string:
+			// Single checkbox as string value
+			return allowed[v]
+		case bool:
+			// Boolean checkbox (true/false type)
+			return true
+		default:
+			return false
+		}
+	}
+
+	return false
 }

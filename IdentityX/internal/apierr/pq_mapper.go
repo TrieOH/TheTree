@@ -1,9 +1,11 @@
 package apierr
 
-import "github.com/lib/pq"
+import (
+	"github.com/jackc/pgx/v5/pgconn"
+)
 
-func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
-	switch pqErr.Constraint {
+func fromUniqueViolation(pgErr *pgconn.PgError, cause error) *Error {
+	switch pgErr.ConstraintName {
 
 	case "one_version_draft_per_schema":
 		return ErrConflict.
@@ -55,8 +57,8 @@ func fromUniqueViolation(pqErr *pq.Error, cause error) *Error {
 	}
 }
 
-func fromCheckViolation(pqErr *pq.Error, cause error) *Error {
-	switch pqErr.Constraint {
+func fromCheckViolation(pgErr *pgconn.PgError, cause error) *Error {
+	switch pgErr.ConstraintName {
 
 	case "schema_fields_key_check":
 		return ErrInvalidInput.

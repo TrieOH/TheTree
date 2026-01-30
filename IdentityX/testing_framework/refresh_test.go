@@ -2,6 +2,7 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"context"
 	"net/http"
 	"sync"
 	"testing"
@@ -65,7 +66,8 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		refreshToken := user.auth.RefreshToken
 
 		// Manually revoke the session in the database
-		_, err := suite.DB.Exec(`
+		ctx := context.Background()
+		_, err := suite.DB.Exec(ctx, `
 			UPDATE sessions 
 			SET revoked_at = NOW() 
 			WHERE token_id = (

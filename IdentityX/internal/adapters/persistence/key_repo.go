@@ -7,9 +7,9 @@ import (
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -32,7 +32,7 @@ func NewKeyRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) outbounds
 }
 
 func (repo *keyRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(transactions.TxKeyValue).(*sql.Tx); ok && tx != nil {
+	if tx, ok := ctx.Value(transactions.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q

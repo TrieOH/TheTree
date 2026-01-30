@@ -9,16 +9,16 @@ import (
 	"GoAuth/internal/application"
 	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/infrastructure/telemetry"
-	"database/sql"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 )
 
-func registerRoutes(db *sql.DB, r *chi.Mux) *chi.Mux {
+func registerRoutes(db *pgxpool.Pool, r *chi.Mux) *chi.Mux {
 	queries := sqlc.New(db)
 	txRunner := transactions.NewTxRunner(db)
 	tracer := otel.Tracer(string(telemetry.GoAuthTracer))
@@ -136,14 +136,21 @@ func registerSchemaRoutes(
 			r.Get("/", schemas.List)
 			r.Get("/ids", schemas.GetIDsFromProjectID)
 			r.Get("/{schema_id}", schemas.GetByID)
-			/* r.With(
-				middleware.DefaultQueryParam("schema_type", "context"),
-				middleware.DefaultQueryParam("flow_id", "none"),
-			).Get("/{schema_id}/latest", schemas.GetLatestForm)
+
+			// UUID-based form routes (schema_id must be valid UUID)
+			r.Get("/{schema_id}/latest", schemas.GetLatestFormByID)
+			r.Get("/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificFormByID)
+
+			// Flow-based lookup form routes (query params required)
 			r.With(
 				middleware.DefaultQueryParam("schema_type", "context"),
-				middleware.DefaultQueryParam("flow_id", "none"),
-			).Get("/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificForm) */
+				middleware.RequireQueryParams("flow_id"),
+			).Get("/lookup/latest", schemas.GetLatestFormByFlow)
+			r.With(
+				middleware.DefaultQueryParam("schema_type", "context"),
+				middleware.RequireQueryParams("flow_id"),
+			).Get("/lookup/v{version:[0-9]+}", schemas.GetSpecificFormByFlow)
+
 			r.Get("/{schema_id}/verbose", schemas.GetVerbose)
 			r.Post("/{schema_id}/publish", schemas.Publish)
 		})

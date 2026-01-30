@@ -2,6 +2,7 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"encoding/json"
 	"net/http"
 	"testing"
 )
@@ -241,8 +242,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field not defined in schema: valor").
-			TraceContains("field not defined in schema: bing")
+			HasMessage("error validating fields for schema register")
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeStringOnInt", func(t *testing.T) {
@@ -258,7 +258,12 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"periodo\" expects type int, got string")
+			HasMessage("error validating fields for schema register").
+			TraceContains(
+				"invalid value for field 'periodo' of type int",
+				"Missing required field: matricula",
+				"Missing required field: curso",
+			)
 	})
 
 	t.Run("RegisterOnSchemaWrongTypeIntOnString", func(t *testing.T) {
@@ -274,7 +279,12 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"matricula\" expects type string, got float64")
+			HasMessage("error validating fields for schema register").
+			TraceContains(
+				"invalid value for field 'matricula' of type string",
+				"Missing required field: curso",
+				"Missing required field: periodo",
+			)
 	})
 
 	t.Run("RegisterOnSchemaTypeFloatOnInt", func(t *testing.T) {
@@ -292,7 +302,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"periodo\" expects type int, got float64")
+			HasMessage("error validating fields for schema register").
+			TraceContains("invalid value for field 'periodo' of type int")
 	})
 
 	t.Run("RegisterOnSchemaTypeStringOnBool", func(t *testing.T) {
@@ -311,7 +322,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"ativo\" expects type bool, got string")
+			TraceContains("invalid value for field 'ativo' of type bool")
 	})
 
 	t.Run("RegisterOnSchemaTypeIntOnBool", func(t *testing.T) {
@@ -330,7 +341,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"ativo\" expects type bool, got float64")
+			TraceContains("invalid value for field 'ativo' of type bool")
 	})
 
 	t.Run("RegisterOnSchemaTypeBoolOnString", func(t *testing.T) {
@@ -346,7 +357,12 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.FieldValidationErrSchemaRegister).
-			TraceContains("field \"matricula\" expects type string, got bool")
+			HasMessage("error validating fields for schema register").
+			TraceContains(
+				"invalid value for field 'matricula' of type string",
+				"Missing required field: curso",
+				"Missing required field: periodo",
+			)
 	})
 
 	t.Run("RegisterOnSchemaTypeFloatZeroOnInt", func(t *testing.T) {
@@ -483,8 +499,8 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					"custom_fields": map[string]interface{}{},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaNoPublishedVersion).
-				HasMessage("schema has no published version")
+				HasErrID(apierr.ProjectUserRegisterOnSchemaNoVersion).
+				HasMessage("can't register on a schema that has no published version")
 		})
 
 		// 2. Create a version but don't publish it
@@ -593,22 +609,472 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusOK)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaIDU + "/publish").
 			Expect(http.StatusOK)
+	})
 
-		t.Run("RegisterFailsDueToUnimplementedType", func(t *testing.T) {
-			// This will fail because validateFieldType defaults to false for 'email'
-			clientU.POST("/projects/"+projectID+"/register").
-				WithQuery("schema_type", "context").
-				WithQuery("flow_id", "emailsync").
-				WithBody(map[string]interface{}{
-					"email":    "user@unimplemented.com",
-					"password": ValidPassword,
-					"custom_fields": map[string]interface{}{
-						"contact": "test@example.com",
+	// ============================================
+	// AMPLIFIED TESTS - Extended Coverage
+	// ============================================
+
+	amplifiedClient := suite.NewClient(t)
+	amplifiedUser := amplifiedClient.WithCredentials("amplified_schemas@mail.com", ValidPassword).
+		Register().
+		Login().
+		CreateProject("Amplified Schema Testing")
+
+	ampProjectID := amplifiedUser.projectID
+	var ampSchemaID string
+	var ampVersionID string
+
+	t.Run("AmplifiedDraftSchema", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(amplifiedUser.auth)
+		data := authClient.POST("/projects/" + ampProjectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "Registration with Options",
+				"flow_id":     "registration-v2",
+			}).
+			Expect(http.StatusCreated).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id": StoreString{Into: &ampSchemaID, Matcher: AnyUUID{}},
+		}
+		Validate(t, data, spec)
+	})
+
+	t.Run("AmplifiedDraftVersion", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(amplifiedUser.auth)
+		data := authClient.POST("/projects/" + ampProjectID + "/schemas/" + ampSchemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			RequireDataValue()
+
+		spec := map[string]interface{}{
+			"id": StoreString{Into: &ampVersionID, Matcher: AnyUUID{}},
+		}
+		Validate(t, data, spec)
+	})
+
+	t.Run("AmplifiedCreateFieldsWithOptionsAndRules", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(amplifiedUser.auth)
+		authClient.POST("/projects/" + ampProjectID + "/schemas/" + ampSchemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":         "name",
+						"type":        "string",
+						"owner":       "user",
+						"title":       "Nome Completo",
+						"description": "Seu nome completo",
+						"required":    true,
+						"mutable":     true,
+						"position":    0,
 					},
-				}).
-				Expect(http.StatusBadRequest).
-				HasErrID(apierr.FieldValidationErrSchemaRegister).
-				TraceContains("field \"contact\" expects type email, got string")
-		})
+					map[string]interface{}{
+						"key":      "email",
+						"type":     "email",
+						"owner":    "user",
+						"title":    "Email",
+						"required": true,
+						"mutable":  true,
+						"position": 1,
+					},
+					// Select field with options
+					map[string]interface{}{
+						"key":      "user_type",
+						"type":     "select",
+						"owner":    "user",
+						"title":    "Tipo de Usuário",
+						"required": true,
+						"mutable":  true,
+						"position": 2,
+						"options": []interface{}{
+							map[string]interface{}{"value": "student", "label": "Estudante", "position": 0},
+							map[string]interface{}{"value": "teacher", "label": "Professor", "position": 1},
+							map[string]interface{}{"value": "staff", "label": "Funcionário", "position": 2},
+						},
+					},
+					// Bool field that other fields depend on
+					map[string]interface{}{
+						"key":      "is_active",
+						"type":     "bool",
+						"owner":    "user",
+						"title":    "Está Ativo?",
+						"required": false,
+						"mutable":  true,
+						"position": 3,
+						"default_value": func() *json.RawMessage {
+							b := json.RawMessage("true")
+							return &b
+						}(),
+					},
+					// Field with visibility rule (only visible if user_type == "student")
+					// NOTE: required=false, so visible but optional
+					map[string]interface{}{
+						"key":      "student_id",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "RA do Aluno",
+						"required": false,
+						"mutable":  true,
+						"position": 4,
+						"visibility_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "user_type",
+								"operator":             "equals",
+								"value":                "student",
+							},
+						},
+					},
+					// Field with required rule (required if is_active == true)
+					map[string]interface{}{
+						"key":      "activation_date",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Data de Ativação",
+						"required": false,
+						"mutable":  true,
+						"position": 5,
+						"required_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "is_active",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+					},
+					// Radio field with options
+					map[string]interface{}{
+						"key":      "shift",
+						"type":     "radio",
+						"owner":    "user",
+						"title":    "Turno",
+						"required": false,
+						"mutable":  true,
+						"position": 6,
+						"options": []interface{}{
+							map[string]interface{}{"value": "morning", "label": "Matutino", "position": 0},
+							map[string]interface{}{"value": "afternoon", "label": "Vespertino", "position": 1},
+							map[string]interface{}{"value": "night", "label": "Noturno", "position": 2},
+						},
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("created fields")
+	})
+
+	t.Run("AmplifiedPublish", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(amplifiedUser.auth)
+		authClient.POST("/projects/" + ampProjectID + "/schemas/" + ampSchemaID + "/versions/publish").
+			Expect(http.StatusOK)
+		authClient.POST("/projects/" + ampProjectID + "/schemas/" + ampSchemaID + "/publish").
+			Expect(http.StatusOK)
+	})
+
+	// Options validation tests
+	t.Run("AmplifiedInvalidOptionValue", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "invalid_option@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "John Doe",
+					"email":     "john@test.com",
+					"user_type": "invalid_type",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("invalid value for field 'user_type'")
+	})
+
+	t.Run("AmplifiedCaseSensitiveOption", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "case_sensitive@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "John Doe",
+					"email":     "john@test.com",
+					"user_type": "STUDENT",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("invalid value for field 'user_type'")
+	})
+
+	t.Run("AmplifiedValidOptionSuccess", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "valid_option@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "John Doe",
+					"email":     "john@test.com",
+					"user_type": "student",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	// Visibility rules tests
+	t.Run("AmplifiedVisibilityRuleHiddenFieldMissing", func(t *testing.T) {
+		// user_type = "teacher", so student_id is hidden (not visible)
+		// Hidden fields are ignored, so missing student_id is OK
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "hidden_field@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Jane Doe",
+					"email":     "jane@test.com",
+					"user_type": "teacher",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	t.Run("AmplifiedVisibilityRuleVisibleButOptional", func(t *testing.T) {
+		// user_type = "student", student_id is visible
+		// But student_id has required=false, so it's optional even when visible
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "visible_optional@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Student Optional",
+					"email":     "optional@test.com",
+					"user_type": "student",
+					// student_id is visible but optional (required=false)
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	// Required rules tests
+	t.Run("AmplifiedRequiredRuleBasic", func(t *testing.T) {
+		// is_active=true triggers required rule for activation_date
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "req_rule_triggered@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Active No Date",
+					"email":     "activenodate@test.com",
+					"user_type": "staff",
+					"is_active": true,
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("Missing required field: activation_date")
+	})
+
+	t.Run("AmplifiedRequiredRuleSatisfied", func(t *testing.T) {
+		// is_active=true + activation_date provided = OK
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "req_rule_satisfied@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":            "Active With Date",
+					"email":           "activewithdate@test.com",
+					"user_type":       "staff",
+					"is_active":       true,
+					"activation_date": "2024-01-15",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	t.Run("AmplifiedRequiredRuleNotTriggered", func(t *testing.T) {
+		// is_active=false, required rule NOT triggered
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "req_rule_not_triggered@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Inactive User",
+					"email":     "inactive@test.com",
+					"user_type": "staff",
+					"is_active": false,
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	t.Run("AmplifiedRequiredRuleBothMissing", func(t *testing.T) {
+		// Both is_active and activation_date missing = OK
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "both_missing@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Partial User",
+					"email":     "partial@test.com",
+					"user_type": "teacher",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	// Radio field tests
+	t.Run("AmplifiedRadioInvalidValue", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "radio_invalid@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Radio User",
+					"email":     "radio@test.com",
+					"user_type": "student",
+					"shift":     "weekend",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("invalid value for field 'shift'")
+	})
+
+	t.Run("AmplifiedRadioValidValue", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "radio_valid@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Radio User",
+					"email":     "radio2@test.com",
+					"user_type": "teacher",
+					"shift":     "night",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	// Email validation tests
+	t.Run("AmplifiedEmailInvalidFormat", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "valid@example.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "Invalid Email User",
+					"email":     "not-an-email",
+					"user_type": "student",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("invalid value for field 'email'")
+	})
+
+	t.Run("AmplifiedEmailMissingAt", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "valid2@example.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":      "No At User",
+					"email":     "invalidemail.com",
+					"user_type": "teacher",
+				},
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			TraceContains("invalid value for field 'email'")
+	})
+
+	t.Run("AmplifiedEmailValidSuccess", func(t *testing.T) {
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "valid_email_test@example.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":       "Valid Email User",
+					"email":      "user@company.com",
+					"user_type":  "student",
+					"student_id": "2023005001",
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	// Edge cases
+	t.Run("AmplifiedExtraFieldsIgnored", func(t *testing.T) {
+		// Unknown fields should be silently ignored
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "extra_ignored@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":          "Extra Fields",
+					"email":         "extra@test.com",
+					"user_type":     "teacher",
+					"unknown_field": "should be ignored",
+					"another_extra": 123,
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
+	})
+
+	t.Run("AmplifiedNullOptionalFields", func(t *testing.T) {
+		// Null values for optional fields = treated as "not provided"
+		amplifiedClient.POST("/projects/"+ampProjectID+"/register").
+			WithQuery("schema_type", "context").
+			WithQuery("flow_id", "registration-v2").
+			WithBody(map[string]interface{}{
+				"email":    "null_optional@test.com",
+				"password": ValidPassword,
+				"custom_fields": map[string]interface{}{
+					"name":            "Null User",
+					"email":           "null@test.com",
+					"user_type":       "staff",
+					"is_active":       nil,
+					"activation_date": nil,
+					"shift":           nil,
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Registered user")
 	})
 }

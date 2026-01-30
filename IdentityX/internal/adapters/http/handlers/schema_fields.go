@@ -85,7 +85,17 @@ func (handler *SchemaFieldsHandler) Create(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if res.Warnings != nil {
+		response := resp.Created("created fields with warnings").
+			WithData(dto.OutputFieldSliceToFieldResponseSlice(res.Fields))
+		for _, warning := range res.Warnings {
+			response.AddTrace(warning)
+		}
+		response.Send(w)
+		return
+	}
+
 	resp.Created("created fields").
-		WithData(dto.OutputFieldSliceToFieldResponseSlice(res)).
+		WithData(dto.OutputFieldSliceToFieldResponseSlice(res.Fields)).
 		Send(w)
 }

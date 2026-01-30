@@ -157,3 +157,11 @@ type ErrFailedToRetrieveJWKS struct {
 func (e ErrFailedToRetrieveJWKS) Error() string {
 	return "failed to retrieve JWKS"
 }
+
+type ErrSchemaRegisterValidation struct {
+	Errors []string
+}
+
+func (e ErrSchemaRegisterValidation) Error() string {
+	return "error validating fields for schema register"
+}

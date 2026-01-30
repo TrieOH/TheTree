@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Type string
@@ -58,7 +60,7 @@ type Schema struct {
 
 func (s Schema) CanRegister() error {
 	if s.CurrentVersionID == nil {
-		return ErrSchemaNoPublishedVersion{}
+		return ErrRegisterSchemaNoPublishedVersion{}
 	}
 	if s.Status == StatusDraft {
 		return ErrRegisterOnSchemaDraft{}
@@ -71,4 +73,38 @@ func (s Schema) CanRegister() error {
 
 func (s Schema) IsVersion(versionID uuid.UUID) bool {
 	return s.CurrentVersionID != nil && *s.CurrentVersionID == versionID
+}
+
+type DiffResult struct {
+	FieldsChanged          *bool `json:"fields_changed"`
+	OptionsChanged         *bool `json:"options_changed"`
+	VisibilityRulesChanged *bool `json:"visibility_rules_changed"`
+	RequiredRulesChanged   *bool `json:"required_rules_changed"`
+}
+
+func (r DiffResult) HasAnyChanges() bool {
+	return isTrue(r.FieldsChanged) ||
+		isTrue(r.OptionsChanged) ||
+		isTrue(r.VisibilityRulesChanged) ||
+		isTrue(r.RequiredRulesChanged)
+}
+
+func isTrue(b *bool) bool {
+	return b != nil && *b
+}
+
+func (r DiffResult) Annotate(span trace.Span) {
+	if r.FieldsChanged != nil {
+		span.SetAttributes(attribute.Bool("fields_changed", *r.FieldsChanged))
+	}
+	if r.OptionsChanged != nil {
+		span.SetAttributes(attribute.Bool("options_changed", *r.OptionsChanged))
+	}
+	if r.VisibilityRulesChanged != nil {
+		span.SetAttributes(attribute.Bool("visibility_rules_changed", *r.VisibilityRulesChanged))
+	}
+	if r.RequiredRulesChanged != nil {
+		span.SetAttributes(attribute.Bool("required_rules_changed", *r.RequiredRulesChanged))
+	}
+	span.SetAttributes(attribute.Bool("has_any_changes", r.HasAnyChanges()))
 }

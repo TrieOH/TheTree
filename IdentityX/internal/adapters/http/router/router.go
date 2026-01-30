@@ -4,7 +4,6 @@ package router
 
 import (
 	"GoAuth/internal/adapters/http/middleware"
-	"database/sql"
 	"log"
 	"net/http"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -50,7 +50,7 @@ import (
 // @response 413 {object} handlers.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} handlers.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(db *sql.DB) http.Handler {
+func CreateRouter(db *pgxpool.Pool) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(chimiddleware.Recoverer)

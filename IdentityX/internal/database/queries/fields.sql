@@ -33,6 +33,35 @@ WHERE
   AND sv.status = 'draft'
     RETURNING *;
 
+-- name: CreateSchemaFieldsBatch :copyfrom
+INSERT INTO schema_fields (
+    schema_id,
+    schema_version_id,
+    key,
+    type,
+    owner,
+    title,
+    description,
+    placeholder,
+    required,
+    mutable,
+    default_value,
+    position
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12
+ );
+
 -- name: GetFieldsByVersionID :many
 SELECT *
 FROM schema_fields
@@ -138,3 +167,231 @@ draft_fields AS (
         SELECT * FROM base_fields
     )
 ) AS has_changes;
+
+-- name: DiffVersionFieldsFull :one
+WITH
+    base_fields AS (
+        SELECT
+            id, key, type, owner, title, description,
+    placeholder, required, mutable, default_value, position
+FROM schema_fields
+WHERE schema_version_id = sqlc.arg(base_version_id)::UUID
+    ),
+    draft_fields AS (
+SELECT
+    id, key, type, owner, title, description,
+    placeholder, required, mutable, default_value, position
+FROM schema_fields
+WHERE schema_version_id = sqlc.arg(draft_version_id)::UUID
+    ),
+    base_opts AS (
+SELECT
+    f.id as field_stable_id,
+    opt.value, opt.label, opt.position
+FROM schema_field_options opt
+    JOIN schema_fields f ON f.object_id = opt.field_id
+WHERE f.schema_version_id = sqlc.arg(base_version_id)::UUID
+    ),
+    draft_opts AS (
+SELECT
+    f.id as field_stable_id,
+    opt.value, opt.label, opt.position
+FROM schema_field_options opt
+    JOIN schema_fields f ON f.object_id = opt.field_id
+WHERE f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+    ),
+    base_vis AS (
+SELECT
+    f.id as field_stable_id,
+    dep_f.id as depends_on_stable_id,
+    vr.operator, vr.value
+FROM schema_field_visibility_rules vr
+    JOIN schema_fields f ON f.object_id = vr.field_id
+    JOIN schema_fields dep_f ON dep_f.object_id = vr.depends_on_field_id
+WHERE f.schema_version_id = sqlc.arg(base_version_id)::UUID
+  AND dep_f.schema_version_id = sqlc.arg(base_version_id)::UUID
+    ),
+    draft_vis AS (
+SELECT
+    f.id as field_stable_id,
+    dep_f.id as depends_on_stable_id,
+    vr.operator, vr.value
+FROM schema_field_visibility_rules vr
+    JOIN schema_fields f ON f.object_id = vr.field_id
+    JOIN schema_fields dep_f ON dep_f.object_id = vr.depends_on_field_id
+WHERE f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+  AND dep_f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+    ),
+    base_req AS (
+SELECT
+    f.id as field_stable_id,
+    dep_f.id as depends_on_stable_id,
+    rr.operator, rr.value
+FROM schema_field_required_rules rr
+    JOIN schema_fields f ON f.object_id = rr.field_id
+    JOIN schema_fields dep_f ON dep_f.object_id = rr.depends_on_field_id
+WHERE f.schema_version_id = sqlc.arg(base_version_id)::UUID
+  AND dep_f.schema_version_id = sqlc.arg(base_version_id)::UUID
+    ),
+    draft_req AS (
+SELECT
+    f.id as field_stable_id,
+    dep_f.id as depends_on_stable_id,
+    rr.operator, rr.value
+FROM schema_field_required_rules rr
+    JOIN schema_fields f ON f.object_id = rr.field_id
+    JOIN schema_fields dep_f ON dep_f.object_id = rr.depends_on_field_id
+WHERE f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+  AND dep_f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+    )
+SELECT
+    (EXISTS(SELECT 1 FROM (SELECT * FROM base_fields EXCEPT SELECT * FROM draft_fields) x)
+        OR EXISTS(SELECT 1 FROM (SELECT * FROM draft_fields EXCEPT SELECT * FROM base_fields) x))
+        as fields_changed,
+
+    (EXISTS(SELECT 1 FROM (SELECT * FROM base_opts EXCEPT SELECT * FROM draft_opts) x)
+        OR EXISTS(SELECT 1 FROM (SELECT * FROM draft_opts EXCEPT SELECT * FROM base_opts) x))
+        as options_changed,
+
+    (EXISTS(SELECT 1 FROM (SELECT * FROM base_vis EXCEPT SELECT * FROM draft_vis) x)
+        OR EXISTS(SELECT 1 FROM (SELECT * FROM draft_vis EXCEPT SELECT * FROM base_vis) x))
+        as visibility_rules_changed,
+
+    (EXISTS(SELECT 1 FROM (SELECT * FROM base_req EXCEPT SELECT * FROM draft_req) x)
+        OR EXISTS(SELECT 1 FROM (SELECT * FROM draft_req EXCEPT SELECT * FROM base_req) x))
+        as required_rules_changed;
+
+-- /////////////////////////////// --
+-- //// -- FIELD OPTIONS -- //// --
+-- /////////////////////////////// --
+
+-- name: CreateFieldOption :one
+INSERT INTO schema_field_options (
+    field_id,
+    value,
+    label,
+    position
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
+-- name: CreateFieldOptionsBatch :copyfrom
+INSERT INTO schema_field_options (field_id, value, label, position)
+VALUES ($1, $2, $3, $4);
+
+-- name: GetFieldOptions :many
+SELECT *
+FROM schema_field_options
+WHERE field_id = ANY($1::uuid[])
+ORDER BY field_id, position;
+
+-- name: DeleteFieldOptions :exec
+DELETE FROM schema_field_options
+WHERE field_id = $1;
+
+-- name: CloneFieldOptions :execrows
+INSERT INTO schema_field_options (field_id, value, label, position)
+SELECT
+    dst.object_id, -- new field's object_id
+    src_opt.value,
+    src_opt.label,
+    src_opt.position
+FROM schema_field_options src_opt
+-- Get stable id from source field
+         JOIN schema_fields src_f ON src_f.object_id = src_opt.field_id
+-- Get new object_id from destination field with same stable id
+         JOIN schema_fields dst ON dst.id = src_f.id
+    AND dst.schema_version_id = sqlc.arg(draft_version_id)::UUID
+WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
+
+-- /////////////////////////////// --
+-- //// -- VISIBILITY RULES -- //// --
+-- /////////////////////////////// --
+
+-- name: CreateVisibilityRule :one
+INSERT INTO schema_field_visibility_rules (
+    field_id,
+    depends_on_field_id,
+    operator,
+    value
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
+-- name: CreateVisibilityRulesBatch :copyfrom
+INSERT INTO schema_field_visibility_rules (field_id, depends_on_field_id, operator, value)
+VALUES ($1, $2, $3, $4);
+
+-- name: GetFieldVisibilityRules :many
+SELECT *
+FROM schema_field_visibility_rules
+WHERE field_id = ANY($1::uuid[])
+ORDER BY field_id, created_at;
+
+-- name: DeleteVisibilityRules :exec
+DELETE FROM schema_field_visibility_rules
+WHERE field_id = $1;
+
+-- name: CloneVisibilityRules :execrows
+INSERT INTO schema_field_visibility_rules (field_id, depends_on_field_id, operator, value)
+SELECT
+    dst_f.object_id,         -- new field's object_id
+    dst_dep.object_id,       -- new dependent field's object_id
+    src_rule.operator,
+    src_rule.value
+FROM schema_field_visibility_rules src_rule
+-- Source field
+         JOIN schema_fields src_f ON src_f.object_id = src_rule.field_id
+-- Destination field (same stable id)
+         JOIN schema_fields dst_f ON dst_f.id = src_f.id
+    AND dst_f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+-- Source dependent field
+JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
+-- Destination dependent field (same stable id)
+    JOIN schema_fields dst_dep ON dst_dep.id = src_dep.id
+    AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
+WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
+
+-- /////////////////////////////// --
+-- //// -- REQUIRED RULES -- //// --
+-- /////////////////////////////// --
+
+-- name: CreateRequiredRule :one
+INSERT INTO schema_field_required_rules (
+    field_id,
+    depends_on_field_id,
+    operator,
+    value
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
+-- name: CreateRequiredRulesBatch :copyfrom
+INSERT INTO schema_field_required_rules (field_id, depends_on_field_id, operator, value)
+VALUES ($1, $2, $3, $4);
+
+-- name: GetFieldRequiredRules :many
+SELECT *
+FROM schema_field_required_rules
+WHERE field_id = ANY($1::uuid[])
+ORDER BY field_id, created_at;
+
+-- name: DeleteRequiredRules :exec
+DELETE FROM schema_field_required_rules
+WHERE field_id = $1;
+
+-- name: CloneRequiredRules :execrows
+INSERT INTO schema_field_required_rules (field_id, depends_on_field_id, operator, value)
+SELECT
+    dst_f.object_id,
+    dst_dep.object_id,
+    src_rule.operator,
+    src_rule.value
+FROM schema_field_required_rules src_rule
+         JOIN schema_fields src_f ON src_f.object_id = src_rule.field_id
+         JOIN schema_fields dst_f ON dst_f.id = src_f.id
+    AND dst_f.schema_version_id = sqlc.arg(draft_version_id)::UUID
+JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
+    JOIN schema_fields dst_dep ON dst_dep.id = src_dep.id
+    AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
+WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
