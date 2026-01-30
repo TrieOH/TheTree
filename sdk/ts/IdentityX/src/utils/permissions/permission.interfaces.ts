@@ -1,14 +1,14 @@
-import type { CannotStartWithNumber, OnlyAlphanumeric } from "../../types/permission-types";
+import type { ValidateNamespace, ValidateSpecifier } from "../../types/permission-types";
 import type { PermissionResult } from "./permission.result";
 
 export interface PermissionRoot {
   on<NS extends string, SP extends string>(
-    namespace: CannotStartWithNumber<NS>,
-    specifier: OnlyAlphanumeric<SP>
+    namespace: ValidateNamespace<NS>,
+    specifier: ValidateSpecifier<SP>
   ): PermissionObjectBuilder;
 
   onWildcard<NS extends string>(
-    namespace: CannotStartWithNumber<NS>
+    namespace: ValidateNamespace<NS>
   ): PermissionObjectBuilder;
 
   any(): PermissionFinal;
@@ -16,12 +16,12 @@ export interface PermissionRoot {
 
 export interface PermissionObjectBuilder {
   on<NS extends string, SP extends string>(
-    namespace: CannotStartWithNumber<NS>,
+    namespace: ValidateNamespace<NS>,
     specifier: SP
   ): PermissionObjectBuilder;
 
   onWildcard<NS extends string>(
-    namespace: CannotStartWithNumber<NS>
+    namespace: ValidateNamespace<NS>
   ): PermissionObjectBuilder;
 
   forAnyChild(): PermissionObjectFinal;

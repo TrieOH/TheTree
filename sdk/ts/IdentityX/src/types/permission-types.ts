@@ -28,16 +28,42 @@ type Letter =
   | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' 
   | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z';
 
-type ValidCaracter = Letter | Digit | '_';
+type ValidChar = Letter | Digit | '_';
 
-export type CannotStartWithNumber<T extends string> =
-  T extends `${Digit}${string}` ? "The string cannot start with a number!" : T;
+type IsValidSequence<T extends string> = 
+  T extends `${infer Head}${infer Tail}`
+    ? Head extends ValidChar
+      ? Tail extends "" ? true : IsValidSequence<Tail>
+      : false
+    : false;
 
-export type OnlyAlphanumeric<T extends string> = 
-T extends "" 
-    ? "The string cannot be empty" 
-    : T extends `${infer Head}${infer Tail}`
-      ? Head extends ValidCaracter
-        ? (Tail extends "" ? T : OnlyAlphanumeric<Tail>) 
-        : "Only a-z, A-Z, 0-9, and _ are permitted."
-      : T;
+export type ValidateNamespace<T extends string> = 
+  T extends "" ? "Namespace cannot be empty" :
+  T extends `${infer Head}${infer Tail}`
+    ? Head extends Letter
+      ? (Tail extends "" ? T : IsValidSequence<Tail> extends true ? T : "Namespace contains invalid characters")
+      : "Namespace must start with a letter (a-zA-Z)"
+    : T;
+
+export type ValidateSpecifier<T extends string> = 
+  T extends "" ? "Specifier cannot be empty" :
+  IsValidSequence<T> extends true ? T : "Specifier contains invalid characters";
+
+// export type CannotStartWithNumber<T extends string> =
+//   T extends `${Digit}${string}` ? "The string cannot start with a number or contains!" : T;
+
+// type IsValid<T extends string> = 
+//   T extends `${infer Head}${infer Tail}`
+//     ? Head extends ValidCaracter
+//       ? Tail extends "" 
+//         ? true          // Everything is valid
+//         : IsValid<Tail> // Continue with the rest
+//       : false           // Invalid Caractere
+//     : false;            // Empty string
+
+// export type ValidateSpecifier<T extends string> = 
+//   IsValid<T> extends true 
+//     ? T 
+//     : T extends "" 
+//       ? "he string cannot be empty" 
+//       : "Only a-z, A-Z, 0-9, and _ are permitted.";
