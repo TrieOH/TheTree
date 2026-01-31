@@ -20,7 +20,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 						"password": spec.Pass,
 					}).
 					Expect(http.StatusBadRequest).
-					HasErrID(apierr.RequestValidationError).
+					HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 					ValidationError(spec.Errors...)
 			})
 		}
@@ -38,7 +38,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 						"password": spec.Password,
 					}).
 					Expect(http.StatusBadRequest).
-					HasErrID(apierr.RequestValidationError).
+					HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 					ValidationError(spec.Errors...)
 			})
 		}
@@ -53,7 +53,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": longPass,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			ValidationError("password must be at most 72 characters long")
 	})
 

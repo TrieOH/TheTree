@@ -5,48 +5,41 @@ import (
 )
 
 var (
-	RequestMissingQueryParamValue    = fail.ID(0, "REQ", 0, false, "RequestMissingQueryParamValue")
-	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, nil, "UNDEFINED").
-						AddLocalizations(map[string]string{
-			"pt-BR": "faltando parametro de pesquisa para: %s",
-		})
+	RequestMissingQueryParamValue = fail.ID(0, "REQ", 0, false, "REQuestMissingQueryParamValue")
+	RequestMissingQueryParam      = fail.ID(0, "REQ", 1, false, "REQuestMissingQueryParam")
 
-	AuthInvalidPrincipal    = fail.ID(1, "AUTH", 0, true, "InvalidPrincipal")
-	ErrAuthInvalidPrincipal = fail.Form(AuthInvalidPrincipal, "invalid principal", false, map[string]any{"code": 401}).
-				AddLocalization("pt-BR", "principal faltando")
+	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
+	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
+	RequestValidationError           = fail.ID(0, "REQ", 2, true, "REQuestValidationError")
+	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQquestNotApplicationJSON")
+	// FIXME create tests for empty cookies
+	RequestEmptyCookie       = fail.ID(0, "REQ", 4, true, "REQuestEmptyCookie") // not used
+	RequestUnknownQueryParam = fail.ID(0, "REQ", 5, true, "REQuestUnknownQueryParam")
+
+	AuthInvalidPrincipal = fail.ID(1, "AUTH", 0, true, "AUTHInvalidPrincipal") // not used
 )
 
 const (
-	RequestMissingQueryParam         ID = "REQ_002"
-	RequestMissingSchemaCustomFields ID = "REQ_003"
-	RequestInvalidJSONFormat         ID = "REQ_004"
-	RequestValidationError           ID = "REQ_005"
-	RequestNotApplicationJSON        ID = "REQ_006"
-	RequestEmptyCookie               ID = "REQ_007"
-	RequestUnknownQueryParam         ID = "REQ_008"
-)
-
-const (
-	AuthInvalidEmail          ID = "AUTH_001"
-	AuthInvalidPassword       ID = "AUTH_002"
-	AuthWrongPassword         ID = "AUTH_003"
-	AuthUserNotFound          ID = "AUTH_004"
-	AuthEmailAlreadyUsed      ID = "AUTH_005"
-	AuthAccountDisabled       ID = "AUTH_006"
-	AuthTokenInvalid          ID = "AUTH_007"
-	AuthTokenExpired          ID = "AUTH_008"
-	AuthRefreshInvalid        ID = "AUTH_009"
-	AuthRefreshRevoked        ID = "AUTH_010"
-	AuthMissingAccessClaims   ID = "AUTH_011"
-	AuthInvalidAccessClaims   ID = "AUTH_012"
-	AuthMissingRefreshClaims  ID = "AUTH_013"
-	AuthInvalidRefreshClaims  ID = "AUTH_014"
-	AuthInvalidCredentials    ID = "AUTH_015"
-	AuthInvalidRefreshCookie  ID = "AUTH_016"
-	AuthInvalidAccessCookie   ID = "AUTH_017"
-	AuthMissingRefreshCookie  ID = "AUTH_018"
-	AuthMissingAccessCookie   ID = "AUTH_019"
-	AuthInvalidPrincipal      ID = "AUTH_020"
+	AuthInvalidEmail         ID = "AUTH_001"
+	AuthInvalidPassword      ID = "AUTH_002"
+	AuthWrongPassword        ID = "AUTH_003"
+	AuthUserNotFound         ID = "AUTH_004"
+	AuthEmailAlreadyUsed     ID = "AUTH_005"
+	AuthAccountDisabled      ID = "AUTH_006"
+	AuthTokenInvalid         ID = "AUTH_007"
+	AuthTokenExpired         ID = "AUTH_008"
+	AuthRefreshInvalid       ID = "AUTH_009"
+	AuthRefreshRevoked       ID = "AUTH_010"
+	AuthMissingAccessClaims  ID = "AUTH_011"
+	AuthInvalidAccessClaims  ID = "AUTH_012"
+	AuthMissingRefreshClaims ID = "AUTH_013"
+	AuthInvalidRefreshClaims ID = "AUTH_014"
+	AuthInvalidCredentials   ID = "AUTH_015"
+	AuthInvalidRefreshCookie ID = "AUTH_016"
+	AuthInvalidAccessCookie  ID = "AUTH_017"
+	AuthMissingRefreshCookie ID = "AUTH_018"
+	AuthMissingAccessCookie  ID = "AUTH_019"
+	// AuthInvalidPrincipal      ID = "AUTH_020"
 	AuthNotClient             ID = "AUTH_021"
 	AuthNotProjectUser        ID = "AUTH_022"
 	AuthNotVerified           ID = "AUTH_023"

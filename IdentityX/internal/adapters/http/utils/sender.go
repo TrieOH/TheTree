@@ -15,7 +15,10 @@ func Sender(e *fail.Error, module string, w http.ResponseWriter) (*resp.Response
 		return nil, false
 	}
 	if rs, ok := trrs.(*resp.Response); ok {
-		return rs.WithModule(module), true
+		if rs != nil {
+			return rs.WithModule(module), true
+		}
+		return nil, false
 	} else {
 		resp.InternalServerError("couldn't cast to response").WithModule(module).Send(w)
 		return nil, false

@@ -27,4 +27,42 @@ var (
 	ErrRoleAlreadyGranted   = fail.Form(ROLEAlreadyGranted, "user already has this role in the specified scope", false, map[string]any{"code": 400})
 
 	ErrPermissionAlreadyGranted = fail.Form(PERMISSIONAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400})
+
+	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+						AddLocalizations(map[string]string{
+			"pt-BR": "faltando parâmetro de pesquisa para: %s",
+		})
+	ErrRequestMissingQueryParam = fail.Form(RequestMissingQueryParam, "missing query parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "faltando parâmetro de pesquisa: %s",
+		})
+	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 401}, "UNDEFINED").
+						AddLocalizations(map[string]string{
+			"pt-BR": "Os campos personalizados do schema são obrigatórios no registro do schema.",
+		})
+	ErrRequestInvalidJSONFormat = fail.Form(RequestInvalidJSONFormat, "Invalid JSON format", false, map[string]any{"code": 401}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Formato do JSON inválido.",
+		})
+	ErrRequestValidationError = fail.Form(RequestValidationError, "Validation failed", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Formato do JSON inválido.",
+		})
+	ErrRequestNotApplicationJSON = fail.Form(RequestNotApplicationJSON, "Content-Type must be application/json", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Content-Type deve ser application/json",
+		})
+	ErrRequestEmptyCookie = fail.Form(RequestEmptyCookie, "", false, map[string]any{"code": 400}, "UNDEFINED").
+				AddLocalizations(map[string]string{
+			"pt-BR": "",
+		})
+	ErrRequestUnknownQueryParam = fail.Form(RequestUnknownQueryParam, "unknown query parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "parâmetro de consulta desconhecido: %s",
+		})
+
+	ErrAuthInvalidPrincipal = fail.Form(AuthInvalidPrincipal, "invalid principal", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "principal faltando",
+		})
 )

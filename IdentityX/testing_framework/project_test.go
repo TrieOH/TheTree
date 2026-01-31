@@ -45,7 +45,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 				"metadata":     map[string]string{"env": "test"},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			ValidationError("project_name is required")
 	})
 
@@ -116,7 +116,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		// Try to DELETE
 		attackerClient.DELETE("/projects/" + projectID).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ProjectNotFound).
+			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
 			HasMessage("project not found")
 
 		// Ensure it was NOT actually deleted from the perspective of the owner

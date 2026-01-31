@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -212,9 +213,8 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	})
 
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		//FIXME add fail.FromNamedMapper
+		return fail.From(err)
 	}
 
 	// FIXME make me a generic error

@@ -7,7 +7,9 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"log"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -225,9 +227,8 @@ func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID string, 
 		ProjectID: projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		log.Println("COmpila porfavor")
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))

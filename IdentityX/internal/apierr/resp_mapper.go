@@ -16,7 +16,7 @@ func MapAPIErrorWithTrace(e *Error) *resp.Response {
 	}
 
 	if e.ID != "" {
-		if e.ID == RequestValidationError {
+		if e.ID == ID(RequestValidationError.String()) {
 			r = r.WithModule("validation")
 		}
 		r = r.WithErrID(string(e.ID))

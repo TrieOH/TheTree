@@ -1,6 +1,7 @@
 package apierr
 
 import (
+	"log"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -28,7 +29,9 @@ func (h *HTTPTranslator) Supports(err *fail.Error) bool {
 		return false
 	}
 	switch err.ID {
-	case RequestMissingQueryParamValue:
+	case RequestMissingQueryParamValue, RequestMissingQueryParam, RequestMissingSchemaCustomFields,
+		RequestInvalidJSONFormat, RequestValidationError, RequestNotApplicationJSON, RequestEmptyCookie,
+		RequestUnknownQueryParam:
 		return true
 	default:
 		return false
@@ -45,12 +48,25 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		traces = []string{}
 	}
 
-	err.Meta["traces"] = ""
+	if err.Cause != nil {
+		traces = append(traces, err.Cause.Error())
+	}
 
-	code, ok := err.Meta["code"].(int)
-	if !ok {
+	var code int
+	if err.Meta != nil {
+		err.Meta["traces"] = ""
+		code, ok = err.Meta["code"].(int)
+		if !ok {
+			code = 500
+		} else if code < 100 || code > 599 {
+			code = 500
+		}
+	} else {
+		err.Meta = map[string]any{}
 		code = 500
 	}
+
+	err.Render()
 
 	r := resp.Response{
 		Module:         "translator",
@@ -64,6 +80,7 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		ContentType:    "application/json",
 		TracePrefix:    "",
 	}
+	log.Println(r)
 
 	return &r, nil
 }

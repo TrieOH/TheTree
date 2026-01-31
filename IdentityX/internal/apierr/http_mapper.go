@@ -13,15 +13,14 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 // FromService This function relies on the invariant that
 // only apierr wraps errors. Do not use errors.As here.
-func FromService(span trace.Span, err error) *resp.Response {
+func FromService(span trace.Span, err error) error {
+	// var rs any
 	if err == nil {
 		return nil
 	}
@@ -56,11 +55,11 @@ func FromService(span trace.Span, err error) *resp.Response {
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case ErrInvalidCustomFieldsJSON:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestInvalidJSONFormat).WithCause(e.Cause)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestInvalidJSONFormat.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case ErrMissingCustomFields:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestMissingSchemaCustomFields)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestMissingSchemaCustomFields.String()))
 		RecordDomainError(span, httpErr)
 		return httpErr
 	// FIXME Add a WithMeta to apierr and FUN
@@ -100,12 +99,15 @@ func FromService(span trace.Span, err error) *resp.Response {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case validation.ErrParseUUID:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
+		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrInvalidPrincipal:
-		rs, err := HTTPResponseTranslator().Translate(fail.New(AuthInvalidPrincipal))
-		return rs
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ID(AuthInvalidPrincipal.String()))
+		RecordDomainError(span, httpErr)
+		return httpErr
+		// rs, err = HTTPResponseTranslator().Translate(fail.New(AuthInvalidPrincipal))
+		// return rs
 	case authz.ErrPrincipalMissingInContext:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthPrincipalNotInContext)
 		RecordDomainError(span, httpErr)
@@ -294,7 +296,9 @@ func FromService(span trace.Span, err error) *resp.Response {
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrEmptyCookie:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(RequestEmptyCookie)
+		// rs, err = HTTPResponseTranslator().Translate(fail.New(RequestEmptyCookie))
+		// return rs
+		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ID(RequestEmptyCookie.String()))
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrTokenReuseNotAllowed:
@@ -417,13 +421,13 @@ func FromHandler(err error) *Error {
 	}
 	switch e := err.(type) {
 	case validation.ErrParseUUID:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		return httpErr
 	case ErrParsingNumber:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError).WithCause(e.Cause)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		return httpErr
 	case ErrMissingParam:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RequestValidationError)
+		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestValidationError.String()))
 		return httpErr
 	default:
 		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(SystemInternalError)

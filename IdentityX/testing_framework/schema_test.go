@@ -133,7 +133,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					"flow_id":     "test",
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.RequestValidationError).
+				HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 				ValidationError("schema_type must be one of: core, context, sub-context")
 		})
 
@@ -146,7 +146,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					"flow_id":     longFlowID,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.RequestValidationError).
+				HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 				ValidationError("flow_id must be at most 63 characters long")
 		})
 	})
@@ -1360,7 +1360,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
 			WithQuery("schema_type", "context").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestMissingQueryParam).
+			HasErrID(apierr.ID(apierr.RequestMissingQueryParam.String())).
 			HasMessage("missing query parameter: flow_id")
 	})
 

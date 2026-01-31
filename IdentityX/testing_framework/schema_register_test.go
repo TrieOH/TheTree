@@ -175,7 +175,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestMissingSchemaCustomFields).
+			HasErrID(apierr.ID(apierr.RequestMissingSchemaCustomFields.String())).
 			HasMessage("schema custom fields are required on a schema register")
 	})
 

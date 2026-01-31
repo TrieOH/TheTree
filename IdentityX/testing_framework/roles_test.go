@@ -165,7 +165,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			HasMessage("Validation failed").
 			TraceContains("name is required")
 	})
@@ -174,7 +174,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/roles/search").
 			WithQuery("something_else", "should_fail").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestUnknownQueryParam).
+			HasErrID(apierr.ID(apierr.RequestUnknownQueryParam.String())).
 			HasMessage("unknown query parameter: something_else")
 	})
 

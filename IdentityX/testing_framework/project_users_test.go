@@ -49,7 +49,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.RequestValidationError).
+				HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 				HasMessage("Validation failed")
 		})
 
@@ -79,7 +79,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 							"password": spec.Pass,
 						}).
 						Expect(http.StatusBadRequest).
-						HasErrID(apierr.RequestValidationError).
+						HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 						ValidationError(spec.Errors...)
 				})
 			}
@@ -97,7 +97,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 							"password": spec.Password,
 						}).
 						Expect(http.StatusBadRequest).
-						HasErrID(apierr.RequestValidationError).
+						HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 						ValidationError(spec.Errors...)
 				})
 			}

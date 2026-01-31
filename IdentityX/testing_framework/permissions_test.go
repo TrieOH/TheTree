@@ -348,7 +348,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			HasMessage("Validation failed").
 			TraceContains("action is required")
 	})
@@ -361,7 +361,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			HasMessage("Validation failed").
 			TraceContains("object is required")
 	})
@@ -374,7 +374,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
 			HasMessage("Validation failed").
 			TraceContains("object is required", "action is required")
 	})
@@ -407,7 +407,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/permissions").
 			WithQuery("not-allowed", "should_deny").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestUnknownQueryParam).
+			HasErrID(apierr.ID(apierr.RequestUnknownQueryParam.String())).
 			HasMessage("unknown query parameter: not-allowed")
 	})
 }

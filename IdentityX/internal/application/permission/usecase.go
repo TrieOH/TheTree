@@ -52,7 +52,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, err)
+		return nil, err
 	}
 
 	var isOwner bool

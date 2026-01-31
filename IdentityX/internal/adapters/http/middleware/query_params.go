@@ -5,7 +5,6 @@ import (
 	"GoAuth/internal/apierr"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail"
 )
 
@@ -16,8 +15,10 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 
 			for _, p := range params {
 				if !q.Has(p) {
-					err := apierr.ErrInvalidInput.WithMsg("missing query parameter: " + p).WithID(apierr.RequestMissingQueryParam)
-					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestMissingQueryParam).WithArgs(p), "RequireQueryParamsMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
 				if q.Get(p) == "" {
@@ -47,10 +48,10 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all query params are allowed
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					err := apierr.ErrInvalidInput.
-						WithMsg("unknown query parameter: " + param).
-						WithID(apierr.RequestUnknownQueryParam)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestUnknownQueryParam).WithArgs(param), "RequireOnlyQueryParamsMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
 			}
@@ -58,10 +59,10 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all allowed params are present and non-empty
 			for _, p := range allowed {
 				if !q.Has(p) {
-					err := apierr.ErrInvalidInput.
-						WithMsg("missing query parameter: " + p).
-						WithID(apierr.RequestMissingQueryParam)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestMissingQueryParam).WithArgs(p), "RequireOnlyQueryParamsMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
 				if q.Get(p) == "" {
@@ -103,13 +104,10 @@ func AllowOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 
 			for key := range q {
 				if _, ok := allowedSet[key]; !ok {
-					err := apierr.ErrInvalidInput.
-						WithMsg("unknown query parameter: " + key).
-						WithID(apierr.RequestUnknownQueryParam)
-
-					resp.FromError(err).
-						WithModule("AllowOnlyQueryParamsMW").
-						Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestUnknownQueryParam).WithArgs(key), "AllowOnlyQueryParamsMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
 			}
