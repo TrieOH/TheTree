@@ -97,9 +97,9 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 	}
 	for _, e := range validationErrors {
 		msg := formatValidationMessage(e, fieldName, value)
-		verr = verr.With(errors.New(msg))
+		verr = verr.Trace(msg)
 	}
-	return verr
+	return verr.AddMeta("module", "validation")
 }
 
 func formatValue(v interface{}) string {
@@ -196,7 +196,7 @@ func ValidateStruct(s interface{}) error {
 		if err.Tag() == "passwd" {
 			password, ok := err.Value().(string)
 			if !ok {
-				verr = verr.With(errors.New(fieldName + " must be a valid string"))
+				verr = verr.Trace(fieldName + " must be a valid string")
 				continue
 			}
 			var hasUpper, hasNumber, hasSymbol bool
@@ -213,19 +213,19 @@ func ValidateStruct(s interface{}) error {
 			}
 
 			if !hasUpper {
-				verr = verr.With(errors.New(fieldName + " must contain at least one uppercase letter"))
+				verr = verr.Trace(fieldName + " must contain at least one uppercase letter")
 			}
 			if !hasNumber {
-				verr = verr.With(errors.New(fieldName + " must contain at least one number"))
+				verr = verr.Trace(fieldName + " must contain at least one number")
 			}
 			if !hasSymbol {
-				verr = verr.With(errors.New(fieldName + " must contain at least one symbol or punctuation"))
+				verr = verr.Trace(fieldName + " must contain at least one symbol or punctuation")
 			}
 			continue
 		}
 
 		msg = formatValidationMessage(err, fieldName, value)
-		verr = verr.With(errors.New(msg))
+		verr = verr.Trace(msg)
 	}
 	return verr
 }
@@ -242,6 +242,10 @@ func ValidateInto[T any](r *http.Request, target *T) error {
 	}
 
 	if err := ValidateStruct(*target); err != nil {
+		fe, ok := fail.As(err)
+		if ok {
+			return fe.AddMeta("module", "validation")
+		}
 		return err
 	}
 

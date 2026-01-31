@@ -1,7 +1,6 @@
 package apierr
 
 import (
-	"log"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -31,7 +30,7 @@ func (h *HTTPTranslator) Supports(err *fail.Error) bool {
 	switch err.ID {
 	case RequestMissingQueryParamValue, RequestMissingQueryParam, RequestMissingSchemaCustomFields,
 		RequestInvalidJSONFormat, RequestValidationError, RequestNotApplicationJSON, RequestEmptyCookie,
-		RequestUnknownQueryParam:
+		RequestUnknownQueryParam, SQLNotFound:
 		return true
 	default:
 		return false
@@ -43,33 +42,39 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		return nil, fail.New(CannotTranslateToHTTP).With(err)
 	}
 
-	traces, ok := err.Meta["traces"].([]string)
-	if !ok {
-		traces = []string{}
-	}
+	traces := toStringSlice(err.Meta["traces"])
+	delete(err.Meta, "traces")
 
 	if err.Cause != nil {
 		traces = append(traces, err.Cause.Error())
 	}
 
+	var module string
 	var code int
+	var ok bool
 	if err.Meta != nil {
-		err.Meta["traces"] = ""
 		code, ok = err.Meta["code"].(int)
+		delete(err.Meta, "code")
 		if !ok {
 			code = 500
 		} else if code < 100 || code > 599 {
 			code = 500
+		}
+
+		module, ok = err.Meta["module"].(string)
+		delete(err.Meta, "module")
+		if !ok {
+			module = "GoAuth"
 		}
 	} else {
 		err.Meta = map[string]any{}
 		code = 500
 	}
 
-	err.Render()
+	_ = err.Render()
 
 	r := resp.Response{
-		Module:         "translator",
+		Module:         module,
 		Message:        err.Message,
 		Data:           err.Meta,
 		Trace:          traces,
@@ -80,7 +85,28 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		ContentType:    "application/json",
 		TracePrefix:    "",
 	}
-	log.Println(r)
 
 	return &r, nil
+}
+
+func toStringSlice(v any) []string {
+	if v == nil {
+		return []string{}
+	}
+
+	if s, ok := v.([]string); ok {
+		return s
+	}
+
+	if arr, ok := v.([]any); ok {
+		result := make([]string, 0, len(arr))
+		for _, item := range arr {
+			if s, ok := item.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	}
+
+	return []string{}
 }
