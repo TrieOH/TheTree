@@ -78,6 +78,8 @@ func init() {
 		log.Fatal(err)
 	}
 
+	fail.RegisterMapper(&apierr.PGXMapper{})
+
 	var err error
 	DB, err = database.WaitForDB(30 * time.Second)
 	if err != nil {

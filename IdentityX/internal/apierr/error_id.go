@@ -230,3 +230,30 @@ const (
 	SystemErrorRenderingEmail      ID = "SYS_009"
 	SystemJWKSRetrievalFailed      ID = "SYS_010"
 )
+
+var (
+	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
+	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
+	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
+	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
+	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
+	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
+	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
+	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
+	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
+	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
+
+	SCHEMAVersionDraftAlreadyExists = fail.ID(0, "SCHEMA", 0, false, "SCHEMAVersionDraftAlreadyExists")
+
+	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
+	FIELDSameKeyForMultipleFields      = fail.ID(0, "FIELD", 1, false, "FIELDSameKeyForMultipleFields")
+	FIELDInvalidCharactersInKey        = fail.ID(0, "FIELD", 2, false, "FIELDInvalidCharactersInKey")
+
+	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
+	SCOPEInvalid                    = fail.ID(0, "SCOPE", 1, false, "SCOPEInvalid")
+
+	ROLENameAlreadyTaken = fail.ID(0, "ROLE", 0, false, "ROLENameAlreadyTaken")
+	ROLEAlreadyGranted   = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+
+	PERMISSIONAlreadyGranted = fail.ID(0, "PERM", 0, false, "PERMISSIONAlreadyGranted")
+)
