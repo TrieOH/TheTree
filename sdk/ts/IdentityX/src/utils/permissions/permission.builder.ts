@@ -1,5 +1,5 @@
 import type { ObjSuffix, PermissionDomain, PermissionObject } from "../../types/permission-types";
-import type { PermissionActionChain, PermissionFinal, PermissionObjectBuilder, PermissionObjectFinal, PermissionRoot } from "./permission.interfaces";
+import type { PermissionActionBuilder, PermissionActionChain, PermissionFinal, PermissionObjectBuilder, PermissionRoot } from "./permission.interfaces";
 import { PermissionResult } from "./permission.result";
 import { assertActionPart, assertNamespace, assertSpecifier } from "./permission.validators";
 
@@ -74,6 +74,7 @@ export function permission(): PermissionRoot {
           const spStr = specifier as unknown as string;
           assertNamespace(nsStr);
           assertSpecifier(spStr);
+
           const next = currentS.clone();
           next.commitSegment(nsStr, spStr, []);
           return objectBuilder(next);
@@ -90,23 +91,16 @@ export function permission(): PermissionRoot {
           const next = currentS.clone();
           if (next.suffix) throw new Error("Suffix already set");
           next.suffix = '*';
-          return objectFinal(next);
+          return actionBuilder(next);
         },
         forAnyDescendant() {
           const next = currentS.clone();
           if (next.suffix) throw new Error("Suffix already set");
           next.suffix = '**';
-          return objectFinal(next);
+          return actionBuilder(next);
         },
-        done() {
-          return objectFinal(currentS.clone());
-        }
-      };
-    }
-
-    function objectFinal(currentS: Impl): PermissionObjectFinal {
-      return {
-        can(action) {
+        
+        in(action) {
           const a = action as unknown as string;
           // validate first token
           const parts = a.split(':').filter(Boolean);
@@ -121,20 +115,78 @@ export function permission(): PermissionRoot {
           next.segments[lastIdx].actionParts = parts.slice();
           return actionChainFor(next);
         },
-        canAnyAction() {
+        inAny() {
           // set actionParts = ['*'] on last segment and finalize
           const next = currentS.clone();
           const lastIdx = next.segments.length - 1;
           if (lastIdx < 0) throw new Error("No object segment to attach action to");
           next.segments[lastIdx].actionParts = ['*'];
           return final(next);
-        }
+        },
+        can(action) {
+          const a = action as unknown as string;
+          // validate first token
+          const parts = a.split(':').filter(Boolean);
+          if (parts.length === 0) throw new Error("Action must be non-empty");
+          assertActionPart(parts[0]);
+
+          // store into the last committed segment's actionParts
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          // push initial parts
+          next.segments[lastIdx].actionParts = parts.slice();
+          return final(next);
+        },
+      };
+    }
+
+    function actionBuilder(currentS: Impl): PermissionActionBuilder {
+      return {
+        in(action) {
+          const a = action as unknown as string;
+          // validate first token
+          const parts = a.split(':').filter(Boolean);
+          if (parts.length === 0) throw new Error("Action must be non-empty");
+          assertActionPart(parts[0]);
+
+          // store into the last committed segment's actionParts
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          // push initial parts
+          next.segments[lastIdx].actionParts = parts.slice();
+          return actionChainFor(next);
+        },
+        inAny() {
+          // set actionParts = ['*'] on last segment and finalize
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          next.segments[lastIdx].actionParts = ['*'];
+          return final(next);
+        },
+        can(action) {
+          const a = action as unknown as string;
+          // validate first token
+          const parts = a.split(':').filter(Boolean);
+          if (parts.length === 0) throw new Error("Action must be non-empty");
+          assertActionPart(parts[0]);
+
+          // store into the last committed segment's actionParts
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          // push initial parts
+          next.segments[lastIdx].actionParts = parts.slice();
+          return final(next);
+        },
       };
     }
 
     function actionChainFor(currentS: Impl): PermissionActionChain {
       return {
-        and(part) {
+        in(part) {
           const p = part as unknown as string;
           assertActionPart(p);
           const next = currentS.clone();
@@ -142,29 +194,45 @@ export function permission(): PermissionRoot {
           next.segments[lastIdx].actionParts.push(p);
           return actionChainFor(next);
         },
-        andAnyChild() {
+        inAny() {
           const next = currentS.clone();
           const lastIdx = next.segments.length - 1;
           next.segments[lastIdx].actionParts.push('*');
           return actionChainFor(next);
         },
-        andAnyDescendant() {
+        can(action) {
+          const a = action as unknown as string;
+          // validate first token
+          const parts = a.split(':').filter(Boolean);
+          if (parts.length === 0) throw new Error("Action must be non-empty");
+          assertActionPart(parts[0]);
+
+          // store into the last committed segment's actionParts
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          if (lastIdx < 0) throw new Error("No object segment to attach action to");
+          // push initial parts
+          next.segments[lastIdx].actionParts = parts.slice();
+          return final(next);
+        },
+        forAnyChild() {
+          const next = currentS.clone();
+          const lastIdx = next.segments.length - 1;
+          next.segments[lastIdx].actionParts.push('*');
+          return final(next);
+        },
+        forAnyDescendant() {
           const next = currentS.clone();
           const lastIdx = next.segments.length - 1;
           next.segments[lastIdx].actionParts.push('**');
           return final(next);
         },
-        build() {
-          const next = currentS.clone();
-          const domain = next.buildStructured();
-          return new PermissionResult(domain);
-        }
       };
     }
 
     function final(currentS: Impl): PermissionFinal {
       return {
-        build() {
+        finish() {
           return new PermissionResult(currentS.buildStructured());
         }
       };

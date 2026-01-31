@@ -5,42 +5,48 @@ export interface PermissionRoot {
   on<NS extends string, SP extends string>(
     namespace: ValidateNamespace<NS>,
     specifier: ValidateSpecifier<SP>
-  ): PermissionObjectBuilder;
+  ): PermissionObjectBuilder; // namespace:specifier/
 
   onAll<NS extends string>(
     namespace: ValidateNamespace<NS>
-  ): PermissionObjectBuilder;
+  ): PermissionObjectBuilder; // namespace:*/
 
-  any(): PermissionFinal;
+  any(): PermissionFinal; // *
 }
 
 export interface PermissionObjectBuilder {
   on<NS extends string, SP extends string>(
     namespace: ValidateNamespace<NS>,
     specifier: SP
-  ): PermissionObjectBuilder;
+  ): PermissionObjectBuilder; // namespace:specifier/
 
   onAll<NS extends string>(
     namespace: ValidateNamespace<NS>
-  ): PermissionObjectBuilder;
+  ): PermissionObjectBuilder; // namespace:*/
+  forAnyChild(): PermissionActionBuilder; // ...namespace:specifier.../*
+  forAnyDescendant(): PermissionActionBuilder; // ...namespace:specifier.../**
 
-  forAnyChild(): PermissionObjectFinal;
-  forAnyDescendant(): PermissionObjectFinal;
-  done(): PermissionObjectFinal;
+  // Start of Actions
+  in<Token extends string>(action: ValidateAction<Token>): PermissionActionChain; // token
+  inAny(): PermissionFinal; // *
+  can<Token extends string>(action: ValidateAction<Token>): PermissionFinal; // token
 }
 
-export interface PermissionObjectFinal {
-  can<Token extends string>(action: ValidateAction<Token>): PermissionActionChain;
-  canAnyAction(): PermissionFinal;
+// Start of Actions
+export interface PermissionActionBuilder {
+  in<Token extends string>(action: ValidateAction<Token>): PermissionActionChain; // token
+  inAny(): PermissionFinal; // *
+  can<Token extends string>(action: ValidateAction<Token>): PermissionFinal; // token
 }
 
 export interface PermissionActionChain {
-  and<Token extends string>(action: ValidateAction<Token>): PermissionActionChain;
-  andAnyChild(): PermissionActionChain;
-  andAnyDescendant(): PermissionFinal;
-  build(): PermissionResult;
+  in<Token extends string>(action: ValidateAction<Token>): PermissionActionChain; // token:...:stage
+  inAny(): PermissionActionChain; // token:...:*
+  can<Token extends string>(action: ValidateAction<Token>): PermissionFinal; // token:...:stage
+  forAnyChild(): PermissionFinal // // token:...:*
+  forAnyDescendant(): PermissionFinal; // token:...:**
 }
 
 export interface PermissionFinal {
-  build(): PermissionResult;
+  finish(): PermissionResult; // end
 }
