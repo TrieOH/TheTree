@@ -16,6 +16,7 @@ import (
 	"GoAuth/internal/database"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -72,6 +73,10 @@ func init() {
 		DefaultModule:        "GoAuth-module",
 		ErrorHandler:         apierr.ErrToResp,
 	})
+
+	if err := fail.RegisterTranslator(&apierr.HTTPTranslator{}); err != nil {
+		log.Fatal(err)
+	}
 
 	var err error
 	DB, err = database.WaitForDB(30 * time.Second)

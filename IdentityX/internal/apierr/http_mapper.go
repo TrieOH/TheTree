@@ -13,16 +13,23 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 // FromService This function relies on the invariant that
 // only apierr wraps errors. Do not use errors.As here.
-func FromService(span trace.Span, err error) *Error {
+func FromService(span trace.Span, err error) *resp.Response {
 	if err == nil {
 		return nil
 	}
+	defer func() {
+		if err != nil {
+
+		}
+	}()
 	switch e := err.(type) {
 	case version.ErrRegisterOnVersionDraft:
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaVersionDraft)
@@ -97,9 +104,8 @@ func FromService(span trace.Span, err error) *Error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case authz.ErrInvalidPrincipal:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthInvalidPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
+		rs, err := HTTPResponseTranslator().Translate(fail.New(AuthInvalidPrincipal))
+		return rs
 	case authz.ErrPrincipalMissingInContext:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthPrincipalNotInContext)
 		RecordDomainError(span, httpErr)
