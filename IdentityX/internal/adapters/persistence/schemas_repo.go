@@ -7,7 +7,6 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"log"
 
 	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
@@ -227,8 +226,7 @@ func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID string, 
 		ProjectID: projectID,
 	})
 	if err != nil {
-		log.Println("COmpila porfavor")
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs("schema")
 	}
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))

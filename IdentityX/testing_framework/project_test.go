@@ -116,7 +116,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		// Try to DELETE
 		attackerClient.DELETE("/projects/" + projectID).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasErrID(apierr.ProjectNotFound).
 			HasMessage("project not found")
 
 		// Ensure it was NOT actually deleted from the perspective of the owner
