@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"GoAuth/internal/adapters/http/utils"
 	"GoAuth/internal/apierr"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 )
 
 func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
@@ -19,8 +21,10 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 					return
 				}
 				if q.Get(p) == "" {
-					err := apierr.ErrInvalidInput.WithMsg("missing query parameter value for: " + p).WithID(apierr.RequestMissingQueryParamValue)
-					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestMissingQueryParamValue).WithArgs(p), "RequireQueryParamsMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
 			}
@@ -61,10 +65,10 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 					return
 				}
 				if q.Get(p) == "" {
-					err := apierr.ErrInvalidInput.
-						WithMsg("missing query parameter value for: " + p).
-						WithID(apierr.RequestMissingQueryParamValue)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, ok := utils.Sender(fail.New(apierr.RequestMissingQueryParamValue).WithArgs(p), "RequireOnlyQueryParamsMW", w)
+					if ok {
+						rs.WithMsg("missing query parameter value for: " + p).Send(w)
+					}
 					return
 				}
 			}

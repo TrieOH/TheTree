@@ -16,6 +16,7 @@ import (
 	"GoAuth/internal/database"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -73,6 +74,10 @@ func init() {
 		ErrorHandler:         apierr.ErrToResp,
 	})
 
+	if err := fail.RegisterTranslator(&apierr.HTTPTranslator{}); err != nil {
+		log.Fatal(err)
+	}
+
 	var err error
 	DB, err = database.WaitForDB(30 * time.Second)
 	if err != nil {
@@ -97,6 +102,11 @@ func init() {
 			}
 			defer zero(priv)
 
+			encryptedPriv, err := crypto.Encrypt(priv)
+			if err != nil {
+				log.Fatalf("failed to encrypt GoAuth key: %v", err)
+			}
+
 			kid := "goauth:" + ulid.Make().String()
 			expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
@@ -106,7 +116,7 @@ func init() {
 				KeyType:    "goauth",
 				Algorithm:  "EdDSA",
 				PublicKey:  pub,
-				PrivateKey: priv,
+				PrivateKey: encryptedPriv,
 				Usage:      "sign",
 				Status:     "active",
 				ExpiresAt:  expiresAt,
@@ -244,6 +254,11 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 		return err
 	}
 
+	encryptedPriv, err := crypto.Encrypt(priv)
+	if err != nil {
+		return err
+	}
+
 	kid := "goauth:" + ulid.Make().String()
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
@@ -253,7 +268,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 		KeyType:    "goauth",
 		Algorithm:  "EdDSA",
 		PublicKey:  pub,
-		PrivateKey: priv,
+		PrivateKey: encryptedPriv,
 		Usage:      "sign",
 		Status:     "active",
 		ExpiresAt:  expiresAt,
@@ -302,6 +317,11 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		return err
 	}
 
+	encryptedPriv, err := crypto.Encrypt(priv)
+	if err != nil {
+		return err
+	}
+
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
@@ -311,7 +331,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		KeyType:    "project",
 		Algorithm:  "EdDSA",
 		PublicKey:  pub,
-		PrivateKey: priv,
+		PrivateKey: encryptedPriv,
 		Usage:      "sign",
 		Status:     "active",
 		ExpiresAt:  expiresAt,

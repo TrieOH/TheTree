@@ -1,7 +1,22 @@
 package apierr
 
+import (
+	"github.com/MintzyG/fail"
+)
+
+var (
+	RequestMissingQueryParamValue    = fail.ID(0, "REQ", 0, false, "RequestMissingQueryParamValue")
+	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, nil, "UNDEFINED").
+						AddLocalizations(map[string]string{
+			"pt-BR": "faltando parametro de pesquisa para: %s",
+		})
+
+	AuthInvalidPrincipal    = fail.ID(1, "AUTH", 0, true, "InvalidPrincipal")
+	ErrAuthInvalidPrincipal = fail.Form(AuthInvalidPrincipal, "invalid principal", false, map[string]any{"code": 401}).
+				AddLocalization("pt-BR", "principal faltando")
+)
+
 const (
-	RequestMissingQueryParamValue    ID = "REQ_001"
 	RequestMissingQueryParam         ID = "REQ_002"
 	RequestMissingSchemaCustomFields ID = "REQ_003"
 	RequestInvalidJSONFormat         ID = "REQ_004"

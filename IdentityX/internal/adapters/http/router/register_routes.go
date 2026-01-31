@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-func registerRoutes(db *pgxpool.Pool, r *chi.Mux) *chi.Mux {
+func registerRoutes(db *pgxpool.Pool, r *chi.Mux) (*chi.Mux, *application.Application) {
 	queries := sqlc.New(db)
 	txRunner := transactions.NewTxRunner(db)
 	tracer := otel.Tracer(string(telemetry.GoAuthTracer))
@@ -40,7 +40,7 @@ func registerRoutes(db *pgxpool.Pool, r *chi.Mux) *chi.Mux {
 	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
 	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
 
-	return r
+	return r, app
 }
 
 func registerAuthRoutes(

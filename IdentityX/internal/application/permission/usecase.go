@@ -52,7 +52,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err)
 	}
 
 	var isOwner bool
@@ -62,7 +62,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot create permissions for a project you don't own"})
+		return nil, inbounds.ErrNotProjectOwner{Msg: "cannot create permissions for a project you don't own"}
 	}
 
 	if err := permissions.ValidatePermission(in.Object, in.Action); err != nil {

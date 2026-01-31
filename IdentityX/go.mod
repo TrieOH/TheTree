@@ -4,6 +4,7 @@ go 1.25.3
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.1
+	github.com/MintzyG/fail v1.1.1
 	github.com/exaring/otelpgx v0.10.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-chi/chi/v5 v5.2.3

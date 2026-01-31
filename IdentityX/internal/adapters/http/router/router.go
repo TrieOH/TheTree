@@ -4,6 +4,7 @@ package router
 
 import (
 	"GoAuth/internal/adapters/http/middleware"
+	"GoAuth/internal/application"
 	"log"
 	"net/http"
 	"strings"
@@ -50,7 +51,7 @@ import (
 // @response 413 {object} handlers.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} handlers.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(db *pgxpool.Pool) http.Handler {
+func CreateRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
 	r := chi.NewRouter()
 
 	r.Use(chimiddleware.Recoverer)
@@ -75,9 +76,9 @@ func CreateRouter(db *pgxpool.Pool) http.Handler {
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 	r.Handle("/metrics", middleware.Handler())
 
-	r = registerRoutes(db, r)
+	r, app := registerRoutes(db, r)
 
-	return otelhttp.NewHandler(r, "http.server")
+	return otelhttp.NewHandler(r, "http.server"), app
 }
 
 func splitAndCleanCSV(value string) []string {

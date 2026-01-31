@@ -46,6 +46,11 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		}
 		defer zero(priv)
 
+		encryptedPriv, err := crypto.Encrypt(priv)
+		if err != nil {
+			log.Fatalf("failed to encrypt GoAuth key: %v", err)
+		}
+
 		kid := "goauth:" + ulid.Make().String()
 		expiresAt := time.Now().Add(90 * 24 * time.Hour)
 
@@ -55,7 +60,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 			KeyType:    "goauth",
 			Algorithm:  "EdDSA",
 			PublicKey:  pub,
-			PrivateKey: priv,
+			PrivateKey: encryptedPriv,
 			Usage:      "sign",
 			Status:     "active",
 			ExpiresAt:  expiresAt,
@@ -87,11 +92,11 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 8. Verify old token still works (token's own expiry is what matters)
 		client.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").Expect(http.StatusOK)
 
-		// 9. Manually revoke the old key
-		err = queries.RevokeKeyByKID(ctx, preRotationKID)
+		// 9. Manually revoke the old key via the Service (Delete-Through)
+		err = suite.App.Keys.RevokeKey(ctx, preRotationKID)
 		require.NoError(t, err, "Failed to manually revoke old key")
 
-		// 10. Verify old token now fails
+		// 10. Verify old token now fails (Cache should be cleared)
 		client.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.TokenUntrusted).
@@ -147,6 +152,11 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		}
 		defer zero(priv)
 
+		encryptedPriv, err := crypto.Encrypt(priv)
+		if err != nil {
+			log.Fatalf("failed to encrypt project key: %v", err)
+		}
+
 		kid := fmt.Sprintf("project:%s:%s", projectOwner.projectID, ulid.Make().String())
 		expiresAt := time.Now().Add(90 * 24 * time.Hour)
 
@@ -156,7 +166,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 			KeyType:    "project",
 			Algorithm:  "EdDSA",
 			PublicKey:  pub,
-			PrivateKey: priv,
+			PrivateKey: encryptedPriv,
 			Usage:      "sign",
 			Status:     "active",
 			ExpiresAt:  expiresAt,
@@ -188,11 +198,11 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 9. Verify old token still works
 		projectUserClient.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").Expect(http.StatusOK)
 
-		// 10. Manually revoke the old key
-		err = queries.RevokeKeyByKID(ctx, preRotationKID)
+		// 10. Manually revoke the old key via the Service (Delete-Through)
+		err = suite.App.Keys.RevokeKey(ctx, preRotationKID)
 		require.NoError(t, err, "Failed to manually revoke old key")
 
-		// 11. Verify old token now fails
+		// 11. Verify old token now fails (Cache should be cleared)
 		projectUserClient.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
 			HasErrID(apierr.TokenUntrusted).
