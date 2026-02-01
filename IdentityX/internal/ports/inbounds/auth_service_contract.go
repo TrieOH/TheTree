@@ -52,23 +52,6 @@ type RefreshInput struct {
 	IP            string
 }
 
-type ErrHashingPassword struct {
-	Cause error
-}
-
-func (e ErrHashingPassword) Error() string {
-	return "error hashing user password"
-}
-
-type ErrGeneratingUUID struct {
-	Cause    error
-	Location string
-}
-
-func (e ErrGeneratingUUID) Error() string {
-	return "error generating UUID V7 at " + e.Location
-}
-
 type ErrEmptyFlowID struct{}
 
 func (e ErrEmptyFlowID) Error() string {
@@ -102,14 +85,6 @@ type ErrCustomFieldsNotAllowed struct{}
 
 func (e ErrCustomFieldsNotAllowed) Error() string {
 	return "custom fields are not allowed for core schema"
-}
-
-type ErrFailedToRetrieveJWKS struct {
-	Cause error
-}
-
-func (e ErrFailedToRetrieveJWKS) Error() string {
-	return "failed to retrieve JWKS"
 }
 
 type ErrSchemaRegisterValidation struct {

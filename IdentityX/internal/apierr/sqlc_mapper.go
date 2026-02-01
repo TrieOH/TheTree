@@ -49,7 +49,7 @@ func FromSQLC(err error) *Error {
 	// fallback
 	return ErrInternal.
 		WithMsg("internal database error").
-		WithID(SystemInternalError).
+		WithID(PlaceholderID).
 		WithDebugCause(err)
 }
 
@@ -94,14 +94,13 @@ func fromPGError(pgErr *pgconn.PgError, cause error) *Error {
 	case "08006", "08001", "08004":
 		return ErrInternal.
 			WithMsg("database connection error").
-			WithID(SystemDependencyDown).
 			WithDebugCause(cause)
 	}
 
 	// unknown postgres error
 	return ErrInternal.
 		WithMsg("database error").
-		WithID(SystemInternalError).
+		WithID(PlaceholderID).
 		WithDebugCause(cause)
 }
 

@@ -9,8 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// FIXME later change fail to check if its static and not let you change anything in the error
-
 type PGXMapper struct {
 	priority int
 	name     string

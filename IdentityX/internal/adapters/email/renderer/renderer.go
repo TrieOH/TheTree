@@ -8,6 +8,7 @@ import (
 	"html/template"
 	texttemplate "text/template"
 
+	"github.com/MintzyG/fail"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -53,7 +54,7 @@ func (mr *MailRenderer) Verification(data outbounds.VerificationEmailData) (outb
 	})
 
 	if err != nil {
-		return outbounds.Email{}, outbounds.ErrRenderingEmail{Cause: err, EmailType: "verification"}
+		return outbounds.Email{}, fail.New(apierr.SYSRenderingEmailFailed).With(err).WithArgs("verification")
 	}
 
 	return outbounds.Email{

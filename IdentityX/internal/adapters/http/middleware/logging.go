@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -67,7 +68,7 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				apiErr := apierr.ErrInternal.WithMsg("error generating UUID V7 at middleware/RequestID").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
+				apiErr := fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID")
 				apierr.RecordSystemError(span, apiErr)
 				reqID = uuid.New().String() // V4
 			} else {

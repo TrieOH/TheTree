@@ -16,7 +16,9 @@ import (
 )
 
 func SetupFail() {
-	fail.AllowInternalLogs(false)
+	fail.AllowInternalLogs(true)
+	fail.AllowStaticMutations(true, false)
+	fail.AllowRuntimePanics(true)
 
 	if err := fail.RegisterTranslator(&apierr.HTTPTranslator{}); err != nil {
 		log.Fatal(err)
