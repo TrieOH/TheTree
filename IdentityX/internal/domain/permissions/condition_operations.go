@@ -95,7 +95,7 @@ func validateLeafCondition(c Condition, path string) error {
 
 func validationError(path, msg string) error {
 	if path == "" {
-		return fail.New(apierr.PERMissionConditionValidationError).WithArgs("").Trace(msg)
+		return fail.New(apierr.PERMissionConditionValidationError).WithArgs("'.'").Trace(msg)
 	}
 	return fail.New(apierr.PERMissionConditionValidationError).WithArgs(path).Trace(msg)
 }

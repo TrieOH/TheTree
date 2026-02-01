@@ -3,12 +3,12 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/roles"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -74,9 +74,7 @@ func (repo *roleRepo) Create(ctx context.Context, toCreate roles.Role) (*roles.R
 		ProjectID:   toCreate.ProjectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("role.id", sqlcRole.ID.String()))
@@ -104,9 +102,7 @@ func (repo *roleRepo) UpdateDescription(ctx context.Context, description string,
 		Description: &description,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -122,9 +118,7 @@ func (repo *roleRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*roles
 
 	sqlcRole, err := repo.queries(ctx).GetRoleByIDInternal(ctx, id)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	var outRole roles.Role
@@ -146,9 +140,7 @@ func (repo *roleRepo) GetByIDExternal(ctx context.Context, id, projectID uuid.UU
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	var outRole roles.Role
@@ -169,9 +161,7 @@ func (repo *roleRepo) GetByName(ctx context.Context, name string, projectID *uui
 		ProjectID: projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("role.id", sqlcRole.ID.String()))
@@ -191,9 +181,7 @@ func (repo *roleRepo) ListByProject(ctx context.Context, projectID uuid.UUID) ([
 
 	sqlcRoles, err := repo.queries(ctx).ListRolesByProject(ctx, &projectID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("role.count", len(sqlcRoles)))
@@ -221,9 +209,7 @@ func (repo *roleRepo) BelongsToProject(ctx context.Context, id, projectID uuid.U
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err)
 	}
 
 	return belongs, nil
@@ -243,9 +229,7 @@ func (repo *roleRepo) AddPermission(ctx context.Context, id uuid.UUID, permissio
 		PermissionID: permissionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -265,9 +249,7 @@ func (repo *roleRepo) RemovePermission(ctx context.Context, id uuid.UUID, permis
 		PermissionID: permissionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -287,9 +269,7 @@ func (repo *roleRepo) GetPermissions(ctx context.Context, id, projectID uuid.UUI
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))
@@ -303,7 +283,7 @@ func (repo *roleRepo) GetPermissions(ctx context.Context, id, projectID uuid.UUI
 	return outPermissions, nil
 }
 
-func (repo *roleRepo) GiveRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error {
+func (repo *roleRepo) GiveRole(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID, role string) error {
 	ctx, span := repo.tracer.Start(ctx, "RoleRepo.GiveRole",
 		trace.WithAttributes(
 			attribute.String("role.id", id.String()),
@@ -323,9 +303,7 @@ func (repo *roleRepo) GiveRole(ctx context.Context, id, identityID uuid.UUID, sc
 		ScopeID:    scopeID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).WithArgs(role)
 	}
 
 	return nil
@@ -351,9 +329,7 @@ func (repo *roleRepo) TakeRole(ctx context.Context, id, identityID uuid.UUID, sc
 		ScopeID:    scopeID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -373,9 +349,7 @@ func (repo *roleRepo) GetUserRoles(ctx context.Context, identityID, projectID uu
 		ProjectID:  &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("roles.count", len(sqlcRoles)))
