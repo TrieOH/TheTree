@@ -31,11 +31,3 @@ type ErrAuthSessionRevoked struct{}
 func (e ErrAuthSessionRevoked) Error() string {
 	return "session not found or revoked"
 }
-
-type ErrEmptyCookie struct {
-	Cookie string
-}
-
-func (e ErrEmptyCookie) Error() string {
-	return "empty " + e.Cookie + " cookie value"
-}

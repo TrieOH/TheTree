@@ -99,7 +99,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": password,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasErrID(apierr.ID(apierr.AuthEmailAlreadyUsed.String())).
 			HasMessage("error registering user").
 			TraceContains("email already in use")
 	})
@@ -120,7 +120,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasErrID(apierr.ID(apierr.AuthEmailAlreadyUsed.String())).
 			HasMessage("error registering user").
 			TraceContains("email already in use")
 	})

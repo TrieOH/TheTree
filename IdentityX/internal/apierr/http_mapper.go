@@ -102,12 +102,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case authz.ErrInvalidPrincipal:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ID(AuthInvalidPrincipal.String()))
-		RecordDomainError(span, httpErr)
-		return httpErr
-		// rs, err = HTTPResponseTranslator().Translate(fail.New(AuthInvalidPrincipal))
-		// return rs
 	case authz.ErrPrincipalMissingInContext:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthPrincipalNotInContext)
 		RecordDomainError(span, httpErr)
@@ -128,24 +122,9 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(TokenRefreshInvalidID).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case ErrPasswordTooLong:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(AuthInvalidPassword)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrHashingPassword:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorBCryptHashingFailed).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrEmailAlreadyInUse:
-		httpErr := ErrConflict.WithMsg(e.Error()).WithID(AuthEmailAlreadyUsed).WithCause(e.Cause)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrInvalidCredentials:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(AuthInvalidCredentials)
-		if e.Cause != nil {
-			httpErr = httpErr.WithCause(e.Cause)
-		}
-		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrGeneratingUUID:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorGeneratingUUID).WithCause(e.Cause)
@@ -210,10 +189,6 @@ func FromService(span trace.Span, err error) error {
 	case inbounds.ErrSchemaInvalidStatus:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SchemaNoValidStatus)
 		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaNoPublishedVersions:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaNoPublishedVersion)
-		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrSchemaOnlyDraft:
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaHasOnlyDraftVersion)
@@ -293,12 +268,6 @@ func FromService(span trace.Span, err error) error {
 		return httpErr
 	case inbounds.ErrAuthSessionRevoked:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SessionRevoked)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrEmptyCookie:
-		// rs, err = HTTPResponseTranslator().Translate(fail.New(RequestEmptyCookie))
-		// return rs
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ID(RequestEmptyCookie.String()))
 		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrTokenReuseNotAllowed:
@@ -400,17 +369,18 @@ func FromService(span trace.Span, err error) error {
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
-		httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
-		spanID := ""
-		if span != nil {
-			spanID = span.SpanContext().SpanID().String()
-		}
-		logs.L().Error("unmapped service error",
-			zap.Error(err),
-			zap.String("span", spanID),
-			zap.String("error_id", string(SystemInternalError)),
-		)
-		return httpErr
+		return err
+		// httpErr := ErrInternal.WithMsg("unmapped service error").WithCause(err).WithID(SystemInternalError)
+		// spanID := ""
+		// if span != nil {
+		// 	spanID = span.SpanContext().SpanID().String()
+		// }
+		// logs.L().Error("unmapped service error",
+		// 	zap.Error(err),
+		// 	zap.String("span", spanID),
+		// 	zap.String("error_id", string(SystemInternalError)),
+		// )
+		// return httpErr
 	}
 }
 

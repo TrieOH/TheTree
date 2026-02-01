@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -26,7 +28,7 @@ func RequirePrincipal(ctx context.Context) (*authz.Principal, error) {
 
 	p, ok := val.(*authz.Principal)
 	if !ok {
-		return nil, authz.ErrInvalidPrincipal{}
+		return nil, fail.New(apierr.AuthInvalidPrincipal)
 	}
 
 	return p, nil

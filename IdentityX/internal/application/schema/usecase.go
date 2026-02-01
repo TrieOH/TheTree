@@ -12,6 +12,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -194,7 +195,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if err != nil && apierr.IsNotFound(err) {
-		return apierr.FromService(span, inbounds.ErrSchemaNoPublishedVersions{Msg: "cannot publish a schema with no versions"})
+		return fail.New(apierr.SCHEMANoPublishedVersion)
 	}
 
 	if latest.VersionNumber == 1 && latest.Status == version.StatusDraft {
@@ -505,7 +506,7 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 	if versionNumber == 0 {
 		// Get current published version
 		if s.CurrentVersionID == nil {
-			return nil, apierr.FromService(span, inbounds.ErrSchemaNoPublishedVersions{})
+			return nil, fail.New(apierr.SCHEMANoPublishedVersion)
 		}
 		v, err = versions.GetByID(ctx, *s.CurrentVersionID)
 		if err != nil {

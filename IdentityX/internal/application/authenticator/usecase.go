@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -47,10 +48,10 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	sessions := uc.deps.Session
 
 	if in.AccessToken == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptyCookie{Cookie: "access_token"})
+		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("access_token")
 	}
 	if in.RefreshToken == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptyCookie{Cookie: "refresh_token"})
+		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("refresh_token")
 	}
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)

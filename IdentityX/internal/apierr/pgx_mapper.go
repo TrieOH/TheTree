@@ -1,10 +1,10 @@
 package apierr
 
 import (
-	"database/sql"
 	"errors"
 
 	"github.com/MintzyG/fail"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -34,7 +34,7 @@ func (m *PGXMapper) MapFromFail(fe *fail.Error) (error, bool) {
 func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 
 	// sqlc "not found" - this stays the same
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return fail.New(SQLNotFound), true
 	}
 
