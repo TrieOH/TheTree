@@ -189,48 +189,8 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrEmptyScopeName:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrInvalidPermissionObject:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidObject)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrInvalidPermissionAction:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionInvalidAction)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrRoleNotOwned:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(RoleNotOwnedByPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPermissionNotOwned:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionNotOwnedByPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrProjectUserNotFromProject:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ProjectUserNotFromProject)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrActionMismatch:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionActionMismatch)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrObjectMismatch:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(PermissionObjectMismatch)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrInsufficientPermissions:
-		httpErr := ErrForbidden.WithMsg("Permission Denied").WithID(PermissionInsufficient).WithCause(e)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrConditionValidationError:
-		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case permissions.ErrLogicalConditionValidationError:
-		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrPublishVersionNotDraft:
@@ -277,7 +237,7 @@ func FromHandler(err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestValidationError.String()))
 		return httpErr
 	default:
-		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(SystemInternalError)
+		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(PlaceholderID)
 		logs.L().Error("unmapped handler error", zap.Error(httpErr), zap.String("cause", err.Error()))
 		return httpErr
 	}

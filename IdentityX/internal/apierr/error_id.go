@@ -126,39 +126,24 @@ const (
 )
 
 const (
-	ScopeEmptyName                  ID = "SCP_001"
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-)
-
-const (
-	PermissionInvalidObject            ID = "PERM_001"
-	PermissionInvalidAction            ID = "PERM_002"
-	PermissionNotOwnedByPrincipal      ID = "PERM_003"
-	PermissionAlreadyGranted           ID = "PERM_004"
-	PermissionObjectMismatch           ID = "PERM_005"
-	PermissionActionMismatch           ID = "PERM_006"
-	PermissionInsufficient             ID = "PERM_007"
-	PermissionConditionValidationError ID = "PERM_008"
-)
-
-const (
-	RoleNotOwnedByPrincipal ID = "ROLE_002"
-	RoleNameTaken           ID = "ROLE_003"
-	RoleAlreadyGranted      ID = "ROLE_004"
-)
-
-const (
 	DBNotFound             ID = "DB_000"
 	DBUniqueViolation      ID = "DB_001"
 	DBForeignKeyViolation  ID = "DB_002"
 	DBNotNullViolation     ID = "DB_003"
 	DBValueTooLong         ID = "DB_004"
 	DBSerializationFailure ID = "DB_005"
-	DBCheckViolation       ID = "DB_009"
 )
 
 const PlaceholderID ID = "PL_000"
+
+const (
+	RoleNameTaken                   ID = "ROLE_003"
+	RoleAlreadyGranted              ID = "ROLE_004"
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
+	PermissionAlreadyGranted        ID = "PERM_004"
+	DBCheckViolation                ID = "DB_009"
+)
 
 var (
 	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
@@ -177,6 +162,27 @@ var (
 	DBTransactionCommitFailed = fail.ID(9, "DB", 2, false, "DBTransactionCommitFailed")
 
 	DBNestedTransactionNotAllowed = fail.ID(9, "DB", 0, true, "DBNestedTransactionNotAllowed")
+
+	ROLENotOwnedByPrincipal = fail.ID(0, "ROLE", 0, false, "ROLENotOwnedByPrincipal")
+	ROLEAlreadyGranted      = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+
+	ROLENameAlreadyTaken = fail.ID(0, "ROLE", 0, true, "ROLENameAlreadyTaken")
+
+	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
+
+	SCOPEInvalidShape = fail.ID(0, "SCOPE", 0, true, "SCOPEInvalidShape")
+	SCOPEEmptyName    = fail.ID(0, "SCOPE", 1, true, "SCOPEEmptyName")
+
+	PERMissionLogicalConditionValidationError = fail.ID(0, "PERM", 0, false, "PERMissionLogicalConditionValidationError")
+	PERMissionConditionValidationError        = fail.ID(0, "PERM", 1, false, "PERMissionConditionValidationError")
+	PERMissionActionMismatch                  = fail.ID(0, "PERM", 2, false, "PERMissionActionMismatch")
+	PERMissionObjectMismatch                  = fail.ID(0, "PERM", 3, false, "PERMissionObjectMismatch")
+	PERMissionAlreadyGranted                  = fail.ID(0, "PERM", 4, false, "PERMissionAlreadyGranted")
+	PERMissionNotOwnedByPrincipal             = fail.ID(0, "PERM", 5, false, "PERMissionNotOwnedByPrincipal")
+	PERMissionInvalidAction                   = fail.ID(0, "PERM", 6, false, "PERMissionInvalidAction")
+	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
+
+	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
 
 	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
 				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
@@ -206,6 +212,44 @@ var (
 
 	ErrNestedTransactionNotAllowed = fail.Form(DBNestedTransactionNotAllowed, "nested transactions are not allowed", true, map[string]any{"code": 500}).
 					AddLocalization("pt-BR", "transações aninhadas não são permitidas")
+
+	ErrRoleNotOwnedByPrincipal = fail.Form(ROLENotOwnedByPrincipal, "role not owned by principal", false, map[string]any{"code": 401}).
+					AddLocalization("pt-BR", "principal não é dono do papel")
+
+	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 400}).
+				AddLocalization("pt-BR", "nome do papel já em uso")
+	ErrRoleAlreadyGranted = fail.Form(ROLEAlreadyGranted, "%s role already granted to user", false, map[string]any{"code": 400}, "ROLE NOT SET").
+				AddLocalization("pt-BR", "papel %s já atribuído ao usuário")
+
+	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 400}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
+						AddLocalization("pt-BR", "escopo com nome e id externo (%s, %s) já existe")
+
+	ScopeInvalidShapeErrorMessage   = "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)"
+	ScopeInvalidShapeErrorMessageBR = "Forma de escopo inválida: um escopo deve ser um dos seguintes — (1) um escopo global com type='global' e sem project_id, name ou external_id; (2) um escopo raiz de projeto com type='project_root', um project_id, e sem name ou external_id; ou (3) um escopo de projeto com type='project_scope', um project_id e um name (external_id opcional)."
+	ErrScopeInvalidShape            = fail.Form(SCOPEInvalidShape, ScopeInvalidShapeErrorMessage, false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", ScopeInvalidShapeErrorMessageBR)
+	ErrScopeEmptyName = fail.Form(SCOPEEmptyName, "scope name cannot be empty", false, map[string]any{"code": 400}).
+				AddLocalization("pt-BR", "nome do escopo não pode estar vazio")
+
+	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").
+							AddLocalization("pt-BR", "%s: condições %s não podem estar vazias")
+	ErrPermissionConditionValidationError = fail.Form(PERMissionConditionValidationError, "error validating permission condition at: %s", false, map[string]any{"code": 400}, "PATH NOT SET").
+						AddLocalization("pt-BR", "erro validando permissão da condição em: %s")
+	ErrPermissionActionMismatch = fail.Form(PERMissionActionMismatch, "action mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
+					AddLocalization("pt-BR", "incompatibilidade de ações: permissão=%s, requisição=%s")
+	ErrPermissionObjectMismatch = fail.Form(PERMissionObjectMismatch, "object mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
+					AddLocalization("pt-BR", "incompatibilidade de objetos: permissão=%s, requisição=%s")
+	ErrPermissionNotOwnedByPrincipal = fail.Form(PERMissionNotOwnedByPrincipal, "permission not owned by principal", false, map[string]any{"code": 401}).
+						AddLocalization("pt-BR", "identidade não é a dona da permissão")
+	ErrPermissionInvalidAction = fail.Form(PERMissionInvalidAction, "invalid permission action: (%s)", false, map[string]any{"code": 400}, "ACTION NOT SET").
+					AddLocalization("pt-BR", "ação da permissão é invalida: (%s)")
+	ErrPermissionInvalidObject = fail.Form(PERMissionInvalidObject, "invalid permission object: (%s)", false, map[string]any{"code": 400}, "OBJECT NOT SET").
+					AddLocalization("pt-BR", "objeto da permissão é invalido: (%s)")
+
+	ErrInsufficientPermission = fail.Form(PERMissionInsufficient, "insufficient permissions", false, map[string]any{"code": 403}).
+					AddLocalization("pt-BR", "permissões insuficientes")
+	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", "usuário já tem essa permissão no escopo específicado")
 )
 
 var (
@@ -225,12 +269,4 @@ var (
 	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
 	FIELDSameKeyForMultipleFields      = fail.ID(0, "FIELD", 1, false, "FIELDSameKeyForMultipleFields")
 	FIELDInvalidCharactersInKey        = fail.ID(0, "FIELD", 2, false, "FIELDInvalidCharactersInKey")
-
-	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
-	SCOPEInvalid                    = fail.ID(0, "SCOPE", 1, false, "SCOPEInvalid")
-
-	ROLENameAlreadyTaken = fail.ID(0, "ROLE", 0, false, "ROLENameAlreadyTaken")
-	ROLEAlreadyGranted   = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
-
-	PERMISSIONAlreadyGranted = fail.ID(0, "PERM", 0, false, "PERMISSIONAlreadyGranted")
 )

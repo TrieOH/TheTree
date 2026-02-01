@@ -1,9 +1,11 @@
 package permissions
 
 import (
+	"GoAuth/internal/apierr"
 	"regexp"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 )
 
@@ -24,20 +26,20 @@ var (
 
 func ValidateObject(object string) error {
 	if object == "" {
-		return ErrInvalidPermissionObject{IsEmpty: true}
+		return fail.New(apierr.PERMissionInvalidObject).WithArgs("(empty)")
 	}
 	if !objectRegex.MatchString(object) {
-		return ErrInvalidPermissionObject{Object: object}
+		return fail.New(apierr.PERMissionInvalidObject).WithArgs(object)
 	}
 	return nil
 }
 
 func ValidateAction(action string) error {
 	if action == "" {
-		return ErrInvalidPermissionAction{IsEmpty: true}
+		return fail.New(apierr.PERMissionInvalidAction).WithArgs("(empty)")
 	}
 	if !actionRegex.MatchString(action) {
-		return ErrInvalidPermissionAction{Action: action}
+		return fail.New(apierr.PERMissionInvalidAction).WithArgs(action)
 	}
 	return nil
 }

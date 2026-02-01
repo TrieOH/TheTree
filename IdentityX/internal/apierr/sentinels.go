@@ -20,14 +20,6 @@ var (
 	ErrSameKeyForMultipleFields      = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400})
 	ErrInvalidCharacterInFieldKey    = fail.Form(FIELDInvalidCharactersInKey, "field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores", false, map[string]any{"code": 400})
 
-	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "two scopes can't have the same name and external_id", false, map[string]any{"code": 400})
-	ErrScopeInvalid                    = fail.Form(SCOPEInvalid, "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)", false, map[string]any{"code": 400})
-
-	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 400})
-	ErrRoleAlreadyGranted   = fail.Form(ROLEAlreadyGranted, "user already has this role in the specified scope", false, map[string]any{"code": 400})
-
-	ErrPermissionAlreadyGranted = fail.Form(PERMISSIONAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400})
-
 	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 						AddLocalizations(map[string]string{
 			"pt-BR": "faltando parâmetro de pesquisa para: %s",

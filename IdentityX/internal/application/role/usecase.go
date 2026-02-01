@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -216,7 +217,7 @@ func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermission
 	}
 
 	if !roleBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var permissionBelongs bool
@@ -226,7 +227,7 @@ func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermission
 	}
 
 	if !permissionBelongs {
-		return apierr.FromService(span, inbounds.ErrPermissionNotOwned{Msg: "cannot add permission to a role you don't own"})
+		return fail.New(apierr.PERMissionNotOwnedByPrincipal).Trace("cannot add permission to a role you don't own")
 	}
 
 	if err = uc.roles.AddPermission(ctx, in.RoleID, in.PermissionID); err != nil {
@@ -262,7 +263,7 @@ func (uc *UseCase) RemovePermission(ctx context.Context, in inbounds.RolePermiss
 	}
 
 	if !roleBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var permissionBelongs bool
@@ -272,7 +273,7 @@ func (uc *UseCase) RemovePermission(ctx context.Context, in inbounds.RolePermiss
 	}
 
 	if !permissionBelongs {
-		return apierr.FromService(span, inbounds.ErrPermissionNotOwned{Msg: "cannot remove permission from a role you don't own"})
+		return fail.New(apierr.PERMissionNotOwnedByPrincipal).Trace("cannot remove permission to a role you don't own")
 	}
 
 	if err = uc.roles.RemovePermission(ctx, in.RoleID, in.PermissionID); err != nil {
@@ -338,7 +339,7 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !roleBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var userBelongs bool
@@ -392,7 +393,7 @@ func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !roleBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a role you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var userBelongs bool
