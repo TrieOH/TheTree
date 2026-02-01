@@ -14,8 +14,14 @@ type HTTPResponse struct {
 type HTTPTranslator struct{}
 
 var (
-	CannotTranslateToHTTP = fail.ID(5, "TR", 0, false, "TRCannotTranslateToHTTP")
-	ErrCannotTranslate    = fail.Form(CannotTranslateToHTTP, "cannot translate error to http", true, nil)
+	CannotTranslateUnsupportedError = fail.ID(5, "TR", 0, false, "TRCannotTranslateUnsupportedError")
+	ErrCannotTranslate              = fail.Form(CannotTranslateUnsupportedError, "cannot translate unsupported error ID(%s) to http", true, nil, "MISSING ID")
+
+	CannotTranslateUntrustedError    = fail.ID(5, "TR", 1, false, "TRCannotTranslateUntrustedError")
+	ErrCannotTranslateUntrustedError = fail.Form(CannotTranslateUntrustedError, "cannot translate untrusted error to %s", true, nil, "MISSING DOMAIN")
+
+	CannotTranslateNilError    = fail.ID(5, "TR", 2, false, "TRCannotTranslateNilError")
+	ErrCannotTranslateNilError = fail.Form(CannotTranslateNilError, "cannot translate nil error to %s", true, nil, "MISSING DOMAIN")
 )
 
 func HTTPResponseTranslator() *HTTPTranslator {
@@ -23,23 +29,27 @@ func HTTPResponseTranslator() *HTTPTranslator {
 }
 
 func (h *HTTPTranslator) Name() string { return "http" }
-func (h *HTTPTranslator) Supports(err *fail.Error) bool {
-	if !err.IsTrusted() || err == nil {
-		return false
+func (h *HTTPTranslator) Supports(err *fail.Error) error {
+	if !err.IsTrusted() {
+		return fail.New(CannotTranslateUntrustedError).WithArgs("http").Render()
+	}
+
+	if err == nil {
+		return fail.New(CannotTranslateNilError).WithArgs("http").Render()
 	}
 	switch err.ID {
 	case RequestMissingQueryParamValue, RequestMissingQueryParam, RequestMissingSchemaCustomFields,
 		RequestInvalidJSONFormat, RequestValidationError, RequestNotApplicationJSON, RequestEmptyCookie,
 		RequestUnknownQueryParam, SQLNotFound:
-		return true
+		return nil
 	default:
-		return false
+		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)
 	}
 }
 
 func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
-	if !h.Supports(err) {
-		return nil, fail.New(CannotTranslateToHTTP).With(err)
+	if spErr := h.Supports(err); spErr != nil {
+		return nil, err
 	}
 
 	traces := toStringSlice(err.Meta["traces"])

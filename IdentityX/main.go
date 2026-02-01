@@ -1,42 +1,7 @@
 package main
 
-import (
-	"GoAuth/internal/adapters/http/router"
-	"GoAuth/internal/infrastructure/telemetry"
-	"context"
-	"log"
-	"net/http"
-)
+import "GoAuth/initialization"
 
 func main() {
-	ctx := context.Background()
-
-	defer DB.Close()
-
-	shutdown, err := telemetry.InitTracer(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func(ctx context.Context) {
-		err := shutdown(ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(ctx)
-
-	defer func() {
-		err := scheduler.StopJobs()
-		if err != nil {
-			log.Printf("Error stopping jobs: %v", err)
-		}
-		err = scheduler.Shutdown()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	mux, _ := router.CreateRouter(DB)
-
-	log.Printf("GoAuth listening on :%s", Port)
-	log.Fatal(http.ListenAndServe(":"+Port, mux))
+	initialization.GoAuthStart(app)
 }

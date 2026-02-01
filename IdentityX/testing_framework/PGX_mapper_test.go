@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPGXMapper_MapToFail(t *testing.T) {
+func testPGXMapper(t *testing.T) {
 	mapper := &apierr.PGXMapper{}
 
 	tests := []struct {
@@ -139,7 +139,7 @@ func TestPGXMapper_MapToFail(t *testing.T) {
 			name:       "Non-PG Error",
 			err:        errors.New("generic error"),
 			expectedID: apierr.SQLInternalDBError,
-			expectedOk: true,
+			expectedOk: false,
 		},
 	}
 

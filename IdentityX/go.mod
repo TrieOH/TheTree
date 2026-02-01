@@ -1,13 +1,13 @@
 module GoAuth
 
-go 1.25.3
+go 1.25.6
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.4
-	github.com/MintzyG/fail v1.1.2
+	github.com/MintzyG/fail v1.1.8
 	github.com/exaring/otelpgx v0.10.0
 	github.com/gavv/httpexpect/v2 v2.17.0
-	github.com/go-chi/chi/v5 v5.2.3
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-chi/cors v1.2.2
 	github.com/go-chi/httprate v0.15.0
 	github.com/go-co-op/gocron/v2 v2.17.0
