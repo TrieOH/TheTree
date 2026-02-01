@@ -118,9 +118,3 @@ func FieldToOutputField(f *field.Field) *OutputField {
 		UpdatedAt:       f.UpdatedAt,
 	}
 }
-
-type ErrAddFieldsToNonDraftVersion struct{}
-
-func (e ErrAddFieldsToNonDraftVersion) Error() string {
-	return "cannot add fields to a non-draft version"
-}

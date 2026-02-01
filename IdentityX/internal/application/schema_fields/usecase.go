@@ -110,7 +110,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaVersionMismatch)
 	}
 	if latest.Status != version.StatusDraft {
-		return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrAddFieldsToNonDraftVersion{})
+		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaVersionNonDraftAddFieldsNotAllowed)
 	}
 
 	// Validate field types/owners first

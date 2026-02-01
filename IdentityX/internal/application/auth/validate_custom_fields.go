@@ -399,10 +399,10 @@ func toFloat64(v interface{}) (float64, bool) {
 
 func parseCustomFields(customFields *json.RawMessage) (custom map[string]any, err error) {
 	if customFields == nil {
-		return nil, apierr.ErrMissingCustomFields{}
+		return nil, fail.New(apierr.RequestMissingCustomFields)
 	}
 	if err = json.Unmarshal(*customFields, &custom); err != nil {
-		return nil, apierr.ErrInvalidCustomFieldsJSON{Cause: err}
+		return nil, fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err)
 	}
 	return custom, nil
 }

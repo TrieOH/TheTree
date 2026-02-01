@@ -8,13 +8,19 @@ var (
 	RequestMissingQueryParamValue = fail.ID(0, "REQ", 0, false, "REQuestMissingQueryParamValue")
 	RequestMissingQueryParam      = fail.ID(0, "REQ", 1, false, "REQuestMissingQueryParam")
 	// FIXME create tests for empty cookies
-	RequestEmptyCookie       = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
-	RequestUnknownQueryParam = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
-	RequestValidationError   = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
+	RequestEmptyCookie             = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
+	RequestUnknownQueryParam       = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
+	RequestValidationError         = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
+	RequestParseUUIDError          = fail.ID(0, "REQ", 5, false, "REQuestParseUUIDError")
+	RequestParseNumberError        = fail.ID(0, "REQ", 6, false, "REQuestParseNumberError")
+	RequestMissingParamError       = fail.ID(0, "REQ", 7, false, "REQuestMissingParamError")
+	RequestInvalidCustomFieldsJSON = fail.ID(0, "REQ", 8, false, "REQuestInvalidCustomFieldsJSON")
 
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
-	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQuestNotApplicationJSON")
+	RequestNotApplicationJSON        = fail.ID(0, "REQ", 2, true, "REQuestNotApplicationJSON")
+	RequestMissingCustomFields       = fail.ID(0, "REQ", 3, true, "REQuestMissingCustomFields")
+	RequestInvalidPassword           = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
 
 	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
 	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
@@ -93,49 +99,45 @@ var (
 	SchemaEmptySchemaType           = fail.ID(1, "SCHEMA", 8, true, "SCHEMAEmptySchemaType")
 	SchemaEmptyFlowID               = fail.ID(1, "SCHEMA", 9, true, "SCHEMAEmptyFlowID")
 
-	// Schema Version
-	SchemaVersionDraftAlreadyExists  = fail.ID(1, "SCHEMAVERSION", 0, true, "SCHEMAVERSIONDraftAlreadyExists")
-	SchemaVersionPublishWithNoFields = fail.ID(1, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONPublishWithNoFields")
+	SchemaVersionNotDraft           = fail.ID(1, "SCHEMAVERSION", 0, false, "SCHEMAVERSIONNotDraft")
+	SCHEMAVersionDraftAlreadyExists = fail.ID(1, "SCHEMAVERSION", 1, false, "SCHEMAVERSIONDraftAlreadyExists")
 
-	SchemaVersionMismatch = fail.ID(1, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONMismatch")
-)
+	SchemaVersionPublishWithNoFields         = fail.ID(1, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONPublishWithNoFields")
+	SchemaVersionDraftDoesntExist            = fail.ID(1, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONDraftDoesntExist")
+	SchemaVersionTryingToPublishPublished    = fail.ID(1, "SCHEMAVERSION", 3, true, "SCHEMAVERSIONTryingToPublishPublished")
+	SchemaVersionTryingToPublishArchived     = fail.ID(1, "SCHEMAVERSION", 4, true, "SCHEMAVERSIONTryingToPublishArchived")
+	SchemaVersionMismatch                    = fail.ID(1, "SCHEMAVERSION", 5, true, "SCHEMAVERSIONMismatch")
+	SchemaVersionNonDraftAddFieldsNotAllowed = fail.ID(1, "SCHEMAVERSION", 6, true, "SCHEMAVERSIONNonDraftAddFieldsNotAllowed")
+	SchemaVersionNoValidStatus               = fail.ID(1, "SCHEMAVERSION", 7, true, "SCHEMAVERSIONNoValidStatus")
+	SchemaVersionDraftOnNonPublished         = fail.ID(1, "SCHEMAVERSION", 8, true, "SCHEMAVERSIONDraftOnNonPublished")
+	SchemaVersionNoChanges                   = fail.ID(1, "SCHEMAVERSION", 9, true, "SCHEMAVERSIONNoChanges")
+	SchemaVersionTryingToPublishNonExistant  = fail.ID(1, "SCHEMAVERSION", 10, true, "SCHEMAVERSIONTryingToPublishNonExistant")
 
-const (
-	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
-	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
-	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
-	// SchemaVersionMismatch                   ID = "SCM_VER_007"
-	SchemaVersionNotDraft                   ID = "SCM_VER_008"
-	SchemaVersionNoValidStatus              ID = "SCM_VER_009"
-	SchemaVersionDraftOnNonPublished        ID = "SCM_VER_010"
-	SchemaVersionNoChanges                  ID = "SCM_VER_011"
-	SchemaVersionTryingToPublishNonExistant ID = "SCM_VER_012"
-)
+	FIELDValidationErrorOnSchemaRegister = fail.ID(0, "FIELD", 0, false, "FIELDValidationErrorOnSchemaRegister")
+	FIELDNotFound                        = fail.ID(0, "FIELD", 1, false, "FIELDNotFound")
+	FIELDInvalidOwner                    = fail.ID(0, "FIELD", 2, false, "FIELDInvalidOwner")
+	FieldNoAffectedRowsOnClone           = fail.ID(1, "FIELD", 3, false, "FIELDNoAffectedRowsOnClone")
+	FIELDInvalidType                     = fail.ID(0, "FIELD", 4, false, "FIELDInvalidType")
+	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 5, false, "FIELDSameKeyForMultipleFields")
+	FIELDSamePositionForMultipleFields   = fail.ID(0, "FIELD", 6, false, "FIELDSamePositionForMultipleFields")
+	FIELDInvalidCharactersInKey          = fail.ID(0, "FIELD", 7, false, "FIELDInvalidCharactersInKey")
 
-const (
-	DBNotFound                         ID = "DB_000"
-	DBUniqueViolation                  ID = "DB_001"
-	DBForeignKeyViolation              ID = "DB_002"
-	DBNotNullViolation                 ID = "DB_003"
-	DBValueTooLong                     ID = "DB_004"
-	DBSerializationFailure             ID = "DB_005"
-	FieldSameKeyForMultipleFields      ID = "FIELD_006"
-	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldInvalidCharactersInKey        ID = "FIELD_003"
-)
+	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
 
-const PlaceholderID ID = "PL_000"
+	FORMMissingRequiredField = fail.ID(0, "FORM", 0, false, "FORMMissingRequiredFields")
+	FORMInvalidFieldValue    = fail.ID(0, "FORM", 1, false, "FORMInvalidFieldValue")
 
-const (
-	RoleNameTaken                   ID = "ROLE_003"
-	RoleAlreadyGranted              ID = "ROLE_004"
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-	PermissionAlreadyGranted        ID = "PERM_004"
-	DBCheckViolation                ID = "DB_009"
-)
+	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
+	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
+	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
+	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
+	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
+	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
+	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
+	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
+	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
+	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
 
-var (
 	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
 	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
 	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
@@ -144,8 +146,6 @@ var (
 
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
-
-	RequestInvalidPassword = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
 
 	DBTransactionPanicked     = fail.ID(9, "DB", 0, false, "DBTransactionPanicked")
 	DBBeginTransactionFailed  = fail.ID(9, "DB", 1, false, "DBBeginTransactionFailed")
@@ -173,16 +173,36 @@ var (
 	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
 
 	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
+)
 
-	FIELDValidationErrorOnSchemaRegister = fail.ID(0, "FIELD", 0, false, "FIELDValidationErrorOnSchemaRegister")
-	FIELDNotFound                        = fail.ID(0, "FIELD", 1, false, "FIELDNotFound")
-	FIELDInvalidOwner                    = fail.ID(0, "FIELD", 2, false, "FIELDInvalidOwner")
-	FIELDInvalidType                     = fail.ID(0, "FIELD", 3, false, "FIELDInvalidType")
-	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 4, false, "FIELDSameKeyForMultipleFields")
+const (
+	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
+)
 
-	FORMMissingRequiredField = fail.ID(0, "FORM", 0, false, "FORMMissingRequiredFields")
-	FORMInvalidFieldValue    = fail.ID(0, "FORM", 0, false, "FORMInvalidFieldValue")
+const (
+	DBNotFound                         ID = "DB_000"
+	DBUniqueViolation                  ID = "DB_001"
+	DBForeignKeyViolation              ID = "DB_002"
+	DBNotNullViolation                 ID = "DB_003"
+	DBValueTooLong                     ID = "DB_004"
+	DBSerializationFailure             ID = "DB_005"
+	FieldSameKeyForMultipleFields      ID = "FIELD_006"
+	FieldSamePositionForMultipleFields ID = "FIELD_001"
+	FieldInvalidCharactersInKey        ID = "FIELD_003"
+)
 
+const PlaceholderID ID = "PL_000"
+
+const (
+	RoleNameTaken                   ID = "ROLE_003"
+	RoleAlreadyGranted              ID = "ROLE_004"
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
+	PermissionAlreadyGranted        ID = "PERM_004"
+	DBCheckViolation                ID = "DB_009"
+)
+
+var (
 	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
 				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
 	ErrServiceUnavailable = fail.Form(SYSServiceUnavailable, "%s is unavailable", true, map[string]any{"code": 500}, "UNNAMED SERVICE").
@@ -264,20 +284,4 @@ var (
 					AddLocalization("pt-BR", "formulário com campos obrigatorio ausente: %s")
 	ErrFormInvalidFieldValue = fail.Form(FORMInvalidFieldValue, "invalid form value for %s: type(%v) value(%v)", false, map[string]any{"code": 400}, "UNSET FIELD KEY", "UNSET FIELD TYPE", "UNSET FIELD VALUE").
 					AddLocalization("pt-BR", "campo %s do formulário com valor inválido: tipo(%v) valor(%v)")
-)
-
-var (
-	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
-	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
-	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
-	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
-	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
-	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
-	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
-	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
-	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
-	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
-
-	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
-	FIELDInvalidCharactersInKey        = fail.ID(0, "FIELD", 2, false, "FIELDInvalidCharactersInKey")
 )

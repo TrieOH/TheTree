@@ -14,8 +14,8 @@ var (
 	ErrSQLUnmatchedUniqueViolation = fail.Form(SQLUnmatchedUniqueViolation, "resource already exists", false, map[string]any{"code": 400})
 	ErrSQLUnmatchedCheckViolation  = fail.Form(SQLUnmatchedCheckViolation, "invalid value, violates a database constraint", false, map[string]any{"code": 400})
 
-	ErrSamePositionForMultipleFields = fail.Form(FIELDSamePositionForMultipleFields, "two fields can't occupy the same position", false, map[string]any{"code": 400})
 	ErrInvalidCharacterInFieldKey    = fail.Form(FIELDInvalidCharactersInKey, "field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores", false, map[string]any{"code": 400})
+	ErrSamePositionForMultipleFields = fail.Form(FIELDSamePositionForMultipleFields, "two fields can't occupy the same position", false, map[string]any{"code": 400})
 
 	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 						AddLocalizations(map[string]string{
@@ -24,6 +24,10 @@ var (
 	ErrRequestMissingQueryParam = fail.Form(RequestMissingQueryParam, "missing query parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "faltando parâmetro de pesquisa: %s",
+		})
+	ErrRequestMissingCustomFields = fail.Form(RequestMissingCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Os campos customizados do schema são obrigatórios no registro de schema",
 		})
 	ErrRequestEmptyCookie = fail.Form(RequestEmptyCookie, "empty %s cookie value", false, map[string]any{"code": 400}, "UNDEFINED").
 				AddLocalizations(map[string]string{
@@ -36,6 +40,22 @@ var (
 	ErrRequestValidationError = fail.Form(RequestValidationError, "Validation failed", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "Formato do JSON inválido.",
+		})
+	ErrRequestParseUUIDError = fail.Form(RequestParseUUIDError, "invalid uuid field: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "O campo UUID: %s está inválido",
+		})
+	ErrRequestParseNumberError = fail.Form(RequestParseNumberError, "error parsing number: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Erro ao converter o número: %s",
+		})
+	ErrRequestMissingParamError = fail.Form(RequestMissingParamError, "missing parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Faltando o parâmetro: %s",
+		})
+	ErrRequestInvalidCustomFieldsJSON = fail.Form(RequestInvalidCustomFieldsJSON, "invalid custom fields JSON", false, map[string]any{"code": 400}, "UNDEFINED").
+						AddLocalizations(map[string]string{
+			"pt-BR": "O JSON de campos customizados está inválido",
 		})
 	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 401}, "UNDEFINED").
 						AddLocalizations(map[string]string{
@@ -320,7 +340,11 @@ var (
 			"pt-BR": "O Flow ID não pode ser vazio",
 		})
 
-	ErrSchemaVersionDraftAlreadyExists = fail.Form(SchemaVersionDraftAlreadyExists, "a draft schema version already exists", false, map[string]any{"code": 400}).
+	ErrSchemaVersionNotDraft = fail.Form(SchemaVersionNotDraft, "cannot publish a schema version that isn't a draft", false, map[string]any{"code": 400}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão do schema que não seja um rascunho",
+		})
+	ErrSchemaVersionDraftAlreadyExists = fail.Form(SCHEMAVersionDraftAlreadyExists, "a draft schema version already exists", false, map[string]any{"code": 400}).
 						AddLocalizations(map[string]string{
 			"pt-BR": "Já existe um rascunho da versão desse schema",
 		})
@@ -328,8 +352,55 @@ var (
 						AddLocalizations(map[string]string{
 			"pt-BR": "Não é possível publicar uma versão do schema com nenhum campo",
 		})
+	ErrSchemaVersionDraftDoesntExist = fail.Form(SchemaVersionDraftDoesntExist, "cannot publish a schema with a version draft that doesn't exist", false, map[string]any{"code": 401}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão do schema de rascunho que não existe",
+		})
+	ErrSchemaVersionTryingToPublishPublished = fail.Form(SchemaVersionTryingToPublishPublished, "cannot publish a schema version that is already published", false, map[string]any{"code": 401}).
+							AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão do schema que já está publicada",
+		})
+	ErrSchemaVersionTryingToPublishArchived = fail.Form(SchemaVersionTryingToPublishArchived, "cannot publish a schema version that is archived", false, map[string]any{"code": 401}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão do schema que está arquivada",
+		})
 	ErrSchemaVersionMismatch = fail.Form(SchemaVersionMismatch, "schema version and supplied version mismatch", false, map[string]any{"code": 400}).
 					AddLocalizations(map[string]string{
 			"pt-BR": "A versão do schema e a versão fornecida não correspondem",
+		})
+	ErrSchemaVersionNonDraftAddFieldsNotAllowed = fail.Form(SchemaVersionNonDraftAddFieldsNotAllowed, "cannot add fields to a non-draft version", false, map[string]any{"code": 400}).
+							AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível adicionar campos em uma versão que não seja rascunho",
+		})
+	ErrSchemaVersionNoValidStatus = fail.Form(SchemaVersionNoValidStatus, "CATASTROPHIC: schema version found with no valid status", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "CATÁSTROFE: A versão do schema encontrada sem status válido",
+		})
+	ErrSchemaVersionDraftOnNonPublished = fail.Form(SchemaVersionDraftOnNonPublished, "new versions can only be drafted from published versions", false, map[string]any{"code": 400}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "Novas versões só podem virar rascunhos a partir dee versões publicadas",
+		})
+	ErrSchemaVersionNoChanges = fail.Form(SchemaVersionNoChanges, "cannot publish a version with no changes", false, map[string]any{"code": 400}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão sem mudanças",
+		})
+	ErrSchemaVersionTryingToPublishNonExistant = fail.Form(SchemaVersionTryingToPublishNonExistant, "cannot publish a non-existent schema version", false, map[string]any{"code": 400}).
+							AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível publicar uma versão inexistente",
+		})
+
+	ErrFieldSamePositionForMultipleFields = fail.Form(FIELDSamePositionForMultipleFields, "two fields can't occupy the same position", false, map[string]any{"code": 409}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "Dois campos não podem ocupar a mesma posição",
+		})
+
+	ErrFieldNoAffectedRowsOnClone = fail.Form(FieldNoAffectedRowsOnClone, "no affected rows", false, map[string]any{"code": 404}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Nenhuma linha afetada",
+		})
+
+	ErrValidationUUIDWasNil = fail.Form(ValidationUUIDWasNil, "%s field is nil", false, map[string]any{"code": 404}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "%s está nulo",
 		})
 )

@@ -56,7 +56,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	if in.Name == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptyScopeName{})
+		return nil, fail.New(apierr.SCOPEEmptyName)
 	}
 
 	scope, err := uc.scopes.Create(ctx, scopes.Scope{

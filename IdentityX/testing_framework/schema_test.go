@@ -163,7 +163,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SchemaVersionDraftDoesntExist).
+			HasErrID(apierr.ID(apierr.SchemaVersionDraftDoesntExist.String())).
 			HasMessage("cannot publish a schema with a version draft that doesn't exist")
 	})
 
@@ -214,7 +214,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaVersionDraftOnNonPublished).
+			HasErrID(apierr.ID(apierr.SchemaVersionDraftOnNonPublished.String())).
 			HasMessage("new versions can only be drafted from published versions")
 	})
 
@@ -352,7 +352,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SchemaVersionTryingToPublishPublished).
+			HasErrID(apierr.ID(apierr.SchemaVersionTryingToPublishPublished.String())).
 			HasMessage("cannot publish a schema version that is already published")
 	})
 
@@ -410,7 +410,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaVersionNoChanges).
+			HasErrID(apierr.ID(apierr.SchemaVersionNoChanges.String())).
 			HasMessage("cannot publish a version with no changes")
 	})
 

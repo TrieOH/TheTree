@@ -248,7 +248,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 
 	// FIXME make this a domain error
 	if reqRows+visRows+optionsRows+fieldsRows == 0 {
-		apiErr := apierr.ErrNotFound.WithMsg("no affected rows").WithID(apierr.FieldNoAffectedRowsOnClone)
+		apiErr := fail.New(apierr.FieldNoAffectedRowsOnClone)
 		apierr.RecordDomainError(span, apiErr)
 		return apiErr
 	}

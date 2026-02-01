@@ -2,7 +2,6 @@ package permissions
 
 import (
 	"GoAuth/internal/apierr"
-	"regexp"
 	"strings"
 
 	"github.com/MintzyG/fail"
