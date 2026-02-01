@@ -4,11 +4,11 @@ import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -68,9 +68,7 @@ func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.Creat
 		Conditions: toCreate.Conditions,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("permission.id", sqlcPermission.ID.String()))
@@ -90,9 +88,7 @@ func (repo *permissionRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (
 
 	sqlcPermission, err := repo.queries(ctx).GetPermissionByIDInternal(ctx, id)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	if sqlcPermission.ProjectID != nil {
@@ -118,9 +114,7 @@ func (repo *permissionRepo) GetByIDExternal(ctx context.Context, id, projectID u
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	var outPermission permissions.Permission
@@ -142,9 +136,7 @@ func (repo *permissionRepo) ListByProject(ctx context.Context, object, action *s
 		Action:    action,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))
@@ -172,9 +164,7 @@ func (repo *permissionRepo) BelongsToProject(ctx context.Context, id, projectID 
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err)
 	}
 
 	return belongs, nil
@@ -200,9 +190,7 @@ func (repo *permissionRepo) GiveDirect(ctx context.Context, id, identityID uuid.
 		ScopeID:      scopeID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -228,9 +216,7 @@ func (repo *permissionRepo) TakeDirect(ctx context.Context, id, identityID uuid.
 		ScopeID:      scopeID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -259,9 +245,7 @@ func (repo *permissionRepo) GetEffective(ctx context.Context, identityID uuid.UU
 		ScopeID:    scopeID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))

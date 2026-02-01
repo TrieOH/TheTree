@@ -338,6 +338,12 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 		return err
 	}
 
+	var userRole *roles.Role
+	userRole, err = uc.roles.GetByIDInternal(ctx, in.RoleID)
+	if err != nil {
+		return err
+	}
+
 	if !roleBelongs {
 		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
@@ -357,7 +363,7 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 		return err
 	}
 
-	if err = uc.roles.GiveRole(ctx, in.RoleID, userIdentity.ID, in.ScopeID); err != nil {
+	if err = uc.roles.GiveRole(ctx, in.RoleID, userIdentity.ID, in.ScopeID, userRole.Name); err != nil {
 		return err
 	}
 

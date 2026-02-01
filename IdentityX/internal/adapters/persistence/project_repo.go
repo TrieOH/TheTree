@@ -65,9 +65,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate project.Project) (
 		IsActive:    toCreate.IsActive,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
@@ -90,9 +88,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -112,9 +108,7 @@ func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUI
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -138,9 +132,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 		ID:      projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err)
 	}
 
 	return isOwner, nil
@@ -156,9 +148,7 @@ func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project
 
 	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("project.count", len(sqlcProjects)))
@@ -189,9 +179,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate project.Project, o
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	mapProjectFromDB(&toUpdate, &sqlcProject)
@@ -217,7 +205,6 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 		return fail.From(err)
 	}
 
-	// FIXME make me a generic error
 	if affectedRows == 0 {
 		return fail.New(apierr.ProjectNotFound)
 	}

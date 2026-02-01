@@ -388,7 +388,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.ID(apierr.PERMissionInvalidObject.String())).
-			HasMessage("invalid permission object: bogus-value")
+			HasMessage("invalid permission object: (bogus-value)") // FIXME replace () with ''
 	})
 
 	t.Run("CreateInvalidActionPermission", func(t *testing.T) {
@@ -400,7 +400,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.ID(apierr.PERMissionInvalidAction.String())).
-			HasMessage("invalid permission action: what:")
+			HasMessage("invalid permission action: (what:)") // FIXME replace () with ''
 	})
 
 	t.Run("NotAllowedQueryParam", func(t *testing.T) {

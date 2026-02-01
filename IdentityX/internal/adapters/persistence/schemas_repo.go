@@ -3,7 +3,6 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -67,9 +66,7 @@ func (repo *schemaRepo) Draft(ctx context.Context, toDraft schema.Schema) (*sche
 		Type:      sqlc.SchemaType(toDraft.Type),
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
@@ -92,9 +89,7 @@ func (repo *schemaRepo) Publish(ctx context.Context, toPublish schema.Schema) er
 		ID:        toPublish.ID,
 		ProjectID: toPublish.ProjectID,
 	}); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -113,9 +108,7 @@ func (repo *schemaRepo) Archive(ctx context.Context, toArchive schema.Schema) er
 		ID:        toArchive.ID,
 		ProjectID: toArchive.ProjectID,
 	}); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -134,9 +127,7 @@ func (repo *schemaRepo) Delete(ctx context.Context, toDelete schema.Schema) erro
 		ID:        toDelete.ID,
 		ProjectID: toDelete.ProjectID,
 	}); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -156,9 +147,7 @@ func (repo *schemaRepo) Exists(ctx context.Context, toCheck schema.Schema) (bool
 		Type:      sqlc.SchemaType(toCheck.Type),
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err)
 	}
 
 	return exists, nil
@@ -178,9 +167,7 @@ func (repo *schemaRepo) BelongsToProject(ctx context.Context, toCheck schema.Sch
 		ProjectID: toCheck.ProjectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err)
 	}
 
 	return belongs, nil
@@ -200,9 +187,7 @@ func (repo *schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projec
 		ProjectID: projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
@@ -246,9 +231,7 @@ func (repo *schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema
 
 	sqlcSchemas, err := repo.queries(ctx).ListSchemas(ctx, projectID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("schema.count", len(sqlcSchemas)))
@@ -280,9 +263,7 @@ func (repo *schemaRepo) SetVersion(ctx context.Context, toUpdate schema.Schema) 
 		ProjectID:        toUpdate.ProjectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -296,9 +277,7 @@ func (repo *schemaRepo) GetIDsFromProjectID(ctx context.Context, projectID uuid.
 
 	IDs, err := repo.queries(ctx).GetSchemaIDsFromProjectID(ctx, projectID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("schema.count", len(IDs)))
