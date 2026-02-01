@@ -131,7 +131,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	var hashedPassword []byte
 	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return outbounds.Email{}, inbounds.ErrHashingPassword{Cause: err}
+		return outbounds.Email{}, fail.New(apierr.RequestInvalidPassword).With(err)
 	}
 
 	var u *user.User
@@ -740,7 +740,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
+		return outbounds.Email{}, fail.New(apierr.RequestInvalidPassword).With(err)
 	}
 
 	var usr *project_users.ProjectUser
@@ -1068,7 +1068,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 	keys, err := uc.deps.Keys.ListGoAuthPublicKeys(ctx)
 	if err != nil {
 		logs.L().Error("Failed listing GoAuth public keys", zap.Error(err))
-		return nil, inbounds.ErrFailedToRetrieveJWKS{Cause: err}
+		return nil, fail.New(apierr.SYSJWKSRetrievalFailed).With(err)
 	}
 
 	jwkKeys := make([]any, len(keys))

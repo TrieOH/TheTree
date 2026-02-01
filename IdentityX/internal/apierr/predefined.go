@@ -4,48 +4,42 @@ var (
 	ErrInvalidInput = Error{
 		Code:    InvalidInput,
 		Message: "invalid input",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrBadRequest = Error{
 		Code:    BadRequest,
 		Message: "bad request",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrNotFound = Error{
 		Code:    NotFound,
 		Message: "resource not found",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrConflict = Error{
 		Code:    Conflict,
 		Message: "conflict",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrUnauthorized = Error{
 		Code:    Unauthorized,
 		Message: "unauthorized",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrForbidden = Error{
 		Code:    Forbidden,
 		Message: "forbidden",
-		ID:      SystemInternalError,
+		ID:      PlaceholderID,
 	}
 
 	ErrInternal = Error{
 		Code:    Internal,
 		Message: "internal error",
-		ID:      SystemInternalError,
-	}
-
-	ErrNotImplemented = Error{
-		Code:    Internal,
-		Message: "functionality not implemented",
-		ID:      SystemNotImplemented,
+		ID:      PlaceholderID,
 	}
 )

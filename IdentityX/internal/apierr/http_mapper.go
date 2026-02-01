@@ -11,7 +11,6 @@ import (
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
-	"GoAuth/internal/ports/outbounds"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -81,14 +80,6 @@ func FromService(span trace.Span, err error) error {
 	case validation.ErrParseUUID:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrHashingPassword:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorBCryptHashingFailed).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrGeneratingUUID:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorGeneratingUUID).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrEmptyFlowID:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaEmptyFlowID)
@@ -197,23 +188,6 @@ func FromService(span trace.Span, err error) error {
 	case inbounds.ErrPublishVersionNoFields:
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
 		RecordDomainError(span, httpErr)
-		return httpErr
-	case outbounds.ErrServiceUnavailable:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SystemServiceUnavailable)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case outbounds.ErrRenderingEmail:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorRenderingEmail)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrTXPanicked:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(DBTransactionPanicked)
-		RecordSystemError(span, httpErr)
-		logs.L().Error("Transaction panicked", zap.Any("panic", e.Panic))
-		return httpErr
-	case inbounds.ErrFailedToRetrieveJWKS:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemJWKSRetrievalFailed).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
 		return httpErr
 	case inbounds.ErrEmptyScopeName:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)

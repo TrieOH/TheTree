@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -184,12 +185,12 @@ func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, ver
 
 func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
+	return fail.New(apierr.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
+	return fail.New(apierr.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, toVersionID uuid.UUID) error {

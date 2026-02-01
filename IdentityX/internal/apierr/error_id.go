@@ -13,7 +13,7 @@ var (
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
 	RequestValidationError           = fail.ID(0, "REQ", 2, true, "REQuestValidationError")
-	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQquestNotApplicationJSON")
+	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQuestNotApplicationJSON")
 	RequestUnknownQueryParam         = fail.ID(0, "REQ", 5, true, "REQuestUnknownQueryParam")
 
 	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
@@ -155,23 +155,57 @@ const (
 	DBNotNullViolation     ID = "DB_003"
 	DBValueTooLong         ID = "DB_004"
 	DBSerializationFailure ID = "DB_005"
-	DBCommitTXFailed       ID = "DB_006"
-	DBBeginTXFailed        ID = "DB_007"
-	DBNestedTXNotAllowed   ID = "DB_008"
 	DBCheckViolation       ID = "DB_009"
-	DBTransactionPanicked  ID = "DB_010"
 )
 
-const (
-	SystemInternalError            ID = "SYS_001"
-	SystemDependencyDown           ID = "SYS_003"
-	SystemNotImplemented           ID = "SYS_004"
-	SystemTransactionWithNoContext ID = "SYS_005"
-	SystemErrorGeneratingUUID      ID = "SYS_006"
-	SystemErrorBCryptHashingFailed ID = "SYS_007"
-	SystemServiceUnavailable       ID = "SYS_008"
-	SystemErrorRenderingEmail      ID = "SYS_009"
-	SystemJWKSRetrievalFailed      ID = "SYS_010"
+const PlaceholderID ID = "PL_000"
+
+var (
+	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
+	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
+	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
+	SYSRenderingEmailFailed  = fail.ID(9, "SYS", 3, false, "SYSRenderingEmailFailed")
+	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
+
+	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
+	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
+
+	RequestInvalidPassword = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
+
+	DBTransactionPanicked     = fail.ID(9, "DB", 0, false, "DBTransactionPanicked")
+	DBBeginTransactionFailed  = fail.ID(9, "DB", 1, false, "DBBeginTransactionFailed")
+	DBTransactionCommitFailed = fail.ID(9, "DB", 2, false, "DBTransactionCommitFailed")
+
+	DBNestedTransactionNotAllowed = fail.ID(9, "DB", 0, true, "DBNestedTransactionNotAllowed")
+
+	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
+				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
+	ErrServiceUnavailable = fail.Form(SYSServiceUnavailable, "%s is unavailable", true, map[string]any{"code": 500}, "UNNAMED SERVICE").
+				AddLocalization("pt-BR", "%s está indisponível")
+	ErrJWKSRetrievalFailed = fail.Form(SYSJWKSRetrievalFailed, "JWKS retrieval failed", true, map[string]any{"code": 500}).
+				AddLocalization("pt-BR", "resgate do JWKS falhou")
+	ErrRenderingEmailFailed = fail.Form(SYSRenderingEmailFailed, "%s email rendering failed", true, map[string]any{"code": 500}, "UNSET EMAIL TYPE").
+				AddLocalization("pt-BR", "%s falhou na renderização")
+	ErrUUIDV7GenerationFailed = fail.Form(SYSUUIDV7GenerationError, "error generating UUID V7 at %s", true, map[string]any{"code": 500}, "UNSET LOCATION").
+					AddLocalization("pt-BR", "erro gerando UUIDV7 em %s")
+
+	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
+						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")
+	ErrSystemTransactionNilContext = fail.Form(SYSTransactionNilContext, "cannot start transactions with a nil context", true, map[string]any{"code": 500}).
+					AddLocalization("pt-BR", "não é possível começar uma transação com contexto nulo")
+
+	ErrRequestInvalidPassword = fail.Form(RequestInvalidPassword, "invalid password", true, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", "senha inválida")
+
+	ErrTransactionPanicked = fail.Form(DBTransactionPanicked, "transaction panicked", true, map[string]any{"code": 500}).
+				AddLocalization("pt-BR", "transação resultou em pânico")
+	ErrBeginTransactionFailed = fail.Form(DBBeginTransactionFailed, "could not begin transaction", true, map[string]any{"code": 500}).
+					AddLocalization("pt-BR", "não foi possível começar a transação")
+	ErrTransactionCommitFailed = fail.Form(DBTransactionCommitFailed, "transaction commit failed", true, map[string]any{"code": 500}).
+					AddLocalization("pt-BR", "transação falhou no commit")
+
+	ErrNestedTransactionNotAllowed = fail.Form(DBNestedTransactionNotAllowed, "nested transactions are not allowed", true, map[string]any{"code": 500}).
+					AddLocalization("pt-BR", "transações aninhadas não são permitidas")
 )
 
 var (
