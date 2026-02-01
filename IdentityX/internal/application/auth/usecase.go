@@ -417,13 +417,13 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var sess *session.Session
 	sess, err = sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound)
 	}
 
 	now := time.Now()
 	if sess.ExpiresAt.Before(now) || sess.RevokedAt != nil {
 		// FIXME Record suspicious behaviour on audit when it is implemented
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound)
 	}
 
 	// should revoke the session because of replay attacks
@@ -439,7 +439,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	sess, err = sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
 	if apierr.IsNotFound(err) {
 		// sql.ErrNoRows → raced / reused / revoked
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound)
 	} else if err != nil {
 		return nil, err
 	}
@@ -952,7 +952,7 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 	var claims *auth.VerificationClaims
 	claims, err = uc.tokenVerifier.VerifyVerificationToken(ctx, token)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err //apierr.FromService(span, err)
 	}
 
 	if claims.Sub.Subject != principal.UserID {
@@ -1001,7 +1001,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	}
 
 	if principal.IsVerified == true {
-		return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+		return fail.New(apierr.AuthAlreadyVerified)
 	}
 
 	if principal.ProjectID != nil {
@@ -1010,7 +1010,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 			return err
 		}
 		if u.IsVerified == true {
-			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+			return fail.New(apierr.AuthAlreadyVerified)
 		}
 	} else {
 		u, err := users.GetUserByID(ctx, principal.UserID)
@@ -1018,7 +1018,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 			return err
 		}
 		if u.IsVerified == true {
-			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+			return fail.New(apierr.AuthAlreadyVerified)
 		}
 	}
 

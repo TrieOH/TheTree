@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"strings"
 
+	"github.com/MintzyG/fail"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -75,11 +76,12 @@ func verifyToken[T jwt.Claims](
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		return claims, auth.ErrTokenInvalidAlg{
-			TokenType: tokenType,
-			Expected:  jwt.SigningMethodEdDSA.Alg(),
-			Got:       alg,
-		}
+		// return claims, auth.ErrTokenInvalidAlg{
+		// 	TokenType: tokenType,
+		// 	Expected:  jwt.SigningMethodEdDSA.Alg(),
+		// 	Got:       alg,
+		// }
+		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg)
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
@@ -87,11 +89,13 @@ func verifyToken[T jwt.Claims](
 		if token.Method != nil {
 			methodAlg = token.Method.Alg()
 		}
-		return claims, auth.ErrTokenInvalidAlg{
-			TokenType: tokenType,
-			Expected:  jwt.SigningMethodEdDSA.Alg(),
-			Got:       methodAlg,
-		}
+		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg)
+
+		// return claims, auth.ErrTokenInvalidAlg{
+		// 	TokenType: tokenType,
+		// 	Expected:  jwt.SigningMethodEdDSA.Alg(),
+		// 	Got:       methodAlg,
+		// }
 	}
 
 	kid, ok := token.Header["kid"].(string)
@@ -113,7 +117,7 @@ func verifyToken[T jwt.Claims](
 
 		if err := uc.keys.VerifyGoAuth(ctx, kid, payload, sig); err != nil {
 			if apierr.IsNotFound(err) {
-				return claims, auth.ErrTokenUntrusted{TokenType: tokenType}
+				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType)
 			}
 			return claims, err
 		}
@@ -131,7 +135,7 @@ func verifyToken[T jwt.Claims](
 
 		if err := uc.keys.VerifyProject(ctx, projectID, kid, payload, sig); err != nil {
 			if apierr.IsNotFound(err) {
-				return claims, auth.ErrTokenUntrusted{TokenType: tokenType}
+				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType)
 			}
 			return claims, err
 		}

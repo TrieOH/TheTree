@@ -101,6 +101,100 @@ var (
 				AddLocalizations(map[string]string{
 			"pt-BR": "Apenas usuários do projeto podem acessar esse endpoint",
 		})
+	ErrAuthAlreadyVerified = fail.Form(AuthAlreadyVerified, "user already verified", false, map[string]any{"code": 403}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O usuário já foi verificado",
+		})
+	ErrAuthPrincipalNotInContext = fail.Form(AuthPrincipalNotInContext, "missing principal in context", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Está faltando o principal no contexto",
+		})
+
+	ErrSessionRevoked = fail.Form(SessionRevoked, "session not found or revoked", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "A sessão não foi encontrado ou revogada",
+		})
+	ErrSessionNotFound = fail.Form(SessionNotFound, "session not found or revoked", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "A sessão não foi encontrado ou revogada",
+		})
+	ErrSessionSelfRevokeForbidden = fail.Form(SessionSelfRevokeForbidden, "cannot revoke the currently active session", false, map[string]any{"code": 403}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Não é possível revogar a sessão atual",
+		})
+	ErrSessionUnauthorized = fail.Form(SessionUnauthorized, "session not found or revoked", false, map[string]any{"code": 403}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "A sessão não foi encontrado ou revogada",
+		})
+
+	ErrTokenInvalid = fail.Form(TokenInvalid, "invalid %s token", false, map[string]any{"code": 401}).
+			AddLocalizations(map[string]string{
+			"pt-BR": "Token %s inválido",
+		})
+	ErrTokenExpired = fail.Form(TokenInvalid, "%s token expired", false, map[string]any{"code": 401}).
+			AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s está expirado",
+		})
+	ErrTokenMalformed = fail.Form(TokenMalformed, "malformed %s token", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s está inválido",
+		})
+	ErrTokenSignatureInvalid = fail.Form(TokenSignatureInvalid, "invalid %s token signature", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "A assinatura do Token %s está inválida",
+		})
+	ErrTokenInvalidAlg = fail.Form(TokenInvalidAlg, "invalid %s token alg, expected \"%s\" but got \"%s\"", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "token %s inválido, esperava \"%s\" mas obteve \"%s\"",
+		})
+	ErrTokenCouldNotSign = fail.Form(TokenCouldNotSign, "error signing %s token", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "erro ao assinar o token $s",
+		})
+	ErrTokenInvalidAccessClaims = fail.Form(TokenInvalidAccessClaims, "invalid %s token claims", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Token %s com claims inválidas",
+		})
+	ErrTokenNotYetValid = fail.Form(TokenNotYetValid, "%s token not yet valid", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s ainda não está válido",
+		})
+	ErrTokenUsedBeforeIssued = fail.Form(TokenUsedBeforeIssued, "%s token used before issued", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s foi usado antes de ser emitido",
+		})
+	ErrTokenInvalidIssuer = fail.Form(TokenInvalidIssuer, "%s token has invalid issuer", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s possui um emissor inválido",
+		})
+	ErrTokenInvalidSubject = fail.Form(TokenInvalidSubject, "%s token has invalid subject", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O Token %s possui um asssunto inválido",
+		})
+	ErrTokenInvalidAudience = fail.Form(TokenInvalidAudience, "%s token has invalid audience", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O token %s tem um público inválido",
+		})
+	ErrTokenRefreshInvalidID = fail.Form(TokenRefreshInvalidID, "%s token has invalid id", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O token %s tem um id inválido",
+		})
+	ErrTokenAccessInvalidID = fail.Form(TokenAccessInvalidID, "%s token has invalid id", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O token %s tem um id inválido",
+		})
+	ErrTokenUntrusted = fail.Form(TokenUntrusted, "untrusted %s token", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Token de %s não confiável",
+		})
+	ErrTokenSessionMismatch = fail.Form(TokenSessionMismatch, "token/session mismatch", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Há uma incompatibilidade entre token e sessão",
+		})
+	ErrTokenMismatchDuringAuth = fail.Form(TokenMismatchDuringAuth, "access token does not belong to this refresh token", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O token de acesso não pertence a este token de atualização.",
+		})
 
 	ErrSchemaNoPublishedVersion = fail.Form(SCHEMANoPublishedVersion, "cannot publish a schema with no versions", false, map[string]any{"code": 400}).
 					AddLocalizations(map[string]string{

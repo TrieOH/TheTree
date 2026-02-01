@@ -23,43 +23,41 @@ var (
 	AuthMissingRefreshCookie = fail.ID(1, "AUTH", 4, false, "AUTHMissingRefreshCookie")
 	AuthMissingAccessCookie  = fail.ID(1, "AUTH", 5, false, "AUTHMissingAccessCookie")
 
-	AuthInvalidPrincipal = fail.ID(1, "AUTH", 0, true, "AUTHInvalidPrincipal")
-	AuthInvalidPassword  = fail.ID(0, "AUTH", 1, true, "AUTHInvalidPassword")
-	AuthNotClient        = fail.ID(1, "AUTH", 2, true, "AUTHNotClient")
-	AuthNotProjectUser   = fail.ID(1, "AUTH", 3, true, "AUTHNotProjectUser")
+	AuthInvalidPrincipal      = fail.ID(1, "AUTH", 0, true, "AUTHInvalidPrincipal")
+	AuthInvalidPassword       = fail.ID(0, "AUTH", 1, true, "AUTHInvalidPassword")
+	AuthNotClient             = fail.ID(1, "AUTH", 2, true, "AUTHNotClient")
+	AuthNotProjectUser        = fail.ID(1, "AUTH", 3, true, "AUTHNotProjectUser")
+	AuthAlreadyVerified       = fail.ID(1, "AUTH", 4, true, "AUTHAlreadyVerified")
+	AuthPrincipalNotInContext = fail.ID(1, "AUTH", 5, true, "AUTHPrincipalNotInContext")
+
+	SessionRevoked             = fail.ID(1, "SESSION", 0, true, "SESSIONRevoked")
+	SessionNotFound            = fail.ID(1, "SESSION", 1, true, "SESSIONNotFound")
+	SessionSelfRevokeForbidden = fail.ID(1, "SESSION", 2, true, "SESSIONSelfRevokeForbi5dden")
+	SessionUnauthorized        = fail.ID(1, "SESSION", 3, true, "SESSIONUnauthorized")
+
+	TokenInvalid             = fail.ID(1, "TOKEN", 0, false, "TOKENInvalid")
+	TokenExpired             = fail.ID(1, "TOKEN", 1, false, "TOKENExpired")
+	TokenMalformed           = fail.ID(1, "TOKEN", 2, false, "TOKENMalformed")
+	TokenSignatureInvalid    = fail.ID(1, "TOKEN", 3, false, "TOKENSignatureInvalid")
+	TokenInvalidAlg          = fail.ID(1, "TOKEN", 4, false, "TOKENInvalidAlgorithm")
+	TokenCouldNotSign        = fail.ID(1, "TOKEN", 5, false, "TOKENCouldNotSign")
+	TokenInvalidAccessClaims = fail.ID(1, "TOKEN", 6, false, "TOKENInvalidAccessClaims")
+	TokenNotYetValid         = fail.ID(1, "TOKEN", 7, false, "TOKENNotYetValid")
+	TokenUsedBeforeIssued    = fail.ID(1, "TOKEN", 8, false, "TOKENUsedBeforeIssued")
+	TokenInvalidIssuer       = fail.ID(1, "TOKEN", 9, false, "TOKENInvalidIssuer")
+	TokenInvalidSubject      = fail.ID(1, "TOKEN", 10, false, "TOKENInvalidSubject")
+	TokenInvalidAudience     = fail.ID(1, "TOKEN", 11, false, "TOKENInvalidAudience")
+	TokenRefreshInvalidID    = fail.ID(1, "TOKEN", 12, false, "TOKENRefreshInvalidID")
+	TokenAccessInvalidID     = fail.ID(1, "TOKEN", 13, false, "TOKENAccessInvalidID")
+	TokenUntrusted           = fail.ID(1, "TOKEN", 14, false, "TOKENUntrusted")
+
+	TokenSessionMismatch    = fail.ID(1, "TOKEN", 0, true, "TOKENSessionMismatch")
+	TokenMismatchDuringAuth = fail.ID(1, "TOKEN", 1, true, "TokenMismatchDuringAuth")
 
 	SCHEMANoPublishedVersion = fail.ID(0, "SCHEMA", 0, true, "SCHEMANoPublishedVersion")
 )
 
 const (
-	AuthAlreadyVerified       ID = "AUTH_024"
-	AuthPrincipalNotInContext ID = "AUTH_025"
-)
-
-const (
-	SessionRevoked             ID = "SESS_003"
-	SessionNotFound            ID = "SESS_004"
-	SessionSelfRevokeForbidden ID = "SESS_008"
-	SessionUnauthorized        ID = "SESS_011"
-)
-
-const (
-	TokenInvalid              ID = "TOKEN_001"
-	TokenExpired              ID = "TOKEN_002"
-	TokenMalformed            ID = "TOKEN_003"
-	TokenSignatureInvalid     ID = "TOKEN_004"
-	TokenInvalidAlg           ID = "TOKEN_005"
-	TokenCouldNotSign         ID = "TOKEN_007"
-	TokenInvalidAccessClaims  ID = "TOKEN_010"
-	TokenNotYetValid          ID = "TOKEN_011"
-	TokenUsedBeforeIssued     ID = "TOKEN_012"
-	TokenInvalidIssuer        ID = "TOKEN_013"
-	TokenInvalidSubject       ID = "TOKEN_014"
-	TokenInvalidAudience      ID = "TOKEN_015"
-	TokenRefreshInvalidID     ID = "TOKEN_016"
-	TokenSessionMismatch      ID = "TOKEN_020"
-	TokenMismatchDuringAuth   ID = "TOKEN_021"
-	TokenAccessInvalidID      ID = "TOKEN_022"
 	TokenInvalidKid           ID = "TOKEN_025"
 	TokenUnknownKid           ID = "TOKEN_026"
 	TokenMissingKid           ID = "TOKEN_027"
@@ -69,7 +67,6 @@ const (
 	TokenReuseIdentified      ID = "TOKEN_032"
 	TokenUserMismatch         ID = "TOKEN_033"
 	TokenInvalidFormat        ID = "TOKEN_034"
-	TokenUntrusted            ID = "TOKEN_035"
 )
 
 const (

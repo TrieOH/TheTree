@@ -48,7 +48,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 		// Try using revoked session
 		loggedInUser.POST("/auth/logout").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionRevoked).
+			HasErrID(apierr.ID(apierr.SessionRevoked.String())).
 			HasMessage("session not found or revoked")
 	})
 }

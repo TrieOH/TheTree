@@ -23,7 +23,7 @@ func WithPrincipal(ctx context.Context, p *authz.Principal) context.Context {
 func RequirePrincipal(ctx context.Context) (*authz.Principal, error) {
 	val := ctx.Value(principalKey)
 	if val == nil {
-		return nil, authz.ErrPrincipalMissingInContext{}
+		return nil, fail.New(apierr.AuthPrincipalNotInContext)
 	}
 
 	p, ok := val.(*authz.Principal)

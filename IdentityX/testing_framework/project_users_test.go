@@ -202,7 +202,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Try using revoked session
 			loggedInUser.POST("/auth/logout").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionRevoked).
+				HasErrID(apierr.ID(apierr.SessionRevoked.String())).
 				HasMessage("session not found or revoked")
 		})
 	})
@@ -245,7 +245,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Can't revoke current session
 			user4.DELETE("/sessions/" + currentSessionID).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.SessionSelfRevokeForbidden).
+				HasErrID(apierr.ID(apierr.SessionSelfRevokeForbidden.String())).
 				HasMessage("cannot revoke the currently active session")
 
 			// Revoke first session
@@ -329,7 +329,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Session should be invalid
 			revoked.GET("/sessions").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionRevoked).
+				HasErrID(apierr.ID(apierr.SessionRevoked.String())).
 				HasMessage("session not found or revoked")
 		})
 	})
