@@ -60,22 +60,6 @@ func (e ErrHashingPassword) Error() string {
 	return "error hashing user password"
 }
 
-type ErrEmailAlreadyInUse struct {
-	Cause error
-}
-
-func (e ErrEmailAlreadyInUse) Error() string {
-	return "error registering user"
-}
-
-type ErrInvalidCredentials struct {
-	Cause error
-}
-
-func (e ErrInvalidCredentials) Error() string {
-	return "invalid email or password"
-}
-
 type ErrGeneratingUUID struct {
 	Cause    error
 	Location string
@@ -83,14 +67,6 @@ type ErrGeneratingUUID struct {
 
 func (e ErrGeneratingUUID) Error() string {
 	return "error generating UUID V7 at " + e.Location
-}
-
-type ErrTokenInvalid struct {
-	TokenType string
-}
-
-func (e ErrTokenInvalid) Error() string {
-	return e.TokenType + " token is invalid"
 }
 
 type ErrEmptyFlowID struct{}
@@ -142,12 +118,6 @@ type ErrTokenUserMismatch struct {
 
 func (e ErrTokenUserMismatch) Error() string {
 	return e.TokenType + " token user mismatch"
-}
-
-type ErrUserAlreadyVerified struct{}
-
-func (e ErrUserAlreadyVerified) Error() string {
-	return "user already verified"
 }
 
 type ErrFailedToRetrieveJWKS struct {

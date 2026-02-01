@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -73,7 +74,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	}
 
 	if principal.SessionID == sessionID {
-		return apierr.FromService(span, inbounds.ErrRevokeCurrentSession{})
+		return fail.New(apierr.SessionSelfRevokeForbidden)
 	}
 
 	var identityType session.IdentityType
@@ -86,7 +87,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	var sess *session.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
 	if apierr.IsNotFound(err) {
-		return apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return fail.New(apierr.SessionNotFound)
 	} else if err != nil {
 		return err
 	}

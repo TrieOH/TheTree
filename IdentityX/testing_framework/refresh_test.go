@@ -91,7 +91,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		deniedClient.POST("/auth/refresh").
 			WithCookie("refresh_token", refreshToken).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionNotFound).
+			HasErrID(apierr.ID(apierr.SessionNotFound.String())).
 			HasMessage("session not found or revoked")
 	})
 

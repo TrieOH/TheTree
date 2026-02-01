@@ -110,14 +110,6 @@ func (e ErrSchemaInvalidStatus) Error() string {
 	return "CATASTROPHIC: schema found with no valid status: " + e.Status
 }
 
-type ErrSchemaNoPublishedVersions struct {
-	Msg string
-}
-
-func (e ErrSchemaNoPublishedVersions) Error() string {
-	return e.Msg
-}
-
 type ErrSchemaOnlyDraft struct {
 	Msg string
 }

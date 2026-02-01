@@ -415,7 +415,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasErrID(apierr.ID(apierr.AuthEmailAlreadyUsed.String())).
 			HasMessage("error registering user").
 			TraceContains("email already in use")
 	})

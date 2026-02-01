@@ -1,7 +1,6 @@
 package apierr
 
 import (
-	"database/sql"
 	"errors"
 
 	"github.com/MintzyG/fail"

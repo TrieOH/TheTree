@@ -38,10 +38,55 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		return fail.New(CannotTranslateNilError).WithArgs("http").Render()
 	}
 	switch err.ID {
-	case RequestMissingQueryParamValue, RequestMissingQueryParam, RequestMissingSchemaCustomFields,
-		RequestInvalidJSONFormat, RequestValidationError, RequestNotApplicationJSON, RequestEmptyCookie,
-		RequestUnknownQueryParam, SQLNotFound:
-		return nil
+	case RequestMissingQueryParamValue,
+		RequestMissingQueryParam,
+		RequestMissingSchemaCustomFields,
+		RequestInvalidJSONFormat,
+		RequestValidationError,
+		RequestNotApplicationJSON,
+		RequestEmptyCookie,
+		RequestUnknownQueryParam:
+		return true
+	case SQLNotFound:
+		return true
+	case AuthEmailAlreadyUsed,
+		AuthInvalidCredentials,
+		AuthInvalidRefreshCookie,
+		AuthInvalidAccessCookie,
+		AuthMissingRefreshCookie,
+		AuthMissingAccessCookie,
+		AuthInvalidPrincipal,
+		AuthInvalidPassword,
+		AuthNotClient,
+		AuthNotProjectUser,
+		AuthAlreadyVerified,
+		AuthPrincipalNotInContext:
+		return true
+	case SessionRevoked,
+		SessionNotFound,
+		SessionSelfRevokeForbidden,
+		SessionUnauthorized:
+		return true
+	case TokenInvalid,
+		TokenExpired,
+		TokenMalformed,
+		TokenSignatureInvalid,
+		TokenInvalidAlg,
+		TokenCouldNotSign,
+		TokenInvalidAccessClaims,
+		TokenNotYetValid,
+		TokenUsedBeforeIssued,
+		TokenInvalidIssuer,
+		TokenInvalidSubject,
+		TokenInvalidAudience,
+		TokenRefreshInvalidID,
+		TokenAccessInvalidID,
+		TokenUntrusted,
+		TokenSessionMismatch,
+		TokenMismatchDuringAuth:
+		return true
+	case SCHEMANoPublishedVersion:
+		return true
 	default:
 		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)
 	}
