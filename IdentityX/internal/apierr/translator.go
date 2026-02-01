@@ -46,9 +46,9 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		RequestNotApplicationJSON,
 		RequestEmptyCookie,
 		RequestUnknownQueryParam:
-		return true
+		return nil
 	case SQLNotFound:
-		return true
+		return nil
 	case AuthEmailAlreadyUsed,
 		AuthInvalidCredentials,
 		AuthInvalidRefreshCookie,
@@ -61,12 +61,12 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		AuthNotProjectUser,
 		AuthAlreadyVerified,
 		AuthPrincipalNotInContext:
-		return true
+		return nil
 	case SessionRevoked,
 		SessionNotFound,
 		SessionSelfRevokeForbidden,
 		SessionUnauthorized:
-		return true
+		return nil
 	case TokenInvalid,
 		TokenExpired,
 		TokenMalformed,
@@ -84,9 +84,9 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		TokenUntrusted,
 		TokenSessionMismatch,
 		TokenMismatchDuringAuth:
-		return true
+		return nil
 	case SCHEMANoPublishedVersion:
-		return true
+		return nil
 	default:
 		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)
 	}
