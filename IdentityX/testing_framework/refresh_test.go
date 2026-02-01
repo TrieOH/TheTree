@@ -56,7 +56,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		// Now try to use the old access token
 		client.WithAuth(oldAuth.auth).GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.TokenReuseIdentified).
+			HasErrID(apierr.ID(apierr.TokenReuseIdentified.String())).
 			HasMessage("refresh token reuse not allowed")
 	})
 

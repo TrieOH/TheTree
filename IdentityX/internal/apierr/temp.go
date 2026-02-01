@@ -13,10 +13,10 @@ func NewPrincipal(
 	refresh *auth.RefreshClaims,
 ) (*authz.Principal, error) {
 	if access == nil {
-		return nil, authz.ErrMissingAccessClaims{}
+		return nil, fail.New(TokenMissingAccessClaims)
 	}
 	if refresh == nil {
-		return nil, authz.ErrMissingRefreshClaims{}
+		return nil, fail.New(TokenMissingRefreshClaims)
 	}
 
 	accessJTI, err := uuid.Parse(access.ID)

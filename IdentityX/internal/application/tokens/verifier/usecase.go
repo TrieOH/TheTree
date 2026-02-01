@@ -76,11 +76,6 @@ func verifyToken[T jwt.Claims](
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		// return claims, auth.ErrTokenInvalidAlg{
-		// 	TokenType: tokenType,
-		// 	Expected:  jwt.SigningMethodEdDSA.Alg(),
-		// 	Got:       alg,
-		// }
 		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg)
 	}
 
@@ -90,17 +85,11 @@ func verifyToken[T jwt.Claims](
 			methodAlg = token.Method.Alg()
 		}
 		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg)
-
-		// return claims, auth.ErrTokenInvalidAlg{
-		// 	TokenType: tokenType,
-		// 	Expected:  jwt.SigningMethodEdDSA.Alg(),
-		// 	Got:       methodAlg,
-		// }
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return claims, auth.ErrTokenMissingKID{TokenType: tokenType}
+		return claims, fail.New(apierr.TokenMissingKid).WithArgs(tokenType)
 	}
 
 	payload, sig, err := splitJWT(tokenType, tokenStr)
@@ -112,7 +101,7 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "goauth:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 2 {
-			return claims, auth.ErrTokenInvalidKID{TokenType: tokenType}
+			return claims, fail.New(apierr.TokenInvalidKid).WithArgs(tokenType)
 		}
 
 		if err := uc.keys.VerifyGoAuth(ctx, kid, payload, sig); err != nil {
@@ -125,7 +114,7 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 3 {
-			return claims, auth.ErrTokenInvalidKID{TokenType: tokenType}
+			return claims, fail.New(apierr.TokenInvalidKid).WithArgs(tokenType)
 		}
 
 		projectID, err := validation.ParseUUID(parts[1], "project_id")
@@ -141,7 +130,7 @@ func verifyToken[T jwt.Claims](
 		}
 
 	default:
-		return claims, auth.ErrTokenUnknownKID{TokenType: tokenType}
+		return claims, fail.New(apierr.TokenUnknownKid).WithArgs(tokenType)
 	}
 
 	return claims, nil
@@ -156,7 +145,7 @@ func parseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, er
 func splitJWT(tokenType, tokenStr string) (signingInput, sig []byte, err error) {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
-		return nil, nil, auth.ErrTokenInvalidFormat{TokenType: tokenType}
+		return nil, nil, fail.New(apierr.TokenInvalidFormat).WithArgs(tokenType)
 	}
 
 	signingInput = []byte(parts[0] + "." + parts[1])

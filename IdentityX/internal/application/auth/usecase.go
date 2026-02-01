@@ -433,7 +433,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 		if err != nil {
 			apierr.RecordDomainError(span, err)
 		}
-		return nil, apierr.FromService(span, inbounds.ErrTokenReuseNotAllowed{TokenType: "refresh"})
+		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh")
 	}
 
 	sess, err = sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
@@ -952,11 +952,11 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 	var claims *auth.VerificationClaims
 	claims, err = uc.tokenVerifier.VerifyVerificationToken(ctx, token)
 	if err != nil {
-		return err //apierr.FromService(span, err)
+		return err
 	}
 
 	if claims.Sub.Subject != principal.UserID {
-		return apierr.FromService(span, inbounds.ErrTokenUserMismatch{TokenType: "verification"})
+		return fail.New(apierr.TokenUserMismatch).WithArgs("verification")
 	}
 
 	var wasAlreadyVerified bool

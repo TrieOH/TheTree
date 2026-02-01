@@ -183,6 +183,34 @@ var (
 				AddLocalizations(map[string]string{
 			"pt-BR": "O token %s tem um id inválido",
 		})
+	ErrTokenInvalidKid = fail.Form(TokenInvalidKid, "invalid %s token kid", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O token %s kid é inválido",
+		})
+	ErrTokenUnknownKid = fail.Form(TokenUnknownKid, "unknown %s token kid", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O token %s kid é desconhecido",
+		})
+	ErrTokenMissingKid = fail.Form(TokenMissingKid, "%s token missing kid", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Está faltando o kid no token %s",
+		})
+	ErrTokenUnverifiable = fail.Form(TokenUnverifiable, "unverifiable %s token", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O token %s não é verificável",
+		})
+	ErrTokenReuseIdentified = fail.Form(TokenReuseIdentified, "%s token reuse not allowed", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Não é permitido a reutilização de token %s",
+		})
+	ErrTokenUserMismatch = fail.Form(TokenUserMismatch, "%s token user mismatch", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O usuário não coincide com o usuário do token %s",
+		})
+	ErrTokenInvalidFormat = fail.Form(TokenInvalidFormat, "invalid %s token format", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O formato do token %s está inválido",
+		})
 	ErrTokenUntrusted = fail.Form(TokenUntrusted, "untrusted %s token", false, map[string]any{"code": 401}).
 				AddLocalizations(map[string]string{
 			"pt-BR": "Token de %s não confiável",
@@ -194,6 +222,14 @@ var (
 	ErrTokenMismatchDuringAuth = fail.Form(TokenMismatchDuringAuth, "access token does not belong to this refresh token", false, map[string]any{"code": 401}).
 					AddLocalizations(map[string]string{
 			"pt-BR": "O token de acesso não pertence a este token de atualização.",
+		})
+	ErrTokenMissingAccessClaims = fail.Form(TokenMissingAccessClaims, "missing access claims", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Está faltando as claims do access token",
+		})
+	ErrTokenMissingRefreshClaims = fail.Form(TokenMissingRefreshClaims, "missing refresh claims", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Está faltando as claims do refresh token",
 		})
 
 	ErrSchemaNoPublishedVersion = fail.Form(SCHEMANoPublishedVersion, "cannot publish a schema with no versions", false, map[string]any{"code": 400}).
