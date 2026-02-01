@@ -14,16 +14,8 @@ var (
 	ErrSQLUnmatchedUniqueViolation = fail.Form(SQLUnmatchedUniqueViolation, "resource already exists", false, map[string]any{"code": 400})
 	ErrSQLUnmatchedCheckViolation  = fail.Form(SQLUnmatchedCheckViolation, "invalid value, violates a database constraint", false, map[string]any{"code": 400})
 
-	ErrSameKeyForMultipleFields   = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400})
-	ErrInvalidCharacterInFieldKey = fail.Form(FIELDInvalidCharactersInKey, "field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores", false, map[string]any{"code": 400})
-
-	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "two scopes can't have the same name and external_id", false, map[string]any{"code": 400})
-	ErrScopeInvalid                    = fail.Form(SCOPEInvalid, "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)", false, map[string]any{"code": 400})
-
-	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 400})
-	ErrRoleAlreadyGranted   = fail.Form(ROLEAlreadyGranted, "user already has this role in the specified scope", false, map[string]any{"code": 400})
-
-	ErrPermissionAlreadyGranted = fail.Form(PERMISSIONAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400})
+	ErrInvalidCharacterInFieldKey    = fail.Form(FIELDInvalidCharactersInKey, "field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores", false, map[string]any{"code": 400})
+	ErrSamePositionForMultipleFields = fail.Form(FIELDSamePositionForMultipleFields, "two fields can't occupy the same position", false, map[string]any{"code": 400})
 
 	ErrRequestMissingQueryParamValue = fail.Form(RequestMissingQueryParamValue, "missing query parameter value for: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 						AddLocalizations(map[string]string{
@@ -32,6 +24,10 @@ var (
 	ErrRequestMissingQueryParam = fail.Form(RequestMissingQueryParam, "missing query parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "faltando parâmetro de pesquisa: %s",
+		})
+	ErrRequestMissingCustomFields = fail.Form(RequestMissingCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Os campos customizados do schema são obrigatórios no registro de schema",
 		})
 	ErrRequestEmptyCookie = fail.Form(RequestEmptyCookie, "empty %s cookie value", false, map[string]any{"code": 400}, "UNDEFINED").
 				AddLocalizations(map[string]string{
@@ -44,6 +40,22 @@ var (
 	ErrRequestValidationError = fail.Form(RequestValidationError, "Validation failed", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "Formato do JSON inválido.",
+		})
+	ErrRequestParseUUIDError = fail.Form(RequestParseUUIDError, "invalid uuid field: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "O campo UUID: %s está inválido",
+		})
+	ErrRequestParseNumberError = fail.Form(RequestParseNumberError, "error parsing number: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Erro ao converter o número: %s",
+		})
+	ErrRequestMissingParamError = fail.Form(RequestMissingParamError, "missing parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "Faltando o parâmetro: %s",
+		})
+	ErrRequestInvalidCustomFieldsJSON = fail.Form(RequestInvalidCustomFieldsJSON, "invalid custom fields JSON", false, map[string]any{"code": 400}, "UNDEFINED").
+						AddLocalizations(map[string]string{
+			"pt-BR": "O JSON de campos customizados está inválido",
 		})
 	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 401}, "UNDEFINED").
 						AddLocalizations(map[string]string{
@@ -385,5 +397,10 @@ var (
 	ErrFieldNoAffectedRowsOnClone = fail.Form(FieldNoAffectedRowsOnClone, "no affected rows", false, map[string]any{"code": 404}).
 					AddLocalizations(map[string]string{
 			"pt-BR": "Nenhuma linha afetada",
+		})
+
+	ErrValidationUUIDWasNil = fail.Form(ValidationUUIDWasNil, "%s field is nil", false, map[string]any{"code": 404}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "%s está nulo",
 		})
 )

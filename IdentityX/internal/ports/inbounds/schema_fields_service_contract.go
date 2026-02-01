@@ -118,29 +118,3 @@ func FieldToOutputField(f *field.Field) *OutputField {
 		UpdatedAt:       f.UpdatedAt,
 	}
 }
-
-type ErrInvalidFieldType struct {
-	Type string
-	Key  string
-}
-
-func (e ErrInvalidFieldType) Error() string {
-	return "invalid field type (" + e.Type + ") for field: " + e.Key
-}
-
-type ErrInvalidFieldOwner struct {
-	Owner string
-	Key   string
-}
-
-func (e ErrInvalidFieldOwner) Error() string {
-	return "invalid owner type (" + e.Owner + ") for field: " + e.Key
-}
-
-type ErrFieldNotFound struct {
-	Key string
-}
-
-func (e ErrFieldNotFound) Error() string {
-	return "field not found: " + e.Key
-}

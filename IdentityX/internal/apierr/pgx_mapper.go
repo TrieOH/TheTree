@@ -51,7 +51,7 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 			case "identity_roles_identity_id_role_id_scope_id_key":
 				return fail.New(ROLEAlreadyGranted).Debug(err.Error()), true
 			case "identity_permissions_identity_id_permission_id_scope_id_key":
-				return fail.New(PERMISSIONAlreadyGranted).Debug(err.Error()), true
+				return fail.New(PERMissionAlreadyGranted).Debug(err.Error()), true
 			default:
 				return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true
 			}
@@ -63,7 +63,7 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 			case "schema_fields_key_check":
 				return fail.New(FIELDInvalidCharactersInKey).Debug(err.Error()), true
 			case "scope_shape_check":
-				return fail.New(SCOPEInvalid).Debug(err.Error()), true
+				return fail.New(SCOPEInvalidShape).Debug(err.Error()), true
 			default:
 				return fail.New(SQLUnmatchedCheckViolation).Debug(err.Error()), true
 			}

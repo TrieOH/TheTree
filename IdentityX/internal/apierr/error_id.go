@@ -8,13 +8,19 @@ var (
 	RequestMissingQueryParamValue = fail.ID(0, "REQ", 0, false, "REQuestMissingQueryParamValue")
 	RequestMissingQueryParam      = fail.ID(0, "REQ", 1, false, "REQuestMissingQueryParam")
 	// FIXME create tests for empty cookies
-	RequestEmptyCookie       = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
-	RequestUnknownQueryParam = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
-	RequestValidationError   = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
+	RequestEmptyCookie             = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
+	RequestUnknownQueryParam       = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
+	RequestValidationError         = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
+	RequestParseUUIDError          = fail.ID(0, "REQ", 5, false, "REQuestParseUUIDError")
+	RequestParseNumberError        = fail.ID(0, "REQ", 6, false, "REQuestParseNumberError")
+	RequestMissingParamError       = fail.ID(0, "REQ", 7, false, "REQuestMissingParamError")
+	RequestInvalidCustomFieldsJSON = fail.ID(0, "REQ", 8, false, "REQuestInvalidCustomFieldsJSON")
 
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
-	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQuestNotApplicationJSON")
+	RequestNotApplicationJSON        = fail.ID(0, "REQ", 2, true, "REQuestNotApplicationJSON")
+	RequestMissingCustomFields       = fail.ID(0, "REQ", 3, true, "REQuestMissingCustomFields")
+	RequestInvalidPassword           = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
 
 	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
 	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
@@ -107,59 +113,31 @@ var (
 	SchemaVersionNoChanges                   = fail.ID(1, "SCHEMAVERSION", 9, true, "SCHEMAVERSIONNoChanges")
 	SchemaVersionTryingToPublishNonExistant  = fail.ID(1, "SCHEMAVERSION", 10, true, "SCHEMAVERSIONTryingToPublishNonExistant")
 
-	FieldNoAffectedRowsOnClone = fail.ID(1, "FIELD", 3, false, "FIELDNoAffectedRowsOnClone")
-)
+	FIELDValidationErrorOnSchemaRegister = fail.ID(0, "FIELD", 0, false, "FIELDValidationErrorOnSchemaRegister")
+	FIELDNotFound                        = fail.ID(0, "FIELD", 1, false, "FIELDNotFound")
+	FIELDInvalidOwner                    = fail.ID(0, "FIELD", 2, false, "FIELDInvalidOwner")
+	FieldNoAffectedRowsOnClone           = fail.ID(1, "FIELD", 3, false, "FIELDNoAffectedRowsOnClone")
+	FIELDInvalidType                     = fail.ID(0, "FIELD", 4, false, "FIELDInvalidType")
+	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 5, false, "FIELDSameKeyForMultipleFields")
+	FIELDSamePositionForMultipleFields   = fail.ID(0, "FIELD", 6, false, "FIELDSamePositionForMultipleFields")
+	FIELDInvalidCharactersInKey          = fail.ID(0, "FIELD", 7, false, "FIELDInvalidCharactersInKey")
 
-const (
-	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
-)
+	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
 
-const (
-	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldInvalidCharactersInKey        ID = "FIELD_003"
-	FieldSameKeyForMultipleFields      ID = "FIELD_006"
-	FieldInvalidType                   ID = "FIELD_008"
-	FieldInvalidOwner                  ID = "FIELD_009"
-	FieldValidationErrSchemaRegister   ID = "FIELD_010"
-	FieldNotFound                      ID = "FIELD_012"
-)
+	FORMMissingRequiredField = fail.ID(0, "FORM", 0, false, "FORMMissingRequiredFields")
+	FORMInvalidFieldValue    = fail.ID(0, "FORM", 1, false, "FORMInvalidFieldValue")
 
-const (
-	ScopeEmptyName                  ID = "SCP_001"
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-)
+	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
+	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
+	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
+	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
+	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
+	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
+	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
+	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
+	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
+	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
 
-const (
-	PermissionInvalidObject            ID = "PERM_001"
-	PermissionInvalidAction            ID = "PERM_002"
-	PermissionNotOwnedByPrincipal      ID = "PERM_003"
-	PermissionAlreadyGranted           ID = "PERM_004"
-	PermissionObjectMismatch           ID = "PERM_005"
-	PermissionActionMismatch           ID = "PERM_006"
-	PermissionInsufficient             ID = "PERM_007"
-	PermissionConditionValidationError ID = "PERM_008"
-)
-
-const (
-	RoleNotOwnedByPrincipal ID = "ROLE_002"
-	RoleNameTaken           ID = "ROLE_003"
-	RoleAlreadyGranted      ID = "ROLE_004"
-)
-
-const (
-	DBNotFound             ID = "DB_000"
-	DBUniqueViolation      ID = "DB_001"
-	DBForeignKeyViolation  ID = "DB_002"
-	DBNotNullViolation     ID = "DB_003"
-	DBValueTooLong         ID = "DB_004"
-	DBSerializationFailure ID = "DB_005"
-	DBCheckViolation       ID = "DB_009"
-)
-
-const PlaceholderID ID = "PL_000"
-
-var (
 	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
 	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
 	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
@@ -169,14 +147,62 @@ var (
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
 
-	RequestInvalidPassword = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
-
 	DBTransactionPanicked     = fail.ID(9, "DB", 0, false, "DBTransactionPanicked")
 	DBBeginTransactionFailed  = fail.ID(9, "DB", 1, false, "DBBeginTransactionFailed")
 	DBTransactionCommitFailed = fail.ID(9, "DB", 2, false, "DBTransactionCommitFailed")
 
 	DBNestedTransactionNotAllowed = fail.ID(9, "DB", 0, true, "DBNestedTransactionNotAllowed")
 
+	ROLENotOwnedByPrincipal = fail.ID(0, "ROLE", 0, false, "ROLENotOwnedByPrincipal")
+	ROLEAlreadyGranted      = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+
+	ROLENameAlreadyTaken = fail.ID(0, "ROLE", 0, true, "ROLENameAlreadyTaken")
+
+	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
+
+	SCOPEInvalidShape = fail.ID(0, "SCOPE", 0, true, "SCOPEInvalidShape")
+	SCOPEEmptyName    = fail.ID(0, "SCOPE", 1, true, "SCOPEEmptyName")
+
+	PERMissionLogicalConditionValidationError = fail.ID(0, "PERM", 0, false, "PERMissionLogicalConditionValidationError")
+	PERMissionConditionValidationError        = fail.ID(0, "PERM", 1, false, "PERMissionConditionValidationError")
+	PERMissionActionMismatch                  = fail.ID(0, "PERM", 2, false, "PERMissionActionMismatch")
+	PERMissionObjectMismatch                  = fail.ID(0, "PERM", 3, false, "PERMissionObjectMismatch")
+	PERMissionAlreadyGranted                  = fail.ID(0, "PERM", 4, false, "PERMissionAlreadyGranted")
+	PERMissionNotOwnedByPrincipal             = fail.ID(0, "PERM", 5, false, "PERMissionNotOwnedByPrincipal")
+	PERMissionInvalidAction                   = fail.ID(0, "PERM", 6, false, "PERMissionInvalidAction")
+	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
+
+	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
+)
+
+const (
+	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
+)
+
+const (
+	DBNotFound                         ID = "DB_000"
+	DBUniqueViolation                  ID = "DB_001"
+	DBForeignKeyViolation              ID = "DB_002"
+	DBNotNullViolation                 ID = "DB_003"
+	DBValueTooLong                     ID = "DB_004"
+	DBSerializationFailure             ID = "DB_005"
+	FieldSameKeyForMultipleFields      ID = "FIELD_006"
+	FieldSamePositionForMultipleFields ID = "FIELD_001"
+	FieldInvalidCharactersInKey        ID = "FIELD_003"
+)
+
+const PlaceholderID ID = "PL_000"
+
+const (
+	RoleNameTaken                   ID = "ROLE_003"
+	RoleAlreadyGranted              ID = "ROLE_004"
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
+	PermissionAlreadyGranted        ID = "PERM_004"
+	DBCheckViolation                ID = "DB_009"
+)
+
+var (
 	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
 				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
 	ErrServiceUnavailable = fail.Form(SYSServiceUnavailable, "%s is unavailable", true, map[string]any{"code": 500}, "UNNAMED SERVICE").
@@ -205,29 +231,57 @@ var (
 
 	ErrNestedTransactionNotAllowed = fail.Form(DBNestedTransactionNotAllowed, "nested transactions are not allowed", true, map[string]any{"code": 500}).
 					AddLocalization("pt-BR", "transações aninhadas não são permitidas")
-)
 
-var (
-	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
-	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
-	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
-	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
-	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
-	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
-	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
-	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
-	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
-	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
+	ErrRoleNotOwnedByPrincipal = fail.Form(ROLENotOwnedByPrincipal, "role not owned by principal", false, map[string]any{"code": 401}).
+					AddLocalization("pt-BR", "principal não é dono do papel")
 
-	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
-	FIELDSameKeyForMultipleFields      = fail.ID(0, "FIELD", 1, false, "FIELDSameKeyForMultipleFields")
-	FIELDInvalidCharactersInKey        = fail.ID(0, "FIELD", 2, false, "FIELDInvalidCharactersInKey")
+	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 400}).
+				AddLocalization("pt-BR", "nome do papel já em uso")
+	ErrRoleAlreadyGranted = fail.Form(ROLEAlreadyGranted, "%s role already granted to user", false, map[string]any{"code": 400}, "ROLE NOT SET").
+				AddLocalization("pt-BR", "papel %s já atribuído ao usuário")
 
-	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
-	SCOPEInvalid                    = fail.ID(0, "SCOPE", 1, false, "SCOPEInvalid")
+	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 400}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
+						AddLocalization("pt-BR", "escopo com nome e id externo (%s, %s) já existe")
 
-	ROLENameAlreadyTaken = fail.ID(0, "ROLE", 0, false, "ROLENameAlreadyTaken")
-	ROLEAlreadyGranted   = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+	ScopeInvalidShapeErrorMessage   = "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)"
+	ScopeInvalidShapeErrorMessageBR = "Forma de escopo inválida: um escopo deve ser um dos seguintes — (1) um escopo global com type='global' e sem project_id, name ou external_id; (2) um escopo raiz de projeto com type='project_root', um project_id, e sem name ou external_id; ou (3) um escopo de projeto com type='project_scope', um project_id e um name (external_id opcional)."
+	ErrScopeInvalidShape            = fail.Form(SCOPEInvalidShape, ScopeInvalidShapeErrorMessage, false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", ScopeInvalidShapeErrorMessageBR)
+	ErrScopeEmptyName = fail.Form(SCOPEEmptyName, "scope name cannot be empty", false, map[string]any{"code": 400}).
+				AddLocalization("pt-BR", "nome do escopo não pode estar vazio")
 
-	PERMISSIONAlreadyGranted = fail.ID(0, "PERM", 0, false, "PERMISSIONAlreadyGranted")
+	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").
+							AddLocalization("pt-BR", "%s: condições %s não podem estar vazias")
+	ErrPermissionConditionValidationError = fail.Form(PERMissionConditionValidationError, "error validating permission condition at: %s", false, map[string]any{"code": 400}, "PATH NOT SET").
+						AddLocalization("pt-BR", "erro validando permissão da condição em: %s")
+	ErrPermissionActionMismatch = fail.Form(PERMissionActionMismatch, "action mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
+					AddLocalization("pt-BR", "incompatibilidade de ações: permissão=%s, requisição=%s")
+	ErrPermissionObjectMismatch = fail.Form(PERMissionObjectMismatch, "object mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
+					AddLocalization("pt-BR", "incompatibilidade de objetos: permissão=%s, requisição=%s")
+	ErrPermissionNotOwnedByPrincipal = fail.Form(PERMissionNotOwnedByPrincipal, "permission not owned by principal", false, map[string]any{"code": 401}).
+						AddLocalization("pt-BR", "identidade não é a dona da permissão")
+	ErrPermissionInvalidAction = fail.Form(PERMissionInvalidAction, "invalid permission action: (%s)", false, map[string]any{"code": 400}, "ACTION NOT SET").
+					AddLocalization("pt-BR", "ação da permissão é invalida: (%s)")
+	ErrPermissionInvalidObject = fail.Form(PERMissionInvalidObject, "invalid permission object: (%s)", false, map[string]any{"code": 400}, "OBJECT NOT SET").
+					AddLocalization("pt-BR", "objeto da permissão é invalido: (%s)")
+
+	ErrInsufficientPermission = fail.Form(PERMissionInsufficient, "insufficient permissions", false, map[string]any{"code": 403}).
+					AddLocalization("pt-BR", "permissões insuficientes")
+	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", "usuário já tem essa permissão no escopo específicado")
+
+	ErrFieldValidationErrorOnSchemaRegister = fail.Form(FIELDValidationErrorOnSchemaRegister, "error validating form for schema register", false, map[string]any{"code": 400}).
+						AddLocalization("pt-BR", "erro validando formulário para o registro em schema")
+	ErrFieldNotFound = fail.Form(FIELDNotFound, "field not found: %s", false, map[string]any{"code": 400}, "FIELD NOT SET").
+				AddLocalization("pt-BR", "campo nao encontrado: %s")
+	ErrFieldInvalidOwner = fail.Form(FIELDInvalidOwner, "invalid owner type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET OWNER", "UNSET FIELD KEY").
+				AddLocalization("pt-BR", "tipo de dono inválido (%s) para o campo: %s")
+	ErrFieldInvalidType = fail.Form(FIELDInvalidOwner, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
+				AddLocalization("pt-BR", "tipo do campo inválido (%s) para o campo: %s")
+	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400})
+
+	ErrFormMissingRequiredField = fail.Form(FORMMissingRequiredField, "form missing required field: %s", false, map[string]any{"code": 400}, "UNSET FIELD KEY").
+					AddLocalization("pt-BR", "formulário com campos obrigatorio ausente: %s")
+	ErrFormInvalidFieldValue = fail.Form(FORMInvalidFieldValue, "invalid form value for %s: type(%v) value(%v)", false, map[string]any{"code": 400}, "UNSET FIELD KEY", "UNSET FIELD TYPE", "UNSET FIELD VALUE").
+					AddLocalization("pt-BR", "campo %s do formulário com valor inválido: tipo(%v) valor(%v)")
 )

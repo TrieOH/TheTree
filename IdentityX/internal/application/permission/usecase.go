@@ -189,7 +189,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a permission you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var userBelongs bool
@@ -243,7 +243,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return apierr.FromService(span, inbounds.ErrRoleNotOwned{Msg: "cannot edit a permission you don't own"})
+		return fail.New(apierr.ROLENotOwnedByPrincipal)
 	}
 
 	var userBelongs bool
@@ -417,5 +417,5 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	}
 
 	span.SetAttributes(attribute.Bool("permission.found", false))
-	return false, apierr.FromService(span, permissions.ErrInsufficientPermissions{})
+	return false, fail.New(apierr.PERMissionInsufficient)
 }

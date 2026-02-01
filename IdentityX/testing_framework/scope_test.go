@@ -69,7 +69,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 				"external_id": "event1",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ScopeEmptyName).
+			HasErrID(apierr.ID(apierr.SCOPEEmptyName.String())).
 			HasMessage("Scope name must not be empty")
 	})
 
@@ -80,7 +80,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 				"external_id": "event1",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ScopeDuplicateNameAndExternalID).
+			HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
 			HasMessage("two scopes can't have the same name and external_id")
 	})
 

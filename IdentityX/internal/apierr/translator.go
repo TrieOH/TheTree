@@ -37,109 +37,17 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 	if err == nil {
 		return fail.New(CannotTranslateNilError).WithArgs("http").Render()
 	}
-	switch err.ID {
-	case RequestMissingQueryParamValue,
-		RequestMissingQueryParam,
-		RequestEmptyCookie,
-		RequestUnknownQueryParam,
-		RequestValidationError,
-		RequestMissingSchemaCustomFields,
-		RequestInvalidJSONFormat,
-		RequestNotApplicationJSON:
-		return nil
-	case SQLNotFound:
-		return nil
-	case AuthEmailAlreadyUsed,
-		AuthInvalidCredentials,
-		AuthInvalidRefreshCookie,
-		AuthInvalidAccessCookie,
-		AuthMissingRefreshCookie,
-		AuthMissingAccessCookie,
-		AuthInvalidPrincipal,
-		AuthInvalidPassword,
-		AuthNotClient,
-		AuthNotProjectUser,
-		AuthAlreadyVerified,
-		AuthPrincipalNotInContext:
-		return nil
-	case SessionRevoked,
-		SessionNotFound,
-		SessionSelfRevokeForbidden,
-		SessionUnauthorized:
-		return nil
-	case TokenInvalid,
-		TokenExpired,
-		TokenMalformed,
-		TokenSignatureInvalid,
-		TokenInvalidAlg,
-		TokenCouldNotSign,
-		TokenInvalidAccessClaims,
-		TokenNotYetValid,
-		TokenUsedBeforeIssued,
-		TokenInvalidIssuer,
-		TokenInvalidSubject,
-		TokenInvalidAudience,
-		TokenRefreshInvalidID,
-		TokenAccessInvalidID,
-		TokenInvalidKid,
-		TokenUnknownKid,
-		TokenMissingKid,
-		TokenUnverifiable,
-		TokenReuseIdentified,
-		TokenUserMismatch,
-		TokenInvalidFormat,
-		TokenUntrusted,
-		TokenSessionMismatch,
-		TokenMismatchDuringAuth,
-		TokenMissingAccessClaims,
-		TokenMissingRefreshClaims:
-		return nil
-	case ProjectErrorGeneratingKeys,
-		ProjectNotOwnedByPrincipal,
-		ProjectNotFound:
-		return nil
-	case ProjectUserRegisterOnSchemaVersionDraft,
-		ProjectUserRegisterOnSchemaDraft,
-		ProjectUserRegisterOnSchemaArchived,
-		ProjectUserRegisterOnSchemaVersionArchived,
-		ProjectUserErrorEncodingMetadata,
-		ProjectUserNotFromProject,
-		ProjectUserRegisterOnSchemaNoVersion:
-		return nil
-	case SchemaNotOwnedByPrincipal,
-		SchemaNoValidStatus,
-		SchemaInvalidFlowID,
-		SchemaFlowIDIsReserved,
-		SCHEMANoPublishedVersion,
-		SchemaFlowIDAlreadyExistsInType,
-		SchemaInvalidSchemaType,
-		SchemaHasOnlyDraftVersion,
-		SchemaHasOnlyArchivedVersion,
-		SchemaTryingToPublishPublished,
-		SchemaTryingToPublishArchived,
-		SchemaMetadataNotAllowed,
-		SchemaEmptySchemaType,
-		SchemaEmptyFlowID:
-		return nil
-	case SchemaVersionNotDraft,
-		SCHEMAVersionDraftAlreadyExists,
-		SchemaVersionPublishWithNoFields,
-		SchemaVersionDraftDoesntExist,
-		SchemaVersionTryingToPublishPublished,
-		SchemaVersionTryingToPublishArchived,
-		SchemaVersionMismatch,
-		SchemaVersionNonDraftAddFieldsNotAllowed,
-		SchemaVersionNoValidStatus,
-		SchemaVersionDraftOnNonPublished,
-		SchemaVersionNoChanges,
-		SchemaVersionTryingToPublishNonExistant:
-		return nil
-	case FIELDSamePositionForMultipleFields,
-		FieldNoAffectedRowsOnClone:
-		return nil
-	default:
-		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)
+
+	code, ok := err.Meta["code"].(int)
+	if !ok {
+		code = 500
+		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID).Trace("Couldn't cast code")
+	} else if code < 100 || code > 599 {
+		code = 500
+		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID).Trace("Outside valid code range")
 	}
+
+	return nil
 }
 
 func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
