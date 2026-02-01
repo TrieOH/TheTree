@@ -71,9 +71,10 @@ func (uc *UseCase) validateAndConstructMetadata(
 		return nil, apierr.FromService(span, err)
 	}
 
-	validated, fieldsErr := validateFields(custom, fieldDefs, registerFields)
-	if len(fieldsErr.FieldErrors) > 0 {
-		return nil, apierr.FromService(span, fieldsErr)
+	var validated map[string]any
+	validated, err = validateFields(custom, fieldDefs, registerFields)
+	if err != nil {
+		return nil, err
 	}
 
 	metadata := make(map[string]any)
@@ -98,8 +99,9 @@ func (uc *UseCase) validateAndConstructMetadata(
 	return &rawMetadata, nil
 }
 
-func validateFields(custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, field.ErrFieldsValidation) {
-	var fieldErr field.ErrFieldsValidation
+func validateFields(custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, error) {
+	var errored bool
+	validationError := fail.New(apierr.FIELDValidationErrorOnSchemaRegister)
 	validated := make(map[string]any)
 
 	// Build map of provided values (filter unknown fields, allow null for optional)
@@ -160,8 +162,8 @@ func validateFields(custom map[string]any, fieldDefs map[string]field.Field, reg
 		if isRequired {
 			// Required field must be provided and not nil
 			if !wasProvided || isNil {
-				fieldErr.FieldErrors = append(fieldErr.FieldErrors,
-					field.ErrMissingRequiredFields{Key: f.Key})
+				errored = true
+				_ = validationError.Trace(fail.New(apierr.FORMMissingRequiredField).WithArgs(f.Key).Render().Error())
 				continue
 			}
 		} else {
@@ -173,15 +175,18 @@ func validateFields(custom map[string]any, fieldDefs map[string]field.Field, reg
 
 		// 4. TYPE & OPTIONS VALIDATION
 		if ok := validateFieldValue(f, value); !ok {
-			fieldErr.FieldErrors = append(fieldErr.FieldErrors,
-				field.ErrInvalidFieldValue{Key: f.Key, Type: string(f.Type), Value: value})
+			errored = true
+			_ = validationError.Trace(fail.New(apierr.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error())
 			continue
 		}
 
 		validated[f.Key] = value
 	}
 
-	return validated, fieldErr
+	if errored {
+		return validated, validationError
+	}
+	return validated, nil
 }
 
 func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator, ruleValue *json.RawMessage, providedValues map[string]any, fieldIDToKey map[uuid.UUID]string) bool {

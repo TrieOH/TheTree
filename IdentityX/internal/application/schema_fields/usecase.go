@@ -116,10 +116,10 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	// Validate field types/owners first
 	for _, f := range in.Fields {
 		if !field.IsValidFieldType(f.Type) {
-			return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrInvalidFieldType{Type: f.Type, Key: f.Key})
+			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDInvalidType).WithArgs(f.Type, f.Key)
 		}
 		if !field.IsValidOwnerType(f.Owner) {
-			return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrInvalidFieldOwner{Key: f.Key, Owner: f.Owner})
+			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDInvalidOwner).WithArgs(f.Owner, f.Key)
 		}
 	}
 
@@ -173,7 +173,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	for _, f := range in.Fields {
 		fieldID, ok := fieldKeyToID[f.Key]
 		if !ok {
-			return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrFieldNotFound{Key: f.Key})
+			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDNotFound).WithArgs(f.Key)
 		}
 
 		// Collect options (no validation needed here)

@@ -52,9 +52,3 @@ func RoleSliceToRoleOutputSlice(roles []roles.Role) []RoleOutput {
 	}
 	return out
 }
-
-type ErrProjectUserNotFromProject struct{}
-
-func (e ErrProjectUserNotFromProject) Error() string {
-	return "project user not from project"
-}

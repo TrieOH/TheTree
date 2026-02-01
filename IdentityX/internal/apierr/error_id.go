@@ -113,23 +113,15 @@ const (
 )
 
 const (
-	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
-	FieldInvalidCharactersInKey        ID = "FIELD_003"
+	DBNotFound                         ID = "DB_000"
+	DBUniqueViolation                  ID = "DB_001"
+	DBForeignKeyViolation              ID = "DB_002"
+	DBNotNullViolation                 ID = "DB_003"
+	DBValueTooLong                     ID = "DB_004"
+	DBSerializationFailure             ID = "DB_005"
 	FieldSameKeyForMultipleFields      ID = "FIELD_006"
-	FieldInvalidType                   ID = "FIELD_008"
-	FieldInvalidOwner                  ID = "FIELD_009"
-	FieldValidationErrSchemaRegister   ID = "FIELD_010"
-	FieldNotFound                      ID = "FIELD_012"
-)
-
-const (
-	DBNotFound             ID = "DB_000"
-	DBUniqueViolation      ID = "DB_001"
-	DBForeignKeyViolation  ID = "DB_002"
-	DBNotNullViolation     ID = "DB_003"
-	DBValueTooLong         ID = "DB_004"
-	DBSerializationFailure ID = "DB_005"
+	FieldSamePositionForMultipleFields ID = "FIELD_001"
+	FieldInvalidCharactersInKey        ID = "FIELD_003"
 )
 
 const PlaceholderID ID = "PL_000"
@@ -181,6 +173,15 @@ var (
 	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
 
 	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
+
+	FIELDValidationErrorOnSchemaRegister = fail.ID(0, "FIELD", 0, false, "FIELDValidationErrorOnSchemaRegister")
+	FIELDNotFound                        = fail.ID(0, "FIELD", 1, false, "FIELDNotFound")
+	FIELDInvalidOwner                    = fail.ID(0, "FIELD", 2, false, "FIELDInvalidOwner")
+	FIELDInvalidType                     = fail.ID(0, "FIELD", 3, false, "FIELDInvalidType")
+	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 4, false, "FIELDSameKeyForMultipleFields")
+
+	FORMMissingRequiredField = fail.ID(0, "FORM", 0, false, "FORMMissingRequiredFields")
+	FORMInvalidFieldValue    = fail.ID(0, "FORM", 0, false, "FORMInvalidFieldValue")
 
 	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
 				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
@@ -248,6 +249,21 @@ var (
 					AddLocalization("pt-BR", "permissões insuficientes")
 	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400}).
 					AddLocalization("pt-BR", "usuário já tem essa permissão no escopo específicado")
+
+	ErrFieldValidationErrorOnSchemaRegister = fail.Form(FIELDValidationErrorOnSchemaRegister, "error validating form for schema register", false, map[string]any{"code": 400}).
+						AddLocalization("pt-BR", "erro validando formulário para o registro em schema")
+	ErrFieldNotFound = fail.Form(FIELDNotFound, "field not found: %s", false, map[string]any{"code": 400}, "FIELD NOT SET").
+				AddLocalization("pt-BR", "campo nao encontrado: %s")
+	ErrFieldInvalidOwner = fail.Form(FIELDInvalidOwner, "invalid owner type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET OWNER", "UNSET FIELD KEY").
+				AddLocalization("pt-BR", "tipo de dono inválido (%s) para o campo: %s")
+	ErrFieldInvalidType = fail.Form(FIELDInvalidOwner, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
+				AddLocalization("pt-BR", "tipo do campo inválido (%s) para o campo: %s")
+	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400})
+
+	ErrFormMissingRequiredField = fail.Form(FORMMissingRequiredField, "form missing required field: %s", false, map[string]any{"code": 400}, "UNSET FIELD KEY").
+					AddLocalization("pt-BR", "formulário com campos obrigatorio ausente: %s")
+	ErrFormInvalidFieldValue = fail.Form(FORMInvalidFieldValue, "invalid form value for %s: type(%v) value(%v)", false, map[string]any{"code": 400}, "UNSET FIELD KEY", "UNSET FIELD TYPE", "UNSET FIELD VALUE").
+					AddLocalization("pt-BR", "campo %s do formulário com valor inválido: tipo(%v) valor(%v)")
 )
 
 var (
@@ -263,6 +279,5 @@ var (
 	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
 
 	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
-	FIELDSameKeyForMultipleFields      = fail.ID(0, "FIELD", 1, false, "FIELDSameKeyForMultipleFields")
 	FIELDInvalidCharactersInKey        = fail.ID(0, "FIELD", 2, false, "FIELDInvalidCharactersInKey")
 )

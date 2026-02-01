@@ -4,8 +4,6 @@ import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/application/validation"
 
-	"GoAuth/internal/domain/field"
-
 	// "GoAuth/internal/domain/schema"
 	// "GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
@@ -35,28 +33,12 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestMissingSchemaCustomFields.String()))
 		RecordDomainError(span, httpErr)
 		return httpErr
-	// FIXME Add a WithMeta to apierr and FUN
-	case field.ErrFieldsValidation:
-		httpErr := ErrInvalidInput.WithMsg("error validating fields for schema register").WithID(FieldValidationErrSchemaRegister)
-		for _, subE := range e.FieldErrors {
-			httpErr = httpErr.WithCause(subE)
-		}
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case validation.ErrParseUUID:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrAddFieldsToNonDraftVersion:
 		httpErr := ErrConflict.WithMsg(e.Error()).WithID(SchemaVersionNotDraft)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrInvalidFieldType:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidType)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrInvalidFieldOwner:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidOwner)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrDraftVersionOnNonPublished:
@@ -83,20 +65,12 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionNoChanges)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrProjectUserNotFromProject:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ProjectUserNotFromProject)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrPublishVersionNotDraft:
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionNotDraft).WithCause(e)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrPublishNonExistentVersion:
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishNonExistant).WithCause(e)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrFieldNotFound:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(FieldNotFound).WithCause(e)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	default:
