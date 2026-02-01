@@ -19,8 +19,7 @@ var (
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
 	RequestNotApplicationJSON        = fail.ID(0, "REQ", 2, true, "REQuestNotApplicationJSON")
-	RequestMissingCustomFields       = fail.ID(0, "REQ", 3, true, "REQuestMissingCustomFields")
-	RequestInvalidPassword           = fail.ID(0, "REQ", 6, true, "REQuestInvalidPassword") // FIXME there was a gap from 3 NIL 5, test extensively later
+	RequestInvalidPassword           = fail.ID(0, "REQ", 5, true, "REQuestInvalidPassword") // FIXME there was a gap from 2 NIL 5, test extensively later
 
 	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
 	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
@@ -177,111 +176,26 @@ var (
 
 const (
 	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
-)
 
-const (
-	DBNotFound                         ID = "DB_000"
-	DBUniqueViolation                  ID = "DB_001"
-	DBForeignKeyViolation              ID = "DB_002"
-	DBNotNullViolation                 ID = "DB_003"
-	DBValueTooLong                     ID = "DB_004"
-	DBSerializationFailure             ID = "DB_005"
+	DBNotFound             ID = "DB_000"
+	DBUniqueViolation      ID = "DB_001"
+	DBForeignKeyViolation  ID = "DB_002"
+	DBNotNullViolation     ID = "DB_003"
+	DBValueTooLong         ID = "DB_004"
+	DBSerializationFailure ID = "DB_005"
+	DBCheckViolation       ID = "DB_009"
+
 	FieldSameKeyForMultipleFields      ID = "FIELD_006"
 	FieldSamePositionForMultipleFields ID = "FIELD_001"
 	FieldInvalidCharactersInKey        ID = "FIELD_003"
+
+	PermissionAlreadyGranted ID = "PERM_004"
+
+	RoleNameTaken      ID = "ROLE_003"
+	RoleAlreadyGranted ID = "ROLE_004"
+
+	ScopeDuplicateNameAndExternalID ID = "SCP_002"
+	ScopeInvalid                    ID = "SCP_003"
 )
 
 const PlaceholderID ID = "PL_000"
-
-const (
-	RoleNameTaken                   ID = "ROLE_003"
-	RoleAlreadyGranted              ID = "ROLE_004"
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-	PermissionAlreadyGranted        ID = "PERM_004"
-	DBCheckViolation                ID = "DB_009"
-)
-
-var (
-	ErrSysDependencyDown = fail.Form(SYSDependencyDown, "system dependency down: %s", true, map[string]any{"code": 500}, "UNNAMED DEPENDENCY").
-				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
-	ErrServiceUnavailable = fail.Form(SYSServiceUnavailable, "%s is unavailable", true, map[string]any{"code": 500}, "UNNAMED SERVICE").
-				AddLocalization("pt-BR", "%s está indisponível")
-	ErrJWKSRetrievalFailed = fail.Form(SYSJWKSRetrievalFailed, "JWKS retrieval failed", true, map[string]any{"code": 500}).
-				AddLocalization("pt-BR", "resgate do JWKS falhou")
-	ErrRenderingEmailFailed = fail.Form(SYSRenderingEmailFailed, "%s email rendering failed", true, map[string]any{"code": 500}, "UNSET EMAIL TYPE").
-				AddLocalization("pt-BR", "%s falhou na renderização")
-	ErrUUIDV7GenerationFailed = fail.Form(SYSUUIDV7GenerationError, "error generating UUID V7 at %s", true, map[string]any{"code": 500}, "UNSET LOCATION").
-					AddLocalization("pt-BR", "erro gerando UUIDV7 em %s")
-
-	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
-						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")
-	ErrSystemTransactionNilContext = fail.Form(SYSTransactionNilContext, "cannot start transactions with a nil context", true, map[string]any{"code": 500}).
-					AddLocalization("pt-BR", "não é possível começar uma transação com contexto nulo")
-
-	ErrRequestInvalidPassword = fail.Form(RequestInvalidPassword, "invalid password", true, map[string]any{"code": 400}).
-					AddLocalization("pt-BR", "senha inválida")
-
-	ErrTransactionPanicked = fail.Form(DBTransactionPanicked, "transaction panicked", true, map[string]any{"code": 500}).
-				AddLocalization("pt-BR", "transação resultou em pânico")
-	ErrBeginTransactionFailed = fail.Form(DBBeginTransactionFailed, "could not begin transaction", true, map[string]any{"code": 500}).
-					AddLocalization("pt-BR", "não foi possível começar a transação")
-	ErrTransactionCommitFailed = fail.Form(DBTransactionCommitFailed, "transaction commit failed", true, map[string]any{"code": 500}).
-					AddLocalization("pt-BR", "transação falhou no commit")
-
-	ErrNestedTransactionNotAllowed = fail.Form(DBNestedTransactionNotAllowed, "nested transactions are not allowed", true, map[string]any{"code": 500}).
-					AddLocalization("pt-BR", "transações aninhadas não são permitidas")
-
-	ErrRoleNotOwnedByPrincipal = fail.Form(ROLENotOwnedByPrincipal, "role not owned by principal", false, map[string]any{"code": 401}).
-					AddLocalization("pt-BR", "principal não é dono do papel")
-
-	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 400}).
-				AddLocalization("pt-BR", "nome do papel já em uso")
-	ErrRoleAlreadyGranted = fail.Form(ROLEAlreadyGranted, "%s role already granted to user", false, map[string]any{"code": 400}, "ROLE NOT SET").
-				AddLocalization("pt-BR", "papel %s já atribuído ao usuário")
-
-	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 400}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
-						AddLocalization("pt-BR", "escopo com nome e id externo (%s, %s) já existe")
-
-	ScopeInvalidShapeErrorMessage   = "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)"
-	ScopeInvalidShapeErrorMessageBR = "Forma de escopo inválida: um escopo deve ser um dos seguintes — (1) um escopo global com type='global' e sem project_id, name ou external_id; (2) um escopo raiz de projeto com type='project_root', um project_id, e sem name ou external_id; ou (3) um escopo de projeto com type='project_scope', um project_id e um name (external_id opcional)."
-	ErrScopeInvalidShape            = fail.Form(SCOPEInvalidShape, ScopeInvalidShapeErrorMessage, false, map[string]any{"code": 400}).
-					AddLocalization("pt-BR", ScopeInvalidShapeErrorMessageBR)
-	ErrScopeEmptyName = fail.Form(SCOPEEmptyName, "scope name cannot be empty", false, map[string]any{"code": 400}).
-				AddLocalization("pt-BR", "nome do escopo não pode estar vazio")
-
-	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").
-							AddLocalization("pt-BR", "%s: condições %s não podem estar vazias")
-	ErrPermissionConditionValidationError = fail.Form(PERMissionConditionValidationError, "error validating permission condition at: %s", false, map[string]any{"code": 400}, "PATH NOT SET").
-						AddLocalization("pt-BR", "erro validando permissão da condição em: %s")
-	ErrPermissionActionMismatch = fail.Form(PERMissionActionMismatch, "action mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
-					AddLocalization("pt-BR", "incompatibilidade de ações: permissão=%s, requisição=%s")
-	ErrPermissionObjectMismatch = fail.Form(PERMissionObjectMismatch, "object mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
-					AddLocalization("pt-BR", "incompatibilidade de objetos: permissão=%s, requisição=%s")
-	ErrPermissionNotOwnedByPrincipal = fail.Form(PERMissionNotOwnedByPrincipal, "permission not owned by principal", false, map[string]any{"code": 401}).
-						AddLocalization("pt-BR", "identidade não é a dona da permissão")
-	ErrPermissionInvalidAction = fail.Form(PERMissionInvalidAction, "invalid permission action: (%s)", false, map[string]any{"code": 400}, "ACTION NOT SET").
-					AddLocalization("pt-BR", "ação da permissão é invalida: (%s)")
-	ErrPermissionInvalidObject = fail.Form(PERMissionInvalidObject, "invalid permission object: (%s)", false, map[string]any{"code": 400}, "OBJECT NOT SET").
-					AddLocalization("pt-BR", "objeto da permissão é invalido: (%s)")
-
-	ErrInsufficientPermission = fail.Form(PERMissionInsufficient, "insufficient permissions", false, map[string]any{"code": 403}).
-					AddLocalization("pt-BR", "permissões insuficientes")
-	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400}).
-					AddLocalization("pt-BR", "usuário já tem essa permissão no escopo específicado")
-
-	ErrFieldValidationErrorOnSchemaRegister = fail.Form(FIELDValidationErrorOnSchemaRegister, "error validating form for schema register", false, map[string]any{"code": 400}).
-						AddLocalization("pt-BR", "erro validando formulário para o registro em schema")
-	ErrFieldNotFound = fail.Form(FIELDNotFound, "field not found: %s", false, map[string]any{"code": 400}, "FIELD NOT SET").
-				AddLocalization("pt-BR", "campo nao encontrado: %s")
-	ErrFieldInvalidOwner = fail.Form(FIELDInvalidOwner, "invalid owner type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET OWNER", "UNSET FIELD KEY").
-				AddLocalization("pt-BR", "tipo de dono inválido (%s) para o campo: %s")
-	ErrFieldInvalidType = fail.Form(FIELDInvalidOwner, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
-				AddLocalization("pt-BR", "tipo do campo inválido (%s) para o campo: %s")
-	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400})
-
-	ErrFormMissingRequiredField = fail.Form(FORMMissingRequiredField, "form missing required field: %s", false, map[string]any{"code": 400}, "UNSET FIELD KEY").
-					AddLocalization("pt-BR", "formulário com campos obrigatorio ausente: %s")
-	ErrFormInvalidFieldValue = fail.Form(FORMInvalidFieldValue, "invalid form value for %s: type(%v) value(%v)", false, map[string]any{"code": 400}, "UNSET FIELD KEY", "UNSET FIELD TYPE", "UNSET FIELD VALUE").
-					AddLocalization("pt-BR", "campo %s do formulário com valor inválido: tipo(%v) valor(%v)")
-)
