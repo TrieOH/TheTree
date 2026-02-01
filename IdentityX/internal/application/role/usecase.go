@@ -63,7 +63,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.RoleInput) (*inbounds
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot create roles for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot create roles for a project you don't own")
 	}
 
 	role, err := uc.roles.Create(ctx, roles.Role{
@@ -94,7 +94,7 @@ func (uc *UseCase) UpdateDescription(ctx context.Context, in inbounds.RoleInput)
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot update roles in a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot update roles in a project you don't own")
 	}
 
 	if in.Description == nil {
@@ -126,7 +126,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetRoleInput
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get roles from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get roles from a project you don't own")
 	}
 
 	role, err := uc.roles.GetByIDExternal(ctx, in.RoleID, *in.ProjectID)
@@ -153,7 +153,7 @@ func (uc *UseCase) GetByName(ctx context.Context, in inbounds.GetRoleInput) (*in
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get roles from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get roles from a project you don't own")
 	}
 
 	role, err := uc.roles.GetByName(ctx, in.Name, in.ProjectID)
@@ -180,7 +180,7 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetRoleInput) 
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get roles from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get roles from a project you don't own")
 	}
 
 	foundRoles, err := uc.roles.ListByProject(ctx, *in.ProjectID)
@@ -207,7 +207,7 @@ func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermission
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
 	}
 
 	var roleBelongs bool
@@ -253,7 +253,7 @@ func (uc *UseCase) RemovePermission(ctx context.Context, in inbounds.RolePermiss
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
 	}
 
 	var roleBelongs bool
@@ -299,7 +299,7 @@ func (uc *UseCase) GetPermissions(ctx context.Context, in inbounds.RolePermissio
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot fetch from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot fetch from a project you don't own")
 	}
 
 	permissions, err := uc.roles.GetPermissions(ctx, in.RoleID, *in.ProjectID)
@@ -329,7 +329,7 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
 	}
 
 	var roleBelongs bool
@@ -349,7 +349,7 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !userBelongs {
-		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+		return fail.New(apierr.ProjectUserNotFromProject)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
@@ -383,7 +383,7 @@ func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot edit a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
 	}
 
 	var roleBelongs bool
@@ -403,7 +403,7 @@ func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	if !userBelongs {
-		return apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+		return fail.New(apierr.ProjectUserNotFromProject)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
@@ -434,7 +434,7 @@ func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) (
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot fetch from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot fetch from a project you don't own")
 	}
 
 	var userBelongs bool
@@ -444,7 +444,7 @@ func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) (
 	}
 
 	if !userBelongs {
-		return nil, apierr.FromService(span, inbounds.ErrProjectUserNotFromProject{})
+		return nil, fail.New(apierr.ProjectUserNotFromProject)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)

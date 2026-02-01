@@ -66,11 +66,11 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	}
 
 	if in.FlowID == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptyFlowID{})
+		return nil, fail.New(apierr.SchemaEmptyFlowID)
 	}
 
 	if in.SchemaType == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptySchemaType{})
+		return nil, fail.New(apierr.SchemaEmptySchemaType)
 	}
 
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
@@ -83,20 +83,20 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot draft a schema for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot draft a schema for a project you don't own")
 	}
 
 	if !schema.IsValidSchemaType(in.SchemaType) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
+		return nil, fail.New(apierr.SchemaInvalidSchemaType)
 	}
 
 	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
+		return nil, fail.New(apierr.SchemaInvalidFlowID).WithArgs("flow id can't be the same as a schema type")
 	}
 
 	if schema.IsFlowIDReserved(in.FlowID) {
-		return nil, apierr.FromService(span, inbounds.ErrFlowIDIsReserved{Reserved: in.FlowID})
+		return nil, fail.New(apierr.SchemaFlowIDIsReserved).WithArgs(in.FlowID)
 	}
 
 	validSchemaType := schema.Type(in.SchemaType)
@@ -112,7 +112,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	}
 
 	if exists {
-		return nil, apierr.FromService(span, inbounds.ErrFlowIDSchemaTypeConflict{})
+		return nil, fail.New(apierr.SchemaFlowIDAlreadyExistsInType)
 	}
 
 	var drafted *schema.Schema
@@ -155,7 +155,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot publish a schema for a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot publish a schema for a project you don't own")
 	}
 
 	var belongs bool
@@ -168,7 +168,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if !belongs {
-		return apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot publish a schema you don't own"})
+		return fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot publish a schema you don't own")
 	}
 
 	var toPublish *schema.Schema
@@ -179,11 +179,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 
 	if toPublish.Status != schema.StatusDraft {
 		if toPublish.Status == schema.StatusPublished {
-			err = apierr.FromService(span, inbounds.ErrPublishSchemaPublished{})
+			err = fail.New(apierr.SchemaTryingToPublishPublished)
 		} else if toPublish.Status == schema.StatusArchived {
-			err = apierr.FromService(span, inbounds.ErrPublishSchemaArchived{})
+			err = fail.New(apierr.SchemaTryingToPublishArchived)
 		} else {
-			err = apierr.FromService(span, inbounds.ErrSchemaInvalidStatus{Status: string(toPublish.Status)})
+			err = fail.New(apierr.SchemaNoValidStatus).WithArgs(toPublish.Status)
 		}
 		return err
 	}
@@ -199,11 +199,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if latest.VersionNumber == 1 && latest.Status == version.StatusDraft {
-		return apierr.FromService(span, inbounds.ErrSchemaOnlyDraft{Msg: "cannot publish a schema with only draft versions"})
+		return fail.New(apierr.SchemaHasOnlyDraftVersion)
 	}
 
 	if latest.VersionNumber == 1 && latest.Status == version.StatusArchived {
-		return apierr.FromService(span, inbounds.ErrSchemaOnlyArchived{Msg: "cannot publish a schema with only archived versions"})
+		return fail.New(apierr.SchemaHasOnlyArchivedVersion)
 	}
 
 	if err = schemas.Publish(ctx, schema.Schema{
@@ -234,7 +234,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get a schema from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get a schema from a project you don't own")
 	}
 
 	var belongs bool
@@ -247,7 +247,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 	}
 
 	if !belongs {
-		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get a schema you don't own"})
+		return nil, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot get a schema you don't own")
 	}
 
 	found, err := schemas.FindByID(ctx, in.SchemaID, in.ProjectID)
@@ -278,7 +278,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get a schema from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get a schema from a project you don't own")
 	}
 
 	var belongs bool
@@ -291,7 +291,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	}
 
 	if !belongs {
-		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get a schema you don't own"})
+		return nil, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot get a schema you don't own")
 	}
 
 	var schemaPart *schema.Schema
@@ -395,7 +395,7 @@ func (uc *UseCase) GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID)
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get schema IDs from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get schema IDs from a project you don't own")
 	}
 
 	IDs, err := schemas.GetIDsFromProjectID(ctx, projectID)
@@ -428,7 +428,7 @@ func (uc *UseCase) List(ctx context.Context, projectID uuid.UUID) ([]inbounds.Sc
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get schemas from a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get schemas from a project you don't own")
 	}
 
 	schemasOutput, err := schemas.List(ctx, projectID)
@@ -472,7 +472,7 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 		return nil, err
 	}
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get form for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get form for a project you don't own")
 	}
 
 	// Get schema - either by ID or by FlowID+Type
@@ -486,7 +486,7 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 			return nil, err
 		}
 		if !belongs {
-			return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot get form for a schema you don't own"})
+			return nil, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot get form for a schema you don't own")
 		}
 
 		s, err = schemas.FindByID(ctx, in.SchemaID, in.ProjectID)

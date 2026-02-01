@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/otel"
@@ -76,7 +77,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err)
 	}
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
@@ -91,19 +92,13 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
-		return nil, apierr.FromService(
-			span,
-			inbounds.ErrGeneratingProjectKeys{Cause: err},
-		)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err)
 	}
 	defer zero(priv)
 
 	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
-		return nil, apierr.FromService(
-			span,
-			inbounds.ErrGeneratingProjectKeys{Cause: err},
-		)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err)
 	}
 
 	kid := fmt.Sprintf(
@@ -124,10 +119,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
 	})
 	if err != nil {
-		return nil, apierr.FromService(
-			span,
-			inbounds.ErrGeneratingProjectKeys{Cause: err},
-		)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err)
 	}
 
 	span.SetAttributes(

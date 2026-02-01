@@ -26,7 +26,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + rid.String() + "/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SchemaNotOwnedByPrincipal).
+			HasErrID(apierr.ID(apierr.SchemaNotOwnedByPrincipal.String())).
 			HasMessage("cannot publish a schema you don't own")
 	})
 
@@ -92,7 +92,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "estudante",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.SchemaFlowIDAlreadyExistsInType).
+			HasErrID(apierr.ID(apierr.SchemaFlowIDAlreadyExistsInType.String())).
 			HasMessage("schema with this flow ID already exists in this type")
 	})
 
@@ -105,7 +105,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "none",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaFlowIDIsReserved).
+			HasErrID(apierr.ID(apierr.SchemaFlowIDIsReserved.String())).
 			HasMessage("flow id can't be the reserved keyword 'none'")
 	})
 
@@ -118,7 +118,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "context",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaInvalidFlowID).
+			HasErrID(apierr.ID(apierr.SchemaInvalidFlowID.String())).
 			HasMessage("flow id can't be the same as a schema type")
 	})
 
@@ -206,7 +206,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaHasOnlyDraftVersion).
+			HasErrID(apierr.ID(apierr.SchemaHasOnlyDraftVersion.String())).
 			HasMessage("cannot publish a schema with only draft versions")
 	})
 
@@ -222,7 +222,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaVersionPublishWithNoFields).
+			HasErrID(apierr.ID(apierr.SchemaVersionPublishWithNoFields.String())).
 			HasMessage("cannot publish a schema version with no fields")
 	})
 
@@ -367,7 +367,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SchemaTryingToPublishPublished).
+			HasErrID(apierr.ID(apierr.SchemaTryingToPublishPublished.String())).
 			HasMessage("cannot publish a schema that is already published")
 	})
 
