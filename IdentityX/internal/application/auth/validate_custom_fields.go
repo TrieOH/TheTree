@@ -4,13 +4,13 @@ import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/field"
-	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"context"
 	"encoding/json"
 	"strings"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -36,18 +36,24 @@ func (uc *UseCase) validateAndConstructMetadata(
 	if registerSchema, err = schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID); err != nil {
 		return nil, err
 	}
-	if err = registerSchema.CanRegister(); err != nil {
+	// if err = registerSchema.CanRegisterSchema(); err != nil {
+	// 	return nil, apierr.FromService(span, err)
+	// }
+	if err = apierr.CanRegisterSchema(*registerSchema); err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 	var registerVersion *version.Version
 	if registerVersion, err = versions.GetCurrent(ctx, registerSchema.ID); err != nil {
 		return nil, err
 	}
-	if err = registerVersion.CanRegister(); err != nil {
+	if err = apierr.CanRegisterVersion(*registerVersion); err != nil {
 		return nil, apierr.FromService(span, err)
 	}
+	// if err = registerVersion.CanRegister(); err != nil {
+	// 	return nil, apierr.FromService(span, err)
+	// }
 	if ok = registerSchema.IsVersion(registerVersion.ID); !ok {
-		return nil, apierr.FromService(span, schema.ErrSchemaVersionMismatch{})
+		return nil, fail.New(apierr.SchemaVersionMismatch)
 	}
 
 	var registerFields []field.Field
@@ -85,7 +91,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
-		return nil, apierr.FromService(span, project_users.ErrEncodingProjectUserMetadata{Cause: err})
+		return nil, fail.New(apierr.ProjectUserErrorEncodingMetadata).With(err)
 	}
 
 	rawMetadata := json.RawMessage(marshalledMetadata)

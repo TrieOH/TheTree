@@ -8,13 +8,13 @@ var (
 	RequestMissingQueryParamValue = fail.ID(0, "REQ", 0, false, "REQuestMissingQueryParamValue")
 	RequestMissingQueryParam      = fail.ID(0, "REQ", 1, false, "REQuestMissingQueryParam")
 	// FIXME create tests for empty cookies
-	RequestEmptyCookie = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
+	RequestEmptyCookie       = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
+	RequestUnknownQueryParam = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
+	RequestValidationError   = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
 
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
-	RequestValidationError           = fail.ID(0, "REQ", 2, true, "REQuestValidationError")
 	RequestNotApplicationJSON        = fail.ID(0, "REQ", 3, true, "REQuestNotApplicationJSON")
-	RequestUnknownQueryParam         = fail.ID(0, "REQ", 5, true, "REQuestUnknownQueryParam")
 
 	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
 	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
@@ -32,7 +32,7 @@ var (
 
 	SessionRevoked             = fail.ID(1, "SESSION", 0, true, "SESSIONRevoked")
 	SessionNotFound            = fail.ID(1, "SESSION", 1, true, "SESSIONNotFound")
-	SessionSelfRevokeForbidden = fail.ID(1, "SESSION", 2, true, "SESSIONSelfRevokeForbi5dden")
+	SessionSelfRevokeForbidden = fail.ID(1, "SESSION", 2, true, "SESSIONSelfRevokeForbidden")
 	SessionUnauthorized        = fail.ID(1, "SESSION", 3, true, "SESSIONUnauthorized")
 
 	TokenInvalid             = fail.ID(1, "TOKEN", 0, false, "TOKENInvalid")
@@ -63,50 +63,48 @@ var (
 	TokenMissingAccessClaims  = fail.ID(1, "TOKEN", 2, true, "TOKENMissingAccessClaims")
 	TokenMissingRefreshClaims = fail.ID(1, "TOKEN", 3, true, "TOKENMissingRefreshClaims")
 
-	SCHEMANoPublishedVersion = fail.ID(0, "SCHEMA", 0, true, "SCHEMANoPublishedVersion")
+	ProjectErrorGeneratingKeys = fail.ID(1, "PROJECT", 0, false, "PROJECTErrorGeneratingKeys")
+	ProjectNotOwnedByPrincipal = fail.ID(1, "PROJECT", 1, false, "PROJECTNotOwnedByPrincipal")
+
+	ProjectNotFound = fail.ID(1, "PROJECT", 0, true, "PROJECTNotFound")
+
+	ProjectUserErrorEncodingMetadata = fail.ID(1, "PROJECTUSER", 0, false, "PROJECTUSERErrorEncodingMetadata")
+
+	ProjectUserRegisterOnSchemaVersionDraft    = fail.ID(1, "PROJECTUSER", 0, true, "PROJECTUSERRegisterOnSchemaVersionDraft")
+	ProjectUserRegisterOnSchemaDraft           = fail.ID(1, "PROJECTUSER", 1, true, "PROJECTUSERRegisterOnSchemaDraft")
+	ProjectUserRegisterOnSchemaArchived        = fail.ID(1, "PROJECTUSER", 2, true, "PROJECTUSERRegisterOnSchemaArchived")
+	ProjectUserRegisterOnSchemaVersionArchived = fail.ID(1, "PROJECTUSER", 3, true, "PROJECTUSERRegisterOnSchemaVersionArchived")
+	ProjectUserNotFromProject                  = fail.ID(1, "PROJECTUSER", 4, true, "PROJECTUSERNotFromProject")
+	ProjectUserRegisterOnSchemaNoVersion       = fail.ID(1, "PROJECTUSER", 5, true, "PROJECTUSERRegisterOnSchemaNoVersion")
+
+	SchemaNotOwnedByPrincipal = fail.ID(1, "SCHEMA", 0, false, "SCHEMANotOwnedByPrincipal")
+	SchemaNoValidStatus       = fail.ID(1, "SCHEMA", 1, false, "SCHEMANoValidStatus")
+	SchemaInvalidFlowID       = fail.ID(1, "SCHEMA", 2, false, "SCHEMAInvalidFlowID")
+	SchemaFlowIDIsReserved    = fail.ID(1, "SCHEMA", 3, false, "SCHEMAFlowIDIsReserved")
+
+	SCHEMANoPublishedVersion        = fail.ID(1, "SCHEMA", 0, true, "SCHEMANoPublishedVersion")
+	SchemaFlowIDAlreadyExistsInType = fail.ID(1, "SCHEMA", 1, true, "SCHEMAFlowIDAlreadyExistsInType")
+	SchemaInvalidSchemaType         = fail.ID(1, "SCHEMA", 2, true, "SCHEMAInvalidSchemaType")
+	SchemaHasOnlyDraftVersion       = fail.ID(1, "SCHEMA", 3, true, "SCHEMAHasOnlyDraftVersion")
+	SchemaHasOnlyArchivedVersion    = fail.ID(1, "SCHEMA", 4, true, "SCHEMAHasOnlyArchivedVersion")
+	SchemaTryingToPublishPublished  = fail.ID(1, "SCHEMA", 5, true, "SCHEMATryingToPublishPublished")
+	SchemaTryingToPublishArchived   = fail.ID(1, "SCHEMA", 6, true, "SCHEMATryingToPublishArchived")
+	SchemaMetadataNotAllowed        = fail.ID(1, "SCHEMA", 7, true, "SCHEMAMetadataNotAllowed")
+	SchemaEmptySchemaType           = fail.ID(1, "SCHEMA", 8, true, "SCHEMAEmptySchemaType")
+	SchemaEmptyFlowID               = fail.ID(1, "SCHEMA", 9, true, "SCHEMAEmptyFlowID")
+
+	// Schema Version
+	SchemaVersionDraftAlreadyExists  = fail.ID(1, "SCHEMAVERSION", 0, true, "SCHEMAVERSIONDraftAlreadyExists")
+	SchemaVersionPublishWithNoFields = fail.ID(1, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONPublishWithNoFields")
+
+	SchemaVersionMismatch = fail.ID(1, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONMismatch")
 )
 
 const (
-	ProjectNotFound            ID = "PROJ_002"
-	ProjectErrorGeneratingKeys ID = "PROJ_004"
-	ProjectErrorParsingKeys    ID = "PROJ_005"
-	ProjectNotOwnedByPrincipal ID = "PROJ_007"
-	ProjectFailedToParseKey    ID = "PROJ_009"
-)
-
-const (
-	ProjectUserRegisterOnSchemaVersionDraft    ID = "PROJ_USR_002"
-	ProjectUserRegisterOnSchemaDraft           ID = "PROJ_USR_003"
-	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
-	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
-	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
-	ProjectUserNotFromProject                  ID = "PROJ_USR_007"
-	ProjectUserRegisterOnSchemaNoVersion       ID = "PROJ_USR_008"
-)
-
-const (
-	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
-	SchemaInvalidSchemaType         ID = "SCHEMA_002"
-	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
-	SchemaHasOnlyDraftVersion       ID = "SCHEMA_006"
-	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
-	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
-	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
-	SchemaNoValidStatus             ID = "SCHEMA_010"
-	SchemaInvalidFlowID             ID = "SCHEMA_011"
-	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
-	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
-	SchemaEmptySchemaType           ID = "SCHEMA_016"
-	SchemaEmptyFlowID               ID = "SCHEMA_017"
-)
-
-const (
-	SchemaVersionDraftAlreadyExists         ID = "SCM_VER_001"
-	SchemaVersionPublishWithNoFields        ID = "SCM_VER_003"
-	SchemaVersionDraftDoesntExist           ID = "SCM_VER_004"
-	SchemaVersionTryingToPublishPublished   ID = "SCM_VER_005"
-	SchemaVersionTryingToPublishArchived    ID = "SCM_VER_006"
-	SchemaVersionMismatch                   ID = "SCM_VER_007"
+	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
+	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
+	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
+	// SchemaVersionMismatch                   ID = "SCM_VER_007"
 	SchemaVersionNotDraft                   ID = "SCM_VER_008"
 	SchemaVersionNoValidStatus              ID = "SCM_VER_009"
 	SchemaVersionDraftOnNonPublished        ID = "SCM_VER_010"
@@ -219,8 +217,6 @@ var (
 	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
 	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
 	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
-
-	SCHEMAVersionDraftAlreadyExists = fail.ID(0, "SCHEMA", 0, false, "SCHEMAVersionDraftAlreadyExists")
 
 	FIELDSamePositionForMultipleFields = fail.ID(0, "FIELD", 0, false, "FIELDSamePositionForMultipleFields")
 	FIELDSameKeyForMultipleFields      = fail.ID(0, "FIELD", 1, false, "FIELDSameKeyForMultipleFields")

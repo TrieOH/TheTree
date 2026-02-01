@@ -3,6 +3,8 @@ package apierr
 import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/domain/version"
 
 	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
@@ -49,3 +51,51 @@ func NewPrincipal(
 		RefreshClaims: refresh,
 	}, nil
 }
+
+func CanRegisterSchema(s schema.Schema) error {
+	if s.CurrentVersionID == nil {
+		return fail.New(ProjectUserRegisterOnSchemaNoVersion)
+	}
+	if s.Status == schema.StatusDraft {
+		return fail.New(ProjectUserRegisterOnSchemaDraft)
+	}
+	if s.Status == schema.StatusArchived {
+		return fail.New(ProjectUserRegisterOnSchemaArchived)
+	}
+	return nil
+}
+
+func CanRegisterVersion(v version.Version) error {
+	if v.Status == version.StatusDraft {
+		return fail.New(ProjectUserRegisterOnSchemaVersionDraft)
+	}
+	if v.Status == version.StatusArchived {
+		return fail.New(ProjectUserRegisterOnSchemaVersionArchived)
+	}
+	return nil
+}
+
+// func (s schema.Schema) CanRegisterSchema() error {
+// 	if s.CurrentVersionID == nil {
+// 		return fail.New(ProjectUserRegisterOnSchemaNoVersion)
+// 	}
+// 	if s.Status == schema.StatusDraft {
+// 		return fail.New(ProjectUserRegisterOnSchemaDraft)
+// 	}
+// 	if s.Status == schema.StatusArchived {
+// 		return fail.New(ProjectUserRegisterOnSchemaArchived)
+// 	}
+// 	return nil
+// }
+
+// type Version version.Version
+
+// func (v version.Version) CanRegisterVersion() error {
+// 	if v.Status == version.StatusDraft {
+// 		return fail.New(ProjectUserRegisterOnSchemaVersionDraft)
+// 	}
+// 	if v.Status == version.StatusArchived {
+// 		return fail.New(ProjectUserRegisterOnSchemaVersionArchived)
+// 	}
+// 	return nil
+// }

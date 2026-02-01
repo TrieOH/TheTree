@@ -10,6 +10,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -81,7 +82,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot draft a schema version for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a project you don't own")
 	}
 
 	var belongs bool
@@ -94,7 +95,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if !belongs {
-		return nil, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot draft a schema version for a schema you don't own"})
+		return nil, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a schema you don't own")
 	}
 
 	var latest *version.Version
@@ -171,7 +172,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !isOwner {
-		return apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot publish a schema version for a project you don't own"})
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a project you don't own")
 	}
 
 	var belongs bool
@@ -184,7 +185,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !belongs {
-		return apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot publish a schema version for a schema you don't own"})
+		return fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a schema you don't own")
 	}
 
 	var latest *version.Version
@@ -215,7 +216,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !hasFields {
-		return apierr.FromService(span, inbounds.ErrPublishVersionNoFields{})
+		return fail.New(apierr.SchemaVersionPublishWithNoFields)
 	}
 
 	if latest.BasedOnVersionID == nil {
@@ -289,7 +290,7 @@ func (uc *UseCase) GetCurrent(ctx context.Context, in inbounds.SchemaVersionServ
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the current schema version for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the current schema version for a project you don't own")
 	}
 
 	current, err := versions.GetCurrent(ctx, in.SchemaID)
@@ -323,7 +324,7 @@ func (uc *UseCase) GetLatest(ctx context.Context, in inbounds.SchemaVersionServi
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the latest schema version for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own")
 	}
 
 	latest, err := versions.GetLatest(ctx, in.SchemaID)
@@ -359,7 +360,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaVersionServ
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get the latest schema version for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own")
 	}
 
 	var foundVersion *version.Version

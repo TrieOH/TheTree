@@ -58,19 +58,6 @@ type Schema struct {
 	UpdatedAt        time.Time
 }
 
-func (s Schema) CanRegister() error {
-	if s.CurrentVersionID == nil {
-		return ErrRegisterSchemaNoPublishedVersion{}
-	}
-	if s.Status == StatusDraft {
-		return ErrRegisterOnSchemaDraft{}
-	}
-	if s.Status == StatusArchived {
-		return ErrRegisterOnSchemaArchive{}
-	}
-	return nil
-}
-
 func (s Schema) IsVersion(versionID uuid.UUID) bool {
 	return s.CurrentVersionID != nil && *s.CurrentVersionID == versionID
 }

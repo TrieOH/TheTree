@@ -52,41 +52,6 @@ type RefreshInput struct {
 	IP            string
 }
 
-type ErrEmptyFlowID struct{}
-
-func (e ErrEmptyFlowID) Error() string {
-	return "flow id can't be empty"
-}
-
-type ErrEmptySchemaType struct{}
-
-func (e ErrEmptySchemaType) Error() string {
-	return "schema type can't be empty"
-}
-
-type ErrInvalidSchemaType struct{}
-
-func (e ErrInvalidSchemaType) Error() string {
-	return "invalid schema type"
-}
-
-type ErrInvalidFlowID struct {
-	Why string
-}
-
-func (e ErrInvalidFlowID) Error() string {
-	if e.Why == "" {
-		return "invalid flow ID"
-	}
-	return "invalid flow ID: " + e.Why
-}
-
-type ErrCustomFieldsNotAllowed struct{}
-
-func (e ErrCustomFieldsNotAllowed) Error() string {
-	return "custom fields are not allowed for core schema"
-}
-
 type ErrSchemaRegisterValidation struct {
 	Errors []string
 }

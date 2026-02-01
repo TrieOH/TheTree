@@ -60,9 +60,3 @@ type ErrRoleNotOwned struct {
 func (e ErrRoleNotOwned) Error() string {
 	return e.Msg
 }
-
-type ErrProjectUserNotFromProject struct{}
-
-func (e ErrProjectUserNotFromProject) Error() string {
-	return "project user not from project"
-}

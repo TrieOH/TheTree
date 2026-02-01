@@ -91,9 +91,3 @@ type ErrPublishVersionNoChanges struct{}
 func (e ErrPublishVersionNoChanges) Error() string {
 	return "cannot publish a version with no changes"
 }
-
-type ErrPublishVersionNoFields struct{}
-
-func (e ErrPublishVersionNoFields) Error() string {
-	return "cannot publish a schema version with no fields"
-}

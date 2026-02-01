@@ -259,7 +259,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/login"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/login")
 	}
 
 	var SigningKid string
@@ -405,7 +405,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/refreshInternal"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/refreshInternal")
 	}
 
 	var newRefreshJTI = uid
@@ -493,7 +493,7 @@ func (uc *UseCase) finishClientRefresh(
 	var newAccessJTI uuid.UUID
 	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishClientRefresh"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/finishClientRefresh")
 	}
 
 	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
@@ -594,7 +594,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var newAccessJTI uuid.UUID
 	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishProjectUserRefresh"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/finishProjectUserRefresh")
 	}
 
 	SigningKid, err := keys.GetActiveProjectSigningKID(ctx, *sess.ProjectID)
@@ -695,11 +695,11 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	issuer := uc.tokenIssuer
 
 	if in.FlowID == "" {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptyFlowID{})
+		return outbounds.Email{}, fail.New(apierr.SchemaEmptyFlowID)
 	}
 
 	if in.SchemaType == "" {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptySchemaType{})
+		return outbounds.Email{}, fail.New(apierr.SchemaEmptySchemaType)
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
@@ -707,16 +707,16 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	if !schema.IsValidSchemaType(in.SchemaType) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
+		return outbounds.Email{}, fail.New(apierr.SchemaInvalidSchemaType)
 	}
 
 	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
+		return outbounds.Email{}, fail.New(apierr.SchemaInvalidFlowID).WithArgs("flow id can't be the same as a schema type")
 	}
 
 	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrCustomFieldsNotAllowed{})
+		return outbounds.Email{}, fail.New(apierr.SchemaMetadataNotAllowed)
 	}
 
 	empty := json.RawMessage(`{}`)
@@ -871,7 +871,7 @@ func (uc *UseCase) LoginProjectUser(
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/LoginProjectUser"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/LoginProjectUser")
 	}
 
 	var SigningKid string

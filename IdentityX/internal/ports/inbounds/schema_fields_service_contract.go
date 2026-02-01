@@ -119,12 +119,6 @@ func FieldToOutputField(f *field.Field) *OutputField {
 	}
 }
 
-type ErrSchemaVersionMismatchLatest struct{}
-
-func (e ErrSchemaVersionMismatchLatest) Error() string {
-	return "version number does not match latest version"
-}
-
 type ErrAddFieldsToNonDraftVersion struct{}
 
 func (e ErrAddFieldsToNonDraftVersion) Error() string {

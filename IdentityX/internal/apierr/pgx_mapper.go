@@ -39,7 +39,7 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 			}()
 			switch pgErr.ConstraintName {
 			case "one_version_draft_per_schema":
-				return fail.New(SCHEMAVersionDraftAlreadyExists).Debug(err.Error()), true
+				return fail.New(SchemaVersionDraftAlreadyExists).Debug(err.Error()), true
 			case "schema_fields_schema_version_id_position_key":
 				return fail.New(FIELDSamePositionForMultipleFields).Debug(err.Error()), true
 			case "schema_fields_schema_version_id_key_key":

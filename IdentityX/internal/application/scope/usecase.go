@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel"
 )
 
@@ -51,7 +52,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get scopes for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own")
 	}
 
 	if in.Name == "" {
@@ -87,7 +88,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get a scope for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get a scope for a project you don't own")
 	}
 
 	scope, err := uc.scopes.GetByIDExternal(ctx, in.ScopeID, in.ProjectID)
@@ -114,7 +115,7 @@ func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.Get
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get scopes for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own")
 	}
 
 	projectScopes, err := uc.scopes.GetProjectScopes(ctx, in.ProjectID)

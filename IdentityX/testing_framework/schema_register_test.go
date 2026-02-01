@@ -499,7 +499,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					"custom_fields": map[string]interface{}{},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ProjectUserRegisterOnSchemaNoVersion).
+				HasErrID(apierr.ID(apierr.ProjectUserRegisterOnSchemaNoVersion.String())).
 				HasMessage("can't register on a schema that has no published version")
 		})
 
@@ -536,7 +536,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ProjectUserRegisterOnSchemaDraft).
+				HasErrID(apierr.ID(apierr.ProjectUserRegisterOnSchemaDraft.String())).
 				HasMessage("can't register to a draft schema")
 		})
 
@@ -557,7 +557,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ProjectUserRegisterOnSchemaDraft).
+				HasErrID(apierr.ID(apierr.ProjectUserRegisterOnSchemaDraft.String())).
 				HasMessage("can't register to a draft schema")
 		})
 	})
