@@ -3,6 +3,7 @@ package apierr
 import (
 	"errors"
 
+	"github.com/MintzyG/fail"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -13,31 +14,31 @@ func FromJWTError(err error, tokenType string) error {
 
 	switch {
 	case errors.Is(err, jwt.ErrTokenExpired):
-		return ErrUnauthorized.WithMsg(tokenType + " token expired").WithID(TokenExpired)
+		return fail.New(TokenExpired).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenSignatureInvalid):
-		return ErrUnauthorized.WithMsg("invalid " + tokenType + " token signature").WithID(TokenSignatureInvalid)
+		return fail.New(TokenSignatureInvalid).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenMalformed):
-		return ErrUnauthorized.WithMsg("malformed " + tokenType + " token").WithID(TokenMalformed)
+		return fail.New(TokenMalformed).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenInvalidClaims):
-		return ErrUnauthorized.WithMsg("invalid " + tokenType + " token claims").WithID(TokenInvalidAccessClaims)
+		return fail.New(TokenInvalidAccessClaims).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenNotValidYet):
-		return ErrUnauthorized.WithMsg(tokenType + " token not yet valid").WithID(TokenNotYetValid)
+		return fail.New(TokenNotYetValid).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenUsedBeforeIssued):
-		return ErrUnauthorized.WithMsg(tokenType + " token used before issued").WithID(TokenUsedBeforeIssued)
+		return fail.New(TokenUsedBeforeIssued).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenInvalidIssuer):
-		return ErrUnauthorized.WithMsg(tokenType + " token has invalid issuer").WithID(TokenInvalidIssuer)
+		return fail.New(TokenInvalidIssuer).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenInvalidSubject):
-		return ErrUnauthorized.WithMsg(tokenType + " token has invalid subject").WithID(TokenInvalidSubject)
+		return fail.New(TokenInvalidSubject).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenInvalidAudience):
-		return ErrUnauthorized.WithMsg(tokenType + " token has invalid audience").WithID(TokenInvalidAudience)
+		return fail.New(TokenInvalidAudience).WithArgs(tokenType)
 	case errors.Is(err, jwt.ErrTokenInvalidId):
 		if tokenType == "refresh" {
-			return ErrUnauthorized.WithMsg(tokenType + " token has invalid id").WithID(TokenRefreshInvalidID)
+			return fail.New(TokenRefreshInvalidID).WithArgs(tokenType).Trace("couldn't parse refresh token JTI")
 		}
-		return ErrUnauthorized.WithMsg(tokenType + " token has invalid id").WithID(TokenAccessInvalidID)
+		return fail.New(TokenAccessInvalidID).WithArgs(tokenType).Trace("couldn't parse access token JTI")
 	case errors.Is(err, jwt.ErrTokenUnverifiable):
 		return ErrUnauthorized.WithMsg("unverifiable " + tokenType + " token").WithID(TokenUnverifiable)
 	}
 
-	return ErrUnauthorized.WithMsg("invalid " + tokenType + " token").WithID(TokenInvalid).WithCause(err)
+	return fail.New(TokenInvalid).WithArgs(tokenType).Trace(err.Error())
 }

@@ -56,7 +56,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	if accessToken.Sub.ProjectID != nil {
@@ -65,11 +65,11 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	refreshToken, err := tokenVerifier.VerifyRefreshToken(ctx, in.RefreshToken)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	if err = validateIssuers(in, accessToken, refreshToken); err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	refreshTokenJTI, err := validation.RequireRefreshJTI(&refreshToken.ID)
@@ -83,19 +83,19 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	}
 
 	if accessTokenJTI != refreshToken.Sub.AccessJTI {
-		return nil, apierr.FromService(span, inbounds.ErrTokenIDMismatch{})
+		return nil, fail.New(apierr.TokenMismatchDuringAuth)
 	}
 
 	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			return nil, apierr.FromService(span, inbounds.ErrSessionUnauthorized{})
+			return nil, fail.New(apierr.SessionUnauthorized)
 		}
 		return nil, err
 	}
 
 	if sess.SessionID != accessToken.Sub.SessionID {
-		return nil, apierr.FromService(span, inbounds.ErrTokenSessionMismatch{})
+		return nil, fail.New(apierr.TokenSessionMismatch)
 	}
 
 	// FIXME add occurrence to the audit when its implemented
@@ -110,7 +110,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	if sess.RevokedAt != nil {
 		// should never happen due to query guarding against this, just being defensive
 		// system error for appropriate priority if it happens, since it should never happen
-		return nil, apierr.FromService(span, inbounds.ErrAuthSessionRevoked{})
+		return nil, fail.New(apierr.SessionRevoked)
 	}
 
 	span.SetAttributes(
@@ -120,7 +120,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	)
 
 	var principal *authz.Principal
-	principal, err = authz.NewPrincipal(accessToken, refreshToken)
+	principal, err = apierr.NewPrincipal(accessToken, refreshToken)
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}
@@ -134,14 +134,14 @@ func validateIssuers(
 ) error {
 	if access.Sub.ProjectID != nil {
 		if access.Issuer != access.Sub.ProjectID.String() {
-			return inbounds.ErrInvalidIssuer{TokenType: "access"}
+			return fail.New(apierr.TokenInvalidIssuer).WithArgs("access")
 		}
 	} else if access.Issuer != in.Issuer {
-		return inbounds.ErrInvalidIssuer{TokenType: "access"}
+		return fail.New(apierr.TokenInvalidIssuer).WithArgs("access")
 	}
 
 	if refresh.Issuer != in.Issuer {
-		return inbounds.ErrInvalidIssuer{TokenType: "refresh"}
+		return fail.New(apierr.TokenInvalidIssuer).WithArgs("refresh")
 	}
 
 	return nil

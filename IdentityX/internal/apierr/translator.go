@@ -48,7 +48,32 @@ func (h *HTTPTranslator) Supports(err *fail.Error) bool {
 		AuthInvalidPrincipal,
 		AuthInvalidPassword,
 		AuthNotClient,
-		AuthNotProjectUser:
+		AuthNotProjectUser,
+		AuthAlreadyVerified,
+		AuthPrincipalNotInContext:
+		return true
+	case SessionRevoked,
+		SessionNotFound,
+		SessionSelfRevokeForbidden,
+		SessionUnauthorized:
+		return true
+	case TokenInvalid,
+		TokenExpired,
+		TokenMalformed,
+		TokenSignatureInvalid,
+		TokenInvalidAlg,
+		TokenCouldNotSign,
+		TokenInvalidAccessClaims,
+		TokenNotYetValid,
+		TokenUsedBeforeIssued,
+		TokenInvalidIssuer,
+		TokenInvalidSubject,
+		TokenInvalidAudience,
+		TokenRefreshInvalidID,
+		TokenAccessInvalidID,
+		TokenUntrusted,
+		TokenSessionMismatch,
+		TokenMismatchDuringAuth:
 		return true
 	case SCHEMANoPublishedVersion:
 		return true

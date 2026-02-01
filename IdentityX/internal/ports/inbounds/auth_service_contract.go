@@ -69,14 +69,6 @@ func (e ErrGeneratingUUID) Error() string {
 	return "error generating UUID V7 at " + e.Location
 }
 
-type ErrTokenInvalid struct {
-	TokenType string
-}
-
-func (e ErrTokenInvalid) Error() string {
-	return e.TokenType + " token is invalid"
-}
-
 type ErrEmptyFlowID struct{}
 
 func (e ErrEmptyFlowID) Error() string {
@@ -126,12 +118,6 @@ type ErrTokenUserMismatch struct {
 
 func (e ErrTokenUserMismatch) Error() string {
 	return e.TokenType + " token user mismatch"
-}
-
-type ErrUserAlreadyVerified struct{}
-
-func (e ErrUserAlreadyVerified) Error() string {
-	return "user already verified"
 }
 
 type ErrFailedToRetrieveJWKS struct {
