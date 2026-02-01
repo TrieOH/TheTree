@@ -93,28 +93,29 @@ var (
 	SchemaEmptySchemaType           = fail.ID(1, "SCHEMA", 8, true, "SCHEMAEmptySchemaType")
 	SchemaEmptyFlowID               = fail.ID(1, "SCHEMA", 9, true, "SCHEMAEmptyFlowID")
 
-	// Schema Version
-	SchemaVersionDraftAlreadyExists  = fail.ID(1, "SCHEMAVERSION", 0, true, "SCHEMAVERSIONDraftAlreadyExists")
-	SchemaVersionPublishWithNoFields = fail.ID(1, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONPublishWithNoFields")
+	SchemaVersionNotDraft           = fail.ID(1, "SCHEMAVERSION", 0, false, "SCHEMAVERSIONNotDraft")
+	SCHEMAVersionDraftAlreadyExists = fail.ID(1, "SCHEMAVERSION", 1, false, "SCHEMAVERSIONDraftAlreadyExists")
 
-	SchemaVersionMismatch = fail.ID(1, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONMismatch")
+	SchemaVersionPublishWithNoFields         = fail.ID(1, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONPublishWithNoFields")
+	SchemaVersionDraftDoesntExist            = fail.ID(1, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONDraftDoesntExist")
+	SchemaVersionTryingToPublishPublished    = fail.ID(1, "SCHEMAVERSION", 3, true, "SCHEMAVERSIONTryingToPublishPublished")
+	SchemaVersionTryingToPublishArchived     = fail.ID(1, "SCHEMAVERSION", 4, true, "SCHEMAVERSIONTryingToPublishArchived")
+	SchemaVersionMismatch                    = fail.ID(1, "SCHEMAVERSION", 5, true, "SCHEMAVERSIONMismatch")
+	SchemaVersionNonDraftAddFieldsNotAllowed = fail.ID(1, "SCHEMAVERSION", 6, true, "SCHEMAVERSIONNonDraftAddFieldsNotAllowed")
+	SchemaVersionNoValidStatus               = fail.ID(1, "SCHEMAVERSION", 7, true, "SCHEMAVERSIONNoValidStatus")
+	SchemaVersionDraftOnNonPublished         = fail.ID(1, "SCHEMAVERSION", 8, true, "SCHEMAVERSIONDraftOnNonPublished")
+	SchemaVersionNoChanges                   = fail.ID(1, "SCHEMAVERSION", 9, true, "SCHEMAVERSIONNoChanges")
+	SchemaVersionTryingToPublishNonExistant  = fail.ID(1, "SCHEMAVERSION", 10, true, "SCHEMAVERSIONTryingToPublishNonExistant")
+
+	FieldNoAffectedRowsOnClone = fail.ID(1, "FIELD", 3, false, "FIELDNoAffectedRowsOnClone")
 )
 
 const (
-	SchemaVersionDraftDoesntExist         ID = "SCM_VER_004"
-	SchemaVersionTryingToPublishPublished ID = "SCM_VER_005"
-	SchemaVersionTryingToPublishArchived  ID = "SCM_VER_006"
-	// SchemaVersionMismatch                   ID = "SCM_VER_007"
-	SchemaVersionNotDraft                   ID = "SCM_VER_008"
-	SchemaVersionNoValidStatus              ID = "SCM_VER_009"
-	SchemaVersionDraftOnNonPublished        ID = "SCM_VER_010"
-	SchemaVersionNoChanges                  ID = "SCM_VER_011"
-	SchemaVersionTryingToPublishNonExistant ID = "SCM_VER_012"
+	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
 )
 
 const (
 	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
 	FieldInvalidCharactersInKey        ID = "FIELD_003"
 	FieldSameKeyForMultipleFields      ID = "FIELD_006"
 	FieldInvalidType                   ID = "FIELD_008"

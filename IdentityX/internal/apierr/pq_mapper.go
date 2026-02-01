@@ -10,7 +10,7 @@ func fromUniqueViolation(pgErr *pgconn.PgError, cause error) *Error {
 	case "one_version_draft_per_schema":
 		return ErrConflict.
 			WithMsg("a draft schema version already exists").
-			WithID(ID(SchemaVersionDraftAlreadyExists.String())).
+			WithID(SchemaVersionDraftAlreadyExists).
 			WithDebugCause(cause)
 
 	case "schema_fields_schema_version_id_position_key":

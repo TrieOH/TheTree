@@ -119,12 +119,6 @@ func FieldToOutputField(f *field.Field) *OutputField {
 	}
 }
 
-type ErrAddFieldsToNonDraftVersion struct{}
-
-func (e ErrAddFieldsToNonDraftVersion) Error() string {
-	return "cannot add fields to a non-draft version"
-}
-
 type ErrInvalidFieldType struct {
 	Type string
 	Key  string

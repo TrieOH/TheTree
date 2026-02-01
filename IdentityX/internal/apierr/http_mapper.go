@@ -48,40 +48,12 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrAddFieldsToNonDraftVersion:
-		httpErr := ErrConflict.WithMsg(e.Error()).WithID(SchemaVersionNotDraft)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrInvalidFieldType:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidType)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrInvalidFieldOwner:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(FieldInvalidOwner)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrDraftVersionOnNonPublished:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionDraftOnNonPublished)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishSchemaNonExistentVersionDraft:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionDraftDoesntExist)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishVersionPublished:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishPublished)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishVersionArchived:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishArchived)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishVersionInvalidStatus:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaVersionNoValidStatus)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishVersionNoChanges:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionNoChanges)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrEmptyScopeName:
@@ -122,14 +94,6 @@ func FromService(span trace.Span, err error) error {
 		return httpErr
 	case permissions.ErrLogicalConditionValidationError:
 		httpErr := ErrForbidden.WithMsg(e.Error()).WithID(PermissionConditionValidationError).WithCause(e)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishVersionNotDraft:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionNotDraft).WithCause(e)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishNonExistentVersion:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionTryingToPublishNonExistant).WithCause(e)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrFieldNotFound:

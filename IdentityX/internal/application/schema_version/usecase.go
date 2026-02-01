@@ -128,7 +128,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if latest.Status != version.StatusPublished {
-		return nil, apierr.FromService(span, inbounds.ErrDraftVersionOnNonPublished{})
+		return nil, fail.New(apierr.SchemaVersionDraftOnNonPublished)
 	}
 
 	var newVersionDraft *version.Version
@@ -195,16 +195,16 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if err != nil && apierr.IsNotFound(err) {
-		return apierr.FromService(span, inbounds.ErrPublishSchemaNonExistentVersionDraft{})
+		return fail.New(apierr.SchemaVersionDraftDoesntExist)
 	}
 
 	if latest.Status != version.StatusDraft {
 		if latest.Status == version.StatusPublished {
-			err = apierr.FromService(span, inbounds.ErrPublishVersionPublished{})
+			err = fail.New(apierr.SchemaVersionTryingToPublishPublished)
 		} else if latest.Status == version.StatusArchived {
-			err = apierr.FromService(span, inbounds.ErrPublishVersionArchived{})
+			err = fail.New(apierr.SchemaVersionTryingToPublishArchived)
 		} else {
-			err = apierr.FromService(span, inbounds.ErrPublishVersionInvalidStatus{})
+			err = fail.New(apierr.SchemaVersionNoValidStatus)
 		}
 		return err
 	}
@@ -246,7 +246,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	diff.Annotate(span)
 
 	if !diff.HasAnyChanges() {
-		return apierr.FromService(span, inbounds.ErrPublishVersionNoChanges{})
+		return fail.New(apierr.SchemaVersionNoChanges)
 	}
 
 	if err = versions.Publish(ctx, version.Version{

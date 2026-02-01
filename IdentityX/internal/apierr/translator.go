@@ -121,9 +121,21 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		SchemaEmptySchemaType,
 		SchemaEmptyFlowID:
 		return nil
-	case SchemaVersionDraftAlreadyExists,
+	case SchemaVersionNotDraft,
+		SCHEMAVersionDraftAlreadyExists,
 		SchemaVersionPublishWithNoFields,
-		SchemaVersionMismatch:
+		SchemaVersionDraftDoesntExist,
+		SchemaVersionTryingToPublishPublished,
+		SchemaVersionTryingToPublishArchived,
+		SchemaVersionMismatch,
+		SchemaVersionNonDraftAddFieldsNotAllowed,
+		SchemaVersionNoValidStatus,
+		SchemaVersionDraftOnNonPublished,
+		SchemaVersionNoChanges,
+		SchemaVersionTryingToPublishNonExistant:
+		return nil
+	case FIELDSamePositionForMultipleFields,
+		FieldNoAffectedRowsOnClone:
 		return nil
 	default:
 		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)

@@ -5,10 +5,10 @@ import (
 	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/version"
-	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -95,7 +95,7 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish version.Ve
 	}
 
 	if affectedRows == 0 {
-		return apierr.FromService(span, inbounds.ErrPublishVersionNotDraft{})
+		return fail.New(apierr.SchemaVersionNotDraft).With(err)
 	}
 
 	return nil

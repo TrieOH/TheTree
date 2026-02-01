@@ -33,7 +33,7 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23505",
 				ConstraintName: "one_version_draft_per_schema",
 			},
-			expectedID: apierr.SchemaVersionDraftAlreadyExists,
+			expectedID: apierr.SCHEMAVersionDraftAlreadyExists,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
 				assert.True(t, apierr.IsUniqueViolationNew(fe))
