@@ -125,7 +125,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaInvalidSchemaType).
+				HasErrID(apierr.ID(apierr.SchemaInvalidSchemaType.String())).
 				HasMessage("invalid schema type")
 		})
 
@@ -139,7 +139,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaInvalidFlowID).
+				HasErrID(apierr.ID(apierr.SchemaInvalidFlowID.String())).
 				HasMessage("flow id can't be the same as a schema type")
 		})
 
@@ -154,7 +154,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaMetadataNotAllowed).
+				HasErrID(apierr.ID(apierr.SchemaMetadataNotAllowed.String())).
 				HasMessage("custom fields are not allowed for core schema")
 		})
 

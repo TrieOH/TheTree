@@ -4,12 +4,11 @@ import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/application/validation"
 
-	// "GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/permissions"
-	"GoAuth/internal/domain/project_users"
-	"GoAuth/internal/domain/schema"
-	"GoAuth/internal/domain/version"
+
+	// "GoAuth/internal/domain/schema"
+	// "GoAuth/internal/domain/version"
 	"GoAuth/internal/ports/inbounds"
 
 	"go.opentelemetry.io/otel/trace"
@@ -29,30 +28,6 @@ func FromService(span trace.Span, err error) error {
 		}
 	}()
 	switch e := err.(type) {
-	case version.ErrRegisterOnVersionDraft:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaVersionDraft)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case version.ErrRegisterOnVersionArchive:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaVersionArchived)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case schema.ErrRegisterOnSchemaDraft:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaDraft)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case schema.ErrRegisterOnSchemaArchive:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaArchived)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case schema.ErrRegisterSchemaNoPublishedVersion:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(ProjectUserRegisterOnSchemaNoVersion)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case schema.ErrSchemaVersionMismatch:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SchemaVersionMismatch)
-		RecordSystemError(span, httpErr)
-		return httpErr
 	case ErrInvalidCustomFieldsJSON:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestInvalidJSONFormat.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
@@ -69,84 +44,8 @@ func FromService(span trace.Span, err error) error {
 		}
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case project_users.ErrEncodingProjectUserMetadata:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectUserErrorEncodingMetadata).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrParseProjectKey:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectFailedToParseKey).WithCause(e.Cause)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case validation.ErrParseUUID:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrEmptyFlowID:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaEmptyFlowID)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrEmptySchemaType:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaEmptySchemaType)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrInvalidSchemaType:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaInvalidSchemaType)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrInvalidFlowID:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaInvalidFlowID)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrCustomFieldsNotAllowed:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaMetadataNotAllowed)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrGeneratingProjectKeys:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectErrorGeneratingKeys).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrParsingProjectPublicKey:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectErrorParsingKeys).WithCause(e.Cause)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrNotProjectOwner:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(ProjectNotOwnedByPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrFlowIDIsReserved:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaFlowIDIsReserved)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrFlowIDSchemaTypeConflict:
-		httpErr := ErrConflict.WithMsg(e.Error()).WithID(SchemaFlowIDAlreadyExistsInType)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaNotOwned:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaNotOwnedByPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishSchemaPublished:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaTryingToPublishPublished)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrPublishSchemaArchived:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaTryingToPublishArchived)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaInvalidStatus:
-		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SchemaNoValidStatus)
-		RecordSystemError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaOnlyDraft:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaHasOnlyDraftVersion)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaOnlyArchived:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SchemaHasOnlyArchivedVersion)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrSchemaVersionMismatchLatest:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionMismatch)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrAddFieldsToNonDraftVersion:
@@ -185,10 +84,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(SchemaVersionNoChanges)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrPublishVersionNoFields:
-		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrEmptyScopeName:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ScopeEmptyName)
 		RecordDomainError(span, httpErr)
@@ -207,10 +102,6 @@ func FromService(span trace.Span, err error) error {
 		return httpErr
 	case inbounds.ErrPermissionNotOwned:
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(PermissionNotOwnedByPrincipal)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case inbounds.ErrProjectUserNotFromProject:
-		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ProjectUserNotFromProject)
 		RecordDomainError(span, httpErr)
 		return httpErr
 	case permissions.ErrActionMismatch:
@@ -277,7 +168,7 @@ func FromHandler(err error) *Error {
 		httpErr := ErrInvalidInput.WithMsg(e.Error()).WithID(ID(RequestValidationError.String()))
 		return httpErr
 	default:
-		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(SystemInternalError)
+		httpErr := ErrInternal.WithMsg("unmapped handler error").WithCause(err).WithID(PlaceholderID)
 		logs.L().Error("unmapped handler error", zap.Error(httpErr), zap.String("cause", err.Error()))
 		return httpErr
 	}

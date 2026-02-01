@@ -23,13 +23,3 @@ type Version struct {
 	UpdatedAt        time.Time
 	BasedOnVersionID *uuid.UUID
 }
-
-func (v Version) CanRegister() error {
-	if v.Status == StatusDraft {
-		return ErrRegisterOnVersionDraft{}
-	}
-	if v.Status == StatusArchived {
-		return ErrRegisterOnVersionArchive{}
-	}
-	return nil
-}

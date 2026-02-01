@@ -40,12 +40,12 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 	switch err.ID {
 	case RequestMissingQueryParamValue,
 		RequestMissingQueryParam,
+		RequestEmptyCookie,
+		RequestUnknownQueryParam,
+		RequestValidationError,
 		RequestMissingSchemaCustomFields,
 		RequestInvalidJSONFormat,
-		RequestValidationError,
-		RequestNotApplicationJSON,
-		RequestEmptyCookie,
-		RequestUnknownQueryParam:
+		RequestNotApplicationJSON:
 		return nil
 	case SQLNotFound:
 		return nil
@@ -94,7 +94,36 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		TokenMissingAccessClaims,
 		TokenMissingRefreshClaims:
 		return nil
-	case SCHEMANoPublishedVersion:
+	case ProjectErrorGeneratingKeys,
+		ProjectNotOwnedByPrincipal,
+		ProjectNotFound:
+		return nil
+	case ProjectUserRegisterOnSchemaVersionDraft,
+		ProjectUserRegisterOnSchemaDraft,
+		ProjectUserRegisterOnSchemaArchived,
+		ProjectUserRegisterOnSchemaVersionArchived,
+		ProjectUserErrorEncodingMetadata,
+		ProjectUserNotFromProject,
+		ProjectUserRegisterOnSchemaNoVersion:
+		return nil
+	case SchemaNotOwnedByPrincipal,
+		SchemaNoValidStatus,
+		SchemaInvalidFlowID,
+		SchemaFlowIDIsReserved,
+		SCHEMANoPublishedVersion,
+		SchemaFlowIDAlreadyExistsInType,
+		SchemaInvalidSchemaType,
+		SchemaHasOnlyDraftVersion,
+		SchemaHasOnlyArchivedVersion,
+		SchemaTryingToPublishPublished,
+		SchemaTryingToPublishArchived,
+		SchemaMetadataNotAllowed,
+		SchemaEmptySchemaType,
+		SchemaEmptyFlowID:
+		return nil
+	case SchemaVersionDraftAlreadyExists,
+		SchemaVersionPublishWithNoFields,
+		SchemaVersionMismatch:
 		return nil
 	default:
 		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID)
@@ -134,6 +163,8 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		err.Meta = map[string]any{}
 		code = 500
 	}
+
+	err.Record()
 
 	_ = err.Render()
 

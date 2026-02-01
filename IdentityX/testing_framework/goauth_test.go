@@ -1,10 +1,7 @@
 package testing
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/MintzyG/fail"
 )
 
 // ============================================================================
@@ -86,6 +83,6 @@ func TestGoAuth(t *testing.T) {
 		testPGXMapper(t)
 	})
 
-	docs, _ := fail.ExportIDList()
-	fmt.Printf("Registered IDs (JSON snippet):\n%s\n", string(docs))
+	// docs, _ := fail.ExportIDList()
+	// fmt.Printf("Registered IDs (JSON snippet):\n%s\n", string(docs))
 }

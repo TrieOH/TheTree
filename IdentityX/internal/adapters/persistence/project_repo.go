@@ -219,7 +219,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 
 	// FIXME make me a generic error
 	if affectedRows == 0 {
-		return apierr.ErrNotFound.WithMsg("project not found").WithID(apierr.ProjectNotFound)
+		return fail.New(apierr.ProjectNotFound)
 	}
 
 	return nil

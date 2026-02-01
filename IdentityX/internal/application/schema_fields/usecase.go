@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -83,7 +84,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !isOwner {
-		return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot create fields for schema versions in a project you don't own"})
+		return inbounds.CreateFieldsResult{}, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot create fields for schema versions in a project you don't own")
 	}
 
 	var belongs bool
@@ -96,7 +97,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !belongs {
-		return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrSchemaNotOwned{Msg: "cannot create fields for a schema you don't own"})
+		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot create fields for a schema you don't own")
 	}
 
 	var latest *version.Version
@@ -106,7 +107,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if latest.VersionNumber != in.VersionNumber {
-		return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrSchemaVersionMismatchLatest{})
+		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaVersionMismatch)
 	}
 	if latest.Status != version.StatusDraft {
 		return inbounds.CreateFieldsResult{}, apierr.FromService(span, inbounds.ErrAddFieldsToNonDraftVersion{})
