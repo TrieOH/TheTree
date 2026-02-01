@@ -16,7 +16,7 @@ It uses sqlc for typesafe sql, and it uses the hexagonal/ports&adapters architec
 ```go
 err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password))
  err != nil {
-	return nil, inbounds.ErrInvalidCredentials{Cause: err}
+	return nil, fail.New(apierr.AuthInvalidCredentials).Trace(err.Error())
 }
 ```
 

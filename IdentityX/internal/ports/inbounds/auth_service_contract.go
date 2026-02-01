@@ -60,22 +60,6 @@ func (e ErrHashingPassword) Error() string {
 	return "error hashing user password"
 }
 
-type ErrEmailAlreadyInUse struct {
-	Cause error
-}
-
-func (e ErrEmailAlreadyInUse) Error() string {
-	return "error registering user"
-}
-
-type ErrInvalidCredentials struct {
-	Cause error
-}
-
-func (e ErrInvalidCredentials) Error() string {
-	return "invalid email or password"
-}
-
 type ErrGeneratingUUID struct {
 	Cause    error
 	Location string

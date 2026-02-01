@@ -19,7 +19,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 				"password": "WrongPass123!",
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidCredentials).
+			HasErrID(apierr.ID(apierr.AuthInvalidCredentials.String())).
 			HasMessage("invalid email or password")
 	})
 
@@ -31,7 +31,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 				"password": user.password,
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidCredentials).
+			HasErrID(apierr.ID(apierr.AuthInvalidCredentials.String())).
 			HasMessage("invalid email or password")
 	})
 

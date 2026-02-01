@@ -1,11 +1,5 @@
 package authz
 
-type ErrInvalidPrincipal struct{}
-
-func (ErrInvalidPrincipal) Error() string {
-	return "invalid principal"
-}
-
 type ErrPrincipalMissingInContext struct{}
 
 func (ErrPrincipalMissingInContext) Error() string {

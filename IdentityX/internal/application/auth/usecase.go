@@ -18,10 +18,10 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
@@ -125,7 +125,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
-		return outbounds.Email{}, apierr.ErrPasswordTooLong{}
+		return outbounds.Email{}, fail.New(apierr.AuthInvalidPassword)
 	}
 
 	var hashedPassword []byte
@@ -137,7 +137,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	var u *user.User
 	u, err = users.Register(ctx, in.Email, string(hashedPassword))
 	if apierr.IsConflict(err) {
-		return outbounds.Email{}, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")}
+		return outbounds.Email{}, fail.New(apierr.AuthEmailAlreadyUsed).Trace("email already in use")
 	} else if err != nil {
 		return outbounds.Email{}, err
 	}
@@ -219,7 +219,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 	var u *user.User
 	u, err = users.GetUserByEmail(ctx, in.Email)
 	if apierr.IsNotFound(err) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
+		return nil, fail.New(apierr.AuthInvalidCredentials)
 	} else if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password))
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
+		return nil, fail.New(apierr.AuthInvalidCredentials).Trace(err.Error())
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
@@ -735,7 +735,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	}
 
 	if len(in.Password) > 72 {
-		return outbounds.Email{}, apierr.FromService(span, apierr.ErrPasswordTooLong{})
+		return outbounds.Email{}, fail.New(apierr.AuthInvalidPassword)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
@@ -751,7 +751,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		Metadata:     customFields,
 	})
 	if apierr.IsConflict(err) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
+		return outbounds.Email{}, fail.New(apierr.AuthEmailAlreadyUsed).Trace("email already in use")
 	} else if err != nil {
 		return outbounds.Email{}, err
 	}
@@ -838,14 +838,14 @@ func (uc *UseCase) LoginProjectUser(
 	var usr *project_users.ProjectUser
 	usr, err = projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
 	if apierr.IsNotFound(err) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
+		return nil, fail.New(apierr.AuthInvalidCredentials)
 	} else if err != nil {
 		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(in.Password))
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
+		return nil, fail.New(apierr.AuthInvalidCredentials).Trace(err.Error())
 	}
 
 	var identity *session.Identity

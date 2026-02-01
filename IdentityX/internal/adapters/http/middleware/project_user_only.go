@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"GoAuth/internal/adapters/http/utils"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/auth"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 )
 
 func ProjectUserOnly(next http.Handler) http.Handler {
@@ -18,8 +20,10 @@ func ProjectUserOnly(next http.Handler) http.Handler {
 		}
 
 		if principal.ProjectID == nil {
-			err = apierr.ErrForbidden.WithMsg("only project users can access this endpoint").WithID(apierr.AuthNotProjectUser)
-			resp.FromError(err).WithModule("ProjectUserOnlyMW").Send(w)
+			rs, ok := utils.Sender(fail.New(apierr.AuthNotProjectUser), "ProjectUserOnlyMW", w)
+			if ok {
+				rs.Send(w)
+			}
 			return
 		}
 

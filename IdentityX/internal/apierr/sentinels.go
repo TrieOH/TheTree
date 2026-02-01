@@ -36,6 +36,10 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "faltando parâmetro de pesquisa: %s",
 		})
+	ErrRequestEmptyCookie = fail.Form(RequestEmptyCookie, "empty %s cookie value", false, map[string]any{"code": 400}, "UNDEFINED").
+				AddLocalizations(map[string]string{
+			"pt-BR": "O valor do cookie %s está vazio",
+		})
 	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 401}, "UNDEFINED").
 						AddLocalizations(map[string]string{
 			"pt-BR": "Os campos personalizados do schema são obrigatórios no registro do schema.",
@@ -52,17 +56,54 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "O Content-Type deve ser application/json",
 		})
-	ErrRequestEmptyCookie = fail.Form(RequestEmptyCookie, "", false, map[string]any{"code": 400}, "UNDEFINED").
-				AddLocalizations(map[string]string{
-			"pt-BR": "",
-		})
 	ErrRequestUnknownQueryParam = fail.Form(RequestUnknownQueryParam, "unknown query parameter: %s", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "parâmetro de consulta desconhecido: %s",
 		})
 
+	ErrAuthEmailAlreadyUsed = fail.Form(AuthEmailAlreadyUsed, "error registering user", false, map[string]any{"code": 409}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Erro ao registrar o usuário",
+		})
+	ErrAuthInvalidCredentials = fail.Form(AuthInvalidCredentials, "invalid email or password", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "Email ou Senha inválida",
+		})
+	ErrAuthInvalidRefreshCookie = fail.Form(AuthInvalidRefreshCookie, "invalid refresh_token cookie", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Cookie refresh_token está inválido",
+		})
+	ErrAuthInvalidAccessCookie = fail.Form(AuthInvalidAccessCookie, "invalid access_token cookie", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Cookie access_token está inválido",
+		})
+	ErrAuthMissingRefreshCookie = fail.Form(AuthMissingRefreshCookie, "missing refresh_token cookie", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Cookie refresh_token está está faltando",
+		})
+	ErrAuthMissingAccessCookie = fail.Form(AuthMissingAccessCookie, "missing access_token cookie", false, map[string]any{"code": 401}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "O Cookie access_token está está faltando",
+		})
 	ErrAuthInvalidPrincipal = fail.Form(AuthInvalidPrincipal, "invalid principal", false, map[string]any{"code": 401}).
 				AddLocalizations(map[string]string{
 			"pt-BR": "principal faltando",
+		})
+	ErrAuthInvalidPassword = fail.Form(AuthInvalidPassword, "password length exceeds 72 bytes", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "O comprimento da senha excede 72 bytes",
+		})
+	ErrAuthNotClient = fail.Form(AuthNotClient, "only clients can access this endpoint", false, map[string]any{"code": 403}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Apenas clientes podem acessar esse endpoint",
+		})
+	ErrAuthNotProjectUser = fail.Form(AuthNotProjectUser, "only project users can access this endpoint", false, map[string]any{"code": 403}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "Apenas usuários do projeto podem acessar esse endpoint",
+		})
+
+	ErrSchemaNoPublishedVersion = fail.Form(SCHEMANoPublishedVersion, "cannot publish a schema with no versions", false, map[string]any{"code": 400}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "não é possível publicar um schema sem versões",
 		})
 )

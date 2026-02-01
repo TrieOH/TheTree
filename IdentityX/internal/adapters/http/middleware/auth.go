@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"GoAuth/internal/adapters/http/utils"
 	"GoAuth/internal/apierr"
 	appauth "GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -50,14 +52,16 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			accessTokenCookie, err = r.Cookie("access_token")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					err = apierr.ErrUnauthorized.WithMsg("missing access_token cookie").WithID(apierr.AuthMissingAccessCookie).WithCause(err)
-					resp.FromError(err).WithModule("AuthMW").Send(w)
-					apierr.RecordDomainError(span, err)
+					rs, ok := utils.Sender(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error()), "AuthMw", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
-				err = apierr.ErrUnauthorized.WithMsg("invalid access_token cookie").WithID(apierr.AuthInvalidAccessCookie).WithCause(err)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
+				rs, ok := utils.Sender(fail.New(apierr.AuthInvalidAccessCookie).Trace(err.Error()), "AuthMW", w)
+				if ok {
+					rs.Send(w)
+				}
 				return
 			}
 
@@ -65,14 +69,16 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			refreshTokenCookie, err = r.Cookie("refresh_token")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					err = apierr.ErrUnauthorized.WithMsg("missing refresh_token cookie").WithID(apierr.AuthMissingRefreshCookie).WithCause(err)
-					resp.FromError(err).WithModule("AuthMW").Send(w)
-					apierr.RecordDomainError(span, err)
+					rs, ok := utils.Sender(fail.New(apierr.AuthMissingRefreshCookie).Trace(err.Error()), "AuthMW", w)
+					if ok {
+						rs.Send(w)
+					}
 					return
 				}
-				err = apierr.ErrUnauthorized.WithMsg("invalid refresh_token cookie").WithID(apierr.AuthInvalidRefreshCookie).WithCause(err)
-				resp.FromError(err).WithModule("AuthMW").Send(w)
-				apierr.RecordDomainError(span, err)
+				rs, ok := utils.Sender(fail.New(apierr.AuthInvalidRefreshCookie).Trace(err.Error()), "AuthMW", w)
+				if ok {
+					rs.Send(w)
+				}
 				return
 			}
 

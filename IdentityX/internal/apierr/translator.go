@@ -28,9 +28,29 @@ func (h *HTTPTranslator) Supports(err *fail.Error) bool {
 		return false
 	}
 	switch err.ID {
-	case RequestMissingQueryParamValue, RequestMissingQueryParam, RequestMissingSchemaCustomFields,
-		RequestInvalidJSONFormat, RequestValidationError, RequestNotApplicationJSON, RequestEmptyCookie,
-		RequestUnknownQueryParam, SQLNotFound:
+	case RequestMissingQueryParamValue,
+		RequestMissingQueryParam,
+		RequestMissingSchemaCustomFields,
+		RequestInvalidJSONFormat,
+		RequestValidationError,
+		RequestNotApplicationJSON,
+		RequestEmptyCookie,
+		RequestUnknownQueryParam:
+		return true
+	case SQLNotFound:
+		return true
+	case AuthEmailAlreadyUsed,
+		AuthInvalidCredentials,
+		AuthInvalidRefreshCookie,
+		AuthInvalidAccessCookie,
+		AuthMissingRefreshCookie,
+		AuthMissingAccessCookie,
+		AuthInvalidPrincipal,
+		AuthInvalidPassword,
+		AuthNotClient,
+		AuthNotProjectUser:
+		return true
+	case SCHEMANoPublishedVersion:
 		return true
 	default:
 		return false
