@@ -80,6 +80,6 @@ func TestGoAuth(t *testing.T) {
 	})
 
 	t.Run("PGX_Mapper", func(t *testing.T) {
-		TestPGXMapper_MapToFail(t)
+		testPGXMapper(t)
 	})
 }

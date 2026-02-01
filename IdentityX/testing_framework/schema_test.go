@@ -1351,8 +1351,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			WithQuery("flow_id", "scti-register").
 			WithQuery("schema_type", "core").
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.DBNotFound).
-			HasMessage("resource not found")
+			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasMessage("schema not found")
 	})
 
 	t.Run("GetFormByFlowLookupMissingRequiredQuery", func(t *testing.T) {

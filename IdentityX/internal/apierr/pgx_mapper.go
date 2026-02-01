@@ -19,12 +19,7 @@ func (m *PGXMapper) Name() string  { return m.name }
 func (m *PGXMapper) Priority() int { return m.priority }
 
 func (m *PGXMapper) Map(err error) (error, bool) {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
-		return nil, false
-	}
-
-	return m.MapToFail(pgErr)
+	return m.MapToFail(err)
 }
 
 func (m *PGXMapper) MapFromFail(fe *fail.Error) (error, bool) {
@@ -32,9 +27,7 @@ func (m *PGXMapper) MapFromFail(fe *fail.Error) (error, bool) {
 }
 
 func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
-
-	// sqlc "not found" - this stays the same
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 		return fail.New(SQLNotFound), true
 	}
 
@@ -90,8 +83,7 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 		return fail.New(SQLUnknownError).With(err), true
 	}
 
-	// FIXME not a postgres error use another id
-	return fail.New(SQLInternalDBError).With(err), true
+	return nil, false
 }
 
 func IsUniqueViolationNew(err error) bool {
