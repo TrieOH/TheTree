@@ -387,7 +387,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PermissionInvalidObject).
+			HasErrID(apierr.ID(apierr.PERMissionInvalidObject.String())).
 			HasMessage("invalid permission object: bogus-value")
 	})
 
@@ -399,7 +399,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PermissionInvalidAction).
+			HasErrID(apierr.ID(apierr.PERMissionInvalidAction.String())).
 			HasMessage("invalid permission action: what:")
 	})
 

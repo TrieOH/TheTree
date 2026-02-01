@@ -15,21 +15,3 @@ type ErrMissingRequiredFields struct {
 func (e ErrMissingRequiredFields) Error() string {
 	return "Missing required field: " + e.Key
 }
-
-type ErrFieldsValidation struct {
-	FieldErrors []error
-}
-
-func (ErrFieldsValidation) Error() string {
-	return "error validating fields"
-}
-
-type ErrInvalidFieldValue struct {
-	Key   string
-	Type  string
-	Value any
-}
-
-func (e ErrInvalidFieldValue) Error() string {
-	return "invalid value for field '" + e.Key + "' of type " + e.Type
-}

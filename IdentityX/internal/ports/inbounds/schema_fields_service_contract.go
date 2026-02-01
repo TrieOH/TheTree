@@ -124,29 +124,3 @@ type ErrAddFieldsToNonDraftVersion struct{}
 func (e ErrAddFieldsToNonDraftVersion) Error() string {
 	return "cannot add fields to a non-draft version"
 }
-
-type ErrInvalidFieldType struct {
-	Type string
-	Key  string
-}
-
-func (e ErrInvalidFieldType) Error() string {
-	return "invalid field type (" + e.Type + ") for field: " + e.Key
-}
-
-type ErrInvalidFieldOwner struct {
-	Owner string
-	Key   string
-}
-
-func (e ErrInvalidFieldOwner) Error() string {
-	return "invalid owner type (" + e.Owner + ") for field: " + e.Key
-}
-
-type ErrFieldNotFound struct {
-	Key string
-}
-
-func (e ErrFieldNotFound) Error() string {
-	return "field not found: " + e.Key
-}

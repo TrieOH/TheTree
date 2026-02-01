@@ -106,7 +106,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "admin",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleNameTaken).
+			HasErrID(apierr.ID(apierr.ROLENameAlreadyTaken.String())).
 			HasMessage("role name already taken")
 	})
 
@@ -838,7 +838,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
+			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
 			HasMessage("user already has this role in the specified scope")
 	})
 
@@ -849,7 +849,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": eventScopeID,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
+			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
 			HasMessage("user already has this role in the specified scope")
 	})
 
@@ -860,7 +860,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": activityScopeID,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
+			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
 			HasMessage("user already has this role in the specified scope")
 	})
 
@@ -871,7 +871,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": activitySubScopeID,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
+			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
 			HasMessage("user already has this role in the specified scope")
 	})
 
@@ -914,7 +914,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id":      nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.PermissionAlreadyGranted).
+			HasErrID(apierr.ID(apierr.PERMissionAlreadyGranted.String())).
 			HasMessage("user already has this permission in the specified scope")
 	})
 

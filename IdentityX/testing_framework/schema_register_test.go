@@ -189,7 +189,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				"custom_fields": map[string]interface{}{},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains("Missing required field: matricula", "Missing required field: curso", "Missing required field: periodo")
 	})
@@ -206,7 +206,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains("Missing required field: curso", "Missing required field: periodo")
 	})
@@ -223,7 +223,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains("Missing required field: matricula", "Missing required field: periodo")
 	})
@@ -241,7 +241,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register")
 	})
 
@@ -257,7 +257,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains(
 				"invalid value for field 'periodo' of type int",
@@ -278,7 +278,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains(
 				"invalid value for field 'matricula' of type string",
@@ -301,7 +301,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains("invalid value for field 'periodo' of type int")
 	})
@@ -321,7 +321,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'ativo' of type bool")
 	})
 
@@ -340,7 +340,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'ativo' of type bool")
 	})
 
@@ -356,7 +356,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			HasMessage("error validating fields for schema register").
 			TraceContains(
 				"invalid value for field 'matricula' of type string",
@@ -786,7 +786,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'user_type'")
 	})
 
@@ -804,7 +804,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'user_type'")
 	})
 
@@ -882,7 +882,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("Missing required field: activation_date")
 	})
 
@@ -959,7 +959,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'shift'")
 	})
 
@@ -996,7 +996,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'email'")
 	})
 
@@ -1014,7 +1014,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldValidationErrSchemaRegister).
+			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
 			TraceContains("invalid value for field 'email'")
 	})
 
