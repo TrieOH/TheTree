@@ -49,24 +49,21 @@ var (
 	TokenInvalidAudience     = fail.ID(1, "TOKEN", 11, false, "TOKENInvalidAudience")
 	TokenRefreshInvalidID    = fail.ID(1, "TOKEN", 12, false, "TOKENRefreshInvalidID")
 	TokenAccessInvalidID     = fail.ID(1, "TOKEN", 13, false, "TOKENAccessInvalidID")
-	TokenUntrusted           = fail.ID(1, "TOKEN", 14, false, "TOKENUntrusted")
+	TokenInvalidKid          = fail.ID(1, "TOKEN", 14, false, "TOKENInvalidKeyID")
+	TokenUnknownKid          = fail.ID(1, "TOKEN", 15, false, "TOKENUnknownKeyID")
+	TokenMissingKid          = fail.ID(1, "TOKEN", 16, false, "TOKENMissingKeyID")
+	TokenUnverifiable        = fail.ID(1, "TOKEN", 17, false, "TOKENUnverifiable")
+	TokenReuseIdentified     = fail.ID(1, "TOKEN", 18, false, "TOKENReuseIdentified")
+	TokenUserMismatch        = fail.ID(1, "TOKEN", 19, false, "TOKENUserMismatch")
+	TokenInvalidFormat       = fail.ID(1, "TOKEN", 20, false, "TOKENInvalidFormat")
+	TokenUntrusted           = fail.ID(1, "TOKEN", 21, false, "TOKENUntrusted")
 
-	TokenSessionMismatch    = fail.ID(1, "TOKEN", 0, true, "TOKENSessionMismatch")
-	TokenMismatchDuringAuth = fail.ID(1, "TOKEN", 1, true, "TokenMismatchDuringAuth")
+	TokenSessionMismatch      = fail.ID(1, "TOKEN", 0, true, "TOKENSessionMismatch")
+	TokenMismatchDuringAuth   = fail.ID(1, "TOKEN", 1, true, "TokenMismatchDuringAuth")
+	TokenMissingAccessClaims  = fail.ID(1, "TOKEN", 2, true, "TOKENMissingAccessClaims")
+	TokenMissingRefreshClaims = fail.ID(1, "TOKEN", 3, true, "TOKENMissingRefreshClaims")
 
 	SCHEMANoPublishedVersion = fail.ID(0, "SCHEMA", 0, true, "SCHEMANoPublishedVersion")
-)
-
-const (
-	TokenInvalidKid           ID = "TOKEN_025"
-	TokenUnknownKid           ID = "TOKEN_026"
-	TokenMissingKid           ID = "TOKEN_027"
-	TokenUnverifiable         ID = "TOKEN_029"
-	TokenMissingAccessClaims  ID = "TOKEN_030"
-	TokenMissingRefreshClaims ID = "TOKEN_031"
-	TokenReuseIdentified      ID = "TOKEN_032"
-	TokenUserMismatch         ID = "TOKEN_033"
-	TokenInvalidFormat        ID = "TOKEN_034"
 )
 
 const (

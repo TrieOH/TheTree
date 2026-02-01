@@ -356,7 +356,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		oldClient.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.TokenReuseIdentified).
+			HasErrID(apierr.ID(apierr.TokenReuseIdentified.String())).
 			HasMessage("refresh token reuse not allowed")
 	})
 

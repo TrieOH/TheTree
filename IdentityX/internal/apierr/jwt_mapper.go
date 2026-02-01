@@ -37,7 +37,7 @@ func FromJWTError(err error, tokenType string) error {
 		}
 		return fail.New(TokenAccessInvalidID).WithArgs(tokenType).Trace("couldn't parse access token JTI")
 	case errors.Is(err, jwt.ErrTokenUnverifiable):
-		return ErrUnauthorized.WithMsg("unverifiable " + tokenType + " token").WithID(TokenUnverifiable)
+		return fail.New(TokenUnverifiable).WithArgs(tokenType)
 	}
 
 	return fail.New(TokenInvalid).WithArgs(tokenType).Trace(err.Error())

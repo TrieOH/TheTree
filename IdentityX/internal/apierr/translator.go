@@ -81,9 +81,18 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 		TokenInvalidAudience,
 		TokenRefreshInvalidID,
 		TokenAccessInvalidID,
+		TokenInvalidKid,
+		TokenUnknownKid,
+		TokenMissingKid,
+		TokenUnverifiable,
+		TokenReuseIdentified,
+		TokenUserMismatch,
+		TokenInvalidFormat,
 		TokenUntrusted,
 		TokenSessionMismatch,
-		TokenMismatchDuringAuth:
+		TokenMismatchDuringAuth,
+		TokenMissingAccessClaims,
+		TokenMissingRefreshClaims:
 		return nil
 	case SCHEMANoPublishedVersion:
 		return nil

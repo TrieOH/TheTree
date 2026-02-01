@@ -104,7 +104,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		if err != nil {
 			apierr.RecordDomainError(span, err)
 		}
-		return nil, apierr.FromService(span, inbounds.ErrTokenReuseNotAllowed{TokenType: "refresh"})
+		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh")
 	}
 
 	if sess.RevokedAt != nil {

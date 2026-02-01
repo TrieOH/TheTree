@@ -3,7 +3,6 @@ package apierr
 import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/application/validation"
-	"GoAuth/internal/domain/auth"
 
 	// "GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
@@ -75,18 +74,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectUserErrorEncodingMetadata).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
 		return httpErr
-	case auth.ErrTokenMissingKID:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenMissingKid)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case auth.ErrTokenInvalidKID:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalidKid)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case auth.ErrTokenUnknownKID:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenUnknownKid)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case inbounds.ErrParseProjectKey:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ProjectFailedToParseKey).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
@@ -95,18 +82,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(ID(RequestValidationError.String())).WithCause(e.Cause)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	// case authz.ErrMissingAccessClaims:
-	// 	httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenMissingAccessClaims)
-	// 	RecordDomainError(span, httpErr)
-	// 	return httpErr
-	// case authz.ErrMissingRefreshClaims:
-	// 	httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenMissingRefreshClaims)
-	// 	RecordDomainError(span, httpErr)
-	// 	return httpErr
-	// case authz.ErrInvalidAccessJTI:
-	// 	httpErr := ErrInternal.WithMsg(e.Error()).WithID(TokenAccessInvalidID).WithCause(e.Cause)
-	// 	RecordDomainError(span, httpErr)
-	// 	return httpErr
 	case inbounds.ErrHashingPassword:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemErrorBCryptHashingFailed).WithCause(e.Cause)
 		RecordSystemError(span, httpErr)
@@ -223,10 +198,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrBadRequest.WithMsg(e.Error()).WithID(SchemaVersionPublishWithNoFields)
 		RecordDomainError(span, httpErr)
 		return httpErr
-	case inbounds.ErrTokenReuseNotAllowed:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenReuseIdentified)
-		RecordDomainError(span, httpErr)
-		return httpErr
 	case outbounds.ErrServiceUnavailable:
 		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(SystemServiceUnavailable)
 		RecordDomainError(span, httpErr)
@@ -239,14 +210,6 @@ func FromService(span trace.Span, err error) error {
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(DBTransactionPanicked)
 		RecordSystemError(span, httpErr)
 		logs.L().Error("Transaction panicked", zap.Any("panic", e.Panic))
-		return httpErr
-	case inbounds.ErrTokenUserMismatch:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenUserMismatch)
-		RecordDomainError(span, httpErr)
-		return httpErr
-	case auth.ErrTokenInvalidFormat:
-		httpErr := ErrUnauthorized.WithMsg(e.Error()).WithID(TokenInvalidFormat)
-		RecordDomainError(span, httpErr)
 		return httpErr
 	case inbounds.ErrFailedToRetrieveJWKS:
 		httpErr := ErrInternal.WithMsg(e.Error()).WithID(SystemJWKSRetrievalFailed).WithCause(e.Cause)
