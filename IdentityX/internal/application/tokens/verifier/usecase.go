@@ -105,7 +105,7 @@ func verifyToken[T jwt.Claims](
 		}
 
 		if err := uc.keys.VerifyGoAuth(ctx, kid, payload, sig); err != nil {
-			if apierr.IsNotFound(err) {
+			if fail.Is(err, apierr.SQLNotFound) {
 				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType)
 			}
 			return claims, err
@@ -123,7 +123,7 @@ func verifyToken[T jwt.Claims](
 		}
 
 		if err := uc.keys.VerifyProject(ctx, projectID, kid, payload, sig); err != nil {
-			if apierr.IsNotFound(err) {
+			if fail.Is(err, apierr.SQLNotFound) {
 				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType)
 			}
 			return claims, err

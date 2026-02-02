@@ -81,6 +81,7 @@ var (
 	ProjectUserRegisterOnSchemaVersionArchived = fail.ID(1, "PROJECTUSER", 3, true, "PROJECTUSERRegisterOnSchemaVersionArchived")
 	ProjectUserNotFromProject                  = fail.ID(1, "PROJECTUSER", 4, true, "PROJECTUSERNotFromProject")
 	ProjectUserRegisterOnSchemaNoVersion       = fail.ID(1, "PROJECTUSER", 5, true, "PROJECTUSERRegisterOnSchemaNoVersion")
+	ProjectUserRegisterOnNoneProject           = fail.ID(1, "PROJECTUSER", 6, true, "PROJECTUSERRegisterOnNoneProject")
 
 	SchemaNotOwnedByPrincipal = fail.ID(1, "SCHEMA", 0, false, "SCHEMANotOwnedByPrincipal")
 	SchemaNoValidStatus       = fail.ID(1, "SCHEMA", 1, false, "SCHEMANoValidStatus")
@@ -142,6 +143,7 @@ var (
 	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
 	SYSRenderingEmailFailed  = fail.ID(9, "SYS", 3, false, "SYSRenderingEmailFailed")
 	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
+	SYSJWKSEncodingFailed    = fail.ID(9, "SYS", 5, false, "SYSJWKSEncodingFailed")
 
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
@@ -170,32 +172,9 @@ var (
 	PERMissionNotOwnedByPrincipal             = fail.ID(0, "PERM", 5, false, "PERMissionNotOwnedByPrincipal")
 	PERMissionInvalidAction                   = fail.ID(0, "PERM", 6, false, "PERMissionInvalidAction")
 	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
+	PERMissionAlreadyExists                   = fail.ID(0, "PERM", 8, false, "PERMissionAlreadyExists")
 
 	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
+
+	EMAILTemplateNotFound = fail.ID(0, "EMAIL", 0, false, "EMAILTemplateNotFound")
 )
-
-const (
-	SchemaVersionDraftAlreadyExists ID = "SCM_VER_001"
-
-	DBNotFound             ID = "DB_000"
-	DBUniqueViolation      ID = "DB_001"
-	DBForeignKeyViolation  ID = "DB_002"
-	DBNotNullViolation     ID = "DB_003"
-	DBValueTooLong         ID = "DB_004"
-	DBSerializationFailure ID = "DB_005"
-	DBCheckViolation       ID = "DB_009"
-
-	FieldSameKeyForMultipleFields      ID = "FIELD_006"
-	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldInvalidCharactersInKey        ID = "FIELD_003"
-
-	PermissionAlreadyGranted ID = "PERM_004"
-
-	RoleNameTaken      ID = "ROLE_003"
-	RoleAlreadyGranted ID = "ROLE_004"
-
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-)
-
-const PlaceholderID ID = "PL_000"

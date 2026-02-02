@@ -41,11 +41,11 @@ var (
 			"pt-BR": "o JSON de campos customizados está inválido",
 		})
 
-	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 401}, "UNDEFINED").
+	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 400}, "UNDEFINED").
 						AddLocalizations(map[string]string{
 			"pt-BR": "os campos personalizados do schema são obrigatórios no registro do schema.",
 		})
-	ErrRequestInvalidJSONFormat = fail.Form(RequestInvalidJSONFormat, "Invalid JSON format", false, map[string]any{"code": 401}, "UNDEFINED").
+	ErrRequestInvalidJSONFormat = fail.Form(RequestInvalidJSONFormat, "Invalid JSON format", false, map[string]any{"code": 400}, "UNDEFINED").
 					AddLocalizations(map[string]string{
 			"pt-BR": "formato do JSON inválido.",
 		})
@@ -277,6 +277,10 @@ var (
 						AddLocalizations(map[string]string{
 			"pt-BR": "você não pode se registrar em um schema que não possui versão publicada",
 		})
+	ErrProjectUserRegisterOnNoneProject = fail.Form(ProjectUserRegisterOnNoneProject, "can't register on a non existant project", false, map[string]any{"code": 400}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "não é possível se registrar em um projeto inexistente",
+		})
 
 	// ------ SCHEMA ------
 	ErrSchemaNotOwnedByPrincipal = fail.Form(SchemaNotOwnedByPrincipal, "%s", false, map[string]any{"code": 401}).
@@ -401,7 +405,7 @@ var (
 		})
 	ErrFieldInvalidType = fail.Form(FIELDInvalidOwner, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
 				AddLocalization("pt-BR", "tipo do campo inválido (%s) para o campo: %s")
-	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 400}).
+	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 409}).
 					AddLocalization("pt-BR", "dois campos não podem possuir a mesma chave identificadora")
 	ErrFieldSamePositionForMultipleFields = fail.Form(FIELDSamePositionForMultipleFields, "two fields can't occupy the same position", false, map[string]any{"code": 409}).
 						AddLocalizations(map[string]string{
@@ -455,6 +459,8 @@ var (
 				AddLocalization("pt-BR", "%s falhou na renderização")
 	ErrUUIDV7GenerationFailed = fail.Form(SYSUUIDV7GenerationError, "error generating UUID V7 at %s", true, map[string]any{"code": 500}, "UNSET LOCATION").
 					AddLocalization("pt-BR", "erro gerando UUIDV7 em %s")
+	ErrSYSJWKSEncodingFailed = fail.Form(SYSJWKSEncodingFailed, "JWKS enconding failed", true, map[string]any{"code": 500}, "UNSET LOCATION").
+					AddLocalization("pt-BR", "falha ao codificar o JWKS")
 
 	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
 						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")
@@ -482,7 +488,7 @@ var (
 				AddLocalization("pt-BR", "nome do papel já em uso")
 
 	// ------ SCOPE ------
-	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 400}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
+	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 409}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
 						AddLocalization("pt-BR", "escopo com nome e id externo (%s, %s) já existe")
 
 	ScopeInvalidShapeErrorMessage   = "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)"
@@ -492,7 +498,7 @@ var (
 	ErrScopeEmptyName = fail.Form(SCOPEEmptyName, "scope name cannot be empty", false, map[string]any{"code": 400}).
 				AddLocalization("pt-BR", "nome do escopo não pode estar vazio")
 
-	// ------ PERMISSION ------
+	// ------ PERM ------
 	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").
 							AddLocalization("pt-BR", "%s: condições %s não podem estar vazias")
 	ErrPermissionConditionValidationError = fail.Form(PERMissionConditionValidationError, "error validating permission condition at: %s", false, map[string]any{"code": 400}, "PATH NOT SET").
@@ -501,7 +507,7 @@ var (
 					AddLocalization("pt-BR", "incompatibilidade de ações: permissão=%s, requisição=%s")
 	ErrPermissionObjectMismatch = fail.Form(PERMissionObjectMismatch, "object mismatch: permission=%s, request=%s", false, map[string]any{"code": 400}, "EXPECTED NOT SET", "ACTUAL NOT SET").
 					AddLocalization("pt-BR", "incompatibilidade de objetos: permissão=%s, requisição=%s")
-	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 400}).
+	ErrPermissionAlreadyGranted = fail.Form(PERMissionAlreadyGranted, "user already has this permission in the specified scope", false, map[string]any{"code": 409}).
 					AddLocalization("pt-BR", "usuário já tem essa permissão no escopo específicado")
 	ErrPermissionNotOwnedByPrincipal = fail.Form(PERMissionNotOwnedByPrincipal, "permission not owned by principal", false, map[string]any{"code": 401}).
 						AddLocalization("pt-BR", "identidade não é a dona da permissão")
@@ -509,7 +515,13 @@ var (
 					AddLocalization("pt-BR", "ação da permissão é invalida: (%s)")
 	ErrPermissionInvalidObject = fail.Form(PERMissionInvalidObject, "invalid permission object: (%s)", false, map[string]any{"code": 400}, "OBJECT NOT SET").
 					AddLocalization("pt-BR", "objeto da permissão é invalido: (%s)")
+	ErrPermissionAlreadyExists = fail.Form(PERMissionAlreadyExists, "permission with object(%s) and action(%s) already exists", false, map[string]any{"code": 409}, "OBJECT NOT SET", "ACTION NOT SET").
+					AddLocalization("pt-BR", "permissão com objeto(%s) e ação(%s) já existe")
 
 	ErrInsufficientPermission = fail.Form(PERMissionInsufficient, "insufficient permissions", false, map[string]any{"code": 403}).
 					AddLocalization("pt-BR", "permissões insuficientes")
+
+	// EMAIL
+	ErrEMAILTemplateNotFound = fail.Form(EMAILTemplateNotFound, "%s %s template not found", false, map[string]any{"code": 500}, "KEY NOT SET", "TYPE NOT SET").
+					AddLocalization("pt-BR", "O template %s %s não foi encontrado")
 )

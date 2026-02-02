@@ -68,7 +68,7 @@ func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.Creat
 		Conditions: toCreate.Conditions,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs(toCreate.Object, toCreate.Action)
 	}
 
 	span.SetAttributes(attribute.String("permission.id", sqlcPermission.ID.String()))

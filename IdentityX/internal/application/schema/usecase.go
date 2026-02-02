@@ -190,11 +190,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 
 	var latest *version.Version
 	latest, err = versions.GetLatest(ctx, in.SchemaID)
-	if err != nil && !apierr.IsNotFound(err) {
+	if err != nil && !fail.Is(err, apierr.SQLNotFound) {
 		return err
 	}
 
-	if err != nil && apierr.IsNotFound(err) {
+	if err != nil && fail.Is(err, apierr.SQLNotFound) {
 		return fail.New(apierr.SCHEMANoPublishedVersion)
 	}
 

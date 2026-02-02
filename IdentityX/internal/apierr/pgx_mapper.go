@@ -26,7 +26,7 @@ func (m *PGXMapper) MapFromFail(fe *fail.Error) (error, bool) {
 }
 
 func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
-	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
+	if IsNotFoundNew(err) {
 		return fail.New(SQLNotFound), true
 	}
 
@@ -38,6 +38,12 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 				_ = fe.AddMeta("is_unique_violation", true)
 			}()
 			switch pgErr.ConstraintName {
+			case "users_email_key":
+				return fail.New(AuthEmailAlreadyUsed).Msg("email already in use").Debug(err.Error()), true
+			case "project_users_project_id_email_key":
+				return fail.New(AuthEmailAlreadyUsed).Msg("email already in use").Debug(err.Error()), true
+			case "permissions_project_id_object_action_key":
+				return fail.New(PERMissionAlreadyExists).Debug(err.Error()), true
 			case "one_version_draft_per_schema":
 				return fail.New(SCHEMAVersionDraftAlreadyExists).Debug(err.Error()), true
 			case "schema_fields_schema_version_id_position_key":
@@ -67,7 +73,11 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 			default:
 				return fail.New(SQLUnmatchedCheckViolation).Debug(err.Error()), true
 			}
-		case "23503":
+		case "23503": // foreign key violation
+			switch pgErr.ConstraintName {
+			case "project_users_project_id_fkey":
+				return fail.New(ProjectUserRegisterOnNoneProject).Debug(err.Error()), true
+			}
 			return fail.New(SQLForeignKeyViolation).With(err), true
 		case "23502":
 			return fail.New(SQLNotNULLViolation).With(err), true
@@ -83,6 +93,13 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 	}
 
 	return nil, false
+}
+
+func IsNotFoundNew(err error) bool {
+	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
+		return true
+	}
+	return false
 }
 
 func IsUniqueViolationNew(err error) bool {

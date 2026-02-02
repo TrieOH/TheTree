@@ -3,7 +3,6 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -102,9 +101,7 @@ func (repo *keyRepo) RotateGoAuthSigningKeys(ctx context.Context) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).RotateSigningKeysForGoAuth(ctx); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err)
 	}
 
 	return nil
@@ -129,9 +126,7 @@ func (repo *keyRepo) GetActiveGoAuthSigningKey(ctx context.Context) (*key.Pair, 
 
 	row, err := repo.queries(ctx).GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	var pair key.Pair

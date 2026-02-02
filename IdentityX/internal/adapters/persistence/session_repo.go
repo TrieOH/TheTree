@@ -3,7 +3,6 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -199,9 +198,7 @@ func (repo *sessionRepo) List(ctx context.Context, entityID uuid.UUID, identityT
 	})
 
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err)
 	}
 
 	span.SetAttributes(attribute.Int("sessions.count", len(sqlcSessions)))

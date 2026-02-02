@@ -256,7 +256,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSamePositionForMultipleFields).
+			HasErrID(apierr.ID(apierr.FIELDSamePositionForMultipleFields.String())).
 			HasMessage("two fields can't occupy the same position")
 	})
 
@@ -290,7 +290,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -432,7 +432,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldInvalidCharactersInKey).
+			HasErrID(apierr.ID(apierr.FIELDInvalidCharactersInKey.String())).
 			HasMessage("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores")
 	})
 
@@ -493,7 +493,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -515,7 +515,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
 			HasMessage("two fields can't have the same key")
 	})
 

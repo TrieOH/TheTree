@@ -336,8 +336,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.DBUniqueViolation).
-			HasMessage("resource already exists")
+			HasErrID(apierr.ID(apierr.PERMissionAlreadyExists.String())).
+			HasMessage("permission with object(event:*) and action(create) already exists")
 	})
 
 	t.Run("CreatePermissionNoAction", func(t *testing.T) {

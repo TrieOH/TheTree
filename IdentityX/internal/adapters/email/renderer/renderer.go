@@ -96,12 +96,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", apierr.ErrNotFound
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "text")
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", apierr.ErrNotFound
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "html")
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

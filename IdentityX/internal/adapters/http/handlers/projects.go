@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail"
 	"go.uber.org/zap"
 )
 
@@ -144,7 +145,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 			zap.Error(err),
 			zap.String("project_id", projectID.String()),
 		)
-		apiErr := apierr.ErrInternal.WithMsg("Failed to encode JWKS").WithCause(err)
+		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err)
 		resp.FromError(apiErr).Send(w)
 		return
 	}

@@ -89,7 +89,7 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 	})
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs(*toCreate.Name, *toCreate.ExternalID)
 	}
 
 	var created scopes.Scope

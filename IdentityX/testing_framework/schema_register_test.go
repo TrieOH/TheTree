@@ -242,7 +242,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(apierr.ID(apierr.FIELDValidationErrorOnSchemaRegister.String())).
-			HasMessage("error validating fields for schema register").
+			HasMessage("error validating form for schema register").
 			TraceContains("form missing required field: matricula",
 				"form missing required field: curso",
 				"form missing required field: periodo")
@@ -421,8 +421,7 @@ func testSchemaRegister(t *testing.T, suite *TestSuite) {
 			}).
 			Expect(http.StatusConflict).
 			HasErrID(apierr.ID(apierr.AuthEmailAlreadyUsed.String())).
-			HasMessage("error registering user").
-			TraceContains("email already in use")
+			HasMessage("email already in use")
 	})
 
 	t.Run("SchemaUserSessionInfo", func(t *testing.T) {
