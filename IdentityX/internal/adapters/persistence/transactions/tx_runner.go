@@ -51,7 +51,6 @@ func (r *TxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		// FIXME make me a generic error
 		return fail.New(apierr.DBBeginTransactionFailed).With(err)
 	}
 

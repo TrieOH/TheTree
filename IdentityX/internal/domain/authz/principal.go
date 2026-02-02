@@ -1,10 +1,12 @@
 package authz
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
 	"encoding/json"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 )
 
@@ -30,4 +32,46 @@ type Principal struct {
 	// ===== Raw claims (escape hatch) =====
 	AccessClaims  *auth.AccessClaims
 	RefreshClaims *auth.RefreshClaims
+}
+
+func NewPrincipal(
+	access *auth.AccessClaims,
+	refresh *auth.RefreshClaims,
+) (*Principal, error) {
+	if access == nil {
+		return nil, fail.New(apierr.TokenMissingAccessClaims)
+	}
+	if refresh == nil {
+		return nil, fail.New(apierr.TokenMissingRefreshClaims)
+	}
+
+	accessJTI, err := uuid.Parse(access.ID)
+	if err != nil {
+		return nil, fail.New(apierr.TokenAccessInvalidID).With(err)
+	}
+
+	refreshJTI, err := uuid.Parse(refresh.ID)
+	if err != nil {
+		return nil, fail.New(apierr.TokenRefreshInvalidID).With(err)
+	}
+
+	return &Principal{
+		UserID:     access.Sub.ID,
+		Email:      access.Sub.Email,
+		UserType:   access.Sub.UserType,
+		ProjectID:  access.Sub.ProjectID,
+		Metadata:   access.Sub.Metadata,
+		IsVerified: access.Sub.IsVerified,
+		VerifiedAt: access.Sub.VerifiedAt,
+
+		SessionID: access.Sub.SessionID,
+		UserAgent: access.Sub.UserAgent,
+		UserIP:    access.Sub.UserIP,
+
+		AccessJTI:  accessJTI,
+		RefreshJTI: refreshJTI,
+
+		AccessClaims:  access,
+		RefreshClaims: refresh,
+	}, nil
 }

@@ -36,22 +36,18 @@ func (uc *UseCase) validateAndConstructMetadata(
 	if registerSchema, err = schemas.FindByFlowIDAndType(ctx, flowID, schemaType, projectID); err != nil {
 		return nil, err
 	}
-	// if err = registerSchema.CanRegisterSchema(); err != nil {
-	// 	return nil, apierr.FromService(span, err)
-	// }
-	if err = apierr.CanRegisterSchema(*registerSchema); err != nil {
+
+	if err = registerSchema.CanRegister(); err != nil {
 		return nil, apierr.FromService(span, err)
 	}
 	var registerVersion *version.Version
 	if registerVersion, err = versions.GetCurrent(ctx, registerSchema.ID); err != nil {
 		return nil, err
 	}
-	if err = apierr.CanRegisterVersion(*registerVersion); err != nil {
+	if err = registerVersion.CanRegister(); err != nil {
 		return nil, apierr.FromService(span, err)
 	}
-	// if err = registerVersion.CanRegister(); err != nil {
-	// 	return nil, apierr.FromService(span, err)
-	// }
+
 	if ok = registerSchema.IsVersion(registerVersion.ID); !ok {
 		return nil, fail.New(apierr.SchemaVersionMismatch)
 	}
