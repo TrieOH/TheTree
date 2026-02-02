@@ -218,7 +218,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 	var u *user.User
 	u, err = users.GetUserByEmail(ctx, in.Email)
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		return nil, fail.New(apierr.AuthInvalidCredentials)
 	} else if err != nil {
 		return nil, err
@@ -437,7 +437,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	}
 
 	sess, err = sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		// sql.ErrNoRows → raced / reused / revoked
 		return nil, fail.New(apierr.SessionNotFound)
 	} else if err != nil {
@@ -837,7 +837,7 @@ func (uc *UseCase) LoginProjectUser(
 
 	var usr *project_users.ProjectUser
 	usr, err = projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		return nil, fail.New(apierr.AuthInvalidCredentials)
 	} else if err != nil {
 		return nil, err

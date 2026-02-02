@@ -86,7 +86,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 
 	var sess *session.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		return fail.New(apierr.SessionNotFound)
 	} else if err != nil {
 		return err

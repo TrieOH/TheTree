@@ -10,6 +10,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,7 +25,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if apierr.IsNotFound(apierr.FromSQLC(err)) {
+		if fail.Is(fail.From(err), apierr.SQLNotFound) {
 			pub, priv, err := crypto.GenerateEd25519()
 			if err != nil {
 				log.Fatalf("failed to generate GoAuth key: %v", err)
@@ -85,7 +86,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 	key, err := q.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if apierr.IsNotFound(err) {
+		if fail.Is(fail.From(err), apierr.SQLNotFound) {
 			// defensive: no signing key → create
 			return createGoAuthKey(ctx, q)
 		}
@@ -145,7 +146,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 	for _, projectID := range projects {
 		key, err := q.GetActiveSigningKeyForProject(ctx, projectID)
 		if err != nil {
-			if apierr.IsNotFound(err) {
+			if fail.Is(fail.From(err), apierr.SQLNotFound) {
 				_ = createProjectKey(ctx, q, *projectID)
 				continue
 			}

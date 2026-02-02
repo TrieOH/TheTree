@@ -30,11 +30,6 @@ func IsConflict(err error) bool {
 	return ok && apiErr.Code == Conflict
 }
 
-func IsNotFound(err error) bool {
-	apiErr, ok := As(err)
-	return ok && apiErr.Code == NotFound
-}
-
 func IsInvalidInput(err error) bool {
 	apiErr, ok := As(err)
 	return ok && apiErr.Code == InvalidInput

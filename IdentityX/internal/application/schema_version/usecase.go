@@ -101,11 +101,11 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	var latest *version.Version
 	latest, err = versions.GetLatestForUpdate(ctx, in.SchemaID)
 
-	if err != nil && !apierr.IsNotFound(err) {
+	if err != nil && !fail.Is(err, apierr.SQLNotFound) {
 		return nil, err
 	}
 
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		newVersion := &version.Version{
 			SchemaID:      in.SchemaID,
 			VersionNumber: 1,
@@ -190,11 +190,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 
 	var latest *version.Version
 	latest, err = versions.GetLatest(ctx, in.SchemaID)
-	if err != nil && !apierr.IsNotFound(err) {
+	if err != nil && !fail.Is(err, apierr.SQLNotFound) {
 		return err
 	}
 
-	if err != nil && apierr.IsNotFound(err) {
+	if err != nil && fail.Is(err, apierr.SQLNotFound) {
 		return fail.New(apierr.SchemaVersionDraftDoesntExist)
 	}
 

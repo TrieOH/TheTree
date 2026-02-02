@@ -88,7 +88,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs("project")
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -108,7 +108,7 @@ func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUI
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs("project")
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -179,7 +179,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate project.Project, o
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).WithArgs("project")
 	}
 
 	mapProjectFromDB(&toUpdate, &sqlcProject)
@@ -201,8 +201,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	})
 
 	if err != nil {
-		//FIXME add fail.FromNamedMapper
-		return fail.From(err)
+		return fail.From(err).WithArgs("project")
 	}
 
 	if affectedRows == 0 {

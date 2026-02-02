@@ -101,8 +101,8 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		// Try to GET project owned by first user
 		attackerClient.GET("/projects/" + projectID).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.DBNotFound).
-			HasMessage("resource not found")
+			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasMessage("project not found")
 
 		// Try to UPDATE
 		attackerClient.PATCH("/projects/" + projectID).
@@ -110,8 +110,8 @@ func testProjects(t *testing.T, suite *TestSuite) {
 				"project_name": "Hacked",
 			}).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.DBNotFound).
-			HasMessage("resource not found")
+			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasMessage("project not found")
 
 		// Try to DELETE
 		attackerClient.DELETE("/projects/" + projectID).

@@ -88,7 +88,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
-		if apierr.IsNotFound(err) {
+		if fail.Is(err, apierr.SQLNotFound) {
 			return nil, fail.New(apierr.SessionUnauthorized)
 		}
 		return nil, err

@@ -859,9 +859,9 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"role_id":  scopelessRoleID,
 				"scope_id": activityScopeID,
 			}).
-			Expect(http.StatusConflict).
+			Expect(http.StatusBadRequest).
 			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
-			HasMessage("user already has this role in the specified scope")
+			HasMessage("scopeless role already granted to user")
 	})
 
 	t.Run("GiveUserDuplicateScopelessRoleOnActivitySubScope", func(t *testing.T) {
