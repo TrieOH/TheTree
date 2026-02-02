@@ -1,16 +1,13 @@
 package apierr
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"errors"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail"
 )
 
-// ErrToResp converts an error to a response.
-// It handles API errors and returns a formatted response.
-// For unhandled errors, it returns an internal server error response.
-// Debug causes are included based on the global IncludeDebugCauses flag.
 func ErrToResp(err error) *resp.Response {
 	if err == nil {
 		return nil
@@ -18,6 +15,7 @@ func ErrToResp(err error) *resp.Response {
 
 	var ae *Error
 	if errors.As(err, &ae) {
+		logs.L().Error("CALLED MapAPIErrorWithTrace")
 		return MapAPIErrorWithTrace(ae)
 	}
 
@@ -26,6 +24,7 @@ func ErrToResp(err error) *resp.Response {
 		return Sender2(fe)
 	}
 
+	logs.L().Error("FAILED ErrToResp")
 	// unknown error = 500
 	return resp.InternalServerError().
 		WithTracePrefix("unhandled-error").

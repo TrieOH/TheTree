@@ -6,20 +6,11 @@ import (
 
 var IncludeDebugCauses bool
 
-// MapAPIErrorWithTrace maps an API error to a response with full trace information.
-// Debug causes are included based on the global IncludeDebugCauses flag.
 func MapAPIErrorWithTrace(e *Error) *resp.Response {
 	r := respFromCode(e.Code)
 
 	if e.Message != "" {
 		r = r.WithMsg(e.Message)
-	}
-
-	if e.ID != "" {
-		if e.ID == ID(RequestValidationError.String()) {
-			r = r.WithModule("validation")
-		}
-		r = r.WithErrID(string(e.ID))
 	}
 
 	// Add all causes to trace

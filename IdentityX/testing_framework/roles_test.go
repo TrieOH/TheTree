@@ -340,7 +340,6 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		Validate(t, val, spec)
 	})
 
-	//FIXME check if scope allow multiple id on the same name
 	var eventScopeID string
 	t.Run("CreateEventScope", func(t *testing.T) {
 		val := suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/scopes").

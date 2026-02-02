@@ -1,8 +1,10 @@
 package schema
 
 import (
+	"GoAuth/internal/apierr"
 	"time"
 
+	"github.com/MintzyG/fail"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -94,4 +96,17 @@ func (r DiffResult) Annotate(span trace.Span) {
 		span.SetAttributes(attribute.Bool("required_rules_changed", *r.RequiredRulesChanged))
 	}
 	span.SetAttributes(attribute.Bool("has_any_changes", r.HasAnyChanges()))
+}
+
+func (s Schema) CanRegister() error {
+	if s.CurrentVersionID == nil {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaNoVersion)
+	}
+	if s.Status == StatusDraft {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaDraft)
+	}
+	if s.Status == StatusArchived {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaArchived)
+	}
+	return nil
 }

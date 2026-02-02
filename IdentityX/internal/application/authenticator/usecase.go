@@ -120,7 +120,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	)
 
 	var principal *authz.Principal
-	principal, err = apierr.NewPrincipal(accessToken, refreshToken)
+	principal, err = authz.NewPrincipal(accessToken, refreshToken)
 	if err != nil {
 		return nil, apierr.FromService(span, err)
 	}

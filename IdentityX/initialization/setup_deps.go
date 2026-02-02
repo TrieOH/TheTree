@@ -28,6 +28,7 @@ func SetupFail() {
 
 	fail.OnFromFail(apierr.OnFromFailHook)
 	fail.OnFromSuccess(apierr.OnFromSuccessHook)
+	fail.SetTracer(apierr.DefaultOTelTracer())
 }
 
 func SetupFUN() {
