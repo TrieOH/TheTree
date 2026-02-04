@@ -10,11 +10,7 @@ export default function MobileMenu({
   onClose: () => void
 }) {
 
-  const hasAny =
-    (actions.left && actions.left.length) ||
-    (actions.center && actions.center.length) ||
-    (actions.right && actions.right.length)
-
+  const hasAny = actions.left?.length || actions.center?.length || actions.right?.length
   if (!hasAny) return null
 
   const hasLCDivider = actions.left.length > 0 && actions.center.length > 0;
@@ -29,22 +25,22 @@ export default function MobileMenu({
         "md:hidden top-full left-0"
       )}
     >
-      {actions.left.map((a, i) => (
-        <div key={i} onClick={onClose}>
+      {actions.left.map(a => (
+        <button type="button" key={`leftM-${a.id}`} onClick={onClose}>
           <HeaderActionRenderer action={a} />
-        </div>
+        </button>
       ))}
       {hasLCDivider && <div className="w-11/12 h-px bg-border self-center" />}
-      {actions.center.map((a, i) => (
-        <div key={i} onClick={onClose}>
+      {actions.center.map(a => (
+        <button type="button" key={`centerM-${a.id}`} onClick={onClose}>
           <HeaderActionRenderer action={a} />
-        </div>
+        </button>
       ))}
       {hasCRivider && <div className="w-11/12 h-px bg-border self-center" />}
-      {actions.right.map((a, i) => (
-        <div key={i} onClick={onClose}>
+      {actions.right.map(a => (
+        <button type="button" key={`rightM-${a.id}`} onClick={onClose}>
           <HeaderActionRenderer action={a} />
-        </div>
+        </button>
       ))}
     </div>
   )

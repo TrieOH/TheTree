@@ -3,11 +3,11 @@ export type VisibleOn = 'mobile' | 'desktop' | 'fixed'
 export type TitlePosition = 'left' | 'none'
 
 export type HeaderAction =
-  | { type: 'link'; label: string; to: string; visibleOn?: VisibleOn, collapseToMenu?: boolean }
-  | { type: 'button'; label?: string; icon?: React.ReactNode; onClick: () => void; visibleOn?: VisibleOn, collapseToMenu?: boolean }
-  | { type: 'authButton'; visibleOn?: VisibleOn, collapseToMenu?: boolean }
-  | { type: 'createProject'; visibleOn?: VisibleOn, collapseToMenu?: boolean; }
-  | { type: 'back'; visibleOn?: VisibleOn, collapseToMenu?: boolean, to?: string; }
+  | { id: string; type: 'link'; label: string; to: string; visibleOn?: VisibleOn, collapseToMenu?: boolean }
+  | { id: string; type: 'button'; label?: string; icon?: React.ReactNode; onClick: () => void; visibleOn?: VisibleOn, collapseToMenu?: boolean }
+  | { id: string; type: 'authButton'; visibleOn?: VisibleOn, collapseToMenu?: boolean }
+  | { id: string; type: 'createProject'; visibleOn?: VisibleOn, collapseToMenu?: boolean; }
+  | { id: string; type: 'back'; visibleOn?: VisibleOn, collapseToMenu?: boolean, to?: string; }
 
 export interface HeaderConfigI {
   variant: HeaderVariant
