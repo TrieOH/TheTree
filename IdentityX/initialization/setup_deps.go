@@ -9,7 +9,9 @@ import (
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fail/v3/plugins/localization"
+	"github.com/MintzyG/fail/v3/plugins/tracing/otel"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
@@ -26,9 +28,16 @@ func SetupFail() {
 
 	fail.RegisterMapper(&apierr.PGXMapper{})
 
-	fail.OnFromFail(apierr.OnFromFailHook)
-	fail.OnFromSuccess(apierr.OnFromSuccessHook)
-	fail.SetTracer(apierr.DefaultOTelTracer())
+	fail.SetLocalizer(localization.New())
+	fail.SetDefaultLocale("en-US")
+
+	tracerPlugin := otel.New(
+		otel.WithTracerName("goauth-service"),
+		otel.WithMode(otel.RecordSmart),
+		otel.WithStackTrace(),
+		otel.WithAttributePrefix("goauth.error"),
+	)
+	fail.SetTracer(tracerPlugin)
 }
 
 func SetupFUN() {

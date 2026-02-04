@@ -7,7 +7,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -66,7 +66,7 @@ func (repo *schemaRepo) Draft(ctx context.Context, toDraft schema.Schema) (*sche
 		Type:      sqlc.SchemaType(toDraft.Type),
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
@@ -89,7 +89,7 @@ func (repo *schemaRepo) Publish(ctx context.Context, toPublish schema.Schema) er
 		ID:        toPublish.ID,
 		ProjectID: toPublish.ProjectID,
 	}); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -108,7 +108,7 @@ func (repo *schemaRepo) Archive(ctx context.Context, toArchive schema.Schema) er
 		ID:        toArchive.ID,
 		ProjectID: toArchive.ProjectID,
 	}); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -127,7 +127,7 @@ func (repo *schemaRepo) Delete(ctx context.Context, toDelete schema.Schema) erro
 		ID:        toDelete.ID,
 		ProjectID: toDelete.ProjectID,
 	}); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -147,7 +147,7 @@ func (repo *schemaRepo) Exists(ctx context.Context, toCheck schema.Schema) (bool
 		Type:      sqlc.SchemaType(toCheck.Type),
 	})
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return exists, nil
@@ -167,7 +167,7 @@ func (repo *schemaRepo) BelongsToProject(ctx context.Context, toCheck schema.Sch
 		ProjectID: toCheck.ProjectID,
 	})
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return belongs, nil
@@ -187,7 +187,7 @@ func (repo *schemaRepo) FindByID(ctx context.Context, schemaID uuid.UUID, projec
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("schema.type", string(sqlcSchema.Type)))
@@ -211,7 +211,7 @@ func (repo *schemaRepo) FindByFlowIDAndType(ctx context.Context, flowID string, 
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("schema")
+		return nil, fail.From(err).WithArgs("schema").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("schema.id", sqlcSchema.ID.String()))
@@ -231,7 +231,7 @@ func (repo *schemaRepo) List(ctx context.Context, projectID uuid.UUID) ([]schema
 
 	sqlcSchemas, err := repo.queries(ctx).ListSchemas(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("schema.count", len(sqlcSchemas)))
@@ -263,7 +263,7 @@ func (repo *schemaRepo) SetVersion(ctx context.Context, toUpdate schema.Schema) 
 		ProjectID:        toUpdate.ProjectID,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -277,7 +277,7 @@ func (repo *schemaRepo) GetIDsFromProjectID(ctx context.Context, projectID uuid.
 
 	IDs, err := repo.queries(ctx).GetSchemaIDsFromProjectID(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("schema.count", len(IDs)))

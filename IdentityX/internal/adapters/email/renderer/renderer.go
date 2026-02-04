@@ -8,7 +8,7 @@ import (
 	"html/template"
 	texttemplate "text/template"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

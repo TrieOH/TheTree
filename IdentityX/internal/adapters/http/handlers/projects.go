@@ -10,13 +10,18 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
 type ProjectHandler struct {
 	projects inbounds.ProjectService
 }
+
+var (
+	handlerTracer = otel.Tracer("GoAuthHandlerTarcer")
+)
 
 func NewProjectHandler(uc inbounds.ProjectService) *ProjectHandler {
 	return &ProjectHandler{projects: uc}
@@ -133,7 +138,11 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	jwks, err := handler.projects.GetJWKS(r.Context(), projectID)
+	ctx := r.Context()
+	ctx, span := handlerTracer.Start(ctx, "GetProjectJWKS")
+	defer span.End()
+
+	jwks, err := handler.projects.GetJWKS(ctx, projectID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -145,7 +154,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 			zap.Error(err),
 			zap.String("project_id", projectID.String()),
 		)
-		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err)
+		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
 		resp.FromError(apiErr).Send(w)
 		return
 	}

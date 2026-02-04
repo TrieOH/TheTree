@@ -9,10 +9,9 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"errors"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -63,16 +62,16 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot create permissions for a project you don't own")
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot create permissions for a project you don't own").RecordCtx(ctx)
 	}
 
-	if err := permissions.ValidatePermission(in.Object, in.Action); err != nil {
-		return nil, apierr.FromService(span, err)
+	if err := permissions.ValidatePermission(ctx, in.Object, in.Action); err != nil {
+		return nil, err
 	}
 
 	_, err = permissions.DecodeAndValidateCondition(in.Conditions)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	permission, err := uc.permissions.Create(ctx, outbounds.CreatePermissionInput{
@@ -94,7 +93,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetPermissio
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -104,7 +103,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetPermissio
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permission for a project you don't own")
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permission for a project you don't own").RecordCtx(ctx)
 	}
 
 	permission, err := uc.permissions.GetByIDExternal(ctx, in.PermissionID, *in.ProjectID)
@@ -122,7 +121,7 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetPermissionI
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -132,20 +131,20 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetPermissionI
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permissions for a project you don't own")
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permissions for a project you don't own").RecordCtx(ctx)
 	}
 
 	if in.Object != nil && *in.Object != "" {
-		if err = permissions.ValidateObject(*in.Object); err != nil {
-			return nil, apierr.FromService(span, err)
+		if err = permissions.ValidateObject(ctx, *in.Object); err != nil {
+			return nil, err
 		}
 	} else {
 		in.Object = nil
 	}
 
 	if in.Action != nil && *in.Action != "" {
-		if err = permissions.ValidateAction(*in.Action); err != nil {
-			return nil, apierr.FromService(span, err)
+		if err = permissions.ValidateAction(ctx, *in.Action); err != nil {
+			return nil, err
 		}
 	} else {
 		in.Action = nil
@@ -169,7 +168,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var isOwner bool
@@ -179,7 +178,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !isOwner {
-		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own").RecordCtx(ctx)
 	}
 
 	var permissionBelongs bool
@@ -189,7 +188,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return fail.New(apierr.ROLENotOwnedByPrincipal)
+		return fail.New(apierr.ROLENotOwnedByPrincipal).RecordCtx(ctx)
 	}
 
 	var userBelongs bool
@@ -199,7 +198,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !userBelongs {
-		return fail.New(apierr.ProjectUserNotFromProject)
+		return fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
@@ -223,7 +222,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var isOwner bool
@@ -233,7 +232,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !isOwner {
-		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own")
+		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own").RecordCtx(ctx)
 	}
 
 	var permissionBelongs bool
@@ -243,7 +242,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return fail.New(apierr.ROLENotOwnedByPrincipal)
+		return fail.New(apierr.ROLENotOwnedByPrincipal).RecordCtx(ctx)
 	}
 
 	var userBelongs bool
@@ -253,7 +252,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !userBelongs {
-		return fail.New(apierr.ProjectUserNotFromProject)
+		return fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
@@ -275,7 +274,7 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 	var principal *authz.Principal
 	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -285,7 +284,7 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permissions for a project you don't own")
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get permissions for a project you don't own").RecordCtx(ctx)
 	}
 
 	var userBelongs bool
@@ -295,7 +294,7 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 	}
 
 	if !userBelongs {
-		return nil, fail.New(apierr.ProjectUserNotFromProject)
+		return nil, fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
@@ -316,13 +315,13 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	ctx, span := usecaseTracer.Start(ctx, "PermissionService.Check")
 	defer span.End()
 
-	if err = permissions.ValidatePermission(in.Object, in.Action); err != nil {
-		return false, apierr.FromService(span, err)
+	if err = permissions.ValidatePermission(ctx, in.Object, in.Action); err != nil {
+		return false, err
 	}
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return false, apierr.FromService(span, err)
+		return false, err
 	}
 
 	// Optional: Check if caller can query permissions (meta-auth)
@@ -336,7 +335,7 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 			return false, err
 		}
 		if !isOwner {
-			return false, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot check permissions in a project you don't own")
+			return false, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot check permissions in a project you don't own").RecordCtx(ctx)
 		}
 	}
 
@@ -348,7 +347,7 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 			return false, err
 		}
 		if !belongs {
-			return false, fail.New(apierr.ProjectUserNotFromProject)
+			return false, fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
 		}
 	}
 
@@ -384,9 +383,7 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 
 			if p.Conditions != nil {
 				if in.Resource == nil {
-					// FIXME when conditions exist but no resource provided, error message unclear
-					// FIXME user doesn't know which permission requires resource data
-					return false, errors.New("can't check conditions without resource")
+					return false, fail.New(apierr.PERMissionNoResource).WithArgs(p.ID).RecordCtx(ctx)
 				}
 				evalCtx := permissions.ConditionContext{
 					Subject: map[string]interface{}{
@@ -417,5 +414,5 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	}
 
 	span.SetAttributes(attribute.Bool("permission.found", false))
-	return false, fail.New(apierr.PERMissionInsufficient)
+	return false, fail.New(apierr.PERMissionInsufficient).RecordCtx(ctx)
 }

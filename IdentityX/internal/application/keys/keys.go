@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// FIXME make these accept context and record to span
+
 type cachedPublic struct {
 	pub       ed25519.PublicKey
 	projectID *uuid.UUID

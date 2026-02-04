@@ -2,9 +2,10 @@ package version
 
 import (
 	"GoAuth/internal/apierr"
+	"context"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -26,12 +27,12 @@ type Version struct {
 	BasedOnVersionID *uuid.UUID
 }
 
-func (v Version) CanRegister() error {
+func (v Version) CanRegister(ctx context.Context) error {
 	if v.Status == StatusDraft {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionDraft)
+		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionDraft).RecordCtx(ctx)
 	}
 	if v.Status == StatusArchived {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionArchived)
+		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionArchived).RecordCtx(ctx)
 	}
 	return nil
 }

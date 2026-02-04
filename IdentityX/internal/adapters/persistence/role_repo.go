@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -74,7 +74,7 @@ func (repo *roleRepo) Create(ctx context.Context, toCreate roles.Role) (*roles.R
 		ProjectID:   toCreate.ProjectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("role.id", sqlcRole.ID.String()))
@@ -102,7 +102,7 @@ func (repo *roleRepo) UpdateDescription(ctx context.Context, description string,
 		Description: &description,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -118,7 +118,7 @@ func (repo *roleRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*roles
 
 	sqlcRole, err := repo.queries(ctx).GetRoleByIDInternal(ctx, id)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var outRole roles.Role
@@ -140,7 +140,7 @@ func (repo *roleRepo) GetByIDExternal(ctx context.Context, id, projectID uuid.UU
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var outRole roles.Role
@@ -161,7 +161,7 @@ func (repo *roleRepo) GetByName(ctx context.Context, name string, projectID *uui
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("role.id", sqlcRole.ID.String()))
@@ -181,7 +181,7 @@ func (repo *roleRepo) ListByProject(ctx context.Context, projectID uuid.UUID) ([
 
 	sqlcRoles, err := repo.queries(ctx).ListRolesByProject(ctx, &projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("role.count", len(sqlcRoles)))
@@ -209,7 +209,7 @@ func (repo *roleRepo) BelongsToProject(ctx context.Context, id, projectID uuid.U
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return belongs, nil
@@ -229,7 +229,7 @@ func (repo *roleRepo) AddPermission(ctx context.Context, id uuid.UUID, permissio
 		PermissionID: permissionID,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -249,7 +249,7 @@ func (repo *roleRepo) RemovePermission(ctx context.Context, id uuid.UUID, permis
 		PermissionID: permissionID,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -269,7 +269,7 @@ func (repo *roleRepo) GetPermissions(ctx context.Context, id, projectID uuid.UUI
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("permission.count", len(sqlcPermissions)))
@@ -303,7 +303,7 @@ func (repo *roleRepo) GiveRole(ctx context.Context, id, identityID uuid.UUID, sc
 		ScopeID:    scopeID,
 	})
 	if err != nil {
-		return fail.From(err).WithArgs(role)
+		return fail.From(err).WithArgs(role).RecordCtx(ctx)
 	}
 
 	return nil
@@ -329,7 +329,7 @@ func (repo *roleRepo) TakeRole(ctx context.Context, id, identityID uuid.UUID, sc
 		ScopeID:    scopeID,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -349,7 +349,7 @@ func (repo *roleRepo) GetUserRoles(ctx context.Context, identityID, projectID uu
 		ProjectID:  &projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("roles.count", len(sqlcRoles)))

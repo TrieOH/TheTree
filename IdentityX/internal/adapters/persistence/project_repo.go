@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -65,7 +65,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate project.Project) (
 		IsActive:    toCreate.IsActive,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
@@ -88,7 +88,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project")
+		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -108,7 +108,7 @@ func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUI
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project")
+		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -132,7 +132,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 		ID:      projectID,
 	})
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return isOwner, nil
@@ -148,7 +148,7 @@ func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]project
 
 	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("project.count", len(sqlcProjects)))
@@ -179,7 +179,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate project.Project, o
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project")
+		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
 	}
 
 	mapProjectFromDB(&toUpdate, &sqlcProject)
@@ -201,7 +201,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	})
 
 	if err != nil {
-		return fail.From(err).WithArgs("project")
+		return fail.From(err).WithArgs("project").RecordCtx(ctx)
 	}
 
 	if affectedRows == 0 {

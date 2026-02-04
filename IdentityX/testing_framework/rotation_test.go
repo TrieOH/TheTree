@@ -99,7 +99,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 10. Verify old token now fails (Cache should be cleared)
 		client.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.TokenUntrusted.String())).
+			HasErrID(apierr.TokenUntrusted).
 			HasMessage("untrusted access token")
 
 		// 11. Delete the expired and revoked key
@@ -109,7 +109,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 12. Verify old token still fails as key is gone
 		client.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.TokenUntrusted.String())).
+			HasErrID(apierr.TokenUntrusted).
 			HasMessage("untrusted access token")
 	})
 
@@ -205,7 +205,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 11. Verify old token now fails (Cache should be cleared)
 		projectUserClient.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.TokenUntrusted.String())).
+			HasErrID(apierr.TokenUntrusted).
 			HasMessage("untrusted access token")
 
 		// 12. Delete the expired and revoked key
@@ -215,7 +215,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		// 13. Verify old token still fails as key is gone
 		projectUserClient.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.TokenUntrusted.String())).
+			HasErrID(apierr.TokenUntrusted).
 			HasMessage("untrusted access token")
 	})
 }

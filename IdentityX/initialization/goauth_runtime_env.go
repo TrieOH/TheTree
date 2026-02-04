@@ -10,7 +10,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,13 +26,16 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
 		if fail.Is(fail.From(err), apierr.SQLNotFound) {
-			pub, priv, err := crypto.GenerateEd25519()
+			var pub string
+			var priv []byte
+			pub, priv, err = crypto.GenerateEd25519()
 			if err != nil {
 				log.Fatalf("failed to generate GoAuth key: %v", err)
 			}
 			defer zero(priv)
 
-			encryptedPriv, err := crypto.Encrypt(priv)
+			var encryptedPriv []byte
+			encryptedPriv, err = crypto.Encrypt(priv)
 			if err != nil {
 				log.Fatalf("failed to encrypt GoAuth key: %v", err)
 			}
@@ -52,17 +55,19 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 				ExpiresAt:  expiresAt,
 			})
 
-			if err != nil {
-				if apierr.IsUniqueViolation(err) {
+			fe := fail.From(err)
+
+			if fe != nil {
+				if apierr.IsUniqueViolationNew(fe) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
-					log.Fatalf("failed to create GoAuth signing key: %v", err)
+					log.Fatalf("failed to create GoAuth signing key: %v", fe.Error())
 				}
 			} else {
 				log.Println("Created GoAuth signing key")
 			}
 		} else {
-			log.Fatalf("failed checking GoAuth signing key: %v", err)
+			log.Fatalf("failed checking GoAuth signing key: %v", err.Error())
 		}
 	}
 
@@ -72,11 +77,14 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 		Name:       nil,
 		ExternalID: nil,
 	})
-	if err != nil {
-		if apierr.IsUniqueViolation(err) {
+
+	fe := fail.From(err)
+
+	if fe != nil {
+		if apierr.IsUniqueViolationNew(fe) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
-			log.Fatalf("Failed to create GoAuth Global scope: %v", err)
+			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
 		}
 	} else {
 		log.Println("Created GoAuth Global scope")
@@ -90,15 +98,15 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 			// defensive: no signing key → create
 			return createGoAuthKey(ctx, q)
 		}
-		return err
+		return fail.From(err)
 	}
 
 	if time.Until(key.ExpiresAt) > 24*time.Hour {
 		return nil
 	}
 
-	if err := q.RotateSigningKeysForGoAuth(ctx); err != nil {
-		return err
+	if err = q.RotateSigningKeysForGoAuth(ctx); err != nil {
+		return fail.From(err)
 	}
 
 	return createGoAuthKey(ctx, q)
@@ -131,34 +139,37 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 		ExpiresAt:  expiresAt,
 	})
 
-	if apierr.IsUniqueViolation(err) {
+	fe := fail.From(err)
+	if apierr.IsUniqueViolationNew(fe) {
 		return nil
 	}
-	return err
+	return fe
 }
 
 func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 	projects, err := q.ListProjectsWithActiveSigningKeys(ctx)
-	if err != nil {
-		return err
+	fe := fail.From(err)
+	if fe != nil {
+		return fe
 	}
 
 	for _, projectID := range projects {
-		key, err := q.GetActiveSigningKeyForProject(ctx, projectID)
+		var key sqlc.KeyPair
+		key, err = q.GetActiveSigningKeyForProject(ctx, projectID)
 		if err != nil {
 			if fail.Is(fail.From(err), apierr.SQLNotFound) {
 				_ = createProjectKey(ctx, q, *projectID)
 				continue
 			}
-			return err
+			return fail.From(err)
 		}
 
 		if time.Until(key.ExpiresAt) > 24*time.Hour {
 			continue
 		}
 
-		if err := q.RotateSigningKeysForProject(ctx, projectID); err != nil {
-			return err
+		if err = q.RotateSigningKeysForProject(ctx, projectID); err != nil {
+			return fail.From(err)
 		}
 
 		_ = createProjectKey(ctx, q, *projectID)
@@ -195,11 +206,11 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	})
 
 	// Rely on DB uniqueness for safety in concurrent rotations
-	if apierr.IsUniqueViolation(err) {
+	if apierr.IsUniqueViolationNew(fail.From(err)) {
 		return nil
 	}
 
-	return err
+	return fail.From(err)
 }
 
 func queriesWithTx(ctx context.Context, q *sqlc.Queries) *sqlc.Queries {

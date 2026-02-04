@@ -1339,7 +1339,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "edit",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 
@@ -1354,7 +1354,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "coordinate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 
@@ -1369,7 +1369,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "administrate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 
@@ -1384,7 +1384,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "delete",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 
@@ -1399,7 +1399,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "attend",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 
@@ -1414,7 +1414,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "coordinate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.ID(apierr.PERMissionInsufficient.String())).
+				HasErrID(apierr.PERMissionInsufficient).
 				HasMessage("insufficient permissions")
 		})
 	})

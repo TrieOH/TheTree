@@ -3,10 +3,11 @@ package authz
 import (
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
+	"context"
 	"encoding/json"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -35,24 +36,25 @@ type Principal struct {
 }
 
 func NewPrincipal(
+	ctx context.Context,
 	access *auth.AccessClaims,
 	refresh *auth.RefreshClaims,
 ) (*Principal, error) {
 	if access == nil {
-		return nil, fail.New(apierr.TokenMissingAccessClaims)
+		return nil, fail.New(apierr.TokenMissingAccessClaims).RecordCtx(ctx)
 	}
 	if refresh == nil {
-		return nil, fail.New(apierr.TokenMissingRefreshClaims)
+		return nil, fail.New(apierr.TokenMissingRefreshClaims).RecordCtx(ctx)
 	}
 
 	accessJTI, err := uuid.Parse(access.ID)
 	if err != nil {
-		return nil, fail.New(apierr.TokenAccessInvalidID).With(err)
+		return nil, fail.New(apierr.TokenAccessInvalidID).With(err).RecordCtx(ctx)
 	}
 
 	refreshJTI, err := uuid.Parse(refresh.ID)
 	if err != nil {
-		return nil, fail.New(apierr.TokenRefreshInvalidID).With(err)
+		return nil, fail.New(apierr.TokenRefreshInvalidID).With(err).RecordCtx(ctx)
 	}
 
 	return &Principal{

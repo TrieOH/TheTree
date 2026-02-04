@@ -2,7 +2,6 @@ package initialization
 
 import (
 	"GoAuth/internal/adapters/http/router"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/infrastructure/telemetry"
 	"context"
 	"log"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 )
 
 type GoauthApp struct {
@@ -27,9 +25,6 @@ func GoAuthSetup() *GoauthApp {
 	SetupFUN()
 	SetupDB(&app, "./internal/database/migrations")
 	SetupCron(app.DB, &app)
-
-	// DEPRECATED removed when migration to fail finishes
-	apierr.IncludeDebugCauses = viper.GetBool("INCLUDE_DEBUG_CAUSES")
 
 	return &app
 }

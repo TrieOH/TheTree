@@ -4,7 +4,7 @@ import (
 	"GoAuth/internal/apierr"
 	"strings"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 )
 
 // ObjectMatch checks if a request object matches a permission object pattern.

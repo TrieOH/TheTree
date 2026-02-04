@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,7 +42,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var identityType session.IdentityType
@@ -70,11 +70,11 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	if principal.SessionID == sessionID {
-		return fail.New(apierr.SessionSelfRevokeForbidden)
+		return fail.New(apierr.SessionSelfRevokeForbidden).RecordCtx(ctx)
 	}
 
 	var identityType session.IdentityType
@@ -87,7 +87,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	var sess *session.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
 	if fail.Is(err, apierr.SQLNotFound) {
-		return fail.New(apierr.SessionNotFound)
+		return fail.New(apierr.SessionNotFound).RecordCtx(ctx)
 	} else if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var identityType session.IdentityType
@@ -140,7 +140,7 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var identityType session.IdentityType
@@ -169,7 +169,7 @@ func (uc *UseCase) Me(ctx context.Context) (*inbounds.PrincipalOutput, error) {
 	defer span.End()
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 	return inbounds.PrincipalToPrincipalOutput(*principal), nil
 }

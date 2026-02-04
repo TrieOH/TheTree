@@ -4,7 +4,7 @@ import (
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 )
 
 type HTTPResponse struct {
@@ -16,12 +16,8 @@ type HTTPTranslator struct{}
 var (
 	CannotTranslateUnsupportedError = fail.ID(5, "TR", 0, false, "TRCannotTranslateUnsupportedError")
 	ErrCannotTranslate              = fail.Form(CannotTranslateUnsupportedError, "cannot translate unsupported error ID(%s) to http", true, nil, "MISSING ID")
-
-	CannotTranslateUntrustedError    = fail.ID(5, "TR", 1, false, "TRCannotTranslateUntrustedError")
-	ErrCannotTranslateUntrustedError = fail.Form(CannotTranslateUntrustedError, "cannot translate untrusted error to %s", true, nil, "MISSING DOMAIN")
-
-	CannotTranslateNilError    = fail.ID(5, "TR", 2, false, "TRCannotTranslateNilError")
-	ErrCannotTranslateNilError = fail.Form(CannotTranslateNilError, "cannot translate nil error to %s", true, nil, "MISSING DOMAIN")
+	CannotTranslateNilError         = fail.ID(5, "TR", 1, false, "TRCannotTranslateNilError")
+	ErrCannotTranslateNilError      = fail.Form(CannotTranslateNilError, "cannot translate nil error to %s", true, nil, "MISSING DOMAIN")
 )
 
 func HTTPResponseTranslator() *HTTPTranslator {
@@ -29,11 +25,8 @@ func HTTPResponseTranslator() *HTTPTranslator {
 }
 
 func (h *HTTPTranslator) Name() string { return "http" }
-func (h *HTTPTranslator) Supports(err *fail.Error) error {
-	if !err.IsTrusted() {
-		return fail.New(CannotTranslateUntrustedError).WithArgs("http").Render()
-	}
 
+func (h *HTTPTranslator) Supports(err *fail.Error) error {
 	if err == nil {
 		return fail.New(CannotTranslateNilError).WithArgs("http").Render()
 	}
@@ -51,10 +44,6 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 }
 
 func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
-	if spErr := h.Supports(err); spErr != nil {
-		return nil, err
-	}
-
 	traces := toStringSlice(err.Meta["traces"])
 	delete(err.Meta, "traces")
 
@@ -83,8 +72,6 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		err.Meta = map[string]any{}
 		code = 500
 	}
-
-	err.Record()
 
 	_ = err.Render()
 

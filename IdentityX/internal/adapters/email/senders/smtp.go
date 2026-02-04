@@ -11,7 +11,7 @@ import (
 	"net/smtp"
 	"net/textproto"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )

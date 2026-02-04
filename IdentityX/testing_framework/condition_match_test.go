@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 )
 
 func testConditions(t *testing.T) {

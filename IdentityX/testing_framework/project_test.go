@@ -45,7 +45,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 				"metadata":     map[string]string{"env": "test"},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
+			HasErrID(apierr.RequestValidationError).
 			ValidationError("project_name is required")
 	})
 
@@ -101,7 +101,7 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		// Try to GET project owned by first user
 		attackerClient.GET("/projects/" + projectID).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasErrID(apierr.SQLNotFound).
 			HasMessage("project not found")
 
 		// Try to UPDATE
@@ -110,13 +110,13 @@ func testProjects(t *testing.T, suite *TestSuite) {
 				"project_name": "Hacked",
 			}).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasErrID(apierr.SQLNotFound).
 			HasMessage("project not found")
 
 		// Try to DELETE
 		attackerClient.DELETE("/projects/" + projectID).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ID(apierr.ProjectNotFound.String())).
+			HasErrID(apierr.ProjectNotFound).
 			HasMessage("project not found")
 
 		// Ensure it was NOT actually deleted from the perspective of the owner
