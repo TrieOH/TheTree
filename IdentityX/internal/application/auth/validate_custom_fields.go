@@ -10,16 +10,19 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+)
+
+var (
+	validateMetadataTracer = otel.Tracer("validateMetadataTracer")
 )
 
 // validateAndConstructMetadata validates custom fields against a schema and returns structured metadata
 func (uc *UseCase) validateAndConstructMetadata(
 	ctx context.Context,
-	span trace.Span,
 	projectID uuid.UUID,
 	schemaType schema.Type,
 	flowID string,
@@ -29,6 +32,9 @@ func (uc *UseCase) validateAndConstructMetadata(
 	var err error
 	var registerSchema *schema.Schema
 
+	ctx, span := validateMetadataTracer.Start(ctx, "validateAndConstructMetadata")
+	defer span.End()
+
 	schemas := uc.deps.Schemas
 	versions := uc.deps.Versions
 	fields := uc.deps.Fields
@@ -37,19 +43,19 @@ func (uc *UseCase) validateAndConstructMetadata(
 		return nil, err
 	}
 
-	if err = registerSchema.CanRegister(); err != nil {
-		return nil, apierr.FromService(span, err)
+	if err = registerSchema.CanRegister(ctx); err != nil {
+		return nil, err
 	}
 	var registerVersion *version.Version
 	if registerVersion, err = versions.GetCurrent(ctx, registerSchema.ID); err != nil {
 		return nil, err
 	}
-	if err = registerVersion.CanRegister(); err != nil {
-		return nil, apierr.FromService(span, err)
+	if err = registerVersion.CanRegister(ctx); err != nil {
+		return nil, err
 	}
 
 	if ok = registerSchema.IsVersion(registerVersion.ID); !ok {
-		return nil, fail.New(apierr.SchemaVersionMismatch)
+		return nil, fail.New(apierr.SchemaVersionMismatch).RecordCtx(ctx)
 	}
 
 	var registerFields []field.Field
@@ -63,12 +69,12 @@ func (uc *UseCase) validateAndConstructMetadata(
 	}
 
 	var custom map[string]any
-	if custom, err = parseCustomFields(customFields); err != nil {
-		return nil, apierr.FromService(span, err)
+	if custom, err = parseCustomFields(ctx, customFields); err != nil {
+		return nil, err
 	}
 
 	var validated map[string]any
-	validated, err = validateFields(custom, fieldDefs, registerFields)
+	validated, err = validateFields(ctx, custom, fieldDefs, registerFields)
 	if err != nil {
 		return nil, err
 	}
@@ -88,16 +94,19 @@ func (uc *UseCase) validateAndConstructMetadata(
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
-		return nil, fail.New(apierr.ProjectUserErrorEncodingMetadata).With(err)
+		return nil, fail.New(apierr.ProjectUserErrorEncodingMetadata).With(err).RecordCtx(ctx)
 	}
 
 	rawMetadata := json.RawMessage(marshalledMetadata)
 	return &rawMetadata, nil
 }
 
-func validateFields(custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, error) {
+func validateFields(ctx context.Context, custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, error) {
+	ctx, span := validateMetadataTracer.Start(ctx, "validateFields")
+	defer span.End()
+
 	var errored bool
-	validationError := fail.New(apierr.FIELDValidationErrorOnSchemaRegister)
+	validationError := fail.New(apierr.FIELDValidationErrorOnSchemaRegister).RecordCtx(ctx)
 	validated := make(map[string]any)
 
 	// Build map of provided values (filter unknown fields, allow null for optional)
@@ -159,7 +168,7 @@ func validateFields(custom map[string]any, fieldDefs map[string]field.Field, reg
 			// Required field must be provided and not nil
 			if !wasProvided || isNil {
 				errored = true
-				_ = validationError.Trace(fail.New(apierr.FORMMissingRequiredField).WithArgs(f.Key).Render().Error())
+				_ = validationError.Trace(fail.New(apierr.FORMMissingRequiredField).WithArgs(f.Key).Render().Error()).RecordCtx(ctx)
 				continue
 			}
 		} else {
@@ -172,7 +181,7 @@ func validateFields(custom map[string]any, fieldDefs map[string]field.Field, reg
 		// 4. TYPE & OPTIONS VALIDATION
 		if ok := validateFieldValue(f, value); !ok {
 			errored = true
-			_ = validationError.Trace(fail.New(apierr.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error())
+			_ = validationError.Trace(fail.New(apierr.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error()).RecordCtx(ctx)
 			continue
 		}
 
@@ -393,12 +402,12 @@ func toFloat64(v interface{}) (float64, bool) {
 	}
 }
 
-func parseCustomFields(customFields *json.RawMessage) (custom map[string]any, err error) {
+func parseCustomFields(ctx context.Context, customFields *json.RawMessage) (custom map[string]any, err error) {
 	if customFields == nil {
-		return nil, fail.New(apierr.RequestMissingSchemaCustomFields)
+		return nil, fail.New(apierr.RequestMissingSchemaCustomFields).RecordCtx(ctx)
 	}
 	if err = json.Unmarshal(*customFields, &custom); err != nil {
-		return nil, fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err)
+		return nil, fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
 	}
 	return custom, nil
 }

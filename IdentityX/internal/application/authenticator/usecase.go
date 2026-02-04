@@ -9,7 +9,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -48,10 +48,10 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	sessions := uc.deps.Session
 
 	if in.AccessToken == "" {
-		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("access_token")
+		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
 	}
 	if in.RefreshToken == "" {
-		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("refresh_token")
+		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("refresh_token").RecordCtx(ctx)
 	}
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)
@@ -68,49 +68,46 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		return nil, err
 	}
 
-	if err = validateIssuers(in, accessToken, refreshToken); err != nil {
+	if err = validateIssuers(ctx, in, accessToken, refreshToken); err != nil {
 		return nil, err
 	}
 
 	refreshTokenJTI, err := validation.RequireRefreshJTI(&refreshToken.ID)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	accessTokenJTI, err := validation.RequireAccessJTI(&accessToken.ID)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	if accessTokenJTI != refreshToken.Sub.AccessJTI {
-		return nil, fail.New(apierr.TokenMismatchDuringAuth)
+		return nil, fail.New(apierr.TokenMismatchDuringAuth).RecordCtx(ctx)
 	}
 
 	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
 		if fail.Is(err, apierr.SQLNotFound) {
-			return nil, fail.New(apierr.SessionUnauthorized)
+			return nil, fail.New(apierr.SessionUnauthorized).RecordCtx(ctx)
 		}
 		return nil, err
 	}
 
 	if sess.SessionID != accessToken.Sub.SessionID {
-		return nil, fail.New(apierr.TokenSessionMismatch)
+		return nil, fail.New(apierr.TokenSessionMismatch).RecordCtx(ctx)
 	}
 
 	// FIXME add occurrence to the audit when its implemented
 	if sess.TokenID != refreshTokenJTI {
-		err = sessions.MarkRevokedByFamilyID(ctx, refreshToken.Sub.FamilyID)
-		if err != nil {
-			apierr.RecordDomainError(span, err)
-		}
-		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh")
+		_ = sessions.MarkRevokedByFamilyID(ctx, refreshToken.Sub.FamilyID)
+		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	if sess.RevokedAt != nil {
 		// should never happen due to query guarding against this, just being defensive
 		// system error for appropriate priority if it happens, since it should never happen
-		return nil, fail.New(apierr.SessionRevoked)
+		return nil, fail.New(apierr.SessionRevoked).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -120,28 +117,29 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	)
 
 	var principal *authz.Principal
-	principal, err = authz.NewPrincipal(accessToken, refreshToken)
+	principal, err = authz.NewPrincipal(ctx, accessToken, refreshToken)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 	return principal, nil
 }
 
 func validateIssuers(
+	ctx context.Context,
 	in inbounds.AuthenticateRequestInput,
 	access *auth.AccessClaims,
 	refresh *auth.RefreshClaims,
 ) error {
 	if access.Sub.ProjectID != nil {
 		if access.Issuer != access.Sub.ProjectID.String() {
-			return fail.New(apierr.TokenInvalidIssuer).WithArgs("access")
+			return fail.New(apierr.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 		}
 	} else if access.Issuer != in.Issuer {
-		return fail.New(apierr.TokenInvalidIssuer).WithArgs("access")
+		return fail.New(apierr.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 	}
 
 	if refresh.Issuer != in.Issuer {
-		return fail.New(apierr.TokenInvalidIssuer).WithArgs("refresh")
+		return fail.New(apierr.TokenInvalidIssuer).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	return nil

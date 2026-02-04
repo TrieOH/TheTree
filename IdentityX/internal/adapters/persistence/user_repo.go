@@ -7,7 +7,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -59,7 +59,7 @@ func (repo *userRepo) Register(ctx context.Context, email, password string) (*us
 	})
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -85,7 +85,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -106,7 +106,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.U
 	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, email)
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -131,7 +131,7 @@ func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error
 
 	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))

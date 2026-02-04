@@ -26,7 +26,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + rid.String() + "/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SchemaNotOwnedByPrincipal.String())).
+			HasErrID(apierr.SchemaNotOwnedByPrincipal).
 			HasMessage("cannot publish a schema you don't own")
 	})
 
@@ -92,7 +92,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "estudante",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.SchemaFlowIDAlreadyExistsInType.String())).
+			HasErrID(apierr.SchemaFlowIDAlreadyExistsInType).
 			HasMessage("schema with this flow ID already exists in this type")
 	})
 
@@ -105,7 +105,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "none",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaFlowIDIsReserved.String())).
+			HasErrID(apierr.SchemaFlowIDIsReserved).
 			HasMessage("flow id can't be the reserved keyword 'none'")
 	})
 
@@ -118,7 +118,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "context",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaInvalidFlowID.String())).
+			HasErrID(apierr.SchemaInvalidFlowID).
 			HasMessage("flow id can't be the same as a schema type")
 	})
 
@@ -133,7 +133,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					"flow_id":     "test",
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ID(apierr.RequestValidationError.String())).
+				HasErrID(apierr.RequestValidationError).
 				ValidationError("schema_type must be one of: core, context, sub-context")
 		})
 
@@ -146,7 +146,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 					"flow_id":     longFlowID,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.ID(apierr.RequestValidationError.String())).
+				HasErrID(apierr.RequestValidationError).
 				ValidationError("flow_id must be at most 63 characters long")
 		})
 	})
@@ -155,7 +155,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SCHEMANoPublishedVersion.String())).
+			HasErrID(apierr.SCHEMANoPublishedVersion).
 			HasMessage("cannot publish a schema with no versions")
 	})
 
@@ -163,7 +163,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SchemaVersionDraftDoesntExist.String())).
+			HasErrID(apierr.SchemaVersionDraftDoesntExist).
 			HasMessage("cannot publish a schema with a version draft that doesn't exist")
 	})
 
@@ -206,7 +206,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaHasOnlyDraftVersion.String())).
+			HasErrID(apierr.SchemaHasOnlyDraftVersion).
 			HasMessage("cannot publish a schema with only draft versions")
 	})
 
@@ -214,7 +214,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaVersionDraftOnNonPublished.String())).
+			HasErrID(apierr.SchemaVersionDraftOnNonPublished).
 			HasMessage("new versions can only be drafted from published versions")
 	})
 
@@ -222,7 +222,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaVersionPublishWithNoFields.String())).
+			HasErrID(apierr.SchemaVersionPublishWithNoFields).
 			HasMessage("cannot publish a schema version with no fields")
 	})
 
@@ -256,7 +256,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.FIELDSamePositionForMultipleFields.String())).
+			HasErrID(apierr.FIELDSamePositionForMultipleFields).
 			HasMessage("two fields can't occupy the same position")
 	})
 
@@ -290,7 +290,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -352,7 +352,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SchemaVersionTryingToPublishPublished.String())).
+			HasErrID(apierr.SchemaVersionTryingToPublishPublished).
 			HasMessage("cannot publish a schema version that is already published")
 	})
 
@@ -367,7 +367,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SchemaTryingToPublishPublished.String())).
+			HasErrID(apierr.SchemaTryingToPublishPublished).
 			HasMessage("cannot publish a schema that is already published")
 	})
 
@@ -410,7 +410,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.SchemaVersionNoChanges.String())).
+			HasErrID(apierr.SchemaVersionNoChanges).
 			HasMessage("cannot publish a version with no changes")
 	})
 
@@ -432,7 +432,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.FIELDInvalidCharactersInKey.String())).
+			HasErrID(apierr.FIELDInvalidCharactersInKey).
 			HasMessage("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores")
 	})
 
@@ -493,7 +493,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -515,7 +515,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.FIELDSameKeyForMultipleFields.String())).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -1351,7 +1351,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			WithQuery("flow_id", "scti-register").
 			WithQuery("schema_type", "core").
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ID(apierr.SQLNotFound.String())).
+			HasErrID(apierr.SQLNotFound).
 			HasMessage("schema not found")
 	})
 
@@ -1360,7 +1360,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
 			WithQuery("schema_type", "context").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.RequestMissingQueryParam.String())).
+			HasErrID(apierr.RequestMissingQueryParam).
 			HasMessage("missing query parameter: flow_id")
 	})
 
@@ -1380,31 +1380,31 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"flow_id":     "forbidden",
 			}).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.AuthNotClient.String())).
+			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Publish
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.AuthNotClient.String())).
+			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Get
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.AuthNotClient.String())).
+			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try GetVerbose
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.AuthNotClient.String())).
+			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 
 		// Try Draft Version
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.AuthNotClient.String())).
+			HasErrID(apierr.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
 	})
 }

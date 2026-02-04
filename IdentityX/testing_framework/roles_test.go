@@ -106,7 +106,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "admin",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.ROLENameAlreadyTaken.String())). // FIXME make the error "role name 'NAME' already taken"
+			HasErrID(apierr.ROLENameAlreadyTaken). // FIXME make the error "role name 'NAME' already taken"
 			HasMessage("role name already taken")
 	})
 
@@ -165,7 +165,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "",
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.RequestValidationError.String())).
+			HasErrID(apierr.RequestValidationError).
 			HasMessage("Validation failed").
 			TraceContains("name is required")
 	})
@@ -174,7 +174,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/roles/search").
 			WithQuery("something_else", "should_fail").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.RequestUnknownQueryParam.String())).
+			HasErrID(apierr.RequestUnknownQueryParam).
 			HasMessage("unknown query parameter: something_else")
 	})
 
@@ -837,7 +837,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
+			HasErrID(apierr.ROLEAlreadyGranted).
 			HasMessage("scopeless role already granted to user")
 	})
 
@@ -848,7 +848,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": eventScopeID,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
+			HasErrID(apierr.ROLEAlreadyGranted).
 			HasMessage("scopeless role already granted to user")
 	})
 
@@ -859,7 +859,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": activityScopeID,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
+			HasErrID(apierr.ROLEAlreadyGranted).
 			HasMessage("scopeless role already granted to user")
 	})
 
@@ -870,7 +870,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id": activitySubScopeID,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.ID(apierr.ROLEAlreadyGranted.String())).
+			HasErrID(apierr.ROLEAlreadyGranted).
 			HasMessage("scopeless role already granted to user")
 	})
 
@@ -913,7 +913,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id":      nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.ID(apierr.PERMissionAlreadyGranted.String())).
+			HasErrID(apierr.PERMissionAlreadyGranted).
 			HasMessage("user already has this permission in the specified scope")
 	})
 

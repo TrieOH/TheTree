@@ -45,7 +45,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Can't revoke current session
 		user4.DELETE("/sessions/" + currentSessionID).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.ID(apierr.SessionSelfRevokeForbidden.String())).
+			HasErrID(apierr.SessionSelfRevokeForbidden).
 			HasMessage("cannot revoke the currently active session")
 
 		// Revoke first session
@@ -123,7 +123,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Session should be invalid
 		user.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SessionRevoked.String())).
+			HasErrID(apierr.SessionRevoked).
 			HasMessage("session not found or revoked")
 	})
 

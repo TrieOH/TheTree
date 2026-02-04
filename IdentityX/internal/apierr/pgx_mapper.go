@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -17,15 +17,7 @@ type PGXMapper struct {
 func (m *PGXMapper) Name() string  { return m.name }
 func (m *PGXMapper) Priority() int { return m.priority }
 
-func (m *PGXMapper) Map(err error) (error, bool) {
-	return m.MapToFail(err)
-}
-
-func (m *PGXMapper) MapFromFail(fe *fail.Error) (error, bool) {
-	return errors.New(fe.Message), true
-}
-
-func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
+func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 	if IsNotFoundNew(err) {
 		return fail.New(SQLNotFound), true
 	}
@@ -58,8 +50,13 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 				return fail.New(ROLEAlreadyGranted).Debug(err.Error()), true
 			case "identity_permissions_identity_id_permission_id_scope_id_key":
 				return fail.New(PERMissionAlreadyGranted).Debug(err.Error()), true
+			case "scopes_one_global":
+				return fail.New(SCOPEOneGlobal).Debug(err.Error()), true
+			case "scopes_one_project_root_per_project":
+				return fail.New(SCOPEOneProjectRootPerProject).Debug(err.Error()), true
 			default:
-				return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true
+				panic(err.Error())
+				//return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true
 			}
 		case "23514": // check_violation
 			defer func() {
@@ -78,18 +75,18 @@ func (m *PGXMapper) MapToFail(err error) (fe *fail.Error, ok bool) {
 			case "project_users_project_id_fkey":
 				return fail.New(ProjectUserRegisterOnNoneProject).Debug(err.Error()), true
 			}
-			return fail.New(SQLForeignKeyViolation).With(err), true
+			return fail.New(SQLForeignKeyViolation).With(err).Debug(err.Error()), true
 		case "23502":
-			return fail.New(SQLNotNULLViolation).With(err), true
+			return fail.New(SQLNotNULLViolation).With(err).Debug(err.Error()), true
 		case "22001":
-			return fail.New(SQLValueTooLong).With(err), true // data
+			return fail.New(SQLValueTooLong).With(err).Debug(err.Error()), true // data
 		case "40001":
-			return fail.New(SQLSerializationFailure).With(err), true // concurrency
+			return fail.New(SQLSerializationFailure).With(err).Debug(err.Error()), true // concurrency
 		case "08006", "08001", "08004":
-			return fail.New(SQLDBConnectionError).With(err), true // connection
+			return fail.New(SQLDBConnectionError).With(err).Debug(err.Error()), true // connection
 		}
 
-		return fail.New(SQLUnknownError).With(err), true
+		return fail.New(SQLUnknownError).With(err).Debug(err.Error()), true
 	}
 
 	return nil, false
@@ -109,6 +106,10 @@ func IsUniqueViolationNew(err error) bool {
 			isUnique, ok := fe.Meta["is_unique_violation"]
 			if ok {
 				return isUnique.(bool)
+			}
+			isConflict, ok := fe.Meta["code"].(int)
+			if ok && isConflict == 409 {
+				return true
 			}
 		}
 	}

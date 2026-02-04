@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"GoAuth/internal/adapters/http/utils"
 	"GoAuth/internal/apierr"
 	appauth "GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
@@ -10,7 +9,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -43,6 +42,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
+			var rs *resp.Response
 			var err error
 			defer func() {
 				span.SetAttributes(attribute.Bool("success", err == nil))
@@ -52,16 +52,20 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			accessTokenCookie, err = r.Cookie("access_token")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					rs, ok := utils.Sender(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error()), "AuthMw", w)
-					if ok {
-						rs.Send(w)
+					rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error()).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
+						return
 					}
+					rs.WithModule("AuthMW").Send(w)
 					return
 				}
-				rs, ok := utils.Sender(fail.New(apierr.AuthInvalidAccessCookie).Trace(err.Error()), "AuthMW", w)
-				if ok {
-					rs.Send(w)
+				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthInvalidAccessCookie).Trace(err.Error()).RecordCtx(ctx), "http")
+				if err != nil {
+					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
+					return
 				}
+				rs.WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -69,16 +73,20 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			refreshTokenCookie, err = r.Cookie("refresh_token")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					rs, ok := utils.Sender(fail.New(apierr.AuthMissingRefreshCookie).Trace(err.Error()), "AuthMW", w)
-					if ok {
-						rs.Send(w)
+					rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthMissingRefreshCookie).Trace(err.Error()).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
+						return
 					}
+					rs.WithModule("AuthMW").Send(w)
 					return
 				}
-				rs, ok := utils.Sender(fail.New(apierr.AuthInvalidRefreshCookie).Trace(err.Error()), "AuthMW", w)
-				if ok {
-					rs.Send(w)
+				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthInvalidRefreshCookie).Trace(err.Error()).RecordCtx(ctx), "http")
+				if err != nil {
+					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
+					return
 				}
+				rs.WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -91,7 +99,12 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			var principal *authz.Principal
 			principal, err = mw.authenticator.AuthenticateRequest(ctx, in)
 			if err != nil {
-				resp.FromError(err).WithModule("AuthMW").Send(w)
+				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()), "http")
+				if err != nil {
+					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
+					return
+				}
+				rs.WithModule("AuthMW").Send(w)
 				return
 			}
 

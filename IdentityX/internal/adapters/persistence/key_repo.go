@@ -7,7 +7,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -89,7 +89,7 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair key.Pair) (*key.Pai
 		ExpiresAt:  pair.ExpiresAt,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	mapKeyPairFromDB(&pair, &row)
@@ -101,7 +101,7 @@ func (repo *keyRepo) RotateGoAuthSigningKeys(ctx context.Context) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).RotateSigningKeysForGoAuth(ctx); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -114,7 +114,7 @@ func (repo *keyRepo) RotateProjectSigningKeys(ctx context.Context, projectID uui
 	defer span.End()
 
 	if err := repo.queries(ctx).RotateSigningKeysForProject(ctx, &projectID); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -126,7 +126,7 @@ func (repo *keyRepo) GetActiveGoAuthSigningKey(ctx context.Context) (*key.Pair, 
 
 	row, err := repo.queries(ctx).GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var pair key.Pair
@@ -142,7 +142,7 @@ func (repo *keyRepo) GetActiveProjectSigningKey(ctx context.Context, projectID u
 
 	row, err := repo.queries(ctx).GetActiveSigningKeyForProject(ctx, &projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var pair key.Pair
@@ -158,7 +158,7 @@ func (repo *keyRepo) GetGoAuthKeyByKID(ctx context.Context, kid string) (*key.Pa
 
 	row, err := repo.queries(ctx).GetGoAuthKeyByKID(ctx, kid)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var pair key.Pair
@@ -174,7 +174,7 @@ func (repo *keyRepo) GetProjectKeyByKID(ctx context.Context, kid string) (*key.P
 
 	row, err := repo.queries(ctx).GetProjectKeyByKID(ctx, kid)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var pair key.Pair
@@ -188,7 +188,7 @@ func (repo *keyRepo) ListGoAuthPublicKeys(ctx context.Context) ([]key.PublicKey,
 
 	rows, err := repo.queries(ctx).ListActivePublicKeysForGoAuth(ctx)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	keys := make([]key.PublicKey, 0, len(rows))
@@ -209,7 +209,7 @@ func (repo *keyRepo) ListProjectPublicKeys(ctx context.Context, projectID uuid.U
 
 	rows, err := repo.queries(ctx).ListActivePublicKeysForProject(ctx, &projectID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	keys := make([]key.PublicKey, 0, len(rows))
@@ -229,7 +229,7 @@ func (repo *keyRepo) RevokeKeyByKID(ctx context.Context, kid string) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).RevokeKeyByKID(ctx, kid); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -240,7 +240,7 @@ func (repo *keyRepo) DeleteExpiredRevokedKeys(ctx context.Context) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).DeleteExpiredRevokedKeys(ctx); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -252,7 +252,7 @@ func (repo *keyRepo) GetActiveGoAuthSigningKID(ctx context.Context) (string, err
 
 	kid, err := repo.queries(ctx).GetActiveGoAuthSigningKID(ctx)
 	if err != nil {
-		return "", fail.From(err)
+		return "", fail.From(err).RecordCtx(ctx)
 	}
 
 	return kid, nil
@@ -268,7 +268,7 @@ func (repo *keyRepo) GetActiveProjectSigningKID(ctx context.Context, projectID u
 
 	kid, err := repo.queries(ctx).GetActiveProjectSigningKID(ctx, &projectID)
 	if err != nil {
-		return "", fail.From(err)
+		return "", fail.From(err).RecordCtx(ctx)
 	}
 
 	return kid, nil

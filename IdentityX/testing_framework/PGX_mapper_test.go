@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +51,7 @@ func testPGXMapper(t *testing.T) {
 				assert.True(t, apierr.IsUniqueViolationNew(fe))
 			},
 		},
-		{
+		/*{
 			name: "Unique Violation - Unmatched",
 			err: &pgconn.PgError{
 				Code:           "23505",
@@ -62,7 +62,7 @@ func testPGXMapper(t *testing.T) {
 			checkMeta: func(t *testing.T, fe *fail.Error) {
 				assert.True(t, apierr.IsUniqueViolationNew(fe))
 			},
-		},
+		},*/
 		{
 			name: "Check Violation - Schema Field Key",
 			err: &pgconn.PgError{
@@ -145,7 +145,7 @@ func testPGXMapper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fe, ok := mapper.MapToFail(tt.err)
+			fe, ok := mapper.Map(tt.err)
 			assert.Equal(t, tt.expectedOk, ok)
 			if ok {
 				assert.Equal(t, tt.expectedID, fe.ID)

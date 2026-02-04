@@ -3,9 +3,11 @@ package apierr
 import (
 	"errors"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+// FIXME transform this into a fail.Mapper
 
 func FromJWTError(err error, tokenType string) error {
 	if err == nil {

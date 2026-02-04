@@ -19,7 +19,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 				"password": "WrongPass123!",
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.AuthInvalidCredentials.String())).
+			HasErrID(apierr.AuthInvalidCredentials).
 			HasMessage("invalid email or password")
 	})
 
@@ -31,7 +31,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 				"password": user.password,
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.AuthInvalidCredentials.String())).
+			HasErrID(apierr.AuthInvalidCredentials).
 			HasMessage("invalid email or password")
 	})
 
@@ -48,7 +48,7 @@ func testLogin(t *testing.T, suite *TestSuite) {
 		// Try using revoked session
 		loggedInUser.POST("/auth/logout").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.ID(apierr.SessionRevoked.String())).
+			HasErrID(apierr.SessionRevoked).
 			HasMessage("session not found or revoked")
 	})
 }

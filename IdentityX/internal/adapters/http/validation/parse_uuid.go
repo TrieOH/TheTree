@@ -3,7 +3,7 @@ package validation
 import (
 	"GoAuth/internal/apierr"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 

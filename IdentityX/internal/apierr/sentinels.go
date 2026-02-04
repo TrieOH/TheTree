@@ -1,6 +1,6 @@
 package apierr
 
-import "github.com/MintzyG/fail"
+import "github.com/MintzyG/fail/v3"
 
 var (
 	// ------ REQ ------
@@ -57,7 +57,7 @@ var (
 					AddLocalization("pt-BR", "senha inválida")
 
 	// ------ AUTH ------
-	ErrAuthEmailAlreadyUsed = fail.Form(AuthEmailAlreadyUsed, "error registering user", false, map[string]any{"code": 409}).
+	ErrAuthEmailAlreadyUsed = fail.Form(AuthEmailAlreadyUsed, "email already in use", false, map[string]any{"code": 409}).
 				AddLocalizations(map[string]string{
 			"pt-BR": "erro ao registrar o usuário",
 		})
@@ -391,6 +391,8 @@ var (
 							AddLocalizations(map[string]string{
 			"pt-BR": "não é possível publicar uma versão inexistente",
 		})
+	ErrSchemaVersionNotPublished = fail.Form(SchemaVersionNotPublished, "version is not published", false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", "versão não foi publicada")
 
 	// ------ FIELD ------
 	ErrFieldValidationErrorOnSchemaRegister = fail.Form(FIELDValidationErrorOnSchemaRegister, "error validating form for schema register", false, map[string]any{"code": 400}).
@@ -497,6 +499,10 @@ var (
 					AddLocalization("pt-BR", ScopeInvalidShapeErrorMessageBR)
 	ErrScopeEmptyName = fail.Form(SCOPEEmptyName, "scope name cannot be empty", false, map[string]any{"code": 400}).
 				AddLocalization("pt-BR", "nome do escopo não pode estar vazio")
+	ErrSCOPEOneGlobal = fail.Form(SCOPEOneGlobal, "only one global scope may exist", true, map[string]any{"code": 409}).
+				AddLocalization("pt-BR", "apenas um escopo global deve existir")
+	ErrSCOPEOneProjectRootPerProject = fail.Form(SCOPEOneProjectRootPerProject, "only one project_root scope may exist per project", true, map[string]any{"code": 409}).
+						AddLocalization("pt-BR", "apenas um escopo raiz de projeto deve existir por projeto")
 
 	// ------ PERM ------
 	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").
@@ -520,6 +526,8 @@ var (
 
 	ErrInsufficientPermission = fail.Form(PERMissionInsufficient, "insufficient permissions", false, map[string]any{"code": 403}).
 					AddLocalization("pt-BR", "permissões insuficientes")
+	ErrPermissionNoResource = fail.Form(PERMissionNoResource, "can't check permission(%s) conditions without resource", false, map[string]any{"code": 403}, "PERMISSION ID NOT SET").
+				AddLocalization("pt-BR", "não é possível verificar as condições da permissão(%s) sem o recurso")
 
 	// EMAIL
 	ErrEMAILTemplateNotFound = fail.Form(EMAILTemplateNotFound, "%s %s template not found", false, map[string]any{"code": 500}, "KEY NOT SET", "TYPE NOT SET").

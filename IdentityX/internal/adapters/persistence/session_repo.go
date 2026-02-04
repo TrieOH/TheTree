@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -81,7 +81,7 @@ func (repo *sessionRepo) Create(ctx context.Context, toCreate session.Session) (
 	})
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("session.user_type", sqlcSession.UserType))
@@ -113,7 +113,7 @@ func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*ses
 	sqlcSession, err := repo.queries(ctx).GetUserSessionByID(ctx, sessionID)
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -142,7 +142,7 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 	sqlcSession, err := repo.queries(ctx).GetUserSessionByTokenID(ctx, tokenID)
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -170,7 +170,7 @@ func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) 
 
 	sqlcSession, err := repo.queries(ctx).GetSessionByFamilyID(ctx, familyID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("session.session_id", sqlcSession.SessionID.String()))
@@ -198,7 +198,7 @@ func (repo *sessionRepo) List(ctx context.Context, entityID uuid.UUID, identityT
 	})
 
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("sessions.count", len(sqlcSessions)))
@@ -235,7 +235,7 @@ func (repo *sessionRepo) Update(ctx context.Context, toUpdate session.Session, e
 	})
 
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -258,7 +258,7 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, ne
 		FamilyID:   familyID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -285,7 +285,7 @@ func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, entityID uuid.UUID
 		EntityID:  entityID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var revokedSession session.Session
@@ -302,7 +302,7 @@ func (repo *sessionRepo) MarkRevokedByFamilyID(ctx context.Context, familyID uui
 	defer span.End()
 
 	if err := repo.queries(ctx).RevokeSessionByFamilyID(ctx, familyID); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -335,7 +335,7 @@ func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter session
 	}
 
 	if err != nil {
-		return 0, fail.From(err)
+		return 0, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("revoke.count", len(sqlcSessions)))
@@ -358,7 +358,7 @@ func (repo *sessionRepo) CreateIdentity(ctx context.Context, identityType sessio
 		EntityID: entityID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("identity_id", sqlcIdentity.ID.String()))
@@ -382,7 +382,7 @@ func (repo *sessionRepo) GetIdentityByEntityIDAndType(ctx context.Context, entit
 		EntityID: entityID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("identity_id", sqlcIdentity.ID.String()))
@@ -406,7 +406,7 @@ func (repo *sessionRepo) GetIdentityByIDAndType(ctx context.Context, identityID 
 		ID:   identityID,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var foundIdentity session.Identity

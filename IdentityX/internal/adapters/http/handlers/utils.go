@@ -13,11 +13,13 @@ import (
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
+
+// FIXME make these errors go into either logs or spans
 
 func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 	IDStr := chi.URLParam(r, fieldName)

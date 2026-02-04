@@ -2,10 +2,11 @@ package permissions
 
 import (
 	"GoAuth/internal/apierr"
+	"context"
 	"regexp"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -24,31 +25,31 @@ var (
 	actionRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z0-9_]+(?::(?:[a-zA-Z0-9_]+|\*))*(?::\*\*)?)$`)
 )
 
-func ValidateObject(object string) error {
+func ValidateObject(ctx context.Context, object string) error {
 	if object == "" {
-		return fail.New(apierr.PERMissionInvalidObject).WithArgs("(empty)")
+		return fail.New(apierr.PERMissionInvalidObject).WithArgs("(empty)").RecordCtx(ctx)
 	}
 	if !objectRegex.MatchString(object) {
-		return fail.New(apierr.PERMissionInvalidObject).WithArgs(object)
+		return fail.New(apierr.PERMissionInvalidObject).WithArgs(object).RecordCtx(ctx)
 	}
 	return nil
 }
 
-func ValidateAction(action string) error {
+func ValidateAction(ctx context.Context, action string) error {
 	if action == "" {
-		return fail.New(apierr.PERMissionInvalidAction).WithArgs("(empty)")
+		return fail.New(apierr.PERMissionInvalidAction).WithArgs("(empty)").RecordCtx(ctx)
 	}
 	if !actionRegex.MatchString(action) {
-		return fail.New(apierr.PERMissionInvalidAction).WithArgs(action)
+		return fail.New(apierr.PERMissionInvalidAction).WithArgs(action).RecordCtx(ctx)
 	}
 	return nil
 }
 
-func ValidatePermission(object, action string) error {
-	if err := ValidateObject(object); err != nil {
+func ValidatePermission(ctx context.Context, object, action string) error {
+	if err := ValidateObject(ctx, object); err != nil {
 		return err
 	}
-	if err := ValidateAction(action); err != nil {
+	if err := ValidateAction(ctx, action); err != nil {
 		return err
 	}
 	return nil

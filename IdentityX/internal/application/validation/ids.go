@@ -3,9 +3,11 @@ package validation
 import (
 	"GoAuth/internal/apierr"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
+
+// FIXME make these accept ctx and log to span
 
 func ParseRefreshJTI(refreshJTI string) (uuid.UUID, error) {
 	jti, err := uuid.Parse(refreshJTI)

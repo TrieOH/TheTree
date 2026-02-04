@@ -3,7 +3,6 @@ package testing
 import (
 	"GoAuth/initialization"
 	"GoAuth/internal/adapters/http/router"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/application"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 )
 
 // ============================================================================
@@ -46,9 +44,6 @@ func (s *TestSuite) setup() {
 	initialization.SetupDB(&goAuth, "../internal/database/migrations")
 
 	s.DB = goAuth.DB
-
-	// DEPRECATED removed when migration to fail finishes
-	apierr.IncludeDebugCauses = viper.GetBool("INCLUDE_DEBUG_CAUSES")
 
 	r, app := createTestRouter(s.DB)
 	s.App = app

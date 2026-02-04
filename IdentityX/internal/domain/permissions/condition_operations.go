@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 )
+
+// FIXME make these accept ctx and record to span
 
 // ValidateCondition validates a condition structure recursively
 func ValidateCondition(c Condition) error {

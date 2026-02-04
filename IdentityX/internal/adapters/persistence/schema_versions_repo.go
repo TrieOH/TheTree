@@ -8,7 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -63,7 +63,7 @@ func (repo *schemaVersionRepo) Draft(ctx context.Context, toDraft version.Versio
 		Version:  toDraft.VersionNumber,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("version.id", sqlcSchemaVersion.ID.String()))
@@ -87,7 +87,7 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish version.Ve
 		SchemaID: toPublish.SchemaID,
 	})
 	if err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	if affectedRows == 0 {
@@ -110,7 +110,7 @@ func (repo *schemaVersionRepo) Archive(ctx context.Context, toArchive version.Ve
 		ID:       toArchive.ID,
 		SchemaID: toArchive.SchemaID,
 	}); err != nil {
-		return fail.From(err)
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -126,7 +126,7 @@ func (repo *schemaVersionRepo) GetByID(ctx context.Context, versionID uuid.UUID)
 
 	sqlcVersion, err := repo.queries(ctx).GetVersionByID(ctx, versionID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var found version.Version
@@ -144,7 +144,7 @@ func (repo *schemaVersionRepo) GetCurrent(ctx context.Context, schemaID uuid.UUI
 
 	sqlcVersion, err := repo.queries(ctx).GetCurrentSchemaVersion(ctx, schemaID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var currentSchemaVersion version.Version
@@ -162,7 +162,7 @@ func (repo *schemaVersionRepo) GetLatest(ctx context.Context, schemaID uuid.UUID
 
 	latest, err := repo.queries(ctx).GetLatestSchemaVersion(ctx, schemaID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var found version.Version
@@ -180,7 +180,7 @@ func (repo *schemaVersionRepo) GetLatestForUpdate(ctx context.Context, schemaID 
 
 	latest, err := repo.queries(ctx).GetLatestSchemaVersionForUpdate(ctx, schemaID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var found version.Version
@@ -198,7 +198,7 @@ func (repo *schemaVersionRepo) List(ctx context.Context, schemaID uuid.UUID) ([]
 
 	sqlcVersions, err := repo.queries(ctx).ListSchemaVersion(ctx, schemaID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("schema.count", len(sqlcVersions)))
@@ -223,7 +223,7 @@ func (repo *schemaVersionRepo) CopyOnDraft(ctx context.Context, schemaVersionID 
 
 	sqlcVersion, err := repo.queries(ctx).CopyVersionOnDraft(ctx, schemaVersionID)
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var copied version.Version
@@ -245,7 +245,7 @@ func (repo *schemaVersionRepo) GetByVersionNumber(ctx context.Context, schemaID 
 		Version:  versionNumber,
 	})
 	if err != nil {
-		return nil, fail.From(err)
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var found version.Version
@@ -261,7 +261,7 @@ func (repo *schemaVersionRepo) HasFields(ctx context.Context, versionID uuid.UUI
 
 	hasFields, err := repo.queries(ctx).VersionHasFields(ctx, versionID)
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("has_fields", hasFields))
@@ -276,7 +276,7 @@ func (repo *schemaVersionRepo) Exists(ctx context.Context, id uuid.UUID) (bool, 
 
 	exists, err := repo.queries(ctx).SchemaVersionExists(ctx, id)
 	if err != nil {
-		return false, fail.From(err)
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("exists", exists))

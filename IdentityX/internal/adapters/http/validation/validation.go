@@ -10,10 +10,12 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/MintzyG/fail"
+	"github.com/MintzyG/fail/v3"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
+
+// FIXME make these errors either go into spans or logs
 
 var validate = validator.New()
 
