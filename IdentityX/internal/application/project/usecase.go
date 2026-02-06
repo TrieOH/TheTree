@@ -2,8 +2,8 @@ package project
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
 	"GoAuth/internal/crypto"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/domain/scopes"
@@ -75,7 +75,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.createInternal")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
@@ -152,7 +152,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID uuid.UUID) (*inbounds.
 	)
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (uc *UseCase) Delete(ctx context.Context, projectID uuid.UUID) error {
 	)
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}

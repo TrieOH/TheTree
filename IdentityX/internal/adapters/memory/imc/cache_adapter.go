@@ -1,4 +1,4 @@
-package memory
+package imc
 
 import (
 	"GoAuth/internal/ports/outbounds"
@@ -28,6 +28,18 @@ func (c *InMemoryCache) Set(ctx context.Context, key string, value any, ttl time
 
 func (c *InMemoryCache) Delete(ctx context.Context, key string) {
 	c.lru.Remove(key)
+}
+
+func (c *InMemoryCache) DeleteByPrefix(ctx context.Context, prefix string) {
+	c.lru.mu.Lock()
+	defer c.lru.mu.Unlock()
+
+	for key, elem := range c.lru.cache {
+		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
+			c.lru.list.Remove(elem)
+			delete(c.lru.cache, key)
+		}
+	}
 }
 
 func (c *InMemoryCache) Clear(ctx context.Context) {

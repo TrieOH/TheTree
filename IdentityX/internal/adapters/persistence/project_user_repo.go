@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -303,6 +304,26 @@ func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectI
 	}
 
 	span.SetAttributes(attribute.Bool("project_user.deleted", true))
+
+	return nil
+}
+
+func (repo *projectUserRepo) UpdateMetadata(ctx context.Context, userID, projectID uuid.UUID, metadata *json.RawMessage) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.UpdateMetadata",
+		trace.WithAttributes(
+			attribute.String("project.project_id", projectID.String()),
+			attribute.String("project_user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).UpdateProjectUserMetadata(ctx, sqlc.UpdateProjectUserMetadataParams{
+		ID:        userID,
+		ProjectID: projectID,
+		Metadata:  *metadata,
+	}); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
 
 	return nil
 }

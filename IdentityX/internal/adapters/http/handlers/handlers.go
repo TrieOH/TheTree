@@ -18,7 +18,7 @@ type HandlerBundle struct {
 
 func New(app *application.Application) *HandlerBundle {
 	return &HandlerBundle{
-		AuthHandler:          NewAuthHandler(app.Auth),
+		AuthHandler:          NewAuthHandler(app.Auth, app.Schema),
 		ProjectHandler:       NewProjectHandler(app.Project),
 		SessionHandler:       NewSessionHandler(app.Session),
 		SchemaHandler:        NewSchemaHandler(app.Schema),

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
@@ -74,4 +75,39 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	}
 	log.Println("Migrations applied successfully")
 	return nil
+}
+
+func WaitForRedis(timeout time.Duration) (*redis.Client, error) {
+	addr := viper.GetString("REDIS_ADDR")
+	if addr == "" {
+		log.Fatal("REDIS_ADDR variable not set")
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: viper.GetString("REDIS_PASSWORD"),
+		DB:       viper.GetInt("REDIS_DB"),
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	deadline := time.Now().Add(timeout)
+	attempt := 0
+
+	for {
+		attempt++
+		log.Printf("waiting for redis... attempt %d\n", attempt)
+
+		if err := rdb.Ping(ctx).Err(); err == nil {
+			log.Printf("redis connected on attempt %d\n", attempt)
+			return rdb, nil
+		}
+
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("redis connection timeout after %d attempts", attempt)
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }
