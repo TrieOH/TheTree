@@ -65,7 +65,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasMessage("invalid reference")
+				HasMessage("can't register on a non existant project")
 		})
 
 		t.Run("ValidationProjectRegister", func(t *testing.T) {
@@ -112,8 +112,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 				}).
 				Expect(http.StatusConflict).
 				HasErrID(apierr.AuthEmailAlreadyUsed).
-				HasMessage("error registering user").
-				TraceContains("email already in use")
+				HasMessage("email already in use")
 		})
 
 		t.Run("InvalidSchemaTypeRegister", func(t *testing.T) {

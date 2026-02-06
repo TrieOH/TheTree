@@ -5,22 +5,34 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail/v3"
 )
 
 func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx, span := MwTracer.Start(ctx, "RequireQueryParams")
+			defer span.End()
 			q := r.URL.Query()
 
 			for _, p := range params {
 				if !q.Has(p) {
-					err := apierr.ErrInvalidInput.WithMsg("missing query parameter: " + p).WithID(apierr.RequestMissingQueryParam)
-					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestMissingQueryParam).WithArgs(p).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("RequireQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					err := apierr.ErrInvalidInput.WithMsg("missing query parameter value for: " + p).WithID(apierr.RequestMissingQueryParamValue)
-					resp.FromError(err).WithModule("RequireQueryParamsMW").Send(w)
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestMissingQueryParamValue).WithArgs(p).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("RequireQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -38,15 +50,20 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx, span := MwTracer.Start(ctx, "RequireOnlyQueryParams")
+			defer span.End()
 			q := r.URL.Query()
 
 			// check all query params are allowed
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					err := apierr.ErrInvalidInput.
-						WithMsg("unknown query parameter: " + param).
-						WithID(apierr.RequestUnknownQueryParam)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestUnknownQueryParam).WithArgs(param).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -54,17 +71,21 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all allowed params are present and non-empty
 			for _, p := range allowed {
 				if !q.Has(p) {
-					err := apierr.ErrInvalidInput.
-						WithMsg("missing query parameter: " + p).
-						WithID(apierr.RequestMissingQueryParam)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestMissingQueryParam).WithArgs(p).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					err := apierr.ErrInvalidInput.
-						WithMsg("missing query parameter value for: " + p).
-						WithID(apierr.RequestMissingQueryParamValue)
-					resp.FromError(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestMissingQueryParamValue).WithArgs(p).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -95,17 +116,19 @@ func AllowOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			ctx, span := MwTracer.Start(ctx, "AllowOnlyQueryParams")
+			defer span.End()
 			q := r.URL.Query()
 
-			for key := range q {
-				if _, ok := allowedSet[key]; !ok {
-					err := apierr.ErrInvalidInput.
-						WithMsg("unknown query parameter: " + key).
-						WithID(apierr.RequestUnknownQueryParam)
-
-					resp.FromError(err).
-						WithModule("AllowOnlyQueryParamsMW").
-						Send(w)
+			for param := range q {
+				if _, ok := allowedSet[param]; !ok {
+					rs, err := fail.ToAs[*resp.Response](fail.New(apierr.RequestUnknownQueryParam).WithArgs(param).RecordCtx(ctx), "http")
+					if err != nil {
+						resp.InternalServerError().WithData(err).WithModule("AllowOnlyQueryParamsMW").Send(w)
+						return
+					}
+					rs.WithModule("AllowOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}

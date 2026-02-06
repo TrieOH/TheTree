@@ -18,10 +18,10 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
@@ -96,12 +96,12 @@ func (uc *UseCase) Register(ctx context.Context, in inbounds.RegisterUserInput) 
 		return err
 	})
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	err = uc.mailSender.Send(ctx, verificationEmail)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	return nil
@@ -125,20 +125,18 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
-		return outbounds.Email{}, apierr.ErrPasswordTooLong{}
+		return outbounds.Email{}, fail.New(apierr.AuthInvalidPassword).RecordCtx(ctx)
 	}
 
 	var hashedPassword []byte
 	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return outbounds.Email{}, inbounds.ErrHashingPassword{Cause: err}
+		return outbounds.Email{}, fail.New(apierr.RequestInvalidPassword).With(err).RecordCtx(ctx)
 	}
 
 	var u *user.User
 	u, err = users.Register(ctx, in.Email, string(hashedPassword))
-	if apierr.IsConflict(err) {
-		return outbounds.Email{}, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")}
-	} else if err != nil {
+	if err != nil {
 		return outbounds.Email{}, err
 	}
 
@@ -218,8 +216,8 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 	var u *user.User
 	u, err = users.GetUserByEmail(ctx, in.Email)
-	if apierr.IsNotFound(err) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
+	if fail.Is(err, apierr.SQLNotFound) {
+		return nil, fail.New(apierr.AuthInvalidCredentials).RecordCtx(ctx)
 	} else if err != nil {
 		return nil, err
 	}
@@ -232,7 +230,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password))
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
+		return nil, fail.New(apierr.AuthInvalidCredentials).Trace(err.Error()).RecordCtx(ctx)
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
@@ -259,7 +257,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/login"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/login").RecordCtx(ctx)
 	}
 
 	var SigningKid string
@@ -280,7 +278,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var accessSig []byte
@@ -300,7 +298,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var refreshSig []byte
@@ -337,7 +335,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var identityType session.IdentityType
@@ -393,7 +391,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var refreshToken *auth.RefreshClaims
 	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var oldJTI uuid.UUID
@@ -405,7 +403,7 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/refreshInternal"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/refreshInternal").RecordCtx(ctx)
 	}
 
 	var newRefreshJTI = uid
@@ -417,29 +415,26 @@ func (uc *UseCase) refreshInternal(ctx context.Context, in inbounds.RefreshInput
 	var sess *session.Session
 	sess, err = sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound).RecordCtx(ctx)
 	}
 
 	now := time.Now()
 	if sess.ExpiresAt.Before(now) || sess.RevokedAt != nil {
 		// FIXME Record suspicious behaviour on audit when it is implemented
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound).RecordCtx(ctx)
 	}
 
 	// should revoke the session because of replay attacks
 	// FIXME Add suspicious behaviour to audit when it is implemented
 	if sess.TokenID != oldJTI {
-		err = sessions.MarkRevokedByFamilyID(ctx, sess.FamilyID)
-		if err != nil {
-			apierr.RecordDomainError(span, err)
-		}
-		return nil, apierr.FromService(span, inbounds.ErrTokenReuseNotAllowed{TokenType: "refresh"})
+		_ = sessions.MarkRevokedByFamilyID(ctx, sess.FamilyID)
+		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	sess, err = sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
-	if apierr.IsNotFound(err) {
+	if fail.Is(err, apierr.SQLNotFound) {
 		// sql.ErrNoRows → raced / reused / revoked
-		return nil, apierr.FromService(span, inbounds.ErrSessionNotFound{})
+		return nil, fail.New(apierr.SessionNotFound).RecordCtx(ctx)
 	} else if err != nil {
 		return nil, err
 	}
@@ -493,7 +488,7 @@ func (uc *UseCase) finishClientRefresh(
 	var newAccessJTI uuid.UUID
 	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishClientRefresh"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/finishClientRefresh").RecordCtx(ctx)
 	}
 
 	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
@@ -513,7 +508,7 @@ func (uc *UseCase) finishClientRefresh(
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var accessSig []byte
@@ -536,7 +531,7 @@ func (uc *UseCase) finishClientRefresh(
 		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var refreshSig []byte
@@ -594,7 +589,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 	var newAccessJTI uuid.UUID
 	newAccessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/finishProjectUserRefresh"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/finishProjectUserRefresh").RecordCtx(ctx)
 	}
 
 	SigningKid, err := keys.GetActiveProjectSigningKID(ctx, *sess.ProjectID)
@@ -614,7 +609,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var accessSig []byte
@@ -634,7 +629,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var refreshSig []byte
@@ -677,7 +672,7 @@ func (uc *UseCase) RegisterProjectUser(ctx context.Context, in inbounds.ProjectR
 
 	err = uc.mailSender.Send(ctx, verificationEmail)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	return nil
@@ -695,11 +690,11 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	issuer := uc.tokenIssuer
 
 	if in.FlowID == "" {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptyFlowID{})
+		return outbounds.Email{}, fail.New(apierr.SchemaEmptyFlowID).RecordCtx(ctx)
 	}
 
 	if in.SchemaType == "" {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmptySchemaType{})
+		return outbounds.Email{}, fail.New(apierr.SchemaEmptySchemaType).RecordCtx(ctx)
 	}
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
@@ -707,16 +702,16 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
 	if !schema.IsValidSchemaType(in.SchemaType) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidSchemaType{})
+		return outbounds.Email{}, fail.New(apierr.SchemaInvalidSchemaType).RecordCtx(ctx)
 	}
 
 	// FlowIDs cannot be the same as schema types so if this matches we error out
 	if schema.IsValidSchemaType(in.FlowID) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrInvalidFlowID{Why: "flow id can't be the same as a schema type"})
+		return outbounds.Email{}, fail.New(apierr.SchemaInvalidFlowID).WithArgs("flow id can't be the same as a schema type").RecordCtx(ctx)
 	}
 
 	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrCustomFieldsNotAllowed{})
+		return outbounds.Email{}, fail.New(apierr.SchemaMetadataNotAllowed).RecordCtx(ctx)
 	}
 
 	empty := json.RawMessage(`{}`)
@@ -725,7 +720,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, span, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
 			return outbounds.Email{}, err
 		}
@@ -735,12 +730,12 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	}
 
 	if len(in.Password) > 72 {
-		return outbounds.Email{}, apierr.FromService(span, apierr.ErrPasswordTooLong{})
+		return outbounds.Email{}, fail.New(apierr.AuthInvalidPassword).RecordCtx(ctx)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrHashingPassword{Cause: err})
+		return outbounds.Email{}, fail.New(apierr.RequestInvalidPassword).With(err).RecordCtx(ctx)
 	}
 
 	var usr *project_users.ProjectUser
@@ -750,9 +745,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		PasswordHash: string(hashedPassword),
 		Metadata:     customFields,
 	})
-	if apierr.IsConflict(err) {
-		return outbounds.Email{}, apierr.FromService(span, inbounds.ErrEmailAlreadyInUse{Cause: errors.New("email already in use")})
-	} else if err != nil {
+	if err != nil {
 		return outbounds.Email{}, err
 	}
 
@@ -837,15 +830,15 @@ func (uc *UseCase) LoginProjectUser(
 
 	var usr *project_users.ProjectUser
 	usr, err = projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
-	if apierr.IsNotFound(err) {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: nil})
+	if fail.Is(err, apierr.SQLNotFound) {
+		return nil, fail.New(apierr.AuthInvalidCredentials).RecordCtx(ctx)
 	} else if err != nil {
 		return nil, err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(usr.PasswordHash), []byte(in.Password))
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrInvalidCredentials{Cause: err})
+		return nil, fail.New(apierr.AuthInvalidCredentials).Trace(err.Error()).RecordCtx(ctx)
 	}
 
 	var identity *session.Identity
@@ -871,7 +864,7 @@ func (uc *UseCase) LoginProjectUser(
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
-		return nil, apierr.FromService(span, inbounds.ErrGeneratingUUID{Cause: err, Location: "auth/LoginProjectUser"})
+		return nil, fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("auth/LoginProjectUser").RecordCtx(ctx)
 	}
 
 	var SigningKid string
@@ -892,7 +885,7 @@ func (uc *UseCase) LoginProjectUser(
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var accessSig []byte
@@ -912,7 +905,7 @@ func (uc *UseCase) LoginProjectUser(
 		FamilyID:   sess.FamilyID,
 	})
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var refreshSig []byte
@@ -946,17 +939,17 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var claims *auth.VerificationClaims
 	claims, err = uc.tokenVerifier.VerifyVerificationToken(ctx, token)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	if claims.Sub.Subject != principal.UserID {
-		return apierr.FromService(span, inbounds.ErrTokenUserMismatch{TokenType: "verification"})
+		return fail.New(apierr.TokenUserMismatch).WithArgs("verification").RecordCtx(ctx)
 	}
 
 	var wasAlreadyVerified bool
@@ -997,11 +990,11 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	var principal *authz.Principal
 	principal, err = RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	if principal.IsVerified == true {
-		return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+		return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 	}
 
 	if principal.ProjectID != nil {
@@ -1010,7 +1003,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 			return err
 		}
 		if u.IsVerified == true {
-			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 		}
 	} else {
 		u, err := users.GetUserByID(ctx, principal.UserID)
@@ -1018,7 +1011,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 			return err
 		}
 		if u.IsVerified == true {
-			return apierr.FromService(span, inbounds.ErrUserAlreadyVerified{})
+			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 		}
 	}
 
@@ -1034,7 +1027,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		ExpiresAt: time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	var verificationSig []byte
@@ -1053,12 +1046,12 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		Locale: "en",
 	})
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	err = uc.mailSender.Send(ctx, verificationEmail)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	return nil
@@ -1068,7 +1061,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 	keys, err := uc.deps.Keys.ListGoAuthPublicKeys(ctx)
 	if err != nil {
 		logs.L().Error("Failed listing GoAuth public keys", zap.Error(err))
-		return nil, inbounds.ErrFailedToRetrieveJWKS{Cause: err}
+		return nil, fail.New(apierr.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
 	}
 
 	jwkKeys := make([]any, len(keys))

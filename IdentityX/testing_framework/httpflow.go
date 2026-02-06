@@ -1,12 +1,12 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/goforj/godump"
 	"github.com/stretchr/testify/assert"
@@ -464,10 +464,10 @@ func (r *Response) HasModule(expected string) *Response {
 	return r
 }
 
-func (r *Response) HasErrID(expected apierr.ID) *Response {
+func (r *Response) HasErrID(expected fail.ErrorID) *Response {
 	r.t.Helper()
 	errID := r.resp.JSON().Object().Value("error_id").String().Raw()
-	if !assert.Equal(r.t, string(expected), errID, "expected error id %q, but it was %q", string(expected), errID) {
+	if !assert.Equal(r.t, expected.String(), errID, "expected error id %q, but it was %q", expected.String(), errID) {
 		r.failed = true
 		r.dumpOnce()
 	}

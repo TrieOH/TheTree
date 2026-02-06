@@ -1,10 +1,15 @@
 package permissions
 
 import (
+	"GoAuth/internal/apierr"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/MintzyG/fail/v3"
 )
+
+// FIXME make these accept ctx and record to span
 
 // ValidateCondition validates a condition structure recursively
 func ValidateCondition(c Condition) error {
@@ -19,7 +24,7 @@ func validateConditionRecursive(c Condition, path string) error {
 			if path != "" {
 				location = fmt.Sprintf("%sand", path)
 			}
-			return ErrLogicalConditionValidationError{Operator: "and", Path: location}
+			return fail.New(apierr.PERMissionLogicalConditionValidationError).WithArgs(location, "AND")
 		}
 		for i, cond := range *c.And {
 			childPath := fmt.Sprintf("%sand[%d]", path, i)
@@ -36,7 +41,7 @@ func validateConditionRecursive(c Condition, path string) error {
 			if path != "" {
 				location = fmt.Sprintf("%sor", path)
 			}
-			return ErrLogicalConditionValidationError{Operator: "or", Path: location}
+			return fail.New(apierr.PERMissionLogicalConditionValidationError).WithArgs(location, "OR")
 		}
 		for i, cond := range *c.Or {
 			childPath := fmt.Sprintf("%sor[%d]", path, i)
@@ -92,9 +97,9 @@ func validateLeafCondition(c Condition, path string) error {
 
 func validationError(path, msg string) error {
 	if path == "" {
-		return ErrConditionValidationError{Message: msg}
+		return fail.New(apierr.PERMissionConditionValidationError).WithArgs("'.'").Trace(msg)
 	}
-	return ErrConditionValidationError{Message: msg, Path: path}
+	return fail.New(apierr.PERMissionConditionValidationError).WithArgs(path).Trace(msg)
 }
 
 func validateTemporalCondition(c Condition, path string) error {

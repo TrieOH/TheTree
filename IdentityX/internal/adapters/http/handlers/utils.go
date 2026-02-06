@@ -13,10 +13,13 @@ import (
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
+
+// FIXME make these errors go into either logs or spans
 
 func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 	IDStr := chi.URLParam(r, fieldName)
@@ -26,7 +29,7 @@ func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 
 	ID, err := validation.ParseUUID(IDStr, fieldName)
 	if err != nil {
-		return uuid.Nil, resp.FromError(apierr.FromHandler(err))
+		return uuid.Nil, resp.FromError(err)
 	}
 	return ID, nil
 }
@@ -34,12 +37,12 @@ func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 	numberStr := chi.URLParam(r, fieldName)
 	if numberStr == "" {
-		return 0, resp.FromError(apierr.ErrMissingParam{Param: fieldName})
+		return 0, resp.FromError(fail.New(apierr.RequestMissingParamError).WithArgs(fieldName))
 	}
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return 0, resp.FromError(apierr.FromHandler(apierr.ErrParsingNumber{Cause: err}))
+		return 0, resp.FromError(fail.New(apierr.RequestParseNumberError).WithArgs(err.Error()))
 	}
 	return number, nil
 }
@@ -47,7 +50,7 @@ func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 func getString(r *http.Request, fieldName string) (string, *resp.Response) {
 	fieldStr := r.URL.Query().Get(fieldName)
 	if fieldStr == "" {
-		return "", resp.FromError(apierr.ErrMissingParam{Param: fieldName})
+		return "", resp.FromError(fail.New(apierr.RequestMissingParamError).WithArgs(fieldName))
 	}
 	return fieldStr, nil
 }

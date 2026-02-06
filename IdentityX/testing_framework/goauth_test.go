@@ -78,4 +78,11 @@ func TestGoAuth(t *testing.T) {
 	t.Run("SchemaDependencies", func(t *testing.T) {
 		testSchemaDependencies(t, suite)
 	})
+
+	t.Run("PGX_Mapper", func(t *testing.T) {
+		testPGXMapper(t)
+	})
+
+	// docs, _ := fail.ExportIDList()
+	// fmt.Printf("Registered IDs (JSON snippet):\n%s\n", string(docs))
 }

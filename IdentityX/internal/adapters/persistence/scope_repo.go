@@ -3,11 +3,11 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -89,9 +89,7 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 	})
 
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).WithArgs(*toCreate.Name, *toCreate.ExternalID).RecordCtx(ctx)
 	}
 
 	var created scopes.Scope
@@ -109,9 +107,7 @@ func (repo *scopeRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*scop
 
 	sqlcScope, err := repo.queries(ctx).GetScopeByIDInternal(ctx, id)
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var created scopes.Scope
@@ -133,9 +129,7 @@ func (repo *scopeRepo) GetByIDExternal(ctx context.Context, id, projectID uuid.U
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var created scopes.Scope
@@ -154,9 +148,7 @@ func (repo *scopeRepo) GetRootByProjectID(ctx context.Context, projectID uuid.UU
 
 	sqlcScope, err := repo.queries(ctx).GetRootByProjectID(ctx, &projectID)
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	var created scopes.Scope
@@ -171,9 +163,7 @@ func (repo *scopeRepo) GetProjectScopes(ctx context.Context, projectID uuid.UUID
 
 	sqlcScopes, err := repo.queries(ctx).GetProjectScopes(ctx, &projectID)
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("scope.count", len(sqlcScopes)))

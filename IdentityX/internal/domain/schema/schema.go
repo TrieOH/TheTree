@@ -1,8 +1,11 @@
 package schema
 
 import (
+	"GoAuth/internal/apierr"
+	"context"
 	"time"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -58,19 +61,6 @@ type Schema struct {
 	UpdatedAt        time.Time
 }
 
-func (s Schema) CanRegister() error {
-	if s.CurrentVersionID == nil {
-		return ErrRegisterSchemaNoPublishedVersion{}
-	}
-	if s.Status == StatusDraft {
-		return ErrRegisterOnSchemaDraft{}
-	}
-	if s.Status == StatusArchived {
-		return ErrRegisterOnSchemaArchive{}
-	}
-	return nil
-}
-
 func (s Schema) IsVersion(versionID uuid.UUID) bool {
 	return s.CurrentVersionID != nil && *s.CurrentVersionID == versionID
 }
@@ -107,4 +97,17 @@ func (r DiffResult) Annotate(span trace.Span) {
 		span.SetAttributes(attribute.Bool("required_rules_changed", *r.RequiredRulesChanged))
 	}
 	span.SetAttributes(attribute.Bool("has_any_changes", r.HasAnyChanges()))
+}
+
+func (s Schema) CanRegister(ctx context.Context) error {
+	if s.CurrentVersionID == nil {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaNoVersion).RecordCtx(ctx)
+	}
+	if s.Status == StatusDraft {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaDraft).RecordCtx(ctx)
+	}
+	if s.Status == StatusArchived {
+		return fail.New(apierr.ProjectUserRegisterOnSchemaArchived).RecordCtx(ctx)
+	}
+	return nil
 }

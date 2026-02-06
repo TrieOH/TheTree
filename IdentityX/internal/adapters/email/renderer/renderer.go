@@ -8,6 +8,7 @@ import (
 	"html/template"
 	texttemplate "text/template"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -53,7 +54,7 @@ func (mr *MailRenderer) Verification(data outbounds.VerificationEmailData) (outb
 	})
 
 	if err != nil {
-		return outbounds.Email{}, outbounds.ErrRenderingEmail{Cause: err, EmailType: "verification"}
+		return outbounds.Email{}, fail.New(apierr.SYSRenderingEmailFailed).With(err).WithArgs("verification")
 	}
 
 	return outbounds.Email{
@@ -95,12 +96,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", apierr.ErrNotFound
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "text")
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", apierr.ErrNotFound
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "html")
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

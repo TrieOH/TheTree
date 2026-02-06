@@ -1,6 +1,7 @@
 package senders
 
 import (
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/outbounds"
 	"bytes"
 	"context"
@@ -10,6 +11,7 @@ import (
 	"net/smtp"
 	"net/textproto"
 
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -56,7 +58,7 @@ func (s *SMTPSender) Send(ctx context.Context, email outbounds.Email) error {
 
 	// queue is full → backpressure
 	default:
-		return outbounds.ErrServiceUnavailable{ServiceName: "BaseSMTPSender"}
+		return fail.New(apierr.SYSServiceUnavailable).WithArgs("BaseSMTPSender")
 	}
 }
 

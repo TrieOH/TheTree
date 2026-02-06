@@ -2,6 +2,7 @@ package application
 
 import (
 	"GoAuth/internal/adapters/email"
+	"GoAuth/internal/adapters/memory"
 	"GoAuth/internal/adapters/persistence"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
@@ -17,10 +18,14 @@ import (
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/ports/inbounds"
+	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Application struct {
 	Auth           inbounds.AuthService
+	Keys           inbounds.KeysService
 	Project        inbounds.ProjectService
 	Schema         inbounds.SchemaService
 	SchemaVersions inbounds.SchemaVersionService
@@ -35,7 +40,16 @@ type Application struct {
 func NewApplication(infra infrastructure.Infra) *Application {
 	repos := persistence.NewRepositories(infra)
 
-	keyService := keys.New(repos.Keys)
+	cacheTTLStr := viper.GetString("KEYS_CACHE_TTL")
+	cacheTTL, err := time.ParseDuration(cacheTTLStr)
+	if err != nil {
+		cacheTTL = time.Hour
+	}
+
+	privateCache := memory.NewInMemoryCache(100, cacheTTL)
+	publicCache := memory.NewInMemoryCache(1000, cacheTTL)
+
+	keyService := keys.New(repos.Keys, privateCache, publicCache)
 	mailBundle := email.NewBundle(infra)
 	tokensBundle := tokens.NewBundle(keyService)
 
@@ -50,6 +64,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			ProjectUsers: repos.ProjectUsers,
 			Keys:         repos.Keys,
 		}, infra, keyService, tokensBundle, mailBundle),
+		Keys: keyService,
 		Project: project.New(
 			repos.Projects,
 			repos.Scopes,

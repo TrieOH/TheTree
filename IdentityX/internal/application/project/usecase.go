@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/otel"
@@ -76,7 +77,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
@@ -91,12 +92,14 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
-		return nil, apierr.FromService(
-			span,
-			inbounds.ErrGeneratingProjectKeys{Cause: err},
-		)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 	defer zero(priv)
+
+	encryptedPriv, err := crypto.Encrypt(priv)
+	if err != nil {
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+	}
 
 	kid := fmt.Sprintf(
 		"project:%s:%s",
@@ -110,16 +113,13 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		KeyType:    key.TypeProject,
 		Algorithm:  key.AlgEdDSA,
 		PublicKey:  pub,
-		PrivateKey: priv,
+		PrivateKey: encryptedPriv,
 		Usage:      key.UsageSign,
 		Status:     key.StatusActive,
 		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
 	})
 	if err != nil {
-		return nil, apierr.FromService(
-			span,
-			inbounds.ErrGeneratingProjectKeys{Cause: err},
-		)
+		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -154,7 +154,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID uuid.UUID) (*inbounds.
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 	proj, err := uc.projects.GetByIDExternal(ctx, projectID, principal.UserID)
 	if err != nil {
@@ -176,7 +176,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputProject, error) {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	projects, err := uc.projects.List(ctx, principal.UserID)
@@ -219,7 +219,7 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	span.SetAttributes(attribute.String("project.id", in.ProjectID.String()))
@@ -258,7 +258,7 @@ func (uc *UseCase) Delete(ctx context.Context, projectID uuid.UUID) error {
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return apierr.FromService(span, err)
+		return err
 	}
 
 	err = uc.projects.Delete(ctx, projectID, principal.UserID)

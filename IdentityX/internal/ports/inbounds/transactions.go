@@ -27,11 +27,3 @@ type TxRunner interface {
 	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
 	WithinTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error
 }
-
-type ErrTXPanicked struct {
-	Panic any
-}
-
-func (e ErrTXPanicked) Error() string {
-	return "transaction panicked"
-}

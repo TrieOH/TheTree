@@ -3,11 +3,11 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -59,9 +59,7 @@ func (repo *userRepo) Register(ctx context.Context, email, password string) (*us
 	})
 
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -87,9 +85,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -110,9 +106,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.U
 	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, email)
 
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return nil, sqlErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -137,9 +131,7 @@ func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error
 
 	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return false, sqlErr
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))

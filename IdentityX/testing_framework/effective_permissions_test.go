@@ -1339,9 +1339,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "edit",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 
 		t.Run("DenyScenario_ParticipantCannotCoordinate", func(t *testing.T) {
@@ -1355,9 +1354,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "coordinate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 
 		t.Run("DenyScenario_StaffCannotAdministrate", func(t *testing.T) {
@@ -1371,9 +1369,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "administrate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 
 		t.Run("DenyScenario_UntrustedAdminCannotDeleteActivity", func(t *testing.T) {
@@ -1387,9 +1384,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "delete",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 
 		t.Run("DenyScenario_ParticipantCannotAccessUnpaidActivity", func(t *testing.T) {
@@ -1403,9 +1399,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "attend",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 
 		t.Run("DenyScenario_WrongScopeDenial", func(t *testing.T) {
@@ -1419,9 +1414,8 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 					"action":     "coordinate",
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.PermissionInsufficient).
-				HasMessage("Permission Denied").
-				TraceContains("insufficient permissions")
+				HasErrID(apierr.PERMissionInsufficient).
+				HasMessage("insufficient permissions")
 		})
 	})
 

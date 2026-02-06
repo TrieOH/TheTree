@@ -10,9 +10,12 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
+
+// FIXME make these errors either go into spans or logs
 
 var validate = validator.New()
 
@@ -89,17 +92,16 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 		return nil
 	}
 
-	verr := apierr.ErrInvalidInput.WithMsg("Validation failed")
+	verr := fail.New(apierr.RequestValidationError)
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {
-		return apierr.ErrInvalidInput.WithMsg("Validation failed").WithCause(err).WithID(apierr.RequestValidationError)
+		return fail.New(apierr.RequestValidationError).With(err)
 	}
 	for _, e := range validationErrors {
 		msg := formatValidationMessage(e, fieldName, value)
-		verr = verr.WithCause(errors.New(msg))
+		verr = verr.Trace(msg)
 	}
-
-	return verr.WithID(apierr.RequestValidationError)
+	return verr.AddMeta("module", "validation")
 }
 
 func formatValue(v interface{}) string {
@@ -160,10 +162,10 @@ func ValidateStruct(s interface{}) error {
 		return nil
 	}
 
-	verr := apierr.ErrInvalidInput.WithMsg("Validation failed")
+	verr := fail.New(apierr.RequestValidationError)
 	var validationErrors validator.ValidationErrors
 	if !errors.As(err, &validationErrors) {
-		return apierr.ErrInvalidInput.WithMsg("Validation failed").WithCause(err)
+		return fail.New(apierr.RequestValidationError).With(err)
 	}
 	for _, err := range validationErrors {
 		structFieldName := err.StructField()
@@ -196,7 +198,7 @@ func ValidateStruct(s interface{}) error {
 		if err.Tag() == "passwd" {
 			password, ok := err.Value().(string)
 			if !ok {
-				verr = verr.WithCause(errors.New(fieldName + " must be a valid string"))
+				verr = verr.Trace(fieldName + " must be a valid string")
 				continue
 			}
 			var hasUpper, hasNumber, hasSymbol bool
@@ -213,36 +215,39 @@ func ValidateStruct(s interface{}) error {
 			}
 
 			if !hasUpper {
-				verr = verr.WithCause(errors.New(fieldName + " must contain at least one uppercase letter"))
+				verr = verr.Trace(fieldName + " must contain at least one uppercase letter")
 			}
 			if !hasNumber {
-				verr = verr.WithCause(errors.New(fieldName + " must contain at least one number"))
+				verr = verr.Trace(fieldName + " must contain at least one number")
 			}
 			if !hasSymbol {
-				verr = verr.WithCause(errors.New(fieldName + " must contain at least one symbol or punctuation"))
+				verr = verr.Trace(fieldName + " must contain at least one symbol or punctuation")
 			}
 			continue
 		}
 
 		msg = formatValidationMessage(err, fieldName, value)
-		verr = verr.WithCause(errors.New(msg))
+		verr = verr.Trace(msg)
 	}
-
-	return verr.WithID(apierr.RequestValidationError)
+	return verr
 }
 
 // ValidateInto validates JSON into a provided pointer
 func ValidateInto[T any](r *http.Request, target *T) error {
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		return apierr.ErrBadRequest.WithMsg("Content-Type must be application/json").WithID(apierr.RequestNotApplicationJSON)
+		return fail.New(apierr.RequestNotApplicationJSON)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return apierr.ErrBadRequest.WithMsg("Invalid JSON format").WithID(apierr.RequestInvalidJSONFormat).WithCause(err)
+		return fail.New(apierr.RequestInvalidJSONFormat).With(err)
 	}
 
 	if err := ValidateStruct(*target); err != nil {
+		fe, ok := fail.As(err)
+		if ok {
+			return fe.AddMeta("module", "validation")
+		}
 		return err
 	}
 

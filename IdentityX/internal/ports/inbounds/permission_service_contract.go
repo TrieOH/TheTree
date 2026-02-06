@@ -56,11 +56,3 @@ func PermissionSliceToPermissionOutputSlice(permissions []permissions.Permission
 	}
 	return out
 }
-
-type ErrPermissionNotOwned struct {
-	Msg string
-}
-
-func (e ErrPermissionNotOwned) Error() string {
-	return e.Msg
-}

@@ -118,9 +118,3 @@ type FormRule struct {
 	Operator         string
 	Value            *json.RawMessage
 }
-
-type ErrVersionNotPublished struct{}
-
-func (e ErrVersionNotPublished) Error() string {
-	return "version not published"
-}

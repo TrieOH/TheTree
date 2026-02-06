@@ -4,8 +4,11 @@ import (
 	"GoAuth/internal/domain/permissions"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/MintzyG/fail/v3"
 )
 
 func testConditions(t *testing.T) {
@@ -15,6 +18,7 @@ func testConditions(t *testing.T) {
 			condition permissions.Condition
 			wantErr   bool
 			errMsg    string
+			wantPath  string
 		}{
 			// ==================== HAPPY PATHS ====================
 			{
@@ -153,6 +157,15 @@ func testConditions(t *testing.T) {
 				},
 				wantErr: false,
 			},
+			{
+				name: "deeply nested path",
+				condition: permissions.Condition{
+					Path:  "resource.metadata.audit.created_by.id",
+					Op:    permissions.OpEq,
+					Value: "user-123",
+				},
+				wantErr: false,
+			},
 
 			// ==================== SAD PATHS ====================
 			{
@@ -160,16 +173,18 @@ func testConditions(t *testing.T) {
 				condition: permissions.Condition{
 					And: &[]permissions.Condition{},
 				},
-				wantErr: true,
-				errMsg:  "and: AND conditions cannot be empty",
+				wantErr:  true,
+				errMsg:   "and: AND conditions cannot be empty",
+				wantPath: "and",
 			},
 			{
 				name: "empty OR operator",
 				condition: permissions.Condition{
 					Or: &[]permissions.Condition{},
 				},
-				wantErr: true,
-				errMsg:  "or: OR conditions cannot be empty",
+				wantErr:  true,
+				errMsg:   "or: OR conditions cannot be empty",
+				wantPath: "or",
 			},
 			{
 				name: "missing operator",
@@ -177,8 +192,9 @@ func testConditions(t *testing.T) {
 					Path:  "resource.status",
 					Value: "active",
 				},
-				wantErr: true,
-				errMsg:  "op: operator is required",
+				wantErr:  true,
+				errMsg:   "op: operator is required",
+				wantPath: "'.'",
 			},
 			{
 				name: "invalid operator name",
@@ -187,8 +203,9 @@ func testConditions(t *testing.T) {
 					Op:    "invalid_op",
 					Value: "active",
 				},
-				wantErr: true,
-				errMsg:  "op: unsupported operator 'invalid_op'",
+				wantErr:  true,
+				errMsg:   "op: unsupported operator 'invalid_op'",
+				wantPath: "'.'",
 			},
 			{
 				name: "temporal condition missing field",
@@ -196,8 +213,9 @@ func testConditions(t *testing.T) {
 					Op:     permissions.OpGraceBefore,
 					Margin: "15m",
 				},
-				wantErr: true,
-				errMsg:  "field: required for 'grace_before' operator",
+				wantErr:  true,
+				errMsg:   "field: required for 'grace_before' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "temporal condition missing margin",
@@ -205,8 +223,9 @@ func testConditions(t *testing.T) {
 					Field: "resource.start_time",
 					Op:    permissions.OpGraceBefore,
 				},
-				wantErr: true,
-				errMsg:  "margin: required for 'grace_before' operator",
+				wantErr:  true,
+				errMsg:   "margin: required for 'grace_before' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "temporal condition invalid duration",
@@ -215,8 +234,9 @@ func testConditions(t *testing.T) {
 					Op:     permissions.OpGraceBefore,
 					Margin: "invalid_duration",
 				},
-				wantErr: true,
-				errMsg:  "margin: invalid duration",
+				wantErr:  true,
+				errMsg:   "margin: invalid duration",
+				wantPath: "'.'",
 			},
 			{
 				name: "grace_duration missing field_start",
@@ -225,8 +245,9 @@ func testConditions(t *testing.T) {
 					Op:       permissions.OpGraceDuration,
 					Margin:   "1h",
 				},
-				wantErr: true,
-				errMsg:  "field_start: required for 'grace_duration' operator",
+				wantErr:  true,
+				errMsg:   "field_start: required for 'grace_duration' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "grace_duration missing field_end",
@@ -235,8 +256,9 @@ func testConditions(t *testing.T) {
 					Op:         permissions.OpGraceDuration,
 					Margin:     "1h",
 				},
-				wantErr: true,
-				errMsg:  "field_end: required for 'grace_duration' operator",
+				wantErr:  true,
+				errMsg:   "field_end: required for 'grace_duration' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "predicate missing path",
@@ -244,8 +266,9 @@ func testConditions(t *testing.T) {
 					Op:    permissions.OpEq,
 					Value: "active",
 				},
-				wantErr: true,
-				errMsg:  "path: required for predicate operator",
+				wantErr:  true,
+				errMsg:   "path: required for predicate operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "predicate missing value and ref",
@@ -253,8 +276,9 @@ func testConditions(t *testing.T) {
 					Path: "resource.status",
 					Op:   permissions.OpEq,
 				},
-				wantErr: true,
-				errMsg:  "either value or ref must be provided",
+				wantErr:  true,
+				errMsg:   "either value or ref must be provided",
+				wantPath: "'.'",
 			},
 			{
 				name: "temporal condition with conflicting predicate fields",
@@ -265,8 +289,9 @@ func testConditions(t *testing.T) {
 					Margin: "15m",
 					Value:  "active",
 				},
-				wantErr: true,
-				errMsg:  "unexpected fields for grace operator",
+				wantErr:  true,
+				errMsg:   "unexpected fields for grace operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "predicate with conflicting temporal fields",
@@ -277,8 +302,9 @@ func testConditions(t *testing.T) {
 					Field:  "resource.start_time",
 					Margin: "15m",
 				},
-				wantErr: true,
-				errMsg:  "temporal fields not allowed for predicate operator",
+				wantErr:  true,
+				errMsg:   "temporal fields not allowed for predicate operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "exists operator with value should fail",
@@ -287,8 +313,9 @@ func testConditions(t *testing.T) {
 					Op:    permissions.OpExists,
 					Value: "should_not_be_here",
 				},
-				wantErr: true,
-				errMsg:  "value and ref should not be provided for 'exists' operator",
+				wantErr:  true,
+				errMsg:   "value and ref should not be provided for 'exists' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "exists operator with ref should fail",
@@ -297,8 +324,9 @@ func testConditions(t *testing.T) {
 					Op:   permissions.OpExists,
 					Ref:  "should_not_be_here",
 				},
-				wantErr: true,
-				errMsg:  "value and ref should not be provided for 'exists' operator",
+				wantErr:  true,
+				errMsg:   "value and ref should not be provided for 'exists' operator",
+				wantPath: "'.'",
 			},
 			{
 				name: "nested validation error",
@@ -308,8 +336,9 @@ func testConditions(t *testing.T) {
 						{Path: "resource.count", Op: permissions.OpGt}, // Missing value/ref
 					},
 				},
-				wantErr: true,
-				errMsg:  "and[1]: either value or ref must be provided",
+				wantErr:  true,
+				errMsg:   "either value or ref must be provided",
+				wantPath: "and[1]",
 			},
 
 			// ==================== EDGE CASES ====================
@@ -368,8 +397,26 @@ func testConditions(t *testing.T) {
 					t.Errorf("ValidateCondition() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-				if tt.wantErr && tt.errMsg != "" && err != nil {
-					if !contains(err.Error(), tt.errMsg) {
+				if tt.wantErr && err != nil {
+					if tt.wantPath != "" && !contains(err.Error(), tt.wantPath) {
+						t.Errorf("ValidateCondition() error = %v, want path %v", err, tt.wantPath)
+					}
+
+					if tt.errMsg != "" {
+						if contains(err.Error(), tt.errMsg) {
+							return
+						}
+
+						var failErr *fail.Error
+						if errors.As(err, &failErr) && failErr.Meta != nil {
+							traces := toStringSlice(failErr.Meta["traces"])
+							for _, trace := range traces {
+								if contains(trace, tt.errMsg) {
+									return
+								}
+							}
+						}
+
 						t.Errorf("ValidateCondition() error = %v, want error containing %v", err, tt.errMsg)
 					}
 				}
@@ -627,6 +674,7 @@ func testConditions(t *testing.T) {
 			rawJSON    string
 			wantErr    bool
 			errMsg     string
+			wantPath   string
 			validateFn func(t *testing.T, c *permissions.Condition)
 		}{
 			{
@@ -659,8 +707,9 @@ func testConditions(t *testing.T) {
 				"path": "resource.status",
 				"value": "active"
 			}`,
-				wantErr: true,
-				errMsg:  "op: operator is required",
+				wantErr:  true,
+				errMsg:   "op: operator is required",
+				wantPath: "'.'",
 			},
 			{
 				name: "invalid temporal condition",
@@ -669,8 +718,9 @@ func testConditions(t *testing.T) {
 				"op": "grace_before",
 				"margin": "invalid_duration"
 			}`,
-				wantErr: true,
-				errMsg:  "invalid duration",
+				wantErr:  true,
+				errMsg:   "invalid duration",
+				wantPath: "'.'",
 			},
 			{
 				name:    "malformed JSON should fail decode",
@@ -703,8 +753,26 @@ func testConditions(t *testing.T) {
 					t.Errorf("DecodeAndValidateCondition() error = %v, wantErr %v", err, tt.wantErr)
 					return
 				}
-				if tt.wantErr && tt.errMsg != "" && err != nil {
-					if !contains(err.Error(), tt.errMsg) {
+				if tt.wantErr && err != nil {
+					if tt.wantPath != "" && !contains(err.Error(), tt.wantPath) {
+						t.Errorf("DecodeAndValidateCondition() error = %v, want path %v", err, tt.wantPath)
+					}
+
+					if tt.errMsg != "" {
+						if contains(err.Error(), tt.errMsg) {
+							return
+						}
+
+						var failErr *fail.Error
+						if errors.As(err, &failErr) && failErr.Meta != nil {
+							traces := toStringSlice(failErr.Meta["traces"])
+							for _, trace := range traces {
+								if contains(trace, tt.errMsg) {
+									return
+								}
+							}
+						}
+
 						t.Errorf("error = %v, want error containing %v", err, tt.errMsg)
 					}
 				}
@@ -1282,4 +1350,26 @@ func indexOfSubstring(s, substr string) int {
 		}
 	}
 	return -1
+}
+
+func toStringSlice(v any) []string {
+	if v == nil {
+		return []string{}
+	}
+
+	if s, ok := v.([]string); ok {
+		return s
+	}
+
+	if arr, ok := v.([]any); ok {
+		result := make([]string, 0, len(arr))
+		for _, item := range arr {
+			if s, ok := item.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	}
+
+	return []string{}
 }

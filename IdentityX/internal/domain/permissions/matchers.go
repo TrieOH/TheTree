@@ -1,7 +1,10 @@
 package permissions
 
 import (
+	"GoAuth/internal/apierr"
 	"strings"
+
+	"github.com/MintzyG/fail/v3"
 )
 
 // ObjectMatch checks if a request object matches a permission object pattern.
@@ -150,10 +153,10 @@ func matchActionParts(perm, req []string, pIdx, rIdx int) bool {
 // MustMatch is a validation helper for clean error messages
 func MustMatch(permObj, permAction, reqObj, reqAction string) error {
 	if !ObjectMatch(permObj, reqObj) {
-		return ErrObjectMismatch{Expected: permObj, Actual: reqObj}
+		return fail.New(apierr.PERMissionObjectMismatch).WithArgs(permObj, reqObj)
 	}
 	if !ActionMatch(permAction, reqAction) {
-		return ErrActionMismatch{Expected: permAction, Actual: reqAction}
+		return fail.New(apierr.PERMissionActionMismatch).WithArgs(permAction, reqAction)
 	}
 	return nil
 }

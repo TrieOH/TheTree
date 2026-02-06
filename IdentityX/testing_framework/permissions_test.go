@@ -336,8 +336,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.DBUniqueViolation).
-			HasMessage("resource already exists")
+			HasErrID(apierr.PERMissionAlreadyExists).
+			HasMessage("permission with object(event:*) and action(create) already exists")
 	})
 
 	t.Run("CreatePermissionNoAction", func(t *testing.T) {
@@ -387,8 +387,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PermissionInvalidObject).
-			HasMessage("invalid permission object: bogus-value")
+			HasErrID(apierr.PERMissionInvalidObject).
+			HasMessage("invalid permission object: (bogus-value)") // FIXME replace () with ''
 	})
 
 	t.Run("CreateInvalidActionPermission", func(t *testing.T) {
@@ -399,8 +399,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PermissionInvalidAction).
-			HasMessage("invalid permission action: what:")
+			HasErrID(apierr.PERMissionInvalidAction).
+			HasMessage("invalid permission action: (what:)") // FIXME replace () with ''
 	})
 
 	t.Run("NotAllowedQueryParam", func(t *testing.T) {

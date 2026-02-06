@@ -3,11 +3,11 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -68,9 +68,7 @@ func (repo *projectUserRepo) Register(ctx context.Context, toRegister project_us
 		Metadata:     *toRegister.Metadata,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -100,9 +98,7 @@ func (repo *projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID,
 		OwnerID:   ownerID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -131,9 +127,7 @@ func (repo *projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID,
 		ProjectID: projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -162,9 +156,7 @@ func (repo *projectUserRepo) GetByEmailExternal(ctx context.Context, projectID u
 		OwnerID:   ownerID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -192,9 +184,7 @@ func (repo *projectUserRepo) GetByEmailInternal(ctx context.Context, projectID u
 		Email:     email,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -223,9 +213,7 @@ func (repo *projectUserRepo) ListExternal(ctx context.Context, projectID, ownerI
 		OwnerID:   ownerID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("project_users.count", len(sqlcUsers)))
@@ -250,9 +238,7 @@ func (repo *projectUserRepo) ListInternal(ctx context.Context, projectID uuid.UU
 
 	sqlcUsers, err := repo.queries(ctx).ListProjectUsersInternal(ctx, projectID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("project_users.count", len(sqlcUsers)))
@@ -285,9 +271,7 @@ func (repo *projectUserRepo) Update(ctx context.Context, toUpdate project_users.
 		OwnerID:      ownerID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -315,9 +299,7 @@ func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectI
 		ProjectID: projectID,
 		OwnerID:   ownerID,
 	}); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("project_user.deleted", true))
@@ -335,9 +317,7 @@ func (repo *projectUserRepo) Verify(ctx context.Context, userID uuid.UUID) (bool
 
 	wasVerified, err := repo.queries(ctx).VerifyProjectUser(ctx, userID)
 	if err != nil {
-		sqlErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlErr)
-		return false, sqlErr
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
@@ -359,9 +339,7 @@ func (repo *projectUserRepo) BelongsToProject(ctx context.Context, userID, proje
 		ProjectID: projectID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return belongs, nil

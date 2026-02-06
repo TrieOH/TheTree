@@ -1,217 +1,184 @@
 package apierr
 
-const (
-	RequestMissingQueryParamValue    ID = "REQ_001"
-	RequestMissingQueryParam         ID = "REQ_002"
-	RequestMissingSchemaCustomFields ID = "REQ_003"
-	RequestInvalidJSONFormat         ID = "REQ_004"
-	RequestValidationError           ID = "REQ_005"
-	RequestNotApplicationJSON        ID = "REQ_006"
-	RequestEmptyCookie               ID = "REQ_007"
-	RequestUnknownQueryParam         ID = "REQ_008"
+import (
+	"github.com/MintzyG/fail/v3"
 )
 
-const (
-	AuthInvalidEmail          ID = "AUTH_001"
-	AuthInvalidPassword       ID = "AUTH_002"
-	AuthWrongPassword         ID = "AUTH_003"
-	AuthUserNotFound          ID = "AUTH_004"
-	AuthEmailAlreadyUsed      ID = "AUTH_005"
-	AuthAccountDisabled       ID = "AUTH_006"
-	AuthTokenInvalid          ID = "AUTH_007"
-	AuthTokenExpired          ID = "AUTH_008"
-	AuthRefreshInvalid        ID = "AUTH_009"
-	AuthRefreshRevoked        ID = "AUTH_010"
-	AuthMissingAccessClaims   ID = "AUTH_011"
-	AuthInvalidAccessClaims   ID = "AUTH_012"
-	AuthMissingRefreshClaims  ID = "AUTH_013"
-	AuthInvalidRefreshClaims  ID = "AUTH_014"
-	AuthInvalidCredentials    ID = "AUTH_015"
-	AuthInvalidRefreshCookie  ID = "AUTH_016"
-	AuthInvalidAccessCookie   ID = "AUTH_017"
-	AuthMissingRefreshCookie  ID = "AUTH_018"
-	AuthMissingAccessCookie   ID = "AUTH_019"
-	AuthInvalidPrincipal      ID = "AUTH_020"
-	AuthNotClient             ID = "AUTH_021"
-	AuthNotProjectUser        ID = "AUTH_022"
-	AuthNotVerified           ID = "AUTH_023"
-	AuthAlreadyVerified       ID = "AUTH_024"
-	AuthPrincipalNotInContext ID = "AUTH_025"
-)
+var (
+	RequestMissingQueryParamValue = fail.ID(0, "REQ", 0, false, "REQuestMissingQueryParamValue")
+	RequestMissingQueryParam      = fail.ID(0, "REQ", 1, false, "REQuestMissingQueryParam")
+	// FIXME create tests for empty cookies
+	RequestEmptyCookie             = fail.ID(0, "REQ", 2, false, "REQuestEmptyCookie")
+	RequestUnknownQueryParam       = fail.ID(0, "REQ", 3, false, "REQuestUnknownQueryParam")
+	RequestValidationError         = fail.ID(0, "REQ", 4, false, "REQuestValidationError")
+	RequestParseUUIDError          = fail.ID(0, "REQ", 5, false, "REQuestParseUUIDError")
+	RequestParseNumberError        = fail.ID(0, "REQ", 6, false, "REQuestParseNumberError")
+	RequestMissingParamError       = fail.ID(0, "REQ", 7, false, "REQuestMissingParamError")
+	RequestInvalidCustomFieldsJSON = fail.ID(0, "REQ", 8, false, "REQuestInvalidCustomFieldsJSON")
 
-const (
-	SessionInvalidID           ID = "SESS_001"
-	SessionExpired             ID = "SESS_002"
-	SessionRevoked             ID = "SESS_003"
-	SessionNotFound            ID = "SESS_004"
-	SessionAlreadyActive       ID = "SESS_005"
-	SessionLimitReached        ID = "SESS_006"
-	SessionRequiredID          ID = "SESS_007"
-	SessionSelfRevokeForbidden ID = "SESS_008"
-	SessionUpdateFailed        ID = "SESS_009"
-	SessionMissingID           ID = "SESS_010"
-	SessionUnauthorized        ID = "SESS_011"
-)
+	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
+	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
+	RequestNotApplicationJSON        = fail.ID(0, "REQ", 2, true, "REQuestNotApplicationJSON")
+	RequestInvalidPassword           = fail.ID(0, "REQ", 3, true, "REQuestInvalidPassword")
 
-const (
-	TokenInvalid              ID = "TOKEN_001"
-	TokenExpired              ID = "TOKEN_002"
-	TokenMalformed            ID = "TOKEN_003"
-	TokenSignatureInvalid     ID = "TOKEN_004"
-	TokenInvalidAlg           ID = "TOKEN_005"
-	TokenRequiredID           ID = "TOKEN_006"
-	TokenCouldNotSign         ID = "TOKEN_007"
-	TokenMissingRefresh       ID = "TOKEN_008"
-	TokenMissingAccess        ID = "TOKEN_009"
-	TokenInvalidAccessClaims  ID = "TOKEN_010"
-	TokenNotYetValid          ID = "TOKEN_011"
-	TokenUsedBeforeIssued     ID = "TOKEN_012"
-	TokenInvalidIssuer        ID = "TOKEN_013"
-	TokenInvalidSubject       ID = "TOKEN_014"
-	TokenInvalidAudience      ID = "TOKEN_015"
-	TokenRefreshInvalidID     ID = "TOKEN_016"
-	TokenRevoked              ID = "TOKEN_017"
-	TokenRevokeFailed         ID = "TOKEN_018"
-	TokenRefreshIDMissing     ID = "TOKEN_019"
-	TokenSessionMismatch      ID = "TOKEN_020"
-	TokenMismatchDuringAuth   ID = "TOKEN_021"
-	TokenAccessInvalidID      ID = "TOKEN_022"
-	TokenAccessIDMissing      ID = "TOKEN_023"
-	TokenAccessIDMatched      ID = "TOKEN_024"
-	TokenInvalidKid           ID = "TOKEN_025"
-	TokenUnknownKid           ID = "TOKEN_026"
-	TokenMissingKid           ID = "TOKEN_027"
-	TokenInvalidRefreshClaims ID = "TOKEN_028"
-	TokenUnverifiable         ID = "TOKEN_029"
-	TokenMissingAccessClaims  ID = "TOKEN_030"
-	TokenMissingRefreshClaims ID = "TOKEN_031"
-	TokenReuseIdentified      ID = "TOKEN_032"
-	TokenUserMismatch         ID = "TOKEN_033"
-	TokenInvalidFormat        ID = "TOKEN_034"
-	TokenUntrusted            ID = "TOKEN_035"
-)
+	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
+	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
+	AuthInvalidRefreshCookie = fail.ID(0, "AUTH", 2, false, "AUTHInvalidRefreshCookie")
+	AuthInvalidAccessCookie  = fail.ID(0, "AUTH", 3, false, "AUTHInvalidAccessCookie")
+	AuthMissingRefreshCookie = fail.ID(0, "AUTH", 4, false, "AUTHMissingRefreshCookie")
+	AuthMissingAccessCookie  = fail.ID(0, "AUTH", 5, false, "AUTHMissingAccessCookie")
 
-const (
-	ProjectInvalidID            ID = "PROJ_001"
-	ProjectNotFound             ID = "PROJ_002"
-	ProjectInactive             ID = "PROJ_003"
-	ProjectErrorGeneratingKeys  ID = "PROJ_004"
-	ProjectErrorParsingKeys     ID = "PROJ_005"
-	ProjectOwnershipCheckFailed ID = "PROJ_006"
-	ProjectNotOwnedByPrincipal  ID = "PROJ_007"
-	ProjectMissingID            ID = "PROJ_008"
-	ProjectFailedToParseKey     ID = "PROJ_009"
-)
+	AuthInvalidPrincipal      = fail.ID(0, "AUTH", 0, true, "AUTHInvalidPrincipal")
+	AuthInvalidPassword       = fail.ID(0, "AUTH", 1, true, "AUTHInvalidPassword")
+	AuthNotClient             = fail.ID(0, "AUTH", 2, true, "AUTHNotClient")
+	AuthNotProjectUser        = fail.ID(0, "AUTH", 3, true, "AUTHNotProjectUser")
+	AuthAlreadyVerified       = fail.ID(0, "AUTH", 4, true, "AUTHAlreadyVerified")
+	AuthPrincipalNotInContext = fail.ID(0, "AUTH", 5, true, "AUTHPrincipalNotInContext")
 
-const (
-	ProjectUserInvalidMetadata                 ID = "PROJ_USR_001"
-	ProjectUserRegisterOnSchemaVersionDraft    ID = "PROJ_USR_002"
-	ProjectUserRegisterOnSchemaDraft           ID = "PROJ_USR_003"
-	ProjectUserRegisterOnSchemaArchived        ID = "PROJ_USR_004"
-	ProjectUserRegisterOnSchemaVersionArchived ID = "PROJ_USR_005"
-	ProjectUserErrorEncodingMetadata           ID = "PROJ_USR_006"
-	ProjectUserNotFromProject                  ID = "PROJ_USR_007"
-	ProjectUserRegisterOnSchemaNoVersion       ID = "PROJ_USR_008"
-)
+	SessionNotFound            = fail.ID(0, "SESSION", 0, true, "SESSIONNotFound")
+	SessionSelfRevokeForbidden = fail.ID(0, "SESSION", 1, true, "SESSIONSelfRevokeForbidden")
+	SessionUnauthorized        = fail.ID(0, "SESSION", 2, true, "SESSIONUnauthorized")
 
-const (
-	SchemaFlowIDAlreadyExistsInType ID = "SCHEMA_001"
-	SchemaInvalidSchemaType         ID = "SCHEMA_002"
-	SchemaInvalidID                 ID = "SCHEMA_003"
-	SchemaNotOwnedByPrincipal       ID = "SCHEMA_004"
-	SchemaNoPublishedVersion        ID = "SCHEMA_005"
-	SchemaHasOnlyDraftVersion       ID = "SCHEMA_006"
-	SchemaHasOnlyArchivedVersion    ID = "SCHEMA_007"
-	SchemaTryingToPublishPublished  ID = "SCHEMA_008"
-	SchemaTryingToPublishArchived   ID = "SCHEMA_009"
-	SchemaNoValidStatus             ID = "SCHEMA_010"
-	SchemaInvalidFlowID             ID = "SCHEMA_011"
-	SchemaFlowIDIsReserved          ID = "SCHEMA_012"
-	SchemaInvalidMetadata           ID = "SCHEMA_013"
-	SchemaMetadataNotAllowed        ID = "SCHEMA_014"
-	SchemaMissingID                 ID = "SCHEMA_015"
-	SchemaEmptySchemaType           ID = "SCHEMA_016"
-	SchemaEmptyFlowID               ID = "SCHEMA_017"
-	SchemaNotFound                  ID = "SCM_018"
-)
+	SessionRevoked = fail.ID(0, "SESSION", 0, false, "SESSIONRevoked")
 
-const (
-	SchemaVersionDraftAlreadyExists         ID = "SCM_VER_001"
-	SchemaVersionInvalidID                  ID = "SCM_VER_002"
-	SchemaVersionPublishWithNoFields        ID = "SCM_VER_003"
-	SchemaVersionDraftDoesntExist           ID = "SCM_VER_004"
-	SchemaVersionTryingToPublishPublished   ID = "SCM_VER_005"
-	SchemaVersionTryingToPublishArchived    ID = "SCM_VER_006"
-	SchemaVersionMismatch                   ID = "SCM_VER_007"
-	SchemaVersionNotDraft                   ID = "SCM_VER_008"
-	SchemaVersionNoValidStatus              ID = "SCM_VER_009"
-	SchemaVersionDraftOnNonPublished        ID = "SCM_VER_010"
-	SchemaVersionNoChanges                  ID = "SCM_VER_011"
-	SchemaVersionTryingToPublishNonExistant ID = "SCM_VER_012"
-)
+	TokenInvalid             = fail.ID(0, "TOKEN", 0, false, "TOKENInvalid")
+	TokenExpired             = fail.ID(0, "TOKEN", 1, false, "TOKENExpired")
+	TokenMalformed           = fail.ID(0, "TOKEN", 2, false, "TOKENMalformed")
+	TokenSignatureInvalid    = fail.ID(0, "TOKEN", 3, false, "TOKENSignatureInvalid")
+	TokenInvalidAlg          = fail.ID(0, "TOKEN", 4, false, "TOKENInvalidAlgorithm")
+	TokenCouldNotSign        = fail.ID(0, "TOKEN", 5, false, "TOKENCouldNotSign")
+	TokenInvalidAccessClaims = fail.ID(0, "TOKEN", 6, false, "TOKENInvalidAccessClaims")
+	TokenNotYetValid         = fail.ID(0, "TOKEN", 7, false, "TOKENNotYetValid")
+	TokenUsedBeforeIssued    = fail.ID(0, "TOKEN", 8, false, "TOKENUsedBeforeIssued")
+	TokenInvalidIssuer       = fail.ID(0, "TOKEN", 9, false, "TOKENInvalidIssuer")
+	TokenInvalidSubject      = fail.ID(0, "TOKEN", 10, false, "TOKENInvalidSubject")
+	TokenInvalidAudience     = fail.ID(0, "TOKEN", 11, false, "TOKENInvalidAudience")
+	TokenRefreshInvalidID    = fail.ID(0, "TOKEN", 12, false, "TOKENRefreshInvalidID")
+	TokenAccessInvalidID     = fail.ID(0, "TOKEN", 13, false, "TOKENAccessInvalidID")
+	TokenInvalidKid          = fail.ID(0, "TOKEN", 14, false, "TOKENInvalidKeyID")
+	TokenUnknownKid          = fail.ID(0, "TOKEN", 15, false, "TOKENUnknownKeyID")
+	TokenMissingKid          = fail.ID(0, "TOKEN", 16, false, "TOKENMissingKeyID")
+	TokenUnverifiable        = fail.ID(0, "TOKEN", 17, false, "TOKENUnverifiable")
+	TokenReuseIdentified     = fail.ID(0, "TOKEN", 18, false, "TOKENReuseIdentified")
+	TokenUserMismatch        = fail.ID(0, "TOKEN", 19, false, "TOKENUserMismatch")
+	TokenInvalidFormat       = fail.ID(0, "TOKEN", 20, false, "TOKENInvalidFormat")
+	TokenUntrusted           = fail.ID(0, "TOKEN", 21, false, "TOKENUntrusted")
 
-const (
-	FieldSamePositionForMultipleFields ID = "FIELD_001"
-	FieldNoAffectedRowsOnClone         ID = "FIELD_002"
-	FieldInvalidCharactersInKey        ID = "FIELD_003"
-	FieldNotDefinedInSchema            ID = "FIELD_004"
-	FieldTypeMismatch                  ID = "FIELD_005"
-	FieldSameKeyForMultipleFields      ID = "FIELD_006"
-	FieldRequiredMissing               ID = "FIELD_007"
-	FieldInvalidType                   ID = "FIELD_008"
-	FieldInvalidOwner                  ID = "FIELD_009"
-	FieldValidationErrSchemaRegister   ID = "FIELD_010"
-	FieldInvalidValue                  ID = "FIELD_011"
-	FieldNotFound                      ID = "FIELD_012"
-)
+	TokenSessionMismatch      = fail.ID(0, "TOKEN", 0, true, "TOKENSessionMismatch")
+	TokenMismatchDuringAuth   = fail.ID(0, "TOKEN", 1, true, "TokenMismatchDuringAuth")
+	TokenMissingAccessClaims  = fail.ID(0, "TOKEN", 2, true, "TOKENMissingAccessClaims")
+	TokenMissingRefreshClaims = fail.ID(0, "TOKEN", 3, true, "TOKENMissingRefreshClaims")
 
-const (
-	ScopeEmptyName                  ID = "SCP_001"
-	ScopeDuplicateNameAndExternalID ID = "SCP_002"
-	ScopeInvalid                    ID = "SCP_003"
-)
+	ProjectErrorGeneratingKeys = fail.ID(0, "PROJECT", 0, false, "PROJECTErrorGeneratingKeys")
+	ProjectNotOwnedByPrincipal = fail.ID(0, "PROJECT", 1, false, "PROJECTNotOwnedByPrincipal")
 
-const (
-	PermissionInvalidObject            ID = "PERM_001"
-	PermissionInvalidAction            ID = "PERM_002"
-	PermissionNotOwnedByPrincipal      ID = "PERM_003"
-	PermissionAlreadyGranted           ID = "PERM_004"
-	PermissionObjectMismatch           ID = "PERM_005"
-	PermissionActionMismatch           ID = "PERM_006"
-	PermissionInsufficient             ID = "PERM_007"
-	PermissionConditionValidationError ID = "PERM_008"
-)
+	ProjectNotFound = fail.ID(0, "PROJECT", 0, true, "PROJECTNotFound")
 
-const (
-	RoleEmptyName           ID = "ROLE_001"
-	RoleNotOwnedByPrincipal ID = "ROLE_002"
-	RoleNameTaken           ID = "ROLE_003"
-	RoleAlreadyGranted      ID = "ROLE_004"
-)
+	ProjectUserErrorEncodingMetadata = fail.ID(0, "PROJECTUSER", 0, false, "PROJECTUSERErrorEncodingMetadata")
+	ProjectUserRegisterOnNoneProject = fail.ID(0, "PROJECTUSER", 1, false, "PROJECTUSERRegisterOnNoneProject")
 
-const (
-	DBNotFound             ID = "DB_000"
-	DBUniqueViolation      ID = "DB_001"
-	DBForeignKeyViolation  ID = "DB_002"
-	DBNotNullViolation     ID = "DB_003"
-	DBValueTooLong         ID = "DB_004"
-	DBSerializationFailure ID = "DB_005"
-	DBCommitTXFailed       ID = "DB_006"
-	DBBeginTXFailed        ID = "DB_007"
-	DBNestedTXNotAllowed   ID = "DB_008"
-	DBCheckViolation       ID = "DB_009"
-	DBTransactionPanicked  ID = "DB_010"
-)
+	ProjectUserRegisterOnSchemaVersionDraft    = fail.ID(0, "PROJECTUSER", 0, true, "PROJECTUSERRegisterOnSchemaVersionDraft")
+	ProjectUserRegisterOnSchemaDraft           = fail.ID(0, "PROJECTUSER", 1, true, "PROJECTUSERRegisterOnSchemaDraft")
+	ProjectUserRegisterOnSchemaArchived        = fail.ID(0, "PROJECTUSER", 2, true, "PROJECTUSERRegisterOnSchemaArchived")
+	ProjectUserRegisterOnSchemaVersionArchived = fail.ID(0, "PROJECTUSER", 3, true, "PROJECTUSERRegisterOnSchemaVersionArchived")
+	ProjectUserNotFromProject                  = fail.ID(0, "PROJECTUSER", 4, true, "PROJECTUSERNotFromProject")
+	ProjectUserRegisterOnSchemaNoVersion       = fail.ID(0, "PROJECTUSER", 5, true, "PROJECTUSERRegisterOnSchemaNoVersion")
 
-const (
-	SystemInternalError            ID = "SYS_001"
-	SystemMisconfigured            ID = "SYS_002"
-	SystemDependencyDown           ID = "SYS_003"
-	SystemNotImplemented           ID = "SYS_004"
-	SystemTransactionWithNoContext ID = "SYS_005"
-	SystemErrorGeneratingUUID      ID = "SYS_006"
-	SystemErrorBCryptHashingFailed ID = "SYS_007"
-	SystemServiceUnavailable       ID = "SYS_008"
-	SystemErrorRenderingEmail      ID = "SYS_009"
-	SystemJWKSRetrievalFailed      ID = "SYS_010"
+	SchemaNotOwnedByPrincipal = fail.ID(0, "SCHEMA", 0, false, "SCHEMANotOwnedByPrincipal")
+	SchemaNoValidStatus       = fail.ID(0, "SCHEMA", 1, false, "SCHEMANoValidStatus")
+	SchemaInvalidFlowID       = fail.ID(0, "SCHEMA", 2, false, "SCHEMAInvalidFlowID")
+	SchemaFlowIDIsReserved    = fail.ID(0, "SCHEMA", 3, false, "SCHEMAFlowIDIsReserved")
+
+	SCHEMANoPublishedVersion        = fail.ID(0, "SCHEMA", 0, true, "SCHEMANoPublishedVersion")
+	SchemaFlowIDAlreadyExistsInType = fail.ID(0, "SCHEMA", 1, true, "SCHEMAFlowIDAlreadyExistsInType")
+	SchemaInvalidSchemaType         = fail.ID(0, "SCHEMA", 2, true, "SCHEMAInvalidSchemaType")
+	SchemaHasOnlyDraftVersion       = fail.ID(0, "SCHEMA", 3, true, "SCHEMAHasOnlyDraftVersion")
+	SchemaHasOnlyArchivedVersion    = fail.ID(0, "SCHEMA", 4, true, "SCHEMAHasOnlyArchivedVersion")
+	SchemaTryingToPublishPublished  = fail.ID(0, "SCHEMA", 5, true, "SCHEMATryingToPublishPublished")
+	SchemaTryingToPublishArchived   = fail.ID(0, "SCHEMA", 6, true, "SCHEMATryingToPublishArchived")
+	SchemaMetadataNotAllowed        = fail.ID(0, "SCHEMA", 7, true, "SCHEMAMetadataNotAllowed")
+	SchemaEmptySchemaType           = fail.ID(0, "SCHEMA", 8, true, "SCHEMAEmptySchemaType")
+	SchemaEmptyFlowID               = fail.ID(0, "SCHEMA", 9, true, "SCHEMAEmptyFlowID")
+
+	SchemaVersionNotDraft           = fail.ID(0, "SCHEMAVERSION", 0, false, "SCHEMAVERSIONNotDraft")
+	SCHEMAVersionDraftAlreadyExists = fail.ID(0, "SCHEMAVERSION", 1, false, "SCHEMAVERSIONDraftAlreadyExists")
+
+	SchemaVersionPublishWithNoFields         = fail.ID(0, "SCHEMAVERSION", 0, true, "SCHEMAVERSIONPublishWithNoFields")
+	SchemaVersionDraftDoesntExist            = fail.ID(0, "SCHEMAVERSION", 1, true, "SCHEMAVERSIONDraftDoesntExist")
+	SchemaVersionTryingToPublishPublished    = fail.ID(0, "SCHEMAVERSION", 2, true, "SCHEMAVERSIONTryingToPublishPublished")
+	SchemaVersionTryingToPublishArchived     = fail.ID(0, "SCHEMAVERSION", 3, true, "SCHEMAVERSIONTryingToPublishArchived")
+	SchemaVersionMismatch                    = fail.ID(0, "SCHEMAVERSION", 4, true, "SCHEMAVERSIONMismatch")
+	SchemaVersionNonDraftAddFieldsNotAllowed = fail.ID(0, "SCHEMAVERSION", 5, true, "SCHEMAVERSIONNonDraftAddFieldsNotAllowed")
+	SchemaVersionNoValidStatus               = fail.ID(0, "SCHEMAVERSION", 6, true, "SCHEMAVERSIONNoValidStatus")
+	SchemaVersionDraftOnNonPublished         = fail.ID(0, "SCHEMAVERSION", 7, true, "SCHEMAVERSIONDraftOnNonPublished")
+	SchemaVersionNoChanges                   = fail.ID(0, "SCHEMAVERSION", 8, true, "SCHEMAVERSIONNoChanges")
+	SchemaVersionTryingToPublishNonExistant  = fail.ID(0, "SCHEMAVERSION", 9, true, "SCHEMAVERSIONTryingToPublishNonExistant")
+	SchemaVersionNotPublished                = fail.ID(0, "SCHEMAVERSION", 10, true, "SCHEMAVERSIONNotPublished")
+
+	FIELDValidationErrorOnSchemaRegister = fail.ID(0, "FIELD", 0, false, "FIELDValidationErrorOnSchemaRegister")
+	FIELDNotFound                        = fail.ID(0, "FIELD", 1, false, "FIELDNotFound")
+	FIELDInvalidOwner                    = fail.ID(0, "FIELD", 2, false, "FIELDInvalidOwner")
+	FieldNoAffectedRowsOnClone           = fail.ID(0, "FIELD", 3, false, "FIELDNoAffectedRowsOnClone")
+	FIELDInvalidType                     = fail.ID(0, "FIELD", 4, false, "FIELDInvalidType")
+	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 5, false, "FIELDSameKeyForMultipleFields")
+	FIELDSamePositionForMultipleFields   = fail.ID(0, "FIELD", 6, false, "FIELDSamePositionForMultipleFields")
+	FIELDInvalidCharactersInKey          = fail.ID(0, "FIELD", 7, false, "FIELDInvalidCharactersInKey")
+
+	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
+
+	FORMMissingRequiredField = fail.ID(0, "FORM", 0, false, "FORMMissingRequiredFields")
+	FORMInvalidFieldValue    = fail.ID(0, "FORM", 1, false, "FORMInvalidFieldValue")
+
+	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
+	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
+	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
+	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
+	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
+	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
+	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
+	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
+	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
+	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
+
+	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
+	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
+	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
+	SYSRenderingEmailFailed  = fail.ID(9, "SYS", 3, false, "SYSRenderingEmailFailed")
+	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
+	SYSJWKSEncodingFailed    = fail.ID(9, "SYS", 5, false, "SYSJWKSEncodingFailed")
+
+	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
+	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
+
+	DBTransactionPanicked     = fail.ID(9, "DB", 0, false, "DBTransactionPanicked")
+	DBBeginTransactionFailed  = fail.ID(9, "DB", 1, false, "DBBeginTransactionFailed")
+	DBTransactionCommitFailed = fail.ID(9, "DB", 2, false, "DBTransactionCommitFailed")
+
+	DBNestedTransactionNotAllowed = fail.ID(9, "DB", 0, true, "DBNestedTransactionNotAllowed")
+
+	ROLENotOwnedByPrincipal = fail.ID(0, "ROLE", 0, false, "ROLENotOwnedByPrincipal")
+	ROLEAlreadyGranted      = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+	ROLENameAlreadyTaken    = fail.ID(0, "ROLE", 2, false, "ROLENameAlreadyTaken")
+
+	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
+	SCOPEInvalidShape               = fail.ID(0, "SCOPE", 1, false, "SCOPEInvalidShape")
+	SCOPEOneGlobal                  = fail.ID(9, "SCOPE", 2, false, "SCOPEOneGlobal")
+	SCOPEOneProjectRootPerProject   = fail.ID(9, "SCOPE", 3, false, "SCOPEOneProjectRootPerProject")
+
+	SCOPEEmptyName = fail.ID(0, "SCOPE", 0, true, "SCOPEEmptyName")
+
+	PERMissionLogicalConditionValidationError = fail.ID(0, "PERM", 0, false, "PERMissionLogicalConditionValidationError")
+	PERMissionConditionValidationError        = fail.ID(0, "PERM", 1, false, "PERMissionConditionValidationError")
+	PERMissionActionMismatch                  = fail.ID(0, "PERM", 2, false, "PERMissionActionMismatch")
+	PERMissionObjectMismatch                  = fail.ID(0, "PERM", 3, false, "PERMissionObjectMismatch")
+	PERMissionAlreadyGranted                  = fail.ID(0, "PERM", 4, false, "PERMissionAlreadyGranted")
+	PERMissionNotOwnedByPrincipal             = fail.ID(0, "PERM", 5, false, "PERMissionNotOwnedByPrincipal")
+	PERMissionInvalidAction                   = fail.ID(0, "PERM", 6, false, "PERMissionInvalidAction")
+	PERMissionInvalidObject                   = fail.ID(0, "PERM", 7, false, "PERMissionInvalidObject")
+	PERMissionAlreadyExists                   = fail.ID(0, "PERM", 8, false, "PERMissionAlreadyExists")
+
+	PERMissionInsufficient = fail.ID(0, "PERM", 0, true, "PERMissionInsufficient")
+	PERMissionNoResource   = fail.ID(0, "PERM", 1, true, "PERMissionNoResource")
+
+	EMAILTemplateNotFound = fail.ID(0, "EMAIL", 0, false, "EMAILTemplateNotFound")
 )

@@ -60,9 +60,3 @@ func ScopeSliceToScopeSliceOutput(scopes []scopes.Scope) []ScopeOutput {
 	}
 	return result
 }
-
-type ErrEmptyScopeName struct{}
-
-func (e ErrEmptyScopeName) Error() string {
-	return "Scope name must not be empty"
-}

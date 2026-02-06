@@ -1,14 +1,5 @@
 package inbounds
 
-type ErrParseProjectKey struct {
-	KeyType string
-	Cause   error
-}
-
-func (e ErrParseProjectKey) Error() string {
-	return "failed to parse project " + e.KeyType + " key"
-}
-
 type ErrInvalidPEMPubKey struct{}
 
 func (e ErrInvalidPEMPubKey) Error() string {

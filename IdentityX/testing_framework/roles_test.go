@@ -106,7 +106,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "admin",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleNameTaken).
+			HasErrID(apierr.ROLENameAlreadyTaken). // FIXME make the error "role name 'NAME' already taken"
 			HasMessage("role name already taken")
 	})
 
@@ -340,7 +340,6 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		Validate(t, val, spec)
 	})
 
-	//FIXME check if scope allow multiple id on the same name
 	var eventScopeID string
 	t.Run("CreateEventScope", func(t *testing.T) {
 		val := suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/scopes").
@@ -837,9 +836,9 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"role_id":  scopelessRoleID,
 				"scope_id": nil,
 			}).
-			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
-			HasMessage("user already has this role in the specified scope")
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.ROLEAlreadyGranted).
+			HasMessage("scopeless role already granted to user")
 	})
 
 	t.Run("GiveUserDuplicateScopelessRoleOnEventScope", func(t *testing.T) {
@@ -848,9 +847,9 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"role_id":  scopelessRoleID,
 				"scope_id": eventScopeID,
 			}).
-			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
-			HasMessage("user already has this role in the specified scope")
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.ROLEAlreadyGranted).
+			HasMessage("scopeless role already granted to user")
 	})
 
 	t.Run("GiveUserDuplicateScopelessRoleOnActivityScope", func(t *testing.T) {
@@ -859,9 +858,9 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"role_id":  scopelessRoleID,
 				"scope_id": activityScopeID,
 			}).
-			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
-			HasMessage("user already has this role in the specified scope")
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.ROLEAlreadyGranted).
+			HasMessage("scopeless role already granted to user")
 	})
 
 	t.Run("GiveUserDuplicateScopelessRoleOnActivitySubScope", func(t *testing.T) {
@@ -870,9 +869,9 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"role_id":  scopelessRoleID,
 				"scope_id": activitySubScopeID,
 			}).
-			Expect(http.StatusConflict).
-			HasErrID(apierr.RoleAlreadyGranted).
-			HasMessage("user already has this role in the specified scope")
+			Expect(http.StatusBadRequest).
+			HasErrID(apierr.ROLEAlreadyGranted).
+			HasMessage("scopeless role already granted to user")
 	})
 
 	// FIXME right now taking a role from a user succeeds with OK because of how DELETE works in SQL
@@ -914,7 +913,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"scope_id":      nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.PermissionAlreadyGranted).
+			HasErrID(apierr.PERMissionAlreadyGranted).
 			HasMessage("user already has this permission in the specified scope")
 	})
 

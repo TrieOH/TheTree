@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -53,22 +55,22 @@ const (
 )
 
 var (
-	goAuthMiddlewareTracer = otel.Tracer("GoAuthMiddlewareTracer")
+	MwTracer = otel.Tracer("GoAuthMiddlewareTracer")
 )
 
 // RequestID is a middleware that adds a request ID to the request context.
 // It also adds the request ID to the response headers.
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := goAuthMiddlewareTracer.Start(r.Context(), "Middleware.RequestID")
+		ctx, span := MwTracer.Start(r.Context(), "Middleware.RequestID")
+		trace.ContextWithSpan(ctx, span)
 		defer span.End()
 
 		reqID := r.Header.Get("X-Request-ID")
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				apiErr := apierr.ErrInternal.WithMsg("error generating UUID V7 at middleware/RequestID").WithID(apierr.SystemErrorGeneratingUUID).WithCause(err)
-				apierr.RecordSystemError(span, apiErr)
+				_ = fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

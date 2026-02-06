@@ -9,6 +9,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -82,9 +83,7 @@ func (repo *schemaFieldsRepo) Create(ctx context.Context, toCreate field.Field) 
 		SchemaID:        toCreate.SchemaID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -107,9 +106,7 @@ func (repo *schemaFieldsRepo) GetByVersionID(ctx context.Context, schemaVersionI
 
 	sqlcFields, err := repo.queries(ctx).GetFieldsByVersionID(ctx, schemaVersionID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -136,9 +133,7 @@ func (repo *schemaFieldsRepo) ListFromSchema(ctx context.Context, schemaID uuid.
 
 	sqlcFields, err := repo.queries(ctx).ListFieldsFromSchema(ctx, schemaID)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("count", len(sqlcFields)))
@@ -166,9 +161,7 @@ func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, ver
 		SchemaVersionID: versionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Int("count", len(sqlcFields)))
@@ -184,12 +177,12 @@ func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, ver
 
 func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
+	return fail.New(apierr.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
-	return apierr.ErrInternal.WithMsg("functionality not implemented").WithID(apierr.SystemNotImplemented)
+	return fail.New(apierr.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, toVersionID uuid.UUID) error {
@@ -206,9 +199,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 		SourceVersionID: fromVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 	span.SetAttributes(attribute.Int64("cloned_fields", fieldsRows))
 
@@ -217,9 +208,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 		SourceVersionID: fromVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 	span.SetAttributes(attribute.Int64("cloned_options", optionsRows))
 
@@ -228,9 +217,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 		SourceVersionID: fromVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 	span.SetAttributes(attribute.Int64("cloned_visibility_rules", visRows))
 
@@ -239,16 +226,12 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 		SourceVersionID: fromVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 	span.SetAttributes(attribute.Int64("cloned_required_rules", reqRows))
 
-	// FIXME make this a domain error
 	if reqRows+visRows+optionsRows+fieldsRows == 0 {
-		apiErr := apierr.ErrNotFound.WithMsg("no affected rows").WithID(apierr.FieldNoAffectedRowsOnClone)
-		apierr.RecordDomainError(span, apiErr)
+		apiErr := fail.New(apierr.FieldNoAffectedRowsOnClone)
 		return apiErr
 	}
 
@@ -269,9 +252,7 @@ func (repo *schemaFieldsRepo) DiffVersionsState(ctx context.Context, baseVersion
 		DraftVersionID: draftVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return false, sqlcErr
+		return false, fail.From(err).RecordCtx(ctx)
 	}
 
 	return hasChanges, nil
@@ -292,9 +273,7 @@ func (repo *schemaFieldsRepo) DiffVersionsFullState(ctx context.Context, baseVer
 		DraftVersionID: draftVersionID,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return schema.DiffResult{}, sqlcErr
+		return schema.DiffResult{}, fail.From(err).RecordCtx(ctx)
 	}
 
 	diff := schema.DiffResult{
@@ -405,9 +384,7 @@ func (repo *schemaFieldsRepo) CreateOption(ctx context.Context, option field.Opt
 		Position: option.Position,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	return &field.Option{
@@ -428,9 +405,7 @@ func (repo *schemaFieldsRepo) GetOptionsByFieldIDs(ctx context.Context, fieldIDs
 
 	sqlcOpts, err := repo.queries(ctx).GetFieldOptions(ctx, fieldIDs)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	options := make([]field.Option, len(sqlcOpts))
@@ -461,9 +436,7 @@ func (repo *schemaFieldsRepo) CreateVisibilityRule(ctx context.Context, rule fie
 		Value:            rule.Value,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	return &field.VisibilityRule{
@@ -485,9 +458,7 @@ func (repo *schemaFieldsRepo) GetVisibilityRulesByFieldIDs(ctx context.Context, 
 
 	sqlcRules, err := repo.queries(ctx).GetFieldVisibilityRules(ctx, fieldIDs)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	rules := make([]field.VisibilityRule, len(sqlcRules))
@@ -519,9 +490,7 @@ func (repo *schemaFieldsRepo) CreateRequiredRule(ctx context.Context, rule field
 		Value:            rule.Value,
 	})
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	return &field.RequiredRule{
@@ -543,9 +512,7 @@ func (repo *schemaFieldsRepo) GetRequiredRulesByFieldIDs(ctx context.Context, fi
 
 	sqlcRules, err := repo.queries(ctx).GetFieldRequiredRules(ctx, fieldIDs)
 	if err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return nil, sqlcErr
+		return nil, fail.From(err).RecordCtx(ctx)
 	}
 
 	rules := make([]field.RequiredRule, len(sqlcRules))
@@ -594,9 +561,7 @@ func (repo *schemaFieldsRepo) CreateBatch(ctx context.Context, toCreate []field.
 
 	// Bulk insert using COPY FROM (very efficient)
 	if _, err := repo.queries(ctx).CreateSchemaFieldsBatch(ctx, params); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -625,9 +590,7 @@ func (repo *schemaFieldsRepo) CreateOptionsBatch(ctx context.Context, options []
 
 	// Bulk insert using COPY FROM (very efficient)
 	if _, err := repo.queries(ctx).CreateFieldOptionsBatch(ctx, params); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -654,9 +617,7 @@ func (repo *schemaFieldsRepo) CreateVisibilityRulesBatch(ctx context.Context, ru
 	}
 
 	if _, err := repo.queries(ctx).CreateVisibilityRulesBatch(ctx, params); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil
@@ -683,9 +644,7 @@ func (repo *schemaFieldsRepo) CreateRequiredRulesBatch(ctx context.Context, rule
 	}
 
 	if _, err := repo.queries(ctx).CreateRequiredRulesBatch(ctx, params); err != nil {
-		sqlcErr := apierr.FromSQLC(err)
-		apierr.RecordSQLCError(span, sqlcErr)
-		return sqlcErr
+		return fail.From(err).RecordCtx(ctx)
 	}
 
 	return nil

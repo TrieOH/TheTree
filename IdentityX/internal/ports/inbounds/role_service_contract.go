@@ -52,17 +52,3 @@ func RoleSliceToRoleOutputSlice(roles []roles.Role) []RoleOutput {
 	}
 	return out
 }
-
-type ErrRoleNotOwned struct {
-	Msg string
-}
-
-func (e ErrRoleNotOwned) Error() string {
-	return e.Msg
-}
-
-type ErrProjectUserNotFromProject struct{}
-
-func (e ErrProjectUserNotFromProject) Error() string {
-	return "project user not from project"
-}

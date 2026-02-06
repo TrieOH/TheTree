@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
+	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel"
 )
 
@@ -41,7 +42,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -51,11 +52,11 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get scopes for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
 	}
 
 	if in.Name == "" {
-		return nil, apierr.FromService(span, inbounds.ErrEmptyScopeName{})
+		return nil, fail.New(apierr.SCOPEEmptyName).RecordCtx(ctx)
 	}
 
 	scope, err := uc.scopes.Create(ctx, scopes.Scope{
@@ -77,7 +78,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -87,7 +88,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get a scope for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get a scope for a project you don't own").RecordCtx(ctx)
 	}
 
 	scope, err := uc.scopes.GetByIDExternal(ctx, in.ScopeID, in.ProjectID)
@@ -104,7 +105,7 @@ func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.Get
 
 	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, apierr.FromService(span, err)
+		return nil, err
 	}
 
 	var isOwner bool
@@ -114,7 +115,7 @@ func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.Get
 	}
 
 	if !isOwner {
-		return nil, apierr.FromService(span, inbounds.ErrNotProjectOwner{Msg: "cannot get scopes for a project you don't own"})
+		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
 	}
 
 	projectScopes, err := uc.scopes.GetProjectScopes(ctx, in.ProjectID)

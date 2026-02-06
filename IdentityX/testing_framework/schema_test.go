@@ -155,7 +155,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.SchemaNoPublishedVersion).
+			HasErrID(apierr.SCHEMANoPublishedVersion).
 			HasMessage("cannot publish a schema with no versions")
 	})
 
@@ -256,7 +256,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSamePositionForMultipleFields).
+			HasErrID(apierr.FIELDSamePositionForMultipleFields).
 			HasMessage("two fields can't occupy the same position")
 	})
 
@@ -290,7 +290,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -432,7 +432,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FieldInvalidCharactersInKey).
+			HasErrID(apierr.FIELDInvalidCharactersInKey).
 			HasMessage("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores")
 	})
 
@@ -493,7 +493,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -515,7 +515,7 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.FieldSameKeyForMultipleFields).
+			HasErrID(apierr.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
 
@@ -1351,8 +1351,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			WithQuery("flow_id", "scti-register").
 			WithQuery("schema_type", "core").
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.DBNotFound).
-			HasMessage("resource not found")
+			HasErrID(apierr.SQLNotFound).
+			HasMessage("schema not found")
 	})
 
 	t.Run("GetFormByFlowLookupMissingRequiredQuery", func(t *testing.T) {
