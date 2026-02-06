@@ -14,6 +14,7 @@ import (
 	"github.com/MintzyG/fail/v3/plugins/tracing/otel"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
@@ -71,6 +72,15 @@ func SetupDB(app *GoauthApp, migrationPath string) {
 	}
 
 	SetupRuntimeEnv(db)
+}
+
+func SetupRedis(timeout time.Duration) *redis.Client {
+	rdb, err := database.WaitForRedis(timeout)
+	if err != nil {
+		log.Fatalf("Failed to connect Redis: %v", err)
+	}
+
+	return rdb
 }
 
 func SetupCron(db *pgxpool.Pool, app *GoauthApp) {

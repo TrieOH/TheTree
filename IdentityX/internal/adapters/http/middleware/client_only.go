@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
+	"GoAuth/internal/domain/authz"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -19,7 +19,7 @@ func ClientOnly() func(http.Handler) http.Handler {
 			trace.ContextWithSpan(ctx, span)
 			defer span.End()
 			var rs *resp.Response
-			principal, err := auth.RequirePrincipal(ctx)
+			principal, err := authz.RequirePrincipal(ctx)
 			if err != nil {
 				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()).RecordCtx(ctx), "http")
 				if err != nil {

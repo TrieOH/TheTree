@@ -106,6 +106,10 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "está faltando o principal no contexto",
 		})
+	ErrAuthUserSchemaOutdated = fail.Form(AuthUserSchemaOutdated, "user schema is outdated, please upgrade your metadata", false, map[string]any{"code": 403}).
+					AddLocalizations(map[string]string{
+			"pt-BR": "o schema do usuário está desatualizado, por favor atualize seus metadados",
+		})
 
 	// ------ SESSION ------
 	ErrSessionRevoked = fail.Form(SessionRevoked, "session not found or revoked", false, map[string]any{"code": 401}).

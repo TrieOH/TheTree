@@ -11,11 +11,15 @@ import (
 )
 
 type AuthHandler struct {
-	auth inbounds.AuthService
+	auth   inbounds.AuthService
+	schema inbounds.SchemaService
 }
 
-func NewAuthHandler(uc inbounds.AuthService) *AuthHandler {
-	return &AuthHandler{auth: uc}
+func NewAuthHandler(uc inbounds.AuthService, schema inbounds.SchemaService) *AuthHandler {
+	return &AuthHandler{
+		auth:   uc,
+		schema: schema,
+	}
 }
 
 // Register godoc
@@ -90,7 +94,9 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
 
-	resp.OK("Logged in").Send(w)
+	resp.OK("Logged in").WithData(map[string]any{
+		"is_up_to_date": tokens.IsUpToDate,
+	}).Send(w)
 }
 
 // Logout godoc
@@ -167,7 +173,9 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
 
-	resp.OK("Refreshed tokens").Send(w)
+	resp.OK("Refreshed tokens").WithData(map[string]any{
+		"is_up_to_date": tokens.IsUpToDate,
+	}).Send(w)
 }
 
 // GetJWKS godoc
@@ -290,7 +298,9 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
 
-	resp.OK("Logged in").Send(w)
+	resp.OK("Logged in").WithData(map[string]any{
+		"is_up_to_date": tokens.IsUpToDate,
+	}).Send(w)
 }
 
 // Verify godoc
@@ -341,4 +351,51 @@ func (handler *AuthHandler) ResendVerificationEmail(w http.ResponseWriter, r *ht
 	}
 
 	resp.OK("verification email resent successfully").Send(w)
+}
+
+// GetUpgradeForm godoc
+// @Summary Get upgrade forms for outdated user schemas
+// @Description Returns a list of forms that the user needs to complete to update their metadata to the latest schema version.
+// @Tags auth
+// @Produce json
+// @Param project_id path string true "Project ID"
+// @Success 200 {array} inbounds.FormResponse "List of upgrade forms"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Router /projects/{project_id}/upgrade-form [get]
+func (handler *AuthHandler) GetUpgradeForm(w http.ResponseWriter, r *http.Request) {
+	forms, err := handler.schema.GetUpgradeForm(r.Context())
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(forms).Send(w)
+}
+
+// UpdateMetadata godoc
+// @Summary Update user metadata
+// @Description Updates the user's metadata for a project and validates it against the latest schema version.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param project_id path string true "Project ID"
+// @Param metadata body dto.UpdateMetadataRequest true "Metadata update information"
+// @Success 200 {object} object "Metadata updated successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input"
+// @Failure 403 {object} ErrorResponse "Forbidden: Validation failed"
+// @Router /projects/{project_id}/metadata [post]
+func (handler *AuthHandler) UpdateMetadata(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateMetadataRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	err := handler.schema.UpdateMetadata(r.Context(), req.CustomFields)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Metadata updated successfully").Send(w)
 }

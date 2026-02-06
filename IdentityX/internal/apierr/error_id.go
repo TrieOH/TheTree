@@ -34,6 +34,7 @@ var (
 	AuthNotProjectUser        = fail.ID(0, "AUTH", 3, true, "AUTHNotProjectUser")
 	AuthAlreadyVerified       = fail.ID(0, "AUTH", 4, true, "AUTHAlreadyVerified")
 	AuthPrincipalNotInContext = fail.ID(0, "AUTH", 5, true, "AUTHPrincipalNotInContext")
+	AuthUserSchemaOutdated    = fail.ID(0, "AUTH", 6, true, "AUTHUserSchemaOutdated")
 
 	SessionNotFound            = fail.ID(0, "SESSION", 0, true, "SESSIONNotFound")
 	SessionSelfRevokeForbidden = fail.ID(0, "SESSION", 1, true, "SESSIONSelfRevokeForbidden")

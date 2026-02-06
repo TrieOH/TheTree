@@ -2,7 +2,6 @@ package schema_fields
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
@@ -72,7 +71,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	var warnings []error
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return inbounds.CreateFieldsResult{}, err
 	}

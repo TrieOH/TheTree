@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -26,7 +27,7 @@ import (
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
 // @title GoAuth API
-// @version 0.12.0
+// @version 0.14.0
 // @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
 // @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
 // @contact.name TrieOH
@@ -51,7 +52,7 @@ import (
 // @response 413 {object} handlers.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} handlers.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
+func CreateRouter(db *pgxpool.Pool, rdb *redis.Client) (http.Handler, *application.Application) {
 	r := chi.NewRouter()
 
 	r.Use(chimiddleware.Recoverer)
@@ -76,7 +77,7 @@ func CreateRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 	r.Handle("/metrics", middleware.Handler())
 
-	r, app := registerRoutes(db, r)
+	r, app := registerRoutes(db, rdb, r)
 
 	return otelhttp.NewHandler(r, "http.server"), app
 }

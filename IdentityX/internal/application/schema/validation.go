@@ -1,16 +1,20 @@
-package auth
+package schema
 
 import (
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/apierr"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
 	"context"
 	"encoding/json"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/MintzyG/fail/v3"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -18,10 +22,10 @@ import (
 
 var (
 	validateMetadataTracer = otel.Tracer("validateMetadataTracer")
+	validate               = validator.New()
 )
 
-// validateAndConstructMetadata validates custom fields against a schema and returns structured metadata
-func (uc *UseCase) validateAndConstructMetadata(
+func (uc *UseCase) ValidateAndConstructMetadata(
 	ctx context.Context,
 	projectID uuid.UUID,
 	schemaType schema.Type,
@@ -32,7 +36,7 @@ func (uc *UseCase) validateAndConstructMetadata(
 	var err error
 	var registerSchema *schema.Schema
 
-	ctx, span := validateMetadataTracer.Start(ctx, "validateAndConstructMetadata")
+	ctx, span := validateMetadataTracer.Start(ctx, "ValidateAndConstructMetadata")
 	defer span.End()
 
 	schemas := uc.deps.Schemas
@@ -69,12 +73,12 @@ func (uc *UseCase) validateAndConstructMetadata(
 	}
 
 	var custom map[string]any
-	if custom, err = parseCustomFields(ctx, customFields); err != nil {
+	if custom, err = uc.parseCustomFields(ctx, customFields); err != nil {
 		return nil, err
 	}
 
 	var validated map[string]any
-	validated, err = validateFields(ctx, custom, fieldDefs, registerFields)
+	validated, err = uc.ValidateFields(ctx, custom, fieldDefs, registerFields)
 	if err != nil {
 		return nil, err
 	}
@@ -101,85 +105,69 @@ func (uc *UseCase) validateAndConstructMetadata(
 	return &rawMetadata, nil
 }
 
-func validateFields(ctx context.Context, custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, error) {
-	ctx, span := validateMetadataTracer.Start(ctx, "validateFields")
+func (uc *UseCase) ValidateFields(ctx context.Context, custom map[string]any, fieldDefs map[string]field.Field, registerFields []field.Field) (map[string]any, error) {
+	ctx, span := validateMetadataTracer.Start(ctx, "ValidateFields")
 	defer span.End()
 
 	var errored bool
 	validationError := fail.New(apierr.FIELDValidationErrorOnSchemaRegister).RecordCtx(ctx)
 	validated := make(map[string]any)
 
-	// Build map of provided values (filter unknown fields, allow null for optional)
 	providedValues := make(map[string]any)
 	for key, value := range custom {
-		// Skip unknown fields silently
 		if _, exists := fieldDefs[key]; !exists {
 			continue
 		}
-		providedValues[key] = value // value may be nil
+		providedValues[key] = value
 	}
 
-	// Build field ID to key mapping for rule evaluation
 	fieldIDToKey := make(map[uuid.UUID]string)
 	for _, f := range registerFields {
 		fieldIDToKey[f.ObjectID] = f.Key
 	}
 
-	// Evaluate each schema field
 	for _, f := range registerFields {
 		value, wasProvided := providedValues[f.Key]
 		isNil := wasProvided && value == nil
 
-		// 1. CHECK VISIBILITY
-		// Field is visible if: no visibility rules OR any visibility rule matches
 		isVisible := true
 		if len(f.VisibilityRules) > 0 {
 			isVisible = false
 			for _, rule := range f.VisibilityRules {
-				if evaluateRuleMatches(rule.DependsOnFieldID, rule.Operator, rule.Value, providedValues, fieldIDToKey) {
+				if uc.evaluateRuleMatches(rule.DependsOnFieldID, rule.Operator, rule.Value, providedValues, fieldIDToKey) {
 					isVisible = true
 					break
 				}
 			}
 		}
 
-		// If field is NOT visible, skip entirely (no validation, no error for missing)
 		if !isVisible {
 			continue
 		}
 
-		// 2. CHECK REQUIREMENT
-		// Base requirement OR conditional requirement
 		isRequired := f.Required
-
-		// Check conditional required rules (these add to the requirement, not replace)
-		// e.g., f2 required if f1 is filled
 		if len(f.RequiredRules) > 0 {
 			for _, rule := range f.RequiredRules {
-				if evaluateRuleMatches(rule.DependsOnFieldID, rule.Operator, rule.Value, providedValues, fieldIDToKey) {
+				if uc.evaluateRuleMatches(rule.DependsOnFieldID, rule.Operator, rule.Value, providedValues, fieldIDToKey) {
 					isRequired = true
 					break
 				}
 			}
 		}
 
-		// 3. VALIDATE BASED ON REQUIRED STATUS
 		if isRequired {
-			// Required field must be provided and not nil
 			if !wasProvided || isNil {
 				errored = true
 				_ = validationError.Trace(fail.New(apierr.FORMMissingRequiredField).WithArgs(f.Key).Render().Error()).RecordCtx(ctx)
 				continue
 			}
 		} else {
-			// Optional field - if not provided or nil, skip validation
 			if !wasProvided || isNil {
 				continue
 			}
 		}
 
-		// 4. TYPE & OPTIONS VALIDATION
-		if ok := validateFieldValue(f, value); !ok {
+		if ok := uc.validateFieldValue(f, value); !ok {
 			errored = true
 			_ = validationError.Trace(fail.New(apierr.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error()).RecordCtx(ctx)
 			continue
@@ -194,7 +182,104 @@ func validateFields(ctx context.Context, custom map[string]any, fieldDefs map[st
 	return validated, nil
 }
 
-func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator, ruleValue *json.RawMessage, providedValues map[string]any, fieldIDToKey map[uuid.UUID]string) bool {
+func (uc *UseCase) UpdateMetadata(ctx context.Context, customFields *json.RawMessage) error {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.UpdateMetadata")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	userID := principal.UserID
+	if principal.ProjectID == nil {
+		return fail.New(apierr.AuthNotProjectUser).RecordCtx(ctx)
+	}
+	projectID := *principal.ProjectID
+
+	u, err := uc.deps.ProjectUsers.GetByIDInternal(ctx, userID, projectID)
+	if err != nil {
+		return err
+	}
+
+	var input map[string]any
+	if err := json.Unmarshal(*customFields, &input); err != nil {
+		return fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
+	}
+
+	newMetadataMap := make(map[string]any)
+	if u.Metadata != nil {
+		_ = json.Unmarshal(*u.Metadata, &newMetadataMap)
+	}
+
+	schemas, err := uc.deps.Schemas.List(ctx, projectID)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range schemas {
+		if s.Status != schema.StatusPublished || s.CurrentVersionID == nil {
+			continue
+		}
+
+		typeMap, ok := newMetadataMap[string(s.Type)].(map[string]any)
+		if !ok {
+			continue
+		}
+
+		flowMap, ok := typeMap[s.FlowID].(map[string]any)
+		if !ok {
+			continue
+		}
+
+		userFields, _ := flowMap["fields"].(map[string]any)
+		if userFields == nil {
+			userFields = make(map[string]any)
+		}
+
+		// Merge input into userFields
+		for k, v := range input {
+			userFields[k] = v
+		}
+
+		// Validate
+		fields, _ := uc.deps.Fields.GetByVersionIDWithRelations(ctx, *s.CurrentVersionID)
+		fieldDefs := make(map[string]field.Field)
+		for _, f := range fields {
+			fieldDefs[f.Key] = f
+		}
+
+		validated, err := uc.ValidateFields(ctx, userFields, fieldDefs, fields)
+		if err != nil {
+			return err
+		}
+
+		// Update metadata
+		flowMap["fields"] = validated
+		flowMap["schema_version_id"] = s.CurrentVersionID.String()
+		flowMap["schema_id"] = s.ID.String()
+
+		// Clear cache
+		cacheKey := "compat:" + projectID.String() + ":" + s.CurrentVersionID.String() + ":" + userID.String()
+		uc.deps.Cache.Delete(ctx, cacheKey)
+		uc.deps.Cache.Set(ctx, cacheKey, true, time.Hour)
+	}
+
+	marshalled, err := json.Marshal(newMetadataMap)
+	if err != nil {
+		return err
+	}
+
+	raw := json.RawMessage(marshalled)
+	err = uc.deps.ProjectUsers.UpdateMetadata(ctx, userID, projectID, &raw)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator, ruleValue *json.RawMessage, providedValues map[string]any, fieldIDToKey map[uuid.UUID]string) bool {
 	depKey, exists := fieldIDToKey[dependsOnFieldID]
 	if !exists {
 		return false
@@ -212,32 +297,32 @@ func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator
 		if !wasProvided || isNil {
 			return false
 		}
-		return compareRuleValue(actualValue, ruleValue) == 0
+		return uc.compareRuleValue(actualValue, ruleValue) == 0
 	case field.RuleOperatorNotEquals:
 		if !wasProvided || isNil {
 			return true
 		}
-		return compareRuleValue(actualValue, ruleValue) != 0
+		return uc.compareRuleValue(actualValue, ruleValue) != 0
 	case field.RuleOperatorGt:
 		if !wasProvided || isNil {
 			return false
 		}
-		return compareRuleValue(actualValue, ruleValue) > 0
+		return uc.compareRuleValue(actualValue, ruleValue) > 0
 	case field.RuleOperatorGte:
 		if !wasProvided || isNil {
 			return false
 		}
-		return compareRuleValue(actualValue, ruleValue) >= 0
+		return uc.compareRuleValue(actualValue, ruleValue) >= 0
 	case field.RuleOperatorLt:
 		if !wasProvided || isNil {
 			return false
 		}
-		return compareRuleValue(actualValue, ruleValue) < 0
+		return uc.compareRuleValue(actualValue, ruleValue) < 0
 	case field.RuleOperatorLte:
 		if !wasProvided || isNil {
 			return false
 		}
-		return compareRuleValue(actualValue, ruleValue) <= 0
+		return uc.compareRuleValue(actualValue, ruleValue) <= 0
 	case field.RuleOperatorContains:
 		str, ok := actualValue.(string)
 		if !ok {
@@ -266,7 +351,7 @@ func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator
 			}
 		}
 		for _, a := range allowed {
-			if compareValues(actualValue, a) == 0 {
+			if uc.compareValues(actualValue, a) == 0 {
 				return true
 			}
 		}
@@ -286,7 +371,7 @@ func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator
 			}
 		}
 		for _, a := range allowed {
-			if compareValues(actualValue, a) == 0 {
+			if uc.compareValues(actualValue, a) == 0 {
 				return false
 			}
 		}
@@ -296,8 +381,7 @@ func evaluateRuleMatches(dependsOnFieldID uuid.UUID, operator field.RuleOperator
 	}
 }
 
-// compareRuleValue unmarshalls rule JSON value and compares
-func compareRuleValue(actual interface{}, ruleValue *json.RawMessage) int {
+func (uc *UseCase) compareRuleValue(actual interface{}, ruleValue *json.RawMessage) int {
 	if ruleValue == nil {
 		if actual == nil {
 			return 0
@@ -307,16 +391,13 @@ func compareRuleValue(actual interface{}, ruleValue *json.RawMessage) int {
 
 	var target interface{}
 	if err := json.Unmarshal(*ruleValue, &target); err != nil {
-		return -2 // Not comparable
+		return -2
 	}
 
-	return compareValues(actual, target)
+	return uc.compareValues(actual, target)
 }
 
-// compareValues compares two values numerically or lexically
-// Returns: -1 (a < b), 0 (a == b), 1 (a > b), -2 (not comparable)
-func compareValues(a, b interface{}) int {
-	// Handle nil
+func (uc *UseCase) compareValues(a, b interface{}) int {
 	if a == nil && b == nil {
 		return 0
 	}
@@ -327,9 +408,8 @@ func compareValues(a, b interface{}) int {
 		return 1
 	}
 
-	// Try numeric comparison first
-	aNum, aOk := toFloat64(a)
-	bNum, bOk := toFloat64(b)
+	aNum, aOk := uc.toFloat64(a)
+	bNum, bOk := uc.toFloat64(b)
 	if aOk && bOk {
 		if aNum < bNum {
 			return -1
@@ -339,7 +419,6 @@ func compareValues(a, b interface{}) int {
 		return 0
 	}
 
-	// String comparison
 	aStr, aOk := a.(string)
 	bStr, bOk := b.(string)
 	if aOk && bOk {
@@ -351,7 +430,6 @@ func compareValues(a, b interface{}) int {
 		return 0
 	}
 
-	// Bool comparison
 	aBool, aOk := a.(bool)
 	bBool, bOk := b.(bool)
 	if aOk && bOk {
@@ -364,11 +442,10 @@ func compareValues(a, b interface{}) int {
 		return 1
 	}
 
-	return -2 // Not comparable
+	return -2
 }
 
-// toFloat64 attempts to convert a value to float64 for numeric comparison
-func toFloat64(v interface{}) (float64, bool) {
+func (uc *UseCase) toFloat64(v interface{}) (float64, bool) {
 	switch n := v.(type) {
 	case int:
 		return float64(n), true
@@ -402,7 +479,7 @@ func toFloat64(v interface{}) (float64, bool) {
 	}
 }
 
-func parseCustomFields(ctx context.Context, customFields *json.RawMessage) (custom map[string]any, err error) {
+func (uc *UseCase) parseCustomFields(ctx context.Context, customFields *json.RawMessage) (custom map[string]any, err error) {
 	if customFields == nil {
 		return nil, fail.New(apierr.RequestMissingSchemaCustomFields).RecordCtx(ctx)
 	}
@@ -410,4 +487,124 @@ func parseCustomFields(ctx context.Context, customFields *json.RawMessage) (cust
 		return nil, fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
 	}
 	return custom, nil
+}
+
+func (uc *UseCase) validateFieldValue(f field.Field, value any) bool {
+	if !uc.validateFieldType(f.Type, value) {
+		return false
+	}
+	if f.Type.IsOptionType() {
+		return uc.validateOptionValue(f, value)
+	}
+	return true
+}
+
+func (uc *UseCase) validateFieldType(fieldType field.Type, value any) bool {
+	switch fieldType {
+	case field.String:
+		_, ok := value.(string)
+		return ok
+	case field.Email:
+		str, ok := value.(string)
+		if !ok {
+			return false
+		}
+		return validate.Var(str, "required,email") == nil
+	case field.Bool:
+		_, ok := value.(bool)
+		return ok
+	case field.Int:
+		switch v := value.(type) {
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32:
+			return true
+		case uint64:
+			return v <= math.MaxInt64
+		case float32:
+			if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+				return false
+			}
+			if v > math.MaxInt32 || v < math.MinInt32 {
+				return false
+			}
+			if v != float32(int32(v)) {
+				return false
+			}
+			return true
+		case float64:
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				return false
+			}
+			if math.Trunc(v) != v {
+				return false
+			}
+			const maxSafeInt64 float64 = 1<<53 - 1
+			const minSafeInt64 float64 = -(1 << 53)
+			if v > maxSafeInt64 || v < minSafeInt64 {
+				return false
+			}
+			return true
+		case json.Number:
+			_, err := v.Int64()
+			return err == nil
+		default:
+			return false
+		}
+	case field.Select, field.Radio:
+		_, ok := value.(string)
+		return ok
+	case field.Checkbox:
+		switch value.(type) {
+		case bool:
+			return true
+		case []any, []string:
+			return true
+		default:
+			return false
+		}
+	default:
+		return false
+	}
+}
+
+func (uc *UseCase) validateOptionValue(f field.Field, value any) bool {
+	if len(f.Options) == 0 {
+		return false
+	}
+	allowed := make(map[string]bool)
+	for _, opt := range f.Options {
+		allowed[opt.Value] = true
+	}
+	switch f.Type {
+	case field.Select, field.Radio:
+		strVal, ok := value.(string)
+		if !ok {
+			return false
+		}
+		return allowed[strVal]
+	case field.Checkbox:
+		switch v := value.(type) {
+		case []any:
+			for _, item := range v {
+				strItem, ok := item.(string)
+				if !ok || !allowed[strItem] {
+					return false
+				}
+			}
+			return len(v) > 0
+		case []string:
+			for _, item := range v {
+				if !allowed[item] {
+					return false
+				}
+			}
+			return len(v) > 0
+		case string:
+			return allowed[v]
+		case bool:
+			return true
+		default:
+			return false
+		}
+	}
+	return false
 }

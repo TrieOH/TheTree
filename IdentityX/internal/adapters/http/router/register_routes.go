@@ -14,15 +14,16 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 )
 
-func registerRoutes(db *pgxpool.Pool, r *chi.Mux) (*chi.Mux, *application.Application) {
+func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, *application.Application) {
 	queries := sqlc.New(db)
 	txRunner := transactions.NewTxRunner(db)
 	tracer := otel.Tracer(string(telemetry.GoAuthTracer))
-	infra := infrastructure.NewInfra(db, queries, txRunner, logs.L(), tracer)
+	infra := infrastructure.NewInfra(db, queries, txRunner, logs.L(), tracer, rdb)
 
 	app := application.NewApplication(infra)
 
@@ -88,6 +89,11 @@ func registerAuthRoutes(
 		} else {
 			r.Post("/projects/{project_id}/login", h.ProjectLogin)
 		}
+
+		r.With(authMW.Auth()).Group(func(r chi.Router) {
+			r.Get("/projects/{project_id}/upgrade-form", h.GetUpgradeForm)
+			r.Post("/projects/{project_id}/metadata", h.UpdateMetadata)
+		})
 	})
 }
 

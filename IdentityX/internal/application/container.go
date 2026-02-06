@@ -2,7 +2,8 @@ package application
 
 import (
 	"GoAuth/internal/adapters/email"
-	"GoAuth/internal/adapters/memory"
+	"GoAuth/internal/adapters/memory/imc"
+	"GoAuth/internal/adapters/memory/redis"
 	"GoAuth/internal/adapters/persistence"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
@@ -46,24 +47,38 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		cacheTTL = time.Hour
 	}
 
-	privateCache := memory.NewInMemoryCache(100, cacheTTL)
-	publicCache := memory.NewInMemoryCache(1000, cacheTTL)
+	privateCache := imc.NewInMemoryCache(100, cacheTTL)
+	publicCache := imc.NewInMemoryCache(1000, cacheTTL)
+
+	sharedCache := redis.NewRedisCache(infra.Redis)
 
 	keyService := keys.New(repos.Keys, privateCache, publicCache)
 	mailBundle := email.NewBundle(infra)
 	tokensBundle := tokens.NewBundle(keyService)
 
+	schemaService := schema.New(schema.Deps{
+		Schemas:      repos.Schemas,
+		Versions:     repos.SchemaVersions,
+		Fields:       repos.SchemaFields,
+		Projects:     repos.Projects,
+		ProjectUsers: repos.ProjectUsers,
+		Cache:        sharedCache,
+	}, infra.Tx)
+
+	authService := auth.New(auth.Deps{
+		Users:        repos.Users,
+		Sessions:     repos.Sessions,
+		Schemas:      repos.Schemas,
+		Versions:     repos.SchemaVersions,
+		Fields:       repos.SchemaFields,
+		Projects:     repos.Projects,
+		ProjectUsers: repos.ProjectUsers,
+		Keys:         repos.Keys,
+		Cache:        sharedCache,
+	}, infra, keyService, schemaService, tokensBundle, mailBundle)
+
 	return &Application{
-		Auth: auth.New(auth.Deps{
-			Users:        repos.Users,
-			Sessions:     repos.Sessions,
-			Schemas:      repos.Schemas,
-			Versions:     repos.SchemaVersions,
-			Fields:       repos.SchemaFields,
-			Projects:     repos.Projects,
-			ProjectUsers: repos.ProjectUsers,
-			Keys:         repos.Keys,
-		}, infra, keyService, tokensBundle, mailBundle),
+		Auth: authService,
 		Keys: keyService,
 		Project: project.New(
 			repos.Projects,
@@ -71,17 +86,13 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			repos.Keys,
 			infra.Tx,
 		),
-		Schema: schema.New(schema.Deps{
-			Schemas:  repos.Schemas,
-			Versions: repos.SchemaVersions,
-			Fields:   repos.SchemaFields,
-			Projects: repos.Projects,
-		}, infra.Tx),
+		Schema: schemaService,
 		SchemaVersions: schema_version.New(schema_version.Deps{
 			Schemas:  repos.Schemas,
 			Versions: repos.SchemaVersions,
 			Fields:   repos.SchemaFields,
 			Projects: repos.Projects,
+			Cache:    sharedCache,
 		}, infra.Tx),
 		SchemaFields: schema_fields.New(schema_fields.Deps{
 			Schemas:  repos.Schemas,
@@ -94,7 +105,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
 		}, infra.Tracer),
-		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
+		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, schemaService, infra.Tx),
 		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 	}

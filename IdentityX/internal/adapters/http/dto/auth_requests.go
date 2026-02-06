@@ -22,3 +22,7 @@ type LoginProjectUserRequest struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,max=72"`
 }
+
+type UpdateMetadataRequest struct {
+	CustomFields *json.RawMessage `json:"custom_fields" validate:"required"`
+}

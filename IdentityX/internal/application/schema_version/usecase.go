@@ -2,7 +2,6 @@ package schema_version
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
@@ -30,6 +29,7 @@ type Deps struct {
 	Versions outbounds.SchemaVersionRepository
 	Fields   outbounds.SchemaFieldsRepository
 	Projects outbounds.ProjectRepository
+	Cache    outbounds.CacheService
 }
 
 var _ inbounds.SchemaVersionService = (*UseCase)(nil)
@@ -70,7 +70,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	fields := uc.deps.Fields
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +137,9 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 		return nil, err
 	}
 
+	// CopyOnDraft increments the version number in the database, but we should ensure the domain object reflects it if needed.
+	// The CopyOnDraft repo method returns the new version with the incremented number.
+
 	err = fields.CloneFromTo(ctx, latest.ID, newVersionDraft.ID)
 	if err != nil {
 		return nil, err
@@ -160,7 +163,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	fields := uc.deps.Fields
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -235,6 +238,9 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 			return err
 		}
 
+		// Invalidate compatibility cache for this project and version
+		uc.deps.Cache.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.ID.String()+":")
+
 		return nil
 	}
 
@@ -264,6 +270,11 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		return err
 	}
 
+	// Invalidate compatibility cache for the OLD version if it exists
+	if latest.BasedOnVersionID != nil {
+		uc.deps.Cache.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.BasedOnVersionID.String()+":")
+	}
+
 	return nil
 }
 
@@ -279,7 +290,7 @@ func (uc *UseCase) GetCurrent(ctx context.Context, in inbounds.SchemaVersionServ
 	projects := uc.deps.Projects
 	versions := uc.deps.Versions
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +324,7 @@ func (uc *UseCase) GetLatest(ctx context.Context, in inbounds.SchemaVersionServi
 	projects := uc.deps.Projects
 	versions := uc.deps.Versions
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +360,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaVersionServ
 	versions := uc.deps.Versions
 	fields := uc.deps.Fields
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
