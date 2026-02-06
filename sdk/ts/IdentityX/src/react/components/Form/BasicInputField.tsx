@@ -15,6 +15,8 @@ interface BasicInputFieldProps {
   value?: string;
   /** Current Input Value On Change */
   onValueChange?: (value: string) => void;
+  /** OnBlur event handler */
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
   /** AutoComplete */
   autoComplete?: string;
   /** Validations and their results */
@@ -24,6 +26,7 @@ interface BasicInputFieldProps {
   /** Ref to the input element */
   inputRef?: React.Ref<HTMLInputElement>;
 }
+
 export default function BasicInputField({
   name,
   label,
@@ -31,6 +34,7 @@ export default function BasicInputField({
   type = "text",
   value,
   onValueChange,
+  onBlur,
   autoComplete,
   rulesStatus = [],
   submitted = false,
@@ -38,6 +42,7 @@ export default function BasicInputField({
 }: BasicInputFieldProps) {
   const [isSecretVisible, setIsSecretVisible] = useState(false);
   const hasAnyFailing = rulesStatus.some(r => !r.passed);
+
   return (
     <div className="trieoh trieoh-input">
       <label htmlFor={name} className="trieoh-input__label">
@@ -54,8 +59,9 @@ export default function BasicInputField({
           name={name} 
           id={name} 
           placeholder={placeholder}
-          onChange={(e) => onValueChange && onValueChange(e.target.value)}
           value={value}
+          onChange={(e) => onValueChange && onValueChange(e.target.value)}
+          onBlur={onBlur}
           autoComplete={autoComplete}
           aria-invalid={hasAnyFailing && submitted}
           ref={inputRef}
