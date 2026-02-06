@@ -37,12 +37,12 @@
     "url": "git+https://github.com/TrieOH/NodeAuth.git"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "10.2.0",
-    "@storybook/react-vite": "10.2.0",
+    "@storybook/addon-docs": "10.2.7",
+    "@storybook/react-vite": "10.2.7",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "storybook": "10.2.0",
+    "storybook": "10.2.7",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
