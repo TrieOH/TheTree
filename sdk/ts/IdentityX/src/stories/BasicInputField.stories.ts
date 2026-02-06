@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import BasicInputField from '../react/components/Form/BasicInputField';
+import { BasicInputField } from '../react';
 
 const meta = {
   title: "Example/BasicInputField",
