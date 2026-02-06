@@ -2,7 +2,7 @@ package scope
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
@@ -40,7 +40,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	ctx, span := usecaseTracer.Start(ctx, "ScopeService.Create")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 	ctx, span := usecaseTracer.Start(ctx, "ScopeService.GetByIDExternal")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.Get
 	ctx, span := usecaseTracer.Start(ctx, "ScopeService.GetProjectScopesExternal")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}

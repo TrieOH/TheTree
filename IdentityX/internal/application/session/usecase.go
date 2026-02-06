@@ -2,7 +2,7 @@ package session
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
@@ -40,7 +40,7 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.List")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeAll")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 func (uc *UseCase) Me(ctx context.Context) (*inbounds.PrincipalOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.Me")
 	defer span.End()
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}

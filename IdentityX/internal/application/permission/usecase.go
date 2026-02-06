@@ -2,7 +2,6 @@ package permission
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/session"
@@ -25,6 +24,7 @@ type UseCase struct {
 	projects     outbounds.ProjectRepository
 	projectUsers outbounds.ProjectUserRepository
 	sessions     outbounds.SessionRepository
+	schema       inbounds.SchemaService
 	tx           inbounds.TxRunner
 }
 
@@ -35,6 +35,7 @@ func New(
 	projects outbounds.ProjectRepository,
 	projectUsers outbounds.ProjectUserRepository,
 	sessions outbounds.SessionRepository,
+	schema inbounds.SchemaService,
 	tx inbounds.TxRunner,
 ) inbounds.PermissionService {
 	return &UseCase{
@@ -42,6 +43,7 @@ func New(
 		projects:     projects,
 		projectUsers: projectUsers,
 		sessions:     sessions,
+		schema:       schema,
 		tx:           tx,
 	}
 }
@@ -50,7 +52,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 	ctx, span := usecaseTracer.Start(ctx, "PermissionService.Create")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +93,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetPermissio
 	ctx, span := usecaseTracer.Start(ctx, "PermissionService.GetByIDExternal")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +121,7 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetPermissionI
 	defer span.End()
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +168,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	isProjectGlobal := in.ScopeID == nil
 	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -220,7 +222,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	isProjectGlobal := in.ScopeID == nil
 	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -272,7 +274,7 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 	defer span.End()
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -297,6 +299,15 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 		return nil, fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
 	}
 
+	// CHECK COMPATIBILITY
+	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if !isUpToDate {
+		return nil, fail.New(apierr.AuthUserSchemaOutdated).RecordCtx(ctx)
+	}
+
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
 	if err != nil {
 		return nil, err
@@ -319,7 +330,7 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 		return false, err
 	}
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return false, err
 	}
@@ -348,6 +359,15 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 		}
 		if !belongs {
 			return false, fail.New(apierr.ProjectUserNotFromProject).RecordCtx(ctx)
+		}
+
+		// CHECK COMPATIBILITY
+		isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, in.EntityID, *in.ProjectID)
+		if err != nil {
+			return false, err
+		}
+		if !isUpToDate {
+			return false, fail.New(apierr.AuthUserSchemaOutdated).RecordCtx(ctx)
 		}
 	}
 

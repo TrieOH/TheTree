@@ -30,11 +30,16 @@ services:
       DISABLE_RATE_LIMIT: ${DISABLE_RATE_LIMIT:-true}
       INCLUDE_DEBUG_CAUSES: ${INCLUDE_DEBUG_CAUSES:-true}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-1d5be275ff0376f9311c564868f7f4ba550753e5e46ad9acfe48fee7fd2de1ba}
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
     depends_on:
       mailhog:
         condition: service_healthy
       go-auth-test-database:
+        condition: service_started
+      redis:
         condition: service_started
     networks:
       - testnet
@@ -73,6 +78,16 @@ services:
       interval: 2s
       timeout: 1s
       retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save "" --appendonly no
+    ports:
+      - "6379:6379"
+    networks:
+      - testnet
 
 networks:
   testnet:

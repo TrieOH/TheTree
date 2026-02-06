@@ -22,3 +22,4 @@ err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password))
 
 ## Never
 - Never try to run the `go test` command, it will not work, this project is containerized
+- Build by using the following command `go build -o /dev/null ./...`

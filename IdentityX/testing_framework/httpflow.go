@@ -18,9 +18,10 @@ import (
 // ============================================================================
 
 type Client struct {
-	expect *httpexpect.Expect
-	t      *testing.T
-	auth   *AuthContext
+	expect  *httpexpect.Expect
+	t       *testing.T
+	auth    *AuthContext
+	baseURL string
 
 	// Credentials for re-authentication
 	email         string
@@ -43,6 +44,7 @@ func (c *Client) WithCredentials(email, password string) *Client {
 	return &Client{
 		expect:        c.expect,
 		t:             c.t,
+		baseURL:       c.baseURL,
 		email:         email,
 		password:      password,
 		projectID:     c.projectID,
@@ -55,6 +57,7 @@ func (c *Client) WithAuth(auth *AuthContext) *Client {
 	return &Client{
 		expect:        c.expect,
 		t:             c.t,
+		baseURL:       c.baseURL,
 		auth:          auth,
 		email:         c.email,
 		password:      c.password,
@@ -66,8 +69,12 @@ func (c *Client) WithAuth(auth *AuthContext) *Client {
 // WithT creates a new client with a different testing.T (for subtests)
 func (c *Client) WithT(t *testing.T) *Client {
 	return &Client{
-		expect:        c.expect,
+		expect: httpexpect.WithConfig(httpexpect.Config{
+			BaseURL:  c.baseURL,
+			Reporter: httpexpect.NewAssertReporter(t),
+		}),
 		t:             t,
+		baseURL:       c.baseURL,
 		auth:          c.auth,
 		email:         c.email,
 		password:      c.password,
@@ -206,6 +213,7 @@ func (c *Client) CreateProject(name string) *Client {
 	return &Client{
 		expect:    c.expect,
 		t:         c.t,
+		baseURL:   c.baseURL,
 		auth:      c.auth,
 		email:     c.email,
 		password:  c.password,

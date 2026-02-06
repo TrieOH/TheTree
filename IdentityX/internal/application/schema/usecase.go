@@ -2,7 +2,6 @@ package schema
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
@@ -10,7 +9,9 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -29,10 +30,12 @@ type UseCase struct {
 }
 
 type Deps struct {
-	Schemas  outbounds.SchemaRepository
-	Versions outbounds.SchemaVersionRepository
-	Fields   outbounds.SchemaFieldsRepository
-	Projects outbounds.ProjectRepository
+	Schemas      outbounds.SchemaRepository
+	Versions     outbounds.SchemaVersionRepository
+	Fields       outbounds.SchemaFieldsRepository
+	Projects     outbounds.ProjectRepository
+	ProjectUsers outbounds.ProjectUserRepository
+	Cache        outbounds.CacheService
 }
 
 var _ inbounds.SchemaService = (*UseCase)(nil)
@@ -60,7 +63,7 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 	schemas := uc.deps.Schemas
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +146,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 	versions := uc.deps.Versions
 
 	var principal *authz.Principal
-	principal, err = auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -223,7 +226,7 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 	projects := uc.deps.Projects
 	schemas := uc.deps.Schemas
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +270,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	versions := uc.deps.Versions
 	fields := uc.deps.Fields
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +387,7 @@ func (uc *UseCase) GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID)
 	projects := uc.deps.Projects
 	schemas := uc.deps.Schemas
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +420,7 @@ func (uc *UseCase) List(ctx context.Context, projectID uuid.UUID) ([]inbounds.Sc
 	projects := uc.deps.Projects
 	schemas := uc.deps.Schemas
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -462,7 +465,7 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 	fieldsRepo := uc.deps.Fields
 
 	// Auth check
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -598,4 +601,272 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 	}
 
 	return form, nil
+}
+
+func (uc *UseCase) GetUpgradeForm(ctx context.Context) ([]inbounds.FormResponse, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.GetUpgradeForm")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	userID := principal.UserID
+	if principal.ProjectID == nil {
+		return []inbounds.FormResponse{}, nil
+	}
+	projectID := *principal.ProjectID
+
+	u, err := uc.deps.ProjectUsers.GetByIDInternal(ctx, userID, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	schemas, err := uc.deps.Schemas.List(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata map[string]any
+	if u.Metadata != nil {
+		_ = json.Unmarshal(*u.Metadata, &metadata)
+	}
+
+	var responses []inbounds.FormResponse
+	for _, s := range schemas {
+		if s.Status != schema.StatusPublished || s.CurrentVersionID == nil {
+			continue
+		}
+
+		// Check if user is compatible
+		isCompatible := false
+		if metadata != nil {
+			if typeMap, ok := metadata[string(s.Type)].(map[string]any); ok {
+				if flowMap, ok := typeMap[s.FlowID].(map[string]any); ok {
+					metadataVersionIDStr, _ := flowMap["schema_version_id"].(string)
+					if metadataVersionIDStr == s.CurrentVersionID.String() {
+						isCompatible = true
+					} else {
+						userFields, _ := flowMap["fields"].(map[string]any)
+						fields, _ := uc.deps.Fields.GetByVersionIDWithRelations(ctx, *s.CurrentVersionID)
+						fieldDefs := make(map[string]field.Field)
+						for _, f := range fields {
+							fieldDefs[f.Key] = f
+						}
+						_, err := uc.ValidateFields(ctx, userFields, fieldDefs, fields)
+						if err == nil {
+							isCompatible = true
+						}
+					}
+				}
+			}
+		}
+
+		if !isCompatible {
+			// Generate form
+			form, err := uc.getFormWithValues(ctx, s, metadata)
+			if err != nil {
+				continue
+			}
+			responses = append(responses, *form)
+		}
+	}
+
+	return responses, nil
+}
+
+func (uc *UseCase) getFormWithValues(ctx context.Context, s schema.Schema, metadata map[string]any) (*inbounds.FormResponse, error) {
+	v, err := uc.deps.Versions.GetCurrent(ctx, s.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	fields, err := uc.deps.Fields.GetByVersionIDWithRelations(ctx, v.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get user's current values for this schema
+	var userValues map[string]any
+	if metadata != nil {
+		if typeMap, ok := metadata[string(s.Type)].(map[string]any); ok {
+			if flowMap, ok := typeMap[s.FlowID].(map[string]any); ok {
+				userValues, _ = flowMap["fields"].(map[string]any)
+			}
+		}
+	}
+
+	formFields := make([]inbounds.FormField, len(fields))
+	for i, f := range fields {
+		ff := inbounds.FormField{
+			ID:           f.ID,
+			ObjectID:     f.ObjectID,
+			Key:          f.Key,
+			Type:         string(f.Type),
+			Owner:        string(f.Owner),
+			Title:        f.Title,
+			Description:  f.Description,
+			Placeholder:  f.Placeholder,
+			Required:     f.Required,
+			Mutable:      f.Mutable,
+			DefaultValue: f.DefaultValue,
+			Position:     f.Position,
+			CreatedAt:    f.CreatedAt,
+			UpdatedAt:    f.UpdatedAt,
+		}
+
+		// Inject current value into DefaultValue if it exists
+		if val, ok := userValues[f.Key]; ok {
+			marshalled, _ := json.Marshal(val)
+			raw := json.RawMessage(marshalled)
+			ff.DefaultValue = &raw
+		}
+
+		// Map options
+		ff.Options = make([]inbounds.FormOption, len(f.Options))
+		for j, opt := range f.Options {
+			ff.Options[j] = inbounds.FormOption{
+				ID:       opt.ID,
+				Value:    opt.Value,
+				Label:    opt.Label,
+				Position: opt.Position,
+			}
+		}
+
+		// Map rules
+		ff.VisibilityRules = make([]inbounds.FormRule, len(f.VisibilityRules))
+		for j, rule := range f.VisibilityRules {
+			ff.VisibilityRules[j] = inbounds.FormRule{
+				ID:               rule.ID,
+				DependsOnFieldID: rule.DependsOnFieldID,
+				Operator:         string(rule.Operator),
+				Value:            rule.Value,
+			}
+		}
+
+		ff.RequiredRules = make([]inbounds.FormRule, len(f.RequiredRules))
+		for j, rule := range f.RequiredRules {
+			ff.RequiredRules[j] = inbounds.FormRule{
+				ID:               rule.ID,
+				DependsOnFieldID: rule.DependsOnFieldID,
+				Operator:         string(rule.Operator),
+				Value:            rule.Value,
+			}
+		}
+
+		formFields[i] = ff
+	}
+
+	return &inbounds.FormResponse{
+		SchemaID:      s.ID,
+		Title:         s.Title,
+		FlowID:        s.FlowID,
+		SchemaType:    string(s.Type),
+		VersionID:     v.ID,
+		VersionNumber: v.VersionNumber,
+		Fields:        formFields,
+	}, nil
+}
+
+func (uc *UseCase) CheckSchemaCompatibility(ctx context.Context, userID, projectID uuid.UUID) (bool, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaService.CheckSchemaCompatibility")
+	defer span.End()
+
+	// 1. Get Project's current schemas
+	schemas, err := uc.deps.Schemas.List(ctx, projectID)
+	if err != nil {
+		return false, err
+	}
+
+	if len(schemas) == 0 {
+		return true, nil
+	}
+
+	isUpToDate := true
+	for _, s := range schemas {
+		if s.Status != schema.StatusPublished {
+			continue
+		}
+
+		if s.CurrentVersionID == nil {
+			continue
+		}
+
+		// Cache check
+		cacheKey := "compat:" + projectID.String() + ":" + s.CurrentVersionID.String() + ":" + userID.String()
+		if val, ok := uc.deps.Cache.Get(ctx, cacheKey); ok {
+			if compat, ok := val.(bool); ok {
+				if !compat {
+					isUpToDate = false
+				}
+				continue
+			}
+		}
+
+		// Deep Validation
+		compat, err := uc.deepValidateCompatibility(ctx, userID, projectID, s)
+		if err != nil {
+			return false, err
+		}
+
+		// Store in cache (1 hour TTL)
+		uc.deps.Cache.Set(ctx, cacheKey, compat, time.Hour)
+
+		if !compat {
+			isUpToDate = false
+		}
+	}
+
+	return isUpToDate, nil
+}
+
+func (uc *UseCase) deepValidateCompatibility(ctx context.Context, userID, projectID uuid.UUID, s schema.Schema) (bool, error) {
+	u, err := uc.deps.ProjectUsers.GetByIDInternal(ctx, userID, projectID)
+	if err != nil {
+		return false, err
+	}
+
+	if u.Metadata == nil {
+		return false, nil
+	}
+
+	var metadata map[string]any
+	if err := json.Unmarshal(*u.Metadata, &metadata); err != nil {
+		return false, nil
+	}
+
+	typeMap, ok := metadata[string(s.Type)].(map[string]any)
+	if !ok {
+		return false, nil
+	}
+
+	flowMap, ok := typeMap[s.FlowID].(map[string]any)
+	if !ok {
+		return false, nil
+	}
+
+	userFields, ok := flowMap["fields"].(map[string]any)
+	if !ok {
+		return false, nil
+	}
+
+	// Fetch current fields
+	fields, err := uc.deps.Fields.GetByVersionIDWithRelations(ctx, *s.CurrentVersionID)
+	if err != nil {
+		return false, err
+	}
+
+	fieldDefs := make(map[string]field.Field)
+	for _, f := range fields {
+		fieldDefs[f.Key] = f
+	}
+
+	// Run validation logic
+	_, err = uc.ValidateFields(ctx, userFields, fieldDefs, fields)
+	if err != nil {
+		return false, nil
+	}
+
+	return true, nil
 }

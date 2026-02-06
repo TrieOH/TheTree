@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"GoAuth/internal/apierr"
-	appauth "GoAuth/internal/application/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/ports/inbounds"
 	"errors"
@@ -108,7 +107,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx = appauth.WithPrincipal(ctx, principal)
+			ctx = authz.WithPrincipal(ctx, principal)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

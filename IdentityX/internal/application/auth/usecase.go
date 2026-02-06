@@ -38,6 +38,7 @@ var (
 type UseCase struct {
 	deps          Deps
 	keys          inbounds.KeysService
+	schema        inbounds.SchemaService
 	tokenIssuer   inbounds.TokenIssuer
 	tokenVerifier inbounds.TokenVerifier
 	mailRenderer  outbounds.EmailRenderer
@@ -54,6 +55,7 @@ type Deps struct {
 	Projects     outbounds.ProjectRepository
 	ProjectUsers outbounds.ProjectUserRepository
 	Keys         outbounds.KeysRepository
+	Cache        outbounds.CacheService
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -62,12 +64,14 @@ func New(
 	repos Deps,
 	infra infrastructure.Infra,
 	keys inbounds.KeysService,
+	schema inbounds.SchemaService,
 	tokenBundle tokens.TokenBundle,
 	mailBundle email.MailBundle,
 ) inbounds.AuthService {
 	return &UseCase{
 		deps:          repos,
 		keys:          keys,
+		schema:        schema,
 		tokenIssuer:   tokenBundle.Issuer,
 		tokenVerifier: tokenBundle.Verifier,
 		mailRenderer:  mailBundle.Renderer,
@@ -314,6 +318,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		IsUpToDate:         true,
 	}, nil
 }
 
@@ -333,7 +338,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	sessions := uc.deps.Sessions
 
 	var principal *authz.Principal
-	principal, err = RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -550,6 +555,7 @@ func (uc *UseCase) finishClientRefresh(
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		IsUpToDate:         true,
 	}, nil
 }
 
@@ -640,11 +646,18 @@ func (uc *UseCase) finishProjectUserRefresh(
 
 	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
 
+	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, projectUser.ID, *sess.ProjectID)
+	if err != nil {
+		logs.L().Error("Failed to check schema compatibility during refresh", zap.Error(err))
+		isUpToDate = false
+	}
+
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		IsUpToDate:         isUpToDate,
 	}, nil
 }
 
@@ -720,7 +733,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	// Validate and construct metadata for non-core or non-reserved flows
 	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
 	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.validateAndConstructMetadata(ctx, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
+		validatedMetadata, err := uc.schema.ValidateAndConstructMetadata(ctx, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
 		if err != nil {
 			return outbounds.Email{}, err
 		}
@@ -916,11 +929,18 @@ func (uc *UseCase) LoginProjectUser(
 
 	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
 
+	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, usr.ID, in.ProjectID)
+	if err != nil {
+		logs.L().Error("Failed to check schema compatibility during login", zap.Error(err))
+		isUpToDate = false
+	}
+
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		IsUpToDate:         isUpToDate,
 	}, nil
 }
 
@@ -937,7 +957,7 @@ func (uc *UseCase) Verify(ctx context.Context, token string) (err error) {
 	projectUsers := uc.deps.ProjectUsers
 
 	var principal *authz.Principal
-	principal, err = RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -988,7 +1008,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	issuer := uc.tokenIssuer
 
 	var principal *authz.Principal
-	principal, err = RequirePrincipalAndAnnotate(ctx, span)
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}

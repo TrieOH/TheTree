@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 // ============================================================================
@@ -21,6 +23,7 @@ type TestSuite struct {
 	Server *httptest.Server
 	App    *application.Application
 	DB     *pgxpool.Pool
+	Redis  *redis.Client
 	t      *testing.T
 }
 
@@ -42,10 +45,12 @@ func (s *TestSuite) setup() {
 	initialization.SetupFail()
 	initialization.SetupFUN()
 	initialization.SetupDB(&goAuth, "../internal/database/migrations")
+	goAuth.Redis = initialization.SetupRedis(15 * time.Second)
 
 	s.DB = goAuth.DB
+	s.Redis = goAuth.Redis
 
-	r, app := createTestRouter(s.DB)
+	r, app := createTestRouter(s.DB, s.Redis)
 	s.App = app
 	s.Server = httptest.NewServer(r)
 }
@@ -57,6 +62,9 @@ func (s *TestSuite) teardown() {
 	if s.DB != nil {
 		s.DB.Close()
 	}
+	if s.Redis != nil {
+		s.Redis.Close()
+	}
 }
 
 // NewClient creates a new API client for testing
@@ -66,12 +74,13 @@ func (s *TestSuite) NewClient(t *testing.T) *Client {
 			BaseURL:  s.Server.URL,
 			Reporter: httpexpect.NewAssertReporter(t),
 		}),
-		t: t,
+		t:       t,
+		baseURL: s.Server.URL,
 	}
 }
 
-func createTestRouter(db *pgxpool.Pool) (http.Handler, *application.Application) {
-	return router.CreateTestRouter(db)
+func createTestRouter(db *pgxpool.Pool, rdb *redis.Client) (http.Handler, *application.Application) {
+	return router.CreateTestRouter(db, rdb)
 }
 
 func zero(b []byte) {

@@ -79,6 +79,10 @@ func TestGoAuth(t *testing.T) {
 		testSchemaDependencies(t, suite)
 	})
 
+	t.Run("SchemaMigration", func(t *testing.T) {
+		testSchemaMigration(t, suite)
+	})
+
 	t.Run("PGX_Mapper", func(t *testing.T) {
 		testPGXMapper(t)
 	})

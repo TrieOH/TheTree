@@ -84,3 +84,8 @@ SELECT EXISTS (
     WHERE project_id = $1
      AND id = $2
 );
+
+-- name: UpdateProjectUserMetadata :exec
+UPDATE project_users
+SET metadata = $3, updated_at = NOW()
+WHERE id = $1 AND project_id = $2;

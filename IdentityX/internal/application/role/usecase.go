@@ -2,7 +2,7 @@ package role
 
 import (
 	"GoAuth/internal/apierr"
-	"GoAuth/internal/application/auth"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/roles"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/ports/inbounds"
@@ -51,7 +51,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.RoleInput) (*inbounds
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.Create")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (uc *UseCase) UpdateDescription(ctx context.Context, in inbounds.RoleInput)
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.UpdateDescription")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetRoleInput
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetByIDExternal")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (uc *UseCase) GetByName(ctx context.Context, in inbounds.GetRoleInput) (*in
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetByName")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (uc *UseCase) ListByProject(ctx context.Context, in inbounds.GetRoleInput) 
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.ListByProject")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (uc *UseCase) AddPermission(ctx context.Context, in inbounds.RolePermission
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.AddPermission")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func (uc *UseCase) RemovePermission(ctx context.Context, in inbounds.RolePermiss
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.RemovePermission")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (uc *UseCase) GetPermissions(ctx context.Context, in inbounds.RolePermissio
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetPermissions")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func (uc *UseCase) GiveRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	isProjectGlobal := in.ScopeID == nil
 	span.SetAttributes(attribute.Bool("role.project_global", isProjectGlobal))
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -377,7 +377,7 @@ func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	isProjectGlobal := in.ScopeID == nil
 	span.SetAttributes(attribute.Bool("role.project_global", isProjectGlobal))
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
@@ -428,7 +428,7 @@ func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) (
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetUserRoles")
 	defer span.End()
 
-	principal, err := auth.RequirePrincipalAndAnnotate(ctx, span)
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
 	}
