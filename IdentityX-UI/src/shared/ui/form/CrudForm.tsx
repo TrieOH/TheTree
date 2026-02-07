@@ -1,5 +1,6 @@
 import { useAppForm } from "@/shared/lib/forms";
 import type { CrudFormConfig, FieldConfig } from "./types";
+import { useState } from "react";
 
 interface PropsI<TFormData> {
   formId: string;
@@ -12,33 +13,39 @@ export default function CrudForm<TFormData>({
   options,
   fields
 }: PropsI<TFormData>) {
-    const form = useAppForm({
-      defaultValues: options.defaultValues,
-      validators: {
-        onChange: options.validators?.onChange,
-      },
-      onSubmit: options.onSubmit
-    });
+  const [submitted, setSubmitted] = useState(false);
+  const form = useAppForm({
+    defaultValues: options.defaultValues,
+    validators: options.validators,
+    onSubmit: async ({ value, formApi }) => {
+      await options.onSubmit({value, formApi})
+      setSubmitted(false);
+    }
+  });
   return (
     <form
       id={formId}
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        form.handleSubmit();
+        setSubmitted(true);
+        await form.handleSubmit();
       }}
     >
       {fields.map(item => (
         <form.AppField
+          key={item.name}
           name={item.name}
-          children={(field) => (
+        >
+          {(field) => (
             <field.TextField 
               label={item.label} 
               placeholder={item.placeholder}
               autoComplete={item.autoComplete}
+              submitted={submitted}
             />
           )}
-        />
+        </form.AppField>
       ))}
     </form>
   )
