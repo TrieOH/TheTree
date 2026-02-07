@@ -97,6 +97,7 @@ func SetupCron(db *pgxpool.Pool, app *GoauthApp) {
 	txRunner := transactions.NewTxRunner(db)
 	rotateKeysJob(ctx, app, txRunner)
 	sessionCleanupJob(ctx, app, txRunner)
+	tokenReuseCleanupJob(ctx, app)
 
 	go scheduler.Start()
 	log.Println("Started the cron scheduler")

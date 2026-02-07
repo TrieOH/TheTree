@@ -37,8 +37,8 @@ func NewMailRenderer(
 	}
 }
 
-func (mr *MailRenderer) Verification(data outbounds.VerificationEmailData) (outbounds.Email, error) {
-	ctx, span := mr.tracer.Start(context.Background(), "email.render.verification")
+func (mr *MailRenderer) Verification(ctx context.Context, data outbounds.VerificationEmailData) (outbounds.Email, error) {
+	ctx, span := mr.tracer.Start(ctx, "email.render.verification")
 	defer span.End()
 
 	key := "verification:" + data.Locale
@@ -65,8 +65,8 @@ func (mr *MailRenderer) Verification(data outbounds.VerificationEmailData) (outb
 	}, nil
 }
 
-func (mr *MailRenderer) PasswordReset(data outbounds.PasswordResetEmailData) (outbounds.Email, error) {
-	ctx, span := mr.tracer.Start(context.Background(), "email.render.password_reset")
+func (mr *MailRenderer) PasswordReset(ctx context.Context, data outbounds.PasswordResetEmailData) (outbounds.Email, error) {
+	ctx, span := mr.tracer.Start(ctx, "email.render.password_reset")
 	defer span.End()
 
 	key := "password_reset:" + data.Locale
@@ -74,7 +74,7 @@ func (mr *MailRenderer) PasswordReset(data outbounds.PasswordResetEmailData) (ou
 	subject, textBody, htmlBody, err := mr.render(ctx, key, map[string]any{
 		"UserID": data.UserID,
 		"Email":  data.Email,
-		"Link":   viper.GetString("API_URL") + "/reset?token=" + data.Token,
+		"Link":   template.URL(viper.GetString("API_URL") + "/reset?token=" + data.Token),
 	})
 
 	if err != nil {
@@ -96,12 +96,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "text")
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "text").RecordCtx(ctx)
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "html")
+		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "html").RecordCtx(ctx)
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

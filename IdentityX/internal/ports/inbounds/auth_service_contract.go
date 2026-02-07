@@ -71,3 +71,13 @@ type FormResponse struct {
 	VersionNumber int
 	Fields        []FormField
 }
+
+type ForgotPasswordInput struct {
+	Email     string
+	ProjectID *uuid.UUID
+}
+
+type ResetPasswordInput struct {
+	NewPassword string
+	Token       string
+}

@@ -97,15 +97,7 @@
 *   **Why this is dangerous**: Unbounded input storage.
 *   **Suggested mitigation:** Enforce a maximum length (e.g., 4KB) for all string inputs stored in the database.
 
-### 5. Missing Password Reset Functionality
-*   **Severity:** Medium (Availability/Process)
-*   **Affected components:** `internal/ports/inbounds/auth_service_interface.go`
-*   **Description:** The `AuthService` interface lacks any methods for password reset or recovery.
-*   **Attack scenario:** Legitimate users who forget their passwords have no self-service recovery path, leading to insecure manual interventions.
-*   **Why this is dangerous**: Procedural security risks.
-*   **Suggested mitigation:** Implement a standard password reset flow.
-
-### 6. Lack of Session Expiry Enforcement in Database (Cleanup)
+### 5. Lack of Session Expiry Enforcement in Database (Cleanup)
 *   **Severity:** Medium
 *   **Affected components:** `internal/database/queries/sessions.sql`, `init.go` (Scheduler)
 *   **Description:** While `RevokeExpiredSessions` exists and is scheduled, the accumulation of expired-but-not-deleted sessions could impact performance. The scheduler only runs daily.
@@ -348,3 +340,10 @@
 *   **What changed:** Application-level validation ensures that expired sessions are rejected immediately during the refresh flow, independent of the background cleanup job.
 *   **Why the fix is sufficient:** This eliminates the TOCTOU window where an expired session could be used before the cleanup job runs. The background job is now purely for database hygiene, not security enforcement.
 *   **Any residual risk or assumptions:** None.
+
+### 16. Missing Password Reset Functionality
+*   **Severity:** Medium (Availability/Process)
+*   **Affected components:** `internal/ports/inbounds/auth_service_interface.go`, `internal/application/auth/usecase.go`
+*   **How it was fixed:** Implemented a full password reset flow including `ForgotPassword` (issuing signed JWT tokens via email) and `ResetPassword` (verifying tokens, updating passwords, and invalidating all active sessions).
+*   **What changed:** Users can now securely recover their accounts. The implementation includes protection against token reuse and ensures session invalidation upon password change.
+*   **Why the fix is sufficient:** The standard self-service recovery path is now available and follows security best practices (signed tokens, atomicity via transactions, session revocation).

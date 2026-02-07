@@ -47,15 +47,16 @@ type UseCase struct {
 }
 
 type Deps struct {
-	Users        outbounds.UserRepository
-	Sessions     outbounds.SessionRepository
-	Schemas      outbounds.SchemaRepository
-	Versions     outbounds.SchemaVersionRepository
-	Fields       outbounds.SchemaFieldsRepository
-	Projects     outbounds.ProjectRepository
-	ProjectUsers outbounds.ProjectUserRepository
-	Keys         outbounds.KeysRepository
-	Cache        outbounds.CacheService
+	Users          outbounds.UserRepository
+	Sessions       outbounds.SessionRepository
+	Schemas        outbounds.SchemaRepository
+	Versions       outbounds.SchemaVersionRepository
+	Fields         outbounds.SchemaFieldsRepository
+	Projects       outbounds.ProjectRepository
+	ProjectUsers   outbounds.ProjectUserRepository
+	Keys           outbounds.KeysRepository
+	TokenReuseList outbounds.TokenReuseListRepository
+	Cache          outbounds.CacheService
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -186,7 +187,7 @@ func (uc *UseCase) registerInternal(ctx context.Context, in inbounds.RegisterUse
 	verificationTokenStr := issuer.AssembleJWT(verificationPayload, verificationSig)
 
 	var verificationEmail outbounds.Email
-	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+	verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
 		UserID: u.ID,
 		Email:  u.Email,
 		Token:  verificationTokenStr,
@@ -806,7 +807,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	)
 
 	var verificationEmail outbounds.Email
-	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+	verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
 		UserID: usr.ID,
 		Email:  usr.Email,
 		Token:  verificationTokenStr,
@@ -1059,7 +1060,7 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	verificationTokenStr := issuer.AssembleJWT(verificationPayload, verificationSig)
 
 	var verificationEmail outbounds.Email
-	verificationEmail, err = uc.mailRenderer.Verification(outbounds.VerificationEmailData{
+	verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
 		UserID: principal.UserID,
 		Email:  principal.Email,
 		Token:  verificationTokenStr,
@@ -1070,6 +1071,175 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	}
 
 	err = uc.mailSender.Send(ctx, verificationEmail)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) ForgotPassword(ctx context.Context, in inbounds.ForgotPasswordInput) (err error) {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.ForgotPassword")
+	defer span.End()
+	defer func() {
+		span.SetAttributes(attribute.Bool("forgot_password.success", err == nil))
+	}()
+
+	var u *user.User
+	var pu *project_users.ProjectUser
+
+	u, err = uc.deps.Users.GetUserByEmail(ctx, in.Email)
+	if err != nil && !apierr.IsNotFoundNew(err) {
+		return err
+	}
+
+	if err != nil && apierr.IsNotFoundNew(err) {
+		// Global user not found
+		if in.ProjectID == nil {
+			return nil // silent success
+		}
+
+		pu, err = uc.deps.ProjectUsers.GetByEmailInternal(ctx, *in.ProjectID, in.Email)
+		if err != nil {
+			if apierr.IsNotFoundNew(err) {
+				return nil // silent success (no enumeration)
+			}
+			return err // real failure
+		}
+
+	}
+
+	var SigningKid string
+	SigningKid, err = uc.keys.GetActiveGoAuthSigningKID(ctx)
+	if err != nil {
+		return err
+	}
+
+	var subjectID uuid.UUID
+	var subjectEmail string
+
+	if pu != nil {
+		subjectID = pu.ID
+		subjectEmail = pu.Email
+	} else {
+		subjectID = u.ID
+		subjectEmail = u.Email
+	}
+
+	var resetPayload []byte
+	resetPayload, err = uc.tokenIssuer.NewResetPasswordToken(inbounds.NewResetPasswordInput{
+		KID:       SigningKid,
+		Subject:   subjectID,
+		ProjectID: in.ProjectID,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
+	})
+	if err != nil {
+		return err
+	}
+
+	var resetSig []byte
+	resetSig, err = uc.keys.SignGoAuth(ctx, resetPayload)
+	if err != nil {
+		return err
+	}
+
+	resetPassTokenStr := uc.tokenIssuer.AssembleJWT(resetPayload, resetSig)
+
+	var e outbounds.Email
+	e, err = uc.mailRenderer.PasswordReset(ctx, outbounds.PasswordResetEmailData{
+		UserID: subjectID.String(),
+		Email:  subjectEmail,
+		Token:  resetPassTokenStr,
+		Locale: "en",
+	})
+
+	err = uc.mailSender.Send(ctx, e)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *UseCase) ResetPassword(ctx context.Context, in inbounds.ResetPasswordInput) (err error) {
+	ctx, span := usecaseTracer.Start(ctx, "ResetPassword")
+	defer span.End()
+	defer func() {
+		span.SetAttributes(attribute.Bool("reset_password.success", err == nil))
+	}()
+
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		return uc.resetPasswordInternal(ctx, in)
+	})
+
+	return err
+}
+
+func (uc *UseCase) resetPasswordInternal(ctx context.Context, in inbounds.ResetPasswordInput) (err error) {
+	ctx, span := usecaseTracer.Start(ctx, "ResetPasswordInternal")
+	defer span.End()
+	defer func() {
+		span.SetAttributes(attribute.Bool("reset_password.success", err == nil))
+	}()
+
+	var claims *auth.ResetPasswordClaims
+	claims, err = uc.tokenVerifier.VerifyResetPasswordToken(ctx, in.Token)
+	if err != nil {
+		return err
+	}
+
+	var jti uuid.UUID
+	jti, err = uuid.Parse(claims.ID)
+	if err != nil {
+		return fail.New(apierr.RequestParseUUIDError).RecordCtx(ctx)
+	}
+
+	var exists bool
+	exists, err = uc.deps.TokenReuseList.Exists(ctx, jti, claims.Sub.Subject)
+	if err != nil {
+		return err
+	}
+	if exists {
+		// FIXME when the audit is implemented add this to the audit
+		return fail.New(apierr.AuthTokenAlreadyUsed).RecordCtx(ctx)
+	}
+
+	if len(in.NewPassword) > 72 {
+		return fail.New(apierr.AuthInvalidPassword).RecordCtx(ctx)
+	}
+
+	var hashedPassword []byte
+	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fail.New(apierr.RequestInvalidPassword).With(err).RecordCtx(ctx)
+	}
+
+	if claims.Sub.ProjectID == nil {
+		err = uc.deps.Users.ResetPassword(ctx, claims.Sub.Subject, hashedPassword)
+		if err != nil {
+			return err
+		}
+		_, err = uc.deps.Sessions.MarkRevokedByFilter(ctx, session.Filter{
+			EntityID:     claims.Sub.Subject,
+			IdentityType: session.ClientIdentity,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		err = uc.deps.ProjectUsers.ResetPassword(ctx, claims.Sub.Subject, hashedPassword)
+		if err != nil {
+			return err
+		}
+		_, err = uc.deps.Sessions.MarkRevokedByFilter(ctx, session.Filter{
+			EntityID:     claims.Sub.Subject,
+			IdentityType: session.ProjectIdentity,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	err = uc.deps.TokenReuseList.Append(ctx, jti, claims.Sub.Subject, claims.ExpiresAt.Time)
 	if err != nil {
 		return err
 	}

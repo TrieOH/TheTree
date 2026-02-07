@@ -21,4 +21,5 @@ type ProjectUserRepository interface {
 	UpdateMetadata(ctx context.Context, userID, projectID uuid.UUID, metadata *json.RawMessage) error
 	Verify(ctx context.Context, userID uuid.UUID) (bool, error)
 	BelongsToProject(ctx context.Context, userID, projectID uuid.UUID) (bool, error)
+	ResetPassword(ctx context.Context, userID uuid.UUID, passwordHash []byte) error
 }

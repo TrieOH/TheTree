@@ -66,15 +66,16 @@ func NewApplication(infra infrastructure.Infra) *Application {
 	}, infra.Tx)
 
 	authService := auth.New(auth.Deps{
-		Users:        repos.Users,
-		Sessions:     repos.Sessions,
-		Schemas:      repos.Schemas,
-		Versions:     repos.SchemaVersions,
-		Fields:       repos.SchemaFields,
-		Projects:     repos.Projects,
-		ProjectUsers: repos.ProjectUsers,
-		Keys:         repos.Keys,
-		Cache:        sharedCache,
+		Users:          repos.Users,
+		Sessions:       repos.Sessions,
+		Schemas:        repos.Schemas,
+		Versions:       repos.SchemaVersions,
+		Fields:         repos.SchemaFields,
+		Projects:       repos.Projects,
+		ProjectUsers:   repos.ProjectUsers,
+		Keys:           repos.Keys,
+		TokenReuseList: repos.TokenReuseList,
+		Cache:          sharedCache,
 	}, infra, keyService, schemaService, tokensBundle, mailBundle)
 
 	return &Application{
