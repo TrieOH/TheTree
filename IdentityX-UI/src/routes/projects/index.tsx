@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '@/features/auth/lib/route-guard';
 import { ProjectDialog } from '@/features/project/ui/ProjectDialog';
+// import { createServerFn } from '@tanstack/react-start';
+
+// createServerFn
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -10,6 +13,7 @@ export const Route = createFileRoute('/projects/')({
     }
   },
   component: RouteComponent,
+  // loader
 })
 
 function RouteComponent() {
