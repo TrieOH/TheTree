@@ -18,37 +18,45 @@ export default function Header() {
   const matches = useMatches()
   const headerVariant = [...matches]
     .reverse()
-    .find(m => m.staticData.components.header)?.staticData.components.header
+    .find(m => m.staticData.components.header)
+    ?.staticData.components.header
 
   const [isMenuOpen, setMenuOpen] = useState(false)
 
-  if (!headerVariant || headerVariant === 'none') return null
+  const header =
+    headerVariant && headerVariant !== 'none'
+      ? headerRegistry[headerVariant]
+      : null
 
-  const header = headerRegistry[headerVariant]
-  
+  const left = header?.leftActions ?? []
+  const center = header?.centerActions ?? []
+  const right = header?.rightActions ?? []
+
   const shouldCollapse = (a: HeaderAction) => {
-    if (header.disableMobileMenu) return false // doesn't collapse
-    if (a.collapseToMenu === false) return false // doesn't collapse
-    if (a.visibleOn === 'fixed') return false // doesn't collapse
-    return true // if desktop-only or mobile-only collapse
+    if (!header) return false
+    if (header.disableMobileMenu) return false
+    if (a.collapseToMenu === false) return false
+    if (a.visibleOn === 'fixed') return false
+    return true
   }
 
-  const left = header.leftActions ?? []
-  const center = header.centerActions ?? []
-  const right = header.rightActions ?? []
+  const mobileActions = header
+    ? [
+        ...left.filter(shouldCollapse),
+        ...center.filter(shouldCollapse),
+        ...right.filter(shouldCollapse),
+      ]
+    : []
 
-  const mobileActions = [
-    ...left.filter(a => shouldCollapse(a)),
-    ...center.filter(a => shouldCollapse(a)),
-    ...right.filter(a => shouldCollapse(a)),
-  ]
-
-  const showHamburger = !!mobileActions.length && !header.disableMobileMenu
+  const showHamburger =
+    !!mobileActions.length && !header?.disableMobileMenu
 
   useEffect(() => {
     if (!showHamburger) setMenuOpen(false)
   }, [showHamburger])
-  
+
+  if (!header) return null
+
   return (
     <header className="sticky top-0 w-full z-10">
       <div 
@@ -74,9 +82,9 @@ export default function Header() {
 
           {/* left actions (e.g., back) */}
           <div className="flex items-center gap-2">
-            {left.map((a, i) => (
-              <div className={visibilityClass(a.visibleOn)} key={`leftD-${i}`}>
-                <HeaderActionRenderer key={`left-${i}`} action={a} />
+            {left.map(a => (
+              <div className={visibilityClass(a.visibleOn)} key={`leftD-${a.id}`}>
+                <HeaderActionRenderer action={a} />
               </div>
             ))}
             {header.title && header.titlePosition === 'left' && (
@@ -95,18 +103,18 @@ export default function Header() {
 
         {/* center desktop nav */}
         <nav className="hidden md:flex gap-6 items-center">
-          {center.map((a, i) => (
-            <div className={visibilityClass(a.visibleOn)} key={`centerD-${i}`}>
-              <HeaderActionRenderer key={`center-${i}`} action={a} />
+          {center.map(a => (
+            <div className={visibilityClass(a.visibleOn)} key={`centerD-${a.id}`}>
+              <HeaderActionRenderer action={a} />
             </div>
           ))}
         </nav>
 
         {/* right actions */}
         <div className="flex items-center gap-2">
-          {right.map((a, i) => (
-            <div className={visibilityClass(a.visibleOn)} key={`rightD-${i}`}>
-              <HeaderActionRenderer key={`right-${i}`} action={a} />
+          {right.map(a => (
+            <div className={visibilityClass(a.visibleOn)} key={`rightD-${a.id}`}>
+              <HeaderActionRenderer action={a} />
             </div>
           ))}
           {header.showUserMenu && <UserMenu />}

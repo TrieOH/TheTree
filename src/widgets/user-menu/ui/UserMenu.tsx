@@ -30,7 +30,7 @@ export default function UserMenu() {
 
   const handleFailure = async (message: string, trace?: string[]) => {
     const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
-    toast.warning("Auth Failed: " + message, {description: traceMsg})
+    toast.warning(`Auth Failed: ${message}`, {description: traceMsg})
   }
 
   useEffect(() => {
@@ -67,6 +67,7 @@ export default function UserMenu() {
           "flex flex-col justify-center items-center py-3 gap-2 px-1"
         )}>
           <button
+            type="button"
             className={cn(
               "w-full flex items-end text-popover-foreground px-3 ",
               "gap-1 cursor-pointer text-sm font-medium",

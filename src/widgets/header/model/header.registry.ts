@@ -6,12 +6,12 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     title: 'TrieAuth',
     titlePosition: 'left',
     centerActions: [
-      { type: 'link', label: 'Features', to: '/' },
-      { type: 'link', label: 'Pricing', to: '/' },
-      { type: 'link', label: 'Docs', to: '/' },
+      { id: "landing_link_000", type: 'link', label: 'Features', to: '/' },
+      { id: "landing_link_001", type: 'link', label: 'Pricing', to: '/' },
+      { id: "landing_link_002", type: 'link', label: 'Docs', to: '/' },
     ],
     rightActions: [
-      { type: 'authButton', visibleOn: 'fixed' },
+      { id: "landing_auth_button_000", type: 'authButton', visibleOn: 'fixed' },
     ],
   },
 
@@ -20,8 +20,8 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     title: 'Projects',
     titlePosition: 'none',
     disableMobileMenu: true,
-    leftActions: [{ type: 'back', visibleOn: "fixed", to: "/" }],
-    rightActions: [{ type: 'createProject', visibleOn: "fixed" }],
+    leftActions: [{ id: "projects_back_000", type: 'back', visibleOn: "fixed", to: "/" }],
+    rightActions: [{ id: "projects_create_project_000", type: 'createProject', visibleOn: "fixed" }],
     showUserMenu: true,
   },
   auth: { variant: 'auth' },
