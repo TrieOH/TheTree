@@ -13,7 +13,7 @@ export interface Project {
   project_name: string;
   is_active: boolean;
   owner_id: string;
-  // I need to include metadata
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

@@ -5,15 +5,31 @@ import { formOptions } from "@tanstack/react-form";
 import type { FieldConfig } from "@/shared/ui/form/types";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import { projectCRUDSchema, type ProjectCRUD } from "../model/types";
-// import { useAuth } from "@trieoh/node-auth-sdk/react";
+import { createProjectFn } from "../api";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function ProjectDialog() {
-  // useAuth
+  const queryClient = useQueryClient();
+
+  const createProjectMutation = useMutation({
+    mutationFn: createProjectFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message);
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+      } else toast.error(`Failed to create project: ${response.message}`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to create project: ${error.message}`);
+    },
+  });
+
   const { handleSubmit } = useCrudOperations({
     store: projectStore,
     autoClose: true,
     onCreate: async (data) => {
-      console.log(data)
+      createProjectMutation.mutate(data);
     },
   });
   const fields: FieldConfig[] = [
