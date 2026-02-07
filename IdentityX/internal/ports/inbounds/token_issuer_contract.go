@@ -36,3 +36,10 @@ type NewVerificationTokenInput struct {
 	Subject   uuid.UUID
 	ExpiresAt time.Time
 }
+
+type NewResetPasswordInput struct {
+	KID       string
+	Subject   uuid.UUID
+	ExpiresAt time.Time
+	ProjectID *uuid.UUID
+}

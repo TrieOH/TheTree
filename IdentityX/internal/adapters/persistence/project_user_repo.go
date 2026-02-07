@@ -99,7 +99,7 @@ func (repo *projectUserRepo) GetByIDExternal(ctx context.Context, projectUserID,
 		OwnerID:   ownerID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("project user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -128,7 +128,7 @@ func (repo *projectUserRepo) GetByIDInternal(ctx context.Context, projectUserID,
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("project user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -157,7 +157,7 @@ func (repo *projectUserRepo) GetByEmailExternal(ctx context.Context, projectID u
 		OwnerID:   ownerID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("project user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -185,7 +185,7 @@ func (repo *projectUserRepo) GetByEmailInternal(ctx context.Context, projectID u
 		Email:     email,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("project user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -300,7 +300,7 @@ func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectI
 		ProjectID: projectID,
 		OwnerID:   ownerID,
 	}); err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return fail.From(err).WithArgs("project user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.Bool("project_user.deleted", true))
@@ -364,4 +364,23 @@ func (repo *projectUserRepo) BelongsToProject(ctx context.Context, userID, proje
 	}
 
 	return belongs, nil
+}
+
+func (repo *projectUserRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passwordHash []byte) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.ResetPassword",
+		trace.WithAttributes(
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	err := repo.queries(ctx).ResetProjectUserPassword(ctx, sqlc.ResetProjectUserPasswordParams{
+		PasswordHash: string(passwordHash),
+		ID:           userID,
+	})
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }

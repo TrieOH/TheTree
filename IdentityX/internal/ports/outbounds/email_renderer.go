@@ -1,6 +1,8 @@
 package outbounds
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 )
 
@@ -19,6 +21,6 @@ type PasswordResetEmailData struct {
 }
 
 type EmailRenderer interface {
-	Verification(data VerificationEmailData) (Email, error)
-	PasswordReset(data PasswordResetEmailData) (Email, error)
+	Verification(ctx context.Context, data VerificationEmailData) (Email, error)
+	PasswordReset(ctx context.Context, data PasswordResetEmailData) (Email, error)
 }

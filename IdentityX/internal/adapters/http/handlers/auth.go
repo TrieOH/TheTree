@@ -399,3 +399,77 @@ func (handler *AuthHandler) UpdateMetadata(w http.ResponseWriter, r *http.Reques
 
 	resp.OK("Metadata updated successfully").Send(w)
 }
+
+// ForgotPassword godoc
+// @Summary Initiate password reset
+// @Description Sends a password reset email to the user if the account exists.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param forgotInfo body dto.ForgotPasswordRequest true "User email and optional project ID"
+// @Success 200 {object} object "Forgot password email sent"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /auth/forgot-password [post]
+func (handler *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req dto.ForgotPasswordRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ForgotPasswordInput{
+		Email:     req.Email,
+		ProjectID: req.ProjectID,
+	}
+
+	ctx := r.Context()
+	err := handler.auth.ForgotPassword(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("forgot password email sent").Send(w)
+}
+
+// ResetPassword godoc
+// @Summary Reset user password
+// @Description Resets the user's password using a valid reset token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param token query string true "Reset password token"
+// @Param resetInfo body dto.ResetPasswordRequest true "New password information"
+// @Success 200 {object} object "Password reset successfully"
+// @Failure 400 {object} ErrorResponse "Bad Request: Invalid input or token"
+// @Failure 401 {object} ErrorResponse "Unauthorized: Invalid or expired token"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /auth/reset-password [post]
+func (handler *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	token, rs := getString(r, "token")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.ResetPasswordRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ResetPasswordInput{
+		Token:       token,
+		NewPassword: req.NewPassword,
+	}
+
+	ctx := r.Context()
+	err := handler.auth.ResetPassword(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("password reset successfully").Send(w)
+}

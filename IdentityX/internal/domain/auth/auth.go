@@ -44,3 +44,13 @@ type VerificationClaims struct {
 	Sub VerificationSub `json:"sub"`
 	jwt.RegisteredClaims
 }
+
+type ResetPasswordSub struct {
+	Subject   uuid.UUID  `json:"subject"`
+	ProjectID *uuid.UUID `json:"project_id"`
+}
+
+type ResetPasswordClaims struct {
+	Sub ResetPasswordSub `json:"sub"`
+	jwt.RegisteredClaims
+}

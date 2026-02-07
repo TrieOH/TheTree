@@ -85,7 +85,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*user.
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -106,7 +106,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.U
 	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, email)
 
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -137,4 +137,23 @@ func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
 
 	return !wasVerified, nil
+}
+
+func (repo *userRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passwordHash []byte) error {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.ResetPassword",
+		trace.WithAttributes(
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	err := repo.queries(ctx).ResetUserPassword(ctx, sqlc.ResetUserPasswordParams{
+		PasswordHash: string(passwordHash),
+		ID:           userID,
+	})
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }

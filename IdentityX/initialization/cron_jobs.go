@@ -88,3 +88,30 @@ func sessionCleanupJob(ctx context.Context, app *GoauthApp, txRunner inbounds.Tx
 		log.Println("Created SessionCleanup cron job")
 	}
 }
+
+func tokenReuseCleanupJob(ctx context.Context, app *GoauthApp) {
+	db := app.DB
+
+	_, err := app.scheduler.NewJob(
+		gocron.DurationJob(15*time.Minute),
+		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
+
+			queries := sqlc.New(pool)
+
+			if err := queries.DeleteExpiredTokenReuseListEntries(ctx); err != nil {
+				logs.L().Error("Couldn't clear expired token reuse entries", zap.Error(err))
+				return
+			}
+			logs.L().Info("Cleared expired token reuse entries")
+		}, db),
+		gocron.WithContext(ctx),
+	)
+
+	if err != nil {
+		log.Fatalf("Couldn't create TokenReuseCleanup cron job: %v", err)
+	} else {
+		log.Println("Created TokenReuseCleanup cron job")
+	}
+}

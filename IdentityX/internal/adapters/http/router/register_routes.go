@@ -62,6 +62,11 @@ func registerAuthRoutes(
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth()).
 			Post("/auth/logout", h.Logout)
+		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+			Post("/auth/forgot-password", h.ForgotPassword)
+		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+			With(middleware.RequireQueryParams("token")).
+			Post("/auth/reset-password", h.ResetPassword)
 		r.With(authMW.Auth()).
 			With(middleware.RequireQueryParams("token")).
 			Post("/auth/verify", h.Verify)

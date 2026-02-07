@@ -135,6 +135,34 @@ func (uc *UseCase) NewVerificationToken(in inbounds.NewVerificationTokenInput) (
 	return []byte(payload), nil
 }
 
+func (uc *UseCase) NewResetPasswordToken(in inbounds.NewResetPasswordInput) ([]byte, error) {
+	now := time.Now()
+	claims := auth.ResetPasswordClaims{
+		Sub: auth.ResetPasswordSub{
+			Subject:   in.Subject,
+			ProjectID: in.ProjectID,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    viper.GetString("ISSUER"),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
+			Audience:  jwt.ClaimStrings{"password-reset"},
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
 func (uc *UseCase) AssembleJWT(payload []byte, sig []byte) string {
 	return string(payload) + "." + base64.RawURLEncoding.EncodeToString(sig)
 }
