@@ -117,7 +117,10 @@ function DialogFooter({
     >
       {showCloseButton && (
         <DialogPrimitive.Close asChild disabled={isPerformingSubmit}>
-          <ShadowButton value={closeButtonText} />
+          <ShadowButton 
+            value={closeButtonText} 
+            className='justify-center px-4 font-normal sm:font-light text-sm'
+          />
         </DialogPrimitive.Close>
       )}
       {children}

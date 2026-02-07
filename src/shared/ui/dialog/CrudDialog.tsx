@@ -10,6 +10,7 @@ import { AlertTriangle } from 'lucide-react';
 import { ShadowButton } from '../buttons/ShadowButton';
 import { createCrudActions, type CrudStore } from '@/shared/lib/store/crudStore';
 import { useStore } from '@tanstack/react-store';
+import { cn } from '@/shared/lib/utils';
 
 interface CrudDialogProps<T extends { id: string }> {
   store: CrudStore<T>;
@@ -55,7 +56,12 @@ export function CrudDialog<T extends { id: string }>({
 
   return (
     <Dialog open={state.isOpen} onOpenChange={(open) => !open && actions.close()}>
-      <DialogContent className={state.mode === 'delete' ? 'max-w-md' : 'max-w-lg'}>
+      <DialogContent 
+        className={cn(
+          state.mode === 'delete' ? 'max-w-md' : 'max-w-lg',
+          "min-w-[320px] w-11/12"
+        )}
+      >
         <DialogHeader>
           <DialogTitle>{currentConfig.title}</DialogTitle>
           <DialogDescription>{currentConfig.description}</DialogDescription>
@@ -79,6 +85,7 @@ export function CrudDialog<T extends { id: string }>({
             onClick={onSubmit}
             formId={formId}
             disabled={state.isLoading}
+            className='justify-center px-4 font-normal sm:font-light text-sm'
             value={state.isLoading ? 'Submitting...' : currentConfig.submitLabel}
           /> 
         </DialogFooter>
