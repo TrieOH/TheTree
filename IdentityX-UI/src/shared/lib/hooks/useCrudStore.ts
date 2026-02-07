@@ -24,22 +24,24 @@ interface UseCrudOperationsOptions<T extends { id: string }> {
   onDelete?: (id: string) => Promise<void>;
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  autoClose: boolean;
 }
 
 export function useCrudOperations<T extends { id: string }>(
   options: UseCrudOperationsOptions<T>
 ) {
-  const { store, onCreate, onUpdate, onDelete, onSuccess, onError } = options;
+  const { store, onCreate, onUpdate, onDelete, onSuccess, onError, autoClose = false } = options;
   const actions = createCrudActions(store);
 
   const executeOperation = async (
     operation: () => Promise<void>
   ) => {
+    const state = store.state;
     actions.setLoading(true);
     try {
       await operation();
       onSuccess?.();
-      actions.close();
+      if(autoClose || state.mode === "delete") actions.close();
     } catch (error) {
       onError?.(error as Error);
       console.error('CRUD Operation failed:', error);

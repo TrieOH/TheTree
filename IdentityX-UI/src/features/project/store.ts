@@ -1,8 +1,8 @@
 import { createCrudActions, createCrudStore } from "@/shared/lib/store/crudStore";
-import type { Project } from "./model/types";
+import type { ProjectCRUD } from "./model/types";
 
 // Store Instance
-export const projectStore = createCrudStore<Project>();
+export const projectStore = createCrudStore<ProjectCRUD>();
 
 // Actions
 export const projectActions = createCrudActions(projectStore);

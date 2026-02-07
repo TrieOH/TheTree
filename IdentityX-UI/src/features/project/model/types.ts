@@ -1,16 +1,12 @@
-// import { z } from 'zod';
+import { z } from 'zod';
 
-// export const projectSchema = z.object({
-//   id: z.string(),
-//   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-// });
+export const projectCRUDSchema = z.object({
+  id: z.string(),
+  project_name: z.string().min(3, "Project name must be at least 3 characters long"),
+});
 
-// export type ProjectFormData = z.infer<typeof projectSchema>;
+export type ProjectCRUD = z.infer<typeof projectCRUDSchema>;
 
-// export const projectDefaultValues: ProjectFormData = {
-//   id: '',
-//   name: '',
-// };
 
 export interface Project {
   id: string;

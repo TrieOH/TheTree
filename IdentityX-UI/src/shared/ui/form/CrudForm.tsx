@@ -18,7 +18,9 @@ export default function CrudForm<TFormData>({
     defaultValues: options.defaultValues,
     validators: options.validators,
     onSubmit: async ({ value, formApi }) => {
-      await options.onSubmit({value, formApi})
+      formApi.reset()
+      formApi.mount()
+      await options.onSubmit({ value, formApi })
       setSubmitted(false);
     }
   });
