@@ -21,15 +21,26 @@ interface PropsI extends VariantProps<typeof buttonVariants> {
   value?: string;
   leftIcon?: React.ReactNode;
   type?: "button" | "submit";
+  formId?: string;
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
 }
 
-export function ShadowButton({ value, leftIcon, className, onClick, type = "button", disabled, variant }: PropsI) {
+export function ShadowButton({ 
+  value, 
+  leftIcon, 
+  className, 
+  onClick, 
+  disabled, 
+  variant,
+  type = "button", 
+  formId
+}: PropsI) {
   return (
     <button
       type={type}
+      form={formId}
       className={cn(
         buttonVariants({ variant, className }),
         // pressed
