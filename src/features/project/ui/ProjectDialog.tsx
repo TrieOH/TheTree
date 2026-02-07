@@ -1,25 +1,29 @@
 import { CrudDialog } from "@/shared/ui/dialog/CrudDialog";
 import { projectStore } from "../store";
-import z from "zod";
 import CrudForm from "@/shared/ui/form/CrudForm";
 import { formOptions } from "@tanstack/react-form";
 import type { FieldConfig } from "@/shared/ui/form/types";
+import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
+import { projectCRUDSchema, type ProjectCRUD } from "../model/types";
+// import { useAuth } from "@trieoh/node-auth-sdk/react";
 
 export function ProjectDialog() {
+  // useAuth
+  const { handleSubmit } = useCrudOperations({
+    store: projectStore,
+    autoClose: true,
+    onCreate: async (data) => {
+      console.log(data)
+    },
+  });
   const fields: FieldConfig[] = [
     {name: "project_name", label: "Project Name", placeholder: "My Awesome Project", autoComplete: "project_name"}
   ]
   const projectOpts = formOptions({
-    defaultValues: {
-      project_name: "",
-    },
+    defaultValues: { id: "", project_name: "" } as ProjectCRUD,
     validators: {
-      onChange: z.object({
-        project_name: z.string().min(3, "Project name must be at least 3 characters long"),
-      }),
-      onMount: z.object({
-        project_name: z.string().min(3, "Project name must be at least 3 characters long"),
-      })
+      onChange: projectCRUDSchema,
+      onMount: projectCRUDSchema,
     }
   });
   
@@ -35,10 +39,7 @@ export function ProjectDialog() {
         options={{
           defaultValues: projectOpts.defaultValues,
           validators: projectOpts.validators,
-          onSubmit: async ({ value, formApi }) => {
-            formApi.reset()
-            console.log(value);
-          },
+          onSubmit: async ({ value }) => handleSubmit(value)
         }}
       />
     </CrudDialog>
