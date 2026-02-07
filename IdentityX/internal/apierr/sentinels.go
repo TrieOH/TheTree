@@ -110,6 +110,8 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "o schema do usuário está desatualizado, por favor atualize seus metadados",
 		})
+	ErrAuthTokenAlreadyUsed = fail.Form(AuthTokenAlreadyUsed, "token already used", false, map[string]any{"code": 403}).
+				AddLocalization("pt-BR", "este token já foi usado")
 
 	// ------ SESSION ------
 	ErrSessionRevoked = fail.Form(SessionRevoked, "session not found or revoked", false, map[string]any{"code": 401}).

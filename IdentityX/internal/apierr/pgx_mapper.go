@@ -96,6 +96,12 @@ func IsNotFoundNew(err error) bool {
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 		return true
 	}
+	var fe *fail.Error
+	if errors.As(err, &fe) {
+		if fail.Is(fe, SQLNotFound) {
+			return true
+		}
+	}
 	return false
 }
 

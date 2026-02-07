@@ -62,6 +62,19 @@ func (uc *TokenVerifier) VerifyVerificationToken(
 	)
 }
 
+func (uc *TokenVerifier) VerifyResetPasswordToken(
+	ctx context.Context,
+	tokenStr string,
+) (*auth.ResetPasswordClaims, error) {
+	return verifyToken(
+		ctx,
+		uc,
+		"reset password",
+		tokenStr,
+		&auth.ResetPasswordClaims{},
+	)
+}
+
 func verifyToken[T jwt.Claims](
 	ctx context.Context,
 	uc *TokenVerifier,

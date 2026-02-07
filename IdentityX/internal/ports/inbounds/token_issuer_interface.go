@@ -5,5 +5,6 @@ type TokenIssuer interface {
 	NewRefreshToken(in NewRefreshTokenInput) ([]byte, error)
 	NewProjectAccessToken(in NewProjectAccessTokenInput) ([]byte, error)
 	NewVerificationToken(in NewVerificationTokenInput) ([]byte, error)
+	NewResetPasswordToken(in NewResetPasswordInput) ([]byte, error)
 	AssembleJWT(payload []byte, sig []byte) string
 }

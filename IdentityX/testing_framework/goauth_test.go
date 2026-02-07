@@ -47,6 +47,10 @@ func TestGoAuth(t *testing.T) {
 		testVerification(t, suite)
 	})
 
+	t.Run("Reset Password", func(t *testing.T) {
+		testResetPassword(t, suite)
+	})
+
 	t.Run("Key Rotation", func(t *testing.T) {
 		testKeyRotation(t, suite)
 	})

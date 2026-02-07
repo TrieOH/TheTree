@@ -3,6 +3,11 @@ INSERT INTO project_users (project_id, email, password_hash, metadata)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
+-- name: ResetProjectUserPassword :exec
+UPDATE project_users
+SET password_hash = $1
+WHERE id = $2;
+
 -- name: GetProjectUserById :one
 SELECT pu.*
 FROM project_users AS pu
