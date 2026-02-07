@@ -17,6 +17,7 @@ interface CrudDialogProps<T extends { id: string }> {
   description?: string;
   children?: React.ReactNode;
   onSubmit?: () => void; 
+  formId: string;
 }
 
 export function CrudDialog<T extends { id: string }>({
@@ -24,7 +25,8 @@ export function CrudDialog<T extends { id: string }>({
   title,
   description,
   children,
-  onSubmit
+  onSubmit,
+  formId
 }: CrudDialogProps<T>) {
 
   const state = useStore(store);
@@ -75,6 +77,7 @@ export function CrudDialog<T extends { id: string }>({
             type={onSubmit ? "button" : "submit"}
             variant="accent"
             onClick={onSubmit}
+            formId={formId}
             disabled={state.isLoading}
             value={state.isLoading ? 'Submitting...' : currentConfig.submitLabel}
           /> 
