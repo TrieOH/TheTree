@@ -5,7 +5,6 @@ import CrudForm from "@/shared/ui/form/CrudForm";
 import { formOptions } from "@tanstack/react-form";
 import type { FieldConfig } from "@/shared/ui/form/types";
 
-
 export function ProjectDialog() {
   const fields: FieldConfig[] = [
     {name: "project_name", label: "Project Name", placeholder: "My Awesome Project", autoComplete: "project_name"}
@@ -16,8 +15,11 @@ export function ProjectDialog() {
     },
     validators: {
       onChange: z.object({
-        project_name: z.string().min(3),
+        project_name: z.string().min(3, "Project name must be at least 3 characters long"),
       }),
+      onMount: z.object({
+        project_name: z.string().min(3, "Project name must be at least 3 characters long"),
+      })
     }
   });
   
@@ -33,8 +35,8 @@ export function ProjectDialog() {
         options={{
           defaultValues: projectOpts.defaultValues,
           validators: projectOpts.validators,
-          onSubmit: async ({ value }) => {
-            // formApi.reset()
+          onSubmit: async ({ value, formApi }) => {
+            formApi.reset()
             console.log(value);
           },
         }}
