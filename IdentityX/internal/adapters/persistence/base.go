@@ -18,6 +18,7 @@ type Repositories struct {
 	Roles          outbounds.RoleRepository
 	Keys           outbounds.KeysRepository
 	TokenReuseList outbounds.TokenReuseListRepository
+	ApiKey         outbounds.ApiKeyRepository
 }
 
 func NewRepositories(infra infrastructure.Infra) *Repositories {
@@ -34,5 +35,6 @@ func NewRepositories(infra infrastructure.Infra) *Repositories {
 		Roles:          NewRoleRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Keys:           NewKeyRepo(infra.Queries, infra.Logger, infra.Tracer),
 		TokenReuseList: NewTokenReuseListRepo(infra.Queries, infra.Logger, infra.Tracer),
+		ApiKey:         NewApiKeyRepo(infra.Queries, infra.Logger, infra.Tracer),
 	}
 }

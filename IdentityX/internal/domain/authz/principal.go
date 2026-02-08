@@ -9,9 +9,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type AuthMethod string
+
+const (
+	AuthMethodSession AuthMethod = "session"
+	AuthMethodApiKey  AuthMethod = "api_key"
+)
+
 type Principal struct {
 	UserID    uuid.UUID
 	ProjectID *uuid.UUID
+	Method    AuthMethod
 }
 
 func NewPrincipal(
@@ -29,5 +37,6 @@ func NewPrincipal(
 	return &Principal{
 		UserID:    access.Sub.ID,
 		ProjectID: access.Sub.ProjectID,
+		Method:    AuthMethodSession,
 	}, nil
 }

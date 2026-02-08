@@ -5,6 +5,7 @@ import (
 	"GoAuth/internal/adapters/memory/imc"
 	"GoAuth/internal/adapters/memory/redis"
 	"GoAuth/internal/adapters/persistence"
+	"GoAuth/internal/application/apikey"
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
 	"GoAuth/internal/application/keys"
@@ -37,6 +38,7 @@ type Application struct {
 	Role           inbounds.RoleService
 	Scope          inbounds.ScopeService
 	Verifier       inbounds.TokenVerifier
+	ApiKey         inbounds.ApiKeyService
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
@@ -79,6 +81,11 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Cache:          sharedCache,
 	}, infra, keyService, schemaService, tokensBundle, mailBundle)
 
+	apiKeyService := apikey.New(apikey.Deps{
+		ApiKey:  repos.ApiKey,
+		Project: repos.Projects,
+	})
+
 	return &Application{
 		Auth: authService,
 		Keys: keyService,
@@ -106,10 +113,12 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Authenticator: authenticator.New(authenticator.Deps{
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
+			ApiKey:        apiKeyService,
 		}, infra.Tracer),
 		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, schemaService, infra.Tx),
 		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 		Verifier:   tokensBundle.Verifier,
+		ApiKey:     apiKeyService,
 	}
 }

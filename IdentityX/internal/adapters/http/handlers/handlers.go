@@ -14,6 +14,7 @@ type HandlerBundle struct {
 	ScopeHandler         *ScopeHandler
 	PermissionHandler    *PermissionHandler
 	RoleHandler          *RoleHandler
+	ApiKeyHandler        *ApiKeyHandler
 }
 
 func New(app *application.Application) *HandlerBundle {
@@ -27,5 +28,6 @@ func New(app *application.Application) *HandlerBundle {
 		ScopeHandler:         NewScopeHandler(app.Scope),
 		PermissionHandler:    NewPermissionHandler(app.Permission),
 		RoleHandler:          NewRoleHandler(app.Role),
+		ApiKeyHandler:        NewApiKeyHandler(app.ApiKey),
 	}
 }
