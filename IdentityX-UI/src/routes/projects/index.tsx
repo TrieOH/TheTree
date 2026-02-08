@@ -1,6 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '@/features/auth/lib/route-guard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs'
+import { ProjectDialog } from '@/features/project/ui/ProjectDialog';
+import ProjectCard from '@/features/project/ui/ProjectCard';
+import { projectsQueryOptions } from '@/features/project/api';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { ProjectsSkeleton } from '@/shared/ui/placeholders/ProjectsSkeleton';
+import { ProjectsEmptyState } from '@/features/project/ui/ProjectsEmptyState';
+import { projectActions } from '@/features/project/store';
+import { cn } from '@/shared/lib/utils';
+import { ProjectAddButton } from '@/features/project/ui/ProjectAddButon';
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -9,37 +17,51 @@ export const Route = createFileRoute('/projects/')({
       header: "projects"
     }
   },
+  loader: async ({ context: { queryClient }}) => {
+    await queryClient.ensureQueryData(projectsQueryOptions)
+    return {}
+  },
+  pendingComponent: ProjectsSkeleton,
   component: RouteComponent,
 })
 
 function RouteComponent() {
+  const projectsQuery = useSuspenseQuery(projectsQueryOptions)
+  const projects = projectsQuery.data
+
+  const hasProjects = projects && projects.length > 0
+
+  if(!hasProjects) return (
+    <main className={cn(
+      "flex justify-center items-center bg-background",
+      "w-full h-(--screen--minus-header) px-4"
+    )}>
+      <ProjectsEmptyState 
+        onCreate={projectActions.openCreate}
+      />
+      <ProjectDialog />
+    </main>
+  )
+  
   return (
-    <main className="w-full bg-background">
-      <div>
-        <Tabs defaultValue="projects" className='mt-6'>
-          <TabsList className='w-full justify-start gap-4 bg-transparent border-b rounded-none py-0 px-4'>
-            <TabsTrigger
-              value="projects"
-              className='max-w-60 h-full shadow-none! border-b data-[state=active]:border-b-black rounded-none'
-            >
-              Projetos
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className='max-w-60 h-full shadow-none! border-b data-[state=active]:border-b-black rounded-none'
-            >
-              Configurações
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent className='p-12' value="projects">What</TabsContent>
-          <TabsContent 
-            className='p-12' 
-            value="settings"
-          >
-            Make changes to your account here.
-          </TabsContent>
-        </Tabs>
+    <main className="w-full bg-background flex flex-col items-center my-4">
+      <div className="text-center space-y-1 mb-7">
+        <h1 className="font-bold text-3xl">Your Projects</h1>
+        <p className="font-extralight text-sm">
+          Manage your projects configurations
+        </p>
       </div>
+      <div className="max-w-7xl w-full xs:px-4">
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {projects.map((project) => (
+            <ProjectCard key={project.id} data={project} />
+          ))}
+          <ProjectAddButton
+            onCreate={projectActions.openCreate}
+          />
+        </div>
+      </div>
+      <ProjectDialog />
     </main>
   )
 }
