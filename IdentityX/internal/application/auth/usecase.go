@@ -325,7 +325,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 // Logout handles the business logic for logging out a user.
 // It retrieves the principal from the context, deletes the session, and revokes the refresh token.
-func (uc *UseCase) Logout(ctx context.Context) error {
+func (uc *UseCase) Logout(ctx context.Context, accessToken string) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Logout")
 	defer span.End()
 
@@ -335,6 +335,13 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 			span.SetAttributes(attribute.Bool("logout.success", err == nil))
 		}
 	}()
+
+	claims, err := uc.tokenVerifier.VerifyAccessToken(ctx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	sessID := claims.Sub.SessionID
 
 	sessions := uc.deps.Sessions
 
@@ -352,7 +359,7 @@ func (uc *UseCase) Logout(ctx context.Context) error {
 	}
 
 	var sess *session.Session
-	sess, err = sessions.MarkRevokedByID(ctx, principal.UserID, principal.SessionID, identityType)
+	sess, err = sessions.MarkRevokedByID(ctx, principal.UserID, sessID, identityType)
 	if err != nil {
 		return err
 	}
@@ -1018,16 +1025,18 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 	}
 
+	var u *user.User
+	var pu *project_users.ProjectUser
 	if principal.ProjectID != nil {
-		u, err := projectUsers.GetByIDInternal(ctx, principal.UserID, *principal.ProjectID)
+		pu, err = projectUsers.GetByIDInternal(ctx, principal.UserID, *principal.ProjectID)
 		if err != nil {
 			return err
 		}
-		if u.IsVerified == true {
+		if pu.IsVerified == true {
 			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 		}
 	} else {
-		u, err := users.GetUserByID(ctx, principal.UserID)
+		u, err = users.GetUserByID(ctx, principal.UserID)
 		if err != nil {
 			return err
 		}
@@ -1036,7 +1045,8 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		}
 	}
 
-	SigningKid, err := keys.GetActiveGoAuthSigningKID(ctx)
+	var SigningKid string
+	SigningKid, err = keys.GetActiveGoAuthSigningKID(ctx)
 	if err != nil {
 		return err
 	}
@@ -1060,12 +1070,22 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 	verificationTokenStr := issuer.AssembleJWT(verificationPayload, verificationSig)
 
 	var verificationEmail outbounds.Email
-	verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
-		UserID: principal.UserID,
-		Email:  principal.Email,
-		Token:  verificationTokenStr,
-		Locale: "en",
-	})
+	if pu != nil {
+		verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
+			UserID: pu.ID,
+			Email:  pu.Email,
+			Token:  verificationTokenStr,
+			Locale: "en",
+		})
+	} else {
+		verificationEmail, err = uc.mailRenderer.Verification(ctx, outbounds.VerificationEmailData{
+			UserID: u.ID,
+			Email:  u.Email,
+			Token:  verificationTokenStr,
+			Locale: "en",
+		})
+	}
+
 	if err != nil {
 		return err
 	}

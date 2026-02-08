@@ -53,7 +53,6 @@ func AnnotatePrincipal(span trace.Span, principal *Principal) {
 
 	span.SetAttributes(
 		attribute.String("user.id", principal.UserID.String()),
-		attribute.String("user.session_id", principal.SessionID.String()),
 		attribute.String("user.type", principal.UserType),
 	)
 

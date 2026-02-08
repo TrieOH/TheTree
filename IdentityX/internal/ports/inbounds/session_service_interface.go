@@ -8,8 +8,8 @@ import (
 
 type SessionService interface {
 	List(ctx context.Context) ([]OutputSession, error)
-	RevokeByID(ctx context.Context, sessionID uuid.UUID) error
-	RevokeOthers(ctx context.Context) error
+	RevokeByID(ctx context.Context, sessionID uuid.UUID, accessToken string) error
+	RevokeOthers(ctx context.Context, accessToken string) error
 	RevokeAll(ctx context.Context) error
-	Me(ctx context.Context) (*PrincipalOutput, error)
+	Me(ctx context.Context, accessToken, refreshToken string) (*MeOutput, error)
 }

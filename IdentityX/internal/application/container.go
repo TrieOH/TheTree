@@ -36,6 +36,7 @@ type Application struct {
 	Permission     inbounds.PermissionService
 	Role           inbounds.RoleService
 	Scope          inbounds.ScopeService
+	Verifier       inbounds.TokenVerifier
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
@@ -101,7 +102,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Fields:   repos.SchemaFields,
 			Projects: repos.Projects,
 		}, infra.Tx),
-		Session: session.New(repos.Sessions, infra.Tx),
+		Session: session.New(repos.Sessions, tokensBundle.Verifier, infra.Tx),
 		Authenticator: authenticator.New(authenticator.Deps{
 			Session:       repos.Sessions,
 			TokenVerifier: tokensBundle.Verifier,
@@ -109,5 +110,6 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, schemaService, infra.Tx),
 		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
+		Verifier:   tokensBundle.Verifier,
 	}
 }
