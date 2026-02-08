@@ -64,7 +64,11 @@ func (b *permissionBuilder) Action(act any) PermissionBuilder {
 }
 
 func (b *permissionBuilder) Conditions(cond any) PermissionBuilder {
-	b.conditions = cond
+	if cb, ok := cond.(ConditionBuilder); ok {
+		b.conditions = cb.Build()
+	} else {
+		b.conditions = cond
+	}
 	return b
 }
 
