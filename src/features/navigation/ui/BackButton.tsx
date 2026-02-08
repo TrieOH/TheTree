@@ -7,18 +7,22 @@ interface PropsI {
   to?: string;
 }
 
+function goBack(
+  navigate: ReturnType<typeof useNavigate>,
+  to?: string
+) {
+  if (to) navigate({ to })
+  else history.back()
+}
+
+
 export default function BackButton({value, to} : PropsI) {
   const navigate = useNavigate()
-
-  const GoBack = async () => {
-    if (to) await navigate({ to })
-    else history.back()
-  }
 
   return (
     <button
       type="button"
-      onClick={GoBack}
+      onClick={() => goBack(navigate, to)}
       className={cn(
         "flex items-center group transition-all duration-200 cursor-pointer",
         "text-muted-foreground hover:text-foreground"
