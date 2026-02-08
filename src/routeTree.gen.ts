@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SchemasIndexRouteImport } from './routes/schemas/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchemasIndexRoute = SchemasIndexRouteImport.update({
+  id: '/schemas/',
+  path: '/schemas/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/schemas': typeof SchemasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/schemas': typeof SchemasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/': typeof AuthIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/schemas/': typeof SchemasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/projects'
+  fullPaths: '/' | '/auth' | '/projects' | '/schemas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/projects'
-  id: '__root__' | '/' | '/auth/' | '/projects/'
+  to: '/' | '/auth' | '/projects' | '/schemas'
+  id: '__root__' | '/' | '/auth/' | '/projects/' | '/schemas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  SchemasIndexRoute: typeof SchemasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schemas/': {
+      id: '/schemas/'
+      path: '/schemas'
+      fullPath: '/schemas'
+      preLoaderRoute: typeof SchemasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthIndexRoute: AuthIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  SchemasIndexRoute: SchemasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

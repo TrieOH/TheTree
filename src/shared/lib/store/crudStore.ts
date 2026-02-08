@@ -30,8 +30,11 @@ export function createCrudStore<T extends { id: string }>() {
   });
 }
 
-export function createCrudActions<T extends { id: string }>(
-  store: CrudStore<T>
+export function createCrudActions<
+  T extends { id: string },
+  S extends CrudState<T>
+>(
+  store: Store<S>
 ): CrudActions<T> {
   return {
     openCreate: () => {
