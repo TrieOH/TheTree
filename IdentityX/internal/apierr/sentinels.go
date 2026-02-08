@@ -112,6 +112,12 @@ var (
 		})
 	ErrAuthTokenAlreadyUsed = fail.Form(AuthTokenAlreadyUsed, "token already used", false, map[string]any{"code": 403}).
 				AddLocalization("pt-BR", "este token já foi usado")
+	ErrAuthInvalidApiKey = fail.Form(AuthInvalidApiKey, "invalid api key", false, map[string]any{"code": 401}).
+				AddLocalization("pt-BR", "api key inválida")
+	ErrAuthInvalidApiKeyShape = fail.Form(AuthInvalidApiKeyShape, "invalid api key shape", false, map[string]any{"code": 401}).
+					AddLocalization("pt-BR", "formato de api key inválido")
+	ErrAuthApiKeyNotAllowed = fail.Form(AuthApiKeyNotAllowed, "api keys are not allowed for this endpoint", false, map[string]any{"code": 403}).
+				AddLocalization("pt-BR", "api keys não são permitidas para este endpoint")
 
 	// ------ SESSION ------
 	ErrSessionRevoked = fail.Form(SessionRevoked, "session not found or revoked", false, map[string]any{"code": 401}).
@@ -469,6 +475,8 @@ var (
 					AddLocalization("pt-BR", "erro gerando UUIDV7 em %s")
 	ErrSYSJWKSEncodingFailed = fail.Form(SYSJWKSEncodingFailed, "JWKS enconding failed", true, map[string]any{"code": 500}, "UNSET LOCATION").
 					AddLocalization("pt-BR", "falha ao codificar o JWKS")
+	ErrSysCryptoError = fail.Form(SYSCryptoError, "cryptographic error: %s", true, map[string]any{"code": 500}, "UNDEFINED").
+				AddLocalization("pt-BR", "erro criptográfico: %s")
 
 	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
 						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")

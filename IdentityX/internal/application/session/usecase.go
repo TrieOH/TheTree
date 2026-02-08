@@ -20,6 +20,7 @@ var (
 
 type UseCase struct {
 	sessions outbounds.SessionRepository
+	verifier inbounds.TokenVerifier
 	tx       inbounds.TxRunner
 }
 
@@ -27,10 +28,12 @@ var _ inbounds.SessionService = (*UseCase)(nil)
 
 func New(
 	sessions outbounds.SessionRepository,
+	verifier inbounds.TokenVerifier,
 	tx inbounds.TxRunner,
 ) inbounds.SessionService {
 	return &UseCase{
 		sessions: sessions,
+		verifier: verifier,
 		tx:       tx,
 	}
 }
@@ -64,16 +67,23 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
+func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID, accessToken string) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
+
+	claims, err := uc.verifier.VerifyAccessToken(ctx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	currentSessionID := claims.Sub.SessionID
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
 	}
 
-	if principal.SessionID == sessionID {
+	if currentSessionID == sessionID {
 		return fail.New(apierr.SessionSelfRevokeForbidden).RecordCtx(ctx)
 	}
 
@@ -104,9 +114,16 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 }
 
 // RevokeOthers handles the business logic for revoking all sessions for the authenticated user except for the current one.
-func (uc *UseCase) RevokeOthers(ctx context.Context) error {
+func (uc *UseCase) RevokeOthers(ctx context.Context, accessToken string) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
+
+	claims, err := uc.verifier.VerifyAccessToken(ctx, accessToken)
+	if err != nil {
+		return err
+	}
+
+	currentSessionID := claims.Sub.SessionID
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
@@ -123,7 +140,7 @@ func (uc *UseCase) RevokeOthers(ctx context.Context) error {
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, session.Filter{
 		IdentityType: identityType,
 		EntityID:     principal.UserID,
-		ExcludeID:    &principal.SessionID,
+		ExcludeID:    &currentSessionID,
 	})
 	if err != nil {
 		return err
@@ -163,13 +180,23 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 	return nil
 }
 
-// Me returns the principal of the authenticated user.
-func (uc *UseCase) Me(ctx context.Context) (*inbounds.PrincipalOutput, error) {
+// Me returns the claims of the provided tokens.
+func (uc *UseCase) Me(ctx context.Context, accessToken, refreshToken string) (*inbounds.MeOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.Me")
 	defer span.End()
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+
+	accessClaims, err := uc.verifier.VerifyAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
-	return inbounds.PrincipalToPrincipalOutput(*principal), nil
+
+	refreshClaims, err := uc.verifier.VerifyRefreshToken(ctx, refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return &inbounds.MeOutput{
+		AccessClaims:      accessClaims,
+		RefreshExpireDate: refreshClaims.ExpiresAt.Time,
+	}, nil
 }

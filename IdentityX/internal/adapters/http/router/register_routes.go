@@ -40,8 +40,22 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
 	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
 	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
+	registerApiKeyRoutes(r, handlerBundle.ApiKeyHandler, authMW)
 
 	return r, app
+}
+
+func registerApiKeyRoutes(
+	r *chi.Mux,
+	h *handlers.ApiKeyHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+		r.Post("/projects/{project_id}/api-keys/rotate", h.RotateApiKey)
+		r.Delete("/projects/{project_id}/api-keys", h.RevokeApiKey)
+	})
 }
 
 func registerAuthRoutes(
@@ -60,17 +74,17 @@ func registerAuthRoutes(
 		}
 
 		r.Post("/auth/refresh", h.Refresh)
-		r.With(authMW.Auth()).
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			Post("/auth/logout", h.Logout)
 		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
 			Post("/auth/forgot-password", h.ForgotPassword)
 		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
 			With(middleware.RequireQueryParams("token")).
 			Post("/auth/reset-password", h.ResetPassword)
-		r.With(authMW.Auth()).
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			With(middleware.RequireQueryParams("token")).
 			Post("/auth/verify", h.Verify)
-		r.With(authMW.Auth()).
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			Post("/auth/verify/resend", h.ResendVerificationEmail)
 
 		r.Get("/.well-known/jwks.json", h.GetJWKS)
@@ -82,11 +96,8 @@ func registerAuthRoutes(
 			middleware.DefaultQueryParam("version", "0"),
 		).Post("/projects/{project_id}/register", h.ProjectRegister)
 
-		/*r.With(
-			middleware.DefaultQueryParam("schema_type", "core"),
-			middleware.DefaultQueryParam("flow_id", "none"),
-			middleware.DefaultQueryParam("version", "0"),
-		).Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
+		/*r.With(middleware.DefaultQueryParam("version", "0")).
+		Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
 
 		if !viper.GetBool("DISABLE_RATE_LIMIT") {
 			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
@@ -95,10 +106,11 @@ func registerAuthRoutes(
 			r.Post("/projects/{project_id}/login", h.ProjectLogin)
 		}
 
-		r.With(authMW.Auth()).Group(func(r chi.Router) {
-			r.Get("/projects/{project_id}/upgrade-form", h.GetUpgradeForm)
-			r.Post("/projects/{project_id}/metadata", h.UpdateMetadata)
-		})
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
+			Group(func(r chi.Router) {
+				r.Get("/projects/{project_id}/upgrade-form", h.GetUpgradeForm)
+				r.Post("/projects/{project_id}/metadata", h.UpdateMetadata)
+			})
 	})
 }
 
@@ -109,6 +121,7 @@ func registerSessionRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
+		r.Use(middleware.NoApiKeys())
 		r.Get("/sessions", h.ListUserSessions)
 		r.Get("/sessions/me", h.Me)
 		r.Delete("/sessions/{session_id}", h.RevokeUserSessionByID)

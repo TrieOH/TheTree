@@ -156,6 +156,11 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID uuid.UUID) (*inbounds.
 	if err != nil {
 		return nil, err
 	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != projectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
 	proj, err := uc.projects.GetByIDExternal(ctx, projectID, principal.UserID)
 	if err != nil {
 		return nil, err

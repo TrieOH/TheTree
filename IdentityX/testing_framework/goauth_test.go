@@ -91,6 +91,10 @@ func TestGoAuth(t *testing.T) {
 		testPGXMapper(t)
 	})
 
+	t.Run("API Keys", func(t *testing.T) {
+		testApiKeys(t, suite)
+	})
+
 	// docs, _ := fail.ExportIDList()
 	// fmt.Printf("Registered IDs (JSON snippet):\n%s\n", string(docs))
 }
