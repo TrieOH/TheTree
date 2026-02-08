@@ -5,7 +5,7 @@ import { formOptions } from "@tanstack/react-form";
 import type { FieldConfig } from "@/shared/ui/form/types";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import { projectCRUDSchema, type ProjectCRUD } from "../model/types";
-import { createProjectFn, patchProjectFn } from "../api";
+import { createProjectFn, patchProjectFn, deleteProjectFn } from "../api";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
@@ -40,6 +40,19 @@ export function ProjectDialog() {
     },
   });
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: deleteProjectFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message || "Project deleted sucessfuly!");
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+      } else toast.error(`Failed to delete project: ${response.message}`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete project: ${error.message}`);
+    },
+  });
+
   const { handleSubmit } = useCrudOperations({
     store: projectStore,
     autoClose: true,
@@ -49,6 +62,9 @@ export function ProjectDialog() {
     onUpdate: async (id, data) => {
       patchProjectMutation.mutate({ id, ...data } as ProjectCRUD);
     },
+    onDelete: async (id) => {
+      deleteProjectMutation.mutate(id);
+    }
   });
   const fields: FieldConfig[] = [
     {name: "project_name", label: "Project Name", placeholder: "My Awesome Project", autoComplete: "project_name"}
@@ -66,6 +82,7 @@ export function ProjectDialog() {
       formId="project-form"
       store={projectStore}
       title="Project"
+      onSubmit={() => handleSubmit(formData as ProjectCRUD)}
     >
       <CrudForm 
         formId="project-form"

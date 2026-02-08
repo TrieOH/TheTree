@@ -50,3 +50,15 @@ export const patchProjectFn = createClientOnlyFn((projectData: ProjectCRUD) => {
     body: JSON.stringify(dataToSend),
   });
 });
+
+/**
+ * Deletes a project from the server.
+ * @param id - The ID of the project to delete.
+ * @returns A promise that resolves to the API response.
+ */
+export const deleteProjectFn = createClientOnlyFn((id: string) => {
+  return authFetcher<void>(`/projects/${id}`, {
+    method: "DELETE",
+  });
+});
+

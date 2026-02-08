@@ -59,7 +59,13 @@ export default function ProjectCard({ data }: PropsI) {
           className="hover:text-card-foreground duration-300"
           onClick={() => projectActions.openEdit(data)}
         />
-        <Trash2 className="hover:text-card-foreground duration-300" />
+        <Trash2 
+          className="hover:text-card-foreground duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            projectActions.openDelete(data);
+          }}
+        />
       </div>
 
       {/* Active State */}
