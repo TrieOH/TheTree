@@ -1021,10 +1021,6 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 		return err
 	}
 
-	if principal.IsVerified == true {
-		return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
-	}
-
 	var u *user.User
 	var pu *project_users.ProjectUser
 	if principal.ProjectID != nil {
@@ -1041,6 +1037,16 @@ func (uc *UseCase) ResendVerificationEmail(ctx context.Context) (err error) {
 			return err
 		}
 		if u.IsVerified == true {
+			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
+		}
+	}
+
+	if pu != nil {
+		if pu.IsVerified {
+			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
+		}
+	} else {
+		if u.IsVerified {
 			return fail.New(apierr.AuthAlreadyVerified).RecordCtx(ctx)
 		}
 	}

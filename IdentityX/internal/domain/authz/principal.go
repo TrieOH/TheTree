@@ -10,10 +10,8 @@ import (
 )
 
 type Principal struct {
-	UserID     uuid.UUID
-	UserType   string
-	ProjectID  *uuid.UUID
-	IsVerified bool
+	UserID    uuid.UUID
+	ProjectID *uuid.UUID
 }
 
 func NewPrincipal(
@@ -29,9 +27,7 @@ func NewPrincipal(
 	}
 
 	return &Principal{
-		UserID:     access.Sub.ID,
-		UserType:   access.Sub.UserType,
-		ProjectID:  access.Sub.ProjectID,
-		IsVerified: access.Sub.IsVerified,
+		UserID:    access.Sub.ID,
+		ProjectID: access.Sub.ProjectID,
 	}, nil
 }
