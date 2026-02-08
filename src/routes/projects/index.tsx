@@ -8,6 +8,7 @@ import { ProjectsSkeleton } from '@/shared/ui/placeholders/ProjectsSkeleton';
 import { ProjectsEmptyState } from '@/features/project/ui/ProjectsEmptyState';
 import { projectActions } from '@/features/project/store';
 import { cn } from '@/shared/lib/utils';
+import { ProjectAddButton } from '@/features/project/ui/ProjectAddButon';
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -55,6 +56,9 @@ function RouteComponent() {
           {projects.map((project) => (
             <ProjectCard key={project.id} data={project} />
           ))}
+          <ProjectAddButton
+            onCreate={projectActions.openCreate}
+          />
         </div>
       </div>
       <ProjectDialog />

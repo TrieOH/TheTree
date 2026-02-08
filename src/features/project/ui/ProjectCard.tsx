@@ -2,13 +2,13 @@ import { cn } from "@/shared/lib/utils"
 import type { Project } from "../model/types"
 import { ArrowRight, Clock, ClockFading, Edit, Trash2 } from "lucide-react"
 import { formatDate } from "@/shared/lib/date-utils"
+import { projectActions } from "../store"
 
 interface PropsI {
   data: Project
 }
 
 export default function ProjectCard({ data }: PropsI) {
-  console.log(data.created_at)
   return (
     <button 
       type="button"
@@ -55,8 +55,17 @@ export default function ProjectCard({ data }: PropsI) {
           "group-hover:opacity-100 duration-300"
         )}
       >
-        <Edit className="hover:text-card-foreground duration-300" />
-        <Trash2 className="hover:text-card-foreground duration-300" />
+        <Edit 
+          className="hover:text-card-foreground duration-300"
+          onClick={() => projectActions.openEdit(data)}
+        />
+        <Trash2 
+          className="hover:text-card-foreground duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            projectActions.openDelete(data);
+          }}
+        />
       </div>
 
       {/* Active State */}

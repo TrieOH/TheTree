@@ -48,7 +48,7 @@ export function CrudDialog<T extends { id: string }>({
       title: `Delete ${title}`,
       description: description || `Are you sure you want to delete this ${title.toLowerCase()}?`,
       submitLabel: `Delete ${title}`,
-    }, // TODO: I need to use a custom dialog to handle delete
+    },
   };
 
   if (!state.mode) return null;
@@ -80,10 +80,10 @@ export function CrudDialog<T extends { id: string }>({
 
         <DialogFooter showCloseButton closeButtonText='Cancel' isPerformingSubmit={state.isLoading}>
           <ShadowButton 
-            type={onSubmit ? "button" : "submit"}
+            type={state.mode === 'delete' ? "button" : "submit"}
             variant="accent"
-            onClick={onSubmit}
-            formId={formId}
+            onClick={state.mode === 'delete' ? onSubmit : undefined}
+            formId={state.mode === 'delete' ? undefined : formId}
             disabled={state.isLoading}
             className='justify-center px-4 font-normal sm:font-light text-sm'
             value={state.isLoading ? 'Submitting...' : currentConfig.submitLabel}
