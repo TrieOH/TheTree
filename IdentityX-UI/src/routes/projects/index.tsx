@@ -4,6 +4,10 @@ import { ProjectDialog } from '@/features/project/ui/ProjectDialog';
 import ProjectCard from '@/features/project/ui/ProjectCard';
 import { projectsQueryOptions } from '@/features/project/api';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { ProjectsSkeleton } from '@/shared/ui/placeholders/ProjectsSkeleton';
+import { ProjectsEmptyState } from '@/features/project/ui/ProjectsEmptyState';
+import { projectActions } from '@/features/project/store';
+import { cn } from '@/shared/lib/utils';
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -16,12 +20,27 @@ export const Route = createFileRoute('/projects/')({
     await queryClient.ensureQueryData(projectsQueryOptions)
     return {}
   },
+  pendingComponent: ProjectsSkeleton,
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const projectsQuery = useSuspenseQuery(projectsQueryOptions)
   const projects = projectsQuery.data
+
+  const hasProjects = projects && projects.length > 0
+
+  if(!hasProjects) return (
+    <main className={cn(
+      "flex justify-center items-center bg-background",
+      "w-full h-(--screen--minus-header) px-4"
+    )}>
+      <ProjectsEmptyState 
+        onCreate={projectActions.openCreate}
+      />
+      <ProjectDialog />
+    </main>
+  )
   
   return (
     <main className="w-full bg-background flex flex-col items-center my-4">
@@ -31,10 +50,12 @@ function RouteComponent() {
           Manage your projects configurations
         </p>
       </div>
-      <div className="max-w-7xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} data={project} />
-        ))}
+      <div className="max-w-7xl w-full xs:px-4">
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {projects.map((project) => (
+            <ProjectCard key={project.id} data={project} />
+          ))}
+        </div>
       </div>
       <ProjectDialog />
     </main>
