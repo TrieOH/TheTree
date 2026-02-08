@@ -68,6 +68,10 @@ func (uc *UseCase) Draft(ctx context.Context, in inbounds.SchemaServiceInput) (*
 		return nil, err
 	}
 
+	if principal.ProjectID != nil && *principal.ProjectID != in.ProjectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
 	if in.FlowID == "" {
 		return nil, fail.New(apierr.SchemaEmptyFlowID).RecordCtx(ctx)
 	}
@@ -151,6 +155,10 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return err
 	}
 
+	if principal.ProjectID != nil && *principal.ProjectID != in.ProjectID {
+		return fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
 	var isOwner bool
 	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
@@ -231,6 +239,10 @@ func (uc *UseCase) GetByID(ctx context.Context, in inbounds.SchemaServiceInput) 
 		return nil, err
 	}
 
+	if principal.ProjectID != nil && *principal.ProjectID != in.ProjectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
 	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
 	if err != nil {
 		return nil, err
@@ -273,6 +285,10 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaServiceInpu
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
+	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != in.ProjectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
@@ -392,6 +408,10 @@ func (uc *UseCase) GetIDsFromProjectID(ctx context.Context, projectID uuid.UUID)
 		return nil, err
 	}
 
+	if principal.ProjectID != nil && *principal.ProjectID != projectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
 	isOwner, err := projects.IsOwnerOf(ctx, projectID, principal.UserID)
 	if err != nil {
 		return nil, err
@@ -423,6 +443,10 @@ func (uc *UseCase) List(ctx context.Context, projectID uuid.UUID) ([]inbounds.Sc
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
+	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != projectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	isOwner, err := projects.IsOwnerOf(ctx, projectID, principal.UserID)
@@ -468,6 +492,10 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return nil, err
+	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != in.ProjectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	isOwner, err := projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)

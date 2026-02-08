@@ -47,14 +47,14 @@ func SessionResponseFromSessionOutput(s inbounds.OutputSession) SessionResponse 
 	}
 }
 
-type PrincipalResponse struct {
+type MeResponse struct {
 	RefreshExpireDate *jwt.NumericDate  `json:"refresh_expire_date"`
 	AccessClaims      auth.AccessClaims `json:"access"`
 }
 
-func PrincipalOutputToPrincipalResponse(in inbounds.PrincipalOutput) PrincipalResponse {
-	return PrincipalResponse{
-		RefreshExpireDate: in.RefreshClaims.ExpiresAt,
+func MeOutputToMeResponse(in inbounds.MeOutput) MeResponse {
+	return MeResponse{
+		RefreshExpireDate: jwt.NewNumericDate(in.RefreshExpireDate),
 		AccessClaims:      *in.AccessClaims,
 	}
 }

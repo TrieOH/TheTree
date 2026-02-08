@@ -10,33 +10,34 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// ClientOnly is a middleware that ensures that the request is made by a client and not a project user.
-func ClientOnly() func(http.Handler) http.Handler {
+// NoApiKeys is a middleware that ensures that the request is NOT made using an API key.
+func NoApiKeys() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			ctx, span := MwTracer.Start(ctx, "ClientOnly")
+			ctx, span := MwTracer.Start(ctx, "NoApiKeys")
 			trace.ContextWithSpan(ctx, span)
 			defer span.End()
+
 			var rs *resp.Response
 			principal, err := authz.RequirePrincipal(ctx)
 			if err != nil {
 				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()).RecordCtx(ctx), "http")
 				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("ClientOnlyMW").Send(w)
+					resp.InternalServerError().WithData(err).WithModule("NoApiKeysMW").Send(w)
 					return
 				}
-				rs.WithModule("ClientOnlyMW").Send(w)
+				rs.WithModule("NoApiKeysMW").Send(w)
 				return
 			}
 
-			if principal.Method == authz.AuthMethodSession && principal.ProjectID != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthNotClient).RecordCtx(ctx), "http")
+			if principal.Method == authz.AuthMethodApiKey {
+				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthApiKeyNotAllowed).RecordCtx(ctx), "http")
 				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("ClientOnlyMW").Send(w)
+					resp.InternalServerError().WithData(err).WithModule("NoApiKeysMW").Send(w)
 					return
 				}
-				rs.WithModule("ClientOnlyMW").Send(w)
+				rs.WithModule("NoApiKeysMW").Send(w)
 				return
 			}
 

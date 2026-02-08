@@ -28,6 +28,7 @@ type Client struct {
 	password      string
 	projectID     string
 	projectUserID *string
+	apiKey        string
 }
 
 type AuthContext struct {
@@ -49,6 +50,7 @@ func (c *Client) WithCredentials(email, password string) *Client {
 		password:      password,
 		projectID:     c.projectID,
 		projectUserID: c.projectUserID,
+		apiKey:        c.apiKey,
 	}
 }
 
@@ -63,6 +65,7 @@ func (c *Client) WithAuth(auth *AuthContext) *Client {
 		password:      c.password,
 		projectID:     c.projectID,
 		projectUserID: c.projectUserID,
+		apiKey:        c.apiKey,
 	}
 }
 
@@ -80,6 +83,37 @@ func (c *Client) WithT(t *testing.T) *Client {
 		password:      c.password,
 		projectID:     c.projectID,
 		projectUserID: c.projectUserID,
+		apiKey:        c.apiKey,
+	}
+}
+
+// WithApiKey creates a new client that uses an API key instead of session cookies
+func (c *Client) WithApiKey(key string) *Client {
+	return &Client{
+		expect:        c.expect,
+		t:             c.t,
+		baseURL:       c.baseURL,
+		auth:          nil, // Explicitly clear session auth
+		email:         c.email,
+		password:      c.password,
+		projectID:     c.projectID,
+		projectUserID: c.projectUserID,
+		apiKey:        key,
+	}
+}
+
+// WithHeader adds a custom header to the client (will be applied to all subsequent requests)
+func (c *Client) WithHeader(key, value string) *Client {
+	return &Client{
+		expect:        c.expect,
+		t:             c.t,
+		baseURL:       c.baseURL,
+		auth:          c.auth,
+		email:         c.email,
+		password:      c.password,
+		projectID:     c.projectID,
+		projectUserID: c.projectUserID,
+		apiKey:        c.apiKey,
 	}
 }
 
@@ -250,7 +284,9 @@ func (c *Client) newRequest(method, path string) *RequestBuilder {
 	req := c.expect.Request(method, path).
 		WithHeader("Content-Type", "application/json")
 
-	if c.auth != nil {
+	if c.apiKey != "" {
+		req = req.WithHeader("X-API-Key", c.apiKey)
+	} else if c.auth != nil {
 		req = req.
 			WithCookie("access_token", c.auth.AccessToken).
 			WithCookie("refresh_token", c.auth.RefreshToken)
@@ -283,6 +319,11 @@ func (rb *RequestBuilder) WithQuery(key, value string) *RequestBuilder {
 
 func (rb *RequestBuilder) WithCookie(key, value string) *RequestBuilder {
 	rb.req = rb.req.WithCookie(key, value)
+	return rb
+}
+
+func (rb *RequestBuilder) WithHeader(key, value string) *RequestBuilder {
+	rb.req = rb.req.WithHeader(key, value)
 	return rb
 }
 

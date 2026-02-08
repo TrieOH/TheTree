@@ -2,9 +2,7 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/auth"
-	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/session"
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,38 +46,7 @@ func OutputSessionFromSession(s *session.Session) *OutputSession {
 	}
 }
 
-type PrincipalOutput struct {
-	UserID        uuid.UUID
-	Email         string
-	UserType      string
-	ProjectID     *uuid.UUID
-	Metadata      *json.RawMessage
-	SessionID     uuid.UUID
-	UserAgent     string
-	UserIP        string
-	AccessJTI     uuid.UUID
-	RefreshJTI    uuid.UUID
-	AccessClaims  *auth.AccessClaims
-	RefreshClaims *auth.RefreshClaims
-	IsVerified    bool
-	VerifiedAt    *time.Time
-}
-
-func PrincipalToPrincipalOutput(p authz.Principal) *PrincipalOutput {
-	return &PrincipalOutput{
-		UserID:        p.UserID,
-		Email:         p.Email,
-		UserType:      p.UserType,
-		ProjectID:     p.ProjectID,
-		Metadata:      p.Metadata,
-		SessionID:     p.SessionID,
-		UserAgent:     p.UserAgent,
-		UserIP:        p.UserIP,
-		AccessJTI:     p.AccessJTI,
-		RefreshJTI:    p.RefreshJTI,
-		AccessClaims:  p.AccessClaims,
-		RefreshClaims: p.RefreshClaims,
-		IsVerified:    p.IsVerified,
-		VerifiedAt:    p.VerifiedAt,
-	}
+type MeOutput struct {
+	AccessClaims      *auth.AccessClaims
+	RefreshExpireDate time.Time
 }

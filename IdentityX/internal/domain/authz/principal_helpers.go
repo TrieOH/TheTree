@@ -51,11 +51,7 @@ func AnnotatePrincipal(span trace.Span, principal *Principal) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.String("user.id", principal.UserID.String()),
-		attribute.String("user.session_id", principal.SessionID.String()),
-		attribute.String("user.type", principal.UserType),
-	)
+	span.SetAttributes(attribute.String("user.id", principal.UserID.String()))
 
 	if principal.ProjectID != nil {
 		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))

@@ -3,11 +3,13 @@ package handlers
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
+	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
 	"context"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fail/v3"
 )
 
 type AuthHandler struct {
@@ -113,7 +115,13 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/logout [post]
 func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	err := handler.auth.Logout(r.Context())
+	accessToken, err := r.Cookie("access_token")
+	if err != nil {
+		resp.FromError(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+		return
+	}
+
+	err = handler.auth.Logout(r.Context(), accessToken.Value)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

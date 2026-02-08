@@ -25,6 +25,7 @@ type Deps struct {
 	Session       outbounds.SessionRepository
 	Project       outbounds.ProjectRepository
 	TokenVerifier inbounds.TokenVerifier
+	ApiKey        inbounds.ApiKeyService
 }
 
 func New(
@@ -43,6 +44,13 @@ func New(
 func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.AuthenticateRequestInput) (*authz.Principal, error) {
 	ctx, span := uc.tracer.Start(ctx, "Authenticator.AuthenticateRequest")
 	defer span.End()
+
+	if in.ApiKey != "" {
+		span.SetAttributes(attribute.String("auth.method", string(authz.AuthMethodApiKey)))
+		return uc.deps.ApiKey.Authenticate(ctx, in.ApiKey)
+	}
+
+	span.SetAttributes(attribute.String("auth.method", string(authz.AuthMethodSession)))
 
 	tokenVerifier := uc.deps.TokenVerifier
 	sessions := uc.deps.Session
