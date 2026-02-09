@@ -15,7 +15,7 @@ export default function ProjectCard({ data }: PropsI) {
 
   const handleProjectCardClick = () => {
     navigationActions.setCurrentProjectId(data.id);
-    navigate({ to: '/schemas' });
+    navigate({ to: '/projects/config' });
   };
 
   return (
