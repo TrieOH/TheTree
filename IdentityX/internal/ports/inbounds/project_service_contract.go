@@ -62,19 +62,26 @@ type OutputProjectUser struct {
 func OutputProjectUserSliceFromProjectUserSlice(src []project_users.ProjectUser) []OutputProjectUser {
 	dst := make([]OutputProjectUser, 0, len(src))
 	for _, u := range src {
-		dst = append(dst, OutputProjectUser{
-			ID:          u.ID,
-			ProjectID:   u.ProjectID,
-			Email:       u.Email,
-			UserType:    u.UserType,
-			Metadata:    u.Metadata,
-			IsActive:    u.IsActive,
-			CreatedAt:   u.CreatedAt,
-			UpdatedAt:   u.UpdatedAt,
-			LastLoginAt: u.LastLoginAt,
-			IsVerified:  u.IsVerified,
-			VerifiedAt:  u.VerifiedAt,
-		})
+		dst = append(dst, *OutputProjectUserFromProjectUser(&u))
 	}
 	return dst
+}
+
+func OutputProjectUserFromProjectUser(u *project_users.ProjectUser) *OutputProjectUser {
+	if u == nil {
+		return nil
+	}
+	return &OutputProjectUser{
+		ID:          u.ID,
+		ProjectID:   u.ProjectID,
+		Email:       u.Email,
+		UserType:    u.UserType,
+		Metadata:    u.Metadata,
+		IsActive:    u.IsActive,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
+		LastLoginAt: u.LastLoginAt,
+		IsVerified:  u.IsVerified,
+		VerifiedAt:  u.VerifiedAt,
+	}
 }

@@ -317,6 +317,28 @@ func (uc *UseCase) ListUsers(ctx context.Context, projectID uuid.UUID) ([]inboun
 	return inbounds.OutputProjectUserSliceFromProjectUserSlice(users), nil
 }
 
+func (uc *UseCase) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*inbounds.OutputProjectUser, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetUser",
+		trace.WithAttributes(
+			attribute.String("project.id", projectID.String()),
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := uc.projectUsers.GetByIDExternal(ctx, userID, projectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.OutputProjectUserFromProjectUser(user), nil
+}
+
 func zero(b []byte) {
 	for i := range b {
 		b[i] = 0
