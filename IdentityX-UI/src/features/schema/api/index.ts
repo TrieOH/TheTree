@@ -1,6 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type { Schema, SchemaCRUD } from "../model/types";
-import { authFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { queryOptions } from "@tanstack/react-query";
 
 
 /**
@@ -18,3 +19,31 @@ export const createSchemaFn = createClientOnlyFn((schemaData: Omit<SchemaCRUD, "
   });
 });
 
+
+/**
+ * Fetches all schemas from the server.
+ * @returns A promise that resolves to an array of Schema objects.
+ */
+export const getSchemasFn = createClientOnlyFn(async ({
+  queryKey,
+}: {
+  queryKey: ["schemas", string];
+}) => {
+  const [, projectId] = queryKey;
+
+  try {
+    return await tanstackQueryFetcher<Schema[]>(
+      `/projects/${projectId}/schemas`
+    );
+  } catch {
+    return [] as Schema[];
+  }
+});
+
+export const schemasQueryOptions = (project_id: string) => {
+  return queryOptions({
+    queryKey: ['schemas', project_id],
+    queryFn: getSchemasFn,
+    enabled: !!project_id
+  })
+}
