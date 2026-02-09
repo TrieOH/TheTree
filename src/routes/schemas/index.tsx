@@ -1,19 +1,18 @@
+import { navigationStore } from '@/features/navigation';
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { projectStore } from "@/features/project/store"
 import { useStore } from "@tanstack/react-store"
 
 export const Route = createFileRoute('/schemas/')({
   beforeLoad: async () => {
-    const currentProjectId = projectStore.state.currentProjectId;
-    if (!currentProjectId) throw redirect({ to: '/projects' });
+    const currentProjectId = navigationStore.state.currentProjectId;
+    if (typeof window !== 'undefined' && !currentProjectId) throw redirect({ to: '/projects' });
   },
   component: SchemaPage,
   staticData: {components: {header: "projects"}}
 })
 
 function SchemaPage() {
-  const currentProjectId = useStore(projectStore, (state) => state.currentProjectId) || "";
-
+  const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId);
   return (
     // Temp
     <div className="p-4">

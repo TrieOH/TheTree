@@ -25,10 +25,12 @@ export const createProjectFn = createClientOnlyFn((projectData: Omit<ProjectCRUD
  * Fetches all projects from the server.
  * @returns A promise that resolves to an array of Project objects.
  */
-export const getProjectsFn = createClientOnlyFn(() => {
-  return tanstackQueryFetcher<Project[]>("/projects").catch( _ => {
-    return [] as Project[]
-  })
+export const getProjectsFn = createClientOnlyFn(async () => {
+  try {
+    return await tanstackQueryFetcher<Project[]>("/projects");
+  } catch (_) {
+    return [] as Project[];
+  }
 });
 
 export const projectsQueryOptions = queryOptions({
