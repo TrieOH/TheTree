@@ -142,6 +142,7 @@ func registerProjectRoutes(
 		r.Get("/projects/{project_id}", h.GetProjectByID)
 		r.Patch("/projects/{project_id}", h.UpdateProjectByID)
 		r.Delete("/projects/{project_id}", h.DeleteProjectByID)
+		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
 	})
 }
 

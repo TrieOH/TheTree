@@ -13,4 +13,5 @@ type ProjectService interface {
 	GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string]any, error)
 	Update(ctx context.Context, in ProjectServiceInput) (*OutputProject, error)
 	Delete(ctx context.Context, projectID uuid.UUID) error
+	ListUsers(ctx context.Context, projectID uuid.UUID) ([]OutputProjectUser, error)
 }

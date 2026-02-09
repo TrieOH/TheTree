@@ -91,6 +91,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Keys: keyService,
 		Project: project.New(
 			repos.Projects,
+			repos.ProjectUsers,
 			repos.Scopes,
 			repos.Keys,
 			infra.Tx,

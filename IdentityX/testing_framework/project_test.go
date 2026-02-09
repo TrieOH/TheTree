@@ -96,6 +96,37 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		Validate(t, data, spec)
 	})
 
+	t.Run("ListProjectUsers", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+
+		// Register a user to this project first
+		projectUserEmail := "projectuser@mail.com"
+		suite.NewClient(t).POST("/projects/" + projectID + "/register").
+			WithBody(map[string]interface{}{
+				"email":    projectUserEmail,
+				"password": ValidPassword,
+			}).
+			Expect(http.StatusCreated)
+
+		data := authClient.GET("/projects/" + projectID + "/users").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":         AnyUUID{},
+				"project_id": AsString{projectID, AnyUUID{}},
+				"email":      projectUserEmail,
+				"user_type":  "project",
+				"is_active":  true,
+				"created_at": AnyDate{},
+				"updated_at": AnyDate{},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+
 	t.Run("CrossUserAccess", func(t *testing.T) {
 		// Create a second user
 		attacker := client.WithCredentials("attacker@mail.com", ValidPassword).Register().Login()

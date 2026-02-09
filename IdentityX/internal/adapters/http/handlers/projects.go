@@ -120,6 +120,38 @@ func (handler *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Reque
 		Send(w)
 }
 
+// ListProjectUsers godoc
+// @Summary List all users of a project
+// @Description Retrieves a list of all users associated with a specific project.
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param project_id path string true "ID of the project"
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Success 200 {array} dto.ProjectUserResponse "List of project users"
+// @Failure 400 {object} ErrorResponse "Bad Request: Missing project ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 404 {object} ErrorResponse "Not Found: Project not found"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /projects/{project_id}/users [get]
+func (handler *ProjectHandler) ListProjectUsers(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	users, err := handler.projects.ListUsers(r.Context(), projectID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().
+		WithData(dto.ProjectUserSliceToProjectUserResponseSlice(users)).
+		Send(w)
+}
+
 // GetProjectJWKS godoc
 // @Summary Returns the JWKS for a given project
 // @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued for a specific project.
