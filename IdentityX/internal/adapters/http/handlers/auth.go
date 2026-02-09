@@ -5,7 +5,7 @@ import (
 	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/apierr"
 	"GoAuth/internal/ports/inbounds"
-	"context"
+	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -195,14 +195,27 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
-func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, _ *http.Request) {
-	ctx := context.Background()
+func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	jwks, err := handler.auth.GetJWKS(ctx)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
 	}
-	resp.OK().WithData(jwks).Send(w)
+
+	data, err := json.Marshal(jwks)
+	if err != nil {
+		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
+		resp.FromError(apiErr).Send(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=7200")
+	w.WriteHeader(http.StatusOK)
+	if _, err = w.Write(data); err != nil {
+		// Just log if writing fails
+	}
 }
 
 // ProjectRegister godoc

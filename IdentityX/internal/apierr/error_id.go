@@ -27,8 +27,6 @@ var (
 	AuthInvalidAccessCookie  = fail.ID(0, "AUTH", 3, false, "AUTHInvalidAccessCookie")
 	AuthMissingRefreshCookie = fail.ID(0, "AUTH", 4, false, "AUTHMissingRefreshCookie")
 	AuthMissingAccessCookie  = fail.ID(0, "AUTH", 5, false, "AUTHMissingAccessCookie")
-	AuthInvalidApiKey        = fail.ID(0, "AUTH", 6, true, "AUTHInvalidApiKey")
-	AuthInvalidApiKeyShape   = fail.ID(0, "AUTH", 7, true, "AUTHInvalidApiKeyShape")
 
 	AuthInvalidPrincipal      = fail.ID(0, "AUTH", 0, true, "AUTHInvalidPrincipal")
 	AuthInvalidPassword       = fail.ID(0, "AUTH", 1, true, "AUTHInvalidPassword")
@@ -39,6 +37,8 @@ var (
 	AuthUserSchemaOutdated    = fail.ID(0, "AUTH", 6, true, "AUTHUserSchemaOutdated")
 	AuthTokenAlreadyUsed      = fail.ID(0, "AUTH", 7, true, "AUTHTokenAlreadyUsed")
 	AuthApiKeyNotAllowed      = fail.ID(0, "AUTH", 8, true, "AUTHApiKeyNotAllowed")
+	AuthInvalidApiKey         = fail.ID(0, "AUTH", 9, true, "AUTHInvalidApiKey")
+	AuthInvalidApiKeyShape    = fail.ID(0, "AUTH", 10, true, "AUTHInvalidApiKeyShape")
 
 	SessionNotFound            = fail.ID(0, "SESSION", 0, true, "SESSIONNotFound")
 	SessionSelfRevokeForbidden = fail.ID(0, "SESSION", 1, true, "SESSIONSelfRevokeForbidden")

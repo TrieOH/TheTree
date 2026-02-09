@@ -61,7 +61,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - testnet
+      - internal
 
 volumes:
   database-data:

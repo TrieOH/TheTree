@@ -406,11 +406,10 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		})
 
 		t.Run("GetProjectJWKS", func(t *testing.T) {
-			jwksClient := suite.NewClient(t)
+			jwksClient := suite.NewClient(t).WithAuth(nested.auth)
 			jwksClient.GET("/projects/" + user.projectID + "/.well-known/jwks.json").
-				Expect(http.StatusOK).
-				JSONObj().Value("keys").
-				Array().NotEmpty()
+				Expect(http.StatusForbidden).
+				HasErrID(apierr.AuthNotClient)
 		})
 
 		t.Run("DeleteProject", func(t *testing.T) {
@@ -437,7 +436,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		accessToken := projectUser.auth.AccessToken
 
 		// 1. Get Project JWKS (Raw)
-		jwksResp := client.GET("/projects/" + projectID + "/.well-known/jwks.json").
+		jwksResp := client.WithAuth(user.auth).GET("/projects/" + projectID + "/.well-known/jwks.json").
 			Expect(http.StatusOK).
 			JSONObj()
 
@@ -447,10 +446,10 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 		require.NoError(t, err)
 		projectPubKey := parseJWKXToEd25519PublicKey(t, xBytes)
 
-		// 2. Get Global JWKS (Master - Wrapped in Data)
+		// 2. Get Global JWKS (Master - Raw JSON)
 		globalJwksResp := client.GET("/.well-known/jwks.json").
 			Expect(http.StatusOK).
-			RequireDataObject()
+			JSONObj()
 
 		gxBase64 := globalJwksResp.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
 		gxBytes, err := base64.RawURLEncoding.DecodeString(gxBase64)

@@ -2,6 +2,7 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/project"
+	"GoAuth/internal/domain/project_users"
 	"encoding/json"
 	"time"
 
@@ -41,5 +42,46 @@ func OutputProjectFromProject(p *project.Project) *OutputProject {
 		IsActive:    p.IsActive,
 		CreatedAt:   p.CreatedAt,
 		UpdatedAt:   p.UpdatedAt,
+	}
+}
+
+type OutputProjectUser struct {
+	ID          uuid.UUID
+	ProjectID   uuid.UUID
+	Email       string
+	UserType    string
+	Metadata    *json.RawMessage
+	IsActive    bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	LastLoginAt *time.Time
+	IsVerified  bool
+	VerifiedAt  *time.Time
+}
+
+func OutputProjectUserSliceFromProjectUserSlice(src []project_users.ProjectUser) []OutputProjectUser {
+	dst := make([]OutputProjectUser, 0, len(src))
+	for _, u := range src {
+		dst = append(dst, *OutputProjectUserFromProjectUser(&u))
+	}
+	return dst
+}
+
+func OutputProjectUserFromProjectUser(u *project_users.ProjectUser) *OutputProjectUser {
+	if u == nil {
+		return nil
+	}
+	return &OutputProjectUser{
+		ID:          u.ID,
+		ProjectID:   u.ProjectID,
+		Email:       u.Email,
+		UserType:    u.UserType,
+		Metadata:    u.Metadata,
+		IsActive:    u.IsActive,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
+		LastLoginAt: u.LastLoginAt,
+		IsVerified:  u.IsVerified,
+		VerifiedAt:  u.VerifiedAt,
 	}
 }
