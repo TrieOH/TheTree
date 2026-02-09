@@ -1,4 +1,5 @@
 import { navigationStore } from '@/features/navigation';
+import { SchemaDialog } from '@/features/schema/ui/SchemaDialog';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from "@tanstack/react-store"
 
@@ -8,22 +9,16 @@ export const Route = createFileRoute('/schemas/')({
     if (typeof window !== 'undefined' && !currentProjectId) throw redirect({ to: '/projects' });
   },
   component: SchemaPage,
-  staticData: {components: {header: "projects"}}
+  staticData: {components: {header: "schemas"}}
 })
 
 function SchemaPage() {
   const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId);
   return (
-    // Temp
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Schema Page</h1>
-      <p>This is the schema page for a project.</p>
-      {currentProjectId ? (
-        <p>Current Project ID: {currentProjectId}</p>
-      ) : (
-        <p>No project selected.</p>
-      )}
-    </div>
+    <main>
+      <SchemaDialog project_id={currentProjectId || ""}/>
+    </main>
+    
   )
 }
 
