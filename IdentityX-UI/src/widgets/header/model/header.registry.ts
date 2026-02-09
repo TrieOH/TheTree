@@ -24,6 +24,14 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     rightActions: [{ id: "projects_create_project_000", type: 'createProject', visibleOn: "fixed" }],
     showUserMenu: true,
   },
+  schemas: {
+    variant: 'schemas',
+    title: 'Schemas',
+    titlePosition: 'none',
+    disableMobileMenu: true,
+    leftActions: [{ id: "schemas_back_000", type: 'back', visibleOn: "fixed", to: "/projects" }],
+    showUserMenu: true,
+  },
   auth: { variant: 'auth' },
   none: { variant: 'none' }
 } satisfies Record<HeaderVariant, HeaderConfigI>
