@@ -27,7 +27,7 @@ import (
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
 // @title GoAuth API
-// @version 0.14.0
+// @version 0.17.0
 // @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
 // @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
 // @contact.name TrieOH

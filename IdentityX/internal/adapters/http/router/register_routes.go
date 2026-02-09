@@ -135,15 +135,15 @@ func registerProjectRoutes(
 	h *handlers.ProjectHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
-	r.Group(func(r chi.Router) {
+	r.With(authMW.Auth(), middleware.ClientOnly()).Group(func(r chi.Router) {
 		r.Get("/projects/{project_id}/.well-known/jwks.json", h.GetProjectJWKS)
-		r.With(authMW.Auth(), middleware.ClientOnly()).Group(func(r chi.Router) {
-			r.Post("/projects", h.CreateProject)
-			r.Get("/projects", h.ListProjects)
-			r.Get("/projects/{project_id}", h.GetProjectByID)
-			r.Patch("/projects/{project_id}", h.UpdateProjectByID)
-			r.Delete("/projects/{project_id}", h.DeleteProjectByID)
-		})
+		r.Post("/projects", h.CreateProject)
+		r.Get("/projects", h.ListProjects)
+		r.Get("/projects/{project_id}", h.GetProjectByID)
+		r.Patch("/projects/{project_id}", h.UpdateProjectByID)
+		r.Delete("/projects/{project_id}", h.DeleteProjectByID)
+		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
+		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
 	})
 }
 

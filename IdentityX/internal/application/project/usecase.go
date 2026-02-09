@@ -26,25 +26,28 @@ var (
 )
 
 type UseCase struct {
-	projects outbounds.ProjectRepository
-	scopes   outbounds.ScopeRepository
-	keys     outbounds.KeysRepository
-	tx       inbounds.TxRunner
+	projects     outbounds.ProjectRepository
+	projectUsers outbounds.ProjectUserRepository
+	scopes       outbounds.ScopeRepository
+	keys         outbounds.KeysRepository
+	tx           inbounds.TxRunner
 }
 
 var _ inbounds.ProjectService = (*UseCase)(nil)
 
 func New(
 	projects outbounds.ProjectRepository,
+	projectUsers outbounds.ProjectUserRepository,
 	scopes outbounds.ScopeRepository,
 	keys outbounds.KeysRepository,
 	tx inbounds.TxRunner,
 ) inbounds.ProjectService {
 	return &UseCase{
-		projects: projects,
-		scopes:   scopes,
-		keys:     keys,
-		tx:       tx,
+		projects:     projects,
+		projectUsers: projectUsers,
+		scopes:       scopes,
+		keys:         keys,
+		tx:           tx,
 	}
 }
 
@@ -200,6 +203,25 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS")
 	defer span.End()
 
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != projectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
+	if principal.ProjectID == nil {
+		isOwner, err := uc.projects.IsOwnerOf(ctx, projectID, principal.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if !isOwner {
+			return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		}
+	}
+
 	keys, err := uc.keys.ListProjectPublicKeys(ctx, projectID)
 	if err != nil {
 		return map[string]any{"keys": []any{}}, err
@@ -272,6 +294,49 @@ func (uc *UseCase) Delete(ctx context.Context, projectID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (uc *UseCase) ListUsers(ctx context.Context, projectID uuid.UUID) ([]inbounds.OutputProjectUser, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.ListUsers",
+		trace.WithAttributes(attribute.String("project.id", projectID.String())),
+	)
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := uc.projectUsers.ListExternal(ctx, projectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	span.SetAttributes(attribute.Int("users.count", len(users)))
+
+	return inbounds.OutputProjectUserSliceFromProjectUserSlice(users), nil
+}
+
+func (uc *UseCase) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*inbounds.OutputProjectUser, error) {
+	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetUser",
+		trace.WithAttributes(
+			attribute.String("project.id", projectID.String()),
+			attribute.String("user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := uc.projectUsers.GetByIDExternal(ctx, userID, projectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return inbounds.OutputProjectUserFromProjectUser(user), nil
 }
 
 func zero(b []byte) {

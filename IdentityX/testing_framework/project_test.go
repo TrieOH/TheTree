@@ -2,8 +2,11 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"encoding/base64"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func testProjects(t *testing.T, suite *TestSuite) {
@@ -93,6 +96,37 @@ func testProjects(t *testing.T, suite *TestSuite) {
 		Validate(t, data, spec)
 	})
 
+	t.Run("ListProjectUsers", func(t *testing.T) {
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+
+		// Register a user to this project first
+		projectUserEmail := "projectuser@mail.com"
+		suite.NewClient(t).POST("/projects/" + projectID + "/register").
+			WithBody(map[string]interface{}{
+				"email":    projectUserEmail,
+				"password": ValidPassword,
+			}).
+			Expect(http.StatusCreated)
+
+		data := authClient.GET("/projects/" + projectID + "/users").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":         AnyUUID{},
+				"project_id": AsString{projectID, AnyUUID{}},
+				"email":      projectUserEmail,
+				"user_type":  "project",
+				"is_active":  true,
+				"created_at": AnyDate{},
+				"updated_at": AnyDate{},
+			},
+		}
+
+		Validate(t, data, spec)
+	})
+
 	t.Run("CrossUserAccess", func(t *testing.T) {
 		// Create a second user
 		attacker := client.WithCredentials("attacker@mail.com", ValidPassword).Register().Login()
@@ -151,12 +185,23 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("GetProjectJWKS", func(t *testing.T) {
-		jwksClient := suite.NewClient(t)
-		obj := jwksClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		obj := authClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
 			Expect(http.StatusOK).
 			JSONObj()
 
 		obj.Value("keys").Array().NotEmpty()
+
+		// Verify decoding (Client gets it and decodes)
+		xBase64 := obj.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
+		xBytes, err := base64.RawURLEncoding.DecodeString(xBase64)
+		require.NoError(t, err)
+		pubKey := parseJWKXToEd25519PublicKey(t, xBytes)
+		require.NotNil(t, pubKey)
+
+		// Unauthenticated access denial
+		client.GET("/projects/" + projectID + "/.well-known/jwks.json").
+			Expect(http.StatusUnauthorized)
 	})
 
 	t.Run("DeleteProject", func(t *testing.T) {
