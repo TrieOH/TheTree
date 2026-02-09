@@ -200,6 +200,25 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 	ctx, span := usecaseTracer.Start(ctx, "ProjectService.GetJWKS")
 	defer span.End()
 
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	if principal.ProjectID != nil && *principal.ProjectID != projectID {
+		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+	}
+
+	if principal.ProjectID == nil {
+		isOwner, err := uc.projects.IsOwnerOf(ctx, projectID, principal.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if !isOwner {
+			return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		}
+	}
+
 	keys, err := uc.keys.ListProjectPublicKeys(ctx, projectID)
 	if err != nil {
 		return map[string]any{"keys": []any{}}, err

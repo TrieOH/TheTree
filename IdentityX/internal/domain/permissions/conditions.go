@@ -361,6 +361,9 @@ func evalPredicate(evalCtx *ConditionContext, c Condition) (bool, Motive, error)
 	if c.Op == OpContains {
 		return evalContains(leftVal, rightVal)
 	}
+	if c.Op == OpContainsAny || c.Op == OpContainsAll {
+		return evalMultiContains(leftVal, rightVal, c.Op)
+	}
 
 	// Standard comparisons
 	switch c.Op {
@@ -419,6 +422,52 @@ func evalContains(container, item interface{}) (bool, Motive, error) {
 	}
 
 	return false, Motive{Code: "TYPE_ERROR", Message: "contains requires string or array"}, nil
+}
+
+func evalMultiContains(container, items interface{}, op string) (bool, Motive, error) {
+	// For multi-contains, items must be a slice
+	itemList, ok := toInterfaceSlice(items)
+	if !ok {
+		return false, Motive{Code: "TYPE_ERROR", Message: op + " requires array of values"}, nil
+	}
+
+	if len(itemList) == 0 {
+		return false, Motive{}, nil
+	}
+
+	matches := 0
+	for _, item := range itemList {
+		ok, _, _ := evalContains(container, item)
+		if ok {
+			matches++
+			if op == OpContainsAny {
+				return true, Motive{}, nil
+			}
+		} else if op == OpContainsAll {
+			return false, Motive{}, nil
+		}
+	}
+
+	if op == OpContainsAll {
+		return matches == len(itemList), Motive{}, nil
+	}
+
+	return false, Motive{}, nil
+}
+
+func toInterfaceSlice(v interface{}) ([]interface{}, bool) {
+	switch slice := v.(type) {
+	case []interface{}:
+		return slice, true
+	case []string:
+		res := make([]interface{}, len(slice))
+		for i, v := range slice {
+			res[i] = v
+		}
+		return res, true
+	default:
+		return nil, false
+	}
 }
 
 func evalComparison(left, right interface{}, op string) (bool, Motive, error) {

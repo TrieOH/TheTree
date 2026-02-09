@@ -2,8 +2,11 @@ package testing
 
 import (
 	"GoAuth/internal/apierr"
+	"encoding/base64"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func testProjects(t *testing.T, suite *TestSuite) {
@@ -151,12 +154,23 @@ func testProjects(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("GetProjectJWKS", func(t *testing.T) {
-		jwksClient := suite.NewClient(t)
-		obj := jwksClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
+		authClient := suite.NewClient(t).WithAuth(user.auth)
+		obj := authClient.GET("/projects/" + projectID + "/.well-known/jwks.json").
 			Expect(http.StatusOK).
 			JSONObj()
 
 		obj.Value("keys").Array().NotEmpty()
+
+		// Verify decoding (Client gets it and decodes)
+		xBase64 := obj.Value("keys").Array().Value(0).Object().Value("x").String().Raw()
+		xBytes, err := base64.RawURLEncoding.DecodeString(xBase64)
+		require.NoError(t, err)
+		pubKey := parseJWKXToEd25519PublicKey(t, xBytes)
+		require.NotNil(t, pubKey)
+
+		// Unauthenticated access denial
+		client.GET("/projects/" + projectID + "/.well-known/jwks.json").
+			Expect(http.StatusUnauthorized)
 	})
 
 	t.Run("DeleteProject", func(t *testing.T) {
