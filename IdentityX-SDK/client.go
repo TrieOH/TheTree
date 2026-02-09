@@ -30,6 +30,8 @@ type Client struct {
 	Scopes      *ScopeService
 	Permissions *PermissionService
 	Authz       *AuthzService
+	Users       *UserService
+	Tokens      *TokenService
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -60,6 +62,8 @@ func NewClient(config Config) (*Client, error) {
 	c.Scopes = &ScopeService{client: c}
 	c.Permissions = &PermissionService{client: c}
 	c.Authz = &AuthzService{client: c}
+	c.Users = &UserService{client: c}
+	c.Tokens = &TokenService{client: c}
 
 	return c, nil
 }

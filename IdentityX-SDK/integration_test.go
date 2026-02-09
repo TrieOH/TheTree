@@ -230,6 +230,33 @@ func TestIntegration(t *testing.T) {
 		assert.True(t, allowed, "Action wildcard should match any sub-action")
 	})
 
+	t.Run("Project Discovery & User Management", func(t *testing.T) {
+		// 1. Get JWKS
+		jwks, err := client.Tokens.GetJWKS(ctx, false)
+		require.NoError(t, err)
+		assert.NotEmpty(t, jwks.Keys, "JWKS should contain at least one key")
+
+		// 2. List Users
+		users, err := client.Users.List(ctx)
+		require.NoError(t, err)
+		assert.NotEmpty(t, users, "Project should have at least one user (the provided GOAUTH_USER_ID)")
+
+		found := false
+		for _, u := range users {
+			if u.ID == userID {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "The provided user ID should be in the project users list")
+
+		// 3. Get User
+		user, err := client.Users.Get(ctx, userID)
+		require.NoError(t, err)
+		assert.Equal(t, userID, user.ID)
+		assert.Equal(t, projectID, user.ProjectID)
+	})
+
 	t.Run("Resolution Cross-Check (Isolation)", func(t *testing.T) {
 		err = client.Roles.GiveToUser(ctx, userID, roleID, &scopeNilExtID)
 		require.NoError(t, err)
