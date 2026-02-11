@@ -176,7 +176,7 @@ export default function CustomDataTable<T extends object>({
             cellValue = col.searchableTextExtractor(item[col.key], item);
           } else cellValue = String(item[col.key] ?? '');
           
-          return acc + " " + cellValue;
+          return `${acc} ${cellValue}`;
         }, "").toLowerCase();
   
         const matchesSearch = !searchTerm || itemSearchableString.includes(searchTerm.toLowerCase());
@@ -188,7 +188,7 @@ export default function CustomDataTable<T extends object>({
 
       return matchesSearch && matchesCustomFilters;
     });
-  }, [data, searchTerm, activeFilters]);
+  }, [data, searchTerm, activeFilters, columns]);
 
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;

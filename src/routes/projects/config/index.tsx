@@ -23,7 +23,7 @@ export const Route = createFileRoute('/projects/config/')({
 
 
 function RouteComponent() {
-
+  const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
   const items = [
     { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
     { value: 'schema', label: 'Schema', icon: Database, content: <p>Editor de tabelas e campos...</p> },
@@ -35,14 +35,12 @@ function RouteComponent() {
       content: <ScopeTable data={[
         {name: "dwd", id: "d", created_at: "2026-02-11T02:26:04+03:00", type: "dwdw", external_id: "dw", updated_at: "dw", project_id: "dwdw"}
       ]}
+      project_id={currentProjectId}
       />,
     },
     { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
     { value: 'users', label: 'Users', icon: UserCog, content: <p>Gerenciamento de usuários...</p> },
   ];
-
-  const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
-  console.log(currentProjectId)
   return (
     <main className='flex justify-center items-center h-(--screen--minus-header)'>
       <CustomTabs items={items} />
