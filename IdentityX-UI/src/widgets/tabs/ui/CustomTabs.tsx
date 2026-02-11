@@ -179,12 +179,7 @@ export default function CustomTabs({
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }} 
               className={cn("absolute inset-0 h-full", isMobile && "pb-12")}
             >
-              <div 
-                className={cn(
-                  "flex flex-col h-full overflow-y-auto overflow-x-hidden",
-                  "p-4 bg-card rounded-sm shadow-sm"
-                )}
-              >
+              <div className="flex flex-col h-full overflow-y-auto overflow-x-hidden p-4">
                 {(() => {
                   const item = items.find((t) => t.value === displayTab);
                   if (!item) return null;

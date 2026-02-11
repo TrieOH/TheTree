@@ -81,7 +81,7 @@ export function CrudDialog<T extends { id: string }>({
         <DialogFooter showCloseButton closeButtonText='Cancel' isPerformingSubmit={state.isLoading}>
           <ShadowButton 
             type={state.mode === 'delete' ? "button" : "submit"}
-            variant="accent"
+            variant={state.mode === 'delete' ? 'destructive' : "accent-solid" }
             onClick={state.mode === 'delete' ? onSubmit : undefined}
             formId={state.mode === 'delete' ? undefined : formId}
             disabled={state.isLoading}
