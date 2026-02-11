@@ -38,6 +38,7 @@ export type ColumnDef<T> = {
   disabled?: boolean;
   primary?: boolean;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
+  searchableTextExtractor?: (value: T[keyof T], row: T) => string;
 };
 
 export type TableFilter<T> = {
@@ -128,7 +129,7 @@ const NoResultsState = () => (
 
 // --- Main Component ---
 
-export default function CustomDataTable<T extends Record<string, unknown>>({
+export default function CustomDataTable<T extends object>({
   data,
   columns,
   rowActions,
@@ -167,12 +168,18 @@ export default function CustomDataTable<T extends Record<string, unknown>>({
 
   const hasActiveFilters = searchTerm || Object.values(activeFilters).some(v => v !== undefined && v !== '');
 
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const matchesSearch = !searchTerm || Object.values(item).some((val) => 
-        String(val).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
+    const filteredData = useMemo(() => {
+      return data.filter((item) => {
+        const itemSearchableString = columns.reduce((acc, col) => {
+          let cellValue: string = '';
+          if (col.searchableTextExtractor) {
+            cellValue = col.searchableTextExtractor(item[col.key], item);
+          } else cellValue = String(item[col.key] ?? '');
+          
+          return acc + " " + cellValue;
+        }, "").toLowerCase();
+  
+        const matchesSearch = !searchTerm || itemSearchableString.includes(searchTerm.toLowerCase());
       const matchesCustomFilters = Object.entries(activeFilters).every(([key, filterValue]) => {
         if (!filterValue) return true;
         const itemValue = String(item[key as keyof T]).toLowerCase();

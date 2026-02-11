@@ -1,6 +1,7 @@
 import { requireAuth } from '@/features/auth/lib/route-guard';
 import { navigationStore } from '@/features/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
+import ScopeTable from '@/features/scope/ui/ScopeTable';
+import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
 import { Database, Globe, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
@@ -19,62 +20,32 @@ export const Route = createFileRoute('/projects/config/')({
   },
 })
 
+
+
 function RouteComponent() {
+
+  const items = [
+    { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
+    { value: 'schema', label: 'Schema', icon: Database, content: <p>Editor de tabelas e campos...</p> },
+    { value: 'permissions', label: 'Permissions', icon: Shield, content: <p>Gerenciamento de permissões...</p> },
+    { 
+      value: 'scope', 
+      label: 'Scope', 
+      icon: Globe, 
+      content: <ScopeTable data={[
+        {name: "dwd", id: "d", created_at: "2026-02-11T02:26:04+03:00", type: "dwdw", external_id: "dw", updated_at: "dw", project_id: "dwdw"}
+      ]}
+      />,
+    },
+    { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
+    { value: 'users', label: 'Users', icon: UserCog, content: <p>Gerenciamento de usuários...</p> },
+  ];
+
   const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
   console.log(currentProjectId)
   return (
-    <main>
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-lg bg-muted p-1 md:grid md:w-fit md:grid-cols-6">
-          <TabsTrigger 
-            value="dashboard" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="hidden sm:inline">Dashboard</span>
-            <span className="sm:hidden">Dash</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="schema" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <Database className="h-4 w-4" />
-            <span>Schema</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="permissions" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Permissions</span>
-            <span className="sm:hidden">Perms</span>
-          </TabsTrigger>
-
-          <TabsTrigger 
-            value="scope" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <Globe className="h-4 w-4" />
-            <span>Scope</span>
-          </TabsTrigger>
-
-          <TabsTrigger 
-            value="roles" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <ShieldCheck className="h-4 w-4" />
-            <span>Roles</span>
-          </TabsTrigger>
-
-          <TabsTrigger 
-            value="users" 
-            className="flex shrink-0 items-center gap-2 px-3 py-2 text-xs md:text-sm"
-          >
-            <UserCog className="h-4 w-4" />
-            <span>Users</span>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+    <main className='flex justify-center items-center h-(--screen--minus-header)'>
+      <CustomTabs items={items} />
     </main>
-  )
+  );
 }
