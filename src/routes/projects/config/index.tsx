@@ -1,6 +1,8 @@
 import { requireAuth } from '@/features/auth/lib/route-guard';
 import { navigationStore } from '@/features/navigation';
 import ScopeTable from '@/features/scope/ui/ScopeTable';
+import { usersQueryOptions } from '@/features/user/api';
+import UserTable from '@/features/user/ui/UserTable';
 import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
@@ -11,6 +13,11 @@ export const Route = createFileRoute('/projects/config/')({
     requireAuth(ctx)
     const currentProjectId = navigationStore.state.currentProjectId;
     if (typeof window !== 'undefined' && !currentProjectId) throw redirect({ to: '/projects' });
+  },
+  loader: async ({ context: { queryClient }}) => {
+    const currentProjectId = navigationStore.state.currentProjectId;
+    const users = await queryClient.ensureQueryData(usersQueryOptions(currentProjectId || ""))
+    return { users }
   },
   component: RouteComponent,
   staticData: {
@@ -23,6 +30,7 @@ export const Route = createFileRoute('/projects/config/')({
 
 function RouteComponent() {
   const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
+  const { users } = Route.useLoaderData()
   const items = [
     { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
     { value: 'schema', label: 'Schema', icon: Database, content: <p>Editor de tabelas e campos...</p> },
@@ -34,7 +42,12 @@ function RouteComponent() {
       content: <ScopeTable project_id={currentProjectId} />,
     },
     { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
-    { value: 'users', label: 'Users', icon: UserCog, content: <p>Gerenciamento de usuários...</p> },
+    { 
+      value: 'users', 
+      label: 'Users', 
+      icon: UserCog, 
+      content: <UserTable data={users}/>
+    },
   ];
   return (
     <main className='flex justify-center items-center h-(--screen--minus-header)'>
