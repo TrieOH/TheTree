@@ -357,7 +357,6 @@ export default function CustomDataTable<T extends object>({
                 })}
                 {rowActions && rowActions.length > 0 && (
                   <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground whitespace-nowrap">
-                    Actions
                   </th>
                 )}
               </tr>
@@ -377,23 +376,32 @@ export default function CustomDataTable<T extends object>({
                         }
                       </td>
                     ))}
-                    {rowActions && (
+                    {rowActions && rowActions.length > 0 && (
                       <td className="p-4 align-middle text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          {rowActions.map((action, idx) => {
-                            const Icon = action.icon;
-                            return (
-                              <ShadowButton
-                                key={`${action.label}${idx}`}
-                                onClick={() => action.onClick(row)}
-                                variant={action.variant}
-                                label={action.label}
-                                value={!action.hideLabel ? action.label : undefined}
-                                leftIcon={Icon ? <Icon size={16} /> : undefined}
-                              />
-                            );
-                          })}
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <ShadowButton
+                              leftIcon={<MoreHorizontal size={16} />}
+                              label='More Actions'
+                              variant="ghost-primary"
+                            />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            {rowActions.map((action, idx) => {
+                              const Icon = action.icon;
+                              return (
+                                <DropdownMenuItem
+                                  key={`${action.label}${idx}`}
+                                  onClick={() => action.onClick(row)}
+                                  className="cursor-pointer"
+                                >
+                                  {Icon && React.createElement(Icon, { size: 16, className: "mr-2" })}
+                                  <span>{action.label}</span>
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     )}
                   </tr>
@@ -467,7 +475,7 @@ export default function CustomDataTable<T extends object>({
                               onClick={() => action.onClick(row)}
                               className={`
                                 flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors
-                                hover:bg-accent hover:text-accent-foreground
+                                hover:bg-muted hover:text-muted-foreground
                                 ${action.variant === 'destructive' ? 'text-destructive' : ''}
                               `}
                             >

@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
+import React from "react";
 
 const buttonVariants = cva(
   "flex cursor-pointer gap-1 font-extralight border rounded-sm p-2 items-center md:text-sm text-xs transition-all duration-300 ease-out",
@@ -33,19 +34,27 @@ interface PropsI extends VariantProps<typeof buttonVariants> {
   disabled?: boolean;
 }
 
-export function ShadowButton({ 
-  value, 
-  label = value,
-  leftIcon, 
-  className, 
-  onClick, 
-  disabled, 
-  variant,
-  type = "button", 
-  formId
-}: PropsI) {
+export const ShadowButton = React.forwardRef<
+  HTMLButtonElement,
+  PropsI
+>(function ShadowButton(
+  { 
+    value, 
+    label = value,
+    leftIcon, 
+    className, 
+    onClick, 
+    disabled, 
+    variant,
+    type = "button", 
+    formId,
+    ...props
+  },
+  ref
+) {
   return (
     <button
+      ref={ref}
       type={type}
       aria-label={label}
       title={label}
@@ -59,9 +68,10 @@ export function ShadowButton({
       )}
       onClick={onClick}
       disabled={disabled}
+      {...props}
     >
       {leftIcon}
       {value}
     </button>
-  )
-}
+  );
+});
