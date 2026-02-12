@@ -1,3 +1,4 @@
+import FieldEditor from '@/features/schema-version/ui/FieldEditor'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/schemas/editor/')({
@@ -6,5 +7,5 @@ export const Route = createFileRoute('/schemas/editor/')({
 })
 
 function RouteComponent() {
-  return <div>Hello "/schemas/editor/"!</div>
+  return <FieldEditor />
 }
