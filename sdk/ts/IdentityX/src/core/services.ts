@@ -8,7 +8,7 @@ export const createAuthService = (apiInstance: Api) => ({
     const url = env.API_KEY.length > 0 
       ? `/projects/${env.API_KEY}/login` : "/auth/login";
 
-    const res = await apiInstance.post<string>(
+    const res = await apiInstance.post<{is_up_to_date: boolean}>(
       url,
       { email, password }, 
     );
@@ -50,7 +50,7 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   refresh: async () => {
-    const res = await apiInstance.post<string>(
+    const res = await apiInstance.post<{is_up_to_date: boolean}>(
       "/auth/refresh",
       undefined,
       { requiresAuth: true, skipRefresh: true }
