@@ -31,7 +31,7 @@ var (
 	SDKInvalidKeySize              = fail.ID(0, "SDK", 20, false, "SDKInvalidKeySize")
 
 	ErrSDKUnknownError              = fail.Form(SDKUnknownErrorID, "unknown sdk error: %s", false, map[string]any{"code": 500}, "UNSET")
-	ErrSDKNetworkError              = fail.Form(SDKNetworkErrorID, "network error", false, map[string]any{"code": 500})
+	ErrSDKNetworkError              = fail.Form(SDKNetworkErrorID, "network error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKRequestMarshalingError    = fail.Form(SDKRequestMarshalingErrorID, "request marshaling error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKResponseUnmarshalingError = fail.Form(SDKResponseUnmarshalingErrorID, "response unmarshalling error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKInvalidAPIKey             = fail.Form(SDKInvalidAPIKeyID, "invalid api key", false, map[string]any{"code": 401})
