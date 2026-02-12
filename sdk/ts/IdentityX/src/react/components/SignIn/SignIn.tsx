@@ -9,7 +9,7 @@ import {
 } from "../../../utils/field-validator";
 
 export interface SignInProps {
-  onSuccess?: () => Promise<void>;
+  onSuccess?: (is_up_to_date: boolean) => Promise<void>;
   onFailed?: (message: string) => Promise<void>;
   signUpRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
@@ -58,7 +58,7 @@ export function SignIn({
     setLoadingSubmit(true);
 
     const res = await auth.login(email, password);
-    if(res.code === 200 && onSuccess) await onSuccess();
+    if(res.code === 200 && onSuccess) await onSuccess(res.data?.is_up_to_date || true);
     else if(onFailed) await onFailed(res.message);
     setLoadingSubmit(false);
   }

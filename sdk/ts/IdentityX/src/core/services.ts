@@ -8,7 +8,7 @@ export const createAuthService = (apiInstance: Api) => ({
     const url = env.API_KEY.length > 0 
       ? `/projects/${env.API_KEY}/login` : "/auth/login";
 
-    const res = await apiInstance.post<string>(
+    const res = await apiInstance.post<{is_up_to_date: boolean}>(
       url,
       { email, password }, 
     );
@@ -16,14 +16,29 @@ export const createAuthService = (apiInstance: Api) => ({
     return res;
   },
 
-  // Custom need to be changed
-  register: (email: string, password: string, custom: string[] = [""]) => {
-    const url = env.API_KEY.length > 0 
+  register: (email: string, password: string, flow_id?: string, custom: string[] = [""]) => {
+    let url = env.API_KEY.length > 0 
       ? `/projects/${env.API_KEY}/register` : "/auth/register";
 
-    return apiInstance.post<string>(url, { email, password, custom_fields: custom });
-  },
+    if (env.API_KEY.length > 0) {
+      if (!flow_id) {
+        return Promise.reject({
+          code: 400,
+          message: "flow_id is required when a project_id is provided.",
+          module: "auth",
+          timestamp: new Date().toISOString(),
+        });
+      }
+      const params = new URLSearchParams();
+      params.append("flow_id", flow_id);
+      params.append("schema_type", "context");
+      params.append("version", "0");
+      url += `?${params.toString()}`;
+    }
 
+    return apiInstance.post<string>(url, { email, password, custom_fields: custom });
+  },  
+  
   logout: async () => {
     const res = await apiInstance.post<string>(
       "/auth/logout",
@@ -35,7 +50,7 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   refresh: async () => {
-    const res = await apiInstance.post<string>(
+    const res = await apiInstance.post<{is_up_to_date: boolean}>(
       "/auth/refresh",
       undefined,
       { requiresAuth: true, skipRefresh: true }
@@ -63,4 +78,37 @@ export const createAuthService = (apiInstance: Api) => ({
   refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
+
+  sendForgotPassword: async (email: string) => {
+    const res = await apiInstance.post<string>(
+      "/auth/forgot-password",
+      {email, project_id: env.API_KEY}, 
+    );
+    return res;
+  },
+
+  resetPassword: async (token: string, new_password: string) => {
+    const res = await apiInstance.post<string>(
+      `/auth/reset-password?token=${token}`,
+      {new_password}, 
+    );
+    return res;
+  },
+
+  resendVerifyEmail: async () => {
+    const res = await apiInstance.post<string>(
+      "/auth/verify/resend",
+      undefined,
+      { requiresAuth: true } 
+    );
+    return res;
+  },
+
+  verifyEmail: async () => {
+    const res = await apiInstance.get<string>(
+      "/auth/verify",
+      undefined,
+    );
+    return res;
+  },
 });

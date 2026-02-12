@@ -14,6 +14,7 @@ export interface SignUpProps {
   loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
   passwordRules?: Rule[];
+  flow_id?: string;
 }
 
 export function SignUp({
@@ -21,7 +22,8 @@ export function SignUp({
   onFailed,
   loginRedirect,
   emailRules,
-  passwordRules
+  passwordRules,
+  flow_id,
 }: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,7 +69,7 @@ export function SignUp({
     
     setLoadingSubmit(true);
 
-    const res = await auth.register(email, password);
+    const res = await auth.register(email, password, flow_id);
     if(res.code === 201 && onSuccess) await onSuccess();
     else if(onFailed) await onFailed(res.message, res.trace);
     setLoadingSubmit(false);

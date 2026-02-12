@@ -6,8 +6,15 @@ const meta = {
   component: SignUpWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
+  argTypes: {
+    flow_id: { control: 'text' },
+  },
 } satisfies Meta<typeof SignUpWithProvider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    flow_id: 'default',
+  },
+};
