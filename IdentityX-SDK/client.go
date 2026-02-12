@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -69,20 +69,26 @@ func NewClient(config Config) (*Client, error) {
 }
 
 func (c *Client) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
-	var buf io.ReadWriter
+	var buf io.Reader
 	if body != nil {
-		buf = new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(body)
+		b, err := json.Marshal(body)
 		if err != nil {
-			return nil, fail.New(SDKRequestMarshalingErrorID).Trace(err.Error())
+			return nil, fail.New(SDKRequestMarshalingErrorID).WithArgs(err.Error())
 		}
+		buf = bytes.NewReader(b)
 	}
 
-	url := fmt.Sprintf("%s%s", c.config.BaseURL, path)
-	req, err := http.NewRequestWithContext(ctx, method, url, buf)
+	u, err := url.JoinPath(c.config.BaseURL, path)
 	if err != nil {
 		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
 	}
+
+	req, err := http.NewRequestWithContext(ctx, method, u, buf)
+	if err != nil {
+		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
+	}
+
+	req.Header.Set("Accept", "application/json")
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")

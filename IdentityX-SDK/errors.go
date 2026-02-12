@@ -32,8 +32,8 @@ var (
 
 	ErrSDKUnknownError              = fail.Form(SDKUnknownErrorID, "unknown sdk error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKNetworkError              = fail.Form(SDKNetworkErrorID, "network error", false, map[string]any{"code": 500})
-	ErrSDKRequestMarshalingError    = fail.Form(SDKRequestMarshalingErrorID, "request marshaling error", false, map[string]any{"code": 500})
-	ErrSDKResponseUnmarshalingError = fail.Form(SDKResponseUnmarshalingErrorID, "response unmarshalling error", false, map[string]any{"code": 500})
+	ErrSDKRequestMarshalingError    = fail.Form(SDKRequestMarshalingErrorID, "request marshaling error: %s", false, map[string]any{"code": 500}, "UNSET")
+	ErrSDKResponseUnmarshalingError = fail.Form(SDKResponseUnmarshalingErrorID, "response unmarshalling error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKInvalidAPIKey             = fail.Form(SDKInvalidAPIKeyID, "invalid api key", false, map[string]any{"code": 401})
 	ErrSDKUnauthorized              = fail.Form(SDKUnauthorizedID, "unauthorized", false, map[string]any{"code": 401})
 	ErrSDKForbidden                 = fail.Form(SDKForbiddenID, "forbidden", false, map[string]any{"code": 403})
