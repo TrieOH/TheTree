@@ -34,6 +34,8 @@ CREATE TABLE key_pair (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
 
+    verify_expires_at TIMESTAMPTZ NOT NULL,
+
     CHECK (
         (key_type = 'goauth' AND project_id IS NULL)
             OR
@@ -77,7 +79,13 @@ CREATE UNIQUE INDEX uniq_goauth_single_active_signing_key
   AND usage = 'sign'
   AND status = 'active';
 
+CREATE INDEX idx_key_pair_project_jwks
+    ON key_pair (project_id)
+    WHERE status IN ('active', 'rotated')
+      AND verify_expires_at > now();
+
 -- +goose Down
+DROP INDEX IF EXISTS idx_key_pair_project_jwks;
 DROP INDEX IF EXISTS uniq_goauth_single_active_signing_key;
 DROP INDEX IF EXISTS idx_key_pair_goauth_jwks;
 DROP INDEX IF EXISTS idx_key_pair_goauth_active_sign;

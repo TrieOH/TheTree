@@ -35,6 +35,10 @@ func rotateKeysJob(ctx context.Context, app *GoauthApp, txRunner inbounds.TxRunn
 					return err
 				}
 
+				if err := q.RevokeExpiredRotatedKeys(txCtx); err != nil {
+					return err
+				}
+
 				if err := q.DeleteExpiredRevokedKeys(txCtx); err != nil {
 					return err
 				}

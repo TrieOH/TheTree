@@ -9,8 +9,8 @@ WHERE
     LIMIT 1;
 
 -- name: CreateKeyPair :one
-INSERT INTO key_pair (kid, project_id, key_type, algorithm, public_key, private_key, usage, status, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO key_pair (kid, project_id, key_type, algorithm, public_key, private_key, usage, status, expires_at, verify_expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING *;
 
 -- name: GetActiveSigningKeyForGoAuth :one
@@ -48,6 +48,7 @@ WHERE
     key_type = 'goauth'
   AND project_id IS NULL
   AND status IN ('active', 'rotated')
+  AND verify_expires_at > now()
 ORDER BY created_at DESC;
 
 -- name: GetActiveSigningKeyForProject :one
@@ -89,6 +90,13 @@ WHERE
   AND usage = 'sign'
   AND status = 'active';
 
+-- name: RevokeExpiredRotatedKeys :exec
+UPDATE key_pair
+SET status = 'revoked'
+WHERE
+    status = 'rotated'
+  AND verify_expires_at < now();
+
 -- name: RevokeKeyByKID :exec
 UPDATE key_pair
 SET status = 'revoked'
@@ -105,6 +113,7 @@ FROM key_pair
 WHERE
     project_id = $1
   AND status IN ('active', 'rotated')
+  AND verify_expires_at > now()
 ORDER BY created_at DESC;
 
 -- name: DeleteExpiredRevokedKeys :exec

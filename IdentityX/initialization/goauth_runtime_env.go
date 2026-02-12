@@ -128,15 +128,16 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
-		Kid:        kid,
-		ProjectID:  nil,
-		KeyType:    "goauth",
-		Algorithm:  "EdDSA",
-		PublicKey:  pub,
-		PrivateKey: encryptedPriv,
-		Usage:      "sign",
-		Status:     "active",
-		ExpiresAt:  expiresAt,
+		Kid:             kid,
+		ProjectID:       nil,
+		KeyType:         "goauth",
+		Algorithm:       "EdDSA",
+		PublicKey:       pub,
+		PrivateKey:      encryptedPriv,
+		Usage:           "sign",
+		Status:          "active",
+		ExpiresAt:       expiresAt,
+		VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
 	})
 
 	fe := fail.From(err)
@@ -194,15 +195,16 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
-		Kid:        kid,
-		ProjectID:  &projectID,
-		KeyType:    "project",
-		Algorithm:  "EdDSA",
-		PublicKey:  pub,
-		PrivateKey: encryptedPriv,
-		Usage:      "sign",
-		Status:     "active",
-		ExpiresAt:  expiresAt,
+		Kid:             kid,
+		ProjectID:       &projectID,
+		KeyType:         "project",
+		Algorithm:       "EdDSA",
+		PublicKey:       pub,
+		PrivateKey:      encryptedPriv,
+		Usage:           "sign",
+		Status:          "active",
+		ExpiresAt:       expiresAt,
+		VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
 	})
 
 	// Rely on DB uniqueness for safety in concurrent rotations
