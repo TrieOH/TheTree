@@ -16,14 +16,29 @@ export const createAuthService = (apiInstance: Api) => ({
     return res;
   },
 
-  // Custom need to be changed
-  register: (email: string, password: string, custom: string[] = [""]) => {
-    const url = env.API_KEY.length > 0 
+  register: (email: string, password: string, flow_id?: string, custom: string[] = [""]) => {
+    let url = env.API_KEY.length > 0 
       ? `/projects/${env.API_KEY}/register` : "/auth/register";
 
-    return apiInstance.post<string>(url, { email, password, custom_fields: custom });
-  },
+    if (env.API_KEY.length > 0) {
+      if (!flow_id) {
+        return Promise.reject({
+          code: 400,
+          message: "flow_id is required when a project_id is provided.",
+          module: "auth",
+          timestamp: new Date().toISOString(),
+        });
+      }
+      const params = new URLSearchParams();
+      params.append("flow_id", flow_id);
+      params.append("schema_type", "context");
+      params.append("version", "0");
+      url += `?${params.toString()}`;
+    }
 
+    return apiInstance.post<string>(url, { email, password, custom_fields: custom });
+  },  
+  
   logout: async () => {
     const res = await apiInstance.post<string>(
       "/auth/logout",
