@@ -23,7 +23,8 @@ export default function ScopeDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["scopes"] });
+        queryClient.invalidateQueries({ queryKey: ["scopes", project_id] });
+        queryClient.setQueryData(["scopes", project_id, response.data.id], response.data);
       } else toast.error(`Failed to create scope: ${response.message}`);
     },
     onError: (error) => {

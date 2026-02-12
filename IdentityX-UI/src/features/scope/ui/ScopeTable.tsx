@@ -1,16 +1,17 @@
 import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import { Globe } from "lucide-react";
 import { formatDate } from "../../../shared/lib/date-utils";
-import type { Scope } from "@/features/scope/model/types";
 import ScopeDialog from "./ScopeDialog";
 import { scopeActions } from "../store";
+import { useQuery } from "@tanstack/react-query";
+import { scopesQueryOptions } from "../api";
 
 interface PropsI {
-  data: Scope[]
   project_id: string;
 }
 
-export default function ScopeTable({ data, project_id }: PropsI) {
+export default function ScopeTable({ project_id }: PropsI) {
+  const { data = [] } = useQuery(scopesQueryOptions(project_id))
   return (
     <>
       <CustomDataTable
@@ -34,13 +35,6 @@ export default function ScopeTable({ data, project_id }: PropsI) {
           {
             key: "created_at",
             header: "Created At",
-            sortable: true,
-            render: (value) => formatDate(value as string),
-            searchableTextExtractor: (value) => formatDate(value as string),
-          },
-          {
-            key: "updated_at",
-            header: "Updated At",
             sortable: true,
             render: (value) => formatDate(value as string),
             searchableTextExtractor: (value) => formatDate(value as string),

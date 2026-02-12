@@ -40,7 +40,7 @@ export const getScopesFn = createClientOnlyFn(async ({
   }
 });
 
-export const schemasQueryOptions = (project_id: string) => {
+export const scopesQueryOptions = (project_id: string) => {
   return queryOptions({
     queryKey: ['scopes', project_id],
     queryFn: getScopesFn,

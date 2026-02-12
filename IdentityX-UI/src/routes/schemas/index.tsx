@@ -18,7 +18,7 @@ export const Route = createFileRoute('/schemas/')({
     return {}
   },
   component: SchemaPage,
-  staticData: {components: {header: "schemas"}}
+  staticData: {components: {header: "none"}}
 })
 
 function SchemaPage() {

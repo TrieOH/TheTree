@@ -20,5 +20,4 @@ export interface Scope {
   project_id: string;
   external_id: string;
   created_at: string;
-  updated_at: string;
 }

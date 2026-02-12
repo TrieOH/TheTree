@@ -15,11 +15,10 @@ export const Route = createFileRoute('/projects/config/')({
   component: RouteComponent,
   staticData: {
     components: {
-      header: "schemas"
+      header: "projects/config"
     }
   },
 })
-
 
 
 function RouteComponent() {
@@ -32,11 +31,7 @@ function RouteComponent() {
       value: 'scope', 
       label: 'Scope', 
       icon: Globe, 
-      content: <ScopeTable data={[
-        {name: "dwd", id: "d", created_at: "2026-02-11T02:26:04+03:00", type: "dwdw", external_id: "dw", updated_at: "dw", project_id: "dwdw"}
-      ]}
-      project_id={currentProjectId}
-      />,
+      content: <ScopeTable project_id={currentProjectId} />,
     },
     { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
     { value: 'users', label: 'Users', icon: UserCog, content: <p>Gerenciamento de usuários...</p> },
