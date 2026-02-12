@@ -6,7 +6,7 @@ import { scopeActions } from "../store";
 import { useQuery } from "@tanstack/react-query";
 import { scopesQueryOptions } from "../api";
 import { Badge } from "@/shared/ui/shadcn/badge";
-import { Scope } from "../model/types";
+import type { Scope } from "../model/types";
 
 interface PropsI {
   project_id: string;
