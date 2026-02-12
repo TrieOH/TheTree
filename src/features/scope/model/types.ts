@@ -18,6 +18,6 @@ export interface Scope {
   name: string;
   type: string;
   project_id: string;
-  external_id: string;
+  external_id?: string;
   created_at: string;
 }
