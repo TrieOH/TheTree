@@ -1,4 +1,4 @@
-export type HeaderVariant = | 'landing' | 'projects' | 'schemas' | 'auth' | 'none'
+export type HeaderVariant = | 'landing' | 'projects' | 'projects/config' | 'auth' | 'none'
 export type VisibleOn = 'mobile' | 'desktop' | 'fixed'
 export type TitlePosition = 'left' | 'none'
 
