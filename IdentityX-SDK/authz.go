@@ -3,10 +3,10 @@ package goauth
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -73,7 +73,7 @@ func (b *checkBuilder) WithResource(resource map[string]any) CheckBuilder {
 
 func (b *checkBuilder) Allowed(ctx context.Context) (bool, error) {
 	if b.userID == nil {
-		return false, fmt.Errorf("user ID is required for authorization check")
+		return false, fail.New(SDKMissingUserID).Trace("user ID required for authz check")
 	}
 
 	if err := validateObject(b.object); err != nil {

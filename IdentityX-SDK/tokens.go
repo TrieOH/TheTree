@@ -75,12 +75,12 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fail.New(SDKUnexpectedSigningMethod).WithArgs(token.Header["alg"])
 		}
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
-			return nil, fmt.Errorf("missing kid in token header")
+			return nil, fail.New(SDKMissingTokenKID)
 		}
 
 		// Try with current cache
@@ -107,7 +107,7 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 			}
 		}
 
-		return nil, fmt.Errorf("key not found in JWKS: %s", kid)
+		return nil, fail.New(SDKKeyNotInJWKS).WithArgs(kid)
 	}
 
 	token, err := jwt.Parse(tokenStr, keyFunc)
@@ -120,16 +120,16 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 
 func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
 	if key.Kty != "OKP" || key.Crv != "Ed25519" {
-		return nil, fmt.Errorf("unsupported key type or curve: %s/%s", key.Kty, key.Crv)
+		return nil, fail.New(SDKUnsupportedCurve).WithArgs(key.Kty, key.Crv)
 	}
 
 	pubBytes, err := base64.RawURLEncoding.DecodeString(key.X)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode public key: %w", err)
+		return nil, fail.New(SDKKeyDecodeFailed).WithArgs(err.Error())
 	}
 
 	if len(pubBytes) != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("invalid public key size")
+		return nil, fail.New(SDKInvalidKeySize)
 	}
 
 	return ed25519.PublicKey(pubBytes), nil
