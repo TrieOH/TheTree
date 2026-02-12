@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"univents/internal/adapters/http/validation"
-	"univents/internal/apierr"
+	"univents/internal/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
@@ -36,12 +36,12 @@ func getUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 	numberStr := chi.URLParam(r, fieldName)
 	if numberStr == "" {
-		return 0, resp.FromError(fail.New(apierr.RequestMissingParamError).WithArgs(fieldName))
+		return 0, resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
 	}
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return 0, resp.FromError(fail.New(apierr.RequestParseNumberError).WithArgs(err.Error()))
+		return 0, resp.FromError(fail.New(errx.RequestParseNumberError).WithArgs(err.Error()))
 	}
 	return number, nil
 }
@@ -49,7 +49,7 @@ func getNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 func getString(r *http.Request, fieldName string) (string, *resp.Response) {
 	fieldStr := r.URL.Query().Get(fieldName)
 	if fieldStr == "" {
-		return "", resp.FromError(fail.New(apierr.RequestMissingParamError).WithArgs(fieldName))
+		return "", resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
 	}
 	return fieldStr, nil
 }

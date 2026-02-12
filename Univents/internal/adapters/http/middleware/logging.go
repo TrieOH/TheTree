@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 	"univents/internal/adapters/observability/logs"
-	"univents/internal/apierr"
+	"univents/internal/errx"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
@@ -70,7 +70,7 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				_ = fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
+				_ = fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

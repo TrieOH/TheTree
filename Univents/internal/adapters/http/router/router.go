@@ -12,6 +12,7 @@ import (
 
 	_ "univents/docs"
 
+	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -52,7 +53,7 @@ import (
 // @response 413 {object} handlers.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} handlers.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} handlers.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(db *pgxpool.Pool, rdb *redis.Client) (http.Handler, *application.Application) {
+func CreateRouter(gaClient *goauth.Client, db *pgxpool.Pool, rdb *redis.Client) (http.Handler, *application.Application) {
 	r := chi.NewRouter()
 
 	r.Use(chimiddleware.Recoverer)
@@ -77,7 +78,7 @@ func CreateRouter(db *pgxpool.Pool, rdb *redis.Client) (http.Handler, *applicati
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 	r.Handle("/metrics", middleware.Handler())
 
-	r, app := registerRoutes(db, rdb, r)
+	r, app := registerRoutes(gaClient, db, rdb, r)
 
 	return otelhttp.NewHandler(r, "http.server"), app
 }

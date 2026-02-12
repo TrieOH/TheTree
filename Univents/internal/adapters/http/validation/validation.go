@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"univents/internal/apierr"
+	"univents/internal/errx"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/go-playground/validator/v10"
@@ -53,10 +53,10 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 		return nil
 	}
 
-	verr := fail.New(apierr.RequestValidationError)
+	verr := fail.New(errx.RequestValidationError)
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {
-		return fail.New(apierr.RequestValidationError).With(err)
+		return fail.New(errx.RequestValidationError).With(err)
 	}
 	for _, e := range validationErrors {
 		msg := formatValidationMessage(e, fieldName, value)
@@ -123,10 +123,10 @@ func ValidateStruct(s interface{}) error {
 		return nil
 	}
 
-	verr := fail.New(apierr.RequestValidationError)
+	verr := fail.New(errx.RequestValidationError)
 	var validationErrors validator.ValidationErrors
 	if !errors.As(err, &validationErrors) {
-		return fail.New(apierr.RequestValidationError).With(err)
+		return fail.New(errx.RequestValidationError).With(err)
 	}
 	for _, err := range validationErrors {
 		structFieldName := err.StructField()
@@ -158,11 +158,11 @@ func ValidateStruct(s interface{}) error {
 func ValidateInto[T any](r *http.Request, target *T) error {
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		return fail.New(apierr.RequestNotApplicationJSON)
+		return fail.New(errx.RequestNotApplicationJSON)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return fail.New(apierr.RequestInvalidJSONFormat).With(err)
+		return fail.New(errx.RequestInvalidJSONFormat).With(err)
 	}
 
 	if err := ValidateStruct(*target); err != nil {

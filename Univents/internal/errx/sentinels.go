@@ -1,4 +1,4 @@
-package apierr
+package errx
 
 import "github.com/MintzyG/fail/v3"
 
@@ -56,68 +56,29 @@ var (
 	ErrRequestInvalidPassword = fail.Form(RequestInvalidPassword, "invalid password", true, map[string]any{"code": 400}).
 					AddLocalization("pt-BR", "senha inválida")
 
-	// ------ AUTH ------
-	ErrAuthEmailAlreadyUsed = fail.Form(AuthEmailAlreadyUsed, "email already in use", false, map[string]any{"code": 409}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "erro ao registrar o usuário",
-		})
-	ErrAuthInvalidCredentials = fail.Form(AuthInvalidCredentials, "invalid email or password", false, map[string]any{"code": 401}).
-					AddLocalizations(map[string]string{
-			"pt-BR": "email ou senha inválidos",
-		})
-	ErrAuthInvalidRefreshCookie = fail.Form(AuthInvalidRefreshCookie, "invalid refresh_token cookie", false, map[string]any{"code": 401}).
-					AddLocalizations(map[string]string{
-			"pt-BR": "o cookie refresh_token está inválido",
-		})
 	ErrAuthInvalidAccessCookie = fail.Form(AuthInvalidAccessCookie, "invalid access_token cookie", false, map[string]any{"code": 401}).
 					AddLocalizations(map[string]string{
 			"pt-BR": "o cookie access_token está inválido",
-		})
-	ErrAuthMissingRefreshCookie = fail.Form(AuthMissingRefreshCookie, "missing refresh_token cookie", false, map[string]any{"code": 401}).
-					AddLocalizations(map[string]string{
-			"pt-BR": "o cookie refresh_token está está faltando",
 		})
 	ErrAuthMissingAccessCookie = fail.Form(AuthMissingAccessCookie, "missing access_token cookie", false, map[string]any{"code": 401}).
 					AddLocalizations(map[string]string{
 			"pt-BR": "o cookie access_token está está faltando",
 		})
+	ErrAuthSubjectNotInContext = fail.Form(AuthSubjectNotInContext, "authentication subject not found in request context", false, map[string]any{"code": 401}).
+					AddLocalization("pt-BR", "sujeito de autenticação não encontrado no contexto da requisição")
+	ErrAuthInvalidSubject = fail.Form(AuthInvalidSubject, "invalid authentication subject: %s", false, map[string]any{"code": 401}, "UNSET").
+				AddLocalization("pt-BR", "sujeito de autenticação inválido: %s")
 
-	ErrAuthInvalidPrincipal = fail.Form(AuthInvalidPrincipal, "invalid principal", false, map[string]any{"code": 401}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "principal faltando",
-		})
-	ErrAuthInvalidPassword = fail.Form(AuthInvalidPassword, "password length exceeds 72 bytes", false, map[string]any{"code": 401}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "o comprimento da senha excede 72 bytes",
-		})
-	ErrAuthNotClient = fail.Form(AuthNotClient, "only clients can access this endpoint", false, map[string]any{"code": 403}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "apenas clientes podem acessar esse endpoint",
-		})
-	ErrAuthNotProjectUser = fail.Form(AuthNotProjectUser, "only project users can access this endpoint", false, map[string]any{"code": 403}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "apenas usuários do projeto podem acessar esse endpoint",
-		})
-	ErrAuthAlreadyVerified = fail.Form(AuthAlreadyVerified, "user already verified", false, map[string]any{"code": 403}).
-				AddLocalizations(map[string]string{
-			"pt-BR": "o usuário já foi verificado",
-		})
-	ErrAuthPrincipalNotInContext = fail.Form(AuthPrincipalNotInContext, "missing principal in context", false, map[string]any{"code": 401}).
+	ErrTokenInvalidAccessClaims = fail.Form(TokenInvalidAccessClaims, "invalid %s token claims", false, map[string]any{"code": 401}).
 					AddLocalizations(map[string]string{
-			"pt-BR": "está faltando o principal no contexto",
+			"pt-BR": "token %s com claims inválidas",
 		})
-	ErrAuthUserSchemaOutdated = fail.Form(AuthUserSchemaOutdated, "user schema is outdated, please upgrade your metadata", false, map[string]any{"code": 403}).
-					AddLocalizations(map[string]string{
-			"pt-BR": "o schema do usuário está desatualizado, por favor atualize seus metadados",
+	ErrTokenMissingSubClaim = fail.Form(TokenMissingSubClaim, "missing access sub claim", false, map[string]any{"code": 401}).
+				AddLocalizations(map[string]string{
+			"pt-BR": "está faltando as claims do access token",
 		})
-	ErrAuthTokenAlreadyUsed = fail.Form(AuthTokenAlreadyUsed, "token already used", false, map[string]any{"code": 403}).
-				AddLocalization("pt-BR", "este token já foi usado")
-	ErrAuthInvalidApiKey = fail.Form(AuthInvalidApiKey, "invalid api key", false, map[string]any{"code": 401}).
-				AddLocalization("pt-BR", "api key inválida")
-	ErrAuthInvalidApiKeyShape = fail.Form(AuthInvalidApiKeyShape, "invalid api key shape", false, map[string]any{"code": 401}).
-					AddLocalization("pt-BR", "formato de api key inválido")
-	ErrAuthApiKeyNotAllowed = fail.Form(AuthApiKeyNotAllowed, "api keys are not allowed for this endpoint", false, map[string]any{"code": 403}).
-				AddLocalization("pt-BR", "api keys não são permitidas para este endpoint")
+	ErrTokenSubMarshalFailed   = fail.Form(TokenSubMarshalFailed, "failed to marshal sub claim", false, map[string]any{"code": 400})
+	ErrTokenSubUnmarshalFailed = fail.Form(TokenSubUnmarshallingFailed, "failed to unmarshal sub claim into struct", false, map[string]any{"code": 400})
 
 	// ------ VAL ------
 	ErrValidationUUIDWasNil = fail.Form(ValidationUUIDWasNil, "%s field is nil", false, map[string]any{"code": 404}).
@@ -126,7 +87,7 @@ var (
 		})
 
 	// ------ SQL ------
-	ErrSQLNotFound = fail.Form(SQLNotFound, "%s not found", false, map[string]any{"code": 404}, "FORGOT TO SET RESOURCE ON ErrSQLNotFound").
+	ErrSQLNotFound = fail.Form(SQLResourceNotFound, "%s not found", false, map[string]any{"code": 404}, "FORGOT TO SET RESOURCE ON ErrSQLNotFound").
 			AddLocalization("pt-BR", "%s não foi encontrado")
 	ErrInternalDBError = fail.Form(SQLInternalDBError, "internal DB error", true, map[string]any{"code": 500}).
 				AddLocalization("pt-BR", "erro interno no banco de dados")
@@ -140,7 +101,7 @@ var (
 			AddLocalization("pt-BR", "valor muito longo")
 	ErrDBConnectionError = fail.Form(SQLDBConnectionError, "database connection error", true, map[string]any{"code": 500}).
 				AddLocalization("pt-BR", "erro ao conectar no database")
-	ErrSQLUnknownError = fail.Form(SQLUnknownError, "SQL unknown error", true, map[string]any{"code": 500}).
+	ErrSQLUnknownError = fail.Form(SQLDatabaseUnknownError, "SQL unknown error", true, map[string]any{"code": 500}).
 				AddLocalization("pt-BR", "erro desconhecido no SQL")
 	ErrSQLUnmatchedUniqueViolation = fail.Form(SQLUnmatchedUniqueViolation, "resource already exists", false, map[string]any{"code": 400}).
 					AddLocalization("pt-BR", "recurso já existe")
@@ -152,12 +113,8 @@ var (
 				AddLocalization("pt-BR", "dependência do sistema está offline: %s")
 	ErrServiceUnavailable = fail.Form(SYSServiceUnavailable, "%s is unavailable", true, map[string]any{"code": 500}, "UNNAMED SERVICE").
 				AddLocalization("pt-BR", "%s está indisponível")
-	ErrJWKSRetrievalFailed = fail.Form(SYSJWKSRetrievalFailed, "JWKS retrieval failed", true, map[string]any{"code": 500}).
-				AddLocalization("pt-BR", "resgate do JWKS falhou")
 	ErrUUIDV7GenerationFailed = fail.Form(SYSUUIDV7GenerationError, "error generating UUID V7 at %s", true, map[string]any{"code": 500}, "UNSET LOCATION").
 					AddLocalization("pt-BR", "erro gerando UUIDV7 em %s")
-	ErrSysCryptoError = fail.Form(SYSCryptoError, "cryptographic error: %s", true, map[string]any{"code": 500}, "UNDEFINED").
-				AddLocalization("pt-BR", "erro criptográfico: %s")
 
 	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
 						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")

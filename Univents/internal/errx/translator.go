@@ -1,4 +1,4 @@
-package apierr
+package errx
 
 import (
 	"time"
@@ -66,7 +66,7 @@ func (h *HTTPTranslator) Translate(err *fail.Error) (any, error) {
 		module, ok = err.Meta["module"].(string)
 		delete(err.Meta, "module")
 		if !ok {
-			module = "GoAuth"
+			module = "univents"
 		}
 	} else {
 		err.Meta = map[string]any{}

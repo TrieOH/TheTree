@@ -3,7 +3,7 @@ package transactions
 import (
 	"context"
 	"univents/internal/adapters/observability/logs"
-	"univents/internal/apierr"
+	"univents/internal/errx"
 	"univents/internal/ports/inbounds"
 
 	"github.com/MintzyG/fail/v3"
@@ -36,11 +36,11 @@ func (r *TxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		return fail.New(apierr.SYSTransactionNilContext)
+		return fail.New(errx.SYSTransactionNilContext)
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		return fail.New(apierr.DBNestedTransactionNotAllowed)
+		return fail.New(errx.DBNestedTransactionNotAllowed)
 	}
 
 	pgxOpts := pgx.TxOptions{
@@ -51,7 +51,7 @@ func (r *TxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		return fail.New(apierr.DBBeginTransactionFailed).With(err)
+		return fail.New(errx.DBBeginTransactionFailed).With(err)
 	}
 
 	committed := false
@@ -65,7 +65,7 @@ func (r *TxRunner) WithinTxWithOptions(
 				}
 			}
 			logs.L().Error("transaction function panicked", zap.Any("panic", p))
-			err = fail.New(apierr.DBTransactionPanicked).AddMeta("panic", p)
+			err = fail.New(errx.DBTransactionPanicked).AddMeta("panic", p)
 		}
 	}()
 
@@ -84,7 +84,7 @@ func (r *TxRunner) WithinTxWithOptions(
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			logs.L().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		return fail.New(apierr.DBTransactionCommitFailed).With(err)
+		return fail.New(errx.DBTransactionCommitFailed).With(err)
 	}
 	committed = true
 	return nil

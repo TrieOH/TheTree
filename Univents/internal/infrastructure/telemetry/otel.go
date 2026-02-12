@@ -25,7 +25,7 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 	res, err := resource.New(
 		ctx,
 		resource.WithAttributes(
-			semconv.ServiceName("go-auth"),
+			semconv.ServiceName("univents"),
 			semconv.ServiceVersion("dev"),
 		),
 	)
@@ -47,5 +47,5 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 type TracerName string
 
 const (
-	GoAuthTracer TracerName = "goauth"
+	UniventsTracer TracerName = "univents"
 )

@@ -14,7 +14,7 @@ type Application struct {
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
-	repos := persistence.NewRepositories(infra)
+	_ = persistence.NewRepositories(infra)
 
 	cacheTTLStr := viper.GetString("KEYS_CACHE_TTL")
 	cacheTTL, err := time.ParseDuration(cacheTTLStr)
@@ -22,10 +22,9 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		cacheTTL = time.Hour
 	}
 
-	privateCache := imc.NewInMemoryCache(100, cacheTTL)
-	publicCache := imc.NewInMemoryCache(1000, cacheTTL)
-
-	sharedCache := redis.NewRedisCache(infra.Redis)
+	_ = imc.NewInMemoryCache(100, cacheTTL)
+	_ = imc.NewInMemoryCache(1000, cacheTTL)
+	_ = redis.NewRedisCache(infra.Redis)
 
 	return &Application{}
 }

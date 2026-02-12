@@ -1,4 +1,4 @@
-package apierr
+package errx
 
 import (
 	"github.com/MintzyG/fail/v3"
@@ -21,43 +21,32 @@ var (
 	RequestNotApplicationJSON        = fail.ID(0, "REQ", 2, true, "REQuestNotApplicationJSON")
 	RequestInvalidPassword           = fail.ID(0, "REQ", 3, true, "REQuestInvalidPassword")
 
-	AuthEmailAlreadyUsed     = fail.ID(0, "AUTH", 0, false, "AUTHEmailAlreadyUsed")
-	AuthInvalidCredentials   = fail.ID(0, "AUTH", 1, false, "AUTHInvalidCredentials")
-	AuthInvalidRefreshCookie = fail.ID(0, "AUTH", 2, false, "AUTHInvalidRefreshCookie")
-	AuthInvalidAccessCookie  = fail.ID(0, "AUTH", 3, false, "AUTHInvalidAccessCookie")
-	AuthMissingRefreshCookie = fail.ID(0, "AUTH", 4, false, "AUTHMissingRefreshCookie")
-	AuthMissingAccessCookie  = fail.ID(0, "AUTH", 5, false, "AUTHMissingAccessCookie")
+	AuthInvalidAccessCookie = fail.ID(0, "AUTH", 0, false, "AUTHInvalidAccessCookie")
+	AuthMissingAccessCookie = fail.ID(0, "AUTH", 1, false, "AUTHMissingAccessCookie")
+	AuthSubjectNotInContext = fail.ID(0, "AUTH", 2, false, "AUTHSubjectNotInContext")
+	AuthInvalidSubject      = fail.ID(0, "AUTH", 3, false, "AUTHInvalidSubject")
 
-	AuthInvalidPrincipal      = fail.ID(0, "AUTH", 0, true, "AUTHInvalidPrincipal")
-	AuthInvalidPassword       = fail.ID(0, "AUTH", 1, true, "AUTHInvalidPassword")
-	AuthNotClient             = fail.ID(0, "AUTH", 2, true, "AUTHNotClient")
-	AuthNotProjectUser        = fail.ID(0, "AUTH", 3, true, "AUTHNotProjectUser")
-	AuthAlreadyVerified       = fail.ID(0, "AUTH", 4, true, "AUTHAlreadyVerified")
-	AuthPrincipalNotInContext = fail.ID(0, "AUTH", 5, true, "AUTHPrincipalNotInContext")
-	AuthUserSchemaOutdated    = fail.ID(0, "AUTH", 6, true, "AUTHUserSchemaOutdated")
-	AuthTokenAlreadyUsed      = fail.ID(0, "AUTH", 7, true, "AUTHTokenAlreadyUsed")
-	AuthApiKeyNotAllowed      = fail.ID(0, "AUTH", 8, true, "AUTHApiKeyNotAllowed")
-	AuthInvalidApiKey         = fail.ID(0, "AUTH", 9, true, "AUTHInvalidApiKey")
-	AuthInvalidApiKeyShape    = fail.ID(0, "AUTH", 10, true, "AUTHInvalidApiKeyShape")
+	TokenInvalidAccessClaims    = fail.ID(0, "TOKEN", 0, false, "TOKENInvalidAccessClaims")
+	TokenMissingSubClaim        = fail.ID(0, "TOKEN", 1, false, "TOKENMissingSubClaim")
+	TokenSubMarshalFailed       = fail.ID(0, "TOKEN", 2, false, "TOKENSubMarshalFailed")
+	TokenSubUnmarshallingFailed = fail.ID(0, "TOKEN", 3, false, "TOKENSubUnmarshallingFailed")
 
 	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
 
-	SQLNotFound                 = fail.ID(0, "SQL", 0, false, "SQLNotFound")
+	SQLResourceNotFound         = fail.ID(0, "SQL", 0, false, "SQLResourceNotFound")
 	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
 	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")
 	SQLSerializationFailure     = fail.ID(0, "SQL", 3, false, "SQLSerializationFailure")
 	SQLNotNULLViolation         = fail.ID(0, "SQL", 4, false, "SQLNotNULLViolation")
 	SQLValueTooLong             = fail.ID(0, "SQL", 5, false, "SQLValueTooLong")
 	SQLDBConnectionError        = fail.ID(0, "SQL", 6, false, "SQLDBConnectionError")
-	SQLUnknownError             = fail.ID(0, "SQL", 7, false, "SQLUnknownError")
+	SQLDatabaseUnknownError     = fail.ID(0, "SQL", 7, false, "SQLDatabaseUnknownError")
 	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
 	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
 
 	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
 	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
-	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
-	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
-	SYSCryptoError           = fail.ID(9, "SYS", 6, false, "SYSCryptoError")
+	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 2, false, "SYSUUIDV7GenerationError")
 
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
