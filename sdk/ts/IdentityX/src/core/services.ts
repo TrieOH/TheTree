@@ -78,4 +78,37 @@ export const createAuthService = (apiInstance: Api) => ({
   refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
+
+  sendForgotPassword: async (email: string) => {
+    const res = await apiInstance.post<string>(
+      "/auth/forgot-password",
+      {email, project_id: env.API_KEY}, 
+    );
+    return res;
+  },
+
+  resetPassword: async (token: string, new_password: string) => {
+    const res = await apiInstance.post<string>(
+      `/auth/reset-password?token=${token}`,
+      {new_password}, 
+    );
+    return res;
+  },
+
+  resendVerifyEmail: async () => {
+    const res = await apiInstance.post<string>(
+      "/auth/verify/resend",
+      undefined,
+      { requiresAuth: true } 
+    );
+    return res;
+  },
+
+  verifyEmail: async () => {
+    const res = await apiInstance.get<string>(
+      "/auth/verify",
+      undefined,
+    );
+    return res;
+  },
 });
