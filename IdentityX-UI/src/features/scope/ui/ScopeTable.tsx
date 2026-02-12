@@ -5,6 +5,8 @@ import ScopeDialog from "./ScopeDialog";
 import { scopeActions } from "../store";
 import { useQuery } from "@tanstack/react-query";
 import { scopesQueryOptions } from "../api";
+import { Badge } from "@/shared/ui/shadcn/badge";
+import { Scope } from "../model/types";
 
 interface PropsI {
   project_id: string;
@@ -26,11 +28,32 @@ export default function ScopeTable({ project_id }: PropsI) {
             key: "type",
             header: "Type",
             sortable: true,
+            render: (value) => {
+              const type = value as Scope['type'];
+              let variant: "default" | "secondary" | "destructive" | "outline" = "default";
+              let displayType = type;
+              switch (type) {
+                case "global":
+                  variant = "outline";
+                  break;
+                case "project_root":
+                  variant = "secondary";
+                  displayType = "Root";
+                  break;
+                case "project_scope":
+                  variant = "default";
+                  displayType = "Scope";
+                  break;
+              }
+              return <Badge variant={variant}>{displayType}</Badge>;
+            },
           },
           {
             key: "external_id",
             header: "External ID",
             sortable: true,
+            render: (value) => (value ? (value as string) : "N/A"),
+            searchableTextExtractor: (value) => (value ? (value as string) : "N/A"),
           },
           {
             key: "created_at",
