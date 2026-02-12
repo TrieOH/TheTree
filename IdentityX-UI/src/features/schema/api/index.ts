@@ -15,7 +15,7 @@ export const createSchemaFn = createClientOnlyFn((schemaData: Omit<SchemaCRUD, "
   return authFetcher<Schema>(`/projects/${project_id}/schemas`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
-    body: JSON.stringify({ ...dataToSend, schema_type: "core" }),
+    body: JSON.stringify({ ...dataToSend, schema_type: "context" }),
   });
 });
 
