@@ -15,7 +15,22 @@ export const createSchemaFn = createClientOnlyFn((schemaData: Omit<SchemaCRUD, "
   return authFetcher<Schema>(`/projects/${project_id}/schemas`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
-    body: JSON.stringify({ ...dataToSend, schema_type: "core" }),
+    body: JSON.stringify({ ...dataToSend, schema_type: "context" }),
+  });
+});
+
+
+/**
+ * Publish a schema on the server.
+ * @param schemaData - The schema to be published.
+ * @returns A promise that resolves to the API response.
+ */
+export const publishSchemaFn = createClientOnlyFn((schemaData: Schema) => {
+  const { project_id, id } = schemaData;
+
+  return authFetcher<null>(`/projects/${project_id}/schemas/${id}/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
   });
 });
 

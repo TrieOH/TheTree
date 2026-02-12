@@ -57,8 +57,8 @@ importers:
         specifier: ^1.132.0
         version: 1.141.7(@tanstack/react-router@1.141.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@trieoh/node-auth-sdk':
-        specifier: 0.4.0
-        version: 0.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: 0.5.0
+        version: 0.5.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2132,8 +2132,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@trieoh/node-auth-sdk@0.4.0':
-    resolution: {integrity: sha512-6Fv7DuhC/PdRe+0VUFRzIMuaySdi2+T/1KXRLP6tZZ3lENBM153xdGKj2Rsp2UFBqTBCHc4C0f2nn1F/s1YDBA==, tarball: https://npm.pkg.github.com/download/@trieoh/node-auth-sdk/0.4.0/84814c9f2eff814f99548c326df8b30e1763bfae}
+  '@trieoh/node-auth-sdk@0.5.0':
+    resolution: {integrity: sha512-k34ISmj8fgxVT83ru6sFn4/cs8l3S0bRq+W8MDcKVCnXHV3lUYN7/FlDNOzRh8PLDPlapxqKp973K+1tnZiaPA==, tarball: https://npm.pkg.github.com/download/@trieoh/node-auth-sdk/0.5.0/99d5c26a036ab9989d09d0f9fdb6bb1bad8736fd}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -3171,8 +3171,8 @@ packages:
   ua-is-frozen@0.1.2:
     resolution: {integrity: sha512-RwKDW2p3iyWn4UbaxpP2+VxwqXh0jpvdxsYpZ5j/MLLiQOfbsV5shpgQiw93+KMYQPcteeMQ289MaAFzs3G9pw==}
 
-  ua-parser-js@2.0.8:
-    resolution: {integrity: sha512-BdnBM5waFormdrOFBU+cA90R689V0tWUWlIG2i30UXxElHjuCu5+dOV2Etw3547jcQ/yaLtPm9wrqIuOY2bSJg==}
+  ua-parser-js@2.0.9:
+    resolution: {integrity: sha512-OsqGhxyo/wGdLSXMSJxuMGN6H4gDnKz6Fb3IBm4bxZFMnyy0sdf6MN96Ie8tC6z/btdO+Bsy8guxlvLdwT076w==}
     hasBin: true
 
   ufo@1.6.1:
@@ -5405,12 +5405,12 @@ snapshots:
       '@types/react': 19.2.7
       '@types/react-dom': 19.2.3(@types/react@19.2.7)
 
-  '@trieoh/node-auth-sdk@0.4.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@trieoh/node-auth-sdk@0.5.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       react-icons: 5.5.0(react@19.2.3)
-      ua-parser-js: 2.0.8
+      ua-parser-js: 2.0.9
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -6493,7 +6493,7 @@ snapshots:
 
   ua-is-frozen@0.1.2: {}
 
-  ua-parser-js@2.0.8:
+  ua-parser-js@2.0.9:
     dependencies:
       detect-europe-js: 0.1.2
       is-standalone-pwa: 0.1.1
