@@ -36,13 +36,13 @@ type Client struct {
 
 func NewClient(config Config) (*Client, error) {
 	if config.BaseURL == "" {
-		return nil, fail.New(SDKUnknownErrorID).Msg("BaseURL is required")
+		return nil, fail.New(SDKUnknownErrorID).WithArgs("BaseURL is required")
 	}
 	if config.APIKey == "" {
-		return nil, fail.New(SDKUnknownErrorID).Msg("APIKey is required")
+		return nil, fail.New(SDKUnknownErrorID).WithArgs("APIKey is required")
 	}
 	if config.ProjectID == uuid.Nil {
-		return nil, fail.New(SDKUnknownErrorID).Msg("ProjectID is required")
+		return nil, fail.New(SDKUnknownErrorID).WithArgs("ProjectID is required")
 	}
 	config.BaseURL = strings.TrimSuffix(config.BaseURL, "/")
 
@@ -81,7 +81,7 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body any) 
 	url := fmt.Sprintf("%s%s", c.config.BaseURL, path)
 	req, err := http.NewRequestWithContext(ctx, method, url, buf)
 	if err != nil {
-		return nil, fail.New(SDKUnknownErrorID).Trace(err.Error())
+		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
 	}
 
 	if body != nil {

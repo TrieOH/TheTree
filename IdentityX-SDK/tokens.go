@@ -112,7 +112,7 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 
 	token, err := jwt.Parse(tokenStr, keyFunc)
 	if err != nil {
-		return nil, fail.New(SDKUnknownErrorID).Msg(err.Error())
+		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
 	}
 
 	return token, nil
