@@ -19,7 +19,8 @@ export function ProjectDialog() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["projects"] });
+        queryClient.invalidateQueries({ queryKey: ["projects"] }); // Keep for list consistency
+        queryClient.setQueryData(["projects", response.data.id], response.data);
       } else toast.error(`Failed to create project: ${response.message}`);
     },
     onError: (error) => {
@@ -32,6 +33,7 @@ export function ProjectDialog() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || "Updated project");
+        queryClient.setQueryData(["projects", response.data.id], response.data);
         queryClient.invalidateQueries({ queryKey: ["projects"] });
       } else toast.error(`Failed to update project: ${response.message}`);
     },

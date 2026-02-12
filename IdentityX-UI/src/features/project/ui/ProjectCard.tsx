@@ -3,12 +3,21 @@ import type { Project } from "../model/types"
 import { ArrowRight, Clock, ClockFading, Edit, Trash2 } from "lucide-react"
 import { formatDate } from "@/shared/lib/date-utils"
 import { projectActions } from "../store"
+import { useNavigate } from "@tanstack/react-router"
+import { navigationActions } from "@/features/navigation"
 
 interface PropsI {
   data: Project
 }
 
 export default function ProjectCard({ data }: PropsI) {
+  const navigate = useNavigate({ from: '/projects' })
+
+  const handleProjectCardClick = () => {
+    navigationActions.setCurrentProjectId(data.id);
+    navigate({ to: '/projects/config' });
+  };
+
   return (
     <button 
       type="button"
@@ -18,6 +27,7 @@ export default function ProjectCard({ data }: PropsI) {
         "border-2 border-border rounded-lg",
         "shadow-[1px_1px_0_0_var(--color-border)] hover:shadow-[2px_2px_0_0_var(--color-border)]"
       )}
+      onClick={handleProjectCardClick}
     >
       {/* Top */}
       <div className="flex items-center gap-2.5 mb-5">
@@ -57,7 +67,10 @@ export default function ProjectCard({ data }: PropsI) {
       >
         <Edit 
           className="hover:text-card-foreground duration-300"
-          onClick={() => projectActions.openEdit(data)}
+          onClick={(e) => {
+            e.stopPropagation();
+            projectActions.openEdit(data);
+          }}
         />
         <Trash2 
           className="hover:text-card-foreground duration-300"

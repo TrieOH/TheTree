@@ -3,7 +3,6 @@ import { requireAuth } from '@/features/auth/lib/route-guard';
 import { ProjectDialog } from '@/features/project/ui/ProjectDialog';
 import ProjectCard from '@/features/project/ui/ProjectCard';
 import { projectsQueryOptions } from '@/features/project/api';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { ProjectsSkeleton } from '@/shared/ui/placeholders/ProjectsSkeleton';
 import { ProjectsEmptyState } from '@/features/project/ui/ProjectsEmptyState';
 import { projectActions } from '@/features/project/store';
@@ -18,16 +17,15 @@ export const Route = createFileRoute('/projects/')({
     }
   },
   loader: async ({ context: { queryClient }}) => {
-    await queryClient.ensureQueryData(projectsQueryOptions)
-    return {}
+    const projects = await queryClient.ensureQueryData(projectsQueryOptions)
+    return { projects }
   },
   pendingComponent: ProjectsSkeleton,
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const projectsQuery = useSuspenseQuery(projectsQueryOptions)
-  const projects = projectsQuery.data
+  const { projects } = Route.useLoaderData()
 
   const hasProjects = projects && projects.length > 0
 
