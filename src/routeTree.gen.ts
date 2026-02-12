@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as SchemasEditorIndexRouteImport } from './routes/schemas/editor/index'
 import { Route as ProjectsConfigIndexRouteImport } from './routes/projects/config/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/auth/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SchemasEditorIndexRoute = SchemasEditorIndexRouteImport.update({
+  id: '/schemas/editor/',
+  path: '/schemas/editor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsConfigIndexRoute = ProjectsConfigIndexRouteImport.update({
   id: '/projects/config/',
   path: '/projects/config/',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/config': typeof ProjectsConfigIndexRoute
+  '/schemas/editor': typeof SchemasEditorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/config': typeof ProjectsConfigIndexRoute
+  '/schemas/editor': typeof SchemasEditorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,25 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/projects/config/': typeof ProjectsConfigIndexRoute
+  '/schemas/editor/': typeof SchemasEditorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/projects' | '/projects/config'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/projects'
+    | '/projects/config'
+    | '/schemas/editor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/projects' | '/projects/config'
-  id: '__root__' | '/' | '/auth/' | '/projects/' | '/projects/config/'
+  to: '/' | '/auth' | '/projects' | '/projects/config' | '/schemas/editor'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/'
+    | '/projects/'
+    | '/projects/config/'
+    | '/schemas/editor/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +87,7 @@ export interface RootRouteChildren {
   AuthIndexRoute: typeof AuthIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ProjectsConfigIndexRoute: typeof ProjectsConfigIndexRoute
+  SchemasEditorIndexRoute: typeof SchemasEditorIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/schemas/editor/': {
+      id: '/schemas/editor/'
+      path: '/schemas/editor'
+      fullPath: '/schemas/editor'
+      preLoaderRoute: typeof SchemasEditorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/config/': {
       id: '/projects/config/'
       path: '/projects/config'
@@ -107,6 +135,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthIndexRoute: AuthIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ProjectsConfigIndexRoute: ProjectsConfigIndexRoute,
+  SchemasEditorIndexRoute: SchemasEditorIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

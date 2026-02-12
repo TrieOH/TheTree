@@ -2,22 +2,39 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import { Eye, Upload, Database } from "lucide-react";
 import { formatDate } from "../../../shared/lib/date-utils";
 import { schemaActions } from "../store";
-import { useQuery } from "@tanstack/react-query";
-import { schemasQueryOptions } from "../api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { publishSchemaFn, schemasQueryOptions } from "../api";
 import { SchemaDialog } from "./SchemaDialog";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import { useState } from "react";
 import { PublishConfirmDialog } from "./PublishConfirmDialog";
 import type { Schema } from "../model/types";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 interface PropsI {
   project_id: string;
 }
 
 export default function SchemaTable({ project_id }: PropsI) {
+  const navigate = useNavigate({from: "/projects/config"});
+  const queryClient = useQueryClient();
   const { data = [] } = useQuery(schemasQueryOptions(project_id))
   const [isPublishConfirmOpen, setIsPublishConfirmOpen] = useState(false);
   const [selectedSchemaToPublish, setSelectedSchemaToPublish] = useState<Schema | null>(null);
+
+  const publishSchemaMutation = useMutation({
+    mutationFn: publishSchemaFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message);
+        queryClient.invalidateQueries({ queryKey: ["schemas"] });
+      } else toast.error(`Failed to publish schema: ${response.message}`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to publish schema: ${error.message}`);
+    },
+  });
 
   const handlePublish = (schema: Schema) => {
     setSelectedSchemaToPublish(schema);
@@ -25,9 +42,7 @@ export default function SchemaTable({ project_id }: PropsI) {
   };
 
   const confirmPublish = () => {
-    if (selectedSchemaToPublish) {
-      console.log("Publishing schema:", selectedSchemaToPublish.title);
-    }
+    if (selectedSchemaToPublish) publishSchemaMutation.mutate(selectedSchemaToPublish)
     setIsPublishConfirmOpen(false);
     setSelectedSchemaToPublish(null);
   };
@@ -92,7 +107,7 @@ export default function SchemaTable({ project_id }: PropsI) {
         rowActions={[
           {
             label: "Inspect",
-            onClick: (row) => console.log("Inspecting schema:", row.title),
+            onClick: (_) => navigate({to: '/schemas/editor'}),
             icon: Eye,
             variant: "ghost-primary",
           },
