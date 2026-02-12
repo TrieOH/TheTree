@@ -1,21 +1,21 @@
 import { cn } from "@/shared/lib/utils"
-import type { Project } from "../model/types"
+import type { Schema } from "../model/types"
 import { ArrowRight, Clock, ClockFading, Edit, Trash2 } from "lucide-react"
 import { formatDate } from "@/shared/lib/date-utils"
-import { projectActions } from "../store"
 import { useNavigate } from "@tanstack/react-router"
 import { navigationActions } from "@/features/navigation"
+import { schemaActions } from "../store"
 
 interface PropsI {
-  data: Project
+  data: Schema
 }
 
-export default function ProjectCard({ data }: PropsI) {
-  const navigate = useNavigate({ from: '/projects' })
+export default function SchemaCard({ data }: PropsI) {
+  const navigate = useNavigate({ from: '/schemas' })
 
-  const handleProjectCardClick = () => {
+  const handleSchemaCardClick = () => {
     navigationActions.setCurrentProjectId(data.id);
-    navigate({ to: '/projects/config' });
+    navigate({ to: '/schemas' });
   };
 
   return (
@@ -27,7 +27,7 @@ export default function ProjectCard({ data }: PropsI) {
         "border-2 border-border rounded-lg",
         "shadow-[1px_1px_0_0_var(--color-border)] hover:shadow-[2px_2px_0_0_var(--color-border)]"
       )}
-      onClick={handleProjectCardClick}
+      onClick={handleSchemaCardClick}
     >
       {/* Top */}
       <div className="flex items-center gap-2.5 mb-5">
@@ -39,10 +39,10 @@ export default function ProjectCard({ data }: PropsI) {
             "transition-all duration-300 ease-out",
           )}
         >
-          {data.project_name.charAt(0).toUpperCase()}
+          
         </span>
         <span className="font-medium text-xl truncate max-w-50">
-          {data.project_name}
+          {data.title}
         </span>
       </div>
 
@@ -69,25 +69,25 @@ export default function ProjectCard({ data }: PropsI) {
           className="hover:text-card-foreground duration-300"
           onClick={(e) => {
             e.stopPropagation();
-            projectActions.openEdit(data);
+            schemaActions.openEdit(data);
           }}
         />
         <Trash2 
           className="hover:text-card-foreground duration-300"
           onClick={(e) => {
             e.stopPropagation();
-            projectActions.openDelete(data);
+            schemaActions.openDelete(data);
           }}
         />
       </div>
 
-      {/* Active State */}
-      <div 
+      {/* Status */}
+      {/* <div 
         className={cn(
           "absolute w-3.5 h-3.5 rounded-full top-2 right-2",
           data.is_active ? "bg-green-300" : "bg-destructive"
         )}
-      />
+      /> */}
 
 
       <ArrowRight

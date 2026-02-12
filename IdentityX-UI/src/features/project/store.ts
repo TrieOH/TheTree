@@ -1,5 +1,9 @@
-import { createCrudActions, createCrudStore } from "@/shared/lib/store/crudStore";
+import { createCrudActions, createCrudStore, type CrudActions, type CrudState } from "@/shared/lib/store/crudStore";
 import type { ProjectCRUD } from "./model/types";
+
+export interface ProjectStoreState extends CrudState<ProjectCRUD> {}
+
+export interface ProjectStoreActions extends CrudActions<ProjectCRUD> {}
 
 // Store Instance
 export const projectStore = createCrudStore<ProjectCRUD>();
