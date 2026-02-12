@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { JsonValue } from '@/shared/model/types';
 
 export const projectCRUDSchema = z.object({
   id: z.string(),
@@ -13,7 +14,7 @@ export interface Project {
   project_name: string;
   is_active: boolean;
   owner_id: string;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, JsonValue>;
   created_at: string;
   updated_at: string;
 }

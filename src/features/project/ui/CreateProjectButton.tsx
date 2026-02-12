@@ -9,13 +9,13 @@ export default function CreateProjectButton() {
         value="New Project" 
         leftIcon={ <FolderPlus size={20}/> }
         className="xs:flex hidden"
-        variant="accent"
+        variant="accent-solid"
         onClick={projectActions.openCreate}
       />
       <ShadowButton
         leftIcon={ <FolderPlus size={16}/> }
         className="xs:hidden flex"
-        variant="accent"
+        variant="accent-solid"
         onClick={projectActions.openCreate}
       />
     </>
