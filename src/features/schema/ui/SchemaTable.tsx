@@ -11,6 +11,7 @@ import { PublishConfirmDialog } from "./PublishConfirmDialog";
 import type { Schema } from "../model/types";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
+import { navigationActions } from "@/features/navigation";
 
 interface PropsI {
   project_id: string;
@@ -107,7 +108,10 @@ export default function SchemaTable({ project_id }: PropsI) {
         rowActions={[
           {
             label: "Inspect",
-            onClick: (_) => navigate({to: '/schemas/editor'}),
+            onClick: (row) => {
+              navigationActions.setCurrentSchemaId(row.id);
+              navigate({to: '/schemas/editor'})
+            },
             icon: Eye,
             variant: "ghost-primary",
           },
