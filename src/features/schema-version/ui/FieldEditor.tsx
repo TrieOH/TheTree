@@ -11,12 +11,14 @@ import FieldCard from "./FieldCard";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
-import type { VersionFieldList } from "../model/types";
+import type { VersionField, VersionFieldList } from "../model/types";
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
+import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 
 export default function FieldEditor() {
   const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState(defaultVersionFieldList.length);
 
   const sensors = useSensors(
   useSensor(PointerSensor, {
@@ -46,6 +48,24 @@ export default function FieldEditor() {
     setActiveId(null);
   }
 
+  const handleAddField = () => {
+    const newField: VersionField = {
+      key: `custom_field_${nextId}`,
+      title: `Custom Field ${nextId}`,
+      type: "string",
+      owner: "user",
+      mutable: true,
+      required: false,
+      position: items.length,
+      default_value: null,
+      options: [],
+      required_rules: [],
+      visibility_rules: []
+    };
+    setItems(currentItems => [...currentItems, newField]);
+    setNextId(prevId => prevId + 1);
+  };
+
   const activeItem = activeId ? items.find(item => item.key === activeId) : null;
 
   return (
@@ -57,16 +77,18 @@ export default function FieldEditor() {
         sensors={sensors}
       >
         <div className="flex-1 max-w-79 border-r border-r-border p-2 space-y-2">
-          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} />
+          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} isFixed={true}/>
           <SortableContext items={items.map(item => item.key)}>
             {items.map((item) => (
               <FieldCard key={item.key} field={item}/>
             ))}
           </SortableContext>
+          <ShadowButton onClick={handleAddField} className="w-full" value="Add Field"/>
           <FieldCard 
             key={defaultPasswordVersionField.key} 
             field={{...defaultPasswordVersionField}} 
-            overwrite_type="password"
+            overwriteType="password"
+            isFixed={true}
           />
         </div>
         {createPortal(
