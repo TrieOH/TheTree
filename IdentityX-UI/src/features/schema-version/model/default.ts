@@ -1,4 +1,4 @@
-import { VersionField, VersionFieldList } from "./types";
+import type { VersionField, VersionFieldList } from "./types";
 
 export const defaultVersionFieldList: VersionFieldList = [
   {
