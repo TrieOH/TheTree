@@ -3,7 +3,7 @@ package handlers
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
@@ -117,7 +117,7 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
-		resp.FromError(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
 		return
 	}
 
@@ -205,7 +205,7 @@ func (handler *AuthHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 
 	data, err := json.Marshal(jwks)
 	if err != nil {
-		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
+		apiErr := fail.New(errx.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
 		resp.FromError(apiErr).Send(w)
 		return
 	}

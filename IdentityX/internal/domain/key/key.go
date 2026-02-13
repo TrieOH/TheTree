@@ -1,10 +1,14 @@
 package key
 
 import (
+	"GoAuth/internal/errx"
+	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/base64"
-	"strings"
+	"encoding/pem"
 	"time"
 
+	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -50,8 +54,9 @@ type Pair struct {
 	Usage  Usage
 	Status Status
 
-	CreatedAt time.Time
-	ExpiresAt time.Time
+	CreatedAt       time.Time
+	ExpiresAt       time.Time
+	VerifyExpiresAt time.Time
 }
 
 type PublicKey struct {
@@ -62,32 +67,38 @@ type PublicKey struct {
 	ExpiresAt time.Time
 }
 
-// PublicKeyToJWK converts a PublicKey into JWKS-compatible map
-func PublicKeyToJWK(k PublicKey) map[string]any {
-	// Strip PEM headers if needed
-	pubBytes := decodePEM(k.PublicKey)
+func PublicKeyToJWK(k PublicKey) (map[string]any, error) {
+	block, _ := pem.Decode([]byte(k.PublicKey))
+	if block == nil {
+		return nil, fail.New(errx.SYSInvalidPublicKeyPEM).
+			WithArgs("failed to decode PEM block")
+	}
 
-	// Base64URL encode
-	x := base64.RawURLEncoding.EncodeToString(pubBytes)
+	pubAny, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fail.New(errx.SYSPublicKeyParseFailed).
+			WithArgs(err.Error())
+	}
+
+	pub, ok := pubAny.(ed25519.PublicKey)
+	if !ok {
+		return nil, fail.New(errx.SYSInvalidPublicKeyType).
+			WithArgs("expected Ed25519 public key")
+	}
+
+	if len(pub) != ed25519.PublicKeySize {
+		return nil, fail.New(errx.SYSInvalidPublicKeyByteSize).
+			WithArgs("invalid Ed25519 key length")
+	}
+
+	x := base64.RawURLEncoding.EncodeToString(pub)
 
 	return map[string]any{
-		"kty": "OKP",       // Key Type
-		"crv": "Ed25519",   // Curve
-		"x":   x,           // Base64URL public key
-		"alg": k.Algorithm, // Algorithm (EdDSA)
-		"use": "sig",       // Usage: signature
-		"kid": k.KID,       // Key ID
-	}
-}
-
-// decodePEM strips PEM headers and returns raw key bytes
-func decodePEM(pem string) []byte {
-	// Remove header/footer if present
-	pem = strings.ReplaceAll(pem, "-----BEGIN PUBLIC KEY-----", "")
-	pem = strings.ReplaceAll(pem, "-----END PUBLIC KEY-----", "")
-	pem = strings.ReplaceAll(pem, "\n", "")
-
-	// Decode base64
-	raw, _ := base64.StdEncoding.DecodeString(pem)
-	return raw
+		"kty": "OKP",
+		"crv": "Ed25519",
+		"x":   x,
+		"alg": "EdDSA",
+		"use": "sig",
+		"kid": k.KID,
+	}, nil
 }

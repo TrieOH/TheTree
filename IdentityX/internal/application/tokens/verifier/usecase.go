@@ -2,8 +2,8 @@ package verifier
 
 import (
 	"GoAuth/internal/adapters/http/validation"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"context"
 	"encoding/base64"
@@ -84,12 +84,12 @@ func verifyToken[T jwt.Claims](
 ) (T, error) {
 	token, err := parseJWTUnverified(tokenStr, claims)
 	if err != nil {
-		return claims, apierr.FromJWTError(err, tokenType)
+		return claims, errx.FromJWTError(err, tokenType)
 	}
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
@@ -97,12 +97,12 @@ func verifyToken[T jwt.Claims](
 		if token.Method != nil {
 			methodAlg = token.Method.Alg()
 		}
-		return claims, fail.New(apierr.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return claims, fail.New(apierr.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	payload, sig, err := splitJWT(ctx, tokenType, tokenStr)
@@ -114,12 +114,12 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "goauth:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 2 {
-			return claims, fail.New(apierr.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
 		}
 
 		if err := uc.keys.VerifyGoAuth(ctx, kid, payload, sig); err != nil {
-			if fail.Is(err, apierr.SQLNotFound) {
-				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
 			}
 			return claims, err
 		}
@@ -127,7 +127,7 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 3 {
-			return claims, fail.New(apierr.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
 		}
 
 		projectID, err := validation.ParseUUID(parts[1], "project_id")
@@ -136,14 +136,14 @@ func verifyToken[T jwt.Claims](
 		}
 
 		if err := uc.keys.VerifyProject(ctx, projectID, kid, payload, sig); err != nil {
-			if fail.Is(err, apierr.SQLNotFound) {
-				return claims, fail.New(apierr.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
 			}
 			return claims, err
 		}
 
 	default:
-		return claims, fail.New(apierr.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	return claims, nil
@@ -158,7 +158,7 @@ func parseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, er
 func splitJWT(ctx context.Context, tokenType, tokenStr string) (signingInput, sig []byte, err error) {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
-		return nil, nil, fail.New(apierr.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
+		return nil, nil, fail.New(errx.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	signingInput = []byte(parts[0] + "." + parts[1])

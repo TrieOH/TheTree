@@ -4,7 +4,7 @@ import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
@@ -225,7 +225,7 @@ func (handler *ProjectHandler) GetProjectJWKS(w http.ResponseWriter, r *http.Req
 			zap.Error(err),
 			zap.String("project_id", projectID.String()),
 		)
-		apiErr := fail.New(apierr.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
+		apiErr := fail.New(errx.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
 		resp.FromError(apiErr).Send(w)
 		return
 	}

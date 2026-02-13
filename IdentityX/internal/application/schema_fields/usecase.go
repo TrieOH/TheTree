@@ -1,11 +1,11 @@
 package schema_fields
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -83,7 +83,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !isOwner {
-		return inbounds.CreateFieldsResult{}, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot create fields for schema versions in a project you don't own").RecordCtx(ctx)
+		return inbounds.CreateFieldsResult{}, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot create fields for schema versions in a project you don't own").RecordCtx(ctx)
 	}
 
 	var belongs bool
@@ -96,7 +96,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if !belongs {
-		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot create fields for a schema you don't own").RecordCtx(ctx)
+		return inbounds.CreateFieldsResult{}, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot create fields for a schema you don't own").RecordCtx(ctx)
 	}
 
 	var latest *version.Version
@@ -106,19 +106,19 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	}
 
 	if latest.VersionNumber != in.VersionNumber {
-		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaVersionMismatch).RecordCtx(ctx)
+		return inbounds.CreateFieldsResult{}, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
 	}
 	if latest.Status != version.StatusDraft {
-		return inbounds.CreateFieldsResult{}, fail.New(apierr.SchemaVersionNonDraftAddFieldsNotAllowed).RecordCtx(ctx)
+		return inbounds.CreateFieldsResult{}, fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).RecordCtx(ctx)
 	}
 
 	// Validate field types/owners first
 	for _, f := range in.Fields {
 		if !field.IsValidFieldType(f.Type) {
-			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDInvalidType).WithArgs(f.Type, f.Key).RecordCtx(ctx)
+			return inbounds.CreateFieldsResult{}, fail.New(errx.FIELDInvalidType).WithArgs(f.Type, f.Key).RecordCtx(ctx)
 		}
 		if !field.IsValidOwnerType(f.Owner) {
-			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDInvalidOwner).WithArgs(f.Owner, f.Key).RecordCtx(ctx)
+			return inbounds.CreateFieldsResult{}, fail.New(errx.FIELDInvalidOwner).WithArgs(f.Owner, f.Key).RecordCtx(ctx)
 		}
 	}
 
@@ -172,7 +172,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 	for _, f := range in.Fields {
 		fieldID, ok := fieldKeyToID[f.Key]
 		if !ok {
-			return inbounds.CreateFieldsResult{}, fail.New(apierr.FIELDNotFound).WithArgs(f.Key).RecordCtx(ctx)
+			return inbounds.CreateFieldsResult{}, fail.New(errx.FIELDNotFound).WithArgs(f.Key).RecordCtx(ctx)
 		}
 
 		// Collect options (no validation needed here)

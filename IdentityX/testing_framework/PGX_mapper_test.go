@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"database/sql"
 	"errors"
 	"testing"
@@ -12,7 +12,7 @@ import (
 )
 
 func testPGXMapper(t *testing.T) {
-	mapper := &apierr.PGXMapper{}
+	mapper := &errx.PGXMapper{}
 
 	tests := []struct {
 		name       string
@@ -24,7 +24,7 @@ func testPGXMapper(t *testing.T) {
 		{
 			name:       "SQL No Rows",
 			err:        sql.ErrNoRows,
-			expectedID: apierr.SQLNotFound,
+			expectedID: errx.SQLNotFound,
 			expectedOk: true,
 		},
 		{
@@ -33,10 +33,10 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23505",
 				ConstraintName: "one_version_draft_per_schema",
 			},
-			expectedID: apierr.SCHEMAVersionDraftAlreadyExists,
+			expectedID: errx.SCHEMAVersionDraftAlreadyExists,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, apierr.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolationNew(fe))
 			},
 		},
 		{
@@ -45,10 +45,10 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23505",
 				ConstraintName: "roles_name_project_id_key",
 			},
-			expectedID: apierr.ROLENameAlreadyTaken,
+			expectedID: errx.ROLENameAlreadyTaken,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, apierr.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolationNew(fe))
 			},
 		},
 		/*{
@@ -57,10 +57,10 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23505",
 				ConstraintName: "some_other_unique",
 			},
-			expectedID: apierr.SQLUnmatchedUniqueViolation,
+			expectedID: errx.SQLUnmatchedUniqueViolation,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, apierr.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolationNew(fe))
 			},
 		},*/
 		{
@@ -69,10 +69,10 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23514",
 				ConstraintName: "schema_fields_key_check",
 			},
-			expectedID: apierr.FIELDInvalidCharactersInKey,
+			expectedID: errx.FIELDInvalidCharactersInKey,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, apierr.IsCheckViolationNew(fe))
+				assert.True(t, errx.IsCheckViolationNew(fe))
 			},
 		},
 		{
@@ -81,10 +81,10 @@ func testPGXMapper(t *testing.T) {
 				Code:           "23514",
 				ConstraintName: "some_other_check",
 			},
-			expectedID: apierr.SQLUnmatchedCheckViolation,
+			expectedID: errx.SQLUnmatchedCheckViolation,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, apierr.IsCheckViolationNew(fe))
+				assert.True(t, errx.IsCheckViolationNew(fe))
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "23503",
 			},
-			expectedID: apierr.SQLForeignKeyViolation,
+			expectedID: errx.SQLForeignKeyViolation,
 			expectedOk: true,
 		},
 		{
@@ -100,7 +100,7 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "23502",
 			},
-			expectedID: apierr.SQLNotNULLViolation,
+			expectedID: errx.SQLNotNULLViolation,
 			expectedOk: true,
 		},
 		{
@@ -108,7 +108,7 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "22001",
 			},
-			expectedID: apierr.SQLValueTooLong,
+			expectedID: errx.SQLValueTooLong,
 			expectedOk: true,
 		},
 		{
@@ -116,7 +116,7 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "40001",
 			},
-			expectedID: apierr.SQLSerializationFailure,
+			expectedID: errx.SQLSerializationFailure,
 			expectedOk: true,
 		},
 		{
@@ -124,7 +124,7 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "08006",
 			},
-			expectedID: apierr.SQLDBConnectionError,
+			expectedID: errx.SQLDBConnectionError,
 			expectedOk: true,
 		},
 		{
@@ -132,13 +132,13 @@ func testPGXMapper(t *testing.T) {
 			err: &pgconn.PgError{
 				Code: "99999",
 			},
-			expectedID: apierr.SQLUnknownError,
+			expectedID: errx.SQLUnknownError,
 			expectedOk: true,
 		},
 		{
 			name:       "Non-PG Error",
 			err:        errors.New("generic error"),
-			expectedID: apierr.SQLInternalDBError,
+			expectedID: errx.SQLInternalDBError,
 			expectedOk: false,
 		},
 	}

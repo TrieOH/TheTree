@@ -1,7 +1,7 @@
 package senders
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"bytes"
 	"context"
@@ -58,7 +58,7 @@ func (s *SMTPSender) Send(ctx context.Context, email outbounds.Email) error {
 
 	// queue is full → backpressure
 	default:
-		return fail.New(apierr.SYSServiceUnavailable).WithArgs("BaseSMTPSender")
+		return fail.New(errx.SYSServiceUnavailable).WithArgs("BaseSMTPSender")
 	}
 }
 

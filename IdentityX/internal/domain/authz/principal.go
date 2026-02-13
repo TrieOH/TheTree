@@ -1,8 +1,8 @@
 package authz
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/auth"
+	"GoAuth/internal/errx"
 	"context"
 
 	"github.com/MintzyG/fail/v3"
@@ -28,10 +28,10 @@ func NewPrincipal(
 	refresh *auth.RefreshClaims,
 ) (*Principal, error) {
 	if access == nil {
-		return nil, fail.New(apierr.TokenMissingAccessClaims).RecordCtx(ctx)
+		return nil, fail.New(errx.TokenMissingAccessClaims).RecordCtx(ctx)
 	}
 	if refresh == nil {
-		return nil, fail.New(apierr.TokenMissingRefreshClaims).RecordCtx(ctx)
+		return nil, fail.New(errx.TokenMissingRefreshClaims).RecordCtx(ctx)
 	}
 
 	return &Principal{

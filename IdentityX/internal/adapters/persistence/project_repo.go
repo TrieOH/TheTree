@@ -3,8 +3,8 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/project"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
@@ -205,7 +205,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	}
 
 	if affectedRows == 0 {
-		return fail.New(apierr.ProjectNotFound)
+		return fail.New(errx.ProjectNotFound)
 	}
 
 	return nil

@@ -1,9 +1,8 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"crypto/ed25519"
-	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -14,16 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// parseJWKXToEd25519PublicKey parses a DER-encoded public key (from JWK 'x' field) into ed25519.PublicKey
-func parseJWKXToEd25519PublicKey(t *testing.T, derBytes []byte) ed25519.PublicKey {
+// parseJWKXToEd25519PublicKey parses raw Ed25519 public key bytes (from JWK 'x' field) into ed25519.PublicKey
+func parseJWKXToEd25519PublicKey(t *testing.T, rawBytes []byte) ed25519.PublicKey {
 	t.Helper()
-	pub, err := x509.ParsePKIXPublicKey(derBytes)
-	require.NoError(t, err, "Failed to parse PKIX public key")
-
-	edPubKey, ok := pub.(ed25519.PublicKey)
-	require.True(t, ok, "Parsed public key is not an Ed25519 public key")
-
-	return edPubKey
+	require.Equal(t, ed25519.PublicKeySize, len(rawBytes), "Invalid Ed25519 public key length")
+	return ed25519.PublicKey(rawBytes)
 }
 
 func testProjectUsers(t *testing.T, suite *TestSuite) {
@@ -49,7 +43,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.RequestValidationError).
+				HasErrID(errx.RequestValidationError).
 				HasMessage("Validation failed")
 		})
 
@@ -79,7 +73,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 							"password": spec.Pass,
 						}).
 						Expect(http.StatusBadRequest).
-						HasErrID(apierr.RequestValidationError).
+						HasErrID(errx.RequestValidationError).
 						ValidationError(spec.Errors...)
 				})
 			}
@@ -97,7 +91,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 							"password": spec.Password,
 						}).
 						Expect(http.StatusBadRequest).
-						HasErrID(apierr.RequestValidationError).
+						HasErrID(errx.RequestValidationError).
 						ValidationError(spec.Errors...)
 				})
 			}
@@ -111,7 +105,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusConflict).
-				HasErrID(apierr.AuthEmailAlreadyUsed).
+				HasErrID(errx.AuthEmailAlreadyUsed).
 				HasMessage("email already in use")
 		})
 
@@ -124,7 +118,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaInvalidSchemaType).
+				HasErrID(errx.SchemaInvalidSchemaType).
 				HasMessage("invalid schema type")
 		})
 
@@ -138,7 +132,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": user.password,
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaInvalidFlowID).
+				HasErrID(errx.SchemaInvalidFlowID).
 				HasMessage("flow id can't be the same as a schema type")
 		})
 
@@ -153,7 +147,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					},
 				}).
 				Expect(http.StatusBadRequest).
-				HasErrID(apierr.SchemaMetadataNotAllowed).
+				HasErrID(errx.SchemaMetadataNotAllowed).
 				HasMessage("custom fields are not allowed for core schema")
 		})
 
@@ -172,7 +166,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": "WrongPass123!",
 				}).
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.AuthInvalidCredentials).
+				HasErrID(errx.AuthInvalidCredentials).
 				HasMessage("invalid email or password")
 		})
 
@@ -184,7 +178,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"password": projectUser.password,
 				}).
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.AuthInvalidCredentials).
+				HasErrID(errx.AuthInvalidCredentials).
 				HasMessage("invalid email or password")
 		})
 
@@ -201,7 +195,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Try using revoked session
 			loggedInUser.POST("/auth/logout").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionRevoked).
+				HasErrID(errx.SessionRevoked).
 				HasMessage("session not found or revoked")
 		})
 	})
@@ -244,7 +238,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Can't revoke current session
 			user4.DELETE("/sessions/" + currentSessionID).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.SessionSelfRevokeForbidden).
+				HasErrID(errx.SessionSelfRevokeForbidden).
 				HasMessage("cannot revoke the currently active session")
 
 			// Revoke first session
@@ -328,7 +322,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			// Session should be invalid
 			revoked.GET("/sessions").
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.SessionRevoked).
+				HasErrID(errx.SessionRevoked).
 				HasMessage("session not found or revoked")
 		})
 	})
@@ -355,7 +349,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 
 		oldClient.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.TokenReuseIdentified).
+			HasErrID(errx.TokenReuseIdentified).
 			HasMessage("refresh token reuse not allowed")
 	})
 
@@ -373,7 +367,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"metadata":     map[string]string{"env": "test"},
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient).
+				HasErrID(errx.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
 
@@ -381,7 +375,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.GET("/projects").
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient).
+				HasErrID(errx.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
 
@@ -389,7 +383,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.GET("/projects/" + user.projectID).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient).
+				HasErrID(errx.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
 
@@ -401,7 +395,7 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 					"metadata":     map[string]string{"env": "prod"},
 				}).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient).
+				HasErrID(errx.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
 
@@ -409,14 +403,14 @@ func testProjectUsers(t *testing.T, suite *TestSuite) {
 			jwksClient := suite.NewClient(t).WithAuth(nested.auth)
 			jwksClient.GET("/projects/" + user.projectID + "/.well-known/jwks.json").
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient)
+				HasErrID(errx.AuthNotClient)
 		})
 
 		t.Run("DeleteProject", func(t *testing.T) {
 			authClient := suite.NewClient(t).WithAuth(nested.auth)
 			authClient.DELETE("/projects/" + user.projectID).
 				Expect(http.StatusForbidden).
-				HasErrID(apierr.AuthNotClient).
+				HasErrID(errx.AuthNotClient).
 				HasMessage("only clients can access this endpoint")
 		})
 	})

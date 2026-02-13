@@ -79,13 +79,7 @@ CREATE UNIQUE INDEX uniq_goauth_single_active_signing_key
   AND usage = 'sign'
   AND status = 'active';
 
-CREATE INDEX idx_key_pair_project_jwks
-    ON key_pair (project_id)
-    WHERE status IN ('active', 'rotated')
-      AND verify_expires_at > now();
-
 -- +goose Down
-DROP INDEX IF EXISTS idx_key_pair_project_jwks;
 DROP INDEX IF EXISTS uniq_goauth_single_active_signing_key;
 DROP INDEX IF EXISTS idx_key_pair_goauth_jwks;
 DROP INDEX IF EXISTS idx_key_pair_goauth_active_sign;

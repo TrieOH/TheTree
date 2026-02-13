@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"net/http"
 	"sync"
@@ -56,7 +56,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		// Now try to use the old access token
 		client.WithAuth(oldAuth.auth).GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.TokenReuseIdentified).
+			HasErrID(errx.TokenReuseIdentified).
 			HasMessage("refresh token reuse not allowed")
 	})
 
@@ -91,7 +91,7 @@ func testRefresh(t *testing.T, suite *TestSuite) {
 		deniedClient.POST("/auth/refresh").
 			WithCookie("refresh_token", refreshToken).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionNotFound).
+			HasErrID(errx.SessionNotFound).
 			HasMessage("session not found or revoked")
 	})
 

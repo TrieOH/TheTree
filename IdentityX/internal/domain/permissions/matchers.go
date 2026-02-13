@@ -1,7 +1,7 @@
 package permissions
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"strings"
 
 	"github.com/MintzyG/fail/v3"
@@ -153,10 +153,10 @@ func matchActionParts(perm, req []string, pIdx, rIdx int) bool {
 // MustMatch is a validation helper for clean error messages
 func MustMatch(permObj, permAction, reqObj, reqAction string) error {
 	if !ObjectMatch(permObj, reqObj) {
-		return fail.New(apierr.PERMissionObjectMismatch).WithArgs(permObj, reqObj)
+		return fail.New(errx.PERMissionObjectMismatch).WithArgs(permObj, reqObj)
 	}
 	if !ActionMatch(permAction, reqAction) {
-		return fail.New(apierr.PERMissionActionMismatch).WithArgs(permAction, reqAction)
+		return fail.New(errx.PERMissionActionMismatch).WithArgs(permAction, reqAction)
 	}
 	return nil
 }

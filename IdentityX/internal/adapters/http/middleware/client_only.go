@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/errx"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -31,7 +31,7 @@ func ClientOnly() func(http.Handler) http.Handler {
 			}
 
 			if principal.Method == authz.AuthMethodSession && principal.ProjectID != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthNotClient).RecordCtx(ctx), "http")
+				rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthNotClient).RecordCtx(ctx), "http")
 				if err != nil {
 					resp.InternalServerError().WithData(err).WithModule("ClientOnlyMW").Send(w)
 					return

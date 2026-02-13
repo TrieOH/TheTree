@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"net/http"
 	"testing"
 )
@@ -336,7 +336,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.PERMissionAlreadyExists).
+			HasErrID(errx.PERMissionAlreadyExists).
 			HasMessage("permission with object(event:*) and action(create) already exists")
 	})
 
@@ -348,7 +348,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(errx.RequestValidationError).
 			HasMessage("Validation failed").
 			TraceContains("action is required")
 	})
@@ -361,7 +361,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(errx.RequestValidationError).
 			HasMessage("Validation failed").
 			TraceContains("object is required")
 	})
@@ -374,7 +374,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(errx.RequestValidationError).
 			HasMessage("Validation failed").
 			TraceContains("object is required", "action is required")
 	})
@@ -387,7 +387,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PERMissionInvalidObject).
+			HasErrID(errx.PERMissionInvalidObject).
 			HasMessage("invalid permission object: (bogus-value)") // FIXME replace () with ''
 	})
 
@@ -399,7 +399,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"conditions": nil,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.PERMissionInvalidAction).
+			HasErrID(errx.PERMissionInvalidAction).
 			HasMessage("invalid permission action: (what:)") // FIXME replace () with ''
 	})
 
@@ -407,7 +407,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithAuth(user.auth).GET("/projects/"+projectID+"/permissions").
 			WithQuery("not-allowed", "should_deny").
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestUnknownQueryParam).
+			HasErrID(errx.RequestUnknownQueryParam).
 			HasMessage("unknown query parameter: not-allowed")
 	})
 }

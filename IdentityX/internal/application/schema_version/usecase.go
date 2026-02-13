@@ -1,10 +1,10 @@
 package schema_version
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -82,7 +82,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a project you don't own").RecordCtx(ctx)
 	}
 
 	var belongs bool
@@ -95,17 +95,17 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if !belongs {
-		return nil, fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a schema you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot draft a schema version for a schema you don't own").RecordCtx(ctx)
 	}
 
 	var latest *version.Version
 	latest, err = versions.GetLatestForUpdate(ctx, in.SchemaID)
 
-	if err != nil && !fail.Is(err, apierr.SQLNotFound) {
+	if err != nil && !fail.Is(err, errx.SQLNotFound) {
 		return nil, err
 	}
 
-	if fail.Is(err, apierr.SQLNotFound) {
+	if fail.Is(err, errx.SQLNotFound) {
 		newVersion := &version.Version{
 			SchemaID:      in.SchemaID,
 			VersionNumber: 1,
@@ -128,7 +128,7 @@ func (uc *UseCase) draftInternal(ctx context.Context, in inbounds.SchemaVersionS
 	}
 
 	if latest.Status != version.StatusPublished {
-		return nil, fail.New(apierr.SchemaVersionDraftOnNonPublished).RecordCtx(ctx)
+		return nil, fail.New(errx.SchemaVersionDraftOnNonPublished).RecordCtx(ctx)
 	}
 
 	var newVersionDraft *version.Version
@@ -175,7 +175,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !isOwner {
-		return fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a project you don't own").RecordCtx(ctx)
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a project you don't own").RecordCtx(ctx)
 	}
 
 	var belongs bool
@@ -188,26 +188,26 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !belongs {
-		return fail.New(apierr.SchemaNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a schema you don't own").RecordCtx(ctx)
+		return fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot publish a schema version for a schema you don't own").RecordCtx(ctx)
 	}
 
 	var latest *version.Version
 	latest, err = versions.GetLatest(ctx, in.SchemaID)
-	if err != nil && !fail.Is(err, apierr.SQLNotFound) {
+	if err != nil && !fail.Is(err, errx.SQLNotFound) {
 		return err
 	}
 
-	if err != nil && fail.Is(err, apierr.SQLNotFound) {
-		return fail.New(apierr.SchemaVersionDraftDoesntExist).RecordCtx(ctx)
+	if err != nil && fail.Is(err, errx.SQLNotFound) {
+		return fail.New(errx.SchemaVersionDraftDoesntExist).RecordCtx(ctx)
 	}
 
 	if latest.Status != version.StatusDraft {
 		if latest.Status == version.StatusPublished {
-			err = fail.New(apierr.SchemaVersionTryingToPublishPublished).RecordCtx(ctx)
+			err = fail.New(errx.SchemaVersionTryingToPublishPublished).RecordCtx(ctx)
 		} else if latest.Status == version.StatusArchived {
-			err = fail.New(apierr.SchemaVersionTryingToPublishArchived).RecordCtx(ctx)
+			err = fail.New(errx.SchemaVersionTryingToPublishArchived).RecordCtx(ctx)
 		} else {
-			err = fail.New(apierr.SchemaVersionNoValidStatus).RecordCtx(ctx)
+			err = fail.New(errx.SchemaVersionNoValidStatus).RecordCtx(ctx)
 		}
 		return err
 	}
@@ -219,7 +219,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	}
 
 	if !hasFields {
-		return fail.New(apierr.SchemaVersionPublishWithNoFields).RecordCtx(ctx)
+		return fail.New(errx.SchemaVersionPublishWithNoFields).RecordCtx(ctx)
 	}
 
 	if latest.BasedOnVersionID == nil {
@@ -252,7 +252,7 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 	diff.Annotate(span)
 
 	if !diff.HasAnyChanges() {
-		return fail.New(apierr.SchemaVersionNoChanges).RecordCtx(ctx)
+		return fail.New(errx.SchemaVersionNoChanges).RecordCtx(ctx)
 	}
 
 	if err = versions.Publish(ctx, version.Version{
@@ -301,7 +301,7 @@ func (uc *UseCase) GetCurrent(ctx context.Context, in inbounds.SchemaVersionServ
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the current schema version for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get the current schema version for a project you don't own").RecordCtx(ctx)
 	}
 
 	current, err := versions.GetCurrent(ctx, in.SchemaID)
@@ -335,7 +335,7 @@ func (uc *UseCase) GetLatest(ctx context.Context, in inbounds.SchemaVersionServi
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own").RecordCtx(ctx)
 	}
 
 	latest, err := versions.GetLatest(ctx, in.SchemaID)
@@ -371,7 +371,7 @@ func (uc *UseCase) GetVerbose(ctx context.Context, in inbounds.SchemaVersionServ
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get the latest schema version for a project you don't own").RecordCtx(ctx)
 	}
 
 	var foundVersion *version.Version

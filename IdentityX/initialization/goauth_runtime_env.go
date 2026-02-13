@@ -3,9 +3,9 @@ package initialization
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/domain/scopes"
+	"GoAuth/internal/errx"
 	"context"
 	"log"
 	"time"
@@ -25,7 +25,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if fail.Is(fail.From(err), apierr.SQLNotFound) {
+		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			var pub string
 			var priv []byte
 			pub, priv, err = crypto.GenerateEd25519()
@@ -44,21 +44,22 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
-				Kid:        kid,
-				ProjectID:  nil,
-				KeyType:    "goauth",
-				Algorithm:  "EdDSA",
-				PublicKey:  pub,
-				PrivateKey: encryptedPriv,
-				Usage:      "sign",
-				Status:     "active",
-				ExpiresAt:  expiresAt,
+				Kid:             kid,
+				ProjectID:       nil,
+				KeyType:         "goauth",
+				Algorithm:       "EdDSA",
+				PublicKey:       pub,
+				PrivateKey:      encryptedPriv,
+				Usage:           "sign",
+				Status:          "active",
+				ExpiresAt:       expiresAt,
+				VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
 			})
 
 			fe := fail.From(err)
 
 			if fe != nil {
-				if apierr.IsUniqueViolationNew(fe) {
+				if errx.IsUniqueViolationNew(fe) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
 					log.Fatalf("failed to create GoAuth signing key: %v", fe.Error())
@@ -81,7 +82,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	fe := fail.From(err)
 
 	if fe != nil {
-		if apierr.IsUniqueViolationNew(fe) {
+		if errx.IsUniqueViolationNew(fe) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
 			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
@@ -94,7 +95,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 	key, err := q.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if fail.Is(fail.From(err), apierr.SQLNotFound) {
+		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			// defensive: no signing key → create
 			return createGoAuthKey(ctx, q)
 		}
@@ -141,7 +142,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	})
 
 	fe := fail.From(err)
-	if apierr.IsUniqueViolationNew(fe) {
+	if errx.IsUniqueViolationNew(fe) {
 		return nil
 	}
 	return fe
@@ -158,7 +159,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 		var key sqlc.KeyPair
 		key, err = q.GetActiveSigningKeyForProject(ctx, projectID)
 		if err != nil {
-			if fail.Is(fail.From(err), apierr.SQLNotFound) {
+			if fail.Is(fail.From(err), errx.SQLNotFound) {
 				_ = createProjectKey(ctx, q, *projectID)
 				continue
 			}
@@ -208,7 +209,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	})
 
 	// Rely on DB uniqueness for safety in concurrent rotations
-	if apierr.IsUniqueViolationNew(fail.From(err)) {
+	if errx.IsUniqueViolationNew(fail.From(err)) {
 		return nil
 	}
 

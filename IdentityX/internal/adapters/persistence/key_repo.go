@@ -50,6 +50,7 @@ func mapKeyPairFromDB(dst *key.Pair, src *sqlc.KeyPair) {
 	dst.Status = key.Status(src.Status)
 	dst.CreatedAt = src.CreatedAt
 	dst.ExpiresAt = src.ExpiresAt
+	dst.VerifyExpiresAt = src.VerifyExpiresAt
 }
 
 func mapGoAuthPublicKeyFromDB(dst *key.PublicKey, src *sqlc.ListActivePublicKeysForGoAuthRow) {
@@ -78,15 +79,16 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair key.Pair) (*key.Pai
 	defer span.End()
 
 	row, err := repo.queries(ctx).CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
-		Kid:        pair.KID,
-		ProjectID:  pair.ProjectID,
-		KeyType:    sqlc.KeyTypeEnum(pair.KeyType),
-		Algorithm:  string(pair.Algorithm),
-		PublicKey:  pair.PublicKey,
-		PrivateKey: pair.PrivateKey,
-		Usage:      sqlc.KeyUsageEnum(pair.Usage),
-		Status:     sqlc.KeyStatusEnum(pair.Status),
-		ExpiresAt:  pair.ExpiresAt,
+		Kid:             pair.KID,
+		ProjectID:       pair.ProjectID,
+		KeyType:         sqlc.KeyTypeEnum(pair.KeyType),
+		Algorithm:       string(pair.Algorithm),
+		PublicKey:       pair.PublicKey,
+		PrivateKey:      pair.PrivateKey,
+		Usage:           sqlc.KeyUsageEnum(pair.Usage),
+		Status:          sqlc.KeyStatusEnum(pair.Status),
+		ExpiresAt:       pair.ExpiresAt,
+		VerifyExpiresAt: pair.VerifyExpiresAt,
 	})
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)

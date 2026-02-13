@@ -2,11 +2,11 @@ package schema
 
 import (
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/errx"
 	"context"
 	"encoding/json"
 	"math"
@@ -59,7 +59,7 @@ func (uc *UseCase) ValidateAndConstructMetadata(
 	}
 
 	if ok = registerSchema.IsVersion(registerVersion.ID); !ok {
-		return nil, fail.New(apierr.SchemaVersionMismatch).RecordCtx(ctx)
+		return nil, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
 	}
 
 	var registerFields []field.Field
@@ -98,7 +98,7 @@ func (uc *UseCase) ValidateAndConstructMetadata(
 
 	marshalledMetadata, err := json.Marshal(metadata)
 	if err != nil {
-		return nil, fail.New(apierr.ProjectUserErrorEncodingMetadata).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectUserErrorEncodingMetadata).With(err).RecordCtx(ctx)
 	}
 
 	rawMetadata := json.RawMessage(marshalledMetadata)
@@ -110,7 +110,7 @@ func (uc *UseCase) ValidateFields(ctx context.Context, custom map[string]any, fi
 	defer span.End()
 
 	var errored bool
-	validationError := fail.New(apierr.FIELDValidationErrorOnSchemaRegister).RecordCtx(ctx)
+	validationError := fail.New(errx.FIELDValidationErrorOnSchemaRegister).RecordCtx(ctx)
 	validated := make(map[string]any)
 
 	providedValues := make(map[string]any)
@@ -158,7 +158,7 @@ func (uc *UseCase) ValidateFields(ctx context.Context, custom map[string]any, fi
 		if isRequired {
 			if !wasProvided || isNil {
 				errored = true
-				_ = validationError.Trace(fail.New(apierr.FORMMissingRequiredField).WithArgs(f.Key).Render().Error()).RecordCtx(ctx)
+				_ = validationError.Trace(fail.New(errx.FORMMissingRequiredField).WithArgs(f.Key).Render().Error()).RecordCtx(ctx)
 				continue
 			}
 		} else {
@@ -169,7 +169,7 @@ func (uc *UseCase) ValidateFields(ctx context.Context, custom map[string]any, fi
 
 		if ok := uc.validateFieldValue(f, value); !ok {
 			errored = true
-			_ = validationError.Trace(fail.New(apierr.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error()).RecordCtx(ctx)
+			_ = validationError.Trace(fail.New(errx.FORMInvalidFieldValue).WithArgs(f.Key, string(f.Type), value).Render().Error()).RecordCtx(ctx)
 			continue
 		}
 
@@ -193,7 +193,7 @@ func (uc *UseCase) UpdateMetadata(ctx context.Context, customFields *json.RawMes
 
 	userID := principal.UserID
 	if principal.ProjectID == nil {
-		return fail.New(apierr.AuthNotProjectUser).RecordCtx(ctx)
+		return fail.New(errx.AuthNotProjectUser).RecordCtx(ctx)
 	}
 	projectID := *principal.ProjectID
 
@@ -204,7 +204,7 @@ func (uc *UseCase) UpdateMetadata(ctx context.Context, customFields *json.RawMes
 
 	var input map[string]any
 	if err := json.Unmarshal(*customFields, &input); err != nil {
-		return fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
+		return fail.New(errx.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
 	}
 
 	newMetadataMap := make(map[string]any)
@@ -481,10 +481,10 @@ func (uc *UseCase) toFloat64(v interface{}) (float64, bool) {
 
 func (uc *UseCase) parseCustomFields(ctx context.Context, customFields *json.RawMessage) (custom map[string]any, err error) {
 	if customFields == nil {
-		return nil, fail.New(apierr.RequestMissingSchemaCustomFields).RecordCtx(ctx)
+		return nil, fail.New(errx.RequestMissingSchemaCustomFields).RecordCtx(ctx)
 	}
 	if err = json.Unmarshal(*customFields, &custom); err != nil {
-		return nil, fail.New(apierr.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.RequestInvalidCustomFieldsJSON).With(err).RecordCtx(ctx)
 	}
 	return custom, nil
 }

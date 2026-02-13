@@ -1,7 +1,7 @@
 package renderer
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"bytes"
 	"context"
@@ -54,7 +54,7 @@ func (mr *MailRenderer) Verification(ctx context.Context, data outbounds.Verific
 	})
 
 	if err != nil {
-		return outbounds.Email{}, fail.New(apierr.SYSRenderingEmailFailed).With(err).WithArgs("verification")
+		return outbounds.Email{}, fail.New(errx.SYSRenderingEmailFailed).With(err).WithArgs("verification")
 	}
 
 	return outbounds.Email{
@@ -96,12 +96,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "text").RecordCtx(ctx)
+		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "text").RecordCtx(ctx)
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(apierr.EMAILTemplateNotFound).WithArgs(key, "html").RecordCtx(ctx)
+		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "html").RecordCtx(ctx)
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

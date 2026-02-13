@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"time"
 
@@ -101,13 +101,13 @@ func (r DiffResult) Annotate(span trace.Span) {
 
 func (s Schema) CanRegister(ctx context.Context) error {
 	if s.CurrentVersionID == nil {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaNoVersion).RecordCtx(ctx)
+		return fail.New(errx.ProjectUserRegisterOnSchemaNoVersion).RecordCtx(ctx)
 	}
 	if s.Status == StatusDraft {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaDraft).RecordCtx(ctx)
+		return fail.New(errx.ProjectUserRegisterOnSchemaDraft).RecordCtx(ctx)
 	}
 	if s.Status == StatusArchived {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaArchived).RecordCtx(ctx)
+		return fail.New(errx.ProjectUserRegisterOnSchemaArchived).RecordCtx(ctx)
 	}
 	return nil
 }

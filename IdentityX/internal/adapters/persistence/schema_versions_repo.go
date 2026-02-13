@@ -3,8 +3,8 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/version"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
@@ -91,7 +91,7 @@ func (repo *schemaVersionRepo) Publish(ctx context.Context, toPublish version.Ve
 	}
 
 	if affectedRows == 0 {
-		return fail.New(apierr.SchemaVersionNotDraft).With(err)
+		return fail.New(errx.SchemaVersionNotDraft).With(err)
 	}
 
 	return nil

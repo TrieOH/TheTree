@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -74,7 +74,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 	t.Run("ResendVerificationEmailNotAllowed", func(t *testing.T) {
 		user.WithT(t).POST("/auth/verify/resend").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthAlreadyVerified).
+			HasErrID(errx.AuthAlreadyVerified).
 			HasMessage("user already verified")
 	})
 
@@ -202,7 +202,7 @@ func testVerification(t *testing.T, suite *TestSuite) {
 	t.Run("ResendVerificationEmailNotAllowedProjectUser", func(t *testing.T) {
 		projectUser.WithT(t).POST("/auth/verify/resend").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthAlreadyVerified).
+			HasErrID(errx.AuthAlreadyVerified).
 			HasMessage("user already verified")
 	})
 

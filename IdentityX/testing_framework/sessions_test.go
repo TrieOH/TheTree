@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"net/http"
 	"testing"
@@ -45,7 +45,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Can't revoke current session
 		user4.DELETE("/sessions/" + currentSessionID).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.SessionSelfRevokeForbidden).
+			HasErrID(errx.SessionSelfRevokeForbidden).
 			HasMessage("cannot revoke the currently active session")
 
 		// Revoke first session
@@ -123,7 +123,7 @@ func testSessions(t *testing.T, suite *TestSuite) {
 		// Session should be invalid
 		user.GET("/sessions").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionRevoked).
+			HasErrID(errx.SessionRevoked).
 			HasMessage("session not found or revoked")
 	})
 

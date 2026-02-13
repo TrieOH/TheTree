@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"GoAuth/internal/adapters/http/dto"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"net/http"
 
@@ -64,7 +64,7 @@ func (handler *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *h
 
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
-		resp.FromError(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (handler *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *h
 func (handler *SessionHandler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
-		resp.FromError(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
 		return
 	}
 
@@ -139,13 +139,13 @@ func (handler *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.
 func (handler *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
-		resp.FromError(fail.New(apierr.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
 		return
 	}
 
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
-		resp.FromError(fail.New(apierr.AuthMissingRefreshCookie).Trace(err.Error())).Send(w)
+		resp.FromError(fail.New(errx.AuthMissingRefreshCookie).Trace(err.Error())).Send(w)
 		return
 	}
 

@@ -1,7 +1,7 @@
 package version
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"time"
 
@@ -29,10 +29,10 @@ type Version struct {
 
 func (v Version) CanRegister(ctx context.Context) error {
 	if v.Status == StatusDraft {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionDraft).RecordCtx(ctx)
+		return fail.New(errx.ProjectUserRegisterOnSchemaVersionDraft).RecordCtx(ctx)
 	}
 	if v.Status == StatusArchived {
-		return fail.New(apierr.ProjectUserRegisterOnSchemaVersionArchived).RecordCtx(ctx)
+		return fail.New(errx.ProjectUserRegisterOnSchemaVersionArchived).RecordCtx(ctx)
 	}
 	return nil
 }

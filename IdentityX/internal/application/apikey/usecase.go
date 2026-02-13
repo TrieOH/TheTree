@@ -1,10 +1,10 @@
 package apikey
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/domain/apikey"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -56,17 +56,17 @@ func (uc *UseCase) Rotate(ctx context.Context, projectID uuid.UUID) (string, err
 		return "", err
 	}
 	if !isOwner {
-		return "", fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		return "", fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	secret, err := crypto.GenerateRandomSecret(32)
 	if err != nil {
-		return "", fail.New(apierr.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
 	}
 
 	hash, err := crypto.HashBcryptSecret(secret)
 	if err != nil {
-		return "", fail.New(apierr.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
 	}
 
 	err = uc.deps.ApiKey.Upsert(ctx, apikey.ApiKey{
@@ -97,7 +97,7 @@ func (uc *UseCase) Revoke(ctx context.Context, projectID uuid.UUID) error {
 		return err
 	}
 	if !isOwner {
-		return fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		return fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	return uc.deps.ApiKey.Delete(ctx, projectID)
@@ -108,12 +108,12 @@ func (uc *UseCase) Authenticate(ctx context.Context, apiKey string) (*authz.Prin
 	defer span.End()
 
 	if !strings.HasPrefix(apiKey, "gk_") {
-		return nil, fail.New(apierr.AuthInvalidApiKeyShape).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
 	}
 
 	parts := strings.SplitN(apiKey, "_", 3)
 	if len(parts) != 3 {
-		return nil, fail.New(apierr.AuthInvalidApiKeyShape).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
 	}
 
 	projectIDStr := parts[1]
@@ -121,20 +121,20 @@ func (uc *UseCase) Authenticate(ctx context.Context, apiKey string) (*authz.Prin
 
 	projectID, err := uuid.Parse(projectIDStr)
 	if err != nil {
-		return nil, fail.New(apierr.AuthInvalidApiKeyShape).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
 	}
 
 	keyData, err := uc.deps.ApiKey.GetByProjectID(ctx, projectID)
 	if err != nil {
-		if apierr.IsNotFoundNew(err) {
-			return nil, fail.New(apierr.AuthInvalidApiKey).RecordCtx(ctx)
+		if errx.IsNotFoundNew(err) {
+			return nil, fail.New(errx.AuthInvalidApiKey).RecordCtx(ctx)
 		}
 		return nil, err
 	}
 
 	err = crypto.VerifyBcryptSecret(keyData.KeyHash, secret)
 	if err != nil {
-		return nil, fail.New(apierr.AuthInvalidApiKey).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthInvalidApiKey).RecordCtx(ctx)
 	}
 
 	return &authz.Principal{
