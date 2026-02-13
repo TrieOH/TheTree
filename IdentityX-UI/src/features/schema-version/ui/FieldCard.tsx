@@ -8,11 +8,11 @@ import type { VersionField } from "../model/types";
 interface PropsI {
   field: VersionField;
   className?: string;
-  overwrite_type?: "password";
+  overwriteType?: "password";
+  isFixed?: boolean
 }
 
-export default function FieldCard({field, className, overwrite_type}: PropsI) {
-  const isFixed = field.owner === "system" || field.owner === "admin";
+export default function FieldCard({field, className, overwriteType, isFixed = false}: PropsI) {
 
   const {
     attributes,
@@ -30,7 +30,7 @@ export default function FieldCard({field, className, overwrite_type}: PropsI) {
     zIndex: isDragging ? 999 : "auto",
   }
 
-  const Icon = getFieldTypeIcon(overwrite_type || field.type);
+  const Icon = getFieldTypeIcon(overwriteType || field.type);
 
   return (
     <div 
