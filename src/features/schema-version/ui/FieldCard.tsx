@@ -3,14 +3,16 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { getFieldTypeIcon } from "../model/field-type-to-icon";
+import type { VersionField } from "../model/types";
 
 interface PropsI {
-  id: string;
+  field: VersionField;
   className?: string;
-  isFixed?: boolean;
+  overwrite_type?: "password";
 }
 
-export default function FieldCard({id, className, isFixed}: PropsI) {
+export default function FieldCard({field, className, overwrite_type}: PropsI) {
+  const isFixed = field.owner === "system" || field.owner === "admin";
 
   const {
     attributes,
@@ -19,7 +21,7 @@ export default function FieldCard({id, className, isFixed}: PropsI) {
     transform,
     transition,
     isDragging
-  } = useSortable({id: id, disabled: isFixed});
+  } = useSortable({id: field.key, disabled: isFixed});
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -28,7 +30,7 @@ export default function FieldCard({id, className, isFixed}: PropsI) {
     zIndex: isDragging ? 999 : "auto",
   }
 
-  const Icon = getFieldTypeIcon("string");
+  const Icon = getFieldTypeIcon(overwrite_type || field.type);
 
   return (
     <div 
@@ -59,10 +61,10 @@ export default function FieldCard({id, className, isFixed}: PropsI) {
         {isFixed && <div className="w-8 h-8"></div>}
         <Icon className="w-8 h-8 p-2 bg-accent rounded-sm text-accent-foreground shrink-0"/>
         <div className="flex-1">
-          <h5 className="font-semibold">Label</h5>
+          <h5 className="font-semibold">{field.title}</h5>
           <div className="text-xs text-muted-foreground flex justify-between items-center">
-            <span>Field Name</span>
-            <span>Field Type</span>
+            <span>{field.key}</span>
+            <span>{field.type}</span>
           </div>
         </div>
       </div>

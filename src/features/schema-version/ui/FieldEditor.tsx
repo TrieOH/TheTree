@@ -4,19 +4,11 @@ import FieldCard from "./FieldCard";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
-
-interface Item {
-  id: string;
-  isFixed?: boolean;
-}
+import type { VersionFieldList } from "../model/types";
+import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 
 export default function FieldEditor() {
-  const [items, setItems] = useState<Item[]>([
-    { id: "fixed-start", isFixed: true },
-    { id: "dwdw" },
-    { id: "fx" },
-    { id: "fixed-end", isFixed: true },
-  ]);
+  const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -35,15 +27,8 @@ export default function FieldEditor() {
     const { active, over } = ev;
     if(over && active.id !== over.id) {
       setItems(currentItems => {
-        const activeItem = currentItems.find(item => item.id === active.id);
-        const overItem = currentItems.find(item => item.id === over.id);
-
-        if (activeItem?.isFixed || overItem?.isFixed) {
-          return currentItems; // Do not reorder if either is fixed
-        }
-
-        const oldIndex = currentItems.findIndex(item => item.id === active.id);
-        const newIndex = currentItems.findIndex(item => item.id === over.id);
+        const oldIndex = currentItems.findIndex(item => item.key === active.id);
+        const newIndex = currentItems.findIndex(item => item.key === over.id);
         return arrayMove(currentItems, oldIndex, newIndex);
       });
     }
@@ -54,11 +39,7 @@ export default function FieldEditor() {
     setActiveId(null);
   }
 
-  const sortableItems = items.filter(item => !item.isFixed);
-  const fixedStartItem = items.find(item => item.id === "fixed-start");
-  const fixedEndItem = items.find(item => item.id === "fixed-end");
-
-  const activeItem = activeId ? items.find(item => item.id === activeId) : null;
+  const activeItem = activeId ? items.find(item => item.key === activeId) : null;
 
   return (
     <main className="flex w-full h-(--screen--minus-header)">
@@ -69,18 +50,22 @@ export default function FieldEditor() {
         sensors={sensors}
       >
         <div className="flex-1 max-w-79 border-r border-r-border p-2 space-y-2">
-            {fixedStartItem && <FieldCard key={fixedStartItem.id} id={fixedStartItem.id} isFixed={true} />}
-            <SortableContext items={sortableItems}>
-                {sortableItems.map((item) => (
-                <FieldCard key={item.id} id={item.id}/>
-                ))}
-            </SortableContext>
-            {fixedEndItem && <FieldCard key={fixedEndItem.id} id={fixedEndItem.id} isFixed={true} />}
-          </div>
+          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} />
+          <SortableContext items={items.map(item => item.key)}>
+            {items.map((item) => (
+              <FieldCard key={item.key} field={item}/>
+            ))}
+          </SortableContext>
+          <FieldCard 
+            key={defaultPasswordVersionField.key} 
+            field={{...defaultPasswordVersionField}} 
+            overwrite_type="password"
+          />
+        </div>
         {createPortal(
           <DragOverlay>
             {activeItem ? (
-              <FieldCard id={activeItem.id} isFixed={activeItem.isFixed} className="shadow-2xl scale-105 ring-2 ring-primary" />
+              <FieldCard field={activeItem} className="shadow-2xl scale-105 ring-2 ring-primary" />
             ) : null}
           </DragOverlay>,
           document.body

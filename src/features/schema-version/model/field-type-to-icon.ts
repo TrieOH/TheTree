@@ -7,6 +7,7 @@ import {
   ToggleLeft,
   HelpCircle,
   CircleDot,
+  Lock,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -18,7 +19,8 @@ type FieldType =
   | "select"
   | "radio"
   | "checkbox"
-  | "bool";
+  | "bool"
+  | "password";
 
 const fieldTypeIconMap = {
   string: Type,
@@ -28,6 +30,7 @@ const fieldTypeIconMap = {
   radio: CircleDot,
   checkbox: CheckSquare,
   bool: ToggleLeft,
+  password: Lock,
 } satisfies Record<FieldType, LucideIcon>;
 
 
