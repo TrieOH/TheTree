@@ -1,33 +1,54 @@
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from "@/shared/ui/shadcn/command"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/shared/ui/shadcn/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/ui/shadcn/popover"
 import {
-  CalendarIcon,
-  CreditCardIcon,
-  SettingsIcon,
-  UserIcon,
   GitBranchIcon,
   ChevronDownIcon,
   Loader2,
 } from "lucide-react"
-import React from "react"
+import React, { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { latestSchemaVersionQueryOptions } from "../api"
+import { latestSchemaVersionQueryOptions, currentSchemaVersionQueryOptions } from "../api"
 import { cn } from "@/shared/lib/utils"
-import { navigationStore } from "@/features/navigation"
+import { navigationStore, navigationActions } from "@/features/navigation"
 import { useStore } from "@tanstack/react-store"
 
 
 export default function SchemaVersionSelector() {
   const [open, setOpen] = React.useState(false);
-  const { currentProjectId, currentSchemaId } = useStore(navigationStore)
+  const { currentProjectId, currentSchemaId, currentSchemaVersion: storedCurrentSchemaVersion } = useStore(navigationStore)
 
-  const { data: latestVersion, isLoading, isError } = useQuery(
+  const { data: latestVersion, isLoading: isLoadingLatest, isError: isErrorLatest } = useQuery(
     latestSchemaVersionQueryOptions(currentProjectId || "", currentSchemaId || "")
   );
+
+  const { data: currentVersion, isLoading: isLoadingCurrent, isError: isErrorCurrent } = useQuery(
+    currentSchemaVersionQueryOptions(currentProjectId || "", currentSchemaId || "")
+  );
+
+  useEffect(() => {
+    if (currentVersion && currentVersion.version_number !== storedCurrentSchemaVersion) {
+      navigationActions.setCurrentSchemaVersion(currentVersion.version_number);
+    }
+  }, [currentVersion, storedCurrentSchemaVersion]);
+
+  const isLoading = isLoadingLatest || isLoadingCurrent;
+  const isError = isErrorLatest || isErrorCurrent;
+
+  const previousVersions = React.useMemo(() => {
+    if (!currentVersion || currentVersion.version_number <= 1) return [];
+    const versions = [];
+    for (let i = currentVersion.version_number - 1; i >= 1; i--) versions.push({ version_number: i });
+    return versions;
+  }, [currentVersion]);
+
+  const handleSelectVersion = (versionNumber: number) => {
+    navigationActions.setCurrentSchemaVersion(versionNumber);
+    setOpen(false);
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -51,7 +72,7 @@ export default function SchemaVersionSelector() {
             <div className="flex items-center gap-1.5">
               <GitBranchIcon size={16} />
               <span className="truncate mb-0.5">
-                {latestVersion ? `v${latestVersion.version_number}` : "Select version..."}
+                {storedCurrentSchemaVersion ? `v${storedCurrentSchemaVersion}` : (currentVersion ? `v${currentVersion.version_number}` : (latestVersion ? `v${latestVersion.version_number} (Latest)` : "Select version..."))}
               </span>
             </div>
           )}
@@ -63,29 +84,43 @@ export default function SchemaVersionSelector() {
           <CommandInput placeholder="Search versions..." />
           <CommandList>
             <CommandEmpty>No versions found.</CommandEmpty>
-            <CommandGroup heading="Current Active">
-              <CommandItem>
-                <CalendarIcon />
-                <span>Calendar</span>
+            <CommandGroup heading="Latest Version">
+              <CommandItem
+                key={latestVersion?.id || "latest"}
+                onSelect={() => handleSelectVersion(latestVersion?.version_number || 1)}
+                disabled={!latestVersion}
+              >
+                <GitBranchIcon />
+                <span>{latestVersion ? `v${latestVersion.version_number}` : "N/A"}</span>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Previous Versions (10)">
-              <CommandItem>
-                <UserIcon />
-                <span>Profile</span>
-                <CommandShortcut>⌘P</CommandShortcut>
+            <CommandGroup heading="Current Active">
+              <CommandItem
+                key={currentVersion?.id || "current"}
+                onSelect={() => handleSelectVersion(currentVersion?.version_number || 1)}
+                disabled={!currentVersion}
+              >
+                <GitBranchIcon />
+                <span>{currentVersion ? `v${currentVersion.version_number}` : "N/A"}</span>
               </CommandItem>
-              <CommandItem>
-                <CreditCardIcon />
-                <span>Billing</span>
-                <CommandShortcut>⌘B</CommandShortcut>
-              </CommandItem>
-              <CommandItem>
-                <SettingsIcon />
-                <span>Settings</span>
-                <CommandShortcut>⌘S</CommandShortcut>
-              </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading={`Previous Versions (${previousVersions.length})`}>
+              {previousVersions.map((version) => (
+                <CommandItem
+                  key={version.version_number}
+                  onSelect={() => handleSelectVersion(version.version_number)}
+                >
+                  <GitBranchIcon />
+                  <span>{`v${version.version_number}`}</span>
+                </CommandItem>
+              ))}
+              {!previousVersions.length && (
+                <CommandItem disabled>
+                  <span>No previous versions</span>
+                </CommandItem>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

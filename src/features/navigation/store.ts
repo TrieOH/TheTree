@@ -3,10 +3,13 @@ import type { NavigationActions, NavigationStoreState } from "./model/types";
 
 const storedProjectId = typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
 const storedSchemaId = typeof window !== "undefined" ? localStorage.getItem("currentSchemaId") : null;
+const storedSchemaVersion = typeof window !== "undefined" ? localStorage.getItem("currentSchemaVersion") : null;
+
 // Store Instance
 export const navigationStore = new Store<NavigationStoreState>({
   currentProjectId: storedProjectId,
   currentSchemaId: storedSchemaId,
+  currentSchemaVersion: storedSchemaVersion ? parseInt(storedSchemaVersion, 10) : null,
 });
 
 // Actions
@@ -23,6 +26,12 @@ export const navigationActions: NavigationActions = {
       currentSchemaId: schemaId,
     }));
   },
+  setCurrentSchemaVersion: (schemaVersion: number | null) => {
+    navigationStore.setState((state) => ({
+      ...state,
+      currentSchemaVersion: schemaVersion,
+    }));
+  },
 };
 
 
@@ -35,6 +44,9 @@ navigationStore.subscribe((state) => {
 
     if (current.currentSchemaId) localStorage.setItem("currentSchemaId", current.currentSchemaId);
     else localStorage.removeItem("currentSchemaId");
+
+    if (current.currentSchemaVersion) localStorage.setItem("currentSchemaVersion", current.currentSchemaVersion.toString());
+    else localStorage.removeItem("currentSchemaVersion");
   }
 });
 
