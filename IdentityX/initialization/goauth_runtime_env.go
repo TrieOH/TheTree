@@ -59,7 +59,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			fe := fail.From(err)
 
 			if fe != nil {
-				if errx.IsUniqueViolationNew(fe) {
+				if errx.IsUniqueViolation(fe) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
 					log.Fatalf("failed to create GoAuth signing key: %v", fe.Error())
@@ -82,7 +82,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	fe := fail.From(err)
 
 	if fe != nil {
-		if errx.IsUniqueViolationNew(fe) {
+		if errx.IsUniqueViolation(fe) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
 			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
@@ -142,7 +142,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	})
 
 	fe := fail.From(err)
-	if errx.IsUniqueViolationNew(fe) {
+	if errx.IsUniqueViolation(fe) {
 		return nil
 	}
 	return fe
@@ -209,7 +209,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	})
 
 	// Rely on DB uniqueness for safety in concurrent rotations
-	if errx.IsUniqueViolationNew(fail.From(err)) {
+	if errx.IsUniqueViolation(fail.From(err)) {
 		return nil
 	}
 

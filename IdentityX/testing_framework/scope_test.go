@@ -178,7 +178,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsUniqueViolationNew(err))
+		assert.True(t, errx.IsUniqueViolation(err))
 		assert.Contains(t, err.Error(), "only one global scope may exist")
 
 		pid, err := uuid.Parse(projectID)
@@ -196,7 +196,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -208,7 +208,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -220,7 +220,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -232,7 +232,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -244,7 +244,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -256,7 +256,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -268,7 +268,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 	})
 
@@ -289,7 +289,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsUniqueViolationNew(err))
+		assert.True(t, errx.IsUniqueViolation(err))
 		assert.Contains(t, err.Error(), "only one project_root scope may exist per project")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -301,7 +301,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -313,7 +313,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 
 		_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
@@ -325,7 +325,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 	})
 
@@ -356,7 +356,7 @@ func testScopes(t *testing.T, suite *TestSuite) {
 
 		err = fail.From(err)
 		assert.Error(t, err)
-		assert.True(t, errx.IsCheckViolationNew(err))
+		assert.True(t, errx.IsCheckViolation(err))
 		assert.Contains(t, err.Error(), "invalid scope shape: a scope must be one of the following — (1) a global scope with type='global' and no project_id, name, or external_id; (2) a project root scope with type='project_root', a project_id, and no name or external_id; or (3) a project scope with type='project_scope', a project_id, and a name (external_id optional)")
 	})
 }

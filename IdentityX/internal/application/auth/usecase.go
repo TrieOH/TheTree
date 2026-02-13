@@ -1115,11 +1115,11 @@ func (uc *UseCase) ForgotPassword(ctx context.Context, in inbounds.ForgotPasswor
 	var pu *project_users.ProjectUser
 
 	u, err = uc.deps.Users.GetUserByEmail(ctx, in.Email)
-	if err != nil && !errx.IsNotFoundNew(err) {
+	if err != nil && !errx.IsNotFound(err) {
 		return err
 	}
 
-	if err != nil && errx.IsNotFoundNew(err) {
+	if err != nil && errx.IsNotFound(err) {
 		// Global user not found
 		if in.ProjectID == nil {
 			return nil // silent success
@@ -1127,7 +1127,7 @@ func (uc *UseCase) ForgotPassword(ctx context.Context, in inbounds.ForgotPasswor
 
 		pu, err = uc.deps.ProjectUsers.GetByEmailInternal(ctx, *in.ProjectID, in.Email)
 		if err != nil {
-			if errx.IsNotFoundNew(err) {
+			if errx.IsNotFound(err) {
 				return nil // silent success (no enumeration)
 			}
 			return err // real failure

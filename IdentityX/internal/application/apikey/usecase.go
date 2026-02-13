@@ -126,7 +126,7 @@ func (uc *UseCase) Authenticate(ctx context.Context, apiKey string) (*authz.Prin
 
 	keyData, err := uc.deps.ApiKey.GetByProjectID(ctx, projectID)
 	if err != nil {
-		if errx.IsNotFoundNew(err) {
+		if errx.IsNotFound(err) {
 			return nil, fail.New(errx.AuthInvalidApiKey).RecordCtx(ctx)
 		}
 		return nil, err

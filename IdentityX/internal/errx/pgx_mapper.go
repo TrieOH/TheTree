@@ -18,7 +18,7 @@ func (m *PGXMapper) Name() string  { return m.name }
 func (m *PGXMapper) Priority() int { return m.priority }
 
 func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
-	if IsNotFoundNew(err) {
+	if IsNotFound(err) {
 		return fail.New(SQLNotFound), true
 	}
 
@@ -92,7 +92,7 @@ func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 	return nil, false
 }
 
-func IsNotFoundNew(err error) bool {
+func IsNotFound(err error) bool {
 	if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 		return true
 	}
@@ -105,7 +105,7 @@ func IsNotFoundNew(err error) bool {
 	return false
 }
 
-func IsUniqueViolationNew(err error) bool {
+func IsUniqueViolation(err error) bool {
 	var fe *fail.Error
 	if errors.As(err, &fe) {
 		if fe.Meta != nil {
@@ -122,7 +122,7 @@ func IsUniqueViolationNew(err error) bool {
 	return false
 }
 
-func IsCheckViolationNew(err error) bool {
+func IsCheckViolation(err error) bool {
 	var fe *fail.Error
 	if errors.As(err, &fe) {
 		if fe.Meta != nil {

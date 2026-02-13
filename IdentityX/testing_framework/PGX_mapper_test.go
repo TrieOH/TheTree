@@ -36,7 +36,7 @@ func testPGXMapper(t *testing.T) {
 			expectedID: errx.SCHEMAVersionDraftAlreadyExists,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, errx.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolation(fe))
 			},
 		},
 		{
@@ -48,7 +48,7 @@ func testPGXMapper(t *testing.T) {
 			expectedID: errx.ROLENameAlreadyTaken,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, errx.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolation(fe))
 			},
 		},
 		/*{
@@ -60,7 +60,7 @@ func testPGXMapper(t *testing.T) {
 			expectedID: errx.SQLUnmatchedUniqueViolation,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, errx.IsUniqueViolationNew(fe))
+				assert.True(t, errx.IsUniqueViolation(fe))
 			},
 		},*/
 		{
@@ -72,7 +72,7 @@ func testPGXMapper(t *testing.T) {
 			expectedID: errx.FIELDInvalidCharactersInKey,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, errx.IsCheckViolationNew(fe))
+				assert.True(t, errx.IsCheckViolation(fe))
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func testPGXMapper(t *testing.T) {
 			expectedID: errx.SQLUnmatchedCheckViolation,
 			expectedOk: true,
 			checkMeta: func(t *testing.T, fe *fail.Error) {
-				assert.True(t, errx.IsCheckViolationNew(fe))
+				assert.True(t, errx.IsCheckViolation(fe))
 			},
 		},
 		{
