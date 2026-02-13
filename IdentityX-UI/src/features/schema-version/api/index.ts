@@ -36,3 +36,28 @@ export const latestSchemaVersionQueryOptions = (project_id: string, schema_id: s
     enabled: !!project_id && !!schema_id
   })
 }
+
+export const getCurrentSchemaVersionFn = createClientOnlyFn(async ({
+  queryKey,
+}: {
+  queryKey: ["currentSchemaVersion", string, string];
+}) => {
+  const [, projectId, schemaId] = queryKey;
+
+  try {
+    return await tanstackQueryFetcher<SchemaVersion>(
+      `/projects/${projectId}/schemas/${schemaId}/versions/current`
+    );
+  } catch (error) {
+    console.error("Error fetching current schema version:", error);
+    throw error;
+  }
+});
+
+export const currentSchemaVersionQueryOptions = (project_id: string, schema_id: string) => {
+  return queryOptions({
+    queryKey: ['currentSchemaVersion', project_id, schema_id],
+    queryFn: getCurrentSchemaVersionFn,
+    enabled: !!project_id && !!schema_id
+  })
+}

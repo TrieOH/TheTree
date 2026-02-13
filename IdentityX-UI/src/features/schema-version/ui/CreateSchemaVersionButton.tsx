@@ -1,7 +1,7 @@
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { FilePlus, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { navigationStore } from "@/features/navigation";
+import { navigationStore, navigationActions } from "@/features/navigation";
 import { useStore } from "@tanstack/react-store";
 import { toast } from "sonner";
 import { createSchemaVersionDraftFn } from "../api";
@@ -13,10 +13,11 @@ export default function CreateSchemaVersionButton() {
   const createSchemaVersionMutation = useMutation({
     mutationFn: createSchemaVersionDraftFn,
     onSuccess: (response) => {
-      if (response.success) {
+      if (response.success && response.data) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["latestSchemaVersion"] });
-        queryClient.setQueryData(["latestSchemaVersion", response.data.id], response.data);
+        queryClient.invalidateQueries({ queryKey: ["latestSchemaVersion", currentProjectId, currentSchemaId] });
+        queryClient.setQueryData(["latestSchemaVersion", currentProjectId, currentSchemaId], response.data);
+        navigationActions.setCurrentSchemaVersion(response.data.version_number);
       } else toast.error(`Failed to create draft: ${response.message}`);
     },
   });
