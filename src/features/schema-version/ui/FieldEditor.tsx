@@ -1,4 +1,11 @@
-import {DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import {
+  DndContext, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  type DragEndEvent, 
+  type DragStartEvent 
+} from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import FieldCard from "./FieldCard";
 import { useState } from "react";
