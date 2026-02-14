@@ -8,7 +8,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import FieldCard from "./FieldCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
 import type { VersionField, VersionFieldList } from "../model/types";
@@ -20,9 +20,15 @@ import { Plus } from "lucide-react";
 
 export default function FieldEditor() {
   const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
+  const [originalItems, setOriginalItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextId, setNextId] = useState(defaultVersionFieldList.length);
   const [editingField, setEditingField] = useState<VersionField | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    setHasChanges(JSON.stringify(items) !== JSON.stringify(originalItems));
+  }, [items, originalItems]);
 
   const handleOpenEditPanel = (field: VersionField) => {
     setEditingField(field);
@@ -91,6 +97,11 @@ export default function FieldEditor() {
     if (editingField?.key === updatedField.key) setEditingField(updatedField);
   };
 
+  const handleSubmit = () => {
+    console.log("Submitting changes:", items);
+    setOriginalItems(items);
+  };
+
   const activeItem = activeId ? items.find(item => item.key === activeId) : null;
 
   return (
@@ -143,7 +154,15 @@ export default function FieldEditor() {
           document.body
         )}
       </DndContext>
-      <div className="flex-1"></div>
+      <div className="flex-1 p-4 flex flex-col justify-end items-end">
+        <ShadowButton
+          onClick={handleSubmit}
+          disabled={!hasChanges}
+          value="Submit Changes"
+          variant="solid"
+          className="w-fit"
+        />
+      </div>
       {editingField && (
         <DraggableFieldEditPanel onClose={handleCloseEditPanel} title="Edit Field">
           <FieldEditForm
