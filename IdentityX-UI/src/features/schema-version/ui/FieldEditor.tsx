@@ -105,6 +105,12 @@ export default function FieldEditor() {
 
   const activeItem = activeId ? items.find(item => item.key === activeId) : null;
 
+  const allFieldKeys = [
+    ...items.map(item => item.key),
+    defaultEmailVersionField.key,
+    defaultPasswordVersionField.key
+  ];
+
   return (
     <main className="flex w-full min-h-(--screen--minus-header)">
       <DndContext
@@ -173,6 +179,7 @@ export default function FieldEditor() {
               handleCloseEditPanel();
             }}
             onCancel={handleCloseEditPanel}
+            allFieldKeys={allFieldKeys}
           />
         </DraggableFieldEditPanel>
       )}

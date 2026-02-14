@@ -7,7 +7,10 @@ export const versionDraftSchema = z.object({
 
 export type VersionDraft = z.infer<typeof versionDraftSchema>;
 
-const RuleOperator = z.enum(["equals", "not_equals", "in", "not_in", "exists", "not_exists"])
+export const ruleOperatorSchema = z.enum(["equals", "not_equals", "in", "not_in", "exists", "not_exists"])
+
+export type RuleOperator = z.infer<typeof ruleOperatorSchema>;
+
 
 export interface SchemaVersion {
   id: string;
@@ -35,14 +38,14 @@ export const versionFieldSchema = z.object({
   required: z.boolean(), // done
   required_rules: z.array(z.object({
     depends_on_field_key: z.string(),
-    operator: RuleOperator,
-    value: z.json()
+    operator: ruleOperatorSchema,
+    value: z.json() // is a json, but i will use string for now
   })),
   title: z.string().min(3, "Title must be at least 3 characters long"), // done
   type: z.enum(["string", "email", "int", "select", "radio", "checkbox", "bool"]), // done
   visibility_rules: z.array(z.object({
     depends_on_field_key: z.string(),
-    operator: RuleOperator,
+    operator: ruleOperatorSchema,
     value: z.json()
   }))
 });
