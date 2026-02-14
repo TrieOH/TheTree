@@ -4,10 +4,18 @@ import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { FieldTypeSelector } from './FieldTypeSelector';
 import { useForm } from '@tanstack/react-form';
 import { FormField } from '@/shared/ui/form/FormField';
-import { OptionsEditor } from './OptionsEditor';
+import { ShadowTextarea } from '@/shared/ui/form/ShadowTextarea';
 import { versionFieldSchema } from '../model/types';
 import { useEffect } from 'react';
 import { Checkbox } from '@/shared/ui/shadcn/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/shadcn/select";
+import { OptionsEditor } from './OptionsEditor';
 
 interface FieldEditFormProps {
   field: VersionField;
@@ -69,6 +77,16 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
             />
           )}
         </FormField>
+        <FormField<VersionField, 'description'> name="description" label="Description" form={form}>
+          {(field) => (
+            <ShadowTextarea
+              id={field.name}
+              value={field.state.value ?? ''}
+              onBlur={field.handleBlur}
+              onChange={field.handleChange}
+            />
+          )}
+        </FormField>
 
         <FormField<VersionField, 'default_value'> name="default_value" label="Default Value" form={form}>
           {(field) => (
@@ -117,6 +135,23 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
             )}
           </FormField>
         </div>
+        <FormField<VersionField, 'owner'> name="owner" label="Owner" form={form}>
+          {(field) => (
+            <Select
+              value={field.state.value}
+              onValueChange={field.handleChange}
+            >
+              <SelectTrigger className="flex items-center w-full rounded-sm border border-input bg-background shadow-[1px_1px_0_0_var(--color-input)] focus-within:shadow-[2px_2px_0_0_var(--color-input)] transition-all duration-300 ease-out h-9 px-3 text-sm">
+                <SelectValue placeholder="Select owner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </FormField>
         <FormField<VersionField, 'type'> name="type" label="Type" form={form}>
           {(field) => (
             <FieldTypeSelector
