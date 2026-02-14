@@ -50,6 +50,7 @@ const DraggablePanelContent: React.FC<DraggablePanelContentProps> = ({
 
   return (
     <div
+      data-panel="field-edit"
       ref={(node) => { setNodeRef(node); panelRef.current = node; }}
       style={panelStyle}
       className={cn(
@@ -80,7 +81,7 @@ const DraggablePanelContent: React.FC<DraggablePanelContentProps> = ({
 export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = ({ children, onClose, title }) => {
   const DRAGGABLE_PANEL_POSITION_KEY = 'draggable-field-edit-panel-position';
 
-  const [position, setPosition] = useState(() => {
+  const [position, setPosition] = useState<{x: number, y: number}>(() => {
     try {
       const savedPosition = localStorage.getItem(DRAGGABLE_PANEL_POSITION_KEY);
       return savedPosition ? JSON.parse(savedPosition) : { x: 100, y: 100 };
@@ -92,15 +93,33 @@ export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = (
   const [isMobile, setIsMobile] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
 
+    const constrainPosition = useCallback((x: number, y: number, width: number, height: number) => {
+    const margin = -70;
+    const maxX = window.innerWidth - width - margin;
+    const maxY = window.innerHeight - height - margin;
+    
+    return {
+      x: Math.max(margin, Math.min(x, maxX)),
+      y: Math.max(margin, Math.min(y, maxY)),
+    };
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       const newIsMobile = window.innerWidth < 768;
       setIsMobile(newIsMobile);
+
+      const panel = document.querySelector('[data-panel="field-edit"]') as HTMLElement;
+      if (panel) {
+        const width = panel.offsetWidth || 384;
+        const height = panel.offsetHeight || 400;
+        setPosition((prevPosition) => constrainPosition(prevPosition.x, prevPosition.y, width, height));
+      }
     };
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [constrainPosition]);
 
   useEffect(() => {
     return () => localStorage.setItem(DRAGGABLE_PANEL_POSITION_KEY, JSON.stringify(position));
@@ -112,16 +131,6 @@ export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = (
     })
   );
 
-  const constrainPosition = useCallback((x: number, y: number, width: number, height: number) => {
-    const margin = 10;
-    const maxX = window.innerWidth - width - margin;
-    const maxY = window.innerHeight - height - margin;
-    
-    return {
-      x: Math.max(margin, Math.min(x, maxX)),
-      y: Math.max(margin, Math.min(y, maxY)),
-    };
-  }, []);
 
   const handleDragStart = () => {
     setDragStartPos({ ...position });
