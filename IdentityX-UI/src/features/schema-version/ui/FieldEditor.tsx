@@ -56,7 +56,8 @@ export default function FieldEditor() {
       setItems(currentItems => {
         const oldIndex = currentItems.findIndex(item => item.key === active.id);
         const newIndex = currentItems.findIndex(item => item.key === over.id);
-        return arrayMove(currentItems, oldIndex, newIndex);
+        const newItems = arrayMove(currentItems, oldIndex, newIndex);
+        return newItems.map((item, index) => ({ ...item, position: index }));
       });
     }
     setActiveId(null);

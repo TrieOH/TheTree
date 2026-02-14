@@ -23,16 +23,16 @@ export const versionFieldSchema = z.object({
   default_value: z.json().optional(), // done
   description: z.string().optional(),
   key: z.string().min(3, "Key must be at least 3 characters long"), // done
-  mutable: z.boolean(),
+  mutable: z.boolean(), // done
   options: z.array(z.object({ // done
     label: z.string(),
     position: z.number(),
     value: z.string()
   })),
   owner: z.enum(["user", "system", "admin"]),
-  placeholder: z.string().optional(),
-  position: z.number(),
-  required: z.boolean(),
+  placeholder: z.string().optional(), // done
+  position: z.number(), // done
+  required: z.boolean(), // done
   required_rules: z.array(z.object({
     depends_on_field_key: z.string(),
     operator: RuleOperator,
