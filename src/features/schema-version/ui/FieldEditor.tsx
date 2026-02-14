@@ -14,6 +14,7 @@ import { DragOverlay } from "@dnd-kit/core";
 import type { VersionField, VersionFieldList } from "../model/types";
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { Plus } from "lucide-react"; 
 
 export default function FieldEditor() {
   const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
@@ -66,24 +67,43 @@ export default function FieldEditor() {
     setNextId(prevId => prevId + 1);
   };
 
+  const handleDeleteField = (fieldKey: string) => {
+    setItems(currentItems => currentItems.filter(item => item.key !== fieldKey));
+  };
+
+  const handleEditField = (fieldKey: string) => {
+    console.log(`Edit field with key: ${fieldKey}`);
+  };
+
   const activeItem = activeId ? items.find(item => item.key === activeId) : null;
 
   return (
-    <main className="flex w-full h-(--screen--minus-header)">
+    <main className="flex w-full min-h-(--screen--minus-header)">
       <DndContext
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
         sensors={sensors}
       >
-        <div className="flex-1 max-w-79 border-r border-r-border p-2 space-y-2">
-          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} isFixed={true}/>
+        <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
+          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} isFixed={true} />
           <SortableContext items={items.map(item => item.key)}>
             {items.map((item) => (
-              <FieldCard key={item.key} field={item}/>
+              <FieldCard 
+                key={item.key} 
+                field={item} 
+                onEdit={handleEditField} 
+                onDelete={handleDeleteField} 
+              />
             ))}
           </SortableContext>
-          <ShadowButton onClick={handleAddField} className="w-full" value="Add Field"/>
+          <ShadowButton
+            onClick={handleAddField} 
+            className="w-full justify-center"
+            value="Add Field" 
+            variant="solid"
+            leftIcon={<Plus className="w-4 h-4" />} 
+          />
           <FieldCard 
             key={defaultPasswordVersionField.key} 
             field={{...defaultPasswordVersionField}} 
