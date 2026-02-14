@@ -1,13 +1,23 @@
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { SchemaVersion, VersionDraft } from "../model/types";
+import type { SchemaVersion, SchemaVersionFields, VersionDraft } from "../model/types";
 
 export const createSchemaVersionDraftFn = createClientOnlyFn((versionData: VersionDraft) => {
   const { project_id, schema_id } = versionData
   return authFetcher<SchemaVersion>(`/projects/${project_id}/schemas/${schema_id}/versions/draft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+  });
+});
+
+
+export const publishSchemaVersionFieldFn = createClientOnlyFn((fieldsData: SchemaVersionFields) => {
+  const { project_id, schema_id, version, fields } = fieldsData
+  return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+    body: JSON.stringify({fields})
   });
 });
 
