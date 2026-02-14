@@ -12,6 +12,8 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
 import type { VersionField, VersionFieldList } from "../model/types";
+import { DraggableFieldEditPanel } from './DraggableFieldEditPanel';
+import { FieldEditForm } from './FieldEditForm';
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus } from "lucide-react"; 
@@ -20,6 +22,15 @@ export default function FieldEditor() {
   const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextId, setNextId] = useState(defaultVersionFieldList.length);
+  const [editingField, setEditingField] = useState<VersionField | null>(null);
+
+  const handleOpenEditPanel = (field: VersionField) => {
+    setEditingField(field);
+  };
+
+  const handleCloseEditPanel = () => {
+    setEditingField(null);
+  };
 
   const sensors = useSensors(
   useSensor(PointerSensor, {
@@ -71,8 +82,13 @@ export default function FieldEditor() {
     setItems(currentItems => currentItems.filter(item => item.key !== fieldKey));
   };
 
-  const handleEditField = (fieldKey: string) => {
-    console.log(`Edit field with key: ${fieldKey}`);
+  const handleUpdateField = (updatedField: VersionField) => {
+    setItems(currentItems =>
+      currentItems.map(item =>
+        item.key === updatedField.key ? updatedField : item
+      )
+    );
+    if (editingField?.key === updatedField.key) setEditingField(updatedField);
   };
 
   const activeItem = activeId ? items.find(item => item.key === activeId) : null;
@@ -86,14 +102,20 @@ export default function FieldEditor() {
         sensors={sensors}
       >
         <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
-          <FieldCard key={defaultEmailVersionField.key} field={defaultEmailVersionField} isFixed={true} />
+          <FieldCard 
+            key={defaultEmailVersionField.key} 
+            field={defaultEmailVersionField} 
+            isFixed={true} 
+            onOpenEditPanel={handleOpenEditPanel}
+          />
           <SortableContext items={items.map(item => item.key)}>
             {items.map((item) => (
-              <FieldCard 
-                key={item.key} 
-                field={item} 
-                onEdit={handleEditField} 
-                onDelete={handleDeleteField} 
+              <FieldCard
+                key={item.key}
+                field={item}
+                onDelete={handleDeleteField}
+                onUpdateField={handleUpdateField}
+                onOpenEditPanel={handleOpenEditPanel}
               />
             ))}
           </SortableContext>
@@ -109,6 +131,7 @@ export default function FieldEditor() {
             field={{...defaultPasswordVersionField}} 
             overwriteType="password"
             isFixed={true}
+            onOpenEditPanel={handleOpenEditPanel}
           />
         </div>
         {createPortal(
@@ -121,6 +144,18 @@ export default function FieldEditor() {
         )}
       </DndContext>
       <div className="flex-1"></div>
+      {editingField && (
+        <DraggableFieldEditPanel onClose={handleCloseEditPanel} title="Edit Field">
+          <FieldEditForm
+            field={editingField}
+            onSave={(updatedField) => {
+              handleUpdateField(updatedField);
+              handleCloseEditPanel();
+            }}
+            onCancel={handleCloseEditPanel}
+          />
+        </DraggableFieldEditPanel>
+      )}
     </main>
   )
 }
