@@ -34,7 +34,7 @@ export const ShadowTextarea: React.FC<ShadowTextareaProps> = ({
         rows={rows}
         placeholder={placeholder}
         className={cn(
-          "h-auto w-full rounded-sm bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none resize-y",
+          "h-auto min-h-16 w-full rounded-sm bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none resize-y",
           disabled && "cursor-not-allowed"
         )}
         value={value}

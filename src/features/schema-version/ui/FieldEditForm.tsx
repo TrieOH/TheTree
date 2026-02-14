@@ -8,22 +8,18 @@ import { ShadowTextarea } from '@/shared/ui/form/ShadowTextarea';
 import { versionFieldSchema } from '../model/types';
 import { useEffect } from 'react';
 import { Checkbox } from '@/shared/ui/shadcn/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/shadcn/select";
+import { RulesEditor } from './RulesEditor';
 import { OptionsEditor } from './OptionsEditor';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/shadcn/select';
 
 interface FieldEditFormProps {
   field: VersionField;
   onSave: (updatedField: VersionField) => void;
   onCancel: () => void;
+  allFieldKeys: string[];
 }
 
-export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel }) => {
+export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys }) => {
   const form = useForm({
     defaultValues: field,
     onSubmit: async ({ value }) => {
@@ -150,6 +146,24 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
+          )}
+        </FormField>
+        <FormField<VersionField, 'required_rules'> name="required_rules" label="Required Rules" form={form}>
+          {(field) => (
+            <RulesEditor
+              rules={field.state.value || []}
+              allFieldKeys={allFieldKeys}
+              onChange={field.handleChange}
+            />
+          )}
+        </FormField>
+        <FormField<VersionField, 'visibility_rules'> name="visibility_rules" label="Visibility Rules" form={form} >
+          {(field) => (
+            <RulesEditor
+              rules={field.state.value || []}
+              allFieldKeys={allFieldKeys}
+              onChange={field.handleChange}
+            />
           )}
         </FormField>
         <FormField<VersionField, 'type'> name="type" label="Type" form={form}>

@@ -60,10 +60,11 @@ export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange 
         </div>
       ))}
       <ShadowButton 
-        type="button" 
+        type="button"
+        variant="ghost"
         onClick={handleAddOption} 
-        className="w-full"
-        leftIcon={<PlusIcon className="h-4 w-4 mr-2" />}
+        className="w-full h-8 text-xs text-muted-foreground hover:text-foreground border border-dashed border-muted-foreground/30 hover:border-muted-foreground/60"
+        leftIcon={<PlusIcon className="h-4 w-4" />}
         value='Add Option'
       />
     </div>
