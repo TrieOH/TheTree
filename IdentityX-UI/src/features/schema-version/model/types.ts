@@ -20,11 +20,11 @@ export interface SchemaVersion {
 }
 
 export const versionFieldSchema = z.object({
-  default_value: z.json().optional(),
+  default_value: z.json().optional(), // done
   description: z.string().optional(),
-  key: z.string().min(3, "Key must be at least 3 characters long"),
+  key: z.string().min(3, "Key must be at least 3 characters long"), // done
   mutable: z.boolean(),
-  options: z.array(z.object({
+  options: z.array(z.object({ // done
     label: z.string(),
     position: z.number(),
     value: z.string()
@@ -38,8 +38,8 @@ export const versionFieldSchema = z.object({
     operator: RuleOperator,
     value: z.json()
   })),
-  title: z.string().min(3, "Title must be at least 3 characters long"),
-  type: z.enum(["string", "email", "int", "select", "radio", "checkbox", "bool"]),
+  title: z.string().min(3, "Title must be at least 3 characters long"), // done
+  type: z.enum(["string", "email", "int", "select", "radio", "checkbox", "bool"]), // done
   visibility_rules: z.array(z.object({
     depends_on_field_key: z.string(),
     operator: RuleOperator,

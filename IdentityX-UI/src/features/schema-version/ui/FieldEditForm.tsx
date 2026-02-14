@@ -4,8 +4,9 @@ import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { FieldTypeSelector } from './FieldTypeSelector';
 import { useForm } from '@tanstack/react-form';
 import { FormField } from '@/shared/ui/form/FormField';
-import { useEffect } from 'react';
+import { OptionsEditor } from './OptionsEditor';
 import { versionFieldSchema } from '../model/types';
+import { useEffect } from 'react';
 
 interface FieldEditFormProps {
   field: VersionField;
@@ -74,7 +75,23 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
               onSelectType={field.handleChange}
             />
           )}
-        </FormField>            
+        </FormField>
+        <form.Subscribe
+          selector={(state) => state.values.type}
+          children={(type) => {
+            const showOptions = ['select', 'radio', 'checkbox'].includes(type);
+            return showOptions ? (
+              <FormField<VersionField, 'options'> name="options" label="Options" form={form}>
+                {(field) => (
+                  <OptionsEditor
+                    options={field.state.value || []}
+                    onChange={field.handleChange}
+                  />
+                )}
+              </FormField> 
+            ) : null;
+          }}
+        />
         <div className="flex justify-end gap-2">
           <ShadowButton type="button" variant="ghost" onClick={onCancel} value="Cancel" />
           <form.Subscribe
