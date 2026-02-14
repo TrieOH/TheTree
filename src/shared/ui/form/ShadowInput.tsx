@@ -8,12 +8,14 @@ interface ShadowInputProps {
   className?: string;
   disabled?: boolean;
   type?: string;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export const ShadowInput: React.FC<ShadowInputProps> = ({
   id,
   value,
   onChange,
+  onBlur,
   placeholder,
   className,
   disabled,
@@ -37,6 +39,7 @@ export const ShadowInput: React.FC<ShadowInputProps> = ({
         )}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         disabled={disabled}
       />
     </div>

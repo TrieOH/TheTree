@@ -20,7 +20,7 @@ export interface SchemaVersion {
 }
 
 export const versionFieldSchema = z.object({
-  default_value: z.json(),
+  default_value: z.json().optional(),
   description: z.string().optional(),
   key: z.string().min(3, "Key must be at least 3 characters long"),
   mutable: z.boolean(),
