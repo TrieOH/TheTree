@@ -17,8 +17,14 @@ import { FieldEditForm } from './FieldEditForm';
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus } from "lucide-react"; 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { publishSchemaVersionFieldFn } from "../api";
+import { toast } from "sonner";
+import { useStore } from "@tanstack/react-store";
+import { navigationStore } from "@/features/navigation";
 
 export default function FieldEditor() {
+  const queryClient = useQueryClient();
   const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [originalItems, setOriginalItems] = useState<VersionFieldList>(defaultVersionFieldList);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -98,8 +104,25 @@ export default function FieldEditor() {
     if (editingField?.key === updatedField.key) setEditingField(updatedField);
   };
 
+  const publishVersionFieldSchemaMutation = useMutation({
+    mutationFn: publishSchemaVersionFieldFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message);
+        queryClient.invalidateQueries({ queryKey: ["version_fields"] });
+      } else toast.error(`Failed to publish schema: ${response.message}`);
+    },
+  });
+
+  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
+
   const handleSubmit = () => {
-    console.log("Submitting changes:", items);
+    publishVersionFieldSchemaMutation.mutate({
+      fields: items, 
+      project_id: currentProjectId || "",
+      schema_id: currentSchemaId || "",
+      version: currentSchemaVersion || 1
+    })
     setOriginalItems(items);
   };
 

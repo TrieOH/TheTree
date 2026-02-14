@@ -92,3 +92,13 @@ const versionFieldListSchema = z
 
 
 export type VersionFieldList = z.infer<typeof versionFieldListSchema>;
+
+
+export const schemaVersionFieldsSchema = z.object({
+  schema_id: z.string(),
+  project_id: z.string(),
+  version: z.number(),
+  fields: versionFieldListSchema,
+});
+
+export type SchemaVersionFields = z.infer<typeof schemaVersionFieldsSchema>;
