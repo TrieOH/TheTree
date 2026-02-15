@@ -110,6 +110,7 @@ export default function SchemaTable({ project_id }: PropsI) {
             label: "Inspect",
             onClick: (row) => {
               navigationActions.setCurrentSchemaId(row.id);
+              navigationActions.setCurrentSchemaVersion(null);
               navigate({to: '/schemas/editor'})
             },
             icon: Eye,

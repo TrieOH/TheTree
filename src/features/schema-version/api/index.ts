@@ -1,7 +1,7 @@
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { SchemaVersion, SchemaVersionFields, VersionDraft } from "../model/types";
+import type { DetailedSchemaVersion, SchemaVersion, SchemaVersionFields, VersionDraft } from "../model/types";
 
 export const createSchemaVersionDraftFn = createClientOnlyFn((versionData: VersionDraft) => {
   const { project_id, schema_id } = versionData
@@ -11,6 +11,14 @@ export const createSchemaVersionDraftFn = createClientOnlyFn((versionData: Versi
   });
 });
 
+
+export const publishSchemaVersionFn = createClientOnlyFn((fieldsData: VersionDraft) => {
+  const { project_id, schema_id } = fieldsData
+  return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/versions/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+});
 
 export const publishSchemaVersionFieldFn = createClientOnlyFn((fieldsData: SchemaVersionFields) => {
   const { project_id, schema_id, version, fields } = fieldsData
@@ -28,15 +36,9 @@ export const getLatestSchemaVersionFn = createClientOnlyFn(async ({
   queryKey: ["latestSchemaVersion", string, string];
 }) => {
   const [, projectId, schemaId] = queryKey;
-
-  try {
-    return await tanstackQueryFetcher<SchemaVersion>(
-      `/projects/${projectId}/schemas/${schemaId}/versions/latest`
-    );
-  } catch (error) {
-    console.error("Error fetching latest schema version:", error);
-    throw error;
-  }
+  return await tanstackQueryFetcher<SchemaVersion>(
+    `/projects/${projectId}/schemas/${schemaId}/versions/latest`
+  );
 });
 
 export const latestSchemaVersionQueryOptions = (project_id: string, schema_id: string) => {
@@ -53,15 +55,9 @@ export const getCurrentSchemaVersionFn = createClientOnlyFn(async ({
   queryKey: ["currentSchemaVersion", string, string];
 }) => {
   const [, projectId, schemaId] = queryKey;
-
-  try {
-    return await tanstackQueryFetcher<SchemaVersion>(
-      `/projects/${projectId}/schemas/${schemaId}/versions/current`
-    );
-  } catch (error) {
-    console.error("Error fetching current schema version:", error);
-    throw error;
-  }
+  return await tanstackQueryFetcher<SchemaVersion>(
+    `/projects/${projectId}/schemas/${schemaId}/versions/current`
+  );
 });
 
 export const currentSchemaVersionQueryOptions = (project_id: string, schema_id: string) => {
@@ -69,5 +65,24 @@ export const currentSchemaVersionQueryOptions = (project_id: string, schema_id: 
     queryKey: ['currentSchemaVersion', project_id, schema_id],
     queryFn: getCurrentSchemaVersionFn,
     enabled: !!project_id && !!schema_id
+  })
+}
+
+export const getSchemaVersionByIdFn = createClientOnlyFn(async ({
+  queryKey,
+}: {
+  queryKey: ["schemaVersionById", string, string, number];
+}) => {
+  const [, projectId, schemaId, version] = queryKey;
+  return await tanstackQueryFetcher<DetailedSchemaVersion>(
+    `/projects/${projectId}/schemas/${schemaId}/v${version}`
+  );
+});
+
+export const schemaVersionByIdQueryOptions = (project_id: string, schema_id: string, version: number) => {
+  return queryOptions({
+    queryKey: ['schemaVersionById', project_id, schema_id, version],
+    queryFn: getSchemaVersionByIdFn,
+    enabled: Boolean(project_id && schema_id && version !== undefined)
   })
 }
