@@ -174,9 +174,8 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
             />
           )}
         </FormField>
-        <form.Subscribe
-          selector={(state) => state.values.type}
-          children={(type) => {
+        <form.Subscribe selector={(state) => state.values.type}>
+          {(type) => {
             const showOptions = ['select', 'radio', 'checkbox'].includes(type);
             return showOptions ? (
               <FormField<VersionField, 'options'> name="options" label="Options" form={form}>
@@ -189,15 +188,14 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
               </FormField> 
             ) : null;
           }}
-        />
+        </form.Subscribe>
         <div className="flex justify-end gap-2">
           <ShadowButton type="button" variant="ghost" onClick={onCancel} value="Cancel" />
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-            children={([canSubmit, isSubmitting]) => (
+          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+            {([canSubmit, isSubmitting]) => (
               <ShadowButton type="submit" value="Save" disabled={!canSubmit || isSubmitting} />
             )}
-          />
+          </form.Subscribe>
         </div>
       </form>
   );

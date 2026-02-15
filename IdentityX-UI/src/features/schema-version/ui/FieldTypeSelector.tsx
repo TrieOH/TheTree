@@ -27,7 +27,7 @@ export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({ selectedTy
             onClick={() => onSelectType(type)}
           >
             <Icon className="w-6 h-6 mb-1" />
-            <span className="text-xs font-medium capitalize">{type}</span>
+            <span className="text-xs font-medium capitalize">{type === "int" ? "number" : type}</span>
           </button>
         );
       })}

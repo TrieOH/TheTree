@@ -1,7 +1,7 @@
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Upload } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { publishSchemaVersionFn } from "../api"; // Use the new publishSchemaVersionFn
+import { publishSchemaVersionFn } from "../api";
 import { toast } from "sonner";
 import { useStore as useNavigationStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
@@ -10,10 +10,16 @@ import type { VersionFieldList } from "../model/types";
 interface PublishSchemaVersionButtonProps {
   items: VersionFieldList;
   hasChanges: boolean;
+  isMobile: boolean;
   setOriginalItems: (items: VersionFieldList) => void;
 }
 
-export default function PublishSchemaVersionButton({ items, hasChanges, setOriginalItems }: PublishSchemaVersionButtonProps) {
+export default function PublishSchemaVersionButton({ 
+  items, 
+  hasChanges, 
+  isMobile,
+  setOriginalItems
+}: PublishSchemaVersionButtonProps) {
   const queryClient = useQueryClient();
   const { currentProjectId, currentSchemaId } = useNavigationStore(navigationStore);
 
@@ -45,8 +51,8 @@ export default function PublishSchemaVersionButton({ items, hasChanges, setOrigi
     <ShadowButton
       onClick={handleSubmit}
       disabled={!hasChanges}
-      value="Publish Version"
       variant="solid"
+      value={isMobile ? '' : 'Publish Version'}
       leftIcon={<Upload className="w-4 h-4" />}
     />
   );

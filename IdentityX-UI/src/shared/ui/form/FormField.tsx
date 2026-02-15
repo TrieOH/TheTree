@@ -1,10 +1,10 @@
-import { useField, type FieldApi, type FormApi } from '@tanstack/react-form';
+import { type AnyFormApi, type AnyFieldApi, useField } from '@tanstack/react-form';
 
 interface FormFieldProps<TFormData, TName extends keyof TFormData & string> {
   name: TName;
   label: string;
-  form: FormApi<TFormData, any, any, any, any, any, any, any, any, any, any, any>; 
-  children: (field: FieldApi<TFormData, TName, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>) => React.ReactNode;
+  form: AnyFormApi; 
+  children: (field: AnyFieldApi) => React.ReactNode;
 }
 
 export const FormField = <TFormData, TName extends keyof TFormData & string>({

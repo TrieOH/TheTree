@@ -1,9 +1,10 @@
-import React from 'react';
+import type React from 'react';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 
 interface Option {
+  id: string;
   label: string;
   value: string;
   position: number;
@@ -18,15 +19,14 @@ export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange 
   const handleOptionChange = (index: number, key: keyof Option, value: string | number) => {
     const newOptions = [...options];
     if (key === 'position' && typeof value === 'string') {
-      newOptions[index] = { ...newOptions[index], [key]: parseInt(value) };
-    } else {
-      newOptions[index] = { ...newOptions[index], [key]: value };
-    }
+      newOptions[index] = { ...newOptions[index], [key]: parseInt(value, 10) };
+    } else newOptions[index] = { ...newOptions[index], [key]: value };
+    
     onChange(newOptions);
   };
 
   const handleAddOption = () => {
-    const newOptions = [...options, { label: '', value: '', position: options.length }];
+    const newOptions = [...options, { id: crypto.randomUUID(), label: '', value: '', position: options.length }];
     onChange(newOptions);
   };
 
@@ -38,7 +38,7 @@ export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange 
   return (
     <div className="space-y-2">
       {options.map((option, index) => (
-        <div key={index} className="flex items-center gap-2">
+        <div key={option.id} className="flex items-center gap-2">
           <ShadowInput
             placeholder="Label"
             value={option.label}
