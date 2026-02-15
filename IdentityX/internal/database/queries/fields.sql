@@ -395,3 +395,53 @@ JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
     JOIN schema_fields dst_dep ON dst_dep.id = src_dep.id
     AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
+
+-- /////////////////////////////// --
+-- //// -- FIELD CRUD -- //// --
+-- /////////////////////////////// --
+
+-- name: GetFieldByObjectID :one
+SELECT *
+FROM schema_fields
+WHERE object_id = $1;
+
+-- name: UpdateField :one
+UPDATE schema_fields
+SET
+    key = COALESCE(sqlc.arg(key), key),
+    type = COALESCE(sqlc.arg(type), type),
+    title = COALESCE(sqlc.arg(title), title),
+    description = COALESCE(sqlc.arg(description), description),
+    placeholder = COALESCE(sqlc.arg(placeholder), placeholder),
+    required = COALESCE(sqlc.arg(required), required),
+    mutable = COALESCE(sqlc.arg(mutable), mutable),
+    default_value = COALESCE(sqlc.arg(default_value), default_value),
+    position = COALESCE(sqlc.arg(position), position),
+    updated_at = NOW()
+WHERE object_id = sqlc.arg(object_id)
+  AND schema_version_id = sqlc.arg(schema_version_id)
+RETURNING *;
+
+-- name: CheckFieldKeyExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM schema_fields
+    WHERE schema_version_id = $1
+      AND key = $2
+      AND object_id != $3
+) AS exists;
+
+-- name: HasDependentRules :many
+SELECT DISTINCT f.object_id as field_object_id, f.key as field_key
+FROM schema_fields f
+JOIN schema_field_visibility_rules vr ON vr.field_id = f.object_id
+WHERE vr.depends_on_field_id = $1
+   OR EXISTS (
+       SELECT 1 FROM schema_field_required_rules rr
+       WHERE rr.field_id = f.object_id
+         AND rr.depends_on_field_id = $1
+   );
+
+-- name: DeleteField :exec
+DELETE FROM schema_fields
+WHERE object_id = $1;

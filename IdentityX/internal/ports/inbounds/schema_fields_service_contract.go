@@ -57,6 +57,29 @@ type CreateFieldsResult struct {
 	Warnings []error
 }
 
+type EditFieldInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	FieldObjectID uuid.UUID
+	Key           *string
+	Title         *string
+	Description   *string
+	Placeholder   *string
+	Type          *string
+	Required      *bool
+	Mutable       *bool
+	DefaultValue  *json.RawMessage
+	Position      *int
+}
+
+type DeleteFieldInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	FieldObjectID uuid.UUID
+}
+
 type ValidationWarning struct {
 	FieldKey string
 	RuleType string // "visibility" or "required"

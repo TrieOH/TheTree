@@ -435,6 +435,10 @@ var (
 		})
 	ErrInvalidCharacterInFieldKey = fail.Form(FIELDInvalidCharactersInKey, "field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores", false, map[string]any{"code": 400}).
 					AddLocalization("pt-BR", "a chave do campo deve começar com uma letra minúscula e conter apenas letras minúsculas, números ou sublinhados.")
+	ErrFieldKeyAlreadyExists = fail.Form(FIELDKeyAlreadyExists, "field key '%s' already exists in this version", false, map[string]any{"code": 409}, "KEY NOT SET").
+					AddLocalization("pt-BR", "chave do campo '%s' já existe nesta versão")
+	ErrFieldHasDependentRules = fail.Form(FIELDHasDependentRules, "cannot delete field: referenced by visibility/required rules of other fields: %v", false, map[string]any{"code": 409}, "DEPENDENT FIELDS NOT SET").
+					AddLocalization("pt-BR", "não é possível excluir o campo: referenciado por regras de visibilidade/obrigatoriedade de outros campos: %v")
 
 	// ------ VAL ------
 	ErrValidationUUIDWasNil = fail.Form(ValidationUUIDWasNil, "%s field is nil", false, map[string]any{"code": 404}).

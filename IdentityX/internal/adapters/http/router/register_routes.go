@@ -209,6 +209,8 @@ func registerSchemaFieldsRoutes(
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
 		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
+		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.EditField)
+		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.DeleteField)
 	})
 }
 
