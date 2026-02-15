@@ -95,3 +95,15 @@ func FieldParamToInputField(f *FieldParam) *inbounds.InputField {
 
 	return input
 }
+
+type EditFieldRequest struct {
+	Key          *string          `json:"key,omitempty"`
+	Type         *string          `json:"type,omitempty"`
+	Title        *string          `json:"title,omitempty"`
+	Description  *string          `json:"description,omitempty"`
+	Placeholder  *string          `json:"placeholder,omitempty"`
+	Required     *bool            `json:"required,omitempty"`
+	Mutable      *bool            `json:"mutable,omitempty"`
+	DefaultValue *json.RawMessage `json:"default_value,omitempty"`
+	Position     *int             `json:"position,omitempty"`
+}

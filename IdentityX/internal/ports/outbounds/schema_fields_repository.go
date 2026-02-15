@@ -34,4 +34,14 @@ type SchemaFieldsRepository interface {
 	GetOptionsByFieldIDs(ctx context.Context, fieldIDs []uuid.UUID) ([]field.Option, error)
 	GetVisibilityRulesByFieldIDs(ctx context.Context, fieldIDs []uuid.UUID) ([]field.VisibilityRule, error)
 	GetRequiredRulesByFieldIDs(ctx context.Context, fieldIDs []uuid.UUID) ([]field.RequiredRule, error)
+
+	// Field CRUD operations for draft versions
+	GetByObjectID(ctx context.Context, objectID uuid.UUID) (*field.Field, error)
+	UpdateField(ctx context.Context, objectID uuid.UUID, schemaVersionID uuid.UUID, updates map[string]interface{}) (*field.Field, error)
+	DeleteField(ctx context.Context, objectID uuid.UUID) error
+	CheckFieldKeyExists(ctx context.Context, versionID uuid.UUID, key string, excludeObjectID uuid.UUID) (bool, error)
+	HasDependentRules(ctx context.Context, fieldObjectID uuid.UUID) ([]field.Field, error)
+	DeleteFieldOptions(ctx context.Context, fieldID uuid.UUID) error
+	DeleteFieldVisibilityRules(ctx context.Context, fieldID uuid.UUID) error
+	DeleteFieldRequiredRules(ctx context.Context, fieldID uuid.UUID) error
 }

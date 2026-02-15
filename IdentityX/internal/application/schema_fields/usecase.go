@@ -306,3 +306,226 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.SchemaFieldIn
 		Warnings: warnings,
 	}, nil
 }
+
+func (uc *UseCase) EditField(ctx context.Context, in inbounds.EditFieldInput) (*field.Field, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.EditField")
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	var err error
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit fields for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		return nil, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot edit fields for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return nil, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return nil, fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("editing only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	// Verify field exists
+	existingField, err := fields.GetByObjectID(ctx, in.FieldObjectID)
+	if err != nil {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs(in.FieldObjectID).RecordCtx(ctx)
+	}
+
+	// Check if field belongs to this version
+	if existingField.SchemaVersionID != latest.ID {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+	}
+
+	// Validate key uniqueness if key is being updated
+	if in.Key != nil && *in.Key != existingField.Key {
+		exists, err := fields.CheckFieldKeyExists(ctx, latest.ID, *in.Key, in.FieldObjectID)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, fail.New(errx.FIELDKeyAlreadyExists).WithArgs(*in.Key).RecordCtx(ctx)
+		}
+	}
+
+	// Validate field type if it's being updated
+	if in.Type != nil {
+		if !field.IsValidFieldType(*in.Type) {
+			return nil, fail.New(errx.FIELDInvalidType).WithArgs(*in.Type).RecordCtx(ctx)
+		}
+	}
+
+	// Build updates map
+	updates := make(map[string]interface{})
+	if in.Key != nil {
+		updates["key"] = *in.Key
+	}
+	if in.Type != nil {
+		updates["type"] = *in.Type
+	}
+	if in.Title != nil {
+		updates["title"] = *in.Title
+	}
+	if in.Description != nil {
+		updates["description"] = in.Description
+	}
+	if in.Placeholder != nil {
+		updates["placeholder"] = in.Placeholder
+	}
+	if in.Required != nil {
+		updates["required"] = *in.Required
+	}
+	if in.Mutable != nil {
+		updates["mutable"] = *in.Mutable
+	}
+	if in.DefaultValue != nil {
+		updates["default_value"] = in.DefaultValue
+	}
+	if in.Position != nil {
+		updates["position"] = *in.Position
+	}
+
+	// Update the field
+	updatedField, err := fields.UpdateField(ctx, in.FieldObjectID, latest.ID, updates)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedField, nil
+}
+
+func (uc *UseCase) DeleteField(ctx context.Context, in inbounds.DeleteFieldInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.DeleteField")
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	var err error
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot delete fields for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !belongs {
+		return fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot delete fields for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("deletion only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	// Verify field exists
+	existingField, err := fields.GetByObjectID(ctx, in.FieldObjectID)
+	if err != nil {
+		return fail.New(errx.FIELDNotFound).WithArgs(in.FieldObjectID).RecordCtx(ctx)
+	}
+
+	// Check if field belongs to this version
+	if existingField.SchemaVersionID != latest.ID {
+		return fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+	}
+
+	// Check if other fields have rules that depend on this field
+	dependentFields, err := fields.HasDependentRules(ctx, in.FieldObjectID)
+	if err != nil {
+		return err
+	}
+
+	if len(dependentFields) > 0 {
+		fieldKeys := make([]string, len(dependentFields))
+		for i, f := range dependentFields {
+			fieldKeys[i] = f.Key
+		}
+		return fail.New(errx.FIELDHasDependentRules).WithArgs("field is referenced by other fields", fieldKeys).RecordCtx(ctx)
+	}
+
+	// Delete in transaction: options, rules, then field
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := fields.DeleteFieldOptions(ctx, in.FieldObjectID); err != nil {
+			return err
+		}
+		if err := fields.DeleteFieldVisibilityRules(ctx, in.FieldObjectID); err != nil {
+			return err
+		}
+		if err := fields.DeleteFieldRequiredRules(ctx, in.FieldObjectID); err != nil {
+			return err
+		}
+		if err := fields.DeleteField(ctx, in.FieldObjectID); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

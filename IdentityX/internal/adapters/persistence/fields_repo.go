@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -644,6 +645,191 @@ func (repo *schemaFieldsRepo) CreateRequiredRulesBatch(ctx context.Context, rule
 	}
 
 	if _, err := repo.queries(ctx).CreateRequiredRulesBatch(ctx, params); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+// GetByObjectID retrieves a field by its object_id
+func (repo *schemaFieldsRepo) GetByObjectID(ctx context.Context, objectID uuid.UUID) (*field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.GetByObjectID",
+		trace.WithAttributes(attribute.String("field.object_id", objectID.String())),
+	)
+	defer span.End()
+
+	sqlcField, err := repo.queries(ctx).GetFieldByObjectID(ctx, objectID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	var f field.Field
+	mapSchemaFieldFromDB(&f, &sqlcField)
+	return &f, nil
+}
+
+// UpdateField updates a field with partial updates
+func (repo *schemaFieldsRepo) UpdateField(ctx context.Context, objectID uuid.UUID, schemaVersionID uuid.UUID, updates map[string]interface{}) (*field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.UpdateField",
+		trace.WithAttributes(attribute.String("field.object_id", objectID.String())),
+	)
+	defer span.End()
+
+	// First, get the current field to preserve unchanged values
+	current, err := repo.GetByObjectID(ctx, objectID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build params with current values, then override with updates
+	params := sqlc.UpdateFieldParams{
+		ObjectID:        objectID,
+		SchemaVersionID: schemaVersionID,
+		Key:             current.Key,
+		Type:            sqlc.FieldType(current.Type),
+		Title:           current.Title,
+		Description:     current.Description,
+		Placeholder:     current.Placeholder,
+		Required:        current.Required,
+		Mutable:         current.Mutable,
+		DefaultValue:    current.DefaultValue,
+		Position:        current.Position,
+	}
+
+	// Override with provided updates
+	if key, ok := updates["key"].(string); ok {
+		params.Key = key
+	}
+	if fieldType, ok := updates["type"].(string); ok {
+		params.Type = sqlc.FieldType(fieldType)
+	}
+	if title, ok := updates["title"].(string); ok {
+		params.Title = title
+	}
+	if desc, ok := updates["description"].(*string); ok {
+		params.Description = desc
+	}
+	if placeholder, ok := updates["placeholder"].(*string); ok {
+		params.Placeholder = placeholder
+	}
+	if required, ok := updates["required"].(bool); ok {
+		params.Required = required
+	}
+	if mutable, ok := updates["mutable"].(bool); ok {
+		params.Mutable = mutable
+	}
+	if defaultValue, ok := updates["default_value"].(*json.RawMessage); ok {
+		params.DefaultValue = defaultValue
+	}
+	if position, ok := updates["position"].(int); ok {
+		params.Position = position
+	}
+
+	sqlcField, err := repo.queries(ctx).UpdateField(ctx, params)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	var f field.Field
+	mapSchemaFieldFromDB(&f, &sqlcField)
+	return &f, nil
+}
+
+// DeleteField deletes a field by its object_id
+func (repo *schemaFieldsRepo) DeleteField(ctx context.Context, objectID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteField",
+		trace.WithAttributes(attribute.String("field.object_id", objectID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteField(ctx, objectID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+// CheckFieldKeyExists checks if a field key already exists in a version
+func (repo *schemaFieldsRepo) CheckFieldKeyExists(ctx context.Context, versionID uuid.UUID, key string, excludeObjectID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.CheckFieldKeyExists",
+		trace.WithAttributes(
+			attribute.String("version_id", versionID.String()),
+			attribute.String("key", key),
+		),
+	)
+	defer span.End()
+
+	exists, err := repo.queries(ctx).CheckFieldKeyExists(ctx, sqlc.CheckFieldKeyExistsParams{
+		SchemaVersionID: versionID,
+		Key:             key,
+		ObjectID:        excludeObjectID,
+	})
+	if err != nil {
+		return false, fail.From(err).RecordCtx(ctx)
+	}
+
+	return exists, nil
+}
+
+// HasDependentRules checks if other fields have rules that depend on this field
+func (repo *schemaFieldsRepo) HasDependentRules(ctx context.Context, fieldObjectID uuid.UUID) ([]field.Field, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.HasDependentRules",
+		trace.WithAttributes(attribute.String("field.object_id", fieldObjectID.String())),
+	)
+	defer span.End()
+
+	rows, err := repo.queries(ctx).HasDependentRules(ctx, fieldObjectID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	dependentFields := make([]field.Field, len(rows))
+	for i, row := range rows {
+		dependentFields[i] = field.Field{
+			ObjectID: row.FieldObjectID,
+			Key:      row.FieldKey,
+		}
+	}
+
+	return dependentFields, nil
+}
+
+// DeleteFieldOptions deletes all options for a field
+func (repo *schemaFieldsRepo) DeleteFieldOptions(ctx context.Context, fieldID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteFieldOptions",
+		trace.WithAttributes(attribute.String("field_id", fieldID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteFieldOptions(ctx, fieldID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+// DeleteFieldVisibilityRules deletes all visibility rules for a field
+func (repo *schemaFieldsRepo) DeleteFieldVisibilityRules(ctx context.Context, fieldID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteFieldVisibilityRules",
+		trace.WithAttributes(attribute.String("field_id", fieldID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteVisibilityRules(ctx, fieldID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+// DeleteFieldRequiredRules deletes all required rules for a field
+func (repo *schemaFieldsRepo) DeleteFieldRequiredRules(ctx context.Context, fieldID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteFieldRequiredRules",
+		trace.WithAttributes(attribute.String("field_id", fieldID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteRequiredRules(ctx, fieldID); err != nil {
 		return fail.From(err).RecordCtx(ctx)
 	}
 
