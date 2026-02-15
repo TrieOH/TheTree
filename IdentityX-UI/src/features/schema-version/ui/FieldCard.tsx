@@ -13,9 +13,10 @@ interface PropsI {
   isFixed?: boolean;
   onDelete?: (fieldKey: string) => void;
   onOpenEditPanel?: (field: VersionField) => void;
+  isSelected?: boolean; // Add isSelected prop
 }
 
-export default function FieldCard({field, className, overwriteType, isFixed = false, onDelete, onOpenEditPanel}: PropsI) {
+export default function FieldCard({field, className, overwriteType, isFixed = false, onDelete, onOpenEditPanel, isSelected}: PropsI) {
 
   const {
     attributes,
@@ -48,6 +49,7 @@ export default function FieldCard({field, className, overwriteType, isFixed = fa
         !isFixed && "hover:shadow-[2px_2px_0_0_var(--color-border)] hover:bg-muted/50",
         isDragging && "opacity-50",
         isFixed && "bg-muted-foreground/10 border-dashed cursor-not-allowed",
+        isSelected && "ring-2 ring-primary", // Add this line for selected styling
         className
       )}
     >
