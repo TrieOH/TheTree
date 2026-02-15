@@ -5,13 +5,22 @@ import (
 	"log"
 	"net/http"
 	"time"
-	"univents/internal/adapters/http/router"
-	"univents/internal/infrastructure/telemetry"
+	"univents/internal/eventcore/application/commands"
+	"univents/internal/eventcore/application/queries"
+	"univents/internal/eventcore/infrastructure"
+	eventhttp "univents/internal/eventcore/interfaces/http"
+	"univents/internal/interfaces/http/middleware"
+	"univents/internal/interfaces/http/router"
+	"univents/internal/interfaces/http/system"
+	"univents/internal/plataform/database"
+	"univents/internal/plataform/database/sqlc"
+	"univents/internal/plataform/telemetry"
 
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
 )
 
 type UniventsApp struct {
@@ -29,7 +38,7 @@ func UniventsSetup() *UniventsApp {
 	SetupGoAuth(&app)
 	SetupFail()
 	SetupFUN()
-	SetupDB(&app, "./internal/database/migrations")
+	SetupDB(&app, "./internal/plataform/database/migrations")
 	app.Redis = SetupRedis(15 * time.Second)
 	SetupCron(app.DB, &app)
 
@@ -64,7 +73,29 @@ func UniventsStart(app *UniventsApp) {
 		}
 	}()
 
-	mux, _ := router.CreateRouter(app.gaClient, app.DB, app.Redis)
+	q := sqlc.New(app.DB)
+	txRunner := database.NewPGXTxRunner(app.DB)
+	tracer := otel.Tracer(string(telemetry.UniventsTracer))
+	logs := telemetry.L()
+
+	authMW := middleware.NewAuthMiddleware(app.gaClient, tracer)
+
+	eventRepo := infrastructure.NewEventRepo(q, logs, tracer)
+
+	eventCommands := commands.New(eventRepo, app.gaClient, tracer, txRunner)
+	eventQueries := queries.New(eventRepo, app.gaClient, tracer, txRunner)
+
+	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
+
+	systemHandler := system.NewUniventsHandler()
+
+	deps := &router.HTTPDeps{
+		EventsHandler:  eventHandler,
+		SystemHandler:  systemHandler,
+		AuthMiddleware: authMW,
+	}
+
+	mux := router.CreateRouter(deps)
 
 	log.Printf("GoAuth listening on :%s", app.Port)
 	log.Fatal(http.ListenAndServe(":"+app.Port, mux))

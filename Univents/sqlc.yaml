@@ -1,7 +1,7 @@
 version: "2"
 sql:
-  - schema: "internal/database/migrations"
-    queries: "internal/database/queries/*.sql"
+  - schema: "internal/plataform/database/migrations"
+    queries: "internal/plataform/database/queries/*.sql"
     engine: "postgresql"
     gen:
       go:
@@ -10,7 +10,7 @@ sql:
         emit_prepared_queries: false
         emit_exact_table_names: false
         package: "sqlc"
-        out: "internal/adapters/persistence/sqlc"
+        out: "internal/plataform/database/sqlc"
         sql_package: "pgx/v5"
         overrides:
           - db_type: "pg_catalog.varchar"
@@ -183,3 +183,15 @@ sql:
               import: "time"
               type: "Time"
               pointer: false
+          - db_type: "event_status"
+            nullable: false
+            go_type:
+              import: "univents/internal/eventcore/domain"
+              type: "Status"
+              pointer: false
+          - db_type: "event_status"
+            nullable: true
+            go_type:
+              import: "univents/internal/eventcore/domain"
+              type: "Status"
+              pointer: true

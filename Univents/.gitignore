@@ -1,5 +1,5 @@
-internal/adapters/persistence/sqlc/
-internal/adapters/persistence/sqlc/*
+internal/plataform/database/sqlc/
+internal/plataform/database/sqlc/*
 docs/
 docs/*
 .env

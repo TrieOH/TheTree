@@ -3,7 +3,7 @@ package initialization
 import (
 	"log"
 	"strings"
-	http2 "univents/internal/adapters/http/handlers"
+	http2 "univents/internal/shared/validation"
 
 	"github.com/spf13/viper"
 )

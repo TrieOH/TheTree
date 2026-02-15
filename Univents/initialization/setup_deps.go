@@ -4,9 +4,8 @@ import (
 	"context"
 	"log"
 	"time"
-	"univents/internal/adapters/persistence/transactions"
-	"univents/internal/database"
-	"univents/internal/errx"
+	"univents/internal/plataform/database"
+	"univents/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
@@ -115,7 +114,7 @@ func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
 
 	app.scheduler = scheduler
 
-	_ = transactions.NewTxRunner(db)
+	_ = database.NewPGXTxRunner(db)
 
 	go scheduler.Start()
 	log.Println("Started the cron scheduler")
