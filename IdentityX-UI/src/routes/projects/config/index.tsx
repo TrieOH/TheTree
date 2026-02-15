@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { requireAuth } from '@/features/auth/lib/route-guard';
 import { navigationStore } from '@/features/navigation';
 import SchemaTable from '@/features/schema/ui/SchemaTable';
@@ -21,11 +22,7 @@ export const Route = createFileRoute('/projects/config/')({
     queryClient.prefetchQuery(usersQueryOptions(id || ""))
     return { }
   },
-  validateSearch: (search: Record<string, string>) => {
-    return {
-      tab: search.tab || 'dashboard'
-    }
-  },
+  validateSearch: z.object({ tab: z.string().optional().default('dashboard') }),
   component: RouteComponent,
   staticData: {
     components: {
