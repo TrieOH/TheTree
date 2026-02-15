@@ -14,16 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface FieldEditFormProps {
   field: VersionField;
-  onSave: (updatedField: VersionField) => void;
+  onSave: (originalField: VersionField, updatedField: VersionField) => void;
   onCancel: () => void;
   allFieldKeys: string[];
 }
 
 export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys }) => {
+  const filteredFieldKeys = allFieldKeys.filter((key) => key !== field.key);
   const form = useForm({
     defaultValues: field,
     onSubmit: async ({ value }) => {
-      onSave(value);
+      onSave(field, value);
     },
     validators: {
       onChange: versionFieldSchema,
@@ -152,7 +153,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           {(field) => (
             <RulesEditor
               rules={field.state.value || []}
-              allFieldKeys={allFieldKeys}
+              allFieldKeys={filteredFieldKeys}
               onChange={field.handleChange}
             />
           )}
@@ -161,7 +162,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           {(field) => (
             <RulesEditor
               rules={field.state.value || []}
-              allFieldKeys={allFieldKeys}
+              allFieldKeys={filteredFieldKeys}
               onChange={field.handleChange}
             />
           )}
