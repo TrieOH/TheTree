@@ -34,11 +34,11 @@ export default function SchemaVersionSelector() {
     ...latestSchemaVersionQueryOptions(currentProjectId || "", currentSchemaId || ""),
     enabled,
   });
-
+  
   const [showCreatingLoader, setShowCreatingLoader] = React.useState(false);
   const MIN_LOADER_DISPLAY_TIME = 500; // ms
 
-    const createSchemaVersionMutation = useMutation({
+  const createSchemaVersionMutation = useMutation({
     mutationFn: createSchemaVersionDraftFn,
     onSuccess: (response) => {
       if (response.success) {
@@ -67,19 +67,24 @@ export default function SchemaVersionSelector() {
     return () => clearTimeout(timer);
   }, [createSchemaVersionMutation.isPending, showCreatingLoader]);
 
+  React.useEffect(() => {
+    if (!enabled) return;
+    if (!latestVersion?.version_number) return;
+
+    if (storedVersion == null) navigationActions.setCurrentSchemaVersion(latestVersion.version_number);
+    
+  }, [enabled, latestVersion?.version_number, storedVersion]);
 
 
   const displayVersion = React.useMemo(() => {
     if (!enabled) return "Select project...";
     if (showCreatingLoader) return "Creating...";
     if (isLoadingLatest) return "Loading...";
+        
+    if (!storedVersion) return "Empty";
     
-    const version = storedVersion ?? latestVersion?.version_number;
-    
-    if (!version) return "Empty";
-    
-    const isLatest = version === latestVersion?.version_number;
-    return `v${version}${isLatest ? " (lts)" : ""}`;
+    const isLatest = storedVersion === latestVersion?.version_number;
+    return `v${storedVersion}${isLatest ? " (lts)" : ""}`;
   }, [
     enabled, 
     storedVersion, 
