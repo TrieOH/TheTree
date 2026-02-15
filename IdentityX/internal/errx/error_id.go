@@ -130,8 +130,8 @@ var (
 	FIELDSameKeyForMultipleFields        = fail.ID(0, "FIELD", 5, false, "FIELDSameKeyForMultipleFields")
 	FIELDSamePositionForMultipleFields   = fail.ID(0, "FIELD", 6, false, "FIELDSamePositionForMultipleFields")
 	FIELDInvalidCharactersInKey          = fail.ID(0, "FIELD", 7, false, "FIELDInvalidCharactersInKey")
-	FIELDKeyAlreadyExists                = fail.ID(0, "FIELD", 8, true, "FIELDKeyAlreadyExists")
-	FIELDHasDependentRules               = fail.ID(0, "FIELD", 9, true, "FIELDHasDependentRules")
+	FIELDKeyAlreadyExists                = fail.ID(0, "FIELD", 8, false, "FIELDKeyAlreadyExists")
+	FIELDHasDependentRules               = fail.ID(0, "FIELD", 9, false, "FIELDHasDependentRules")
 
 	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
 
