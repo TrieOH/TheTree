@@ -304,6 +304,32 @@ FROM schema_field_options src_opt
     AND dst.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
 
+-- name: GetOptionByID :one
+SELECT *
+FROM schema_field_options
+WHERE id = $1;
+
+-- name: DeleteOptionByID :exec
+DELETE FROM schema_field_options
+WHERE id = $1;
+
+-- name: CheckOptionValueInRules :one
+SELECT EXISTS (
+    SELECT 1 FROM schema_field_visibility_rules
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+) OR EXISTS (
+    SELECT 1 FROM schema_field_required_rules
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+) AS is_referenced;
+
+-- name: SetFieldOptions :exec
+DELETE FROM schema_field_options
+WHERE field_id = sqlc.arg(field_id)::UUID;
+
+-- name: CreateFieldOptionForSet :exec
+INSERT INTO schema_field_options (field_id, value, label, position)
+VALUES ($1, $2, $3, $4);
+
 -- /////////////////////////////// --
 -- //// -- VISIBILITY RULES -- //// --
 -- /////////////////////////////// --
@@ -352,6 +378,38 @@ JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
     AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
 
+-- name: GetVisibilityRuleByID :one
+SELECT *
+FROM schema_field_visibility_rules
+WHERE id = $1;
+
+-- name: UpdateVisibilityRule :one
+UPDATE schema_field_visibility_rules
+SET
+    depends_on_field_id = COALESCE(sqlc.arg(depends_on_field_id), depends_on_field_id),
+    operator = COALESCE(sqlc.arg(operator), operator),
+    value = COALESCE(sqlc.arg(value), value)
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
+-- name: DeleteVisibilityRuleByID :exec
+DELETE FROM schema_field_visibility_rules
+WHERE id = $1;
+
+-- name: SetVisibilityRules :exec
+DELETE FROM schema_field_visibility_rules
+WHERE field_id = sqlc.arg(field_id)::UUID;
+
+-- name: CreateVisibilityRuleForSet :one
+INSERT INTO schema_field_visibility_rules (
+    field_id,
+    depends_on_field_id,
+    operator,
+    value
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
 -- /////////////////////////////// --
 -- //// -- REQUIRED RULES -- //// --
 -- /////////////////////////////// --
@@ -395,6 +453,38 @@ JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
     JOIN schema_fields dst_dep ON dst_dep.id = src_dep.id
     AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
+
+-- name: GetRequiredRuleByID :one
+SELECT *
+FROM schema_field_required_rules
+WHERE id = $1;
+
+-- name: UpdateRequiredRule :one
+UPDATE schema_field_required_rules
+SET
+    depends_on_field_id = COALESCE(sqlc.arg(depends_on_field_id), depends_on_field_id),
+    operator = COALESCE(sqlc.arg(operator), operator),
+    value = COALESCE(sqlc.arg(value), value)
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
+-- name: DeleteRequiredRuleByID :exec
+DELETE FROM schema_field_required_rules
+WHERE id = $1;
+
+-- name: SetRequiredRules :exec
+DELETE FROM schema_field_required_rules
+WHERE field_id = sqlc.arg(field_id)::UUID;
+
+-- name: CreateRequiredRuleForSet :one
+INSERT INTO schema_field_required_rules (
+    field_id,
+    depends_on_field_id,
+    operator,
+    value
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
 
 -- /////////////////////////////// --
 -- //// -- FIELD CRUD -- //// --

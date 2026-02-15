@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"GoAuth/internal/domain/field"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"time"
@@ -57,4 +58,64 @@ func OutputFieldToFieldResponse(field *inbounds.OutputField) *FieldResponse {
 		CreatedAt:       field.CreatedAt,
 		UpdatedAt:       field.UpdatedAt,
 	}
+}
+
+type OptionResponse struct {
+	ID       uuid.UUID `json:"id"`
+	Value    string    `json:"value"`
+	Label    string    `json:"label"`
+	Position int       `json:"position"`
+}
+
+func OptionSliceToResponse(opts []field.Option) []OptionResponse {
+	out := make([]OptionResponse, len(opts))
+	for i, opt := range opts {
+		out[i] = OptionResponse{
+			ID:       opt.ID,
+			Value:    opt.Value,
+			Label:    opt.Label,
+			Position: opt.Position,
+		}
+	}
+	return out
+}
+
+type VisibilityRuleResponse struct {
+	ID               uuid.UUID        `json:"id"`
+	DependsOnFieldID uuid.UUID        `json:"depends_on_field_id"`
+	Operator         string           `json:"operator"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+func VisibilityRuleSliceToResponse(rules []field.VisibilityRule) []VisibilityRuleResponse {
+	out := make([]VisibilityRuleResponse, len(rules))
+	for i, rule := range rules {
+		out[i] = VisibilityRuleResponse{
+			ID:               rule.ID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         string(rule.Operator),
+			Value:            rule.Value,
+		}
+	}
+	return out
+}
+
+type RequiredRuleResponse struct {
+	ID               uuid.UUID        `json:"id"`
+	DependsOnFieldID uuid.UUID        `json:"depends_on_field_id"`
+	Operator         string           `json:"operator"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+func RequiredRuleSliceToResponse(rules []field.RequiredRule) []RequiredRuleResponse {
+	out := make([]RequiredRuleResponse, len(rules))
+	for i, rule := range rules {
+		out[i] = RequiredRuleResponse{
+			ID:               rule.ID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         string(rule.Operator),
+			Value:            rule.Value,
+		}
+	}
+	return out
 }

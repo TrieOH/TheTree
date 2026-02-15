@@ -211,6 +211,14 @@ func registerSchemaFieldsRoutes(
 		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
 		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.EditField)
 		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.DeleteField)
+		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options", h.SetFieldOptions)
+		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options/{option_id}", h.DeleteFieldOption)
+		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules", h.SetVisibilityRules)
+		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules/{rule_id}", h.EditVisibilityRule)
+		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules/{rule_id}", h.DeleteVisibilityRule)
+		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules", h.SetRequiredRules)
+		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules/{rule_id}", h.EditRequiredRule)
+		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules/{rule_id}", h.DeleteRequiredRule)
 	})
 }
 

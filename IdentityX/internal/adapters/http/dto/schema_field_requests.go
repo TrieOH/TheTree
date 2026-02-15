@@ -107,3 +107,27 @@ type EditFieldRequest struct {
 	DefaultValue *json.RawMessage `json:"default_value,omitempty"`
 	Position     *int             `json:"position,omitempty"`
 }
+
+type SetFieldOptionsRequest struct {
+	Options []OptionParam `json:"options" validate:"required"`
+}
+
+type SetVisibilityRulesRequest struct {
+	VisibilityRules []VisibilityRuleParam `json:"visibility_rules" validate:"required"`
+}
+
+type EditVisibilityRuleRequest struct {
+	DependsOnFieldID *string          `json:"depends_on_field_id,omitempty"`
+	Operator         *string          `json:"operator,omitempty"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+type SetRequiredRulesRequest struct {
+	RequiredRules []RequiredRuleParam `json:"required_rules" validate:"required"`
+}
+
+type EditRequiredRuleRequest struct {
+	DependsOnFieldID *string          `json:"depends_on_field_id,omitempty"`
+	Operator         *string          `json:"operator,omitempty"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}

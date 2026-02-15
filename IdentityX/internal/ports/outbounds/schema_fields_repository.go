@@ -44,4 +44,22 @@ type SchemaFieldsRepository interface {
 	DeleteFieldOptions(ctx context.Context, fieldID uuid.UUID) error
 	DeleteFieldVisibilityRules(ctx context.Context, fieldID uuid.UUID) error
 	DeleteFieldRequiredRules(ctx context.Context, fieldID uuid.UUID) error
+
+	// Option CRUD operations for draft versions
+	GetOptionByID(ctx context.Context, optionID uuid.UUID) (*field.Option, error)
+	SetFieldOptions(ctx context.Context, fieldID uuid.UUID, options []field.Option) error
+	DeleteOptionByID(ctx context.Context, optionID uuid.UUID) error
+	IsOptionValueReferenced(ctx context.Context, fieldID uuid.UUID, optionValue string) (bool, error)
+
+	// Visibility Rule CRUD operations for draft versions
+	GetVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.VisibilityRule, error)
+	SetVisibilityRules(ctx context.Context, fieldID uuid.UUID, rules []field.VisibilityRule) error
+	UpdateVisibilityRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.VisibilityRule, error)
+	DeleteVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) error
+
+	// Required Rule CRUD operations for draft versions
+	GetRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.RequiredRule, error)
+	SetRequiredRules(ctx context.Context, fieldID uuid.UUID, rules []field.RequiredRule) error
+	UpdateRequiredRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.RequiredRule, error)
+	DeleteRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) error
 }
