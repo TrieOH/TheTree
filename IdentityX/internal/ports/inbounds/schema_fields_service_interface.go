@@ -14,4 +14,7 @@ type SchemaFieldsService interface {
 	SetVisibilityRules(ctx context.Context, in SetVisibilityRulesInput) ([]field.VisibilityRule, error)
 	EditVisibilityRule(ctx context.Context, in EditVisibilityRuleInput) (*field.VisibilityRule, error)
 	DeleteVisibilityRule(ctx context.Context, in DeleteVisibilityRuleInput) error
+	SetRequiredRules(ctx context.Context, in SetRequiredRulesInput) ([]field.RequiredRule, error)
+	EditRequiredRule(ctx context.Context, in EditRequiredRuleInput) (*field.RequiredRule, error)
+	DeleteRequiredRule(ctx context.Context, in DeleteRequiredRuleInput) error
 }

@@ -454,6 +454,38 @@ JOIN schema_fields src_dep ON src_dep.object_id = src_rule.depends_on_field_id
     AND dst_dep.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
 
+-- name: GetRequiredRuleByID :one
+SELECT *
+FROM schema_field_required_rules
+WHERE id = $1;
+
+-- name: UpdateRequiredRule :one
+UPDATE schema_field_required_rules
+SET
+    depends_on_field_id = COALESCE(sqlc.arg(depends_on_field_id), depends_on_field_id),
+    operator = COALESCE(sqlc.arg(operator), operator),
+    value = COALESCE(sqlc.arg(value), value)
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
+-- name: DeleteRequiredRuleByID :exec
+DELETE FROM schema_field_required_rules
+WHERE id = $1;
+
+-- name: SetRequiredRules :exec
+DELETE FROM schema_field_required_rules
+WHERE field_id = sqlc.arg(field_id)::UUID;
+
+-- name: CreateRequiredRuleForSet :one
+INSERT INTO schema_field_required_rules (
+    field_id,
+    depends_on_field_id,
+    operator,
+    value
+)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
 -- /////////////////////////////// --
 -- //// -- FIELD CRUD -- //// --
 -- /////////////////////////////// --

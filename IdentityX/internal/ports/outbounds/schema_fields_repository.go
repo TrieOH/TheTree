@@ -56,4 +56,10 @@ type SchemaFieldsRepository interface {
 	SetVisibilityRules(ctx context.Context, fieldID uuid.UUID, rules []field.VisibilityRule) error
 	UpdateVisibilityRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.VisibilityRule, error)
 	DeleteVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) error
+
+	// Required Rule CRUD operations for draft versions
+	GetRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.RequiredRule, error)
+	SetRequiredRules(ctx context.Context, fieldID uuid.UUID, rules []field.RequiredRule) error
+	UpdateRequiredRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.RequiredRule, error)
+	DeleteRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) error
 }

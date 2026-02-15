@@ -121,3 +121,13 @@ type EditVisibilityRuleRequest struct {
 	Operator         *string          `json:"operator,omitempty"`
 	Value            *json.RawMessage `json:"value,omitempty"`
 }
+
+type SetRequiredRulesRequest struct {
+	RequiredRules []RequiredRuleParam `json:"required_rules" validate:"required"`
+}
+
+type EditRequiredRuleRequest struct {
+	DependsOnFieldID *string          `json:"depends_on_field_id,omitempty"`
+	Operator         *string          `json:"operator,omitempty"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}

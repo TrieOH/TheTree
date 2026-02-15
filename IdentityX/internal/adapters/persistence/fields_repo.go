@@ -1035,3 +1035,116 @@ func (repo *schemaFieldsRepo) DeleteVisibilityRuleByID(ctx context.Context, rule
 
 	return nil
 }
+
+// GetRequiredRuleByID retrieves a required rule by its ID
+func (repo *schemaFieldsRepo) GetRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.RequiredRule, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.GetRequiredRuleByID",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	sqlcRule, err := repo.queries(ctx).GetRequiredRuleByID(ctx, ruleID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return &field.RequiredRule{
+		ID:               sqlcRule.ID,
+		FieldID:          sqlcRule.FieldID,
+		DependsOnFieldID: sqlcRule.DependsOnFieldID,
+		Operator:         field.RuleOperator(sqlcRule.Operator),
+		Value:            sqlcRule.Value,
+		CreatedAt:        sqlcRule.CreatedAt,
+	}, nil
+}
+
+// SetRequiredRules replaces all required rules for a field
+func (repo *schemaFieldsRepo) SetRequiredRules(ctx context.Context, fieldID uuid.UUID, rules []field.RequiredRule) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.SetRequiredRules",
+		trace.WithAttributes(
+			attribute.String("field_id", fieldID.String()),
+			attribute.Int("rule_count", len(rules)),
+		),
+	)
+	defer span.End()
+
+	// Delete existing rules
+	if err := repo.queries(ctx).SetRequiredRules(ctx, fieldID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	// Insert new rules
+	for _, rule := range rules {
+		if _, err := repo.queries(ctx).CreateRequiredRuleForSet(ctx, sqlc.CreateRequiredRuleForSetParams{
+			FieldID:          fieldID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         sqlc.RuleOperator(rule.Operator),
+			Value:            rule.Value,
+		}); err != nil {
+			return fail.From(err).RecordCtx(ctx)
+		}
+	}
+
+	return nil
+}
+
+// UpdateRequiredRule updates a required rule with partial updates
+func (repo *schemaFieldsRepo) UpdateRequiredRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.RequiredRule, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.UpdateRequiredRule",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	// First, get the current rule to preserve unchanged values
+	current, err := repo.GetRequiredRuleByID(ctx, ruleID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build params with current values, then override with updates
+	params := sqlc.UpdateRequiredRuleParams{
+		ID:               ruleID,
+		DependsOnFieldID: current.DependsOnFieldID,
+		Operator:         sqlc.RuleOperator(current.Operator),
+		Value:            current.Value,
+	}
+
+	// Override with provided updates
+	if dependsOnFieldID, ok := updates["depends_on_field_id"].(uuid.UUID); ok {
+		params.DependsOnFieldID = dependsOnFieldID
+	}
+	if operator, ok := updates["operator"].(string); ok {
+		params.Operator = sqlc.RuleOperator(operator)
+	}
+	if value, ok := updates["value"].(*json.RawMessage); ok {
+		params.Value = value
+	}
+
+	sqlcRule, err := repo.queries(ctx).UpdateRequiredRule(ctx, params)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return &field.RequiredRule{
+		ID:               sqlcRule.ID,
+		FieldID:          sqlcRule.FieldID,
+		DependsOnFieldID: sqlcRule.DependsOnFieldID,
+		Operator:         field.RuleOperator(sqlcRule.Operator),
+		Value:            sqlcRule.Value,
+		CreatedAt:        sqlcRule.CreatedAt,
+	}, nil
+}
+
+// DeleteRequiredRuleByID deletes a required rule by its ID
+func (repo *schemaFieldsRepo) DeleteRequiredRuleByID(ctx context.Context, ruleID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteRequiredRuleByID",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteRequiredRuleByID(ctx, ruleID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}

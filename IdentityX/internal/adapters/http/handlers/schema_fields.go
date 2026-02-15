@@ -682,3 +682,265 @@ func (handler *SchemaFieldsHandler) DeleteVisibilityRule(w http.ResponseWriter, 
 
 	resp.NoContent().Send(w)
 }
+
+// SetRequiredRules godoc
+// @Summary Set required rules for a field (replaces all existing rules)
+// @Description Replaces all required rules for a field. Only allowed on draft versions.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param field_id path string true "Field Object ID"
+// @Param rules body dto.SetRequiredRulesRequest true "Required rules to set"
+// @Success 200 {array} dto.RequiredRuleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields/{field_id}/required-rules [put]
+func (handler *SchemaFieldsHandler) SetRequiredRules(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	fieldID, rs := getUUID(r, "field_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	var req dto.SetRequiredRulesRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	rules := make([]inbounds.InputRequiredRule, len(req.RequiredRules))
+	for i, rule := range req.RequiredRules {
+		rules[i] = inbounds.InputRequiredRule{
+			DependsOnFieldKey: rule.DependsOnFieldKey,
+			Operator:          rule.Operator,
+			Value:             rule.Value,
+		}
+	}
+
+	in := inbounds.SetRequiredRulesInput{
+		ProjectID:     projectID,
+		SchemaID:      schemaID,
+		VersionNumber: versionNumber,
+		FieldObjectID: fieldID,
+		RequiredRules: rules,
+	}
+
+	ctx := r.Context()
+	result, err := handler.fields.SetRequiredRules(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.RequiredRuleSliceToResponse(result)).Send(w)
+}
+
+// EditRequiredRule godoc
+// @Summary Edit a required rule
+// @Description Updates a required rule's properties (only provided fields are updated). Only allowed on draft versions.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param field_id path string true "Field Object ID"
+// @Param rule_id path string true "Rule ID"
+// @Param rule body dto.EditRequiredRuleRequest true "Required rule update information"
+// @Success 200 {object} dto.RequiredRuleResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields/{field_id}/required-rules/{rule_id} [patch]
+func (handler *SchemaFieldsHandler) EditRequiredRule(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	fieldID, rs := getUUID(r, "field_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ruleID, rs := getUUID(r, "rule_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	var req dto.EditRequiredRuleRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	var dependsOnFieldID *uuid.UUID
+	if req.DependsOnFieldID != nil {
+		id, err := uuid.Parse(*req.DependsOnFieldID)
+		if err != nil {
+			resp.BadRequest("invalid depends_on_field_id").Send(w)
+			return
+		}
+		dependsOnFieldID = &id
+	}
+
+	in := inbounds.EditRequiredRuleInput{
+		ProjectID:        projectID,
+		SchemaID:         schemaID,
+		VersionNumber:    versionNumber,
+		FieldObjectID:    fieldID,
+		RuleID:           ruleID,
+		DependsOnFieldID: dependsOnFieldID,
+		Operator:         req.Operator,
+		Value:            req.Value,
+	}
+
+	ctx := r.Context()
+	updatedRule, err := handler.fields.EditRequiredRule(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.RequiredRuleSliceToResponse([]field.RequiredRule{*updatedRule})).Send(w)
+}
+
+// DeleteRequiredRule godoc
+// @Summary Delete a required rule
+// @Description Deletes a single required rule by ID. Only allowed on draft versions.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param field_id path string true "Field Object ID"
+// @Param rule_id path string true "Rule ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields/{field_id}/required-rules/{rule_id} [delete]
+func (handler *SchemaFieldsHandler) DeleteRequiredRule(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	fieldID, rs := getUUID(r, "field_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ruleID, rs := getUUID(r, "rule_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	in := inbounds.DeleteRequiredRuleInput{
+		ProjectID:     projectID,
+		SchemaID:      schemaID,
+		VersionNumber: versionNumber,
+		FieldObjectID: fieldID,
+		RuleID:        ruleID,
+	}
+
+	ctx := r.Context()
+	if err := handler.fields.DeleteRequiredRule(ctx, in); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.NoContent().Send(w)
+}

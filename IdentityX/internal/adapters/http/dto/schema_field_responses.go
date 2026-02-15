@@ -99,3 +99,23 @@ func VisibilityRuleSliceToResponse(rules []field.VisibilityRule) []VisibilityRul
 	}
 	return out
 }
+
+type RequiredRuleResponse struct {
+	ID               uuid.UUID        `json:"id"`
+	DependsOnFieldID uuid.UUID        `json:"depends_on_field_id"`
+	Operator         string           `json:"operator"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+func RequiredRuleSliceToResponse(rules []field.RequiredRule) []RequiredRuleResponse {
+	out := make([]RequiredRuleResponse, len(rules))
+	for i, rule := range rules {
+		out[i] = RequiredRuleResponse{
+			ID:               rule.ID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         string(rule.Operator),
+			Value:            rule.Value,
+		}
+	}
+	return out
+}

@@ -1005,3 +1005,289 @@ func (uc *UseCase) DeleteVisibilityRule(ctx context.Context, in inbounds.DeleteV
 
 	return nil
 }
+
+func (uc *UseCase) SetRequiredRules(ctx context.Context, in inbounds.SetRequiredRulesInput) ([]field.RequiredRule, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.SetRequiredRules")
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	var err error
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit required rules for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		return nil, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot edit required rules for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return nil, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return nil, fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("required rules editing only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	// Verify field exists
+	existingField, err := fields.GetByObjectID(ctx, in.FieldObjectID)
+	if err != nil {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs(in.FieldObjectID).RecordCtx(ctx)
+	}
+
+	// Check if field belongs to this version
+	if existingField.SchemaVersionID != latest.ID {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+	}
+
+	// Validate all rules
+	rules := make([]field.RequiredRule, len(in.RequiredRules))
+	for i, ruleInput := range in.RequiredRules {
+		if !field.IsValidRuleOperator(ruleInput.Operator) {
+			return nil, fail.New(errx.FIELDInvalidType).WithArgs("invalid operator", ruleInput.Operator).RecordCtx(ctx)
+		}
+
+		rules[i] = field.RequiredRule{
+			FieldID:  in.FieldObjectID,
+			Operator: field.RuleOperator(ruleInput.Operator),
+			Value:    ruleInput.Value,
+		}
+
+		// If DependsOnFieldKey is provided, we need to resolve it to DependsOnFieldID
+		if ruleInput.DependsOnFieldKey != "" {
+			// Get all fields in this version to find the matching key
+			versionFields, err := fields.ListFromVersion(ctx, in.SchemaID, latest.ID)
+			if err != nil {
+				return nil, err
+			}
+			found := false
+			for _, f := range versionFields {
+				if f.Key == ruleInput.DependsOnFieldKey {
+					rules[i].DependsOnFieldID = f.ObjectID
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, fail.New(errx.FIELDNotFound).WithArgs("depends_on_field_key not found", ruleInput.DependsOnFieldKey).RecordCtx(ctx)
+			}
+		}
+	}
+
+	// Replace all required rules
+	if err := fields.SetRequiredRules(ctx, in.FieldObjectID, rules); err != nil {
+		return nil, err
+	}
+
+	return rules, nil
+}
+
+func (uc *UseCase) EditRequiredRule(ctx context.Context, in inbounds.EditRequiredRuleInput) (*field.RequiredRule, error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.EditRequiredRule")
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	var err error
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit required rules for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if !belongs {
+		return nil, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot edit required rules for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return nil, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return nil, fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("required rules editing only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	// Verify field exists
+	existingField, err := fields.GetByObjectID(ctx, in.FieldObjectID)
+	if err != nil {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs(in.FieldObjectID).RecordCtx(ctx)
+	}
+
+	// Check if field belongs to this version
+	if existingField.SchemaVersionID != latest.ID {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+	}
+
+	// Verify rule exists and belongs to this field
+	existingRule, err := fields.GetRequiredRuleByID(ctx, in.RuleID)
+	if err != nil {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs("required rule not found").RecordCtx(ctx)
+	}
+
+	if existingRule.FieldID != in.FieldObjectID {
+		return nil, fail.New(errx.FIELDNotFound).WithArgs("rule does not belong to this field").RecordCtx(ctx)
+	}
+
+	// Build updates map
+	updates := make(map[string]interface{})
+	if in.DependsOnFieldID != nil {
+		updates["depends_on_field_id"] = *in.DependsOnFieldID
+	}
+	if in.Operator != nil {
+		if !field.IsValidRuleOperator(*in.Operator) {
+			return nil, fail.New(errx.FIELDInvalidType).WithArgs("invalid operator", *in.Operator).RecordCtx(ctx)
+		}
+		updates["operator"] = *in.Operator
+	}
+	if in.Value != nil {
+		updates["value"] = in.Value
+	}
+
+	// Update the rule
+	updatedRule, err := fields.UpdateRequiredRule(ctx, in.RuleID, updates)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedRule, nil
+}
+
+func (uc *UseCase) DeleteRequiredRule(ctx context.Context, in inbounds.DeleteRequiredRuleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.DeleteRequiredRule")
+	defer span.End()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	var err error
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot delete required rules for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return err
+	}
+
+	if !belongs {
+		return fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot delete required rules for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("required rules deletion only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	// Verify field exists
+	existingField, err := fields.GetByObjectID(ctx, in.FieldObjectID)
+	if err != nil {
+		return fail.New(errx.FIELDNotFound).WithArgs(in.FieldObjectID).RecordCtx(ctx)
+	}
+
+	// Check if field belongs to this version
+	if existingField.SchemaVersionID != latest.ID {
+		return fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+	}
+
+	// Verify rule exists and belongs to this field
+	existingRule, err := fields.GetRequiredRuleByID(ctx, in.RuleID)
+	if err != nil {
+		return fail.New(errx.FIELDNotFound).WithArgs("required rule not found").RecordCtx(ctx)
+	}
+
+	if existingRule.FieldID != in.FieldObjectID {
+		return fail.New(errx.FIELDNotFound).WithArgs("rule does not belong to this field").RecordCtx(ctx)
+	}
+
+	// Delete the rule
+	if err := fields.DeleteRequiredRuleByID(ctx, in.RuleID); err != nil {
+		return err
+	}
+
+	return nil
+}
