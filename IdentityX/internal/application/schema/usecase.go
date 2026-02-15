@@ -550,11 +550,6 @@ func (uc *UseCase) getForm(ctx context.Context, in inbounds.SchemaServiceInput, 
 		}
 	}
 
-	// Ensure version is published (for forms we don't want to expose drafts)
-	if v.Status != version.StatusPublished {
-		return nil, fail.New(errx.SchemaVersionNotPublished).RecordCtx(ctx)
-	}
-
 	// Get all fields for this version
 	// Note: You'll need to ensure your fields repository loads options and rules
 	domainFields, err := fieldsRepo.ListFromVersionWithRelations(ctx, s.ID, v.ID)
