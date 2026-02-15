@@ -31,7 +31,7 @@ export default function SchemaVersionSelector() {
   const enabled = !!currentProjectId && !!currentSchemaId;
 
   const { data: latestVersion, isLoading: isLoadingLatest } = useQuery({
-    ...latestSchemaVersionQueryOptions(currentProjectId!, currentSchemaId!),
+    ...latestSchemaVersionQueryOptions(currentProjectId || "", currentSchemaId || ""),
     enabled,
   });
 
@@ -83,7 +83,7 @@ export default function SchemaVersionSelector() {
   }, [
     enabled, 
     storedVersion, 
-    latestVersion?.version_number || null, 
+    latestVersion?.version_number, 
     isLoadingLatest, 
     showCreatingLoader
   ]);
@@ -106,9 +106,13 @@ export default function SchemaVersionSelector() {
   }
 
   const handleCreateNewDraft = () => {
+    if (!currentProjectId || !currentSchemaId) {
+      console.error("Attempted to create new draft without project or schema ID.");
+      return;
+    }
     createSchemaVersionMutation.mutate({
-      project_id: currentProjectId!, 
-      schema_id: currentSchemaId!
+      project_id: currentProjectId, 
+      schema_id: currentSchemaId
     });
   };
 

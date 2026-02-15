@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { PlusIcon, TrashIcon } from 'lucide-react';
@@ -9,9 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/shadcn/select";
-import { RuleOperator, ruleOperatorSchema } from '../model/types';
+import { type RuleOperator, ruleOperatorSchema } from '../model/types';
 
 interface Rule {
+  id: string;
   depends_on_field_key: string;
   operator: RuleOperator;
   value: string;
@@ -59,6 +59,7 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, o
 
   const handleAddRule = () => {
     const newRule: Rule = {
+      id: crypto.randomUUID(),
       depends_on_field_key: allFieldKeys.length > 0 ? allFieldKeys[0] : '',
       operator: ruleOperatorSchema.enum.equals,
       value: '',
@@ -74,10 +75,11 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, o
   return (
     <div className="space-y-2">
       {rules.map((rule, index) => (
-                <div
-                  key={index}
-                  className="flex flex-wrap items-center gap-2 p-2 bg-muted/20 border rounded-md group hover:bg-muted/40 transition-colors"
-                >          <Select
+        <div
+          key={rule.id}
+          className="flex flex-wrap items-center gap-2 p-2 bg-muted/20 border rounded-md group hover:bg-muted/40 transition-colors"
+        >          
+          <Select
             value={rule.depends_on_field_key}
             onValueChange={(val) => handleRuleChange(index, 'depends_on_field_key', val)}
           >

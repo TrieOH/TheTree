@@ -1,3 +1,4 @@
+import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import {
   DndContext, 
   PointerSensor, 
@@ -8,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import FieldCard from "./FieldCard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
 import type { VersionField, VersionFieldList, VersionFieldResult } from "../model/types";
@@ -16,7 +17,7 @@ import { DraggableFieldEditPanel } from './DraggableFieldEditPanel';
 import { FieldEditForm } from './FieldEditForm';
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
-import { Plus } from "lucide-react"; 
+import { Plus, SaveAll } from "lucide-react"; 
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { publishSchemaVersionFieldFn, schemaVersionByIdQueryOptions } from "../api";
 import { toast } from "sonner";
@@ -37,8 +38,21 @@ export default function FieldEditor() {
   const [nextId, setNextId] = useState(defaultVersionFieldList.length);
   const [editingField, setEditingField] = useState<VersionField | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  function mapFieldIdsToKeys(fields: VersionFieldResult[]) {
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+
+  const mapFieldIdsToKeys = useCallback((fields: VersionFieldResult[]) => {
     const fieldMap = new Map(
       fields.map(field => [field.object_id, field.key])
     );
@@ -56,7 +70,7 @@ export default function FieldEditor() {
         depends_on_field_key: fieldMap.get(rule.depends_on_field_id) ?? ""
       }))
     }));
-  }
+  }, []);
 
 
   useEffect(() => {
@@ -65,7 +79,7 @@ export default function FieldEditor() {
       setItems(mappedFields);
       setOriginalItems(mappedFields);
     }
-  }, [schemaVersionData]);
+  }, [schemaVersionData, mapFieldIdsToKeys]);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(items) !== JSON.stringify(originalItems));
@@ -171,70 +185,125 @@ export default function FieldEditor() {
   ];
 
   return (
-    <main className="flex w-full min-h-(--screen--minus-header)">
+    <main className="flex w-full md:min-h-(--screen--minus-header) md:h-auto h-(--screen--minus-header)">
       <DndContext
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
         sensors={sensors}
       >
-        <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
-          <FieldCard 
-            key={defaultEmailVersionField.key} 
-            field={defaultEmailVersionField} 
-            isFixed={true} 
-            onOpenEditPanel={handleOpenEditPanel}
+        {isMobile ? (
+          <CustomTabs
+            items={[
+              {
+                value: "field",
+                label: "Field",
+                content: (
+                  <div className="flex-1 py-4 px-2 space-y-2">
+                    <FieldCard
+                      key={defaultEmailVersionField.key}
+                      field={defaultEmailVersionField}
+                      isFixed={true}
+                      onOpenEditPanel={handleOpenEditPanel}
+                    />
+                    <SortableContext items={items.map((item) => item.key)}>
+                      {items.map((item) => (
+                        <FieldCard
+                          key={item.key}
+                          field={item}
+                          onDelete={handleDeleteField}
+                          onUpdateField={handleUpdateField}
+                          onOpenEditPanel={handleOpenEditPanel}
+                        />
+                      ))}
+                    </SortableContext>
+                    <ShadowButton
+                      onClick={handleAddField}
+                      className="w-full justify-center"
+                      value="Add Field"
+                      variant="solid"
+                      leftIcon={<Plus className="w-4 h-4" />}
+                      disabled={isVersionNull}
+                    />
+                    <FieldCard
+                      key={defaultPasswordVersionField.key}
+                      field={{ ...defaultPasswordVersionField }}
+                      overwriteType="password"
+                      isFixed={true}
+                      onOpenEditPanel={handleOpenEditPanel}
+                    />
+                  </div>
+                ),
+              },
+              {
+                value: "preview",
+                label: "Preview",
+                content: (
+                  <div className="flex-1 p-4">
+                    {editingField && (
+                      <FieldEditForm
+                        field={editingField}
+                        onSave={(updatedField) => {
+                          handleUpdateField(updatedField);
+                        }}
+                        onCancel={handleCloseEditPanel}
+                        allFieldKeys={allFieldKeys}
+                      />
+                    )}
+                  </div>
+                ),
+              },
+            ]}
           />
-          <SortableContext items={items.map(item => item.key)}>
-            {items.map((item) => (
+        ) : (
+            <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
               <FieldCard
-                key={item.key}
-                field={item}
-                onDelete={handleDeleteField}
-                onUpdateField={handleUpdateField}
+                key={defaultEmailVersionField.key}
+                field={defaultEmailVersionField}
+                isFixed={true}
                 onOpenEditPanel={handleOpenEditPanel}
               />
-            ))}
-          </SortableContext>
-          <ShadowButton
-            onClick={handleAddField}
-            className="w-full justify-center"
-            value="Add Field"
-            variant="solid"
-            leftIcon={<Plus className="w-4 h-4" />}
-            disabled={isVersionNull}
-          />
-          <FieldCard 
-            key={defaultPasswordVersionField.key} 
-            field={{...defaultPasswordVersionField}} 
-            overwriteType="password"
-            isFixed={true}
-            onOpenEditPanel={handleOpenEditPanel}
-          />
-        </div>
+              <SortableContext items={items.map((item) => item.key)}>
+                {items.map((item) => (
+                  <FieldCard
+                    key={item.key}
+                    field={item}
+                    onDelete={handleDeleteField}
+                    onUpdateField={handleUpdateField}
+                    onOpenEditPanel={handleOpenEditPanel}
+                  />
+                ))}
+              </SortableContext>
+              <ShadowButton
+                onClick={handleAddField}
+                className="w-full justify-center"
+                value="Add Field"
+                variant="solid"
+                leftIcon={<Plus className="w-4 h-4" />}
+                disabled={isVersionNull}
+              />
+              <FieldCard
+                key={defaultPasswordVersionField.key}
+                field={{ ...defaultPasswordVersionField }}
+                overwriteType="password"
+                isFixed={true}
+                onOpenEditPanel={handleOpenEditPanel}
+              />
+            </div>
+        )}
+
         {createPortal(
           <DragOverlay>
             {activeItem ? (
-              <FieldCard field={activeItem} className="shadow-2xl scale-105 ring-2 ring-primary" />
+              <FieldCard
+                field={activeItem}
+                className="shadow-2xl scale-105 ring-2 ring-primary"
+              />
             ) : null}
           </DragOverlay>,
           document.body
         )}
       </DndContext>
-      <div className="flex-1 p-4 flex flex-col justify-end items-end">
-        <ShadowButton
-          onClick={handleSubmit}
-          disabled={!hasChanges || isVersionNull}
-          value="Save Fields"
-          variant="solid"
-          className="w-fit"
-        />
-        <PublishSchemaVersionButton
-          items={items}
-          hasChanges={hasChanges && !isVersionNull}
-          setOriginalItems={setOriginalItems}
-        />
-      </div>
       {editingField && (
         <DraggableFieldEditPanel onClose={handleCloseEditPanel} title="Edit Field">
           <FieldEditForm
@@ -248,6 +317,21 @@ export default function FieldEditor() {
           />
         </DraggableFieldEditPanel>
       )}
+      <div className="fixed right-4 md:bottom-4 bottom-16 flex flex-col items-center gap-2">
+        <ShadowButton
+          onClick={handleSubmit}
+          disabled={!hasChanges || isVersionNull}
+          leftIcon={<SaveAll className="w-4 h-4" />}
+          value={isMobile ? '' : 'Save Fields'}
+          variant="solid"
+        />
+        <PublishSchemaVersionButton
+          items={items}
+          isMobile={isMobile}
+          hasChanges={!isVersionNull}
+          setOriginalItems={setOriginalItems}
+        />
+      </div>
     </main>
-  )
+  );
 }
