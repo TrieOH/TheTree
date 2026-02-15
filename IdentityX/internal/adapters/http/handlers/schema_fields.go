@@ -254,3 +254,167 @@ func (handler *SchemaFieldsHandler) DeleteField(w http.ResponseWriter, r *http.R
 
 	resp.NoContent().Send(w)
 }
+
+// SetFieldOptions godoc
+// @Summary Set options for a field (replaces all existing options)
+// @Description Replaces all options for a field. Only allowed on draft versions.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param field_id path string true "Field Object ID"
+// @Param options body dto.SetFieldOptionsRequest true "Options to set"
+// @Success 200 {array} dto.OptionResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields/{field_id}/options [put]
+func (handler *SchemaFieldsHandler) SetFieldOptions(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	fieldID, rs := getUUID(r, "field_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	var req dto.SetFieldOptionsRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	options := make([]inbounds.InputOption, len(req.Options))
+	for i, opt := range req.Options {
+		options[i] = inbounds.InputOption{
+			Value:    opt.Value,
+			Label:    opt.Label,
+			Position: opt.Position,
+		}
+	}
+
+	in := inbounds.SetFieldOptionsInput{
+		ProjectID:     projectID,
+		SchemaID:      schemaID,
+		VersionNumber: versionNumber,
+		FieldObjectID: fieldID,
+		Options:       options,
+	}
+
+	ctx := r.Context()
+	result, err := handler.fields.SetFieldOptions(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.OptionSliceToResponse(result)).Send(w)
+}
+
+// DeleteFieldOption godoc
+// @Summary Delete a specific option from a field
+// @Description Deletes a single option by ID. Only allowed on draft versions.
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param field_id path string true "Field Object ID"
+// @Param option_id path string true "Option ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields/{field_id}/options/{option_id} [delete]
+func (handler *SchemaFieldsHandler) DeleteFieldOption(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	fieldID, rs := getUUID(r, "field_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	optionID, rs := getUUID(r, "option_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	in := inbounds.DeleteFieldOptionInput{
+		ProjectID:     projectID,
+		SchemaID:      schemaID,
+		VersionNumber: versionNumber,
+		FieldObjectID: fieldID,
+		OptionID:      optionID,
+	}
+
+	ctx := r.Context()
+	if err := handler.fields.DeleteFieldOption(ctx, in); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.NoContent().Send(w)
+}

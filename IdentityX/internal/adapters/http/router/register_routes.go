@@ -211,6 +211,8 @@ func registerSchemaFieldsRoutes(
 		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
 		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.EditField)
 		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.DeleteField)
+		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options", h.SetFieldOptions)
+		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options/{option_id}", h.DeleteFieldOption)
 	})
 }
 

@@ -44,4 +44,10 @@ type SchemaFieldsRepository interface {
 	DeleteFieldOptions(ctx context.Context, fieldID uuid.UUID) error
 	DeleteFieldVisibilityRules(ctx context.Context, fieldID uuid.UUID) error
 	DeleteFieldRequiredRules(ctx context.Context, fieldID uuid.UUID) error
+
+	// Option CRUD operations for draft versions
+	GetOptionByID(ctx context.Context, optionID uuid.UUID) (*field.Option, error)
+	SetFieldOptions(ctx context.Context, fieldID uuid.UUID, options []field.Option) error
+	DeleteOptionByID(ctx context.Context, optionID uuid.UUID) error
+	IsOptionValueReferenced(ctx context.Context, fieldID uuid.UUID, optionValue string) (bool, error)
 }

@@ -80,6 +80,22 @@ type DeleteFieldInput struct {
 	FieldObjectID uuid.UUID
 }
 
+type SetFieldOptionsInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	FieldObjectID uuid.UUID
+	Options       []InputOption
+}
+
+type DeleteFieldOptionInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	FieldObjectID uuid.UUID
+	OptionID      uuid.UUID
+}
+
 type ValidationWarning struct {
 	FieldKey string
 	RuleType string // "visibility" or "required"

@@ -304,6 +304,32 @@ FROM schema_field_options src_opt
     AND dst.schema_version_id = sqlc.arg(draft_version_id)::UUID
 WHERE src_f.schema_version_id = sqlc.arg(source_version_id)::UUID;
 
+-- name: GetOptionByID :one
+SELECT *
+FROM schema_field_options
+WHERE id = $1;
+
+-- name: DeleteOptionByID :exec
+DELETE FROM schema_field_options
+WHERE id = $1;
+
+-- name: CheckOptionValueInRules :one
+SELECT EXISTS (
+    SELECT 1 FROM schema_field_visibility_rules
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+) OR EXISTS (
+    SELECT 1 FROM schema_field_required_rules
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+) AS is_referenced;
+
+-- name: SetFieldOptions :exec
+DELETE FROM schema_field_options
+WHERE field_id = sqlc.arg(field_id)::UUID;
+
+-- name: CreateFieldOptionForSet :exec
+INSERT INTO schema_field_options (field_id, value, label, position)
+VALUES ($1, $2, $3, $4);
+
 -- /////////////////////////////// --
 -- //// -- VISIBILITY RULES -- //// --
 -- /////////////////////////////// --

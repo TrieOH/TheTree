@@ -107,3 +107,7 @@ type EditFieldRequest struct {
 	DefaultValue *json.RawMessage `json:"default_value,omitempty"`
 	Position     *int             `json:"position,omitempty"`
 }
+
+type SetFieldOptionsRequest struct {
+	Options []OptionParam `json:"options" validate:"required"`
+}

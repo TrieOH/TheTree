@@ -835,3 +835,90 @@ func (repo *schemaFieldsRepo) DeleteFieldRequiredRules(ctx context.Context, fiel
 
 	return nil
 }
+
+// GetOptionByID retrieves an option by its ID
+func (repo *schemaFieldsRepo) GetOptionByID(ctx context.Context, optionID uuid.UUID) (*field.Option, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.GetOptionByID",
+		trace.WithAttributes(attribute.String("option_id", optionID.String())),
+	)
+	defer span.End()
+
+	sqlcOption, err := repo.queries(ctx).GetOptionByID(ctx, optionID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return &field.Option{
+		ID:       sqlcOption.ID,
+		FieldID:  sqlcOption.FieldID,
+		Value:    sqlcOption.Value,
+		Label:    sqlcOption.Label,
+		Position: sqlcOption.Position,
+	}, nil
+}
+
+// SetFieldOptions replaces all options for a field
+func (repo *schemaFieldsRepo) SetFieldOptions(ctx context.Context, fieldID uuid.UUID, options []field.Option) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.SetFieldOptions",
+		trace.WithAttributes(
+			attribute.String("field_id", fieldID.String()),
+			attribute.Int("option_count", len(options)),
+		),
+	)
+	defer span.End()
+
+	// Delete existing options
+	if err := repo.queries(ctx).SetFieldOptions(ctx, fieldID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	// Insert new options one by one (since we need to handle the :exec query)
+	for _, opt := range options {
+		if err := repo.queries(ctx).CreateFieldOptionForSet(ctx, sqlc.CreateFieldOptionForSetParams{
+			FieldID:  fieldID,
+			Value:    opt.Value,
+			Label:    opt.Label,
+			Position: opt.Position,
+		}); err != nil {
+			return fail.From(err).RecordCtx(ctx)
+		}
+	}
+
+	return nil
+}
+
+// DeleteOptionByID deletes a single option by its ID
+func (repo *schemaFieldsRepo) DeleteOptionByID(ctx context.Context, optionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteOptionByID",
+		trace.WithAttributes(attribute.String("option_id", optionID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteOptionByID(ctx, optionID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+// IsOptionValueReferenced checks if an option value is referenced in any rules
+func (repo *schemaFieldsRepo) IsOptionValueReferenced(ctx context.Context, fieldID uuid.UUID, optionValue string) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.IsOptionValueReferenced",
+		trace.WithAttributes(
+			attribute.String("field_id", fieldID.String()),
+			attribute.String("option_value", optionValue),
+		),
+	)
+	defer span.End()
+
+	isReferenced, err := repo.queries(ctx).CheckOptionValueInRules(ctx, optionValue)
+	if err != nil {
+		return false, fail.From(err).RecordCtx(ctx)
+	}
+
+	if isReferenced == nil {
+		return false, nil
+	}
+
+	return *isReferenced, nil
+}

@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"GoAuth/internal/domain/field"
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"time"
@@ -57,4 +58,24 @@ func OutputFieldToFieldResponse(field *inbounds.OutputField) *FieldResponse {
 		CreatedAt:       field.CreatedAt,
 		UpdatedAt:       field.UpdatedAt,
 	}
+}
+
+type OptionResponse struct {
+	ID       uuid.UUID `json:"id"`
+	Value    string    `json:"value"`
+	Label    string    `json:"label"`
+	Position int       `json:"position"`
+}
+
+func OptionSliceToResponse(opts []field.Option) []OptionResponse {
+	out := make([]OptionResponse, len(opts))
+	for i, opt := range opts {
+		out[i] = OptionResponse{
+			ID:       opt.ID,
+			Value:    opt.Value,
+			Label:    opt.Label,
+			Position: opt.Position,
+		}
+	}
+	return out
 }
