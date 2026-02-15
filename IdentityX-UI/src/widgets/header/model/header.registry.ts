@@ -37,7 +37,14 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     title: 'Schema Editor',
     titlePosition: 'none',
     disableMobileMenu: true,
-    leftActions: [{ id: "schemas_editor_back_000", type: 'back', visibleOn: "fixed", to: "/projects/config" }],
+    leftActions: [
+      {
+        id: "schemas_editor_back_000",
+        type: 'back',
+        visibleOn: "fixed",
+        to: "/projects/config?tab=schema"
+      }
+    ],
     rightActions: [
       { id: "schemas_editor_version_selector_000", type: "schemaVersionSelector", visibleOn: "fixed"},
     ],

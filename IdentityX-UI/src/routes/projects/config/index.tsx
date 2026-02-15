@@ -21,6 +21,11 @@ export const Route = createFileRoute('/projects/config/')({
     queryClient.prefetchQuery(usersQueryOptions(id || ""))
     return { }
   },
+  validateSearch: (search: Record<string, string>) => {
+    return {
+      tab: search.tab || 'dashboard'
+    }
+  },
   component: RouteComponent,
   staticData: {
     components: {
@@ -33,32 +38,35 @@ export const Route = createFileRoute('/projects/config/')({
 function RouteComponent() {
   const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
   const { data: users } = useSuspenseQuery(usersQueryOptions(currentProjectId))
+  const { tab } = Route.useSearch();
+
   const items = [
     { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
-    { 
-      value: 'schema', 
-      label: 'Schema', 
-      icon: Database, 
-      content: <SchemaTable project_id={currentProjectId}/> 
+    {
+      value: 'schema',
+      label: 'Schema',
+      icon: Database,
+      content: <SchemaTable project_id={currentProjectId}/>
     },
-    { 
-      value: 'scope', 
-      label: 'Scope', 
-      icon: Globe, 
+    {
+      value: 'scope',
+      label: 'Scope',
+      icon: Globe,
       content: <ScopeTable project_id={currentProjectId} />,
     },
-    { 
-      value: 'users', 
-      label: 'Users', 
-      icon: UserCog, 
+    {
+      value: 'users',
+      label: 'Users',
+      icon: UserCog,
       content: <UserTable data={users}/>
     },
     { value: 'permissions', label: 'Permissions', icon: Shield, content: <p>Gerenciamento de permissões...</p> },
     { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
   ];
+
   return (
     <main className='flex justify-center items-center h-(--screen--minus-header)'>
-      <CustomTabs items={items} />
+      <CustomTabs items={items} initialValue={tab}/>
     </main>
   );
 }
