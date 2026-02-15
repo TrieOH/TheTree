@@ -144,13 +144,13 @@ export default function FieldEditor() {
     setItems(currentItems => currentItems.filter(item => item.key !== fieldKey));
   };
 
-  const handleUpdateField = (updatedField: VersionField) => {
+  const handleUpdateField = (originalField: VersionField, updatedField: VersionField) => {
     setItems(currentItems =>
       currentItems.map(item =>
-        item.key === updatedField.key ? updatedField : item
+        item.key === originalField.key ? updatedField : item
       )
     );
-    if (editingField?.key === updatedField.key) setEditingField(updatedField);
+    if (editingField?.key === originalField.key) setEditingField(updatedField);
   };
 
   const publishVersionFieldSchemaMutation = useMutation({
@@ -204,7 +204,6 @@ export default function FieldEditor() {
                       key={defaultEmailVersionField.key}
                       field={defaultEmailVersionField}
                       isFixed={true}
-                      onOpenEditPanel={handleOpenEditPanel}
                     />
                     <SortableContext items={items.map((item) => item.key)}>
                       {items.map((item) => (
@@ -212,7 +211,6 @@ export default function FieldEditor() {
                           key={item.key}
                           field={item}
                           onDelete={handleDeleteField}
-                          onUpdateField={handleUpdateField}
                           onOpenEditPanel={handleOpenEditPanel}
                         />
                       ))}
@@ -230,7 +228,6 @@ export default function FieldEditor() {
                       field={{ ...defaultPasswordVersionField }}
                       overwriteType="password"
                       isFixed={true}
-                      onOpenEditPanel={handleOpenEditPanel}
                     />
                   </div>
                 ),
@@ -243,8 +240,8 @@ export default function FieldEditor() {
                     {editingField && (
                       <FieldEditForm
                         field={editingField}
-                        onSave={(updatedField) => {
-                          handleUpdateField(updatedField);
+                        onSave={(originalField, updatedField) => {
+                          handleUpdateField(originalField, updatedField);
                         }}
                         onCancel={handleCloseEditPanel}
                         allFieldKeys={allFieldKeys}
@@ -261,7 +258,6 @@ export default function FieldEditor() {
                 key={defaultEmailVersionField.key}
                 field={defaultEmailVersionField}
                 isFixed={true}
-                onOpenEditPanel={handleOpenEditPanel}
               />
               <SortableContext items={items.map((item) => item.key)}>
                 {items.map((item) => (
@@ -269,7 +265,6 @@ export default function FieldEditor() {
                     key={item.key}
                     field={item}
                     onDelete={handleDeleteField}
-                    onUpdateField={handleUpdateField}
                     onOpenEditPanel={handleOpenEditPanel}
                   />
                 ))}
@@ -287,7 +282,6 @@ export default function FieldEditor() {
                 field={{ ...defaultPasswordVersionField }}
                 overwriteType="password"
                 isFixed={true}
-                onOpenEditPanel={handleOpenEditPanel}
               />
             </div>
         )}
@@ -308,8 +302,8 @@ export default function FieldEditor() {
         <DraggableFieldEditPanel onClose={handleCloseEditPanel} title="Edit Field">
           <FieldEditForm
             field={editingField}
-            onSave={(updatedField) => {
-              handleUpdateField(updatedField);
+            onSave={(originalField, updatedField) => {
+              handleUpdateField(originalField, updatedField);
               handleCloseEditPanel();
             }}
             onCancel={handleCloseEditPanel}

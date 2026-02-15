@@ -11,13 +11,11 @@ interface PropsI {
   className?: string;
   overwriteType?: "password";
   isFixed?: boolean;
-  onEdit?: (fieldKey: string) => void;
   onDelete?: (fieldKey: string) => void;
-  onUpdateField?: (updatedField: VersionField) => void;
   onOpenEditPanel?: (field: VersionField) => void;
 }
 
-export default function FieldCard({field, className, overwriteType, isFixed = false, onEdit, onDelete, onUpdateField, onOpenEditPanel}: PropsI) {
+export default function FieldCard({field, className, overwriteType, isFixed = false, onDelete, onOpenEditPanel}: PropsI) {
 
   const {
     attributes,
@@ -72,16 +70,8 @@ export default function FieldCard({field, className, overwriteType, isFixed = fa
             <span className="shrink-0">({displayType})</span>
           </div>
         </div>
-        {!isFixed && (onEdit || onDelete || onUpdateField) && (
+        {!isFixed && (
           <div className="flex gap-1 shrink-0">
-            {onEdit && (
-              <ShadowButton
-                onClick={() => onEdit(field.key)}
-                leftIcon={<Pencil className="w-4 h-4" />}
-                variant="ghost"
-                className="p-1 h-auto"
-              />
-            )}
             {onOpenEditPanel && (
               <ShadowButton
                 leftIcon={<Pencil className="w-4 h-4" />}
