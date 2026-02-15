@@ -1,10 +1,10 @@
 package authenticator
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -56,10 +56,10 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	sessions := uc.deps.Session
 
 	if in.AccessToken == "" {
-		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
+		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
 	}
 	if in.RefreshToken == "" {
-		return nil, fail.New(apierr.RequestEmptyCookie).WithArgs("refresh_token").RecordCtx(ctx)
+		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("refresh_token").RecordCtx(ctx)
 	}
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)
@@ -91,31 +91,31 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	}
 
 	if accessTokenJTI != refreshToken.Sub.AccessJTI {
-		return nil, fail.New(apierr.TokenMismatchDuringAuth).RecordCtx(ctx)
+		return nil, fail.New(errx.TokenMismatchDuringAuth).RecordCtx(ctx)
 	}
 
 	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
-		if fail.Is(err, apierr.SQLNotFound) {
-			return nil, fail.New(apierr.SessionUnauthorized).RecordCtx(ctx)
+		if fail.Is(err, errx.SQLNotFound) {
+			return nil, fail.New(errx.SessionUnauthorized).RecordCtx(ctx)
 		}
 		return nil, err
 	}
 
 	if sess.SessionID != accessToken.Sub.SessionID {
-		return nil, fail.New(apierr.TokenSessionMismatch).RecordCtx(ctx)
+		return nil, fail.New(errx.TokenSessionMismatch).RecordCtx(ctx)
 	}
 
 	// FIXME add occurrence to the audit when its implemented
 	if sess.TokenID != refreshTokenJTI {
 		_ = sessions.MarkRevokedByFamilyID(ctx, refreshToken.Sub.FamilyID)
-		return nil, fail.New(apierr.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
+		return nil, fail.New(errx.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	if sess.RevokedAt != nil {
 		// should never happen due to query guarding against this, just being defensive
 		// system error for appropriate priority if it happens, since it should never happen
-		return nil, fail.New(apierr.SessionRevoked).RecordCtx(ctx)
+		return nil, fail.New(errx.SessionRevoked).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -140,14 +140,14 @@ func validateIssuers(
 ) error {
 	if access.Sub.ProjectID != nil {
 		if access.Issuer != access.Sub.ProjectID.String() {
-			return fail.New(apierr.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
+			return fail.New(errx.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 		}
 	} else if access.Issuer != in.Issuer {
-		return fail.New(apierr.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
+		return fail.New(errx.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 	}
 
 	if refresh.Issuer != in.Issuer {
-		return fail.New(apierr.TokenInvalidIssuer).WithArgs("refresh").RecordCtx(ctx)
+		return fail.New(errx.TokenInvalidIssuer).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	return nil

@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -57,7 +57,7 @@ func testResetPassword(t *testing.T, suite *TestSuite) {
 		// Check if old session is invalidated
 		userSession.GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionRevoked)
+			HasErrID(errx.SessionRevoked)
 
 		// Try to login with old password - should fail
 		client.POST("/auth/login").
@@ -66,7 +66,7 @@ func testResetPassword(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidCredentials)
+			HasErrID(errx.AuthInvalidCredentials)
 
 		// Login with new password - should succeed
 		client.WithCredentials(userEmail, newPassword).
@@ -123,7 +123,7 @@ func testResetPassword(t *testing.T, suite *TestSuite) {
 		// Check if project user session is invalidated
 		projectUserSession.GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.SessionRevoked)
+			HasErrID(errx.SessionRevoked)
 
 		// Try to login with old password - should fail
 		client.POST("/projects/" + projectID + "/login").
@@ -132,7 +132,7 @@ func testResetPassword(t *testing.T, suite *TestSuite) {
 				"password": projectUserPassword,
 			}).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidCredentials)
+			HasErrID(errx.AuthInvalidCredentials)
 
 		// Login with new password - should succeed
 		client.WithCredentials(projectUserEmail, projectUserNewPassword).
@@ -174,7 +174,7 @@ func testResetPassword(t *testing.T, suite *TestSuite) {
 				"new_password": "NewPassword2!",
 			}).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthTokenAlreadyUsed)
+			HasErrID(errx.AuthTokenAlreadyUsed)
 	})
 }
 

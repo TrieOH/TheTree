@@ -1,7 +1,7 @@
 package permissions
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"regexp"
 	"time"
@@ -27,20 +27,20 @@ var (
 
 func ValidateObject(ctx context.Context, object string) error {
 	if object == "" {
-		return fail.New(apierr.PERMissionInvalidObject).WithArgs("(empty)").RecordCtx(ctx)
+		return fail.New(errx.PERMissionInvalidObject).WithArgs("(empty)").RecordCtx(ctx)
 	}
 	if !objectRegex.MatchString(object) {
-		return fail.New(apierr.PERMissionInvalidObject).WithArgs(object).RecordCtx(ctx)
+		return fail.New(errx.PERMissionInvalidObject).WithArgs(object).RecordCtx(ctx)
 	}
 	return nil
 }
 
 func ValidateAction(ctx context.Context, action string) error {
 	if action == "" {
-		return fail.New(apierr.PERMissionInvalidAction).WithArgs("(empty)").RecordCtx(ctx)
+		return fail.New(errx.PERMissionInvalidAction).WithArgs("(empty)").RecordCtx(ctx)
 	}
 	if !actionRegex.MatchString(action) {
-		return fail.New(apierr.PERMissionInvalidAction).WithArgs(action).RecordCtx(ctx)
+		return fail.New(errx.PERMissionInvalidAction).WithArgs(action).RecordCtx(ctx)
 	}
 	return nil
 }

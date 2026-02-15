@@ -3,9 +3,9 @@ package persistence
 import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/field"
 	"GoAuth/internal/domain/schema"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/outbounds"
 	"context"
 
@@ -177,12 +177,12 @@ func (repo *schemaFieldsRepo) ListFromVersion(ctx context.Context, schemaID, ver
 
 func (repo *schemaFieldsRepo) Update(ctx context.Context, toUpdate field.Field) error {
 	// TODO Implement me!
-	return fail.New(apierr.SYSFunctionalityNotImplemented)
+	return fail.New(errx.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) Delete(ctx context.Context, fieldID uuid.UUID) error {
 	// TODO Implement me!
-	return fail.New(apierr.SYSFunctionalityNotImplemented)
+	return fail.New(errx.SYSFunctionalityNotImplemented)
 }
 
 func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, toVersionID uuid.UUID) error {
@@ -231,7 +231,7 @@ func (repo *schemaFieldsRepo) CloneFromTo(ctx context.Context, fromVersionID, to
 	span.SetAttributes(attribute.Int64("cloned_required_rules", reqRows))
 
 	if reqRows+visRows+optionsRows+fieldsRows == 0 {
-		apiErr := fail.New(apierr.FieldNoAffectedRowsOnClone)
+		apiErr := fail.New(errx.FieldNoAffectedRowsOnClone)
 		return apiErr
 	}
 

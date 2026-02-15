@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"net/http"
 	"testing"
 )
@@ -40,7 +40,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 		authClient := otherC.WithT(t)
 		authClient.POST("/projects/" + projectIDA + "/api-keys/rotate").
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ProjectNotFound)
+			HasErrID(errx.ProjectNotFound)
 	})
 
 	t.Run("Rotation_InvalidatesOldKey", func(t *testing.T) {
@@ -66,7 +66,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithApiKey(oldKey).
 			GET("/projects/" + projectIDA).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidApiKey)
+			HasErrID(errx.AuthInvalidApiKey)
 
 		apiKeyA = newKey // Update for subsequent tests
 	})
@@ -77,7 +77,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 
 		keyAClient.GET("/projects/" + projectIDB).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ProjectNotFound)
+			HasErrID(errx.ProjectNotFound)
 	})
 
 	t.Run("CrossProjectIsolation_DifferentOwner", func(t *testing.T) {
@@ -86,7 +86,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 
 		keyAClient.GET("/projects/" + projectIDC).
 			Expect(http.StatusNotFound).
-			HasErrID(apierr.ProjectNotFound)
+			HasErrID(errx.ProjectNotFound)
 	})
 
 	t.Run("OwnerCapabilities_ScopedToProject", func(t *testing.T) {
@@ -116,21 +116,21 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 			suite.NewClient(t).WithApiKey("bad_prefix_uuid_secret").
 				GET("/projects/" + projectIDA).
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.AuthInvalidApiKeyShape)
+				HasErrID(errx.AuthInvalidApiKeyShape)
 		})
 
 		t.Run("WrongPartCount", func(t *testing.T) {
 			suite.NewClient(t).WithApiKey("gk_too_few").
 				GET("/projects/" + projectIDA).
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.AuthInvalidApiKeyShape)
+				HasErrID(errx.AuthInvalidApiKeyShape)
 		})
 
 		t.Run("InvalidUUID", func(t *testing.T) {
 			suite.NewClient(t).WithApiKey("gk_not-a-uuid_secret").
 				GET("/projects/" + projectIDA).
 				Expect(http.StatusUnauthorized).
-				HasErrID(apierr.AuthInvalidApiKeyShape)
+				HasErrID(errx.AuthInvalidApiKeyShape)
 		})
 	})
 
@@ -139,11 +139,11 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 
 		keyAClient.GET("/sessions").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthApiKeyNotAllowed)
+			HasErrID(errx.AuthApiKeyNotAllowed)
 
 		keyAClient.POST("/auth/logout").
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthApiKeyNotAllowed)
+			HasErrID(errx.AuthApiKeyNotAllowed)
 	})
 
 	t.Run("FullCapabilities_ManageAndCheck", func(t *testing.T) {
@@ -226,7 +226,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 		suite.NewClient(t).WithApiKey(apiKeyA).
 			GET("/projects/" + projectIDA).
 			Expect(http.StatusUnauthorized).
-			HasErrID(apierr.AuthInvalidApiKey)
+			HasErrID(errx.AuthInvalidApiKey)
 
 	})
 

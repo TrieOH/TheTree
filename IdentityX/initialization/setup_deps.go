@@ -2,8 +2,8 @@ package initialization
 
 import (
 	"GoAuth/internal/adapters/persistence/transactions"
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/database"
+	"GoAuth/internal/errx"
 	"context"
 	"log"
 	"time"
@@ -23,11 +23,11 @@ func SetupFail() {
 	fail.AllowStaticMutations(true, false)
 	fail.AllowRuntimePanics(true)
 
-	if err := fail.RegisterTranslator(&apierr.HTTPTranslator{}); err != nil {
+	if err := fail.RegisterTranslator(&errx.HTTPTranslator{}); err != nil {
 		log.Fatal(err)
 	}
 
-	fail.RegisterMapper(&apierr.PGXMapper{})
+	fail.RegisterMapper(&errx.PGXMapper{})
 
 	fail.SetLocalizer(localization.New())
 	fail.SetDefaultLocale("en-US")
@@ -54,7 +54,7 @@ func SetupFUN() {
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        module,
-		ErrorHandler:         apierr.ErrToResp,
+		ErrorHandler:         errx.ErrToResp,
 	})
 }
 

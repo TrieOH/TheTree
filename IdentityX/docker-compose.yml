@@ -7,6 +7,7 @@ services:
       - "8080:8080"
     networks:
       - internal
+      - univents-net
     depends_on:
       go-auth-database:
         condition: service_started
@@ -69,4 +70,5 @@ volumes:
 networks:
   internal:
     driver: bridge
-
+  univents-net:
+    external: true

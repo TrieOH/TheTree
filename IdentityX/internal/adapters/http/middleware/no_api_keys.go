@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/errx"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -32,7 +32,7 @@ func NoApiKeys() func(http.Handler) http.Handler {
 			}
 
 			if principal.Method == authz.AuthMethodApiKey {
-				rs, err = fail.ToAs[*resp.Response](fail.New(apierr.AuthApiKeyNotAllowed).RecordCtx(ctx), "http")
+				rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthApiKeyNotAllowed).RecordCtx(ctx), "http")
 				if err != nil {
 					resp.InternalServerError().WithData(err).WithModule("NoApiKeysMW").Send(w)
 					return

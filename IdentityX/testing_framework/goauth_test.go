@@ -95,6 +95,10 @@ func TestGoAuth(t *testing.T) {
 		testApiKeys(t, suite)
 	})
 
+	t.Run("SubContext", func(t *testing.T) {
+		testSubContext(t, suite)
+	})
+
 	// docs, _ := fail.ExportIDList()
 	// fmt.Printf("Registered IDs (JSON snippet):\n%s\n", string(docs))
 }

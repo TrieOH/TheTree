@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,7 +20,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 						"password": spec.Pass,
 					}).
 					Expect(http.StatusBadRequest).
-					HasErrID(apierr.RequestValidationError).
+					HasErrID(errx.RequestValidationError).
 					ValidationError(spec.Errors...)
 			})
 		}
@@ -38,7 +38,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 						"password": spec.Password,
 					}).
 					Expect(http.StatusBadRequest).
-					HasErrID(apierr.RequestValidationError).
+					HasErrID(errx.RequestValidationError).
 					ValidationError(spec.Errors...)
 			})
 		}
@@ -53,7 +53,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": longPass,
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.RequestValidationError).
+			HasErrID(errx.RequestValidationError).
 			ValidationError("password must be at most 72 characters long")
 	})
 
@@ -99,7 +99,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": password,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasErrID(errx.AuthEmailAlreadyUsed).
 			HasMessage("email already in use")
 	})
 
@@ -119,7 +119,7 @@ func testRegister(t *testing.T, suite *TestSuite) {
 				"password": ValidPassword,
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(apierr.AuthEmailAlreadyUsed).
+			HasErrID(errx.AuthEmailAlreadyUsed).
 			HasMessage("email already in use")
 	})
 }

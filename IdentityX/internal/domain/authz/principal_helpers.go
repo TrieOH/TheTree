@@ -1,7 +1,7 @@
 package authz
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 
 	"github.com/MintzyG/fail/v3"
@@ -22,12 +22,12 @@ func WithPrincipal(ctx context.Context, p *Principal) context.Context {
 func RequirePrincipal(ctx context.Context) (*Principal, error) {
 	val := ctx.Value(principalKey)
 	if val == nil {
-		return nil, fail.New(apierr.AuthPrincipalNotInContext).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthPrincipalNotInContext).RecordCtx(ctx)
 	}
 
 	p, ok := val.(*Principal)
 	if !ok {
-		return nil, fail.New(apierr.AuthInvalidPrincipal).RecordCtx(ctx)
+		return nil, fail.New(errx.AuthInvalidPrincipal).RecordCtx(ctx)
 	}
 
 	return p, nil

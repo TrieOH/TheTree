@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"fmt"
 	"net/http"
@@ -246,7 +246,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 				"project_id": projectID,
 			}).
 			Expect(http.StatusForbidden).
-			HasErrID(apierr.AuthUserSchemaOutdated)
+			HasErrID(errx.AuthUserSchemaOutdated)
 	})
 
 	t.Run("GetUpgradeForm", func(t *testing.T) {
@@ -293,7 +293,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 				},
 			}).
 			Expect(http.StatusBadRequest).
-			HasErrID(apierr.FIELDValidationErrorOnSchemaRegister)
+			HasErrID(errx.FIELDValidationErrorOnSchemaRegister)
 	})
 
 	t.Run("UpdateMetadataSuccess", func(t *testing.T) {

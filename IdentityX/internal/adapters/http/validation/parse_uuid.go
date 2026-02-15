@@ -1,7 +1,7 @@
 package validation
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -10,7 +10,7 @@ import (
 func ParseUUID(id, fieldName string) (uuid.UUID, error) {
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return uuid.Nil, fail.New(apierr.RequestParseUUIDError).WithArgs(fieldName).With(err)
+		return uuid.Nil, fail.New(errx.RequestParseUUIDError).WithArgs(fieldName).With(err)
 	}
 	return parsedID, nil
 }

@@ -1,9 +1,9 @@
 package session
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/session"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -84,7 +84,7 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID, accessTo
 	}
 
 	if currentSessionID == sessionID {
-		return fail.New(apierr.SessionSelfRevokeForbidden).RecordCtx(ctx)
+		return fail.New(errx.SessionSelfRevokeForbidden).RecordCtx(ctx)
 	}
 
 	var identityType session.IdentityType
@@ -96,8 +96,8 @@ func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID, accessTo
 
 	var sess *session.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
-	if fail.Is(err, apierr.SQLNotFound) {
-		return fail.New(apierr.SessionNotFound).RecordCtx(ctx)
+	if fail.Is(err, errx.SQLNotFound) {
+		return fail.New(errx.SessionNotFound).RecordCtx(ctx)
 	} else if err != nil {
 		return err
 	}

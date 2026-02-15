@@ -1,9 +1,9 @@
 package scope
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/scopes"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -52,11 +52,11 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
 	}
 
 	if in.Name == "" {
-		return nil, fail.New(apierr.SCOPEEmptyName).RecordCtx(ctx)
+		return nil, fail.New(errx.SCOPEEmptyName).RecordCtx(ctx)
 	}
 
 	scope, err := uc.scopes.Create(ctx, scopes.Scope{
@@ -88,7 +88,7 @@ func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInpu
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get a scope for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get a scope for a project you don't own").RecordCtx(ctx)
 	}
 
 	scope, err := uc.scopes.GetByIDExternal(ctx, in.ScopeID, in.ProjectID)
@@ -115,7 +115,7 @@ func (uc *UseCase) GetProjectScopesExternal(ctx context.Context, in inbounds.Get
 	}
 
 	if !isOwner {
-		return nil, fail.New(apierr.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
 	}
 
 	projectScopes, err := uc.scopes.GetProjectScopes(ctx, in.ProjectID)

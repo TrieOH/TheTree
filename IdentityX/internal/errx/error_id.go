@@ -1,4 +1,4 @@
-package apierr
+package errx
 
 import (
 	"github.com/MintzyG/fail/v3"
@@ -15,6 +15,7 @@ var (
 	RequestParseNumberError        = fail.ID(0, "REQ", 6, false, "REQuestParseNumberError")
 	RequestMissingParamError       = fail.ID(0, "REQ", 7, false, "REQuestMissingParamError")
 	RequestInvalidCustomFieldsJSON = fail.ID(0, "REQ", 8, false, "REQuestInvalidCustomFieldsJSON")
+	RequestInvalidSubContextJSON   = fail.ID(0, "REQ", 9, false, "REQuestInvalidSubContextJSON")
 
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
@@ -80,7 +81,8 @@ var (
 	ProjectNotFound = fail.ID(0, "PROJECT", 0, true, "PROJECTNotFound")
 
 	ProjectUserErrorEncodingMetadata = fail.ID(0, "PROJECTUSER", 0, false, "PROJECTUSERErrorEncodingMetadata")
-	ProjectUserRegisterOnNoneProject = fail.ID(0, "PROJECTUSER", 1, false, "PROJECTUSERRegisterOnNoneProject")
+	ProjectUserMetadataDecodeFailed  = fail.ID(0, "PROJECTUSER", 1, false, "PROJECTUSERMetadataDecodeFailed")
+	ProjectUserRegisterOnNoneProject = fail.ID(0, "PROJECTUSER", 2, false, "PROJECTUSERRegisterOnNoneProject")
 
 	ProjectUserRegisterOnSchemaVersionDraft    = fail.ID(0, "PROJECTUSER", 0, true, "PROJECTUSERRegisterOnSchemaVersionDraft")
 	ProjectUserRegisterOnSchemaDraft           = fail.ID(0, "PROJECTUSER", 1, true, "PROJECTUSERRegisterOnSchemaDraft")
@@ -145,13 +147,17 @@ var (
 	SQLUnmatchedUniqueViolation = fail.ID(1, "SQL", 8, false, "SQLUnmatchedUniqueViolation")
 	SQLUnmatchedCheckViolation  = fail.ID(1, "SQL", 9, false, "SQLUnmatchedCheckViolation")
 
-	SYSDependencyDown        = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
-	SYSServiceUnavailable    = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
-	SYSJWKSRetrievalFailed   = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
-	SYSRenderingEmailFailed  = fail.ID(9, "SYS", 3, false, "SYSRenderingEmailFailed")
-	SYSUUIDV7GenerationError = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
-	SYSJWKSEncodingFailed    = fail.ID(9, "SYS", 5, false, "SYSJWKSEncodingFailed")
-	SYSCryptoError           = fail.ID(9, "SYS", 6, false, "SYSCryptoError")
+	SYSDependencyDown           = fail.ID(9, "SYS", 0, false, "SYStemDependencyDown")
+	SYSServiceUnavailable       = fail.ID(9, "SYS", 1, false, "SYSServiceUnavailable")
+	SYSJWKSRetrievalFailed      = fail.ID(9, "SYS", 2, false, "SYSJWKSRetrievalFailed")
+	SYSRenderingEmailFailed     = fail.ID(9, "SYS", 3, false, "SYSRenderingEmailFailed")
+	SYSUUIDV7GenerationError    = fail.ID(9, "SYS", 4, false, "SYSUUIDV7GenerationError")
+	SYSJWKSEncodingFailed       = fail.ID(9, "SYS", 5, false, "SYSJWKSEncodingFailed")
+	SYSCryptoError              = fail.ID(9, "SYS", 6, false, "SYSCryptoError")
+	SYSInvalidPublicKeyPEM      = fail.ID(9, "SYS", 7, false, "SYSInvalidPublicKeyPEM")
+	SYSPublicKeyParseFailed     = fail.ID(9, "SYS", 8, false, "SYSPublicKeyParseFailed")
+	SYSInvalidPublicKeyType     = fail.ID(9, "SYS", 9, false, "SYSInvalidPublicKeyType")
+	SYSInvalidPublicKeyByteSize = fail.ID(9, "SYS", 10, false, "SYSInvalidPublicKeyByteSize")
 
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")

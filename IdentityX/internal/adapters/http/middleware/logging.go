@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"context"
 	"net/http"
 	"time"
@@ -70,7 +70,7 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				_ = fail.New(apierr.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
+				_ = fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

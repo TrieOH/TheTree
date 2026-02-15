@@ -1,7 +1,7 @@
 package permissions
 
 import (
-	"GoAuth/internal/apierr"
+	"GoAuth/internal/errx"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -24,7 +24,7 @@ func validateConditionRecursive(c Condition, path string) error {
 			if path != "" {
 				location = fmt.Sprintf("%sand", path)
 			}
-			return fail.New(apierr.PERMissionLogicalConditionValidationError).WithArgs(location, "AND")
+			return fail.New(errx.PERMissionLogicalConditionValidationError).WithArgs(location, "AND")
 		}
 		for i, cond := range *c.And {
 			childPath := fmt.Sprintf("%sand[%d]", path, i)
@@ -41,7 +41,7 @@ func validateConditionRecursive(c Condition, path string) error {
 			if path != "" {
 				location = fmt.Sprintf("%sor", path)
 			}
-			return fail.New(apierr.PERMissionLogicalConditionValidationError).WithArgs(location, "OR")
+			return fail.New(errx.PERMissionLogicalConditionValidationError).WithArgs(location, "OR")
 		}
 		for i, cond := range *c.Or {
 			childPath := fmt.Sprintf("%sor[%d]", path, i)
@@ -97,9 +97,9 @@ func validateLeafCondition(c Condition, path string) error {
 
 func validationError(path, msg string) error {
 	if path == "" {
-		return fail.New(apierr.PERMissionConditionValidationError).WithArgs("'.'").Trace(msg)
+		return fail.New(errx.PERMissionConditionValidationError).WithArgs("'.'").Trace(msg)
 	}
-	return fail.New(apierr.PERMissionConditionValidationError).WithArgs(path).Trace(msg)
+	return fail.New(errx.PERMissionConditionValidationError).WithArgs(path).Trace(msg)
 }
 
 func validateTemporalCondition(c Condition, path string) error {

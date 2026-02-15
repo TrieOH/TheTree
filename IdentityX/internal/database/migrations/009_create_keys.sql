@@ -34,6 +34,8 @@ CREATE TABLE key_pair (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
 
+    verify_expires_at TIMESTAMPTZ NOT NULL,
+
     CHECK (
         (key_type = 'goauth' AND project_id IS NULL)
             OR

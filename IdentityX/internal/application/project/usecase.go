@@ -1,12 +1,12 @@
 package project
 
 import (
-	"GoAuth/internal/apierr"
 	"GoAuth/internal/crypto"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project"
 	"GoAuth/internal/domain/scopes"
+	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
@@ -80,7 +80,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
@@ -95,13 +95,13 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
-		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 	defer zero(priv)
 
 	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
-		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 
 	kid := fmt.Sprintf(
@@ -111,18 +111,19 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 	)
 
 	_, err = uc.keys.CreateKeyPair(ctx, key.Pair{
-		KID:        kid,
-		ProjectID:  &createdProject.ID,
-		KeyType:    key.TypeProject,
-		Algorithm:  key.AlgEdDSA,
-		PublicKey:  pub,
-		PrivateKey: encryptedPriv,
-		Usage:      key.UsageSign,
-		Status:     key.StatusActive,
-		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
+		KID:             kid,
+		ProjectID:       &createdProject.ID,
+		KeyType:         key.TypeProject,
+		Algorithm:       key.AlgEdDSA,
+		PublicKey:       pub,
+		PrivateKey:      encryptedPriv,
+		Usage:           key.UsageSign,
+		Status:          key.StatusActive,
+		ExpiresAt:       time.Now().Add(7 * 24 * time.Hour),
+		VerifyExpiresAt: time.Now().Add(14 * 24 * time.Hour),
 	})
 	if err != nil {
-		return nil, fail.New(apierr.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 
 	span.SetAttributes(
@@ -161,7 +162,7 @@ func (uc *UseCase) GetByID(ctx context.Context, projectID uuid.UUID) (*inbounds.
 	}
 
 	if principal.ProjectID != nil && *principal.ProjectID != projectID {
-		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	proj, err := uc.projects.GetByIDExternal(ctx, projectID, principal.UserID)
@@ -209,7 +210,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 	}
 
 	if principal.ProjectID != nil && *principal.ProjectID != projectID {
-		return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	if principal.ProjectID == nil {
@@ -218,7 +219,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 			return nil, err
 		}
 		if !isOwner {
-			return nil, fail.New(apierr.ProjectNotFound).RecordCtx(ctx)
+			return nil, fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 		}
 	}
 
@@ -227,9 +228,14 @@ func (uc *UseCase) GetJWKS(ctx context.Context, projectID uuid.UUID) (map[string
 		return map[string]any{"keys": []any{}}, err
 	}
 
-	jwkKeys := make([]any, len(keys))
-	for i, k := range keys {
-		jwkKeys[i] = key.PublicKeyToJWK(k)
+	jwkKeys := make([]any, 0, len(keys))
+	var jwk map[string]any
+	for _, k := range keys {
+		jwk, err = key.PublicKeyToJWK(k)
+		if err != nil {
+			return nil, err
+		}
+		jwkKeys = append(jwkKeys, jwk)
 	}
 
 	return map[string]any{
