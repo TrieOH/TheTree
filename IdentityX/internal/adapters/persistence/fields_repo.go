@@ -922,3 +922,116 @@ func (repo *schemaFieldsRepo) IsOptionValueReferenced(ctx context.Context, field
 
 	return *isReferenced, nil
 }
+
+// GetVisibilityRuleByID retrieves a visibility rule by its ID
+func (repo *schemaFieldsRepo) GetVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.VisibilityRule, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.GetVisibilityRuleByID",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	sqlcRule, err := repo.queries(ctx).GetVisibilityRuleByID(ctx, ruleID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return &field.VisibilityRule{
+		ID:               sqlcRule.ID,
+		FieldID:          sqlcRule.FieldID,
+		DependsOnFieldID: sqlcRule.DependsOnFieldID,
+		Operator:         field.RuleOperator(sqlcRule.Operator),
+		Value:            sqlcRule.Value,
+		CreatedAt:        sqlcRule.CreatedAt,
+	}, nil
+}
+
+// SetVisibilityRules replaces all visibility rules for a field
+func (repo *schemaFieldsRepo) SetVisibilityRules(ctx context.Context, fieldID uuid.UUID, rules []field.VisibilityRule) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.SetVisibilityRules",
+		trace.WithAttributes(
+			attribute.String("field_id", fieldID.String()),
+			attribute.Int("rule_count", len(rules)),
+		),
+	)
+	defer span.End()
+
+	// Delete existing rules
+	if err := repo.queries(ctx).SetVisibilityRules(ctx, fieldID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	// Insert new rules
+	for _, rule := range rules {
+		if _, err := repo.queries(ctx).CreateVisibilityRuleForSet(ctx, sqlc.CreateVisibilityRuleForSetParams{
+			FieldID:          fieldID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         sqlc.RuleOperator(rule.Operator),
+			Value:            rule.Value,
+		}); err != nil {
+			return fail.From(err).RecordCtx(ctx)
+		}
+	}
+
+	return nil
+}
+
+// UpdateVisibilityRule updates a visibility rule with partial updates
+func (repo *schemaFieldsRepo) UpdateVisibilityRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.VisibilityRule, error) {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.UpdateVisibilityRule",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	// First, get the current rule to preserve unchanged values
+	current, err := repo.GetVisibilityRuleByID(ctx, ruleID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build params with current values, then override with updates
+	params := sqlc.UpdateVisibilityRuleParams{
+		ID:               ruleID,
+		DependsOnFieldID: current.DependsOnFieldID,
+		Operator:         sqlc.RuleOperator(current.Operator),
+		Value:            current.Value,
+	}
+
+	// Override with provided updates
+	if dependsOnFieldID, ok := updates["depends_on_field_id"].(uuid.UUID); ok {
+		params.DependsOnFieldID = dependsOnFieldID
+	}
+	if operator, ok := updates["operator"].(string); ok {
+		params.Operator = sqlc.RuleOperator(operator)
+	}
+	if value, ok := updates["value"].(*json.RawMessage); ok {
+		params.Value = value
+	}
+
+	sqlcRule, err := repo.queries(ctx).UpdateVisibilityRule(ctx, params)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return &field.VisibilityRule{
+		ID:               sqlcRule.ID,
+		FieldID:          sqlcRule.FieldID,
+		DependsOnFieldID: sqlcRule.DependsOnFieldID,
+		Operator:         field.RuleOperator(sqlcRule.Operator),
+		Value:            sqlcRule.Value,
+		CreatedAt:        sqlcRule.CreatedAt,
+	}, nil
+}
+
+// DeleteVisibilityRuleByID deletes a visibility rule by its ID
+func (repo *schemaFieldsRepo) DeleteVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "SchemaFieldsRepo.DeleteVisibilityRuleByID",
+		trace.WithAttributes(attribute.String("rule_id", ruleID.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteVisibilityRuleByID(ctx, ruleID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}

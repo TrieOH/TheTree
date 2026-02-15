@@ -79,3 +79,23 @@ func OptionSliceToResponse(opts []field.Option) []OptionResponse {
 	}
 	return out
 }
+
+type VisibilityRuleResponse struct {
+	ID               uuid.UUID        `json:"id"`
+	DependsOnFieldID uuid.UUID        `json:"depends_on_field_id"`
+	Operator         string           `json:"operator"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+func VisibilityRuleSliceToResponse(rules []field.VisibilityRule) []VisibilityRuleResponse {
+	out := make([]VisibilityRuleResponse, len(rules))
+	for i, rule := range rules {
+		out[i] = VisibilityRuleResponse{
+			ID:               rule.ID,
+			DependsOnFieldID: rule.DependsOnFieldID,
+			Operator:         string(rule.Operator),
+			Value:            rule.Value,
+		}
+	}
+	return out
+}

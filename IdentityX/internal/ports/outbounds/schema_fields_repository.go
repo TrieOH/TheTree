@@ -50,4 +50,10 @@ type SchemaFieldsRepository interface {
 	SetFieldOptions(ctx context.Context, fieldID uuid.UUID, options []field.Option) error
 	DeleteOptionByID(ctx context.Context, optionID uuid.UUID) error
 	IsOptionValueReferenced(ctx context.Context, fieldID uuid.UUID, optionValue string) (bool, error)
+
+	// Visibility Rule CRUD operations for draft versions
+	GetVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) (*field.VisibilityRule, error)
+	SetVisibilityRules(ctx context.Context, fieldID uuid.UUID, rules []field.VisibilityRule) error
+	UpdateVisibilityRule(ctx context.Context, ruleID uuid.UUID, updates map[string]interface{}) (*field.VisibilityRule, error)
+	DeleteVisibilityRuleByID(ctx context.Context, ruleID uuid.UUID) error
 }

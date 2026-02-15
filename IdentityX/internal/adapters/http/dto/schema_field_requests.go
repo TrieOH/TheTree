@@ -111,3 +111,13 @@ type EditFieldRequest struct {
 type SetFieldOptionsRequest struct {
 	Options []OptionParam `json:"options" validate:"required"`
 }
+
+type SetVisibilityRulesRequest struct {
+	VisibilityRules []VisibilityRuleParam `json:"visibility_rules" validate:"required"`
+}
+
+type EditVisibilityRuleRequest struct {
+	DependsOnFieldID *string          `json:"depends_on_field_id,omitempty"`
+	Operator         *string          `json:"operator,omitempty"`
+	Value            *json.RawMessage `json:"value,omitempty"`
+}

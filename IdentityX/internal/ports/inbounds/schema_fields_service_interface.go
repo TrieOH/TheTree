@@ -11,4 +11,7 @@ type SchemaFieldsService interface {
 	DeleteField(ctx context.Context, in DeleteFieldInput) error
 	SetFieldOptions(ctx context.Context, in SetFieldOptionsInput) ([]field.Option, error)
 	DeleteFieldOption(ctx context.Context, in DeleteFieldOptionInput) error
+	SetVisibilityRules(ctx context.Context, in SetVisibilityRulesInput) ([]field.VisibilityRule, error)
+	EditVisibilityRule(ctx context.Context, in EditVisibilityRuleInput) (*field.VisibilityRule, error)
+	DeleteVisibilityRule(ctx context.Context, in DeleteVisibilityRuleInput) error
 }

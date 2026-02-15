@@ -96,6 +96,33 @@ type DeleteFieldOptionInput struct {
 	OptionID      uuid.UUID
 }
 
+type SetVisibilityRulesInput struct {
+	ProjectID       uuid.UUID
+	SchemaID        uuid.UUID
+	VersionNumber   int
+	FieldObjectID   uuid.UUID
+	VisibilityRules []InputVisibilityRule
+}
+
+type EditVisibilityRuleInput struct {
+	ProjectID        uuid.UUID
+	SchemaID         uuid.UUID
+	VersionNumber    int
+	FieldObjectID    uuid.UUID
+	RuleID           uuid.UUID
+	DependsOnFieldID *uuid.UUID
+	Operator         *string
+	Value            *json.RawMessage
+}
+
+type DeleteVisibilityRuleInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	FieldObjectID uuid.UUID
+	RuleID        uuid.UUID
+}
+
 type ValidationWarning struct {
 	FieldKey string
 	RuleType string // "visibility" or "required"
