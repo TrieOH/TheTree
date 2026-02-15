@@ -17,6 +17,7 @@ import (
 	"GoAuth/internal/application/schema_version"
 	"GoAuth/internal/application/scope"
 	"GoAuth/internal/application/session"
+	"GoAuth/internal/application/subcontext"
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/infrastructure"
 	"GoAuth/internal/ports/inbounds"
@@ -39,6 +40,7 @@ type Application struct {
 	Scope          inbounds.ScopeService
 	Verifier       inbounds.TokenVerifier
 	ApiKey         inbounds.ApiKeyService
+	SubContext     inbounds.SubContextService
 }
 
 func NewApplication(infra infrastructure.Infra) *Application {
@@ -121,5 +123,9 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
 		Verifier:   tokensBundle.Verifier,
 		ApiKey:     apiKeyService,
+		SubContext: subcontext.New(subcontext.Deps{
+			Projects:     repos.Projects,
+			ProjectUsers: repos.ProjectUsers,
+		}, infra.Tx),
 	}
 }

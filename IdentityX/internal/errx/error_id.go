@@ -15,6 +15,7 @@ var (
 	RequestParseNumberError        = fail.ID(0, "REQ", 6, false, "REQuestParseNumberError")
 	RequestMissingParamError       = fail.ID(0, "REQ", 7, false, "REQuestMissingParamError")
 	RequestInvalidCustomFieldsJSON = fail.ID(0, "REQ", 8, false, "REQuestInvalidCustomFieldsJSON")
+	RequestInvalidSubContextJSON   = fail.ID(0, "REQ", 9, false, "REQuestInvalidSubContextJSON")
 
 	RequestMissingSchemaCustomFields = fail.ID(0, "REQ", 0, true, "REQuestMissingSchemaCustomFields")
 	RequestInvalidJSONFormat         = fail.ID(0, "REQ", 1, true, "REQuestInvalidJSONFormat")
@@ -80,7 +81,8 @@ var (
 	ProjectNotFound = fail.ID(0, "PROJECT", 0, true, "PROJECTNotFound")
 
 	ProjectUserErrorEncodingMetadata = fail.ID(0, "PROJECTUSER", 0, false, "PROJECTUSERErrorEncodingMetadata")
-	ProjectUserRegisterOnNoneProject = fail.ID(0, "PROJECTUSER", 1, false, "PROJECTUSERRegisterOnNoneProject")
+	ProjectUserMetadataDecodeFailed  = fail.ID(0, "PROJECTUSER", 1, false, "PROJECTUSERMetadataDecodeFailed")
+	ProjectUserRegisterOnNoneProject = fail.ID(0, "PROJECTUSER", 2, false, "PROJECTUSERRegisterOnNoneProject")
 
 	ProjectUserRegisterOnSchemaVersionDraft    = fail.ID(0, "PROJECTUSER", 0, true, "PROJECTUSERRegisterOnSchemaVersionDraft")
 	ProjectUserRegisterOnSchemaDraft           = fail.ID(0, "PROJECTUSER", 1, true, "PROJECTUSERRegisterOnSchemaDraft")

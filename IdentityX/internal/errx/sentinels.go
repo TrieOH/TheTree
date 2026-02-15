@@ -40,6 +40,10 @@ var (
 						AddLocalizations(map[string]string{
 			"pt-BR": "o JSON de campos customizados está inválido",
 		})
+	ErrRequestInvalidSubContextJSON = fail.Form(RequestInvalidSubContextJSON, "invalid sub-context JSON", false, map[string]any{"code": 400}, "UNDEFINED").
+					AddLocalizations(map[string]string{
+			"pt-BR": "o JSON de sub-contexto está inválido",
+		})
 
 	ErrRequestMissingSchemaCustomFields = fail.Form(RequestMissingSchemaCustomFields, "schema custom fields are required on a schema register", false, map[string]any{"code": 400}, "UNDEFINED").
 						AddLocalizations(map[string]string{
@@ -263,6 +267,10 @@ var (
 	ErrProjectUserErrorEncodingMetadata = fail.Form(ProjectUserErrorEncodingMetadata, "error encoding project user metadata", false, map[string]any{"code": 500}).
 						AddLocalizations(map[string]string{
 			"pt-BR": "erro ao codificar os metadados do projeto do usuário",
+		})
+	ErrProjectUserMetadataDecodeFailed = fail.Form(ProjectUserMetadataDecodeFailed, "error decoding project user metadata", false, map[string]any{"code": 500}).
+						AddLocalizations(map[string]string{
+			"pt-BR": "erro ao decodificar os metadados do projeto do usuário",
 		})
 
 	ErrProjectUserRegisterOnSchemaVersionDraft = fail.Form(ProjectUserRegisterOnSchemaVersionDraft, "can't register to a draft schema version", false, map[string]any{"code": 400}).

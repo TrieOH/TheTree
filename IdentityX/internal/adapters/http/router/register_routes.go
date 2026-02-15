@@ -41,6 +41,7 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
 	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
 	registerApiKeyRoutes(r, handlerBundle.ApiKeyHandler, authMW)
+	registerSubContextRoutes(r, handlerBundle.SubContextHandler, authMW)
 
 	return r, app
 }
@@ -272,5 +273,19 @@ func registerRoleRoutes(
 		r.Get("/projects/{project_id}/identities/{entity_id}/roles", h.GetUserRoles)
 		r.Post("/projects/{project_id}/identities/{entity_id}/roles", h.GiveRole)
 		r.Delete("/projects/{project_id}/identities/{entity_id}/roles", h.TakeRole)
+	})
+}
+
+func registerSubContextRoutes(
+	r *chi.Mux,
+	h *handlers.SubContextHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Use(middleware.ClientOnly())
+		r.Post("/projects/{project_id}/sub-context", h.AddSubContext)
+		r.Delete("/projects/{project_id}/sub-context", h.RemoveSubContext)
+		r.Get("/projects/{project_id}/users/{user_id}/sub-context", h.GetSubContext)
 	})
 }

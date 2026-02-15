@@ -24,25 +24,7 @@
 *   **Why this is dangerous:** Revocation of access is broken. Deactivated accounts/projects remain fully functional.
 *   **Suggested mitigation:** Add `AND is_active = true` to all SQL queries involved in authentication and key resolution. In the use case, explicitly check the `IsActive` field after retrieval.
 
-### 2. Broken Validation for Advanced Field Types (Availability)
-*   **Severity:** High
-*   **Affected components:** `internal/application/auth/validate_field_type.go` (`validateFieldValue`)
-*   **Description:** The `validateFieldValue` function explicitly contains a `FIXME` comment: `// FIXME: Implement other field types when they are implemented in the API. // Currently, types like 'email', 'select', 'radio', 'checkbox' will always return false, // making them unusable for project user registration.` Any attempt to use these common field types (`email`, `select`, `radio`, `checkbox`) will result in `validateFieldValue` returning `false` (because they fall through to the `default` case), making them unusable.
-*   **Attack scenario:** If a project administrator configures a schema that includes field types like `email`, `select`, `radio`, or `checkbox` (which are valid types for custom user fields), all attempts by users to register for that project will fail due to validation errors. This causes a direct denial of service for new user registrations for affected projects.
-*   **Why this is dangerous:** Leads to a critical availability issue for configured features, effectively causing a denial of service for certain project registrations.
-*   **Conditions required to exploit:** A project attempts to use any custom field type other than `string`, `bool`, or `int`.
-*   **Suggested mitigation:** Implement proper validation logic for `email` (e.g., regex), and `select`/`radio`/`checkbox` (e.g., check against allowed options).
-
-### 3. Denial of Service via Uncached DB Lookups for JWT Keys
-*   **Severity:** High
-*   **Affected components:** `internal/application/keys/keys.go` (`VerifyProject`), `internal/application/tokens/verifier/usecase.go` (`verifyToken`)
-*   **Description:** The `verifyToken` function delegates project-specific key verification to `keys.VerifyProject`, which in turn performs a database lookup (`uc.repo.GetProjectKeyByKID`) for every JWT verification with a "project:" prefixed `kid`. This lookup is not cached.
-*   **Attack scenario:** An attacker can flood the API with requests containing JWTs (even invalid ones) with random `kid` headers like `project:{random-uuid}:v1`. This forces the server to perform a `SELECT` query on the `key_pair` table for every request, bypassing signature verification (since the key is needed *to* verify). Each such request, valid or not, incurs a database query overhead.
-*   **Why this is dangerous:** Database resource exhaustion (CPU/IO), leading to Denial of Service for legitimate users.
-*   **Conditions required to exploit**: Public network access.
-*   **Suggested mitigation:** Implement an in-memory LRU cache for project public keys with a short TTL (e.g., 5-10 minutes) to reduce database load.
-
-### 4. Lack of Secure Transport (SSL/TLS) Enforcement for Database Connection
+### 2. Lack of Secure Transport (SSL/TLS) Enforcement for Database Connection
 **Severity**: High
 **Affected components**: `internal/database/database.go` (`WaitForDB`), `DATABASE_URL`
 *   **Description**: The `WaitForDB` function connects to the PostgreSQL database using a DSN from the `DATABASE_URL` environment variable. There is no explicit enforcement or check for `sslmode=require` or `sslmode=verify-full` in the connection string. Without strict SSL/TLS enforcement, the database connection could be established over an unencrypted channel, even if the database supports TLS.
@@ -51,7 +33,7 @@
 *   **Conditions required to exploit**: Network access to intercept traffic between the application and the database.
 *   **Suggested mitigation (high-level, no patch required)**: Always enforce `sslmode=verify-full` in the `DATABASE_URL` DSN for production environments. The application should fail to start if a secure connection cannot be established.
 
-### 6. Refresh Token Verification Bypasses Session Revocation
+### 3. Refresh Token Verification Bypasses Session Revocation
 *   **Severity:** High
 *   **Affected components:** `internal/application/tokens/verifier/usecase.go` (`VerifyRefreshToken`), `internal/application/auth/usecase.go` (`refreshInternal`)
 *   **Description:** The `VerifyRefreshToken` function only checks the cryptographic validity and expiry of the refresh token itself. It does not check the status of the underlying session in the database. The `refreshInternal` function, which consumes the verified refresh token, checks for session revocation later, but this creates a race condition.
@@ -104,7 +86,7 @@
 *   **Why this is dangerous**: Performance degradation over time.
 *   **Suggested mitigation:** Ensure the scheduler runs frequently enough.
 
-### 7. Unrestricted Tenant Self-Registration (Public Admin Access)
+### 6. Unrestricted Tenant Self-Registration (Public Admin Access)
 *   **Severity:** Medium (Design Concern)
 *   **Affected components:** `internal/adapters/http/router/router.go`, `internal/application/auth/usecase.go`
 *   **Description:** The `/auth/register` endpoint is publicly accessible and allows anyone to create a "Client" account. Client accounts have the ability to create and manage projects (becoming Tenant Admins).
@@ -112,7 +94,7 @@
 *   **Why this is dangerous**: Lack of access control for tenant creation.
 *   **Suggested mitigation:** Disable public registration for Client accounts in production (feature flag), or implement an invitation-only flow for new Tenants.
 
-### 8. User Enumeration via Timing Attack
+### 7. User Enumeration via Timing Attack
 *   **Severity:** Medium
 *   **Affected components:** `internal/application/auth/usecase.go` (`Login`)
 *   **Description:** The `Login` function returns immediately if `GetUserByEmail` fails (user not found), but executes a slow `bcrypt.CompareHashAndPassword` if the user exists. This creates a measurable timing difference.
@@ -120,7 +102,7 @@
 *   **Why this is dangerous**: Allows attackers to build a list of valid users for targeted phishing or credential stuffing.
 *   **Suggested mitigation:** Implement a "fake" bcrypt comparison or constant-time logic when the user is not found to normalize response times.
 
-### 9. Volatile Session Binding Information in JWT Claims
+### 8. Volatile Session Binding Information in JWT Claims
 **Severity**: Medium
 **Affected components**: `internal/application/tokens/issuer/usecase.go` (`NewAccessToken`)
 **Description**: The `NewAccessToken` function includes volatile information such as `UserAgent` and `UserIP` directly within the `AccessClaims` of the JWT. JWTs are designed to be stateless and self-contained. Binding them to frequently changing attributes like IP address or User-Agent can lead to legitimate tokens being invalidated prematurely (e.g., if a user switches networks or updates their browser). If these fields are intended for security binding, their presence in a stateless token can create inconsistencies or be bypassed.
@@ -129,7 +111,7 @@
 *   **Conditions required to exploit**: Frequent changes in user's IP/User-Agent, or an attacker successfully spoofing these headers if they are used for binding and are not properly validated.
 *   **Suggested mitigation (high-level, no patch required)**: Avoid including highly volatile information like `UserAgent` and `UserIP` directly in JWT claims. Session binding should primarily rely on secure cookie flags, IP-based rate limiting, and robust refresh token rotation schemes. If binding to these attributes is necessary for specific security policies, ensure the verification logic is resilient to legitimate changes and prevents spoofing.
 
-### 10. Incorrect Integer Range Validation for `float64` Inputs in Custom Fields
+### 9. Incorrect Integer Range Validation for `float64` Inputs in Custom Fields
 **Severity**: Medium
 **Affected components**: `internal/application/auth/validate_field_type.go` (`validateFieldValue` for `field.Int` type)
 **Description**: The `validateFieldValue` function, when validating `field.Int` types from `float64` inputs (which JSON numbers default to), uses `maxSafeInt64` (1<<53 - 1) and `minSafeInt64` (-(1 << 53)) for range checking. These bounds are significantly smaller than the actual `int64` range (approx. 2^63 - 1 to -(2^63)).
@@ -137,14 +119,6 @@
 *   **Why this is dangerous**: Leads to a functional bug where valid integer inputs are rejected, impairing legitimate application usage. Could be exploited to cause denial of service for users trying to register with specific (but otherwise valid) integer values in custom fields.
 *   **Conditions required to exploit**: User inputting large integer values via JSON for `field.Int` types.
 *   **Suggested mitigation (high-level, no patch required)**: Adjust the validation logic for `float64` to `int64` conversion to correctly use `math.MaxInt64` and `math.MinInt64`, potentially with a safer conversion method that accounts for float precision without prematurely rejecting valid `int64` values. If `json.Number` is available, convert to `int64` via that method first.
-
-### 11. Unauthenticated Access to Project JWKS
-*   **Severity:** Medium (Information Leakage)
-*   **Affected components:** `internal/application/project/usecase.go` (`GetJWKS`)
-*   **Description:** The `GetJWKS` function does not perform any authorization checks. It retrieves the public keys for a project based solely on the `projectID` provided in the request.
-*   **Attack scenario:** An attacker with a valid account can iterate through UUIDs or use a known `projectID` to retrieve the public keys for any project on the platform. This leaks information about the existence of projects and their cryptographic materials.
-*   **Why this is dangerous:** It breaks project isolation and allows attackers to gather information about other tenants.
-*   **Suggested mitigation:** Before retrieving the keys, the `GetJWKS` function should verify that the authenticated principal has the right to access the specified project. This could be an ownership check or a check for project membership.
 
 ---
 
@@ -347,3 +321,34 @@
 *   **How it was fixed:** Implemented a full password reset flow including `ForgotPassword` (issuing signed JWT tokens via email) and `ResetPassword` (verifying tokens, updating passwords, and invalidating all active sessions).
 *   **What changed:** Users can now securely recover their accounts. The implementation includes protection against token reuse and ensures session invalidation upon password change.
 *   **Why the fix is sufficient:** The standard self-service recovery path is now available and follows security best practices (signed tokens, atomicity via transactions, session revocation).
+
+### 17. Broken Validation for Advanced Field Types (Availability)
+*   **Severity:** High
+*   **Affected components:** `internal/application/schema/validation.go` (`validateFieldValue`, `validateFieldType`)
+*   **How it was fixed:** All field types (`email`, `select`, `radio`, `checkbox`) now have proper validation implemented. The `validateFieldValue` function was refactored to handle each field type appropriately:
+  - `field.Email`: Uses `validator.New()` with "required,email" validation
+  - `field.Select` and `field.Radio`: Accept string values
+  - `field.Checkbox`: Accepts `bool`, `[]any`, or `[]string` values
+  - A new `validateOptionValue` function validates select/radio/checkbox values against allowed options
+*   **What changed:** The FIXME comment was removed, and comprehensive validation logic was added for all field types. The file was also moved from `internal/application/auth/validate_field_type.go` to `internal/application/schema/validation.go`.
+*   **Why the fix is sufficient:** All custom field types are now usable for project user registration without causing false validation failures. The validation ensures data integrity while supporting all intended field types.
+*   **Any residual risk or assumptions:** None.
+
+### 18. Denial of Service via Uncached DB Lookups for JWT Keys
+*   **Severity:** High
+*   **Affected components:** `internal/application/keys/keys.go` (`VerifyProject`, `VerifyGoAuth`), `internal/application/tokens/verifier/usecase.go` (`verifyToken`)
+*   **How it was fixed:** An in-memory LRU cache was implemented for public keys in the `UseCase` struct with `privateKeyCache` and `publicKeyCache` fields of type `outbounds.CacheService`. The `VerifyProject` and `VerifyGoAuth` functions now check the cache first before performing database lookups. When a key is retrieved from the database, it is stored in the cache. The `RevokeKey` function properly invalidates the cache when a key is revoked.
+*   **What changed:** Database lookups for JWT keys are now cached, preventing resource exhaustion from repeated queries. Keys are cached with their project associations to ensure proper validation.
+*   **Why the fix is sufficient:** This prevents DoS attacks that attempt to flood the API with JWT verification requests. The cache significantly reduces database load while maintaining security through proper cache invalidation on key revocation.
+*   **Any residual risk or assumptions:** The cache implementation assumes the `outbounds.CacheService` is properly configured with appropriate TTL settings.
+
+### 19. Unauthenticated Access to Project JWKS
+*   **Severity:** Medium (Information Leakage)
+*   **Affected components:** `internal/application/project/usecase.go` (`GetJWKS`)
+*   **How it was fixed:** The `GetJWKS` function now requires authentication and authorization:
+  - Calls `authz.RequirePrincipalAndAnnotate(ctx, span)` to require authentication
+  - Checks if the principal's project ID matches the requested project
+  - If no project ID in principal, verifies the user is the owner of the project
+*   **What changed:** The endpoint is now protected and no longer allows unauthenticated access to project public keys. Only authorized users (project owners or members) can retrieve JWKS for a project.
+*   **Why the fix is sufficient:** This enforces proper project isolation and prevents information leakage about other tenants' cryptographic materials. Attackers can no longer enumerate projects or gather JWKS data without proper authorization.
+*   **Any residual risk or assumptions:** None.

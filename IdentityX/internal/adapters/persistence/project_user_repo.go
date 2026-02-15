@@ -328,6 +328,59 @@ func (repo *projectUserRepo) UpdateMetadata(ctx context.Context, userID, project
 	return nil
 }
 
+func (repo *projectUserRepo) UpdateSubContext(ctx context.Context, userID, projectID uuid.UUID, subContext json.RawMessage) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.UpdateSubContext",
+		trace.WithAttributes(
+			attribute.String("project.project_id", projectID.String()),
+			attribute.String("project_user.id", userID.String()),
+		),
+	)
+	defer span.End()
+
+	// Get current user metadata
+	user, err := repo.GetByIDInternal(ctx, userID, projectID)
+	if err != nil {
+		return err
+	}
+
+	// Parse current metadata
+	var metadataMap map[string]any
+	if user.Metadata != nil && len(*user.Metadata) > 0 {
+		if err := json.Unmarshal(*user.Metadata, &metadataMap); err != nil {
+			return fail.From(err).RecordCtx(ctx)
+		}
+	} else {
+		metadataMap = make(map[string]any)
+	}
+
+	// Parse new sub-context
+	var subContextMap map[string]any
+	if err := json.Unmarshal(subContext, &subContextMap); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	// Merge sub-context into metadata
+	metadataMap["sub-context"] = subContextMap
+
+	// Marshal updated metadata
+	updatedMetadata, err := json.Marshal(metadataMap)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	rawMetadata := json.RawMessage(updatedMetadata)
+	if err := repo.queries(ctx).UpdateProjectUserMetadata(ctx, sqlc.UpdateProjectUserMetadataParams{
+		ID:        userID,
+		ProjectID: projectID,
+		Metadata:  rawMetadata,
+	}); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	span.SetAttributes(attribute.Bool("sub_context.updated", true))
+	return nil
+}
+
 func (repo *projectUserRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Verify",
 		trace.WithAttributes(
