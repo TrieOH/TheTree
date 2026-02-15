@@ -40,7 +40,6 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     leftActions: [{ id: "schemas_editor_back_000", type: 'back', visibleOn: "fixed", to: "/projects/config" }],
     rightActions: [
       { id: "schemas_editor_version_selector_000", type: "schemaVersionSelector", visibleOn: "fixed"},
-      { id: "schemas_editor_version_draft_000", type: "schemaVersionDraft", visibleOn: "fixed"},
     ],
     showUserMenu: true,
   },

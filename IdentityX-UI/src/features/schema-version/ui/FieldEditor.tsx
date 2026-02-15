@@ -11,26 +11,61 @@ import FieldCard from "./FieldCard";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
-import type { VersionField, VersionFieldList } from "../model/types";
+import type { VersionField, VersionFieldList, VersionFieldResult } from "../model/types";
 import { DraggableFieldEditPanel } from './DraggableFieldEditPanel';
 import { FieldEditForm } from './FieldEditForm';
 import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFieldList } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus } from "lucide-react"; 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { publishSchemaVersionFieldFn } from "../api";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { publishSchemaVersionFieldFn, schemaVersionByIdQueryOptions } from "../api";
 import { toast } from "sonner";
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
+import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
-  const [items, setItems] = useState<VersionFieldList>(defaultVersionFieldList);
-  const [originalItems, setOriginalItems] = useState<VersionFieldList>(defaultVersionFieldList);
+  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
+  const isVersionNull = currentSchemaVersion === null || currentSchemaVersion === undefined;
+
+  const { data: schemaVersionData } = useQuery(schemaVersionByIdQueryOptions(currentProjectId || "", currentSchemaId || "", currentSchemaVersion || 1));
+
+  const [items, setItems] = useState<VersionFieldList>([]);
+  const [originalItems, setOriginalItems] = useState<VersionFieldList>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [nextId, setNextId] = useState(defaultVersionFieldList.length);
   const [editingField, setEditingField] = useState<VersionField | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+
+  function mapFieldIdsToKeys(fields: VersionFieldResult[]) {
+    const fieldMap = new Map(
+      fields.map(field => [field.object_id, field.key])
+    );
+
+    return fields.map(field => ({
+      ...field,
+      required_rules: field.required_rules.map(rule => ({
+        operator: rule.operator,
+        value: rule.value,
+        depends_on_field_key: fieldMap.get(rule.depends_on_field_id) ?? ""
+      })),
+      visibility_rules: field.visibility_rules.map(rule => ({
+        operator: rule.operator,
+        value: rule.value,
+        depends_on_field_key: fieldMap.get(rule.depends_on_field_id) ?? ""
+      }))
+    }));
+  }
+
+
+  useEffect(() => {
+    if (schemaVersionData) {
+      const mappedFields = mapFieldIdsToKeys(schemaVersionData.fields);  
+      setItems(mappedFields);
+      setOriginalItems(mappedFields);
+    }
+  }, [schemaVersionData]);
 
   useEffect(() => {
     setHasChanges(JSON.stringify(items) !== JSON.stringify(originalItems));
@@ -109,12 +144,13 @@ export default function FieldEditor() {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["version_fields"] });
-      } else toast.error(`Failed to publish schema: ${response.message}`);
+        queryClient.invalidateQueries({ queryKey: ["schemaVersionById"] });
+      }
     },
+    onError: (error) => {
+      toast.error(`Failed to publish schema: ${error.message}`);
+    }
   });
-
-  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
 
   const handleSubmit = () => {
     publishVersionFieldSchemaMutation.mutate({
@@ -161,11 +197,12 @@ export default function FieldEditor() {
             ))}
           </SortableContext>
           <ShadowButton
-            onClick={handleAddField} 
+            onClick={handleAddField}
             className="w-full justify-center"
-            value="Add Field" 
+            value="Add Field"
             variant="solid"
-            leftIcon={<Plus className="w-4 h-4" />} 
+            leftIcon={<Plus className="w-4 h-4" />}
+            disabled={isVersionNull}
           />
           <FieldCard 
             key={defaultPasswordVersionField.key} 
@@ -187,10 +224,15 @@ export default function FieldEditor() {
       <div className="flex-1 p-4 flex flex-col justify-end items-end">
         <ShadowButton
           onClick={handleSubmit}
-          disabled={!hasChanges}
-          value="Submit Changes"
+          disabled={!hasChanges || isVersionNull}
+          value="Save Fields"
           variant="solid"
           className="w-fit"
+        />
+        <PublishSchemaVersionButton
+          items={items}
+          hasChanges={hasChanges && !isVersionNull}
+          setOriginalItems={setOriginalItems}
         />
       </div>
       {editingField && (
