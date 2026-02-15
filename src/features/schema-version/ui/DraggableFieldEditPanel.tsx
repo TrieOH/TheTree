@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/shared/lib/utils';
-import { X } from 'lucide-react';
+import { X, Minimize2, Maximize2 } from 'lucide-react';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 
 interface DraggableFieldEditPanelProps {
@@ -22,10 +22,12 @@ interface DraggablePanelContentProps extends DraggableFieldEditPanelProps {
   isMobile: boolean;
   position: { x: number; y: number };
   setPosition: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  isMinimized: boolean;
+  toggleMinimize: () => void;
 }
 
 const DraggablePanelContent: React.FC<DraggablePanelContentProps> = ({ 
-  children, onClose, title, isMobile, position 
+  children, onClose, title, isMobile, position, isMinimized, toggleMinimize
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +57,8 @@ const DraggablePanelContent: React.FC<DraggablePanelContentProps> = ({
       style={panelStyle}
       className={cn(
         "fixed bg-popover text-popover-foreground rounded-lg shadow-2xl border border-border z-50",
-        "flex flex-col overflow-hidden w-[calc(100vw-20px)] md:w-96 max-w-full max-h-(--screen--minus-header)",
+        "flex flex-col overflow-hidden w-[calc(100vw-20px)] md:w-96 max-w-full",
+        isMinimized ? "max-h-12.5" : "max-h-(--screen--minus-header)",
         isMobile && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
       )}
     >
@@ -68,11 +71,16 @@ const DraggablePanelContent: React.FC<DraggablePanelContentProps> = ({
         )}
       >
         <h4 className="font-semibold text-lg">{title}</h4>
-        <ShadowButton variant="ghost" onClick={onClose} leftIcon={<X className="w-4 h-4"/>} className="p-1 h-auto" />
+        <div className="flex items-center gap-1">
+          <ShadowButton variant="ghost" onClick={toggleMinimize} leftIcon={isMinimized ? <Maximize2 className="w-3.5 h-3.5"/> : <Minimize2 className="w-3.5 h-3.5"/>} className="p-1 h-auto" />
+          <ShadowButton variant="ghost" onClick={onClose} leftIcon={<X className="w-4 h-4"/>} className="p-1 h-auto" />
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        {children}
-      </div>
+      {!isMinimized && (
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
@@ -92,6 +100,11 @@ export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = (
   });
   const [isMobile, setIsMobile] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  const toggleMinimize = useCallback(() => {
+    setIsMinimized(prev => !prev);
+  }, []);
 
     const constrainPosition = useCallback((x: number, y: number, width: number, height: number) => {
     const margin = -70;
@@ -146,7 +159,7 @@ export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = (
     const newX = dragStartPos.x + event.delta.x;
     const newY = dragStartPos.y + event.delta.y;
     
-    setPosition(constrainPosition(newX, newY, width, height));
+    setPosition(constrainPosition(newX, newY, width, height + (isMinimized ? 150 : 0)));
   };
 
   return (
@@ -161,6 +174,8 @@ export const DraggableFieldEditPanel: React.FC<DraggableFieldEditPanelProps> = (
         isMobile={isMobile} 
         position={position}
         setPosition={setPosition}
+        isMinimized={isMinimized}
+        toggleMinimize={toggleMinimize}
       >
         {children}
       </DraggablePanelContent>

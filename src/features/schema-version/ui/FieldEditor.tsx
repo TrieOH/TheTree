@@ -204,6 +204,7 @@ export default function FieldEditor() {
                       key={defaultEmailVersionField.key}
                       field={defaultEmailVersionField}
                       isFixed={true}
+                      isSelected={editingField?.key === defaultEmailVersionField.key}
                     />
                     <SortableContext items={items.map((item) => item.key)}>
                       {items.map((item) => (
@@ -212,6 +213,7 @@ export default function FieldEditor() {
                           field={item}
                           onDelete={handleDeleteField}
                           onOpenEditPanel={handleOpenEditPanel}
+                          isSelected={editingField?.key === item.key}
                         />
                       ))}
                     </SortableContext>
@@ -228,6 +230,7 @@ export default function FieldEditor() {
                       field={{ ...defaultPasswordVersionField }}
                       overwriteType="password"
                       isFixed={true}
+                      isSelected={editingField?.key === defaultPasswordVersionField.key}
                     />
                   </div>
                 ),
@@ -258,6 +261,7 @@ export default function FieldEditor() {
                 key={defaultEmailVersionField.key}
                 field={defaultEmailVersionField}
                 isFixed={true}
+                isSelected={editingField?.key === defaultEmailVersionField.key}
               />
               <SortableContext items={items.map((item) => item.key)}>
                 {items.map((item) => (
@@ -266,6 +270,7 @@ export default function FieldEditor() {
                     field={item}
                     onDelete={handleDeleteField}
                     onOpenEditPanel={handleOpenEditPanel}
+                    isSelected={editingField?.key === item.key}
                   />
                 ))}
               </SortableContext>
@@ -282,6 +287,7 @@ export default function FieldEditor() {
                 field={{ ...defaultPasswordVersionField }}
                 overwriteType="password"
                 isFixed={true}
+                isSelected={editingField?.key === defaultPasswordVersionField.key}
               />
             </div>
         )}
