@@ -24,19 +24,19 @@ export interface SchemaVersion {
 
 
 const needFieldsSchema = z.object({
-  default_value: z.json().optional(), // done
-  description: z.string().optional(), // done
-  key: z.string().min(3, "Key must be at least 3 characters long"), // done
-  mutable: z.boolean(), // done
-  owner: z.enum(["user", "system", "admin"]), // done
-  position: z.number(), // done
-  required: z.boolean(), // done
-  placeholder: z.string().optional(), // done
-  title: z.string().min(3, "Title must be at least 3 characters long"), // done
-  type: z.enum(["string", "email", "int", "select", "radio", "checkbox", "bool"]), // done
+  default_value: z.json().optional(),
+  description: z.string().optional(),
+  key: z.string().min(3, "Key must be at least 3 characters long"),
+  mutable: z.boolean(),
+  owner: z.enum(["user", "system", "admin"]),
+  position: z.number(),
+  required: z.boolean(),
+  placeholder: z.string().optional(),
+  title: z.string().min(3, "Title must be at least 3 characters long"),
+  type: z.enum(["string", "email", "int", "select", "radio", "checkbox", "bool"]),
 })
 
-type NeedVersionField = z.infer<typeof needFieldsSchema>;
+export type NeedVersionField = z.infer<typeof needFieldsSchema>;
 
 export const versionFieldSchema = needFieldsSchema.extend({
   required_rules: z.array(z.object({
@@ -44,7 +44,7 @@ export const versionFieldSchema = needFieldsSchema.extend({
     operator: ruleOperatorSchema,
     value: z.json() // is a json, but i will use string for now
   })),
-  options: z.array(z.object({ // done
+  options: z.array(z.object({
     label: z.string(),
     position: z.number(),
     value: z.string()
@@ -117,9 +117,11 @@ export type SchemaVersionFields = z.infer<typeof schemaVersionFieldsSchema>;
 
 
 export type VersionFieldResult = NeedVersionField & {
-  object_id: string;
+  id: string;
+  object_id?: string;
   required_rules: {
     id: string;
+    depends_on_field_key?: string;
     depends_on_field_id: string;
     operator: RuleOperator;
     value: string;
@@ -132,6 +134,7 @@ export type VersionFieldResult = NeedVersionField & {
   }[],
   visibility_rules: {
     id: string;
+    depends_on_field_key?: string;
     depends_on_field_id: string;
     operator: RuleOperator;
     value: string;
