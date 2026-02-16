@@ -5,23 +5,18 @@ import { publishSchemaVersionFn } from "../api";
 import { toast } from "sonner";
 import { useStore as useNavigationStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
-import type { VersionFieldList } from "../model/types";
 
 interface PublishSchemaVersionButtonProps {
-  items: VersionFieldList;
   hasChanges: boolean;
   isMobile: boolean;
-  setOriginalItems: (items: VersionFieldList) => void;
 }
 
 export default function PublishSchemaVersionButton({ 
-  items, 
   hasChanges, 
   isMobile,
-  setOriginalItems
 }: PublishSchemaVersionButtonProps) {
   const queryClient = useQueryClient();
-  const { currentProjectId, currentSchemaId } = useNavigationStore(navigationStore);
+  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useNavigationStore(navigationStore);
 
   const publishSchemaVersionMutation = useMutation({
     mutationFn: publishSchemaVersionFn,
@@ -30,9 +25,7 @@ export default function PublishSchemaVersionButton({
         toast.success(response.message);
         queryClient.invalidateQueries({ queryKey: ["latestSchemaVersion", currentProjectId, currentSchemaId] });
         queryClient.invalidateQueries({ queryKey: ["currentSchemaVersion", currentProjectId, currentSchemaId] });
-        queryClient.invalidateQueries({ queryKey: ["schemaVersionById"] });
-
-        setOriginalItems(items);
+        queryClient.invalidateQueries({ queryKey: ["schemaVersionById", currentProjectId, currentSchemaId, currentSchemaVersion] });
       }
     },
     onError: (error) => {
