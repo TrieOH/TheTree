@@ -28,11 +28,6 @@ const needFieldsSchema = z.object({
   description: z.string().optional(), // done
   key: z.string().min(3, "Key must be at least 3 characters long"), // done
   mutable: z.boolean(), // done
-  options: z.array(z.object({ // done
-    label: z.string(),
-    position: z.number(),
-    value: z.string()
-  })),
   owner: z.enum(["user", "system", "admin"]), // done
   position: z.number(), // done
   required: z.boolean(), // done
@@ -49,6 +44,11 @@ export const versionFieldSchema = needFieldsSchema.extend({
     operator: ruleOperatorSchema,
     value: z.json() // is a json, but i will use string for now
   })),
+  options: z.array(z.object({ // done
+    label: z.string(),
+    position: z.number(),
+    value: z.string()
+  })),
   visibility_rules: z.array(z.object({
     depends_on_field_key: z.string(),
     operator: ruleOperatorSchema,
@@ -57,6 +57,12 @@ export const versionFieldSchema = needFieldsSchema.extend({
 });
 
 export type VersionField = z.infer<typeof versionFieldSchema>;
+
+export type PartialVersionField = Partial<VersionField>;
+
+export type SchemaFieldOption = z.infer<typeof versionFieldSchema.shape.options.element>;
+export type SchemaFieldRequiredRule = z.infer<typeof versionFieldSchema.shape.required_rules.element>;
+export type SchemaFieldVisibilityRule = z.infer<typeof versionFieldSchema.shape.visibility_rules.element>;
 
 const versionFieldListSchema = z
   .array(versionFieldSchema)
@@ -117,6 +123,12 @@ export type VersionFieldResult = NeedVersionField & {
     depends_on_field_id: string;
     operator: RuleOperator;
     value: string;
+  }[],
+  options: {
+    id: string;
+    label: string,
+    position: number,
+    value: string
   }[],
   visibility_rules: {
     id: string;

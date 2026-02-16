@@ -19,7 +19,7 @@ import { defaultEmailVersionField, defaultPasswordVersionField, defaultVersionFi
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus, SaveAll } from "lucide-react"; 
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { publishSchemaVersionFieldFn, schemaVersionByIdQueryOptions } from "../api";
+import { createSchemaVersionFieldFn, schemaVersionByIdQueryOptions } from "../api";
 import { toast } from "sonner";
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
@@ -153,8 +153,8 @@ export default function FieldEditor() {
     if (editingField?.key === originalField.key) setEditingField(updatedField);
   };
 
-  const publishVersionFieldSchemaMutation = useMutation({
-    mutationFn: publishSchemaVersionFieldFn,
+  const createVersionFieldSchemaMutation = useMutation({
+    mutationFn: createSchemaVersionFieldFn,
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
@@ -167,7 +167,7 @@ export default function FieldEditor() {
   });
 
   const handleSubmit = () => {
-    publishVersionFieldSchemaMutation.mutate({
+    createVersionFieldSchemaMutation.mutate({
       fields: items, 
       project_id: currentProjectId || "",
       schema_id: currentSchemaId || "",
