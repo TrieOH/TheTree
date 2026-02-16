@@ -25,6 +25,7 @@ import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
 import { mapFieldIdsToKeys, mapVersionFieldResultToVersionField } from '../lib/convert-field-utils';
 import { areFieldsEqual } from '../lib/field-utils';
+import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
@@ -367,12 +368,10 @@ export default function FieldEditor() {
           value={isMobile ? '' : 'Save Fields'}
           variant="solid"
         />
-        {/* <PublishSchemaVersionButton
-          items={items}
+        <PublishSchemaVersionButton
           isMobile={isMobile}
-          hasChanges={!isVersionNull}
-          setOriginalItems={setOriginalItems}
-        /> */}
+          hasChanges={!isVersionNull && schemaVData?.status === 'draft'}
+        />
       </div>
     </main>
   );

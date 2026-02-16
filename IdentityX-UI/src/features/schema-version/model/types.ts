@@ -146,5 +146,6 @@ export interface DetailedSchemaVersion {
   title: string;
   fields: VersionFieldResult[];
   version_number: number;
+  status: 'published' | 'draft' | 'archived';
 }
 
