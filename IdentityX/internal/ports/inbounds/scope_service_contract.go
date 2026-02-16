@@ -11,6 +11,7 @@ type CreateScopeInput struct {
 	Name       string
 	ExternalID *string
 	ProjectID  uuid.UUID
+	ParentID   *uuid.UUID // nil = default to project root
 }
 
 type GetScopeInput struct {
@@ -21,6 +22,7 @@ type GetScopeInput struct {
 type ScopeOutput struct {
 	ID         uuid.UUID
 	Type       scopes.ScopeType
+	ParentID   *uuid.UUID
 	ProjectID  *uuid.UUID
 	Name       *string
 	ExternalID *string
@@ -35,6 +37,7 @@ func ScopeToScopeOutput(scope *scopes.Scope) *ScopeOutput {
 	return &ScopeOutput{
 		ID:         scope.ID,
 		Type:       scope.Type,
+		ParentID:   scope.ParentID,
 		ProjectID:  scope.ProjectID,
 		Name:       scope.Name,
 		ExternalID: scope.ExternalID,
@@ -52,6 +55,7 @@ func ScopeSliceToScopeSliceOutput(scopes []scopes.Scope) []ScopeOutput {
 		result = append(result, ScopeOutput{
 			ID:         scope.ID,
 			Type:       scope.Type,
+			ParentID:   scope.ParentID,
 			ProjectID:  scope.ProjectID,
 			Name:       scope.Name,
 			ExternalID: scope.ExternalID,

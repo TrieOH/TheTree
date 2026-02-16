@@ -4,7 +4,10 @@
 CREATE TABLE scopes (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
-    -- Internal hierarchy (controlled by the IdP only)
+    -- Hierarchy reference (null only for global scope)
+    parent_id UUID REFERENCES scopes(id) ON DELETE RESTRICT,
+
+    -- Internal hierarchy type (controlled by the IdP only)
     type TEXT NOT NULL CHECK (type IN ('global', 'project_root', 'project_scope')),
 
     -- Tenant boundary (NULL only for global)
@@ -19,26 +22,28 @@ CREATE TABLE scopes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT scope_shape_check CHECK (
-
-        -- 🌍 One true global scope
+        -- 🌍 One true global scope (root of IdP scopes, isolated from projects)
         (type = 'global'
             AND project_id IS NULL
+            AND parent_id IS NULL
             AND name IS NULL
             AND external_id IS NULL)
 
             OR
 
-        -- 🏗 One root scope per project
+        -- 🏗 One root scope per project (root of its own hierarchy, isolated from IdP)
         (type = 'project_root'
             AND project_id IS NOT NULL
+            AND parent_id IS NULL
             AND name IS NULL
             AND external_id IS NULL)
 
             OR
 
-        -- 📦 Named scopes inside a project
+        -- 📦 Named scopes inside a project (hierarchical, arbitrary depth)
         (type = 'project_scope'
             AND project_id IS NOT NULL
+            AND parent_id IS NOT NULL
             AND name IS NOT NULL)
         )
 );
@@ -53,15 +58,21 @@ CREATE UNIQUE INDEX scopes_one_project_root_per_project
     ON scopes (project_id)
     WHERE type = 'project_root';
 
--- Unique named scopes per project
-CREATE UNIQUE INDEX scopes_unique_project_named_scopes
-    ON scopes (project_id, name)
-    WHERE type = 'project_scope' AND external_id IS NULL;
+-- Unique named scopes per parent (sibling uniqueness)
+CREATE UNIQUE INDEX scopes_unique_siblings
+    ON scopes (parent_id, name)
+    WHERE external_id IS NULL;
 
--- Unique resource-bound scopes per project
-CREATE UNIQUE INDEX scopes_unique_project_resource_scopes
-    ON scopes (project_id, name, external_id)
-    WHERE type = 'project_scope' AND external_id IS NOT NULL;
+-- Unique resource-bound scopes per parent (sibling uniqueness with external_id)
+CREATE UNIQUE INDEX scopes_unique_resource_siblings
+    ON scopes (parent_id, name, external_id)
+    WHERE external_id IS NOT NULL;
+
+-- Fast parent lookups for hierarchy traversal
+CREATE INDEX idx_scopes_parent_id ON scopes(parent_id);
+
+-- Index for project scope listings
+CREATE INDEX idx_scopes_project_id ON scopes(project_id);
 
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -156,8 +167,10 @@ DROP TABLE IF EXISTS role_permissions;
 DROP TABLE IF EXISTS roles;
 DROP INDEX IF EXISTS idx_permissions_object_action;
 DROP TABLE IF EXISTS permissions;
-DROP INDEX IF EXISTS scopes_unique_project_resource_scopes;
-DROP INDEX IF EXISTS scopes_unique_project_named_scopes;
+DROP INDEX IF EXISTS scopes_unique_resource_siblings;
+DROP INDEX IF EXISTS scopes_unique_siblings;
+DROP INDEX IF EXISTS idx_scopes_project_id;
+DROP INDEX IF EXISTS idx_scopes_parent_id;
 DROP INDEX IF EXISTS scopes_one_project_root_per_project;
 DROP INDEX IF EXISTS scopes_one_global;
 DROP TABLE IF EXISTS scopes;

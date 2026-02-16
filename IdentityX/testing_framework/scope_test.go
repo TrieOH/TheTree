@@ -81,8 +81,8 @@ func testScopes(t *testing.T, suite *TestSuite) {
 				"external_id": "event1",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(errx.SCOPEDuplicateNameAndExternalID).
-			HasMessage("scope with name and external id (events, event1) already exists")
+			HasErrID(errx.SCOPEDuplicateSibling).
+			HasMessage("scope with same name already exists under this parent")
 	})
 
 	t.Run("CreateScopeExistingNameNoID", func(t *testing.T) {

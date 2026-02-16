@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/google/uuid"
 )
 
 type ScopeHandler struct {
@@ -44,10 +45,22 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse optional parent_id
+	var parentID *uuid.UUID
+	if req.ParentID != nil {
+		parsed, err := uuid.Parse(*req.ParentID)
+		if err != nil {
+			resp.BadRequest("Invalid parent_id format").Send(w)
+			return
+		}
+		parentID = &parsed
+	}
+
 	in := inbounds.CreateScopeInput{
 		ProjectID:  projectID,
 		Name:       req.Name,
 		ExternalID: req.ExternalID,
+		ParentID:   parentID,
 	}
 
 	ctx := r.Context()

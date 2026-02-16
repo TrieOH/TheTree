@@ -9,6 +9,7 @@ import (
 
 type ScopeResponse struct {
 	ID         uuid.UUID  `json:"id"`
+	ParentID   *uuid.UUID `json:"parent_id"`
 	ProjectID  *uuid.UUID `json:"project_id"`
 	ExternalID *string    `json:"external_id"`
 	Type       string     `json:"type"`
@@ -19,6 +20,7 @@ type ScopeResponse struct {
 func ScopeOutputToScopeResponse(in *inbounds.ScopeOutput) ScopeResponse {
 	return ScopeResponse{
 		ID:         in.ID,
+		ParentID:   in.ParentID,
 		ProjectID:  in.ProjectID,
 		ExternalID: in.ExternalID,
 		Type:       string(in.Type),
