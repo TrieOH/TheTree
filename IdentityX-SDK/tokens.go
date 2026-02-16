@@ -129,7 +129,7 @@ func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
 	}
 
 	if len(pubBytes) != ed25519.PublicKeySize {
-		return nil, fail.New(SDKInvalidKeySize)
+		return nil, fail.New(SDKInvalidKeySize).WithArgs(len(pubBytes))
 	}
 
 	return ed25519.PublicKey(pubBytes), nil

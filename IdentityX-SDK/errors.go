@@ -50,7 +50,7 @@ var (
 	ErrKeyNotInJWKS                 = fail.Form(SDKKeyNotInJWKS, "key not found in JWKS: %s", false, map[string]any{"code": 404}, "UNSET")
 	ErrUnsupportedCurve             = fail.Form(SDKUnsupportedCurve, "unsupported key type or curve: %s/%s", false, map[string]any{"code": 400}, "UNSET", "UNSET")
 	ErrKeyDecodeFailed              = fail.Form(SDKKeyDecodeFailed, "failed to decode public key: %s", false, map[string]any{"code": 400}, "UNSET")
-	ErrInvalidKeySize               = fail.Form(SDKInvalidKeySize, "invalid public key size", false, map[string]any{"code": 400})
+	ErrInvalidKeySize               = fail.Form(SDKInvalidKeySize, "invalid public key size: %d", false, map[string]any{"code": 400}, -1)
 )
 
 type httpStatusError struct {

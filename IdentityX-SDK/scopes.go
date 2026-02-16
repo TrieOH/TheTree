@@ -10,6 +10,7 @@ import (
 
 type Scope struct {
 	ID         uuid.UUID  `json:"id"`
+	ParentID   *uuid.UUID `json:"parent_id"`
 	ProjectID  *uuid.UUID `json:"project_id"`
 	ExternalID *string    `json:"external_id"`
 	Type       string     `json:"type"`
@@ -22,9 +23,14 @@ type ScopeService struct {
 }
 
 func (s *ScopeService) Create(ctx context.Context, name string, externalID *string) (*Scope, error) {
+	return s.CreateWithParent(ctx, name, externalID, nil)
+}
+
+func (s *ScopeService) CreateWithParent(ctx context.Context, name string, externalID *string, parentID *uuid.UUID) (*Scope, error) {
 	reqBody := map[string]any{
 		"name":        name,
 		"external_id": externalID,
+		"parent_id":   parentID,
 	}
 	path := fmt.Sprintf("/projects/%s/scopes", s.client.projectID)
 	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
