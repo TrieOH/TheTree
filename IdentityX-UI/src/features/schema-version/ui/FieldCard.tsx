@@ -3,17 +3,17 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { getFieldTypeIcon } from "../model/field-type-to-icon";
-import type { VersionField } from "../model/types";
+import type { VersionFieldResult } from "../model/types";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 
 interface PropsI {
-  field: VersionField;
+  field: VersionFieldResult;
   className?: string;
   overwriteType?: "password";
   isFixed?: boolean;
   onDelete?: (fieldKey: string) => void;
-  onOpenEditPanel?: (field: VersionField) => void;
-  isSelected?: boolean; // Add isSelected prop
+  onOpenEditPanel?: (field: VersionFieldResult) => void;
+  isSelected?: boolean;
 }
 
 export default function FieldCard({field, className, overwriteType, isFixed = false, onDelete, onOpenEditPanel, isSelected}: PropsI) {
@@ -49,7 +49,7 @@ export default function FieldCard({field, className, overwriteType, isFixed = fa
         !isFixed && "hover:shadow-[2px_2px_0_0_var(--color-border)] hover:bg-muted/50",
         isDragging && "opacity-50",
         isFixed && "bg-muted-foreground/10 border-dashed cursor-not-allowed",
-        isSelected && "ring-2 ring-primary", // Add this line for selected styling
+        isSelected && "ring-2 ring-primary",
         className
       )}
     >
