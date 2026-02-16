@@ -54,6 +54,8 @@ func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 				return fail.New(SCOPEOneGlobal).Debug(err.Error()), true
 			case "scopes_one_project_root_per_project":
 				return fail.New(SCOPEOneProjectRootPerProject).Debug(err.Error()), true
+			case "scopes_unique_siblings", "scopes_unique_resource_siblings":
+				return fail.New(SCOPEDuplicateSibling).Debug(err.Error()), true
 			default:
 				panic(err.Error())
 				//return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true

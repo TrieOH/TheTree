@@ -54,6 +54,7 @@ func scopeTypeFromSQLCScopeType(scopeType string) scopes.ScopeType {
 func mapScopeFromDB(dst *scopes.Scope, src *sqlc.Scope) {
 	dst.ID = src.ID
 	dst.Type = scopeTypeFromSQLCScopeType(src.Type)
+	dst.ParentID = src.ParentID
 	dst.ProjectID = src.ProjectID
 	dst.ExternalID = src.ExternalID
 	dst.Name = src.Name
@@ -74,6 +75,10 @@ func annotateScope(span trace.Span, toAnnotate scopes.Scope) {
 	if toAnnotate.ExternalID != nil {
 		span.SetAttributes(attribute.String("scope.external_id", *toAnnotate.ExternalID))
 	}
+
+	if toAnnotate.ParentID != nil {
+		span.SetAttributes(attribute.String("scope.parent_id", toAnnotate.ParentID.String()))
+	}
 }
 
 func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scopes.Scope, error) {
@@ -83,6 +88,7 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 
 	sqlcScope, err := repo.queries(ctx).CreateScope(ctx, sqlc.CreateScopeParams{
 		Type:       string(toCreate.Type),
+		ParentID:   toCreate.ParentID,
 		ProjectID:  toCreate.ProjectID,
 		Name:       toCreate.Name,
 		ExternalID: toCreate.ExternalID,
@@ -173,6 +179,76 @@ func (repo *scopeRepo) GetProjectScopes(ctx context.Context, projectID uuid.UUID
 		var created scopes.Scope
 		mapScopeFromDB(&created, &sqlcScope)
 		found = append(found, created)
+	}
+	return found, nil
+}
+
+func (repo *scopeRepo) GetAncestors(ctx context.Context, scopeID uuid.UUID) ([]scopes.Scope, error) {
+	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.GetAncestors",
+		trace.WithAttributes(
+			attribute.String("scope.id", scopeID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcScopes, err := repo.queries(ctx).GetScopeAncestors(ctx, scopeID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	span.SetAttributes(attribute.Int("ancestor.count", len(sqlcScopes)))
+
+	found := make([]scopes.Scope, 0, len(sqlcScopes))
+	for _, sqlcScope := range sqlcScopes {
+		scope := scopes.Scope{
+			ID:         sqlcScope.ID,
+			Type:       scopeTypeFromSQLCScopeType(sqlcScope.Type),
+			ParentID:   sqlcScope.ParentID,
+			ProjectID:  sqlcScope.ProjectID,
+			Name:       sqlcScope.Name,
+			ExternalID: sqlcScope.ExternalID,
+			CreatedAt:  sqlcScope.CreatedAt,
+		}
+		found = append(found, scope)
+	}
+	return found, nil
+}
+
+func (repo *scopeRepo) GetGlobalScope(ctx context.Context) (*scopes.Scope, error) {
+	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.GetGlobalScope")
+	defer span.End()
+
+	sqlcScope, err := repo.queries(ctx).GetGlobalScope(ctx)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	var created scopes.Scope
+	mapScopeFromDB(&created, &sqlcScope)
+	annotateScope(span, created)
+	return &created, nil
+}
+
+func (repo *scopeRepo) GetChildren(ctx context.Context, scopeID uuid.UUID) ([]scopes.Scope, error) {
+	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.GetChildren",
+		trace.WithAttributes(
+			attribute.String("scope.id", scopeID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcScopes, err := repo.queries(ctx).GetScopeChildren(ctx, &scopeID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	span.SetAttributes(attribute.Int("children.count", len(sqlcScopes)))
+
+	found := make([]scopes.Scope, 0, len(sqlcScopes))
+	for _, sqlcScope := range sqlcScopes {
+		var scope scopes.Scope
+		mapScopeFromDB(&scope, &sqlcScope)
+		found = append(found, scope)
 	}
 	return found, nil
 }

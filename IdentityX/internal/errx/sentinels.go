@@ -537,6 +537,18 @@ var (
 				AddLocalization("pt-BR", "apenas um escopo global deve existir")
 	ErrSCOPEOneProjectRootPerProject = fail.Form(SCOPEOneProjectRootPerProject, "only one project_root scope may exist per project", true, map[string]any{"code": 409}).
 						AddLocalization("pt-BR", "apenas um escopo raiz de projeto deve existir por projeto")
+	ErrScopeParentNotFound = fail.Form(SCOPEParentNotFound, "parent scope not found", false, map[string]any{"code": 404}).
+				AddLocalization("pt-BR", "escopo pai não encontrado")
+	ErrScopeParentDifferentProject = fail.Form(SCOPEParentDifferentProject, "parent scope belongs to a different project", false, map[string]any{"code": 400}).
+					AddLocalization("pt-BR", "escopo pai pertence a um projeto diferente")
+	ErrScopeHierarchyError = fail.Form(SCOPEHierarchyError, "error checking scope hierarchy", false, map[string]any{"code": 500}).
+				AddLocalization("pt-BR", "erro ao verificar hierarquia de escopo")
+	ErrScopeCycleDetected = fail.Form(SCOPECycleDetected, "scope hierarchy cycle detected", false, map[string]any{"code": 400}).
+				AddLocalization("pt-BR", "ciclo detectado na hierarquia de escopos")
+	ErrScopeRootNotFound = fail.Form(SCOPERootNotFound, "project root scope not found", false, map[string]any{"code": 500}).
+				AddLocalization("pt-BR", "escopo raiz do projeto não encontrado")
+	ErrScopeDuplicateSibling = fail.Form(SCOPEDuplicateSibling, "scope with same name already exists under this parent", false, map[string]any{"code": 409}).
+					AddLocalization("pt-BR", "escopo com o mesmo nome já existe sob este pai")
 
 	// ------ PERM ------
 	ErrPermissionLogicalConditionValidationError = fail.Form(PERMissionLogicalConditionValidationError, "%s: %s conditions cannot be empty", false, map[string]any{"code": 400}, "PATH NOT SET", "OPERATOR NOT SET").

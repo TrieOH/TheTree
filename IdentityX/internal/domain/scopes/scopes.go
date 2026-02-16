@@ -18,6 +18,7 @@ const (
 type Scope struct {
 	ID         uuid.UUID
 	Type       ScopeType
+	ParentID   *uuid.UUID // nil for global and project_root
 	ProjectID  *uuid.UUID
 	Name       *string
 	ExternalID *string

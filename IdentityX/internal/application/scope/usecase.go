@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/MintzyG/fail/v3"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 )
 
@@ -52,15 +53,44 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	if !isOwner {
-		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get scopes for a project you don't own").RecordCtx(ctx)
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot create scopes for a project you don't own").RecordCtx(ctx)
 	}
 
 	if in.Name == "" {
 		return nil, fail.New(errx.SCOPEEmptyName).RecordCtx(ctx)
 	}
 
+	// Determine parent_id
+	var parentID *uuid.UUID
+	if in.ParentID != nil {
+		// Validate parent exists and is in same project
+		parent, err := uc.scopes.GetByIDInternal(ctx, *in.ParentID)
+		if err != nil {
+			return nil, fail.New(errx.SCOPEParentNotFound).With(err).RecordCtx(ctx)
+		}
+
+		// Ensure parent is in the same project
+		if parent.ProjectID == nil || *parent.ProjectID != in.ProjectID {
+			return nil, fail.New(errx.SCOPEParentDifferentProject).RecordCtx(ctx)
+		}
+
+		// For a new scope, we don't need cycle detection since:
+		// 1. The scope doesn't exist yet (no ID), so it can't reference itself
+		// 2. The database constraints prevent parent_id from referencing non-existent scopes
+		// 3. The only way to create a cycle would be in UPDATE operations (moving a scope)
+		parentID = in.ParentID
+	} else {
+		// Default to project root
+		root, err := uc.scopes.GetRootByProjectID(ctx, in.ProjectID)
+		if err != nil {
+			return nil, fail.New(errx.SCOPERootNotFound).With(err).RecordCtx(ctx)
+		}
+		parentID = &root.ID
+	}
+
 	scope, err := uc.scopes.Create(ctx, scopes.Scope{
 		Type:       scopes.ScopeTypeProjectScope,
+		ParentID:   parentID,
 		ProjectID:  &in.ProjectID,
 		Name:       &in.Name,
 		ExternalID: in.ExternalID,

@@ -58,30 +58,20 @@ WHERE identity_id = $1 AND permission_id = $2 AND scope_id IS NOT DISTINCT FROM 
 -----------------------------------------------
 
 -- name: GetEffectivePermissions :many
-WITH target_scope AS (
-    SELECT
-        s.id,
-        s.project_id,
-        s.name,
-        s.external_id
+-- Recursively walks up the scope hierarchy to collect all ancestor scope IDs
+WITH RECURSIVE scope_ancestors AS (
+    -- Start with the target scope
+    SELECT id, parent_id
+    FROM scopes
+    WHERE id = sqlc.narg('scope_id')::uuid
+
+    UNION ALL
+
+    -- Recursively get all ancestors up to root
+    SELECT s.id, s.parent_id
     FROM scopes s
-    WHERE s.id = sqlc.narg('scope_id')::uuid
-    AND sqlc.narg('scope_id')::uuid IS NOT NULL
-),
-master_scope AS (
-    SELECT s2.id
-    FROM target_scope ts
-        JOIN scopes s2 ON s2.project_id = ts.project_id
-        AND s2.name = ts.name
-        AND s2.external_id IS NULL
-    WHERE ts.external_id IS NOT NULL
-),
-scope_family AS (
-    -- The specific scope itself
-    SELECT id FROM target_scope
-    UNION
-    -- Its parent master scope (same name, no external_id)
-    SELECT id FROM master_scope
+    INNER JOIN scope_ancestors sa ON s.id = sa.parent_id
+    WHERE sa.parent_id IS NOT NULL
 )
 SELECT DISTINCT p.*
 FROM permissions p
@@ -95,9 +85,9 @@ WHERE p.id IN (
         -- Querying nil scope: only nil scope assignments
         (sqlc.narg('scope_id')::uuid IS NULL AND ir.scope_id IS NULL)
         OR
-        -- Querying specific scope: hierarchy + nil scope fallback
+        -- Querying specific scope: walk up hierarchy + nil scope fallback
         (sqlc.narg('scope_id')::uuid IS NOT NULL AND (
-            ir.scope_id IN (SELECT id FROM scope_family)
+            ir.scope_id IN (SELECT id FROM scope_ancestors)
             OR ir.scope_id IS NULL
         ))
     )
@@ -112,7 +102,7 @@ WHERE p.id IN (
         (sqlc.narg('scope_id')::uuid IS NULL AND ip.scope_id IS NULL)
         OR
         (sqlc.narg('scope_id')::uuid IS NOT NULL AND (
-            ip.scope_id IN (SELECT id FROM scope_family)
+            ip.scope_id IN (SELECT id FROM scope_ancestors)
             OR ip.scope_id IS NULL
         ))
     )

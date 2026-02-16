@@ -179,7 +179,13 @@ var (
 	SCOPEOneGlobal                  = fail.ID(9, "SCOPE", 2, false, "SCOPEOneGlobal")
 	SCOPEOneProjectRootPerProject   = fail.ID(9, "SCOPE", 3, false, "SCOPEOneProjectRootPerProject")
 
-	SCOPEEmptyName = fail.ID(0, "SCOPE", 0, true, "SCOPEEmptyName")
+	SCOPEEmptyName              = fail.ID(0, "SCOPE", 0, true, "SCOPEEmptyName")
+	SCOPEParentNotFound         = fail.ID(0, "SCOPE", 1, true, "SCOPEParentNotFound")
+	SCOPEParentDifferentProject = fail.ID(0, "SCOPE", 2, true, "SCOPEParentDifferentProject")
+	SCOPEHierarchyError         = fail.ID(0, "SCOPE", 3, true, "SCOPEHierarchyError")
+	SCOPECycleDetected          = fail.ID(0, "SCOPE", 4, true, "SCOPECycleDetected")
+	SCOPERootNotFound           = fail.ID(0, "SCOPE", 5, true, "SCOPERootNotFound")
+	SCOPEDuplicateSibling       = fail.ID(0, "SCOPE", 6, true, "SCOPEDuplicateSibling")
 
 	PERMissionLogicalConditionValidationError = fail.ID(0, "PERM", 0, false, "PERMissionLogicalConditionValidationError")
 	PERMissionConditionValidationError        = fail.ID(0, "PERM", 1, false, "PERMissionConditionValidationError")
