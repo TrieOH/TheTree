@@ -17,7 +17,7 @@ interface FieldEditFormProps {
   onSave: (originalField: VersionFieldResult, updatedField: VersionFieldResult) => void;
   onCancel: () => void;
   allFieldKeys: string[];
-  allSchemaFields: VersionFieldResult[]; // NEW: Add allSchemaFields
+  allSchemaFields: VersionFieldResult[];
 }
 
 export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys, allSchemaFields }) => {
@@ -144,7 +144,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           <RulesEditor
             rules={field.state.value || []}
             allFieldKeys={filteredFieldKeys}
-            allFields={allSchemaFields} // Pass allSchemaFields here
+            allFields={allSchemaFields} 
             onChange={field.handleChange}
           />
         )}
@@ -154,7 +154,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           <RulesEditor
             rules={field.state.value || []}
             allFieldKeys={filteredFieldKeys}
-            allFields={allSchemaFields} // Pass allSchemaFields here
+            allFields={allSchemaFields}
             onChange={field.handleChange}
           />
         )}

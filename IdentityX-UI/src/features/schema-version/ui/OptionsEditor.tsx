@@ -2,13 +2,7 @@ import type React from 'react';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { PlusIcon, TrashIcon } from 'lucide-react';
-
-interface Option {
-  id: string;
-  label: string;
-  value: string;
-  position: number;
-}
+import type { Option } from '../model/types';
 
 interface OptionsEditorProps {
   options: Option[];
@@ -26,7 +20,7 @@ export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange 
   };
 
   const handleAddOption = () => {
-    const newOptions = [...options, { id: crypto.randomUUID(), label: '', value: '', position: options.length }];
+    const newOptions = [...options, { id: crypto.randomUUID(), label: 'New Option', value: `new-option-${crypto.randomUUID().substring(0, 8)}`, position: options.length }];
     onChange(newOptions);
   };
 

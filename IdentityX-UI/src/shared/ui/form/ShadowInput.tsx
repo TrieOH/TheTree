@@ -4,22 +4,26 @@ interface ShadowInputProps {
   id?: string;
   value: string;
   onChange: (value: string) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
   type?: string;
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }
 
 export const ShadowInput: React.FC<ShadowInputProps> = ({
   id,
   value,
   onChange,
+  onKeyDown,
   onBlur,
   placeholder,
   className,
   disabled,
   type = "text",
+  inputRef
 }) => {
   return (
     <div
@@ -32,6 +36,7 @@ export const ShadowInput: React.FC<ShadowInputProps> = ({
       <input
         id={id}
         type={type}
+        ref={inputRef}
         placeholder={placeholder}
         className={cn(
           "h-9 w-full rounded-sm bg-transparent px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none", // Adjusted padding
@@ -39,6 +44,7 @@ export const ShadowInput: React.FC<ShadowInputProps> = ({
         )}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         onBlur={onBlur}
         disabled={disabled}
       />
