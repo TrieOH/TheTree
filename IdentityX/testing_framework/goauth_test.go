@@ -43,6 +43,10 @@ func TestGoAuth(t *testing.T) {
 		testBatchUpdateFields(t, suite)
 	})
 
+	t.Run("DeleteFieldOptionsAndRules", func(t *testing.T) {
+		testDeleteFieldOptionsAndRules(t, suite)
+	})
+
 	t.Run("Schema Register", func(t *testing.T) {
 		testSchemaRegister(t, suite)
 	})
