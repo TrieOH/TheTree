@@ -3,6 +3,8 @@ package dto
 import (
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
+
+	"github.com/google/uuid"
 )
 
 type CreateFieldRequest struct {
@@ -130,4 +132,24 @@ type EditRequiredRuleRequest struct {
 	DependsOnFieldID *string          `json:"depends_on_field_id,omitempty"`
 	Operator         *string          `json:"operator,omitempty"`
 	Value            *json.RawMessage `json:"value,omitempty"`
+}
+
+type BatchUpdateFieldsRequest struct {
+	Fields []BatchFieldUpdate `json:"fields" validate:"required"`
+}
+
+type BatchFieldUpdate struct {
+	ObjectID        *uuid.UUID            `json:"object_id,omitempty"`
+	Key             *string               `json:"key,omitempty"`
+	Title           *string               `json:"title,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	Placeholder     *string               `json:"placeholder,omitempty"`
+	Type            *string               `json:"type,omitempty"`
+	Required        *bool                 `json:"required,omitempty"`
+	Mutable         *bool                 `json:"mutable,omitempty"`
+	DefaultValue    *json.RawMessage      `json:"default_value,omitempty"`
+	Position        *int                  `json:"position,omitempty"`
+	Options         []OptionParam         `json:"options"`
+	VisibilityRules []VisibilityRuleParam `json:"visibility_rules"`
+	RequiredRules   []RequiredRuleParam   `json:"required_rules"`
 }

@@ -1,10 +1,12 @@
 package errx
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
+	"go.uber.org/zap"
 )
 
 type HTTPResponse struct {
@@ -34,6 +36,7 @@ func (h *HTTPTranslator) Supports(err *fail.Error) error {
 	code, ok := err.Meta["code"].(int)
 	if !ok {
 		code = 500
+		logs.L().Error("Couldnt cast code from error", zap.Error(err), zap.Any("dump", err.Dump()))
 		return fail.New(CannotTranslateUnsupportedError).WithArgs(err.ID).Trace("Couldn't cast code")
 	} else if code < 100 || code > 599 {
 		code = 500

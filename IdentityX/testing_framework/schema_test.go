@@ -326,7 +326,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusCreated).
 			HasMessage("created fields").
 			RequireDataValue()
-
 		spec := []interface{}{
 			map[string]interface{}{
 				"object_id": AnyUUID{},
@@ -337,17 +336,14 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"id":        AnyUUID{},
 			},
 		}
-
 		Validate(t, data, spec)
 	})
-
 	t.Run("PublishVersionSuccess", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema version")
 	})
-
 	t.Run("PublishVersionAlreadyPublished", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
@@ -355,14 +351,12 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.SchemaVersionTryingToPublishPublished).
 			HasMessage("cannot publish a schema version that is already published")
 	})
-
 	t.Run("PublishSchemaSuccess", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusOK).
 			HasMessage("published schema")
 	})
-
 	t.Run("PublishSchemaAlreadyPublished", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
@@ -370,29 +364,24 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.SchemaTryingToPublishPublished).
 			HasMessage("cannot publish a schema that is already published")
 	})
-
 	var schemaVersion2ID string
 	t.Run("DraftVersion2", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusCreated).
 			RequireDataValue()
-
 		spec := map[string]interface{}{
 			"id":             StoreString{Into: &schemaVersion2ID, Matcher: AnyUUID{}},
 			"schema_id":      AsString{schemaID, AnyUUID{}},
 			"version_number": 2,
 		}
-
 		Validate(t, data, spec)
 	})
-
 	t.Run("CheckSchemaVersionAfterV2Draft", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusOK).
 			RequireDataValue()
-
 		spec := map[string]interface{}{
 			"id":                 AsString{schemaID, AnyUUID{}},
 			"project_id":         AsString{projectID, AnyUUID{}},
@@ -402,10 +391,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			"status":             "published",
 			"current_version_id": AsString{schemaVersion1ID, AnyUUID{}},
 		}
-
 		Validate(t, data, spec)
 	})
-
 	t.Run("PublishVersion2NoChanges", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/publish").
@@ -413,7 +400,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.SchemaVersionNoChanges).
 			HasMessage("cannot publish a version with no changes")
 	})
-
 	t.Run("AddFieldToV2FailKeyCheck", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
@@ -435,7 +421,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.FIELDInvalidCharactersInKey).
 			HasMessage("field key must start with a lowercase letter and contain only lowercase letters, numbers, or underscores")
 	})
-
 	t.Run("AddFieldToV2Success", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
@@ -456,7 +441,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusCreated).
 			HasMessage("created fields").
 			RequireDataValue()
-
 		spec := []interface{}{
 			map[string]interface{}{
 				"object_id":   AnyUUID{},
@@ -471,10 +455,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				"position":    2,
 			},
 		}
-
 		Validate(t, data, spec)
 	})
-
 	t.Run("CreateFieldDuplicateInherited", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
@@ -496,7 +478,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.FIELDSameKeyForMultipleFields).
 			HasMessage("two fields can't have the same key")
 	})
-
 	t.Run("CreateFieldDuplicateInDraft", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v2").
@@ -1341,10 +1322,8 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 				},
 			},
 		}
-
 		Validate(t, data, spec)
 	})
-
 	t.Run("GetFormByFlowLookupInvalidType", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
@@ -1354,7 +1333,6 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.SQLNotFound).
 			HasMessage("schema not found")
 	})
-
 	t.Run("GetFormByFlowLookupMissingRequiredQuery", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		authClient.GET("/projects/"+projectID+"/schemas/lookup/latest").
@@ -1363,15 +1341,12 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			HasErrID(errx.RequestMissingQueryParam).
 			HasMessage("missing query parameter: flow_id")
 	})
-
 	t.Run("ProjectUserAccessDenied", func(t *testing.T) {
 		// Register a project user
 		projUser := client.WithCredentials("proj-user-schema@mail.com", ValidPassword).
 			ProjectRegister(user.projectID).
 			ProjectLogin(user.projectID)
-
 		authClient := suite.NewClient(t).WithAuth(projUser.auth)
-
 		// Try Draft
 		authClient.POST("/projects/" + projectID + "/schemas").
 			WithBody(map[string]interface{}{
@@ -1382,29 +1357,470 @@ func testSchemas(t *testing.T, suite *TestSuite) {
 			Expect(http.StatusForbidden).
 			HasErrID(errx.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
-
 		// Try Publish
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/publish").
 			Expect(http.StatusForbidden).
 			HasErrID(errx.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
-
 		// Try Get
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID).
 			Expect(http.StatusForbidden).
 			HasErrID(errx.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
-
 		// Try GetVerbose
 		authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/verbose").
 			Expect(http.StatusForbidden).
 			HasErrID(errx.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
-
 		// Try Draft Version
 		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
 			Expect(http.StatusForbidden).
 			HasErrID(errx.AuthNotClient).
 			HasMessage("only clients can access this endpoint")
+	})
+}
+func testBatchUpdateFields(t *testing.T, suite *TestSuite) {
+	client := suite.NewClient(t)
+	user := client.WithCredentials("batch-fields@mail.com", ValidPassword).
+		Register().
+		Login().
+		CreateProject("batch field testing")
+	projectID := user.projectID
+	authClient := suite.NewClient(t).WithAuth(user.auth)
+	var schemaID string
+	t.Run("SetupSchema", func(t *testing.T) {
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "batch-test-flow",
+				"flow_id":     "batch-test",
+			}).
+			Expect(http.StatusCreated).
+			RequireDataValue()
+		spec := map[string]interface{}{
+			"id":         StoreString{Into: &schemaID, Matcher: AnyUUID{}},
+			"project_id": AsString{projectID, AnyUUID{}},
+			"title":      "batch-test-flow",
+			"flow_id":    "batch-test",
+			"type":       "context",
+			"status":     "draft",
+		}
+		Validate(t, data, spec)
+	})
+	var versionID string
+	t.Run("SetupVersion", func(t *testing.T) {
+		data := authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			RequireDataValue()
+		spec := map[string]interface{}{
+			"id":             StoreString{Into: &versionID, Matcher: AnyUUID{}},
+			"schema_id":      AsString{schemaID, AnyUUID{}},
+			"version_number": 1,
+		}
+		Validate(t, data, spec)
+	})
+	t.Run("SetupInitialFields", func(t *testing.T) {
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "field_a",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Field A",
+						"required": true,
+						"mutable":  true,
+						"position": 0,
+					},
+					map[string]interface{}{
+						"key":      "field_b",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Field B",
+						"required": true,
+						"mutable":  true,
+						"position": 1,
+					},
+					map[string]interface{}{
+						"key":      "field_c",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Field C",
+						"required": false,
+						"mutable":  true,
+						"position": 2,
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("created fields")
+	})
+	var (
+		fieldAID, fieldBID, fieldCID string
+	)
+	t.Run("GetInitialFields", func(t *testing.T) {
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+		fields := data.Object().Value("fields").Array()
+		fieldA := fields.Element(0).Object()
+		fieldAID = fieldA.Value("object_id").String().NotEmpty().Raw()
+		fieldB := fields.Element(1).Object()
+		fieldBID = fieldB.Value("object_id").String().NotEmpty().Raw()
+		fieldC := fields.Element(2).Object()
+		fieldCID = fieldC.Value("object_id").String().NotEmpty().Raw()
+	})
+	t.Run("BatchReorderFields", func(t *testing.T) {
+		data := authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldCID,
+						"position":  0,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"position":  1,
+					},
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"position":  2,
+					},
+				},
+			}).
+			Expect(http.StatusOK).
+			RequireDataValue()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id": AsString{fieldCID, AnyUUID{}},
+				"key":       "field_c",
+				"title":     "Field C",
+				"position":  0,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldBID, AnyUUID{}},
+				"key":       "field_b",
+				"title":     "Field B",
+				"position":  1,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldAID, AnyUUID{}},
+				"key":       "field_a",
+				"title":     "Field A",
+				"position":  2,
+			},
+		}
+		Validate(t, data, spec)
+	})
+	t.Run("BatchReorderWithUpdates", func(t *testing.T) {
+		updatedDesc := "Updated description"
+		data := authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id":   fieldAID,
+						"title":       "Field A Updated",
+						"position":    0,
+						"required":    false,
+						"mutable":     false,
+						"description": updatedDesc,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"title":     "Field B Updated",
+						"position":  1,
+					},
+					map[string]interface{}{
+						"object_id": fieldCID,
+						"title":     "Field C Updated",
+						"position":  2,
+						"required":  true,
+					},
+				},
+			}).
+			Expect(http.StatusOK).
+			RequireDataValue()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id":   AsString{fieldAID, AnyUUID{}},
+				"key":         "field_a",
+				"title":       "Field A Updated",
+				"position":    0,
+				"required":    false,
+				"mutable":     false,
+				"description": updatedDesc,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldBID, AnyUUID{}},
+				"key":       "field_b",
+				"title":     "Field B Updated",
+				"position":  1,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldCID, AnyUUID{}},
+				"key":       "field_c",
+				"title":     "Field C Updated",
+				"position":  2,
+				"required":  true,
+			},
+		}
+		Validate(t, data, spec)
+	})
+	t.Run("BatchUpdateAndAddNewFields", func(t *testing.T) {
+		data := authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"title":     "Field A Final",
+						"position":  0,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"position":  1,
+					},
+					map[string]interface{}{
+						"object_id": fieldCID,
+						"position":  2,
+					},
+					map[string]interface{}{
+						"key":      "new_alpha",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "New Alpha",
+						"required": true,
+						"position": 3,
+					},
+					map[string]interface{}{
+						"key":      "new_beta",
+						"type":     "int",
+						"owner":    "user",
+						"title":    "New Beta",
+						"required": false,
+						"position": 4,
+					},
+				},
+			}).
+			Expect(http.StatusOK).
+			RequireDataValue()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id": AsString{fieldAID, AnyUUID{}},
+				"key":       "field_a",
+				"title":     "Field A Final",
+				"position":  0,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldBID, AnyUUID{}},
+				"key":       "field_b",
+				"position":  1,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldCID, AnyUUID{}},
+				"key":       "field_c",
+				"position":  2,
+			},
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"key":       "new_alpha",
+				"type":      "string",
+				"owner":     "user",
+				"title":     "New Alpha",
+				"required":  true,
+				"position":  3,
+			},
+			map[string]interface{}{
+				"object_id": AnyUUID{},
+				"key":       "new_beta",
+				"type":      "int",
+				"owner":     "user",
+				"title":     "New Beta",
+				"required":  false,
+				"position":  4,
+			},
+		}
+		Validate(t, data, spec)
+	})
+	t.Run("BatchUpdateWithInvalidPosition", func(t *testing.T) {
+		authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"position":  0,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"position":  0,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(errx.FIELDSamePositionForMultipleFields).
+			HasMessage("two fields can't occupy the same position")
+	})
+	t.Run("BatchUpdateWithInvalidKey", func(t *testing.T) {
+		authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"key":       "field_b",
+						"position":  0,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"position":  1,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(errx.FIELDKeyAlreadyExists).
+			HasMessage("field key 'field_b' already exists in this version")
+	})
+	t.Run("BatchUpdateDuplicatePositionInNewFields", func(t *testing.T) {
+		authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"position":  0,
+					},
+					map[string]interface{}{
+						"key":      "new_field_1",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "New Field 1",
+						"position": 1,
+					},
+					map[string]interface{}{
+						"key":      "new_field_2",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "New Field 2",
+						"position": 1,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(errx.FIELDSamePositionForMultipleFields).
+			HasMessage("two fields can't occupy the same position")
+	})
+	t.Run("BatchUpdateDuplicateKeyInNewFields", func(t *testing.T) {
+		authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"position":  0,
+					},
+					map[string]interface{}{
+						"key":      "duplicate_key",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Duplicate 1",
+						"position": 1,
+					},
+					map[string]interface{}{
+						"key":      "duplicate_key",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Duplicate 2",
+						"position": 2,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(errx.FIELDSameKeyForMultipleFields).
+			HasMessage("two fields can't have the same key")
+	})
+	t.Run("BatchUpdateWithNewFieldDuplicateKey", func(t *testing.T) {
+		authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id": fieldAID,
+						"position":  0,
+					},
+					map[string]interface{}{
+						"key":      "field_b",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Duplicate of existing",
+						"position": 1,
+					},
+				},
+			}).
+			Expect(http.StatusConflict).
+			HasErrID(errx.FIELDKeyAlreadyExists).
+			HasMessage("field key 'field_b' already exists in this version")
+	})
+	t.Run("BatchUpdateOnlyExistingFields", func(t *testing.T) {
+		desc := "Only updating field A"
+		data := authClient.PUT("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"object_id":   fieldAID,
+						"title":       "Field A Only",
+						"description": desc,
+						"position":    0,
+					},
+					map[string]interface{}{
+						"object_id": fieldBID,
+						"title":     "Field B Only",
+						"position":  1,
+					},
+					map[string]interface{}{
+						"object_id": fieldCID,
+						"title":     "Field C Only",
+						"position":  2,
+					},
+					map[string]interface{}{
+						"key":      "new_alpha",
+						"type":     "string",
+						"position": 3,
+					},
+					map[string]interface{}{
+						"key":      "new_beta",
+						"type":     "string",
+						"position": 4,
+					},
+				},
+			}).
+			Expect(http.StatusOK).
+			RequireDataValue()
+		spec := []interface{}{
+			map[string]interface{}{
+				"object_id":   AsString{fieldAID, AnyUUID{}},
+				"key":         "field_a",
+				"title":       "Field A Only",
+				"description": desc,
+				"position":    0,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldBID, AnyUUID{}},
+				"key":       "field_b",
+				"title":     "Field B Only",
+				"position":  1,
+			},
+			map[string]interface{}{
+				"object_id": AsString{fieldCID, AnyUUID{}},
+				"key":       "field_c",
+				"title":     "Field C Only",
+				"position":  2,
+			},
+			map[string]interface{}{
+				"key":      "field_x",
+				"type":     "string",
+				"position": 3,
+			},
+			map[string]interface{}{
+				"key":      "field_y",
+				"type":     "string",
+				"position": 4,
+			},
+		}
+		Validate(t, data, spec)
 	})
 }

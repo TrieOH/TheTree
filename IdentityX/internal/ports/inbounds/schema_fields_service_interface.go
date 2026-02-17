@@ -17,4 +17,5 @@ type SchemaFieldsService interface {
 	SetRequiredRules(ctx context.Context, in SetRequiredRulesInput) ([]field.RequiredRule, error)
 	EditRequiredRule(ctx context.Context, in EditRequiredRuleInput) (*field.RequiredRule, error)
 	DeleteRequiredRule(ctx context.Context, in DeleteRequiredRuleInput) error
+	BatchUpdateFields(ctx context.Context, in BatchUpdateFieldsInput) (BatchUpdateFieldsResult, error)
 }

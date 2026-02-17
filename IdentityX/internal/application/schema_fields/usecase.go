@@ -1291,3 +1291,345 @@ func (uc *UseCase) DeleteRequiredRule(ctx context.Context, in inbounds.DeleteReq
 
 	return nil
 }
+
+func (uc *UseCase) BatchUpdateFields(ctx context.Context, in inbounds.BatchUpdateFieldsInput) (inbounds.BatchUpdateFieldsResult, error) {
+	var result inbounds.BatchUpdateFieldsResult
+	err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		result, err = uc.batchUpdateFieldsInternal(ctx, in)
+		return err
+	})
+	return result, err
+}
+
+func (uc *UseCase) batchUpdateFieldsInternal(ctx context.Context, in inbounds.BatchUpdateFieldsInput) (out inbounds.BatchUpdateFieldsResult, err error) {
+	ctx, span := usecaseTracer.Start(ctx, "SchemaFieldService.BatchUpdateFields")
+	defer span.End()
+
+	defer func() {
+		span.SetAttributes(attribute.Bool("batch_update.success", err == nil))
+	}()
+
+	projects := uc.deps.Projects
+	schemas := uc.deps.Schemas
+	versions := uc.deps.Versions
+	fields := uc.deps.Fields
+
+	var principal *authz.Principal
+	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	var isOwner bool
+	isOwner, err = projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	if !isOwner {
+		return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot batch update fields for a project you don't own").RecordCtx(ctx)
+	}
+
+	var belongs bool
+	belongs, err = schemas.BelongsToProject(ctx, schema.Schema{
+		ProjectID: in.ProjectID,
+		ID:        in.SchemaID,
+	})
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	if !belongs {
+		return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.SchemaNotOwnedByPrincipal).WithArgs("cannot batch update fields for a schema you don't own").RecordCtx(ctx)
+	}
+
+	var latest *version.Version
+	latest, err = versions.GetLatest(ctx, in.SchemaID)
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	if latest.VersionNumber != in.VersionNumber {
+		return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.SchemaVersionMismatch).RecordCtx(ctx)
+	}
+
+	if latest.Status != version.StatusDraft {
+		return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.SchemaVersionNonDraftAddFieldsNotAllowed).WithArgs("batch update only allowed on draft versions").RecordCtx(ctx)
+	}
+
+	var warnings []error
+
+	newFields := make([]inbounds.InputField, 0)
+	existingFieldsUpdates := make(map[uuid.UUID]map[string]interface{})
+
+	existingFieldsInVersion, err := fields.ListFromVersion(ctx, in.SchemaID, latest.ID)
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	existingFieldMap := make(map[uuid.UUID]field.Field, len(existingFieldsInVersion))
+	for _, f := range existingFieldsInVersion {
+		existingFieldMap[f.ObjectID] = f
+	}
+
+	keyToObjectID := make(map[string]uuid.UUID)
+	for _, f := range existingFieldsInVersion {
+		keyToObjectID[f.Key] = f.ObjectID
+	}
+
+	for _, batchField := range in.Fields {
+		if batchField.ObjectID == nil {
+			if batchField.Key == nil || *batchField.Key == "" {
+				return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDInvalidCharactersInKey).WithArgs("field key is required").RecordCtx(ctx)
+			}
+
+			if batchField.Type == nil || *batchField.Type == "" {
+				return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDInvalidType).WithArgs("UNSET", *batchField.Key).RecordCtx(ctx)
+			}
+
+			if !field.IsValidFieldType(*batchField.Type) {
+				return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDInvalidType).WithArgs(*batchField.Type, *batchField.Key).RecordCtx(ctx)
+			}
+
+			owner := "user"
+			if batchField.Mutable != nil && !*batchField.Mutable {
+				owner = "system"
+			}
+
+			required := false
+			if batchField.Required != nil {
+				required = *batchField.Required
+			}
+
+			mutable := true
+			if batchField.Mutable != nil {
+				mutable = *batchField.Mutable
+			}
+
+			position := 0
+			if batchField.Position != nil {
+				position = *batchField.Position
+			}
+
+			newField := inbounds.InputField{
+				Key:          *batchField.Key,
+				Type:         *batchField.Type,
+				Owner:        owner,
+				Title:        "",
+				Description:  batchField.Description,
+				Placeholder:  batchField.Placeholder,
+				Required:     required,
+				Mutable:      mutable,
+				DefaultValue: batchField.DefaultValue,
+				Position:     position,
+			}
+
+			if batchField.Title != nil {
+				newField.Title = *batchField.Title
+			}
+
+			for _, opt := range batchField.Options {
+				newField.Options = append(newField.Options, inbounds.InputOption{
+					Value:    opt.Value,
+					Label:    opt.Label,
+					Position: opt.Position,
+				})
+			}
+
+			for _, rule := range batchField.VisibilityRules {
+				newField.VisibilityRules = append(newField.VisibilityRules, inbounds.InputVisibilityRule{
+					DependsOnFieldKey: rule.DependsOnFieldKey,
+					Operator:          rule.Operator,
+					Value:             rule.Value,
+				})
+			}
+
+			for _, rule := range batchField.RequiredRules {
+				newField.RequiredRules = append(newField.RequiredRules, inbounds.InputRequiredRule{
+					DependsOnFieldKey: rule.DependsOnFieldKey,
+					Operator:          rule.Operator,
+					Value:             rule.Value,
+				})
+			}
+
+			newFields = append(newFields, newField)
+		} else {
+			existingField, exists := existingFieldMap[*batchField.ObjectID]
+			if !exists {
+				return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDNotFound).WithArgs(*batchField.ObjectID).RecordCtx(ctx)
+			}
+
+			if existingField.SchemaVersionID != latest.ID {
+				return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDNotFound).WithArgs("field does not belong to this version").RecordCtx(ctx)
+			}
+
+			updates := make(map[string]interface{})
+
+			if batchField.Key != nil && *batchField.Key != existingField.Key {
+				if _, keyExists := keyToObjectID[*batchField.Key]; keyExists && keyToObjectID[*batchField.Key] != *batchField.ObjectID {
+					return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDKeyAlreadyExists).WithArgs(*batchField.Key).RecordCtx(ctx)
+				}
+				updates["key"] = *batchField.Key
+				keyToObjectID[*batchField.Key] = *batchField.ObjectID
+			}
+
+			if batchField.Title != nil {
+				updates["title"] = *batchField.Title
+			}
+
+			if batchField.Description != nil {
+				desc := *batchField.Description
+				updates["description"] = &desc
+			}
+
+			if batchField.Placeholder != nil {
+				placeholder := *batchField.Placeholder
+				updates["placeholder"] = &placeholder
+			}
+
+			if batchField.Type != nil {
+				if !field.IsValidFieldType(*batchField.Type) {
+					return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDInvalidType).WithArgs(*batchField.Type, existingField.Key).RecordCtx(ctx)
+				}
+				updates["type"] = *batchField.Type
+			}
+
+			if batchField.Required != nil {
+				updates["required"] = *batchField.Required
+			}
+
+			if batchField.Mutable != nil {
+				updates["mutable"] = *batchField.Mutable
+			}
+
+			if batchField.DefaultValue != nil {
+				updates["default_value"] = batchField.DefaultValue
+			}
+
+			if batchField.Position != nil {
+				updates["position"] = *batchField.Position
+			}
+
+			if len(updates) > 0 {
+				existingFieldsUpdates[*batchField.ObjectID] = updates
+			}
+		}
+	}
+
+	if len(newFields) > 0 || len(existingFieldsUpdates) > 0 {
+		newFieldKeys := make(map[string]bool)
+		for _, f := range newFields {
+			if f.Key != "" {
+				if _, keyExists := keyToObjectID[f.Key]; keyExists {
+					return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDKeyAlreadyExists).WithArgs(f.Key).RecordCtx(ctx)
+				}
+				if newFieldKeys[f.Key] {
+					return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDSameKeyForMultipleFields).RecordCtx(ctx)
+				}
+				newFieldKeys[f.Key] = true
+			}
+		}
+
+		for objectID, updates := range existingFieldsUpdates {
+			if newKey, hasKey := updates["key"].(string); hasKey {
+				if existingOID, keyExists := keyToObjectID[newKey]; keyExists && existingOID != objectID {
+					return inbounds.BatchUpdateFieldsResult{}, fail.New(errx.FIELDKeyAlreadyExists).WithArgs(newKey).RecordCtx(ctx)
+				}
+			}
+		}
+
+		tempOffset := 10000
+		originalPositions := make(map[uuid.UUID]int)
+
+		i := 0
+		for objectID := range existingFieldsUpdates {
+			if updates, ok := existingFieldsUpdates[objectID]; ok {
+				if pos, hasPos := updates["position"].(int); hasPos {
+					originalPositions[objectID] = pos
+					existingFieldsUpdates[objectID]["position"] = tempOffset + i
+				}
+			}
+			i++
+		}
+
+		for objectID, updates := range existingFieldsUpdates {
+			_, err = fields.UpdateField(ctx, objectID, latest.ID, updates)
+			if err != nil {
+				return inbounds.BatchUpdateFieldsResult{}, err
+			}
+		}
+
+		newFieldIDs := make(map[string]uuid.UUID)
+		if len(newFields) > 0 {
+			fieldsToCreate := make([]field.Field, len(newFields))
+			for i, f := range newFields {
+				fieldsToCreate[i] = field.Field{
+					SchemaID:        in.SchemaID,
+					SchemaVersionID: latest.ID,
+					Key:             f.Key,
+					Type:            field.Type(f.Type),
+					Owner:           field.Owner(f.Owner),
+					Title:           f.Title,
+					Description:     f.Description,
+					Placeholder:     f.Placeholder,
+					Required:        f.Required,
+					Mutable:         f.Mutable,
+					DefaultValue:    f.DefaultValue,
+					Position:        tempOffset + len(existingFieldsUpdates) + i,
+				}
+			}
+
+			if err = fields.CreateBatch(ctx, fieldsToCreate); err != nil {
+				return inbounds.BatchUpdateFieldsResult{}, err
+			}
+
+			var created []field.Field
+			created, err = fields.ListFromVersion(ctx, in.SchemaID, latest.ID)
+			if err != nil {
+				return inbounds.BatchUpdateFieldsResult{}, err
+			}
+
+			existingKeys := make(map[string]bool)
+			for _, ef := range existingFieldsInVersion {
+				existingKeys[ef.Key] = true
+			}
+
+			for _, cf := range created {
+				if existingKeys[cf.Key] {
+					continue
+				}
+				newFieldIDs[cf.Key] = cf.ObjectID
+			}
+
+			for i, f := range newFields {
+				targetPos := f.Position
+				if targetPos == 0 {
+					targetPos = len(existingFieldsInVersion) + i
+				}
+				objID := newFieldIDs[f.Key]
+				_, err = fields.UpdateField(ctx, objID, latest.ID, map[string]interface{}{"position": targetPos})
+				if err != nil {
+					return inbounds.BatchUpdateFieldsResult{}, err
+				}
+			}
+		}
+
+		for objectID, originalPos := range originalPositions {
+			_, err = fields.UpdateField(ctx, objectID, latest.ID, map[string]interface{}{"position": originalPos})
+			if err != nil {
+				return inbounds.BatchUpdateFieldsResult{}, err
+			}
+		}
+	}
+
+	updatedFields, err := fields.ListFromVersion(ctx, in.SchemaID, latest.ID)
+	if err != nil {
+		return inbounds.BatchUpdateFieldsResult{}, err
+	}
+
+	return inbounds.BatchUpdateFieldsResult{
+		Fields:   inbounds.FieldSliceToOutputFieldSlice(updatedFields),
+		Warnings: warnings,
+	}, nil
+}
