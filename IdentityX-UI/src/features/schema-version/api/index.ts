@@ -1,7 +1,7 @@
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { DetailedSchemaVersion, PartialVersionField, SchemaFieldOption, SchemaFieldRequiredRule, SchemaFieldVisibilityRule, SchemaVersion, SchemaVersionFields, VersionDraft } from "../model/types";
+import type { DetailedSchemaVersion, PartialVersionField, SchemaFieldOption, SchemaFieldRequiredRule, SchemaFieldVisibilityRule, SchemaVersion, SchemaVersionFields, VersionDraft, VersionFieldResult } from "../model/types";
 
 export const createSchemaVersionDraftFn = createClientOnlyFn((versionData: VersionDraft) => {
   const { project_id, schema_id } = versionData
@@ -85,6 +85,22 @@ export const createSchemaVersionFieldFn = createClientOnlyFn((fieldsData: Schema
   const { project_id, schema_id, version, fields } = fieldsData
   return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+    body: JSON.stringify({fields})
+  });
+});
+
+interface setSchemaVersionFieldsFnPropsI {
+  fields: VersionFieldResult[]
+  project_id: string;
+  schema_id: string;
+  version: number;
+}
+
+export const setSchemaVersionFieldsFn = createClientOnlyFn((data: setSchemaVersionFieldsFnPropsI) => {
+  const { project_id, schema_id, version, fields } = data
+  return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}/fields`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
     body: JSON.stringify({fields})
   });

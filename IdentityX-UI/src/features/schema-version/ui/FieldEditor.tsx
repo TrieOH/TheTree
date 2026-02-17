@@ -19,7 +19,7 @@ import { defaultEmailVersionField, defaultPasswordVersionField } from "../model/
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus, SaveAll } from "lucide-react"; 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, setSchemaFieldOptionsFn, updateSchemaVersionFieldFn } from "../api";
+import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, setSchemaFieldOptionsFn, setSchemaVersionFieldsFn } from "../api";
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
@@ -111,18 +111,14 @@ export default function FieldEditor() {
     },
 
     onUpdate: async (updates) => {
-      console.log("Update:", updates);
+      console.log("Update:", updates.map(item => item.value));
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
-      const ordered = [...updates].sort((a, b) => a.value.position - b.value.position);
-      for (const u of ordered) {
-        await updateSchemaVersionFieldFn({
-          project_id: currentProjectId,
-          schema_id: currentSchemaId,
-          version: currentSchemaVersion,
-          field_id: u.id,
-          fieldData: mapVersionFieldResultToVersionField(u.value),
-        });
-      }
+      await setSchemaVersionFieldsFn({
+        project_id: currentProjectId,
+        schema_id: currentSchemaId,
+        version: currentSchemaVersion,
+        fields: updates.map(item => item.value)
+      })
     },
 
     onDelete: async (deletes) => {
