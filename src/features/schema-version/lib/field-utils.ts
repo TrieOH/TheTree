@@ -25,15 +25,6 @@ export const areFieldsEqual = (a: VersionFieldResult, b: VersionFieldResult): bo
   const simplifiedAVisibilityRules = a.visibility_rules.map(simplifyRule);
   const simplifiedBVisibilityRules = b.visibility_rules.map(simplifyRule);
   if (JSON.stringify(simplifiedAVisibilityRules) !== JSON.stringify(simplifiedBVisibilityRules)) return false;
-
-  const simplifyOption = (option: any) => ({
-    label: option.label,
-    value: option.value
-  });
-
-  const simplifiedAOptions = a.options.map(simplifyOption);
-  const simplifiedBOptions = b.options.map(simplifyOption);
-  if (JSON.stringify(simplifiedAOptions) !== JSON.stringify(simplifiedBOptions)) return false;
   
   return true;
 };
