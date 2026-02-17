@@ -19,7 +19,7 @@ import { defaultEmailVersionField, defaultPasswordVersionField } from "../model/
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus, SaveAll } from "lucide-react"; 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, setSchemaFieldOptionsFn, setSchemaVersionFieldsFn } from "../api";
+import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, setSchemaFieldOptionsFn, setSchemaFieldRequiredRulesFn, setSchemaFieldVisibilityRulesFn, setSchemaVersionFieldsFn } from "../api";
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
@@ -27,6 +27,7 @@ import { mapFieldIdsToKeys, mapVersionFieldResultToVersionField } from '../lib/c
 import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 import { optionsDiff } from '../lib/field-options-diff-utils';
+import { rulesDiff } from '../lib/field-rules-diff-utils';
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
@@ -162,6 +163,30 @@ export default function FieldEditor() {
             field_id: fieldId,
             options: options
           });
+        }
+      }),
+      rulesDiff({
+        putRequiredRules: async (fieldId, rules) => {
+          console.log("PUT REQUIRED RULES:", rules);
+          if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
+          await setSchemaFieldRequiredRulesFn({
+            project_id: currentProjectId,
+            schema_id: currentSchemaId,
+            version: currentSchemaVersion,
+            field_id: fieldId,
+            rules: rules,
+          })
+        },
+        putVisibilityRules: async (fieldId, rules) => {
+          console.log("PUT VISIBILITY RULES:", rules);
+          if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
+          await setSchemaFieldVisibilityRulesFn({
+            project_id: currentProjectId,
+            schema_id: currentSchemaId,
+            version: currentSchemaVersion,
+            field_id: fieldId,
+            rules: rules,
+          })
         }
       })
     ]

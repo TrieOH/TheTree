@@ -122,24 +122,20 @@ export interface Option {
   value: string
 }
 
+export interface Rule {
+  id: string;
+  depends_on_field_key?: string;
+  depends_on_field_id: string;
+  operator: RuleOperator;
+  value: string;
+}
+
 export type VersionFieldResult = NeedVersionField & {
   id: string;
   object_id?: string;
-  required_rules: {
-    id: string;
-    depends_on_field_key?: string;
-    depends_on_field_id: string;
-    operator: RuleOperator;
-    value: string;
-  }[],
+  required_rules: Rule[],
   options: Option[],
-  visibility_rules: {
-    id: string;
-    depends_on_field_key?: string;
-    depends_on_field_id: string;
-    operator: RuleOperator;
-    value: string;
-  }[]; 
+  visibility_rules: Rule[]; 
 }
 
 export interface DetailedSchemaVersion {
