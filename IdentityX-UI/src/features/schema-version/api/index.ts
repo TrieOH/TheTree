@@ -1,7 +1,7 @@
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { DetailedSchemaVersion, PartialVersionField, SchemaFieldOption, SchemaFieldRequiredRule, SchemaFieldVisibilityRule, SchemaVersion, SchemaVersionFields, VersionDraft, VersionFieldResult } from "../model/types";
+import type { DetailedSchemaVersion, PartialVersionField, Rule, SchemaFieldOption, SchemaVersion, SchemaVersionFields, VersionDraft, VersionFieldResult } from "../model/types";
 
 export const createSchemaVersionDraftFn = createClientOnlyFn((versionData: VersionDraft) => {
   const { project_id, schema_id } = versionData
@@ -143,11 +143,11 @@ export const deleteSchemaFieldOptionFn = createClientOnlyFn(
 );
 
 export const setSchemaFieldVisibilityRulesFn = createClientOnlyFn(
-  ({ project_id, schema_id, version, field_id, rules }: { project_id: string; schema_id: string; version: number; field_id: string; rules: SchemaFieldVisibilityRule[] }) => {
+  ({ project_id, schema_id, version, field_id, rules }: { project_id: string; schema_id: string; version: number; field_id: string; rules: Rule[] }) => {
     return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}/fields/${field_id}/visibility-rules`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(rules),
+      body: JSON.stringify({visibility_rules: rules}),
     });
   }
 );
@@ -161,11 +161,11 @@ export const deleteSchemaFieldVisibilityRuleFn = createClientOnlyFn(
 );
 
 export const setSchemaFieldRequiredRulesFn = createClientOnlyFn(
-  ({ project_id, schema_id, version, field_id, rules }: { project_id: string; schema_id: string; version: number; field_id: string; rules: SchemaFieldRequiredRule[] }) => {
+  ({ project_id, schema_id, version, field_id, rules }: { project_id: string; schema_id: string; version: number; field_id: string; rules: Rule[] }) => {
     return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}/fields/${field_id}/required-rules`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(rules),
+      body: JSON.stringify({required_rules: rules}),
     });
   }
 );
