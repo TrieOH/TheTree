@@ -1,33 +1,4 @@
-import type { VersionFieldList, VersionFieldResult } from "./types";
-
-export const defaultVersionFieldList: VersionFieldList = [
-  {
-    key: "name",
-    title: "Name",
-    type: "string",
-    owner: "user",
-    mutable: true,
-    required: true,
-    position: 0,
-    default_value: null,
-    options: [],
-    required_rules: [],
-    visibility_rules: []
-  },
-  {
-    key: "age",
-    title: "Age",
-    type: "int",
-    owner: "user",
-    mutable: true,
-    required: false,
-    position: 1,
-    default_value: null,
-    options: [],
-    required_rules: [],
-    visibility_rules: []
-  },
-];
+import type { VersionFieldResult } from "./types";
 
 export const defaultEmailVersionField: VersionFieldResult = {
   key: "email",
@@ -37,7 +8,7 @@ export const defaultEmailVersionField: VersionFieldResult = {
   mutable: false,
   required: true,
   position: -1,
-  default_value: null,
+  default_value: '',
   options: [],
   required_rules: [],
   visibility_rules: [],
@@ -53,7 +24,7 @@ export const defaultPasswordVersionField: VersionFieldResult = {
   mutable: false,
   required: true,
   position: -1,
-  default_value: null,
+  default_value: '',
   options: [],
   required_rules: [],
   visibility_rules: [],
