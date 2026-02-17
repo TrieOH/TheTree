@@ -138,7 +138,7 @@ export function useEditableList<T>({
       if (diff.updates.length && onUpdate) await onUpdate(diff.updates);
       if (diff.creates.length && onCreate) await onCreate(diff.creates);
     } finally { setIsSubmitting(false); }
-  }, [computeDiff, onCreate, onUpdate, onDelete, items]);
+  }, [computeDiff, onCreate, onUpdate, onDelete, customDiffs]);
 
   const hasChanges = JSON.stringify(items) !== JSON.stringify(original);
 
