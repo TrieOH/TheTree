@@ -10,6 +10,7 @@ import { Checkbox } from '@/shared/ui/shadcn/checkbox';
 import { RulesEditor } from './RulesEditor';
 import { OptionsEditor } from './OptionsEditor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/shadcn/select';
+import { DefaultValueInput } from './DefaultValueInput';
 
 interface FieldEditFormProps {
   field: VersionFieldResult;
@@ -78,17 +79,6 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           <ShadowTextarea
             id={field.name}
             value={field.state.value ?? ''}
-            onBlur={field.handleBlur}
-            onChange={field.handleChange}
-          />
-        )}
-      </FormField>
-
-      <FormField<VersionField, 'default_value'> name="default_value" label="Default Value" form={form}>
-        {(field) => (
-          <ShadowInput
-            id={field.name}
-            value={String(field.state.value ?? '')}
             onBlur={field.handleBlur}
             onChange={field.handleChange}
           />
@@ -189,6 +179,15 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           ) : null;
         }}
       </form.Subscribe>
+      <FormField<VersionField, 'default_value'> name="default_value" label="Default Value" form={form}>
+        {(field) => (
+          <form.Subscribe selector={(state) => state.values}>
+            {(values) => (
+              <DefaultValueInput field={field} fieldType={values.type} options={values.options} />
+            )}
+          </form.Subscribe>
+        )}
+      </FormField>
       <div className="flex justify-end gap-2">
         <ShadowButton type="button" variant="ghost" onClick={onCancel} value="Cancel" />
         <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
