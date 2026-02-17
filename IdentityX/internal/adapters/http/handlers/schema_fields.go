@@ -944,3 +944,137 @@ func (handler *SchemaFieldsHandler) DeleteRequiredRule(w http.ResponseWriter, r 
 
 	resp.NoContent().Send(w)
 }
+
+// BatchUpdateFields godoc
+// @Summary Batch update schema fields
+// @Description Updates and creates fields in a single batch request. Can update existing fields (by object_id) and create new fields (without object_id).
+// @Tags schema-fields
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param schema_id path string true "Schema ID"
+// @Param version path int true "Schema Version Number"
+// @Param fields body dto.BatchUpdateFieldsRequest true "Fields to update/create"
+// @Success 200 {array} dto.FieldResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/schemas/{schema_id}/v{version}/fields [put]
+func (handler *SchemaFieldsHandler) BatchUpdateFields(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	schemaID, rs := getUUID(r, "schema_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	version := chi.URLParam(r, "version")
+	if version == "" {
+		resp.BadRequest("missing version parameter").Send(w)
+		return
+	}
+
+	versionNumber, err := strconv.Atoi(version)
+	if err != nil {
+		resp.BadRequest("invalid version parameter").AddTrace(err).Send(w)
+		return
+	}
+
+	if versionNumber <= 0 {
+		resp.BadRequest("version must be >= 1").Send(w)
+		return
+	}
+
+	var req dto.BatchUpdateFieldsRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	fields := make([]inbounds.BatchFieldInput, len(req.Fields))
+	for i, f := range req.Fields {
+		fields[i] = inbounds.BatchFieldInput{
+			ObjectID:        f.ObjectID,
+			Key:             f.Key,
+			Title:           f.Title,
+			Description:     f.Description,
+			Placeholder:     f.Placeholder,
+			Type:            f.Type,
+			Required:        f.Required,
+			Mutable:         f.Mutable,
+			DefaultValue:    f.DefaultValue,
+			Position:        f.Position,
+			Options:         convertOptionParams(f.Options),
+			VisibilityRules: convertVisibilityRuleParams(f.VisibilityRules),
+			RequiredRules:   convertRequiredRuleParams(f.RequiredRules),
+		}
+	}
+
+	in := inbounds.BatchUpdateFieldsInput{
+		ProjectID:     projectID,
+		SchemaID:      schemaID,
+		VersionNumber: versionNumber,
+		Fields:        fields,
+	}
+
+	ctx := r.Context()
+	result, err := handler.fields.BatchUpdateFields(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	if result.Warnings != nil {
+		response := resp.OK().WithData(dto.OutputFieldSliceToFieldResponseSlice(result.Fields))
+		for _, warning := range result.Warnings {
+			response.AddTrace(warning)
+		}
+		response.Send(w)
+		return
+	}
+
+	resp.OK().WithData(dto.OutputFieldSliceToFieldResponseSlice(result.Fields)).Send(w)
+}
+
+func convertOptionParams(opts []dto.OptionParam) []inbounds.InputOption {
+	out := make([]inbounds.InputOption, len(opts))
+	for i, opt := range opts {
+		out[i] = inbounds.InputOption{
+			Value:    opt.Value,
+			Label:    opt.Label,
+			Position: opt.Position,
+		}
+	}
+	return out
+}
+
+func convertVisibilityRuleParams(rules []dto.VisibilityRuleParam) []inbounds.InputVisibilityRule {
+	out := make([]inbounds.InputVisibilityRule, len(rules))
+	for i, rule := range rules {
+		out[i] = inbounds.InputVisibilityRule{
+			DependsOnFieldKey: rule.DependsOnFieldKey,
+			Operator:          rule.Operator,
+			Value:             rule.Value,
+		}
+	}
+	return out
+}
+
+func convertRequiredRuleParams(rules []dto.RequiredRuleParam) []inbounds.InputRequiredRule {
+	out := make([]inbounds.InputRequiredRule, len(rules))
+	for i, rule := range rules {
+		out[i] = inbounds.InputRequiredRule{
+			DependsOnFieldKey: rule.DependsOnFieldKey,
+			Operator:          rule.Operator,
+			Value:             rule.Value,
+		}
+	}
+	return out
+}

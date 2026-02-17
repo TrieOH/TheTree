@@ -39,6 +39,10 @@ func TestGoAuth(t *testing.T) {
 		testSchemas(t, suite)
 	})
 
+	t.Run("BatchUpdateFields", func(t *testing.T) {
+		testBatchUpdateFields(t, suite)
+	})
+
 	t.Run("Schema Register", func(t *testing.T) {
 		testSchemaRegister(t, suite)
 	})

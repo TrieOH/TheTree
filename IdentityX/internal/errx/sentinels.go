@@ -425,7 +425,7 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "nenhuma linha afetada",
 		})
-	ErrFieldInvalidType = fail.Form(FIELDInvalidOwner, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
+	ErrFieldInvalidType = fail.Form(FIELDInvalidType, "invalid field type (%s) for field: %s", false, map[string]any{"code": 400}, "UNSET TYPE", "UNSET FIELD KEY").
 				AddLocalization("pt-BR", "tipo do campo inválido (%s) para o campo: %s")
 	ErrSameKeyForMultipleFields = fail.Form(FIELDSameKeyForMultipleFields, "two fields can't have the same key", false, map[string]any{"code": 409}).
 					AddLocalization("pt-BR", "dois campos não podem possuir a mesma chave identificadora")

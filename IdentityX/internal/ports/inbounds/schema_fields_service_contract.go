@@ -150,6 +150,34 @@ type DeleteRequiredRuleInput struct {
 	RuleID        uuid.UUID
 }
 
+type BatchUpdateFieldsInput struct {
+	ProjectID     uuid.UUID
+	SchemaID      uuid.UUID
+	VersionNumber int
+	Fields        []BatchFieldInput
+}
+
+type BatchFieldInput struct {
+	ObjectID        *uuid.UUID
+	Key             *string
+	Title           *string
+	Description     *string
+	Placeholder     *string
+	Type            *string
+	Required        *bool
+	Mutable         *bool
+	DefaultValue    *json.RawMessage
+	Position        *int
+	Options         []InputOption
+	VisibilityRules []InputVisibilityRule
+	RequiredRules   []InputRequiredRule
+}
+
+type BatchUpdateFieldsResult struct {
+	Fields   []OutputField
+	Warnings []error
+}
+
 type ValidationWarning struct {
 	FieldKey string
 	RuleType string // "visibility" or "required"

@@ -276,6 +276,10 @@ func (c *Client) PATCH(path string) *RequestBuilder {
 	return c.newRequest("PATCH", path)
 }
 
+func (c *Client) PUT(path string) *RequestBuilder {
+	return c.newRequest("PUT", path)
+}
+
 func (c *Client) DELETE(path string) *RequestBuilder {
 	return c.newRequest("DELETE", path)
 }
