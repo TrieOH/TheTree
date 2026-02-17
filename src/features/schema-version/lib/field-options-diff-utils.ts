@@ -1,4 +1,4 @@
-import { CustomDiff } from "../hooks/useEditableList";
+import type { CustomDiff } from "../hooks/useEditableList";
 import type { Option, VersionFieldResult } from "../model/types";
 
 function diffFieldOptions(oldField: VersionFieldResult, newField: VersionFieldResult) {

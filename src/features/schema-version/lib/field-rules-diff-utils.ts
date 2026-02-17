@@ -1,4 +1,4 @@
-import { CustomDiff } from "../hooks/useEditableList";
+import type { CustomDiff } from "../hooks/useEditableList";
 import type { Rule, VersionFieldResult } from "../model/types";
 
 function simplifyRule(rule: Rule) {

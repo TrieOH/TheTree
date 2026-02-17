@@ -56,9 +56,9 @@ export default function FieldEditor() {
     let maxSuffix = -1;
     allKeys.forEach(key => {
       const match = key.match(/custom_field_(\d+)/);
-      if (match && match[1]) {
+      if (match?.[1]) {
         const suffix = parseInt(match[1], 10);
-        if (!isNaN(suffix) && suffix > maxSuffix) maxSuffix = suffix;
+        if (!Number.isNaN(suffix) && suffix > maxSuffix) maxSuffix = suffix;
       }
     });
     setNextId(maxSuffix + 1);
