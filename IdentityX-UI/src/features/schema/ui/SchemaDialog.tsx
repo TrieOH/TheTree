@@ -9,6 +9,7 @@ import { useStore } from "@tanstack/react-store";
 import { schemaStore } from "../store";
 import { createSchemaFn } from "../api";
 import  { type SchemaCRUD, schemaCRUDSchema } from "../model/types";
+import { getFieldError } from "@/shared/lib/utils";
 
 interface PropsI {
   project_id: string;
@@ -43,13 +44,15 @@ export function SchemaDialog({ project_id }: PropsI) {
       name: "title", 
       label: "Title", 
       placeholder: "My New Schema", 
-      autoComplete: "title"
+      autoComplete: "title",
+      errors: getFieldError(schemaCRUDSchema.shape["title"])
     },
     {
       name: "flow_id", 
       label: "Flow ID", 
       placeholder: "auth flow", 
-      autoComplete: "flow_id"
+      autoComplete: "flow_id",
+      errors: getFieldError(schemaCRUDSchema.shape["flow_id"])
     }
   ]
   const projectOpts = formOptions({

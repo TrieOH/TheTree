@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
 import { formOptions } from "@tanstack/react-form";
+import { getFieldError } from "@/shared/lib/utils";
 
 interface PropsI {
   project_id: string;
@@ -44,13 +45,15 @@ export default function ScopeDialog({ project_id }: PropsI) {
       name: "name", 
       label: "Name", 
       placeholder: "My New Scope", 
-      autoComplete: "name"
+      autoComplete: "name",
+      errors: getFieldError(scopeCRUDSchema.shape["name"])
     },
     {
       name: "external_id", 
       label: "External ID", 
       placeholder: "Event", 
-      autoComplete: "external_id"
+      autoComplete: "external_id",
+      errors: getFieldError(scopeCRUDSchema.shape["external_id"], "d")
     }
   ]
   const scopeOpts = formOptions({

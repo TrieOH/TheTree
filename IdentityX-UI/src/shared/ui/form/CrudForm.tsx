@@ -11,7 +11,7 @@ interface PropsI<TFormData> {
 export default function CrudForm<TFormData>({
   formId,
   options,
-  fields
+  fields,
 }: PropsI<TFormData>) {
   const [submitted, setSubmitted] = useState(false);
   const form = useAppForm({
@@ -44,6 +44,7 @@ export default function CrudForm<TFormData>({
               label={item.label} 
               placeholder={item.placeholder}
               autoComplete={item.autoComplete}
+              errors={item.errors}
               submitted={submitted}
             />
           )}

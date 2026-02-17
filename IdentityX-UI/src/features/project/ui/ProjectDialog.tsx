@@ -9,6 +9,7 @@ import { createProjectFn, patchProjectFn, deleteProjectFn } from "../api";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
+import { getFieldError } from "@/shared/lib/utils";
 
 export function ProjectDialog() {
   const queryClient = useQueryClient();
@@ -69,7 +70,13 @@ export function ProjectDialog() {
     }
   });
   const fields: FieldConfig[] = [
-    {name: "project_name", label: "Project Name", placeholder: "My Awesome Project", autoComplete: "project_name"}
+    {
+      name: "project_name", 
+      label: "Project Name", 
+      placeholder: "My Awesome Project", 
+      autoComplete: "project_name",
+      errors: getFieldError(projectCRUDSchema.shape["project_name"])
+    }
   ]
   const projectOpts = formOptions({
     defaultValues: (mode === 'create' ? { id: "", project_name: "" } : formData) as ProjectCRUD,
