@@ -1,8 +1,8 @@
-import type { VersionField, VersionFieldResult } from '../model/types';
+import { versionFieldResultZodSchema, type VersionField, type VersionFieldResult } from '../model/types';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { FieldTypeSelector } from './FieldTypeSelector';
-import { useForm } from '@tanstack/react-form';
+import { type AnyFormApi, useForm } from '@tanstack/react-form';
 import { FormField } from '@/shared/ui/form/FormField';
 import { ShadowTextarea } from '@/shared/ui/form/ShadowTextarea';
 import { useEffect } from 'react';
@@ -27,14 +27,18 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
     onSubmit: async ({ value }) => {
       onSave(field, value);
     },
-    // validators: {
-    //   onChange: versionFieldSchema,
-    // }
+    validators: {
+      onChange: versionFieldResultZodSchema,
+    }
   });
 
   useEffect(() => {
     form.reset(field);
   }, [field, form.reset]);
+
+  const setOptionsEmpty = (form: AnyFormApi) => {
+    form.setFieldValue("options" as const, []);
+  };
 
   return (
     <form
@@ -163,7 +167,10 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
         {(field) => (
           <FieldTypeSelector
             selectedType={field.state.value}
-            onSelectType={field.handleChange}
+            onSelectType={(t) => {
+              field.handleChange(t);
+              setOptionsEmpty(form);
+            }}
           />
         )}
       </FormField>

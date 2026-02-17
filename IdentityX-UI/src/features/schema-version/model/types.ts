@@ -1,4 +1,4 @@
-import type { JsonValue } from "@/shared/model/types";
+
 import z from "zod";
 
 export const versionDraftSchema = z.object({
@@ -24,6 +24,22 @@ export const ruleOperatorSchema = z.enum([
 
 export type RuleOperator = z.infer<typeof ruleOperatorSchema>;
 
+// Zod schema for Option
+export const optionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  position: z.number(),
+  value: z.string()
+});
+
+// Zod schema for Rule
+export const ruleSchema = z.object({
+  id: z.string(),
+  depends_on_field_key: z.string().optional(),
+  depends_on_field_id: z.string(),
+  operator: ruleOperatorSchema,
+  value: z.json()
+});
 
 export interface SchemaVersion {
   id: string;
@@ -77,14 +93,24 @@ export type SchemaFieldOption = z.infer<typeof versionFieldSchema.shape.options.
 export type SchemaFieldRequiredRule = z.infer<typeof versionFieldSchema.shape.required_rules.element>;
 export type SchemaFieldVisibilityRule = z.infer<typeof versionFieldSchema.shape.visibility_rules.element>;
 
+export const versionFieldResultZodSchema = needFieldsSchema.extend({
+  id: z.string(),
+  object_id: z.string().optional(),
+  required_rules: z.array(ruleSchema),
+  options: z.array(optionSchema),
+  visibility_rules: z.array(ruleSchema)
+});
+
+export type VersionFieldResult = z.infer<typeof versionFieldResultZodSchema>;
+
 const versionFieldListSchema = z
-  .array(versionFieldSchema)
+  .array(versionFieldResultZodSchema)
   .superRefine((fields, ctx) => {
     const existingKeys = new Set(fields.map(f => f.key));
 
     fields.forEach((field, fieldIndex) => {
       field.required_rules?.forEach((rule, ruleIndex) => {
-        if (!existingKeys.has(rule.depends_on_field_key)) {
+        if (rule.depends_on_field_key && !existingKeys.has(rule.depends_on_field_key)) {
           ctx.addIssue({
             code: "custom",
             message: `depends_on_field_key "${rule.depends_on_field_key}" does not exist`,
@@ -99,7 +125,7 @@ const versionFieldListSchema = z
       });
 
       field.visibility_rules?.forEach((rule, ruleIndex) => {
-        if (!existingKeys.has(rule.depends_on_field_key)) {
+        if (rule.depends_on_field_key && !existingKeys.has(rule.depends_on_field_key)) {
           ctx.addIssue({
             code: "custom",
             message: `depends_on_field_key "${rule.depends_on_field_key}" does not exist`,
@@ -128,28 +154,9 @@ export const schemaVersionFieldsSchema = z.object({
 
 export type SchemaVersionFields = z.infer<typeof schemaVersionFieldsSchema>;
 
-export interface Option {
-  id: string;
-  label: string,
-  position: number,
-  value: string
-}
+export type Option = z.infer<typeof optionSchema>;
 
-export interface Rule {
-  id: string;
-  depends_on_field_key?: string;
-  depends_on_field_id: string;
-  operator: RuleOperator;
-  value: JsonValue;
-}
-
-export type VersionFieldResult = NeedVersionField & {
-  id: string;
-  object_id?: string;
-  required_rules: Rule[],
-  options: Option[],
-  visibility_rules: Rule[]; 
-}
+export type Rule = z.infer<typeof ruleSchema>;
 
 export interface DetailedSchemaVersion {
   flow_id: string;

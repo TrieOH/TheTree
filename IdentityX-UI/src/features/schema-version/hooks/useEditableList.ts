@@ -37,7 +37,8 @@ export function useEditableList<T>({
   historyLimit = 100,
   customDiffs
 }: EditableListConfig<T>) {
-  const [items, setItems] = useState<T[]>(initial);
+  const itemsRef = useRef<T[]>(initial);
+  const [, forceRender] = useState(0);
   const [original, setOriginal] = useState<T[]>(initial);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,33 +56,37 @@ export function useEditableList<T>({
   }, [historyLimit]);
 
   const update = useCallback((updater: (prev: T[]) => T[]) => {
-    setItems(prev => {
-      const next = updater(prev);
-      pushHistory(next);
-      return next;
-    });
+    const prevItems = itemsRef.current;
+    const nextItems = updater(prevItems);
+
+    itemsRef.current = nextItems;
+    pushHistory(nextItems);
+    forceRender(prev => prev + 1);
   }, [pushHistory]);
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if(indexRef.current <= 0) return;
     indexRef.current--;
-    setItems(structuredClone(historyRef.current[indexRef.current]));
-  }
+    itemsRef.current = structuredClone(historyRef.current[indexRef.current]);
+    forceRender(prev => prev + 1);
+  }, []);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (indexRef.current >= historyRef.current.length - 1) return;
     indexRef.current++;
-    setItems(structuredClone(historyRef.current[indexRef.current]));
-  };
+    itemsRef.current = structuredClone(historyRef.current[indexRef.current]);
+    forceRender(prev => prev + 1);
+  }, []);
 
   const canUndo = indexRef.current > 0;
   const canRedo = indexRef.current < historyRef.current.length - 1;
 
   useEffect(() => {
-    setItems(initial);
+    itemsRef.current = initial;
     setOriginal(initial);
     historyRef.current = [structuredClone(initial)];
     indexRef.current = 0;
+    forceRender(prev => prev + 1); 
   }, [initial]);
 
   // DIFF
@@ -97,13 +102,13 @@ export function useEditableList<T>({
     }
 
     const currentMap = new Map<string, T>();
-    for (const c of items) {
+    for (const c of itemsRef.current) { 
       const id = getId(c);
       if (id) currentMap.set(id, c);
     }
 
     // Create + Update
-    for(const c of items){
+    for(const c of itemsRef.current){
       const id = getId(c);
       if(!id) {creates.push(c); continue;}
       const old = originalMap.get(id);
@@ -118,7 +123,7 @@ export function useEditableList<T>({
       if(!currentMap.has(id)) deletes.push({id, value: o});
     }
     return { creates, updates, deletes, originalMap, currentMap };
-  }, [items, original, getId, isEqual]);
+  }, [original, getId, isEqual]);
 
   // SUBMIT
   const submit = useCallback(async () => {
@@ -140,17 +145,17 @@ export function useEditableList<T>({
     } finally { setIsSubmitting(false); }
   }, [computeDiff, onCreate, onUpdate, onDelete, customDiffs]);
 
-  const hasChanges = JSON.stringify(items) !== JSON.stringify(original);
-
+  const hasChanges = JSON.stringify(itemsRef.current) !== JSON.stringify(original);
   const syncWith = useCallback((newItems: T[]) => {
-    setItems(structuredClone(newItems));
+    itemsRef.current = structuredClone(newItems);
     setOriginal(structuredClone(newItems));
     historyRef.current = [structuredClone(newItems)];
     indexRef.current = 0;
+    forceRender(prev => prev + 1);
   }, []);
 
   return {
-    items,
+    items: itemsRef.current, 
     setItems: update,
 
     undo,

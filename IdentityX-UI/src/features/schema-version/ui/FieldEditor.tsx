@@ -23,7 +23,7 @@ import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVers
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
-import { mapFieldIdsToKeys, mapVersionFieldResultToVersionField } from '../lib/convert-field-utils';
+import { mapFieldIdsToKeys } from '../lib/convert-field-utils';
 import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 import { optionsDiff } from '../lib/field-options-diff-utils';
@@ -104,7 +104,7 @@ export default function FieldEditor() {
       console.log("Create:", creates);
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
       await createSchemaVersionFieldFn({
-        fields: creates.map(item => mapVersionFieldResultToVersionField(item)),
+        fields: creates, // Pass creates directly
         project_id: currentProjectId,
         schema_id: currentSchemaId,
         version: currentSchemaVersion,
