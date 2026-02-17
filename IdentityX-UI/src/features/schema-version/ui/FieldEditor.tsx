@@ -335,6 +335,7 @@ export default function FieldEditor() {
                         }}
                         onCancel={handleCloseEditPanel}
                         allFieldKeys={allFieldKeys}
+                        allSchemaFields={fields.items}
                       />
                     )}
                   </div>
@@ -402,6 +403,7 @@ export default function FieldEditor() {
             }}
             onCancel={handleCloseEditPanel}
             allFieldKeys={allFieldKeys}
+            allSchemaFields={fields.items}
           />
         </DraggableFieldEditPanel>
       )}

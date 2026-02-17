@@ -1,3 +1,4 @@
+import type { JsonValue } from "@/shared/model/types";
 import z from "zod";
 
 export const versionDraftSchema = z.object({
@@ -127,7 +128,7 @@ export interface Rule {
   depends_on_field_key?: string;
   depends_on_field_id: string;
   operator: RuleOperator;
-  value: string;
+  value: JsonValue;
 }
 
 export type VersionFieldResult = NeedVersionField & {

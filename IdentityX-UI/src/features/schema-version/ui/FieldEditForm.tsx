@@ -17,9 +17,10 @@ interface FieldEditFormProps {
   onSave: (originalField: VersionFieldResult, updatedField: VersionFieldResult) => void;
   onCancel: () => void;
   allFieldKeys: string[];
+  allSchemaFields: VersionFieldResult[]; // NEW: Add allSchemaFields
 }
 
-export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys }) => {
+export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys, allSchemaFields }) => {
   const filteredFieldKeys = allFieldKeys.filter((key) => key !== field.key);
   const form = useForm({
     defaultValues: field,
@@ -143,6 +144,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           <RulesEditor
             rules={field.state.value || []}
             allFieldKeys={filteredFieldKeys}
+            allFields={allSchemaFields} // Pass allSchemaFields here
             onChange={field.handleChange}
           />
         )}
@@ -152,6 +154,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           <RulesEditor
             rules={field.state.value || []}
             allFieldKeys={filteredFieldKeys}
+            allFields={allSchemaFields} // Pass allSchemaFields here
             onChange={field.handleChange}
           />
         )}

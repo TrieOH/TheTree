@@ -1,5 +1,5 @@
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
-import { ShadowInput } from '@/shared/ui/form/ShadowInput';
+// import { ShadowInput } from '@/shared/ui/form/ShadowInput'; // Not directly used here anymore for rule value
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import {
   Select,
@@ -8,50 +8,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/shadcn/select";
-import { type RuleOperator, ruleOperatorSchema } from '../model/types';
-
-interface Rule {
-  id: string;
-  depends_on_field_key: string;
-  operator: RuleOperator;
-  value: string;
-}
+import { type RuleOperator, ruleOperatorSchema, type Rule, type VersionFieldResult } from '../model/types';
+import { RuleValueInput } from './RuleValueInput'; // Import the new component
 
 interface RulesEditorProps {
   rules: Rule[];
   allFieldKeys: string[];
+  allFields: VersionFieldResult[]; // NEW: Add allFields prop
   onChange: (rules: Rule[]) => void;
 }
 
 const operatorConfig: Record<RuleOperator, {  label: string; symbol: string }> = {
-  equals: { 
+  equals: {
     label: 'Equals',
-    symbol: '=' 
+    symbol: '='
   },
-  not_equals: { 
+  not_equals: {
     label: 'Not equals',
-    symbol: '≠' 
+    symbol: '≠'
   },
-  in: { 
+  in: {
     label: 'Contains',
-    symbol: '∋' 
+    symbol: '∋'
   },
-  not_in: { 
+  not_in: {
     label: 'Not contains',
-    symbol: '∌' 
+    symbol: '∌'
   },
-  exists: { 
+  exists: {
     label: 'Exists',
-    symbol: '∃' 
+    symbol: '∃'
   },
-  not_exists: { 
+  not_exists: {
     label: 'Not exists',
-    symbol: '∄' 
+    symbol: '∄'
   },
 };
 
-export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, onChange }) => {
-  const handleRuleChange = (index: number, key: keyof Rule, value: string) => {
+export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, allFields, onChange }) => {
+  const handleRuleChange = (index: number, key: keyof Rule, value: unknown) => {
     const newRules = [...rules];
     newRules[index] = { ...newRules[index], [key]: value };
     onChange(newRules);
@@ -61,8 +56,9 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, o
     const newRule: Rule = {
       id: crypto.randomUUID(),
       depends_on_field_key: allFieldKeys.length > 0 ? allFieldKeys[0] : '',
+      depends_on_field_id: '', // Added to satisfy Rule interface
       operator: ruleOperatorSchema.enum.equals,
-      value: '',
+      value: null,
     };
     onChange([...rules, newRule]);
   };
@@ -74,71 +70,79 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, o
 
   return (
     <div className="space-y-2">
-      {rules.map((rule, index) => (
-        <div
-          key={rule.id}
-          className="flex flex-wrap items-center gap-2 p-2 bg-muted/20 border rounded-md group hover:bg-muted/40 transition-colors"
-        >          
-          <Select
-            value={rule.depends_on_field_key}
-            onValueChange={(val) => handleRuleChange(index, 'depends_on_field_key', val)}
-          >
-            <SelectTrigger className="flex-1 min-w-30 h-8 text-xs border border-input bg-background shadow-[1px_1px_0_0_var(--color-input)] focus:ring-offset-background focus:ring-2 focus:ring-ring focus:outline-none">
-              <SelectValue placeholder="Field..." />
-            </SelectTrigger>
-            <SelectContent>
-              {allFieldKeys.map((key) => (
-                <SelectItem key={key} value={key} className="text-xs">
-                  {key}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {rules.map((rule, index) => {
+        const dependentField = allFields.find(f => f.key === rule.depends_on_field_key);
+        const fieldType = dependentField?.type || 'string'; // Default to string if field not found
+        const fieldOptions = dependentField?.options;
 
-          <Select
-            value={rule.operator}
-            onValueChange={(val) => handleRuleChange(index, 'operator', val as RuleOperator)}
+        return (
+          <div
+            key={rule.id}
+            className="flex flex-wrap items-center gap-2 p-2 bg-muted/20 border rounded-md group hover:bg-muted/40 transition-colors"
           >
-            <SelectTrigger 
-              className="w-12 h-8 px-0 justify-center text-lg font-medium hover:bg-muted transition-colors" 
-              title={operatorConfig[rule.operator].label}
+            <Select
+              value={rule.depends_on_field_key ?? ''}
+              onValueChange={(val) => handleRuleChange(index, 'depends_on_field_key', val)}
             >
-              <SelectValue placeholder="=">
-                <span className="leading-none">{operatorConfig[rule.operator].symbol}</span>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent align="center" className="min-w-30">
-              {Object.values(ruleOperatorSchema.enum).map((op) => (
-                <SelectItem key={op} value={op} className="text-xs gap-2">
-                  <span className="w-6 text-center text-base font-medium">{operatorConfig[op].symbol}</span>
-                  <span className="text-muted-foreground">{operatorConfig[op].label}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <SelectTrigger className="flex-1 min-w-30 h-8 text-xs border border-input bg-background shadow-[1px_1px_0_0_var(--color-input)] focus:ring-offset-background focus:ring-2 focus:ring-ring focus:outline-none">
+                <SelectValue placeholder="Field..." />
+              </SelectTrigger>
+              <SelectContent>
+                {allFieldKeys.map((key) => (
+                  <SelectItem key={key} value={key} className="text-xs">
+                    {key}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <ShadowInput
-            placeholder="value..."
-            value={rule.value}
-            onChange={(val) => handleRuleChange(index, 'value', val)}
-            className="flex-1 h-8 text-xs min-w-20"
-          />
+            <Select
+              value={rule.operator}
+              onValueChange={(val) => handleRuleChange(index, 'operator', val as RuleOperator)}
+            >
+              <SelectTrigger
+                className="w-12 h-8 px-0 justify-center text-lg font-medium hover:bg-muted transition-colors"
+                title={operatorConfig[rule.operator].label}
+              >
+                <SelectValue placeholder="=">
+                  <span className="leading-none">{operatorConfig[rule.operator].symbol}</span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent align="center" className="min-w-30">
+                {Object.values(ruleOperatorSchema.enum).map((op) => (
+                  <SelectItem key={op} value={op} className="text-xs gap-2">
+                    <span className="w-6 text-center text-base font-medium">{operatorConfig[op].symbol}</span>
+                    <span className="text-muted-foreground">{operatorConfig[op].label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <ShadowButton
-            type="button"
-            variant="ghost"
-            leftIcon={<TrashIcon className="h-3.5 w-3.5" />}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive justify-center"
-            onClick={() => handleRemoveRule(index)}
-          />
-        </div>
-      ))}
+            <RuleValueInput
+              id={`rule-value-${rule.id}`}
+              value={rule.value}
+              onChange={(val) => handleRuleChange(index, 'value', val)}
+              fieldType={fieldType}
+              options={fieldOptions}
+              operator={rule.operator}
+            />
 
-      <ShadowButton 
-        type="button" 
+            <ShadowButton
+              type="button"
+              variant="ghost"
+              leftIcon={<TrashIcon className="h-3.5 w-3.5" />}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive justify-center"
+              onClick={() => handleRemoveRule(index)}
+            />
+          </div>
+        );
+      })}
+
+      <ShadowButton
+        type="button"
         variant="ghost"
         leftIcon={<PlusIcon className="h-4 w-4" />}
-        onClick={handleAddRule} 
+        onClick={handleAddRule}
         value='Add Rule'
         className="w-full h-8 text-xs text-muted-foreground hover:text-foreground border border-dashed border-muted-foreground/30 hover:border-muted-foreground/60"
       />
