@@ -8,7 +8,19 @@ export const versionDraftSchema = z.object({
 
 export type VersionDraft = z.infer<typeof versionDraftSchema>;
 
-export const ruleOperatorSchema = z.enum(["equals", "not_equals", "in", "not_in", "exists", "not_exists"])
+export const ruleOperatorSchema = z.enum([
+  "equals",
+  "not_equals",
+  "in",
+  "not_in",
+  "exists",
+  "not_exists",
+  "contains",
+  "gt",
+  "gte",
+  "lt",
+  "lte"
+])
 
 export type RuleOperator = z.infer<typeof ruleOperatorSchema>;
 
@@ -146,4 +158,3 @@ export interface DetailedSchemaVersion {
   version_number: number;
   status: 'published' | 'draft' | 'archived';
 }
-
