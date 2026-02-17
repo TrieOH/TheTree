@@ -4,7 +4,15 @@ export type DiffResult<T> = {
   creates: T[];
   updates: { id: string; value: T }[];
   deletes: { id: string; value: T }[];
+  currentMap: Map<string, T>;
+  originalMap: Map<string, T>
 };
+
+export type CustomDiff<T> = (ctx: {
+  getOriginalById: (id: string) => T | undefined;
+  getCurrentById: (id: string) => T | undefined;
+  diff: DiffResult<T>;
+}) => Promise<void>;
 
 type EditableListConfig<T> = {
   initial: T[];
@@ -15,6 +23,8 @@ type EditableListConfig<T> = {
   onCreate?: (items: T[]) => Promise<void>; // For now i will just ignore the results
   onUpdate?: (items: { id: string; value: T }[]) => Promise<void>; // For now i will just ignore the results
   onDelete?: (items: { id: string; value: T }[]) => Promise<void>; // For now i will just ignore the results
+
+  customDiffs?: CustomDiff<T>[];
 };
 
 export function useEditableList<T>({
@@ -25,6 +35,7 @@ export function useEditableList<T>({
   onUpdate,
   onDelete,
   historyLimit = 100,
+  customDiffs
 }: EditableListConfig<T>) {
   const [items, setItems] = useState<T[]>(initial);
   const [original, setOriginal] = useState<T[]>(initial);
@@ -106,7 +117,7 @@ export function useEditableList<T>({
       if(!id) continue;
       if(!currentMap.has(id)) deletes.push({id, value: o});
     }
-    return { creates, updates, deletes};
+    return { creates, updates, deletes, originalMap, currentMap };
   }, [items, original, getId, isEqual]);
 
   // SUBMIT
@@ -116,14 +127,17 @@ export function useEditableList<T>({
     const diff = computeDiff();
 
     try {
-      // I need to call delete options, required rules and visibility, if their key matchs with the 
-      // toDelete(diff.deletes) depends_on_field_key, i need to call this before delete and update
+      for(const d of (customDiffs || [])) 
+        await d({
+          diff, 
+          getCurrentById: id => diff.currentMap.get(id),
+          getOriginalById: id => diff.originalMap.get(id),
+        });
+
       if (diff.deletes.length && onDelete) await onDelete(diff.deletes);
       if (diff.updates.length && onUpdate) await onUpdate(diff.updates);
       if (diff.creates.length && onCreate) await onCreate(diff.creates);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
   }, [computeDiff, onCreate, onUpdate, onDelete, items]);
 
   const hasChanges = JSON.stringify(items) !== JSON.stringify(original);

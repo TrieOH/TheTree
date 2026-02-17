@@ -19,13 +19,14 @@ import { defaultEmailVersionField, defaultPasswordVersionField } from "../model/
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus, SaveAll } from "lucide-react"; 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchemaVersionFieldFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, updateSchemaVersionFieldFn } from "../api";
+import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVersionFieldFn, schemaVersionByIdQueryOptions, setSchemaFieldOptionsFn, updateSchemaVersionFieldFn } from "../api";
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
 import { mapFieldIdsToKeys, mapVersionFieldResultToVersionField } from '../lib/convert-field-utils';
 import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
+import { optionsDiff } from '../lib/field-options-diff-utils';
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
@@ -138,6 +139,36 @@ export default function FieldEditor() {
         )
       );
     },
+    customDiffs: [
+      optionsDiff({
+        deleteOptions: async (fieldId, optionsDiff) => {
+          console.log("DELETE OPTIONS:", optionsDiff);
+          if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
+          await Promise.all(
+            optionsDiff.map(id =>
+              deleteSchemaFieldOptionFn({
+                project_id: currentProjectId,
+                schema_id: currentSchemaId,
+                version: currentSchemaVersion,
+                field_id: fieldId,
+                option_id: id,
+              })
+            )
+          );
+        },
+        putOptions: async (fieldId, options) => {
+          console.log("PUT OPTIONS:", options);
+          if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
+          await setSchemaFieldOptionsFn({
+            project_id: currentProjectId,
+            schema_id: currentSchemaId,
+            version: currentSchemaVersion,
+            field_id: fieldId,
+            options: options
+          });
+        }
+      })
+    ]
   });
 
   useEffect(() => {

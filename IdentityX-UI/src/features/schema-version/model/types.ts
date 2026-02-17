@@ -115,6 +115,12 @@ export const schemaVersionFieldsSchema = z.object({
 
 export type SchemaVersionFields = z.infer<typeof schemaVersionFieldsSchema>;
 
+export interface Option {
+  id: string;
+  label: string,
+  position: number,
+  value: string
+}
 
 export type VersionFieldResult = NeedVersionField & {
   id: string;
@@ -126,12 +132,7 @@ export type VersionFieldResult = NeedVersionField & {
     operator: RuleOperator;
     value: string;
   }[],
-  options: {
-    id: string;
-    label: string,
-    position: number,
-    value: string
-  }[],
+  options: Option[],
   visibility_rules: {
     id: string;
     depends_on_field_key?: string;

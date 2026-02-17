@@ -113,7 +113,7 @@ export const setSchemaFieldOptionsFn = createClientOnlyFn(
     return authFetcher<string>(`/projects/${project_id}/schemas/${schema_id}/v${version}/fields/${field_id}/options`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(options),
+      body: JSON.stringify({options}),
     });
   }
 );
