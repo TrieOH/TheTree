@@ -8,7 +8,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.25rem;
   color: var(--trieoh-neutral2);
 }
 
@@ -21,7 +21,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.125rem 0.625rem;
+  padding: 0.0625rem 0.625rem;
   gap: 0.625rem;
   border-bottom: solid 0.125rem var(--trieoh-neutral2);
 }
@@ -60,7 +60,7 @@
 .trieoh-input__hint .hint-part {
   transition: color 0.12s ease, text-decoration 0.12s ease, opacity 0.12s ease;
   opacity: 0.95;
-  margin: 0.25rem;
+  margin: 0.125rem;
 }
 
 .trieoh-input__hint .hint-part.passed {
