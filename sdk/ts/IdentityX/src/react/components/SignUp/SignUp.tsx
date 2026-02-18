@@ -27,10 +27,12 @@ export function SignUp({
 }: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement | null>(null);
   const { auth } = useAuth();
 
   const rules: Record<string, Rule[]> = {
@@ -46,10 +48,14 @@ export function SignUp({
       },
       { message: "Deve conter um número.", test: v => /\d/.test(v) },
     ],
+    confirmPassword: [
+      { message: "Senhas não conferem.", test: v => v === password },
+    ],
   };
 
   const emailValidation = evaluateRules(rules.email, email);
   const passwordValidation = evaluateRules(rules.password, password);
+  const confirmPasswordValidation = evaluateRules(rules.confirmPassword, confirmPassword);
 
   const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -57,6 +63,7 @@ export function SignUp({
 
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
+    const confirmPasswordInvalid = confirmPasswordValidation.some(r => !r.passed);
 
     if (emailInvalid) {
       emailRef.current?.focus();
@@ -64,6 +71,10 @@ export function SignUp({
     }
     if (passwordInvalid) {
       passwordRef.current?.focus();
+      return;
+    }
+    if (confirmPasswordInvalid) {
+      confirmPasswordRef.current?.focus();
       return;
     }
     
@@ -100,6 +111,18 @@ export function SignUp({
           onValueChange={setPassword}
           inputRef={passwordRef}
           rulesStatus={passwordValidation}
+          submitted={submitted}
+        />
+        <BasicInputField 
+          label="Confirme a Senha" 
+          name="confirm-password"
+          placeholder="**********"
+          autoComplete="new-password"
+          type="password"
+          value={confirmPassword}
+          onValueChange={setConfirmPassword}
+          inputRef={confirmPasswordRef}
+          rulesStatus={confirmPasswordValidation}
           submitted={submitted}
         />
       </div>

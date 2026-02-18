@@ -250,7 +250,7 @@
 }
 
 .trieoh-card__other {
-  font-size: var(--trieoh-text-base);
+  font-size: var(--trieoh-text-sm);
   font-weight: 600;
 }
 
