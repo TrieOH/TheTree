@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import SessionsWithProvider from './components/SessionsWithProvider';
 
 const meta = {
-  title: "Example/Sessions",
+  title: "Authentication/Sessions",
   component: SessionsWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],

@@ -105,7 +105,7 @@ export function SignUp({
           label="Senha" 
           name="password"
           placeholder="**********"
-          autoComplete="current-password"
+          autoComplete="new-password"
           type="password"
           value={password}
           onValueChange={setPassword}
@@ -127,15 +127,17 @@ export function SignUp({
         />
       </div>
       <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit}/>
-      <div className="trieoh-card__divider">
-        <hr />
-        OU
-        <hr />
-      </div>
-      <span className="trieoh-card__other">
-        {"Já possui uma conta? "}
-        <span onClick={loginRedirect}>Entre</span>
-      </span>
+      {loginRedirect && <>
+        <div className="trieoh-card__divider">
+          <hr />
+          OU
+          <hr />
+        </div>
+        <span className="trieoh-card__other">
+          {"Já possui uma conta? "}
+          <span onClick={loginRedirect}>Entre</span>
+        </span>
+      </>}
     </form>
   );
 }

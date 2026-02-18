@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Copyright } from '../react';
 
 const meta = {
-  title: "Example/Copyright",
+  title: "Common/Copyright",
   component: Copyright,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SignUp, SignUpProps } from "./SignUp";
+import { SignUp, type SignUpProps } from "./SignUp";
 
 export interface TabbedSignUpProps extends Omit<SignUpProps, 'flow_id'> {
   flowIds: { label: string; value: string; }[];

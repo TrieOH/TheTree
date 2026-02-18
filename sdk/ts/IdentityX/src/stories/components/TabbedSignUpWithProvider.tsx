@@ -1,14 +1,15 @@
-import { AuthProvider, SignUp, TabbedSignUp } from "../../react";
+import type { MouseEvent } from "react";
+import { AuthProvider, TabbedSignUp } from "../../react";
 
-interface FlowIdsI {
-  label: string;
-  value: string;
+export interface TabbedSignUpWithProviderProps {
+  loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  flowIds: { label: string; value: string; }[];
 }
 
-export default function TabbedSignUpWithProvider({ flowIds }: { flowIds: FlowIdsI[] }) {
+export default function TabbedSignUpWithProvider({ flowIds, loginRedirect }: TabbedSignUpWithProviderProps) {
   return (
     <AuthProvider baseURL="http://localhost:8080">
-      <TabbedSignUp flowIds={flowIds} />
+      <TabbedSignUp flowIds={flowIds} loginRedirect={loginRedirect} />
     </AuthProvider>
   )
 }

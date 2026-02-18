@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import TabbedSignUpWithProvider from "./components/TabbedSignUpWithProvider";
 const meta = {
-  title: "Example/TabbedSignUp",
+  title: "Authentication/TabbedSignUp",
   component: TabbedSignUpWithProvider,
   parameters: {
     layout: "centered",
@@ -27,9 +27,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {},
-};
+export const Default: Story = {};
 
 export const CustomFlowIds: Story = {
   args: {
@@ -38,5 +36,12 @@ export const CustomFlowIds: Story = {
       { label: "Type B", value: "type_b" },
       { label: "Type C", value: "type_c" },
     ],
+  },
+};
+
+
+export const WithLogin: Story = {
+  args: {
+    loginRedirect: () => {}
   },
 };
