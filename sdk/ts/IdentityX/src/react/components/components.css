@@ -232,7 +232,6 @@
   gap: 0.625rem;
   flex: 1 1 auto;
   overflow-y: auto;
-  padding-right: 0.25rem;
   margin-bottom: 0.5rem;
 }
 
@@ -412,4 +411,96 @@
     gap: 0.5rem;
     align-items: center;
   }
+}
+
+/* Tab */
+
+.trieoh-tabbed-signup {
+  width: 100%;
+  max-width: 30rem;
+  min-width: 15rem;
+  background-color: var(--trieoh-neutral1);
+  color: var(--trieoh-neutral2);
+  box-shadow: 0 0.25rem 0.25rem 0 rgba(0, 0, 0, 0.25);
+  transition: transform 150ms ease;
+}
+
+.trieoh-tabbed-signup__header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: transparent;
+}
+
+.trieoh-tabbed-signup__tab {
+  flex-shrink: 0;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--trieoh-neutral2);
+  opacity: 0.8;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* Hover */
+.trieoh-tabbed-signup__tab:hover {
+  color: var(--trieoh-primary);
+  opacity: 1;
+}
+
+/* Active Tab */
+.trieoh-tabbed-signup__tab.active {
+  color: var(--trieoh-primary);
+  background: transparent;
+}
+
+
+.trieoh-tabbed-signup__tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 1rem;
+  right: 1rem;
+  height: 2px;
+  background: var(--trieoh-primary);
+  border-radius: 2px;
+}
+
+/* Focus */
+.trieoh-tabbed-signup__tab:focus-visible {
+  outline: none;
+  color: var(--trieoh-primary);
+}
+
+.trieoh-tabbed-signup hr {
+  opacity: 0.5;
+  border-top: 1px solid var(--trieoh-primary);
+  margin: 0 0.5rem;
+  border-radius: 1rem;
+}
+
+
+.trieoh-tabbed-signup .trieoh-card {
+  box-shadow: none;
+  background: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.trieoh-tabbed-signup__content {
+  width: 100%;
 }
