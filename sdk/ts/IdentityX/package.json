@@ -12,6 +12,11 @@
       "types": "./dist/esm/react.d.mts",
       "import": "./dist/esm/react.js",
       "require": "./dist/cjs/react.js"
+    },
+    "./server": {
+      "types": "./dist/esm/server.d.mts",
+      "import": "./dist/esm/server.js",
+      "require": "./dist/cjs/server.js"
     }
   },
   "main": "./dist/cjs/index.js",

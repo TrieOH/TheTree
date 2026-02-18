@@ -1,24 +1,31 @@
-export function resolveEnv() {
-  let viteEnv: ImportMetaEnv = {};
+export interface TrieOHEnv {
+  PROJECT_KEY: string;
+  API_KEY: string;
+  BASE_URL: string;
+}
+
+export function resolveEnv(): TrieOHEnv {
+  let viteEnv: Partial<ImportMetaEnv> = {};
+  
   try {
-    viteEnv = (typeof import.meta !== "undefined" && import.meta.env) || {};
-  } catch {
-    viteEnv = { VITE_TRIEOH_AUTH_API_KEY: undefined };
-  }
+    const meta = import.meta;
+    if (meta && meta.env) viteEnv = meta.env;
+  } catch {  }
+
+  const isServer = typeof window === "undefined";
+  const safeProcessEnv = typeof process !== "undefined" ? process.env : {};
 
   return {
-    API_KEY:
-      // Vite (import.meta.env.VITE_*)
-      viteEnv.VITE_TRIEOH_AUTH_API_KEY ??
-      // Next (process.env.NEXT_PUBLIC_*)
-      (typeof process !== "undefined"
-        ? process.env.NEXT_PUBLIC_TRIEOH_AUTH_API_KEY
-        : undefined) ??
-      // Node (process.env.PUBLIC_TRIEOH_*)
-      (typeof process !== "undefined"
-        ? process.env.PUBLIC_TRIEOH_AUTH_API_KEY
-        : undefined) ??
+    PROJECT_KEY:
+      viteEnv.VITE_TRIEOH_AUTH_PROJECT_KEY ??
+      safeProcessEnv.NEXT_PUBLIC_TRIEOH_AUTH_PROJECT_KEY ??
+      safeProcessEnv.PUBLIC_TRIEOH_AUTH_PROJECT_KEY ??
       "",
+
+    API_KEY: isServer
+      ? safeProcessEnv.TRIEOH_AUTH_API_KEY ?? ""
+      : "",
+
     BASE_URL: "https://api.default.com",
   };
 }
