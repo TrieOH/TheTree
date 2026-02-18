@@ -375,7 +375,7 @@ export default function FieldEditor() {
                 value="Add Field"
                 variant="solid"
                 leftIcon={<Plus className="w-4 h-4" />}
-                disabled={isVersionNull}
+                disabled={isVersionNull || schemaVData?.status !== 'draft'}
               />
               
             </div>
@@ -417,7 +417,7 @@ export default function FieldEditor() {
             });
             fields.syncWith(mappedFields);
           }}
-          disabled={!fields.hasChanges || isVersionNull || fields.isSubmitting}
+          disabled={!fields.hasChanges || isVersionNull || fields.isSubmitting || schemaVData?.status !== 'draft'}
           leftIcon={<SaveAll className="w-4 h-4" />}
           value={isMobile ? '' : 'Save Fields'}
           variant="solid"
