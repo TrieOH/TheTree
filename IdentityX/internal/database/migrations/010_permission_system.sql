@@ -83,8 +83,8 @@ CREATE TABLE permissions (
 
     CHECK (length(object) BETWEEN 1 AND 100),
     CHECK (length(action) BETWEEN 1 AND 100),
-    CHECK (object ~ '^[a-zA-Z][a-zA-Z0-9_]*$'),
-    CHECK (action ~ '^[a-zA-Z][a-zA-Z0-9_]*$'),
+    CHECK (object ~ '^(\*|[a-zA-Z][a-zA-Z0-9_]*)$'),
+    CHECK (action ~ '^(\*|[a-zA-Z][a-zA-Z0-9_]*)$'),
 
     UNIQUE NULLS NOT DISTINCT (project_id, object, action)
 );

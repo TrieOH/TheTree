@@ -19,10 +19,10 @@ type Permission struct {
 }
 
 var (
-	// Plain object name only - no wildcards, no separators
-	objectRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
-	// Plain action name only - no wildcards, no separators
-	actionRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+	// Plain object name or global wildcard (*)
+	objectRegex = regexp.MustCompile(`^(\*|[a-zA-Z][a-zA-Z0-9_]*)$`)
+	// Plain action name or global wildcard (*)
+	actionRegex = regexp.MustCompile(`^(\*|[a-zA-Z][a-zA-Z0-9_]*)$`)
 )
 
 func ValidateObject(ctx context.Context, object string) error {
