@@ -366,8 +366,32 @@
 }
 
 .trieoh-copyright {
-  font-size: 2rem;
+  font-size: var(--trieoh-text-xl);
   font-weight: 500;
+}
+
+.trieoh-copyright--xs {
+  font-size: var(--trieoh-text-sm);
+}
+
+.trieoh-copyright--sm {
+  font-size: var(--trieoh-text-base);
+}
+
+.trieoh-copyright--md {
+  font-size: var(--trieoh-text-xl);
+}
+
+.trieoh-copyright--lg {
+  font-size: var(--trieoh-text-2xl);
+}
+
+.trieoh-copyright--xl {
+  font-size: var(--trieoh-text-3xl);
+}
+
+.trieoh-copyright--2xl {
+  font-size: var(--trieoh-text-6xl);
 }
 
 .trieoh-sessions {
