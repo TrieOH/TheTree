@@ -46,10 +46,9 @@ func (handler *PermissionHandler) Create(w http.ResponseWriter, r *http.Request)
 	}
 
 	in := inbounds.CreatePermissionInput{
-		ProjectID:  &projectID,
-		Object:     req.Object,
-		Action:     req.Action,
-		Conditions: req.Conditions,
+		ProjectID: &projectID,
+		Object:    req.Object,
+		Action:    req.Action,
 	}
 
 	ctx := r.Context()

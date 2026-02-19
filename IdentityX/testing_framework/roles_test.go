@@ -106,7 +106,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 				"name": "admin",
 			}).
 			Expect(http.StatusConflict).
-			HasErrID(errx.ROLENameAlreadyTaken). // FIXME make the error "role name 'NAME' already taken"
+			HasErrID(errx.ROLENameAlreadyTaken).
 			HasMessage("role name already taken")
 	})
 
@@ -178,14 +178,14 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			HasMessage("unknown query parameter: something_else")
 	})
 
+	// Simplified permission names - no wildcards
 	var createEventPermissionID string
 	t.Run("CreateEventPermission", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:*",
-				"action":     "create",
-				"conditions": nil,
+				"object": "event",
+				"action": "create",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -194,9 +194,8 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &createEventPermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:*",
+			"object":     "event",
 			"action":     "create",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -208,9 +207,8 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object": "attendance",
+				"action": "mark",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -219,34 +217,31 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &markAttendancePermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:123/activity:*",
-			"action":     "attendance:mark",
-			"conditions": nil,
+			"object":     "attendance",
+			"action":     "mark",
 			"created_at": AnyDate{},
 		}
 
 		Validate(t, val, spec)
 	})
 
-	var attendActivity321PermissionID string
+	var attendActivityPermissionID string
 	t.Run("CreateActivityAttendancePermission", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:123/activity:321",
-				"action":     "attend",
-				"conditions": nil,
+				"object": "activity",
+				"action": "attend",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
 			RequireDataValue()
 
 		spec := map[string]interface{}{
-			"id":         StoreString{Into: &attendActivity321PermissionID, Matcher: AnyUUID{}},
+			"id":         StoreString{Into: &attendActivityPermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:123/activity:321",
+			"object":     "activity",
 			"action":     "attend",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -264,7 +259,7 @@ func testRoles(t *testing.T, suite *TestSuite) {
 	})
 
 	t.Run("AddUserPermissions", func(t *testing.T) {
-		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles/" + userRoleID + "/permissions/" + attendActivity321PermissionID).
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/roles/" + userRoleID + "/permissions/" + attendActivityPermissionID).
 			Expect(http.StatusOK).
 			HasMessage("Added permission to role")
 	})
@@ -278,17 +273,15 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: markAttendancePermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object":     "attendance",
+				"action":     "mark",
 				"created_at": AnyDate{},
 			},
 			map[string]interface{}{
 				"id":         AsString{Value: createEventPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:*",
+				"object":     "event",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -303,11 +296,10 @@ func testRoles(t *testing.T, suite *TestSuite) {
 
 		spec := []interface{}{
 			map[string]interface{}{
-				"id":         AsString{Value: attendActivity321PermissionID, Matcher: AnyUUID{}},
+				"id":         AsString{Value: attendActivityPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/activity:321",
+				"object":     "activity",
 				"action":     "attend",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -330,9 +322,8 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: markAttendancePermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object":     "attendance",
+				"action":     "mark",
 				"created_at": AnyDate{},
 			},
 		}

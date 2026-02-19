@@ -136,7 +136,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 		// Give user a permission
 		data := authClient.WithT(t).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object": "app:document",
+				"object": "document",
 				"action": "read",
 			}).
 			Expect(http.StatusCreated).
@@ -158,7 +158,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 		data := authClient.WithT(t).POST("/authz/check").
 			WithBody(map[string]interface{}{
 				"entity_id":  entityID,
-				"object":     "app:document",
+				"object":     "document",
 				"action":     "read",
 				"project_id": projectID,
 			}).
@@ -241,7 +241,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 		authClient.WithT(t).POST("/authz/check").
 			WithBody(map[string]interface{}{
 				"entity_id":  entityID,
-				"object":     "app:document",
+				"object":     "document",
 				"action":     "read",
 				"project_id": projectID,
 			}).
@@ -335,7 +335,7 @@ func testSchemaMigration(t *testing.T, suite *TestSuite) {
 		data := authClient.WithT(t).POST("/authz/check").
 			WithBody(map[string]interface{}{
 				"entity_id":  entityID,
-				"object":     "app:document",
+				"object":     "document",
 				"action":     "read",
 				"project_id": projectID,
 			}).

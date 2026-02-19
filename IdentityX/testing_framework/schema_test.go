@@ -1777,14 +1777,14 @@ func testBatchUpdateFields(t *testing.T, suite *TestSuite) {
 						"position":  2,
 					},
 					map[string]interface{}{
-						"key":      "new_alpha",
+						"key":      "field_x",
 						"type":     "string",
-						"position": 3,
+						"position": 5,
 					},
 					map[string]interface{}{
-						"key":      "new_beta",
+						"key":      "field_y",
 						"type":     "string",
-						"position": 4,
+						"position": 6,
 					},
 				},
 			}).
@@ -1811,16 +1811,215 @@ func testBatchUpdateFields(t *testing.T, suite *TestSuite) {
 				"position":  2,
 			},
 			map[string]interface{}{
-				"key":      "field_x",
+				"key":      "new_alpha",
 				"type":     "string",
 				"position": 3,
 			},
 			map[string]interface{}{
+				"key":      "new_beta",
+				"type":     "int",
+				"position": 4,
+			},
+			map[string]interface{}{
+				"key":      "field_x",
+				"type":     "string",
+				"position": 5,
+			},
+			map[string]interface{}{
 				"key":      "field_y",
 				"type":     "string",
-				"position": 4,
+				"position": 6,
 			},
 		}
 		Validate(t, data, spec)
+	})
+}
+
+func testDeleteFieldOptionsAndRules(t *testing.T, suite *TestSuite) {
+	client := suite.NewClient(t)
+	user := client.WithCredentials("delete-options-rules@mail.com", ValidPassword).
+		Register().
+		Login().
+		CreateProject("delete options rules test")
+	projectID := user.projectID
+	authClient := suite.NewClient(t).WithAuth(user.auth)
+
+	var schemaID string
+	t.Run("SetupSchema", func(t *testing.T) {
+		data := authClient.POST("/projects/" + projectID + "/schemas").
+			WithBody(map[string]interface{}{
+				"schema_type": "context",
+				"title":       "delete-test-flow",
+				"flow_id":     "delete-test",
+			}).
+			Expect(http.StatusCreated).
+			RequireDataValue()
+		spec := map[string]interface{}{
+			"id":         StoreString{Into: &schemaID, Matcher: AnyUUID{}},
+			"project_id": AsString{projectID, AnyUUID{}},
+			"title":      "delete-test-flow",
+			"flow_id":    "delete-test",
+			"type":       "context",
+			"status":     "draft",
+		}
+		Validate(t, data, spec)
+	})
+
+	t.Run("SetupVersion", func(t *testing.T) {
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/versions/draft").
+			Expect(http.StatusCreated).
+			HasMessage("drafted")
+	})
+
+	var fieldWithOptionsID string
+	var optionID1 string
+
+	t.Run("CreateFieldWithOptions", func(t *testing.T) {
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "user_type",
+						"type":     "select",
+						"owner":    "user",
+						"title":    "User Type",
+						"required": true,
+						"mutable":  true,
+						"position": 0,
+						"options": []interface{}{
+							map[string]interface{}{"value": "admin", "label": "Admin", "position": 0},
+							map[string]interface{}{"value": "user", "label": "User", "position": 1},
+						},
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("created fields")
+
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		fields := data.Object().Value("fields").Array()
+		fieldWithOptionsID = fields.Element(0).Object().Value("object_id").String().NotEmpty().Raw()
+
+		options := fields.Element(0).Object().Value("options").Array()
+		optionID1 = options.Element(0).Object().Value("id").String().NotEmpty().Raw()
+		_ = options.Element(1).Object().Value("id").String().NotEmpty().Raw()
+	})
+
+	var fieldWithRulesID string
+	var visibilityRuleID string
+	var requiredRuleID string
+
+	t.Run("CreateFieldWithRules", func(t *testing.T) {
+		authClient.POST("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			WithBody(map[string]interface{}{
+				"fields": []interface{}{
+					map[string]interface{}{
+						"key":      "has_car",
+						"type":     "bool",
+						"owner":    "user",
+						"title":    "Has Car",
+						"required": false,
+						"mutable":  true,
+						"position": 1,
+					},
+					map[string]interface{}{
+						"key":      "car_model",
+						"type":     "string",
+						"owner":    "user",
+						"title":    "Car Model",
+						"required": false,
+						"mutable":  true,
+						"position": 2,
+						"visibility_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "has_car",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+						"required_rules": []interface{}{
+							map[string]interface{}{
+								"depends_on_field_key": "has_car",
+								"operator":             "equals",
+								"value":                true,
+							},
+						},
+					},
+				},
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("created fields")
+
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		fields := data.Object().Value("fields").Array()
+		_ = fields.Element(0).Object().Value("object_id").String().NotEmpty().Raw()
+		_ = fields.Element(1).Object().Value("object_id").String().NotEmpty().Raw()
+		fieldWithRulesID = fields.Element(2).Object().Value("object_id").String().NotEmpty().Raw()
+
+		visibilityRules := fields.Element(2).Object().Value("visibility_rules").Array()
+		visibilityRuleID = visibilityRules.Element(0).Object().Value("id").String().NotEmpty().Raw()
+
+		requiredRules := fields.Element(2).Object().Value("required_rules").Array()
+		requiredRuleID = requiredRules.Element(0).Object().Value("id").String().NotEmpty().Raw()
+	})
+
+	t.Run("DeleteOption", func(t *testing.T) {
+		authClient.DELETE("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields/" + fieldWithOptionsID + "/options/" + optionID1).
+			Expect(http.StatusNoContent)
+	})
+
+	t.Run("VerifyOptionDeleted", func(t *testing.T) {
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		fields := data.Object().Value("fields").Array()
+		options := fields.Element(0).Object().Value("options").Array()
+
+		if int(options.Length().Raw()) != 1 {
+			t.Errorf("expected 1 option, got %d", int(options.Length().Raw()))
+		}
+	})
+
+	t.Run("DeleteVisibilityRule", func(t *testing.T) {
+		authClient.DELETE("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields/" + fieldWithRulesID + "/visibility-rules/" + visibilityRuleID).
+			Expect(http.StatusNoContent)
+	})
+
+	t.Run("VerifyVisibilityRuleDeleted", func(t *testing.T) {
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		fields := data.Object().Value("fields").Array()
+		rules := fields.Element(2).Object().Value("visibility_rules").Array()
+
+		if int(rules.Length().Raw()) != 0 {
+			t.Errorf("expected 0 visibility rules, got %d", int(rules.Length().Raw()))
+		}
+	})
+
+	t.Run("DeleteRequiredRule", func(t *testing.T) {
+		authClient.DELETE("/projects/" + projectID + "/schemas/" + schemaID + "/v1/fields/" + fieldWithRulesID + "/required-rules/" + requiredRuleID).
+			Expect(http.StatusNoContent)
+	})
+
+	t.Run("VerifyRequiredRuleDeleted", func(t *testing.T) {
+		data := authClient.GET("/projects/" + projectID + "/schemas/" + schemaID + "/v1").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		fields := data.Object().Value("fields").Array()
+		rules := fields.Element(2).Object().Value("required_rules").Array()
+
+		if int(rules.Length().Raw()) != 0 {
+			t.Errorf("expected 0 required rules, got %d", int(rules.Length().Raw()))
+		}
 	})
 }

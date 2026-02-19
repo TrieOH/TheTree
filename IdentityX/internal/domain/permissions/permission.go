@@ -16,13 +16,13 @@ type Permission struct {
 	Object    string
 	Action    string
 	CreatedAt time.Time
-
-	Conditions *Condition
 }
 
 var (
-	objectRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z][a-zA-Z0-9_]*:(?:[a-zA-Z0-9_]+|\*)(?:/[a-zA-Z][a-zA-Z0-9_]*:(?:[a-zA-Z0-9_]+|\*))*(?:/(?:\*|\*\*))?)$`)
-	actionRegex = regexp.MustCompile(`^(?:\*|[a-zA-Z0-9_]+(?::(?:[a-zA-Z0-9_]+|\*))*(?::\*\*)?)$`)
+	// Plain object name only - no wildcards, no separators
+	objectRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+	// Plain action name only - no wildcards, no separators
+	actionRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 )
 
 func ValidateObject(ctx context.Context, object string) error {
