@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { SignUp, type SignUpProps } from "./SignUp";
+import type { FieldDefinitionResultI } from "../../../types/fields-types";
 
-export interface TabbedSignUpProps extends Omit<SignUpProps, 'flow_id'> {
-  flowIds: { label: string; value: string; }[];
+export interface TabbedFlowI {
+  label: string;
+  value: string;
+  fields: FieldDefinitionResultI[];
+}
+
+export interface TabbedSignUpProps extends Omit<SignUpProps, 'flow_id' | 'fields'> {
+  flowIds: TabbedFlowI[];
 }
 
 export function TabbedSignUp({ flowIds, ...rest }: TabbedSignUpProps) {
   const [activeFlowId, setActiveFlowId] = useState<string>(flowIds[0]?.value || "");
 
-  if (!flowIds || flowIds.length === 0) return <></>
+  if (!flowIds || flowIds.length === 0) return null;
+
+  const activeFlow = flowIds.find(f => f.value === activeFlowId);
 
   return (
     <div className="trieoh-tabbed-signup">
@@ -29,7 +38,12 @@ export function TabbedSignUp({ flowIds, ...rest }: TabbedSignUpProps) {
       <hr />
 
       <div className="trieoh-tabbed-signup__content">
-        <SignUp flow_id={activeFlowId} {...rest} />
+        <SignUp 
+          key={activeFlowId} 
+          flow_id={activeFlowId} 
+          {...rest} 
+          fields={activeFlow?.fields} 
+        />
       </div>
     </div>
   );
