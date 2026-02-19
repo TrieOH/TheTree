@@ -1,39 +1,27 @@
 package dto
 
 import (
-	"GoAuth/internal/adapters/observability/logs"
-	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/inbounds"
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 )
 
 type PermissionResponse struct {
-	ID         uuid.UUID        `json:"id"`
-	ProjectID  *uuid.UUID       `json:"project_id"`
-	Object     string           `json:"object"`
-	Action     string           `json:"action"`
-	Conditions *json.RawMessage `json:"conditions"`
-	CreatedAt  time.Time        `json:"created_at"`
+	ID        uuid.UUID  `json:"id"`
+	ProjectID *uuid.UUID `json:"project_id"`
+	Object    string     `json:"object"`
+	Action    string     `json:"action"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 func PermissionOutputToPermissionResponse(in inbounds.PermissionOutput) PermissionResponse {
-	// FIXME Deal with error
-	condition, err := permissions.EncodeCondition(in.Permission.Conditions)
-	if err != nil {
-		logs.L().Error("error while encoding condition on permission response", zap.Error(err))
-	}
-
 	return PermissionResponse{
-		ID:         in.Permission.ID,
-		ProjectID:  in.Permission.ProjectID,
-		Object:     in.Permission.Object,
-		Action:     in.Permission.Action,
-		Conditions: condition,
-		CreatedAt:  in.Permission.CreatedAt,
+		ID:        in.Permission.ID,
+		ProjectID: in.Permission.ProjectID,
+		Object:    in.Permission.Object,
+		Action:    in.Permission.Action,
+		CreatedAt: in.Permission.CreatedAt,
 	}
 }
 

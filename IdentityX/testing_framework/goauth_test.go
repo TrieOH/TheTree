@@ -83,10 +83,6 @@ func TestGoAuth(t *testing.T) {
 		testPermissionMatching(t, suite)
 	})
 
-	t.Run("ConditionMatching", func(t *testing.T) {
-		testConditions(t)
-	})
-
 	t.Run("SchemaDependencies", func(t *testing.T) {
 		testSchemaDependencies(t, suite)
 	})

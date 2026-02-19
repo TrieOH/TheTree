@@ -167,7 +167,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 		var permID string
 		permVal := keyAClient.POST("/projects/" + projectIDA + "/permissions").
 			WithBody(map[string]interface{}{
-				"object": "resource:1",
+				"object": "resource",
 				"action": "read",
 			}).
 			Expect(http.StatusCreated).
@@ -208,7 +208,7 @@ func testApiKeys(t *testing.T, suite *TestSuite) {
 			WithBody(map[string]interface{}{
 				"project_id": projectIDA,
 				"entity_id":  userID,
-				"object":     "resource:1",
+				"object":     "resource",
 				"action":     "read",
 			}).
 			Expect(http.StatusOK).
