@@ -136,6 +136,29 @@ export const WithCustomFields: Story = {
               required_rules: [],
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
+            },
+            {
+              id: "f6",
+              key: "country",
+              title: "País",
+              type: "select",
+              placeholder: "Selecione seu país",
+              required: true,
+              position: 6,
+              object_id: "obj1",
+              description: "",
+              options: [
+                { id: "c1", label: "Brasil", value: "br", position: 1 },
+                { id: "c2", label: "Estados Unidos", value: "us", position: 2 },
+                { id: "c3", label: "Portugal", value: "pt", position: 3 },
+              ],
+              default_value: "",
+              mutable: true,
+              owner: "user",
+              visibility_rules: [],
+              required_rules: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             }
           ]
         }

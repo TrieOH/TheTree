@@ -5,6 +5,7 @@
 /* Basic Input Field */
 
 .trieoh-input {
+  position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -42,6 +43,106 @@
   border: none;
   box-shadow: none !important;
   padding: 0.125rem 0;
+}
+
+/* Custom Select */
+.trieoh-custom-select__wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.trieoh-custom-select {
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.trieoh-custom-select.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trieoh-custom-select:focus-visible {
+  outline: 2px solid var(--trieoh-primary);
+  outline-offset: 2px;
+}
+
+.trieoh-custom-select__trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.trieoh-custom-select__trigger.placeholder {
+  opacity: 0.6;
+}
+
+.trieoh-custom-select__arrow {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.trieoh-custom-select__arrow.is-open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.trieoh-custom-select__dropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--trieoh-neutral1);
+  border: solid 0.125rem var(--trieoh-neutral2);
+  border-radius: 0.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 15rem;
+  overflow-y: auto;
+  animation: dropdownSlide 0.15s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.trieoh-custom-select__options {
+  padding: 0.25rem 0;
+}
+
+.trieoh-custom-select__option {
+  padding: 0.5rem 0.625rem;
+  font-size: var(--trieoh-text-base);
+  font-weight: 300;
+  color: var(--trieoh-neutral2);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  outline: none;
+}
+
+.trieoh-custom-select__option:hover,
+.trieoh-custom-select__option:focus-visible {
+  background-color: var(--trieoh-secondary);
+  color: var(--trieoh-neutral2);
+}
+
+.trieoh-custom-select__option.is-selected {
+  background-color: var(--trieoh-secondary);
+  color: var(--trieoh-neutral2);
+  font-weight: 500;
+}
+
+.trieoh-custom-select.is-open {
+  border-color: var(--trieoh-primary, var(--trieoh-neutral2));
 }
 
 .trieoh-input__container-icon {

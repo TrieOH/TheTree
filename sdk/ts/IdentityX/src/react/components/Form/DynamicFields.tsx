@@ -1,5 +1,6 @@
 import type { FieldDefinitionResultI, FieldValue } from "../../../types/fields-types";
 import BasicInputField from "./BasicInputField";
+import BasicSelectField from "./BasicSelectField";
 
 interface DynamicFieldsProps {
   fields: FieldDefinitionResultI[];
@@ -78,28 +79,11 @@ export default function DynamicFields({
               );
             case "select":
               return (
-                <div key={field.id} className="trieoh trieoh-input">
-                  <label htmlFor={field.key} className="trieoh-input__label">
-                    {field.title}
-                  </label>
-                  <div className="trieoh-input__container">
-                    <select
-                      id={field.key}
-                      name={field.key}
-                      value={String(values[field.key] ?? field.default_value ?? "")}
-                      onChange={(e) => onValueChange(field.key, e.target.value)}
-                      className="trieoh-input__container-field"
-                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: 'inherit' }}
-                    >
-                      <option value="" disabled>{field.placeholder || "Selecione uma opção"}</option>
-                      {field.options.map((opt) => (
-                        <option key={opt.id} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                <BasicSelectField
+                  {...commonProps}
+                  options={field.options}
+                  onValueChange={(value) => onValueChange(field.key, value)}
+                />
               );
             case "checkbox":
               const currentValues = Array.isArray(values[field.key]) ? (values[field.key] as string[]) : [];
@@ -142,8 +126,7 @@ export default function DynamicFields({
                   </label>
                 </div>
               );
-            default:
-              return null;
+            default: return null;
           }
         })}
     </>

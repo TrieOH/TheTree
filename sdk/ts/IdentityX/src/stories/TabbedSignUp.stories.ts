@@ -43,6 +43,14 @@ const meta = {
         fields: [
           mockField("f1", "first_name", "First Name"),
           mockField("f2", "last_name", "Last Name"),
+          {
+            ...mockField("f_country", "country", "Country", "select"),
+            placeholder: "Select your country",
+            options: [
+              { id: "c1", label: "Brazil", value: "br", position: 1 },
+              { id: "c2", label: "United States", value: "us", position: 2 },
+            ]
+          }
         ]
       },
       { 
