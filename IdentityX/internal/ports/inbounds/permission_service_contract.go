@@ -2,16 +2,14 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/permissions"
-	"encoding/json"
 
 	"github.com/google/uuid"
 )
 
 type CreatePermissionInput struct {
-	ProjectID  *uuid.UUID
-	Object     string
-	Action     string
-	Conditions *json.RawMessage
+	ProjectID *uuid.UUID
+	Object    string
+	Action    string
 }
 
 type GetPermissionInput struct {

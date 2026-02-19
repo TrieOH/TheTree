@@ -3,7 +3,6 @@ package outbounds
 import (
 	"GoAuth/internal/domain/permissions"
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,10 +27,9 @@ type PermissionRepository interface {
 }
 
 type CreatePermissionInput struct {
-	ID         uuid.UUID
-	ProjectID  *uuid.UUID
-	Object     string
-	Action     string
-	CreatedAt  time.Time
-	Conditions *json.RawMessage
+	ID        uuid.UUID
+	ProjectID *uuid.UUID
+	Object    string
+	Action    string
+	CreatedAt time.Time
 }

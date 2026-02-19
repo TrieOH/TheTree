@@ -19,9 +19,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:*",
-				"action":     "create",
-				"conditions": nil,
+				"object": "document",
+				"action": "create",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -30,9 +29,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &permissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:*",
+			"object":     "document",
 			"action":     "create",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -48,9 +46,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &permissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:*",
+			"object":     "document",
 			"action":     "create",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -62,9 +59,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object": "event",
+				"action": "read",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -73,9 +69,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &anotherPermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:123/activity:*",
-			"action":     "attendance:mark",
-			"conditions": nil,
+			"object":     "event",
+			"action":     "read",
 			"created_at": AnyDate{},
 		}
 
@@ -92,17 +87,15 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: anotherPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object":     "event",
+				"action":     "read",
 				"created_at": AnyDate{},
 			},
 			map[string]interface{}{
 				"id":         AsString{Value: permissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:*",
+				"object":     "document",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -113,7 +106,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("GetPermissionByObject", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.GET("/projects/"+projectID+"/permissions").
-			WithQuery("object", "event:123/activity:*").
+			WithQuery("object", "event").
 			Expect(http.StatusOK).
 			RequireDataValue()
 
@@ -121,9 +114,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: anotherPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/activity:*",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object":     "event",
+				"action":     "read",
 				"created_at": AnyDate{},
 			},
 		}
@@ -142,9 +134,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: permissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:*",
+				"object":     "document",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -157,9 +148,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:123/product:*",
-				"action":     "create",
-				"conditions": nil,
+				"object": "product",
+				"action": "create",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -168,9 +158,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &createProductPermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:123/product:*",
+			"object":     "product",
 			"action":     "create",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -188,17 +177,15 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: createProductPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/product:*",
+				"object":     "product",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 			map[string]interface{}{
 				"id":         AsString{Value: permissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:*",
+				"object":     "document",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -211,9 +198,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:123/product:*",
-				"action":     "edit",
-				"conditions": nil,
+				"object": "product",
+				"action": "edit",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -222,9 +208,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         StoreString{Into: &editProductPermissionID, Matcher: AnyUUID{}},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:123/product:*",
+			"object":     "product",
 			"action":     "edit",
-			"conditions": nil,
 			"created_at": AnyDate{},
 		}
 
@@ -234,7 +219,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("GetPermissionByObjectAgain", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.GET("/projects/"+projectID+"/permissions").
-			WithQuery("object", "event:123/product:*").
+			WithQuery("object", "product").
 			Expect(http.StatusOK).
 			RequireDataValue()
 
@@ -242,17 +227,15 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: editProductPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/product:*",
+				"object":     "product",
 				"action":     "edit",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 			map[string]interface{}{
 				"id":         AsString{Value: createProductPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/product:*",
+				"object":     "product",
 				"action":     "create",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -263,7 +246,7 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("GetPermissionByObjectAndAction", func(t *testing.T) {
 		authClient := suite.NewClient(t).WithAuth(user.auth)
 		val := authClient.GET("/projects/"+projectID+"/permissions").
-			WithQuery("object", "event:123/product:*").
+			WithQuery("object", "product").
 			WithQuery("action", "edit").
 			Expect(http.StatusOK).
 			RequireDataValue()
@@ -272,9 +255,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 			map[string]interface{}{
 				"id":         AsString{Value: editProductPermissionID, Matcher: AnyUUID{}},
 				"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-				"object":     "event:123/product:*",
+				"object":     "product",
 				"action":     "edit",
-				"conditions": nil,
 				"created_at": AnyDate{},
 			},
 		}
@@ -282,12 +264,11 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		Validate(t, val, spec)
 	})
 
-	t.Run("CreateEventMasterAdminPermission", func(t *testing.T) {
+	t.Run("CreateAdminPermission", func(t *testing.T) {
 		val := suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:456",
-				"action":     "*",
-				"conditions": nil,
+				"object": "user",
+				"action": "delete",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -296,21 +277,19 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         AnyUUID{},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "event:456",
-			"action":     "*",
-			"conditions": nil,
+			"object":     "user",
+			"action":     "delete",
 			"created_at": AnyDate{},
 		}
 
 		Validate(t, val, spec)
 	})
 
-	t.Run("CreateMasterUserPermission", func(t *testing.T) {
+	t.Run("CreateMasterPermission", func(t *testing.T) {
 		val := suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "*",
-				"action":     "*",
-				"conditions": nil,
+				"object": "system",
+				"action": "admin",
 			}).
 			Expect(http.StatusCreated).
 			HasMessage("Permission Created").
@@ -319,9 +298,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 		spec := map[string]interface{}{
 			"id":         AnyUUID{},
 			"project_id": AsString{Value: projectID, Matcher: AnyUUID{}},
-			"object":     "*",
-			"action":     "*",
-			"conditions": nil,
+			"object":     "system",
+			"action":     "admin",
 			"created_at": AnyDate{},
 		}
 
@@ -331,21 +309,19 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("CreateDuplicatePermission", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:*",
-				"action":     "create",
-				"conditions": nil,
+				"object": "document",
+				"action": "create",
 			}).
 			Expect(http.StatusConflict).
 			HasErrID(errx.PERMissionAlreadyExists).
-			HasMessage("permission with object(event:*) and action(create) already exists")
+			HasMessage("permission with object(document) and action(create) already exists")
 	})
 
 	t.Run("CreatePermissionNoAction", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:*",
-				"action":     "",
-				"conditions": nil,
+				"object": "document",
+				"action": "",
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(errx.RequestValidationError).
@@ -356,9 +332,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("CreatePermissionNoObject", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "",
-				"action":     "create",
-				"conditions": nil,
+				"object": "",
+				"action": "create",
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(errx.RequestValidationError).
@@ -369,9 +344,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("CreateEmptyPermission", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/"+projectID+"/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "",
-				"action":     "",
-				"conditions": nil,
+				"object": "",
+				"action": "",
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(errx.RequestValidationError).
@@ -382,25 +356,45 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 	t.Run("CreateInvalidObjectPermission", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "bogus-value",
-				"action":     "attendance:mark",
-				"conditions": nil,
+				"object": "event:*",
+				"action": "read",
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(errx.PERMissionInvalidObject).
-			HasMessage("invalid permission object: (bogus-value)") // FIXME replace () with ''
+			HasMessage("invalid permission object: (event:*)")
 	})
 
 	t.Run("CreateInvalidActionPermission", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
 			WithBody(map[string]interface{}{
-				"object":     "event:*",
-				"action":     "what:",
-				"conditions": nil,
+				"object": "document",
+				"action": "attendance:mark",
 			}).
 			Expect(http.StatusBadRequest).
 			HasErrID(errx.PERMissionInvalidAction).
-			HasMessage("invalid permission action: (what:)") // FIXME replace () with ''
+			HasMessage("invalid permission action: (attendance:mark)")
+	})
+
+	t.Run("CreateWildcardObjectPermission", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object": "*",
+				"action": "read",
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(errx.PERMissionInvalidObject).
+			HasMessage("invalid permission object: (*)")
+	})
+
+	t.Run("CreateWildcardActionPermission", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object": "document",
+				"action": "*",
+			}).
+			Expect(http.StatusBadRequest).
+			HasErrID(errx.PERMissionInvalidAction).
+			HasMessage("invalid permission action: (*)")
 	})
 
 	t.Run("NotAllowedQueryParam", func(t *testing.T) {

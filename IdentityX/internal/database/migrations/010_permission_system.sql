@@ -77,15 +77,14 @@ CREATE INDEX idx_scopes_project_id ON scopes(project_id);
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-    object TEXT NOT NULL, -- e.g. "event:*", "event:123", "event:123/activity"
-    action TEXT NOT NULL, -- e.g. "create", "edit", "delete", "attendance:mark"
-    conditions JSONB,     -- optional ABAC rules
+    object TEXT NOT NULL, -- plain object name, e.g. "document", "event"
+    action TEXT NOT NULL, -- plain action name, e.g. "read", "write"
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CHECK (length(object) BETWEEN 1 AND 255),
+    CHECK (length(object) BETWEEN 1 AND 100),
     CHECK (length(action) BETWEEN 1 AND 100),
-    CHECK (object ~ '^[a-zA-Z0-9:_/*-]+$'),
-    CHECK (action ~ '^[a-zA-Z0-9:_*-]+$'),
+    CHECK (object ~ '^[a-zA-Z][a-zA-Z0-9_]*$'),
+    CHECK (action ~ '^[a-zA-Z][a-zA-Z0-9_]*$'),
 
     UNIQUE NULLS NOT DISTINCT (project_id, object, action)
 );

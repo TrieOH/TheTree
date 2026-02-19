@@ -43,6 +43,10 @@ func TestGoAuth(t *testing.T) {
 		testBatchUpdateFields(t, suite)
 	})
 
+	t.Run("DeleteFieldOptionsAndRules", func(t *testing.T) {
+		testDeleteFieldOptionsAndRules(t, suite)
+	})
+
 	t.Run("Schema Register", func(t *testing.T) {
 		testSchemaRegister(t, suite)
 	})
@@ -77,10 +81,6 @@ func TestGoAuth(t *testing.T) {
 
 	t.Run("PermissionMatching", func(t *testing.T) {
 		testPermissionMatching(t, suite)
-	})
-
-	t.Run("ConditionMatching", func(t *testing.T) {
-		testConditions(t)
 	})
 
 	t.Run("SchemaDependencies", func(t *testing.T) {

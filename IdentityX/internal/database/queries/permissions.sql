@@ -1,6 +1,6 @@
 -- name: CreatePermission :one
-INSERT INTO permissions (object, action, conditions, project_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO permissions (object, action, project_id)
+VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetPermissionByIDInternal :one

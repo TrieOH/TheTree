@@ -287,7 +287,7 @@ ORDER BY field_id, position;
 
 -- name: DeleteFieldOptions :exec
 DELETE FROM schema_field_options
-WHERE field_id = $1;
+WHERE field_id = $1::UUID;
 
 -- name: CloneFieldOptions :execrows
 INSERT INTO schema_field_options (field_id, value, label, position)
@@ -316,10 +316,10 @@ WHERE id = $1;
 -- name: CheckOptionValueInRules :one
 SELECT EXISTS (
     SELECT 1 FROM schema_field_visibility_rules
-    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value)::text)
 ) OR EXISTS (
     SELECT 1 FROM schema_field_required_rules
-    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value))
+    WHERE value @> jsonb_build_object('value', sqlc.arg(option_value)::text)
 ) AS is_referenced;
 
 -- name: SetFieldOptions :exec
@@ -356,7 +356,7 @@ ORDER BY field_id, created_at;
 
 -- name: DeleteVisibilityRules :exec
 DELETE FROM schema_field_visibility_rules
-WHERE field_id = $1;
+WHERE field_id = $1::UUID;
 
 -- name: CloneVisibilityRules :execrows
 INSERT INTO schema_field_visibility_rules (field_id, depends_on_field_id, operator, value)
@@ -436,7 +436,7 @@ ORDER BY field_id, created_at;
 
 -- name: DeleteRequiredRules :exec
 DELETE FROM schema_field_required_rules
-WHERE field_id = $1;
+WHERE field_id = $1::UUID;
 
 -- name: CloneRequiredRules :execrows
 INSERT INTO schema_field_required_rules (field_id, depends_on_field_id, operator, value)
@@ -493,7 +493,7 @@ VALUES ($1, $2, $3, $4)
 -- name: GetFieldByObjectID :one
 SELECT *
 FROM schema_fields
-WHERE object_id = $1;
+WHERE object_id = $1::UUID;
 
 -- name: UpdateField :one
 UPDATE schema_fields
@@ -525,13 +525,13 @@ SELECT EXISTS (
 SELECT DISTINCT f.object_id as field_object_id, f.key as field_key
 FROM schema_fields f
 JOIN schema_field_visibility_rules vr ON vr.field_id = f.object_id
-WHERE vr.depends_on_field_id = $1
+WHERE vr.depends_on_field_id = $1::UUID
    OR EXISTS (
        SELECT 1 FROM schema_field_required_rules rr
        WHERE rr.field_id = f.object_id
-         AND rr.depends_on_field_id = $1
+         AND rr.depends_on_field_id = $1::UUID
    );
 
 -- name: DeleteField :exec
 DELETE FROM schema_fields
-WHERE object_id = $1;
+WHERE object_id = $1::UUID;
