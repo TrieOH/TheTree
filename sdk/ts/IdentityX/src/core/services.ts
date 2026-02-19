@@ -1,4 +1,4 @@
-import type { ProjectFieldDefinitionResultI } from "../types/fields-types";
+import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
 import type { SessionI } from "../types/sessions-types";
 import { clearAuthTokens, fetchAndSaveClaims, getUserInfo } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
@@ -20,7 +20,7 @@ export const createAuthService = (apiInstance: Api) => ({
     return res;
   },
 
-  register: (email: string, password: string, flow_id?: string, custom: string[] = [""]) => {
+  register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
     if (env.PROJECT_KEY) {
       validateProjectKey();
       if (!flow_id) {
@@ -40,7 +40,7 @@ export const createAuthService = (apiInstance: Api) => ({
       return apiInstance.post<string>(url, { email, password, custom_fields: custom });
     }
 
-    return apiInstance.post<string>("/auth/register", { email, password, custom_fields: custom });
+    return apiInstance.post<string>("/auth/register", { email, password });
   },  
   
   logout: async () => {

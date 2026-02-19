@@ -1,6 +1,8 @@
 
 export type DevStatus = "draft" | "published" | "archived";
 
+export type FieldValue = string | number | boolean | string[] | undefined;
+
 export interface RuleResultI {
   depends_on_field_id: string;
   id: string;

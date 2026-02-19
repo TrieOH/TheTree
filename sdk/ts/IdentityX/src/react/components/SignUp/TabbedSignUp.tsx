@@ -8,13 +8,7 @@ export interface TabbedSignUpProps extends Omit<SignUpProps, 'flow_id'> {
 export function TabbedSignUp({ flowIds, ...rest }: TabbedSignUpProps) {
   const [activeFlowId, setActiveFlowId] = useState<string>(flowIds[0]?.value || "");
 
-  if (!flowIds || flowIds.length === 0) {
-    return (
-      <div className="trieoh-card trieoh-card--full-rounded">
-        <p className="trieoh-tabbed-signup__empty">Nenhuma opção de cadastro disponível.</p>
-      </div>
-    );
-  }
+  if (!flowIds || flowIds.length === 0) return <></>
 
   return (
     <div className="trieoh-tabbed-signup">
