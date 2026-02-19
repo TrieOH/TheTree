@@ -17,19 +17,17 @@ type AuthzService struct {
 type CheckBuilder interface {
 	User(id uuid.UUID) CheckBuilder
 	Scope(id uuid.UUID) CheckBuilder
-	Object(obj any) CheckBuilder
-	Action(act any) CheckBuilder
-	WithResource(resource map[string]any) CheckBuilder
+	Object(obj string) CheckBuilder
+	Action(act string) CheckBuilder
 	Allowed(ctx context.Context) (bool, error)
 }
 
 type checkBuilder struct {
-	client   *Client
-	userID   *uuid.UUID
-	scopeID  *uuid.UUID
-	object   string
-	action   string
-	resource map[string]any
+	client  *Client
+	userID  *uuid.UUID
+	scopeID *uuid.UUID
+	object  string
+	action  string
 }
 
 func (s *AuthzService) Check() CheckBuilder {
@@ -46,28 +44,13 @@ func (b *checkBuilder) Scope(id uuid.UUID) CheckBuilder {
 	return b
 }
 
-func (b *checkBuilder) Object(obj any) CheckBuilder {
-	switch v := obj.(type) {
-	case string:
-		b.object = v
-	case FinalizedBuilder:
-		b.object = v.String()
-	}
+func (b *checkBuilder) Object(obj string) CheckBuilder {
+	b.object = obj
 	return b
 }
 
-func (b *checkBuilder) Action(act any) CheckBuilder {
-	switch v := act.(type) {
-	case string:
-		b.action = v
-	case FinalizedBuilder:
-		b.action = v.String()
-	}
-	return b
-}
-
-func (b *checkBuilder) WithResource(resource map[string]any) CheckBuilder {
-	b.resource = resource
+func (b *checkBuilder) Action(act string) CheckBuilder {
+	b.action = act
 	return b
 }
 
@@ -89,7 +72,6 @@ func (b *checkBuilder) Allowed(ctx context.Context) (bool, error) {
 		"entity_id":  b.userID,
 		"object":     b.object,
 		"action":     b.action,
-		"resource":   b.resource,
 	}
 
 	req, err := b.client.newRequest(ctx, "POST", "/authz/check", reqBody)

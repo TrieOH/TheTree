@@ -2,7 +2,6 @@ package goauth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -11,82 +10,31 @@ import (
 )
 
 type Permission struct {
-	ID         uuid.UUID        `json:"id"`
-	ProjectID  *uuid.UUID       `json:"project_id"`
-	Object     string           `json:"object"`
-	Action     string           `json:"action"`
-	Conditions *json.RawMessage `json:"conditions"`
-	CreatedAt  time.Time        `json:"created_at"`
+	ID        uuid.UUID  `json:"id"`
+	ProjectID *uuid.UUID `json:"project_id"`
+	Object    string     `json:"object"`
+	Action    string     `json:"action"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 type PermissionService struct {
 	client *Client
 }
 
-type PermissionBuilder interface {
-	Object(obj any) PermissionBuilder
-	Action(act any) PermissionBuilder
-	Conditions(cond any) PermissionBuilder
-	Create(ctx context.Context) (*Permission, error)
-}
-
-type permissionBuilder struct {
-	client     *Client
-	object     string
-	action     string
-	conditions any
-}
-
-func (s *PermissionService) Define() PermissionBuilder {
-	return &permissionBuilder{
-		client: s.client,
-	}
-}
-
-func (b *permissionBuilder) Object(obj any) PermissionBuilder {
-	switch v := obj.(type) {
-	case string:
-		b.object = v
-	case FinalizedBuilder:
-		b.object = v.String()
-	}
-	return b
-}
-
-func (b *permissionBuilder) Action(act any) PermissionBuilder {
-	switch v := act.(type) {
-	case string:
-		b.action = v
-	case FinalizedBuilder:
-		b.action = v.String()
-	}
-	return b
-}
-
-func (b *permissionBuilder) Conditions(cond any) PermissionBuilder {
-	if cb, ok := cond.(ConditionBuilder); ok {
-		b.conditions = cb.Build()
-	} else {
-		b.conditions = cond
-	}
-	return b
-}
-
-func (b *permissionBuilder) Create(ctx context.Context) (*Permission, error) {
-	if err := validateObject(b.object); err != nil {
+func (s *PermissionService) Create(ctx context.Context, object, action string) (*Permission, error) {
+	if err := validateObject(object); err != nil {
 		return nil, err
 	}
-	if err := validateAction(b.action); err != nil {
+	if err := validateAction(action); err != nil {
 		return nil, err
 	}
 
 	reqBody := map[string]any{
-		"object":     b.object,
-		"action":     b.action,
-		"conditions": b.conditions,
+		"object": object,
+		"action": action,
 	}
-	path := fmt.Sprintf("/projects/%s/permissions", b.client.projectID)
-	req, err := b.client.newRequest(ctx, "POST", path, reqBody)
+	path := fmt.Sprintf("/projects/%s/permissions", s.client.projectID)
+	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +42,7 @@ func (b *permissionBuilder) Create(ctx context.Context) (*Permission, error) {
 	var res struct {
 		Data Permission `json:"data"`
 	}
-	err = b.client.do(req, &res)
+	err = s.client.do(req, &res)
 	if err != nil {
 		return nil, err
 	}

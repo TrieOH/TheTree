@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
@@ -25,45 +24,50 @@ func main() {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	// 2. Define a Permission with Conditions
-	fmt.Println("\n--- Condition Builder Example ---")
+	// 2. Create a Permission with simple string object/action
+	fmt.Println("\n--- Creating Permission ---")
 
-	c := goauth.NewCondition()
-	// Logic: (status == 'active') AND (requester == owner OR role == 'admin')
-	cond := c.And(
-		c.Path("resource.status").Eq("active"),
-		c.Or(
-			c.Path("resource.requester_id").RefEq("resource.owner_id"),
-			c.Path("subject.role").Eq("admin"),
-		),
-	)
-
-	perm, err := client.Permissions.Define().
-		Object(goauth.Object("document", "secure_*")).
-		Action("read").
-		Conditions(cond). // Automatically calls .Build()
-		Create(ctx)
+	perm, err := client.Permissions.Create(ctx, "document", "read")
 	if err != nil {
-		handleError("DefinePermission", err)
+		handleError("CreatePermission", err)
 		return
 	}
-	fmt.Printf("Created Permission with ID: %s\n", perm.ID)
+	fmt.Printf("Created Permission: ID=%s, Object=%s, Action=%s\n", perm.ID, perm.Object, perm.Action)
 
-	// 3. Authorization Check with Resource Data
-	fmt.Println("\n--- Authz Check with Resource ---")
+	// 3. Create a Role
+	fmt.Println("\n--- Creating Role ---")
+	role, err := client.Roles.Define("DocumentReader").Create(ctx)
+	if err != nil {
+		handleError("CreateRole", err)
+		return
+	}
+	fmt.Printf("Created Role: ID=%s, Name=%s\n", role.ID, role.Name)
 
+	// 4. Add Permission to Role
+	fmt.Println("\n--- Adding Permission to Role ---")
+	err = client.Roles.AddPermission(ctx, role.ID, perm.ID)
+	if err != nil {
+		handleError("AddPermissionToRole", err)
+		return
+	}
+	fmt.Println("Permission added to role successfully")
+
+	// 5. Assign Role to User
+	fmt.Println("\n--- Assigning Role to User ---")
 	userID := uuid.MustParse("019c3f35-0f2c-7816-83e3-65b578c91adb")
+	err = client.Roles.GiveToUser(ctx, userID, role.ID, nil)
+	if err != nil {
+		handleError("GiveRoleToUser", err)
+		return
+	}
+	fmt.Println("Role assigned to user successfully")
 
-	// Match: status is active and requester is the owner
+	// 6. Check Authorization
+	fmt.Println("\n--- Authorization Check ---")
 	allowed, err := client.Authz.Check().
 		User(userID).
-		Object("document:secure_report_001").
+		Object("document").
 		Action("read").
-		WithResource(map[string]any{
-			"status":       "active",
-			"owner_id":     userID.String(),
-			"requester_id": userID.String(),
-		}).
 		Allowed(ctx)
 
 	if err != nil {
@@ -72,40 +76,87 @@ func main() {
 	}
 
 	if allowed {
-		fmt.Println("✅ Access GRANTED (Condition Matched)")
+		fmt.Println("✅ Access GRANTED")
 	} else {
 		fmt.Println("❌ Access DENIED")
 	}
 
-	// 4. Temporal Grace Example
-	fmt.Println("\n--- Temporal Grace Example ---")
-
-	graceCond := c.Field("resource.start_time").GraceBefore("15m")
-
-	gracePerm, err := client.Permissions.Define().
-		Object("event:checkin").
-		Action("execute").
-		Conditions(graceCond).
-		Create(ctx)
-	if err != nil {
-		handleError("DefineGracePermission", err)
-		return
-	}
-	fmt.Printf("Created Grace Permission with ID: %s\n", gracePerm.ID)
-
-	// Check if allowed 5 minutes before event
-	eventTime := time.Now().Add(5 * time.Minute).Format(time.RFC3339)
-	allowed, _ = client.Authz.Check().
+	// 7. Check with different action (should fail)
+	fmt.Println("\n--- Authorization Check (Different Action) ---")
+	allowed, err = client.Authz.Check().
 		User(userID).
-		Object("event:checkin").
-		Action("execute").
-		WithResource(map[string]any{"start_time": eventTime}).
+		Object("document").
+		Action("write").
 		Allowed(ctx)
 
+	if err != nil {
+		handleError("AuthzCheck", err)
+		return
+	}
+
 	if allowed {
-		fmt.Println("✅ Check-in ALLOWED (Within 15m grace before start)")
+		fmt.Println("✅ Access GRANTED")
 	} else {
-		fmt.Println("❌ Check-in DENIED")
+		fmt.Println("❌ Access DENIED (Expected - user only has 'read' permission)")
+	}
+
+	// 8. Create a scoped permission
+	fmt.Println("\n--- Creating Scoped Permission ---")
+
+	// Create a scope first
+	scope, err := client.Scopes.Create(ctx, "department", nil)
+	if err != nil {
+		handleError("CreateScope", err)
+		return
+	}
+	fmt.Printf("Created Scope: ID=%s, Name=%s\n", scope.ID, scope.Name)
+
+	// Create permission for that scope
+	scopedPerm, err := client.Permissions.Create(ctx, "report", "view")
+	if err != nil {
+		handleError("CreateScopedPermission", err)
+		return
+	}
+	fmt.Printf("Created Scoped Permission: ID=%s\n", scopedPerm.ID)
+
+	// Give user the permission within the scope
+	err = client.Permissions.GiveDirect(ctx, userID, scopedPerm.ID, &scope.ID)
+	if err != nil {
+		handleError("GiveDirectPermission", err)
+		return
+	}
+	fmt.Println("Permission granted to user within scope")
+
+	// Check authorization within the scope
+	fmt.Println("\n--- Scoped Authorization Check ---")
+	allowed, err = client.Authz.Check().
+		User(userID).
+		Scope(scope.ID).
+		Object("report").
+		Action("view").
+		Allowed(ctx)
+
+	if err != nil {
+		handleError("ScopedAuthzCheck", err)
+		return
+	}
+
+	if allowed {
+		fmt.Println("✅ Access GRANTED within scope")
+	} else {
+		fmt.Println("❌ Access DENIED")
+	}
+
+	// 9. List effective permissions
+	fmt.Println("\n--- Listing Effective Permissions ---")
+	effPerms, err := client.Permissions.GetEffective(ctx, userID, nil)
+	if err != nil {
+		handleError("GetEffectivePermissions", err)
+		return
+	}
+	fmt.Printf("User has %d effective permissions:\n", len(effPerms))
+	for _, p := range effPerms {
+		fmt.Printf("  - %s:%s (ID: %s)\n", p.Object, p.Action, p.ID)
 	}
 }
 
