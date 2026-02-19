@@ -13,7 +13,7 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			request    string
 			want       bool
 		}{
-			// Exact matches only
+			// Exact matches
 			{"ExactMatchSimple", "document", "document", true},
 			{"ExactMatchEvent", "event", "event", true},
 			{"ExactMatchUser", "user", "user", true},
@@ -22,6 +22,11 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			{"EmptyRequest", "document", "", false},
 			{"EmptyPermission", "", "document", false},
 			{"DifferentNames", "user_profile", "userprofile", false},
+
+			// Global wildcard (*) matches anything
+			{"WildcardMatchesAny", "*", "document", true},
+			{"WildcardMatchesEvent", "*", "event", true},
+			{"WildcardMatchesAnything", "*", "anything_at_all", true},
 		}
 
 		for _, tt := range tests {
@@ -42,7 +47,7 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			request    string
 			want       bool
 		}{
-			// Exact matches only
+			// Exact matches
 			{"ExactMatchRead", "read", "read", true},
 			{"ExactMatchWrite", "write", "write", true},
 			{"ExactMatchDelete", "delete", "delete", true},
@@ -51,6 +56,11 @@ func testPermissionMatching(t *testing.T, _ *TestSuite) {
 			{"EmptyRequest", "read", "", false},
 			{"EmptyPermission", "", "read", false},
 			{"DifferentActions", "create_record", "createrecord", false},
+
+			// Global wildcard (*) matches anything
+			{"WildcardMatchesRead", "*", "read", true},
+			{"WildcardMatchesWrite", "*", "write", true},
+			{"WildcardMatchesAnyAction", "*", "any_action", true},
 		}
 
 		for _, tt := range tests {

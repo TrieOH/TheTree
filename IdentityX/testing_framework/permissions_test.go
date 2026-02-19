@@ -381,9 +381,8 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"object": "*",
 				"action": "read",
 			}).
-			Expect(http.StatusBadRequest).
-			HasErrID(errx.PERMissionInvalidObject).
-			HasMessage("invalid permission object: (*)")
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created")
 	})
 
 	t.Run("CreateWildcardActionPermission", func(t *testing.T) {
@@ -392,9 +391,18 @@ func testPermissions(t *testing.T, suite *TestSuite) {
 				"object": "document",
 				"action": "*",
 			}).
-			Expect(http.StatusBadRequest).
-			HasErrID(errx.PERMissionInvalidAction).
-			HasMessage("invalid permission action: (*)")
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created")
+	})
+
+	t.Run("CreateMasterPermission", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/permissions").
+			WithBody(map[string]interface{}{
+				"object": "*",
+				"action": "*",
+			}).
+			Expect(http.StatusCreated).
+			HasMessage("Permission Created")
 	})
 
 	t.Run("NotAllowedQueryParam", func(t *testing.T) {

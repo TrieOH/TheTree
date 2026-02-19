@@ -6,14 +6,22 @@ import (
 )
 
 // ObjectMatch checks if a request object matches a permission object.
-// Now uses simple equality - no wildcards or patterns supported.
+// Supports global wildcard (*) which matches any object.
 func ObjectMatch(permissionObj, requestObj string) bool {
+	// Global wildcard matches everything
+	if permissionObj == "*" {
+		return true
+	}
 	return permissionObj == requestObj
 }
 
 // ActionMatch checks if a request action matches a permission action.
-// Now uses simple equality - no wildcards or patterns supported.
+// Supports global wildcard (*) which matches any action.
 func ActionMatch(permissionAction, requestAction string) bool {
+	// Global wildcard matches everything
+	if permissionAction == "*" {
+		return true
+	}
 	return permissionAction == requestAction
 }
 
