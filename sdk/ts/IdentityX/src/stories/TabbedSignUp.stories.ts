@@ -1,26 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import TabbedSignUpWithProvider from "./components/TabbedSignUpWithProvider";
-import type { FieldDefinitionResultI } from "../types/fields-types";
-
-const mockField = (id: string, key: string, title: string, type: FieldDefinitionResultI['type'] = 'string'): FieldDefinitionResultI => ({
-  id,
-  object_id: "obj_1",
-  key,
-  title,
-  type,
-  placeholder: `Enter your ${title.toLowerCase()}`,
-  description: "",
-  position: 0,
-  options: [],
-  default_value: "",
-  mutable: true,
-  required: true,
-  owner: "user",
-  visibility_rules: [],
-  required_rules: [],
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-});
+import { MOCK_FIELDS, createMockField } from "./mocks/field-mocks";
 
 const meta = {
   title: "Authentication/TabbedSignUp",
@@ -38,27 +18,31 @@ const meta = {
   args: {
     flowIds: [
       { 
-        label: "Personal", 
-        value: "personal_flow",
+        label: "Básico", 
+        value: "basic_flow",
         fields: [
-          mockField("f1", "first_name", "First Name"),
-          mockField("f2", "last_name", "Last Name"),
-          {
-            ...mockField("f_country", "country", "Country", "select"),
-            placeholder: "Select your country",
-            options: [
-              { id: "c1", label: "Brazil", value: "br", position: 1 },
-              { id: "c2", label: "United States", value: "us", position: 2 },
-            ]
-          }
+          createMockField("f1", "first_name", "Nome"),
+          createMockField("f2", "last_name", "Sobrenome"),
+          MOCK_FIELDS.COUNTRY,
         ]
       },
       { 
-        label: "Business", 
-        value: "business_flow",
+        label: "Perfil", 
+        value: "profile_flow",
         fields: [
-          mockField("f3", "company_name", "Company Name"),
-          mockField("f4", "tax_id", "Tax ID"),
+          MOCK_FIELDS.AGE,
+          MOCK_FIELDS.GENDER,
+          MOCK_FIELDS.BIO("f_age"),
+        ]
+      },
+      { 
+        label: "Configurações", 
+        value: "settings_flow",
+        fields: [
+          MOCK_FIELDS.USER_TYPE,
+          MOCK_FIELDS.COMPANY_NAME("f_utype"),
+          MOCK_FIELDS.INTERESTS,
+          MOCK_FIELDS.NEWSLETTER,
         ]
       },
     ],
@@ -70,19 +54,38 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+export const BusinessOnboarding: Story = {
+  args: {
+    flowIds: [
+      {
+        label: "Dados Pessoais",
+        value: "personal",
+        fields: [
+          createMockField("p1", "full_name", "Nome Completo"),
+          MOCK_FIELDS.COUNTRY,
+          MOCK_FIELDS.CPF("f_country"),
+        ]
+      },
+      {
+        label: "Dados Profissionais",
+        value: "professional",
+        fields: [
+          MOCK_FIELDS.USER_TYPE,
+          MOCK_FIELDS.COMPANY_NAME("f_utype"),
+          MOCK_FIELDS.ZIPCODE("f_country"),
+        ]
+      }
+    ]
+  }
+};
+
 export const ManyTabs: Story = {
   args: {
     flowIds: [
-      { label: "Individual", value: "individual", fields: [mockField("f5", "nickname", "Nickname")] },
-      { label: "Developer", value: "developer", fields: [mockField("f6", "github", "GitHub Username")] },
-      { label: "Company", value: "company", fields: [mockField("f7", "org", "Organization")] },
-      { label: "Non-Profit", value: "non_profit", fields: [mockField("f8", "cause", "Cause")] },
+      { label: "Individual", value: "individual", fields: [createMockField("f5", "nickname", "Nickname")] },
+      { label: "Developer", value: "developer", fields: [createMockField("f6", "github", "GitHub Username")] },
+      { label: "Company", value: "company", fields: [createMockField("f7", "org", "Organization")] },
+      { label: "Non-Profit", value: "non_profit", fields: [createMockField("f8", "cause", "Cause")] },
     ],
-  },
-};
-
-export const WithLoginRedirect: Story = {
-  args: {
-    loginRedirect: () => alert("Redirect to login"),
   },
 };

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import SignUpWithProvider from './components/SignUpWithProvider';
+import { MOCK_FIELDS } from './mocks/field-mocks';
 
 const meta = {
   title: "Authentication/SignUp",
@@ -30,137 +31,57 @@ export const WithLoginLink: Story = {
   },
 };
 
-export const WithCustomFields: Story = {
+export const FullProfile: Story = {
   args: {
-    flow_id: 'onboarding',
+    flow_id: 'full-profile',
     fields: [
-      {
-        id: "f1",
-        key: "name",
-        title: "Nome Completo",
-        type: "string",
-        placeholder: "Seu nome aqui",
-        required: true,
-        position: 1,
-        object_id: "obj1",
-        description: "",
-        options: [],
-        default_value: "",
-        mutable: true,
-        owner: "user",
-        visibility_rules: [],
-        required_rules: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+      MOCK_FIELDS.USER_TYPE,
+      MOCK_FIELDS.COMPANY_NAME("f_utype"),
+      MOCK_FIELDS.COUNTRY,
+      MOCK_FIELDS.ZIPCODE("f_country"),
+      MOCK_FIELDS.CPF("f_country"),
+      MOCK_FIELDS.AGE,
+      MOCK_FIELDS.BIO("f_age"),
+      MOCK_FIELDS.GENDER,
+      MOCK_FIELDS.INTERESTS,
+      MOCK_FIELDS.NEWSLETTER,
+    ]
+  }
+};
+
+export const MultiStepSimulation: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Simulação de regras complexas: O campo Bio só aparece para maiores de 18, e o campo Nome da Empresa só aparece para Business.',
       },
-      {
-        id: "f2",
-        key: "age",
-        title: "Idade",
-        type: "int",
-        placeholder: "Sua idade",
-        required: false,
-        position: 2,
-        object_id: "obj1",
-        description: "",
-        options: [],
-        default_value: "",
-        mutable: true,
-        owner: "user",
-        visibility_rules: [],
-        required_rules: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    },
+  },
+  args: {
+    flow_id: 'complex-rules',
+    fields: [
+      MOCK_FIELDS.AGE,
+      MOCK_FIELDS.BIO("f_age"),
+      MOCK_FIELDS.USER_TYPE,
+      MOCK_FIELDS.COMPANY_NAME("f_utype"),
+    ]
+  }
+};
+
+export const ConditionalRequirements: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Regras de obrigatoriedade: CEP é obrigatório para Brasil e EUA. CPF é obrigatório apenas para Brasil.',
       },
-            {
-              id: "f3",
-              key: "gender",
-              title: "Gênero",
-              type: "radio",
-              placeholder: "Selecione",
-              required: true,
-              position: 3,
-              object_id: "obj1",
-              description: "",
-              options: [
-                { id: "o1", label: "Masculino", value: "male", position: 1 },
-                { id: "o2", label: "Feminino", value: "female", position: 2 },
-                { id: "o3", label: "Outro", value: "other", position: 3 },
-              ],
-              default_value: "",
-              mutable: true,
-              owner: "user",
-              visibility_rules: [],
-              required_rules: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: "f4",
-              key: "interests",
-              title: "Interesses",
-              type: "checkbox",
-              placeholder: "",
-              required: false,
-              position: 4,
-              object_id: "obj1",
-              description: "",
-              options: [
-                { id: "i1", label: "Tecnologia", value: "tech", position: 1 },
-                { id: "i2", label: "Esportes", value: "sports", position: 2 },
-                { id: "i3", label: "Música", value: "music", position: 3 },
-              ],
-              default_value: "",
-              mutable: true,
-              owner: "user",
-              visibility_rules: [],
-              required_rules: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: "f5",
-              key: "newsletter",
-              title: "Desejo receber novidades",
-              type: "bool",
-              placeholder: "",
-              required: false,
-              position: 5,
-              object_id: "obj1",
-              description: "",
-              options: [],
-              default_value: "false",
-              mutable: true,
-              owner: "user",
-              visibility_rules: [],
-              required_rules: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-            {
-              id: "f6",
-              key: "country",
-              title: "País",
-              type: "select",
-              placeholder: "Selecione seu país",
-              required: true,
-              position: 6,
-              object_id: "obj1",
-              description: "",
-              options: [
-                { id: "c1", label: "Brasil", value: "br", position: 1 },
-                { id: "c2", label: "Estados Unidos", value: "us", position: 2 },
-                { id: "c3", label: "Portugal", value: "pt", position: 3 },
-              ],
-              default_value: "",
-              mutable: true,
-              owner: "user",
-              visibility_rules: [],
-              required_rules: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }
-          ]
-        }
-      };
-      
+    },
+  },
+  args: {
+    flow_id: 'cond-req',
+    fields: [
+      MOCK_FIELDS.COUNTRY,
+      MOCK_FIELDS.ZIPCODE("f_country"),
+      MOCK_FIELDS.CPF("f_country"),
+    ]
+  }
+};

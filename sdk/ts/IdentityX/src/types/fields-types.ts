@@ -1,5 +1,17 @@
-
 export type DevStatus = "draft" | "published" | "archived";
+
+export type Operator = 
+  | "exists" 
+  | "not_exists" 
+  | "equals" 
+  | "not_equals" 
+  | "contains" 
+  | "gt" 
+  | "gte" 
+  | "lt" 
+  | "lte" 
+  | "in" 
+  | "not_in";
 
 export type FieldValue = string | number | boolean | string[] | undefined;
 
@@ -7,7 +19,7 @@ export interface RuleResultI {
   depends_on_field_id: string;
   id: string;
   operator: string;
-  value: string;
+  value: FieldValue;
 }
 
 export interface OptionResultI {
