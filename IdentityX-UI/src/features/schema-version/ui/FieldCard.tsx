@@ -3,16 +3,16 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { getFieldTypeIcon } from "../model/field-type-to-icon";
-import type { VersionFieldResult } from "../model/types";
+import type { FieldDefinitionResultI } from "../model/types";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 
 interface PropsI {
-  field: VersionFieldResult;
+  field: FieldDefinitionResultI;
   className?: string;
   overwriteType?: "password";
   isFixed?: boolean;
   onDelete?: (fieldKey: string) => void;
-  onOpenEditPanel?: (field: VersionFieldResult) => void;
+  onOpenEditPanel?: (field: FieldDefinitionResultI) => void;
   isSelected?: boolean;
 }
 

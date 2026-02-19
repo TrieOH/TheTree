@@ -1,4 +1,3 @@
-import { versionFieldResultZodSchema, type VersionField, type VersionFieldResult } from '../model/types';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { FieldTypeSelector } from './FieldTypeSelector';
@@ -9,15 +8,22 @@ import { useEffect } from 'react';
 import { Checkbox } from '@/shared/ui/shadcn/checkbox';
 import { RulesEditor } from './RulesEditor';
 import { OptionsEditor } from './OptionsEditor';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/shadcn/select';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/shared/ui/shadcn/select';
 import { DefaultValueInput } from './DefaultValueInput';
+import type { FieldDefinitionResultI } from '../model/types';
 
 interface FieldEditFormProps {
-  field: VersionFieldResult;
-  onSave: (originalField: VersionFieldResult, updatedField: VersionFieldResult) => void;
+  field: FieldDefinitionResultI;
+  onSave: (originalField: FieldDefinitionResultI, updatedField: FieldDefinitionResultI) => void;
   onCancel: () => void;
   allFieldKeys: string[];
-  allSchemaFields: VersionFieldResult[];
+  allSchemaFields: FieldDefinitionResultI[];
 }
 
 export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onCancel, allFieldKeys, allSchemaFields }) => {
@@ -27,9 +33,6 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
     onSubmit: async ({ value }) => {
       onSave(field, value);
     },
-    validators: {
-      onChange: versionFieldResultZodSchema,
-    }
   });
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
       }}
       className="p-4 space-y-4"
     >
-      <FormField<VersionField, 'title'> name="title" label="Title" form={form}>
+      <FormField<FieldDefinitionResultI, 'title'> name="title" label="Title" form={form}>
         {(field) => (
           <ShadowInput
             id={field.name}
@@ -59,7 +62,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           />
         )}
       </FormField>
-      <FormField<VersionField, 'key'> name="key" label="Key" form={form}>
+      <FormField<FieldDefinitionResultI, 'key'> name="key" label="Key" form={form}>
         {(field) => (
           <ShadowInput
             id={field.name}
@@ -69,7 +72,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           />
         )}
       </FormField>
-      <FormField<VersionField, 'placeholder'> name="placeholder" label="Placeholder" form={form}>
+      <FormField<FieldDefinitionResultI, 'placeholder'> name="placeholder" label="Placeholder" form={form}>
         {(field) => (
           <ShadowInput
             id={field.name}
@@ -79,7 +82,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           />
         )}
       </FormField>
-      <FormField<VersionField, 'description'> name="description" label="Description" form={form}>
+      <FormField<FieldDefinitionResultI, 'description'> name="description" label="Description" form={form}>
         {(field) => (
           <ShadowTextarea
             id={field.name}
@@ -91,7 +94,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
       </FormField>
       
       <div className='flex items-center justify-between px-4'>
-        <FormField<VersionField, 'required'> name="required" label="" form={form}>
+        <FormField<FieldDefinitionResultI, 'required'> name="required" label="" form={form}>
           {(field) => (
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -108,7 +111,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
             </div>
           )}
         </FormField>
-        <FormField<VersionField, 'mutable'> name="mutable" label="" form={form}>
+        <FormField<FieldDefinitionResultI, 'mutable'> name="mutable" label="" form={form}>
           {(field) => (
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -126,7 +129,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           )}
         </FormField>
       </div>
-      <FormField<VersionField, 'owner'> name="owner" label="Owner" form={form}>
+      <FormField<FieldDefinitionResultI, 'owner'> name="owner" label="Owner" form={form}>
         {(field) => (
           <Select
             value={field.state.value}
@@ -143,7 +146,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           </Select>
         )}
       </FormField>
-      <FormField<VersionField, 'required_rules'> name="required_rules" label="Required Rules" form={form}>
+      <FormField<FieldDefinitionResultI, 'required_rules'> name="required_rules" label="Required Rules" form={form}>
         {(field) => (
           <RulesEditor
             rules={field.state.value || []}
@@ -153,7 +156,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           />
         )}
       </FormField>
-      <FormField<VersionField, 'visibility_rules'> name="visibility_rules" label="Visibility Rules" form={form} >
+      <FormField<FieldDefinitionResultI, 'visibility_rules'> name="visibility_rules" label="Visibility Rules" form={form} >
         {(field) => (
           <RulesEditor
             rules={field.state.value || []}
@@ -163,7 +166,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           />
         )}
       </FormField>
-      <FormField<VersionField, 'type'> name="type" label="Type" form={form}>
+      <FormField<FieldDefinitionResultI, 'type'> name="type" label="Type" form={form}>
         {(field) => (
           <FieldTypeSelector
             selectedType={field.state.value}
@@ -178,7 +181,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
         {(type) => {
           const showOptions = ['select', 'radio', 'checkbox'].includes(type);
           return showOptions ? (
-            <FormField<VersionField, 'options'> name="options" label="Options" form={form}>
+            <FormField<FieldDefinitionResultI, 'options'> name="options" label="Options" form={form}>
               {(field) => (
                 <OptionsEditor
                   options={field.state.value || []}
@@ -189,7 +192,7 @@ export const FieldEditForm: React.FC<FieldEditFormProps> = ({ field, onSave, onC
           ) : null;
         }}
       </form.Subscribe>
-      <FormField<VersionField, 'default_value'> name="default_value" label="Default Value" form={form}>
+      <FormField<FieldDefinitionResultI, 'default_value'> name="default_value" label="Default Value" form={form}>
         {(field) => (
           <form.Subscribe selector={(state) => state.values}>
             {(values) => (

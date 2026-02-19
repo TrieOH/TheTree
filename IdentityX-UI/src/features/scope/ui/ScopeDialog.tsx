@@ -46,14 +46,14 @@ export default function ScopeDialog({ project_id }: PropsI) {
       label: "Name", 
       placeholder: "My New Scope", 
       autoComplete: "name",
-      errors: getFieldError(scopeCRUDSchema.shape["name"])
+      errors: getFieldError(scopeCRUDSchema.shape.name)
     },
     {
       name: "external_id", 
       label: "External ID", 
       placeholder: "Event", 
       autoComplete: "external_id",
-      errors: getFieldError(scopeCRUDSchema.shape["external_id"], "d")
+      errors: getFieldError(scopeCRUDSchema.shape.external_id, "d")
     }
   ]
   const scopeOpts = formOptions({

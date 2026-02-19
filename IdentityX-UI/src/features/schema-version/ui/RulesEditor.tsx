@@ -7,18 +7,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/ui/shadcn/select";
-import { type RuleOperator, ruleOperatorSchema, type Rule, type VersionFieldResult } from '../model/types';
 import { RuleValueInput } from './RuleValueInput';
 import { getCompatibleOperators } from '../lib/rule-utils';
+import { 
+  OPERATORS,
+  type RuleResultI,
+  type FieldDefinitionResultI,
+  type Operator,
+} from '../model/types';
 
 interface RulesEditorProps {
-  rules: Rule[];
+  rules: RuleResultI[];
   allFieldKeys: string[];
-  allFields: VersionFieldResult[];
-  onChange: (rules: Rule[]) => void;
+  allFields: FieldDefinitionResultI[];
+  onChange: (rules: RuleResultI[]) => void;
 }
 
-const operatorConfig: Record<RuleOperator, { label: string; symbol: string }> = {
+const operatorConfig: Record<Operator, { label: string; symbol: string }> = {
   equals: { label: 'Equals', symbol: '=' },
   not_equals: { label: 'Not equals', symbol: '≠' },
   in: { label: 'Is in', symbol: '∈' },
@@ -26,26 +31,26 @@ const operatorConfig: Record<RuleOperator, { label: string; symbol: string }> = 
   exists: { label: 'Exists', symbol: '∃' },
   not_exists: { label: 'Not exists', symbol: '∄' },
   contains: { label: 'Contains', symbol: '⊇' },
-  gt: { label: 'Greater than', symbol: '>' },
-  gte: { label: 'Greater than or equals', symbol: '≥' },
-  lt: { label: 'Less than', symbol: '<' },
-  lte: { label: 'Less than or equals', symbol: '≤' },
+  greater_than: { label: 'Greater than', symbol: '>' },
+  greater_than_equal: { label: 'Greater than or equals', symbol: '≥' },
+  lower_than: { label: 'Less than', symbol: '<' },
+  lower_than_equal: { label: 'Less than or equals', symbol: '≤' },
 };
 
 export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, allFields, onChange }) => {
-  const handleRuleChange = (index: number, key: keyof Rule, value: unknown) => {
+  const handleRuleChange = (index: number, key: keyof RuleResultI, value: unknown) => {
     const newRules = [...rules];
     newRules[index] = { ...newRules[index], [key]: value };
     onChange(newRules);
   };
 
   const handleAddRule = () => {
-    const newRule: Rule = {
+    if(allFields.length <= 0) return;
+    const newRule: RuleResultI = {
       id: crypto.randomUUID(),
-      depends_on_field_key: allFieldKeys.length > 0 ? allFieldKeys[0] : '',
-      depends_on_field_id: '',
-      operator: ruleOperatorSchema.enum.equals,
-      value: null,
+      depends_on_field_id: allFields[0].object_id,
+      operator: "equals",
+      value: "",
     };
     onChange([...rules, newRule]);
   };
@@ -58,7 +63,8 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, a
   return (
     <div className="space-y-2 w-full min-w-0">
       {rules.map((rule, index) => {
-        const dependentField = allFields.find(f => f.key === rule.depends_on_field_key);
+        const dependentField = allFields.find(f => f.object_id === rule.depends_on_field_id);
+        const fieldKey = dependentField?.key
         const fieldType = dependentField?.type || 'string';
         const fieldOptions = dependentField?.options;
         const compatibleOperatorsForField = getCompatibleOperators(fieldType);
@@ -70,7 +76,7 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, a
           >
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <Select
-                value={rule.depends_on_field_key ?? ''}
+                value={fieldKey}
                 onValueChange={(val) => {
                   const newDependentField = allFields.find(f => f.key === val);
                   const newFieldType = newDependentField?.type || 'string';
@@ -80,13 +86,13 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, a
                   let newValue = rule.value;
 
                   if (!newCompatibleOperators.includes(newOperator)) {
-                    newOperator = newCompatibleOperators[0] || ruleOperatorSchema.enum.equals;
-                    newValue = null;
+                    newOperator = newCompatibleOperators[0] || "equals";
+                    newValue = "";
                   }
 
-                  const updatedRule: Rule = {
+                  const updatedRule: RuleResultI = {
                     ...rule,
-                    depends_on_field_key: val,
+                    depends_on_field_id: allFields.find(field => field.key === val)?.object_id || "",
                     operator: newOperator,
                     value: newValue
                   };
@@ -109,7 +115,7 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, a
 
               <Select
                 value={rule.operator}
-                onValueChange={(val) => handleRuleChange(index, 'operator', val as RuleOperator)}
+                onValueChange={(val) => handleRuleChange(index, 'operator', val as Operator)}
               >
                 <SelectTrigger
                   className="w-10 sm:w-12 h-8 px-0 justify-center text-base sm:text-lg font-medium hover:bg-muted transition-colors shrink-0"
@@ -120,7 +126,7 @@ export const RulesEditor: React.FC<RulesEditorProps> = ({ rules, allFieldKeys, a
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent align="center" className="min-w-35">
-                  {Object.values(ruleOperatorSchema.enum)
+                  {Object.values(OPERATORS)
                     .filter(op => compatibleOperatorsForField.includes(op))
                     .map((op) => (
                       <SelectItem key={op} value={op} className="text-xs gap-2">

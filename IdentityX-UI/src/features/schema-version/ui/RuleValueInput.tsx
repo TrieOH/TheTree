@@ -2,16 +2,16 @@ import type React from 'react';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/shadcn/select';
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/shadcn/radio-group';
-import type { Option, RuleOperator, VersionFieldResult } from '../model/types';
 import { MultiValueInput } from './MultiValueInput';
 import { MultiSelectOptions } from './MultiSelectOptions';
+import type { FieldDefinitionResultI, Operator, OptionResultI } from '../model/types';
 
 interface RuleValueInputProps {
   value: unknown;
   onChange: (value: unknown) => void;
-  fieldType: VersionFieldResult['type'];
-  options?: Option[];
-  operator: RuleOperator;
+  fieldType: FieldDefinitionResultI['type'];
+  options?: OptionResultI[];
+  operator: Operator;
   id: string;
 }
 

@@ -75,7 +75,7 @@ export function ProjectDialog() {
       label: "Project Name", 
       placeholder: "My Awesome Project", 
       autoComplete: "project_name",
-      errors: getFieldError(projectCRUDSchema.shape["project_name"])
+      errors: getFieldError(projectCRUDSchema.shape.project_name)
     }
   ]
   const projectOpts = formOptions({

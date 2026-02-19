@@ -1,13 +1,13 @@
 import { cn } from '@/shared/lib/utils';
 import { getFieldTypeIcon } from '../model/field-type-to-icon';
-import type { VersionField } from '../model/types';
+import type { VersionFieldType } from '../model/types';
 
 interface FieldTypeSelectorProps {
-  selectedType: VersionField['type'];
-  onSelectType: (type: VersionField['type']) => void;
+  selectedType: VersionFieldType;
+  onSelectType: (type: VersionFieldType) => void;
 }
 
-const fieldTypes: VersionField['type'][] = ["string", "email", "int", "select", "radio", "checkbox", "bool"];
+const fieldTypes: VersionFieldType[] = ["string", "email", "int", "select", "radio", "checkbox", "bool"];
 
 export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({ selectedType, onSelectType }) => {
   return (

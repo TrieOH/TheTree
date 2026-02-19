@@ -9,10 +9,10 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import FieldCard from "./FieldCard";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DragOverlay } from "@dnd-kit/core";
-import type { VersionFieldResult } from "../model/types";
+import type { FieldDefinitionResultI } from "../model/types";
 import { DraggableFieldEditPanel } from './DraggableFieldEditPanel';
 import { FieldEditForm } from './FieldEditForm';
 import { defaultEmailVersionField, defaultPasswordVersionField } from "../model/default";
@@ -23,11 +23,12 @@ import { createSchemaVersionFieldFn, deleteSchemaFieldOptionFn, deleteSchemaVers
 import { useStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
 import { useEditableList } from '../hooks/useEditableList';
-import { mapFieldIdsToKeys } from '../lib/convert-field-utils';
 import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 import { optionsDiff } from '../lib/field-options-diff-utils';
 import { rulesDiff } from '../lib/field-rules-diff-utils';
+import { SignUp } from '@trieoh/node-auth-sdk/react';
+import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
@@ -40,30 +41,8 @@ export default function FieldEditor() {
     currentProjectId || "", currentSchemaId || "", currentSchemaVersion || 1
   ));
 
-  const mappedFields = useMemo(() => {
-    if (!schemaVData) return [];
-    return mapFieldIdsToKeys(schemaVData.fields);
-  }, [schemaVData]);
-
   const [activeId, setActiveId] = useState<string | null>(null);
-  useEffect(() => {
-    const allKeys = [
-      ...mappedFields.map(field => field.key),
-      defaultEmailVersionField.key,
-      defaultPasswordVersionField.key
-    ];
-
-    let maxSuffix = -1;
-    allKeys.forEach(key => {
-      const match = key.match(/custom_field_(\d+)/);
-      if (match?.[1]) {
-        const suffix = parseInt(match[1], 10);
-        if (!Number.isNaN(suffix) && suffix > maxSuffix) maxSuffix = suffix;
-      }
-    });
-    setNextId(maxSuffix + 1);
-  }, [mappedFields]);
-  const [editingField, setEditingField] = useState<VersionFieldResult | null>(null);
+  const [editingField, setEditingField] = useState<FieldDefinitionResultI | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -77,7 +56,7 @@ export default function FieldEditor() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const handleOpenEditPanel = (field: VersionFieldResult) => {
+  const handleOpenEditPanel = (field: FieldDefinitionResultI) => {
     setEditingField(field);
   };
 
@@ -93,18 +72,17 @@ export default function FieldEditor() {
     })
   );
 
-  const fields = useEditableList<VersionFieldResult>({
-    initial: mappedFields,
+  const fields = useEditableList<FieldDefinitionResultI>({
+    initial: schemaVData?.fields || [],
 
     getId: (f) => f.object_id,
-
     isEqual: areFieldsEqual,
 
     onCreate: async (creates) => {
       console.log("Create:", creates);
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
       await createSchemaVersionFieldFn({
-        fields: creates, // Pass creates directly
+        fields: mapFieldDefinitionResultToSchemaFieldCreateRequest(creates),
         project_id: currentProjectId,
         schema_id: currentSchemaId,
         version: currentSchemaVersion,
@@ -193,6 +171,24 @@ export default function FieldEditor() {
   });
 
   useEffect(() => {
+    const allKeys = [
+      ...(schemaVData?.fields || []).map(field => field.key),
+      defaultEmailVersionField.key,
+      defaultPasswordVersionField.key
+    ];
+    console.log(schemaVData?.fields)
+    let maxSuffix = -1;
+    allKeys.forEach(key => {
+      const match = key.match(/custom_field_(\d+)/);
+      if (match?.[1]) {
+        const suffix = parseInt(match[1], 10);
+        if (!Number.isNaN(suffix) && suffix > maxSuffix) maxSuffix = suffix;
+      }
+    });
+    setNextId(maxSuffix + 1);
+  }, [schemaVData?.fields]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if(e.ctrlKey && e.key === "z") fields.undo();
       if(e.ctrlKey && e.key === "y") fields.redo();
@@ -229,19 +225,21 @@ export default function FieldEditor() {
   }
 
   const handleAddField = () => {
-    const newField: VersionFieldResult = {
+    const newField: FieldDefinitionResultI = {
       key: `custom_field_${nextId}`,
       title: `Custom Field ${nextId}`,
       description: '',
       placeholder: '',
-      object_id: undefined,
+      object_id: "",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       id: 'Null',
       type: "string",
       owner: "user",
       mutable: true,
       required: false,
       position: fields.items.length,
-      default_value: null,
+      default_value: "",
       options: [],
       required_rules: [],
       visibility_rules: [],
@@ -258,7 +256,7 @@ export default function FieldEditor() {
     });
   };
 
-  const handleUpdateField = (originalField: VersionFieldResult, updatedField: VersionFieldResult) => {
+  const handleUpdateField = (originalField: FieldDefinitionResultI, updatedField: FieldDefinitionResultI) => {
     fields.setItems(list =>
       list.map(item =>
         item.key === originalField.key ? updatedField : item
@@ -326,46 +324,35 @@ export default function FieldEditor() {
                 value: "preview",
                 label: "Preview",
                 content: (
-                  <div className="flex-1 p-4">
-                    {editingField && (
-                      <FieldEditForm
-                        field={editingField}
-                        onSave={(originalField, updatedField) => {
-                          handleUpdateField(originalField, updatedField);
-                        }}
-                        onCancel={handleCloseEditPanel}
-                        allFieldKeys={allFieldKeys}
-                        allSchemaFields={fields.items}
-                      />
-                    )}
-                  </div>
+                  <SignUp fields={fields.items} />
                 ),
               },
             ]}
           />
         ) : (
+          <>
             <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
               <FieldCard
                 key={defaultEmailVersionField.key}
                 field={defaultEmailVersionField}
                 isFixed={true}
                 isSelected={editingField?.key === defaultEmailVersionField.key}
-              />
+                />
               <FieldCard
                 key={defaultPasswordVersionField.key}
                 field={{ ...defaultPasswordVersionField }}
                 overwriteType="password"
                 isFixed={true}
                 isSelected={editingField?.key === defaultPasswordVersionField.key}
-              />
+                />
               <SortableContext items={fields.items.map((item) => item.key)}>
                 {fields.items.map((item) => (
                   <FieldCard
-                    key={item.key}
-                    field={item}
-                    onDelete={handleDeleteField}
-                    onOpenEditPanel={handleOpenEditPanel}
-                    isSelected={editingField?.key === item.key}
+                  key={item.key}
+                  field={item}
+                  onDelete={handleDeleteField}
+                  onOpenEditPanel={handleOpenEditPanel}
+                  isSelected={editingField?.key === item.key}
                   />
                 ))}
               </SortableContext>
@@ -376,9 +363,13 @@ export default function FieldEditor() {
                 variant="solid"
                 leftIcon={<Plus className="w-4 h-4" />}
                 disabled={isVersionNull || schemaVData?.status !== 'draft'}
-              />
+                />
               
             </div>
+            <div className='flex-1 flex justify-center items-center sticky top-16 h-(--screen--minus-header)'>
+              <SignUp fields={fields.items} />
+            </div>
+          </>
         )}
 
         {createPortal(
@@ -415,7 +406,7 @@ export default function FieldEditor() {
             await queryClient.invalidateQueries({
               queryKey: schemaVersionByIdQueryOptions(currentProjectId, currentSchemaId, currentSchemaVersion).queryKey
             });
-            fields.syncWith(mappedFields);
+            fields.syncWith(schemaVData?.fields || []);
           }}
           disabled={!fields.hasChanges || isVersionNull || fields.isSubmitting || schemaVData?.status !== 'draft'}
           leftIcon={<SaveAll className="w-4 h-4" />}
