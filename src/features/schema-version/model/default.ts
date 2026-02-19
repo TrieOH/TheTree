@@ -1,6 +1,6 @@
-import type { VersionFieldResult } from "./types";
+import type { FieldDefinitionResultI } from "./types"
 
-export const defaultEmailVersionField: VersionFieldResult = {
+export const defaultEmailVersionField: FieldDefinitionResultI = {
   key: "email",
   title: "Email",
   type: "email",
@@ -13,10 +13,14 @@ export const defaultEmailVersionField: VersionFieldResult = {
   required_rules: [],
   visibility_rules: [],
   id: 'emailTemplate',
-  object_id: 'emailTemplate'
+  object_id: 'emailTemplate',
+  description: "",
+  placeholder: "",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 }
 
-export const defaultPasswordVersionField: VersionFieldResult = {
+export const defaultPasswordVersionField: FieldDefinitionResultI = {
   key: "password",
   title: "Password",
   type: "string",
@@ -29,5 +33,9 @@ export const defaultPasswordVersionField: VersionFieldResult = {
   required_rules: [],
   visibility_rules: [],
   id: 'passwordTemplate',
-  object_id: 'passwordTemplate'
+  object_id: 'passwordTemplate',
+  description: "",
+  placeholder: "",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 }

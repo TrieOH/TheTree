@@ -30,7 +30,6 @@ export default function TextField({ label, placeholder, autoComplete, errors, su
         {
           message: messageToShow,
           passed: !hasError,
-          test: () => true, // not needed in this situation
         }
       ]}
     />

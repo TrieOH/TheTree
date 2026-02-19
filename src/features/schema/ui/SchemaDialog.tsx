@@ -45,14 +45,14 @@ export function SchemaDialog({ project_id }: PropsI) {
       label: "Title", 
       placeholder: "My New Schema", 
       autoComplete: "title",
-      errors: getFieldError(schemaCRUDSchema.shape["title"])
+      errors: getFieldError(schemaCRUDSchema.shape.title)
     },
     {
       name: "flow_id", 
       label: "Flow ID", 
       placeholder: "auth flow", 
       autoComplete: "flow_id",
-      errors: getFieldError(schemaCRUDSchema.shape["flow_id"])
+      errors: getFieldError(schemaCRUDSchema.shape.flow_id)
     }
   ]
   const projectOpts = formOptions({

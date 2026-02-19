@@ -3,12 +3,12 @@ import type { AnyFieldApi } from '@tanstack/react-form';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/shadcn/select';
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/shadcn/radio-group';
-import type { Option, VersionFieldResult } from '../model/types';
+import type { FieldDefinitionResultI, OptionResultI } from '../model/types';
 
 interface DefaultValueInputProps {
   field: AnyFieldApi;
-  fieldType: VersionFieldResult['type'];
-  options?: Option[];
+  fieldType: FieldDefinitionResultI['type'];
+  options?: OptionResultI[];
 }
 
 export const DefaultValueInput: React.FC<DefaultValueInputProps> = ({ field, fieldType, options }) => {

@@ -1,7 +1,7 @@
 import type { CustomDiff } from "../hooks/useEditableList";
-import type { Option, VersionFieldResult } from "../model/types";
+import type { FieldDefinitionResultI, OptionResultI } from "../model/types";
 
-function diffFieldOptions(oldField: VersionFieldResult, newField: VersionFieldResult) {
+function diffFieldOptions(oldField: FieldDefinitionResultI, newField: FieldDefinitionResultI) {
   const oldOptions = oldField.options ?? [];
   const newOptions = newField.options ?? [];
 
@@ -27,8 +27,8 @@ function diffFieldOptions(oldField: VersionFieldResult, newField: VersionFieldRe
 
 export function optionsDiff(api: {
   deleteOptions: (fieldId: string, optionIds: string[]) => Promise<void>;
-  putOptions: (fieldId: string, options: Option[]) => Promise<void>;
-}): CustomDiff<VersionFieldResult> {
+  putOptions: (fieldId: string, options: OptionResultI[]) => Promise<void>;
+}): CustomDiff<FieldDefinitionResultI> {
 
   return async ({ getOriginalById, diff }) => {
     for (const [id, newField] of diff.currentMap.entries()) {

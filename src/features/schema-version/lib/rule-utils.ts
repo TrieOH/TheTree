@@ -1,10 +1,10 @@
-import type { RuleOperator, VersionFieldResult } from "../model/types";
+import type { FieldDefinitionResultI, Operator } from "../model/types";
 
-export const getCompatibleOperators = (fieldType: VersionFieldResult['type']): RuleOperator[] => {
-  const commonOperators: RuleOperator[] = ["equals", "not_equals", "exists", "not_exists"];
-  const inNotInOperators: RuleOperator[] = ["in", "not_in"];
-  const numericOperators: RuleOperator[] = ["gt", "gte", "lt", "lte"];
-  const stringOperators: RuleOperator[] = ["contains"];
+export const getCompatibleOperators = (fieldType: FieldDefinitionResultI['type']): Operator[] => {
+  const commonOperators: Operator[] = ["equals", "not_equals", "exists", "not_exists"];
+  const inNotInOperators: Operator[] = ["in", "not_in"];
+  const numericOperators: Operator[] = ["greater_than", "greater_than_equal", "lower_than", "lower_than_equal"];
+  const stringOperators: Operator[] = ["contains"];
 
   switch (fieldType) {
     case 'string':

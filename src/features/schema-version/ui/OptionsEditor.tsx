@@ -2,15 +2,15 @@ import type React from 'react';
 import { ShadowInput } from '@/shared/ui/form/ShadowInput';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { PlusIcon, TrashIcon } from 'lucide-react';
-import type { Option } from '../model/types';
+import type { OptionResultI } from '../model/types';
 
 interface OptionsEditorProps {
-  options: Option[];
-  onChange: (options: Option[]) => void;
+  options: OptionResultI[];
+  onChange: (options: OptionResultI[]) => void;
 }
 
 export const OptionsEditor: React.FC<OptionsEditorProps> = ({ options, onChange }) => {
-  const handleOptionChange = (index: number, key: keyof Option, value: string | number) => {
+  const handleOptionChange = (index: number, key: keyof OptionResultI, value: string | number) => {
     const newOptions = [...options];
     if (key === 'position' && typeof value === 'string') {
       newOptions[index] = { ...newOptions[index], [key]: parseInt(value, 10) };

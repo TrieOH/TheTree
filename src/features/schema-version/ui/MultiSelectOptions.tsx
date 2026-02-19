@@ -14,11 +14,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/shadcn/popover";
 import { Checkbox } from "@/shared/ui/shadcn/checkbox";
 
-import type { Option } from '../model/types';
+import type { OptionResultI } from '../model/types';
 
 interface MultiSelectOptionsProps {
   id: string;
-  options: Option[];
+  options: OptionResultI[];
   value?: string[] | null;
   onChange: (value: string[] | undefined) => void;
   placeholder?: string;
