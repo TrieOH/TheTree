@@ -3,7 +3,7 @@ import { fn } from 'storybook/test';
 import BasicLogoutWithProvider from './components/BasicLogoutWithProvider';
 
 const meta = {
-  title: "Example/BasicLogoutButton",
+  title: "Authentication/BasicLogoutButton",
   component: BasicLogoutWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],

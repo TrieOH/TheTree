@@ -3,10 +3,12 @@ import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
 import CardAvatar from "../Form/CardAvatar";
+import DynamicFields from "../Form/DynamicFields";
 import { 
   evaluateRules, 
   type Rule,
 } from "../../../utils/field-validator";
+import type { FieldDefinitionResultI, FieldValue } from "../../../types/fields-types";
 
 export interface SignUpProps {
   onSuccess?: () => Promise<void>;
@@ -15,6 +17,7 @@ export interface SignUpProps {
   emailRules?: Rule[];
   passwordRules?: Rule[];
   flow_id?: string;
+  fields?: FieldDefinitionResultI[];
 }
 
 export function SignUp({
@@ -24,14 +27,22 @@ export function SignUp({
   emailRules,
   passwordRules,
   flow_id,
+  fields = [],
 }: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [dynamicValues, setDynamicValues] = useState<Record<string, FieldValue>>({});
   const [submitted, setSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement | null>(null);
   const { auth } = useAuth();
+
+  const handleDynamicChange = (key: string, value: FieldValue) => {
+    setDynamicValues(prev => ({ ...prev, [key]: value }));
+  };
 
   const rules: Record<string, Rule[]> = {
     email: emailRules || [
@@ -46,10 +57,14 @@ export function SignUp({
       },
       { message: "Deve conter um número.", test: v => /\d/.test(v) },
     ],
+    confirmPassword: [
+      { message: "Senhas não conferem.", test: v => v === password },
+    ],
   };
 
   const emailValidation = evaluateRules(rules.email, email);
   const passwordValidation = evaluateRules(rules.password, password);
+  const confirmPasswordValidation = evaluateRules(rules.confirmPassword, confirmPassword);
 
   const handleSubmit = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -57,6 +72,10 @@ export function SignUp({
 
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
+    const confirmPasswordInvalid = confirmPasswordValidation.some(r => !r.passed);
+    
+    // Simple validation for dynamic required fields
+    const dynamicInvalid = fields.some(f => f.required && !dynamicValues[f.key]);
 
     if (emailInvalid) {
       emailRef.current?.focus();
@@ -66,10 +85,15 @@ export function SignUp({
       passwordRef.current?.focus();
       return;
     }
+    if (confirmPasswordInvalid) {
+      confirmPasswordRef.current?.focus();
+      return;
+    }
+    if (dynamicInvalid) return;
     
     setLoadingSubmit(true);
 
-    const res = await auth.register(email, password, flow_id);
+    const res = await auth.register(email, password, flow_id, dynamicValues);
     if(res.code === 201 && onSuccess) await onSuccess();
     else if(onFailed) await onFailed(res.message, res.trace);
     setLoadingSubmit(false);
@@ -94,7 +118,7 @@ export function SignUp({
           label="Senha" 
           name="password"
           placeholder="**********"
-          autoComplete="current-password"
+          autoComplete="new-password"
           type="password"
           value={password}
           onValueChange={setPassword}
@@ -102,17 +126,37 @@ export function SignUp({
           rulesStatus={passwordValidation}
           submitted={submitted}
         />
+        <BasicInputField 
+          label="Confirme a Senha" 
+          name="confirm-password"
+          placeholder="**********"
+          autoComplete="new-password"
+          type="password"
+          value={confirmPassword}
+          onValueChange={setConfirmPassword}
+          inputRef={confirmPasswordRef}
+          rulesStatus={confirmPasswordValidation}
+          submitted={submitted}
+        />
+        <DynamicFields 
+          fields={fields} 
+          values={dynamicValues} 
+          onValueChange={handleDynamicChange}
+          submitted={submitted}
+        />
       </div>
       <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit}/>
-      <div className="trieoh-card__divider">
-        <hr />
-        OU
-        <hr />
-      </div>
-      <span className="trieoh-card__other">
-        {"Já possui uma conta? "}
-        <span onClick={loginRedirect}>Entre</span>
-      </span>
+      {loginRedirect && <>
+        <div className="trieoh-card__divider">
+          <hr />
+          OU
+          <hr />
+        </div>
+        <span className="trieoh-card__other">
+          {"Já possui uma conta? "}
+          <span onClick={loginRedirect}>Entre</span>
+        </span>
+      </>}
     </form>
   );
 }

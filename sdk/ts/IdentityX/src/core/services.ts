@@ -1,26 +1,28 @@
-import { SessionI } from "../types/sessions-types";
+import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
+import type { SessionI } from "../types/sessions-types";
 import { clearAuthTokens, fetchAndSaveClaims, getUserInfo } from "../utils/token-utils";
+import { validateApiKey, validateProjectKey } from "../utils/env-validator";
 import type { Api } from "./api";
 import { env } from "./env";
 
 export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
-    const url = env.API_KEY.length > 0 
-      ? `/projects/${env.API_KEY}/login` : "/auth/login";
+    if (env.PROJECT_KEY) {
+      validateProjectKey();
+      const url = `/projects/${env.PROJECT_KEY}/login`;
+      const res = await apiInstance.post<{is_up_to_date: boolean}>(url, { email, password });
+      if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+      return res;
+    }
 
-    const res = await apiInstance.post<{is_up_to_date: boolean}>(
-      url,
-      { email, password }, 
-    );
+    const res = await apiInstance.post<{is_up_to_date: boolean}>("/auth/login", { email, password });
     if(res.code === 200) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 
-  register: (email: string, password: string, flow_id?: string, custom: string[] = [""]) => {
-    let url = env.API_KEY.length > 0 
-      ? `/projects/${env.API_KEY}/register` : "/auth/register";
-
-    if (env.API_KEY.length > 0) {
+  register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
+    if (env.PROJECT_KEY) {
+      validateProjectKey();
       if (!flow_id) {
         return Promise.reject({
           code: 400,
@@ -29,14 +31,16 @@ export const createAuthService = (apiInstance: Api) => ({
           timestamp: new Date().toISOString(),
         });
       }
+      
       const params = new URLSearchParams();
       params.append("flow_id", flow_id);
       params.append("schema_type", "context");
-      params.append("version", "0");
-      url += `?${params.toString()}`;
+      params.append("version", "1");
+      const url = `/projects/${env.PROJECT_KEY}/register?${params.toString()}`;
+      return apiInstance.post<string>(url, { email, password, custom_fields: custom });
     }
 
-    return apiInstance.post<string>(url, { email, password, custom_fields: custom });
+    return apiInstance.post<string>("/auth/register", { email, password });
   },  
   
   logout: async () => {
@@ -60,19 +64,16 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   sessions: async () => {
-    const res = await apiInstance.get<SessionI[]>("/sessions", { requiresAuth: true });
-    return res;
+    return apiInstance.get<SessionI[]>("/sessions", { requiresAuth: true });
   },
 
   revokeASession: async (id: string) => {
-    const res = await apiInstance.delete<string>(`/sessions/${id}`, { requiresAuth: true });
-    return res;
+    return apiInstance.delete<string>(`/sessions/${id}`, { requiresAuth: true });
   },
 
   revokeSessions: async (revokeAll: boolean = false) => {
     const path = revokeAll ? "/sessions" : "/sessions/others"
-    const res = await apiInstance.delete<string>(path, { requiresAuth: true });
-    return res;
+    return apiInstance.delete<string>(path, { requiresAuth: true });
   },
 
   refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
@@ -80,35 +81,80 @@ export const createAuthService = (apiInstance: Api) => ({
   profile: () => getUserInfo(),
 
   sendForgotPassword: async (email: string) => {
-    const res = await apiInstance.post<string>(
-      "/auth/forgot-password",
-      {email, project_id: env.API_KEY}, 
-    );
-    return res;
+    if (env.PROJECT_KEY) {
+      validateProjectKey();
+      return apiInstance.post<string>(
+        "/auth/forgot-password",
+        {email, project_id: env.PROJECT_KEY}, 
+      );
+    }
+    return apiInstance.post<string>("/auth/forgot-password", {email});
   },
 
   resetPassword: async (token: string, new_password: string) => {
-    const res = await apiInstance.post<string>(
+    return apiInstance.post<string>(
       `/auth/reset-password?token=${token}`,
       {new_password}, 
     );
-    return res;
   },
 
   resendVerifyEmail: async () => {
-    const res = await apiInstance.post<string>(
+    return apiInstance.post<string>(
       "/auth/verify/resend",
       undefined,
       { requiresAuth: true } 
     );
-    return res;
   },
 
   verifyEmail: async () => {
-    const res = await apiInstance.get<string>(
+    return apiInstance.get<string>(
       "/auth/verify",
       undefined,
     );
-    return res;
+  },
+});
+
+export const createServerAuthService = (apiInstance: Api) => ({
+  getProjectLatestRegisterFields: async (flow_id: string) => {
+    validateProjectKey();
+    validateApiKey();
+
+    let url = `/projects/${env.PROJECT_KEY}/schemas/lookup/latest`
+    const params = new URLSearchParams();
+    params.append("flow_id", flow_id);
+    params.append("schema_type", "context");
+    url += `?${params.toString()}`;
+
+    return apiInstance.get<ProjectFieldDefinitionResultI[]>(
+      url,
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  },
+
+  getProjectRegisterFields: async (flow_id: string) => {
+    validateProjectKey();
+    validateApiKey();
+
+    const version = 1;
+    let url = `/projects/${env.PROJECT_KEY}/schemas/lookup/v${version}`
+    const params = new URLSearchParams();
+    params.append("flow_id", flow_id);
+    params.append("schema_type", "context");
+    url += `?${params.toString()}`;
+
+    return apiInstance.get<ProjectFieldDefinitionResultI[]>(
+      url,
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
   },
 });

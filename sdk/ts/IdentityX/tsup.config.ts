@@ -4,7 +4,8 @@ export default defineConfig((options) => {
   const commonOptions: Options = {
     entry: {
       index: "src/index.ts",
-      react: "src/react.ts"
+      react: "src/react.ts",
+      server: "src/server.ts"
     },
     dts: false,
     minify: true,

@@ -12,6 +12,7 @@ export interface SignInProps {
   onSuccess?: (is_up_to_date: boolean) => Promise<void>;
   onFailed?: (message: string) => Promise<void>;
   signUpRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  forgotPasswordRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
 }
 
@@ -19,6 +20,7 @@ export function SignIn({
   onSuccess,
   onFailed,
   signUpRedirect,
+  forgotPasswordRedirect,
   emailRules,
 }: SignInProps) {
   const [email, setEmail] = useState("");
@@ -92,15 +94,24 @@ export function SignIn({
         />
       </div>
       <BasicSubmitButton label="Entrar" onSubmit={handleSubmit} loading={loadingSubmit}/>
-      <div className="trieoh-card__divider">
-        <hr />
-        OU
-        <hr />
-      </div>
-      <span className="trieoh-card__other">
-        {"Ainda não possui uma conta? "}
-        <span onClick={signUpRedirect}>Cadastra-se</span>
-      </span>
+      {forgotPasswordRedirect && (
+        <span className="trieoh-card__other" style={{ textAlign: "center", cursor: "pointer" }}>
+          <span onClick={forgotPasswordRedirect}>
+            Esqueceu sua senha?
+          </span>
+        </span>
+      )}
+      {signUpRedirect && <>
+        <div className="trieoh-card__divider">
+          <hr />
+          OU
+          <hr />
+        </div>
+        <span className="trieoh-card__other">
+          {"Ainda não possui uma conta? "}
+          <span onClick={signUpRedirect}>Cadastra-se</span>
+        </span>
+      </>}
     </form>
   );
 }
