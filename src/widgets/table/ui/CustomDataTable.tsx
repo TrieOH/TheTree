@@ -438,12 +438,12 @@ export default function CustomDataTable<T extends object>({
                     }
                   </h3>
                   {mobileVisibleColumns[1] && (
-                    <p className="text-sm text-muted-foreground mt-1 truncate">
+                    <div className="text-sm text-muted-foreground mt-1 truncate">
                       {mobileVisibleColumns[1].render 
                         ? mobileVisibleColumns[1].render(row[mobileVisibleColumns[1].key], row)
                         : String(row[mobileVisibleColumns[1].key])
                       }
-                    </p>
+                    </div>
                   )}
                 </div>
                 
