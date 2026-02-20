@@ -365,6 +365,14 @@
   color: var(--trieoh-primary);
 }
 
+.trieoh-card__empty {
+  display: block;
+  padding: 1.25rem 0.75rem;
+  text-align: center;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
 .trieoh-copyright {
   font-size: var(--trieoh-text-xl);
   font-weight: 500;

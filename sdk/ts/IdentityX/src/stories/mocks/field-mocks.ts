@@ -18,7 +18,7 @@ export const createMockField = (
   options: [],
   default_value: "",
   mutable: true,
-  required: true,
+  required: false,
   owner: "user",
   visibility_rules: [],
   required_rules: [],
@@ -69,7 +69,7 @@ export const MOCK_FIELDS = {
     ],
   }),
 
-  AGE: createMockField("f_age", "age", "Idade", "int", { required: false }),
+  AGE: createMockField("f_age", "age", "Idade", "int", { required: true }),
 
   NEWSLETTER: createMockField("f_news", "newsletter", "Desejo receber novidades", "bool", { required: false }),
   
@@ -96,7 +96,15 @@ export const MOCK_FIELDS = {
       {
         id: "rule_vis_age",
         depends_on_field_id: dependsOnId,
-        operator: "gte",
+        operator: "greater_than_equal",
+        value: "18",
+      }
+    ],
+    required_rules: [
+      {
+        id: "rule_vis_age",
+        depends_on_field_id: dependsOnId,
+        operator: "greater_than_equal",
         value: "18",
       }
     ]

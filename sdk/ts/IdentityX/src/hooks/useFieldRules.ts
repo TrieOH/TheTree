@@ -43,6 +43,8 @@ function evaluateRule(
   let passed: boolean;
   let message: string;
 
+  const normalize = (val: FieldValue) => (val === undefined || val === null) ? "" : String(val);
+
   switch (operator) {
     case "exists": {
       passed = fieldValue !== undefined && fieldValue !== null && fieldValue !== "";
@@ -57,58 +59,58 @@ function evaluateRule(
     }
     
     case "equals": {
-      passed = String(fieldValue) === String(compareValue);
-      message = `O campo "${fieldTitle}" deve ser igual a "${String(compareValue)}".`;
+      passed = normalize(fieldValue) === normalize(compareValue);
+      message = `O campo "${fieldTitle}" deve ser igual a "${normalize(compareValue)}".`;
       break;
     }
     
     case "not_equals": {
-      passed = String(fieldValue) !== String(compareValue) || fieldValue === undefined || fieldValue === null;
-      message = `O campo "${fieldTitle}" deve ser diferente de "${String(compareValue)}".`;
+      passed = normalize(fieldValue) !== normalize(compareValue);
+      message = `O campo "${fieldTitle}" deve ser diferente de "${normalize(compareValue)}".`;
       break;
     }
     
     case "contains": {
-      passed = String(fieldValue).includes(String(compareValue));
-      message = `O campo "${fieldTitle}" deve conter "${String(compareValue)}".`;
+      passed = normalize(fieldValue).includes(normalize(compareValue));
+      message = `O campo "${fieldTitle}" deve conter "${normalize(compareValue)}".`;
       break;
     }
     
-    case "gt": {
+    case "greater_than": {
       passed = Number(fieldValue) > Number(compareValue);
-      message = `O campo "${fieldTitle}" deve ser maior que ${String(compareValue)}.`;
+      message = `O campo "${fieldTitle}" deve ser maior que ${normalize(compareValue)}.`;
       break;
     }
     
-    case "gte": {
+    case "greater_than_equal": {
       passed = Number(fieldValue) >= Number(compareValue);
-      message = `O campo "${fieldTitle}" deve ser maior ou igual a ${String(compareValue)}.`;
+      message = `O campo "${fieldTitle}" deve ser maior ou igual a ${normalize(compareValue)}.`;
       break;
     }
     
-    case "lt": {
+    case "lower_than": {
       passed = Number(fieldValue) < Number(compareValue);
-      message = `O campo "${fieldTitle}" deve ser menor que ${String(compareValue)}.`;
+      message = `O campo "${fieldTitle}" deve ser menor que ${normalize(compareValue)}.`;
       break;
     }
     
-    case "lte": {
+    case "lower_than_equal": {
       passed = Number(fieldValue) <= Number(compareValue);
-      message = `O campo "${fieldTitle}" deve ser menor ou igual a ${String(compareValue)}.`;
+      message = `O campo "${fieldTitle}" deve ser menor ou igual a ${normalize(compareValue)}.`;
       break;
     }
     
     case "in": {
-      const options = String(compareValue).split(",").map(v => v.trim());
-      passed = options.includes(String(fieldValue));
+      const options = normalize(compareValue).split(",").map(v => v.trim());
+      passed = options.includes(normalize(fieldValue));
       const optionsStr = options.join(", ");
       message = `O campo "${fieldTitle}" deve ser um dos seguintes: ${optionsStr}.`;
       break;
     }
     
     case "not_in": {
-      const options = String(compareValue).split(",").map(v => v.trim());
-      passed = !options.includes(String(fieldValue));
+      const options = normalize(compareValue).split(",").map(v => v.trim());
+      passed = !options.includes(normalize(fieldValue));
       const optionsStr = options.join(", ");
       message = `O campo "${fieldTitle}" não pode ser um dos seguintes: ${optionsStr}.`;
       break;

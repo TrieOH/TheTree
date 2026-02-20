@@ -80,6 +80,18 @@ export const createAuthService = (apiInstance: Api) => ({
 
   profile: () => getUserInfo(),
 
+  getProfileUpgradeForms: async () => {
+    validateProjectKey();
+    const url = `/projects/${env.PROJECT_KEY}/upgrade-form`;
+    return apiInstance.get<ProjectFieldDefinitionResultI>(url, { requiresAuth: true });
+  },
+
+  updateProfile: async (custom: Record<string, FieldValue>) => {
+    validateProjectKey();
+    const url = `/projects/${env.PROJECT_KEY}/metadata`;
+    return apiInstance.post<string>(url, { custom_fields: custom }, { requiresAuth: true });
+  },
+
   sendForgotPassword: async (email: string) => {
     if (env.PROJECT_KEY) {
       validateProjectKey();
@@ -125,7 +137,7 @@ export const createServerAuthService = (apiInstance: Api) => ({
     params.append("schema_type", "context");
     url += `?${params.toString()}`;
 
-    return apiInstance.get<ProjectFieldDefinitionResultI[]>(
+    return apiInstance.get<ProjectFieldDefinitionResultI>(
       url,
       {
         headers: {
@@ -147,7 +159,7 @@ export const createServerAuthService = (apiInstance: Api) => ({
     params.append("schema_type", "context");
     url += `?${params.toString()}`;
 
-    return apiInstance.get<ProjectFieldDefinitionResultI[]>(
+    return apiInstance.get<ProjectFieldDefinitionResultI>(
       url,
       {
         headers: {
