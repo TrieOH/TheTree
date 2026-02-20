@@ -176,7 +176,6 @@ export default function FieldEditor() {
       defaultEmailVersionField.key,
       defaultPasswordVersionField.key
     ];
-    console.log(schemaVData?.fields)
     let maxSuffix = -1;
     allKeys.forEach(key => {
       const match = key.match(/custom_field_(\d+)/);
@@ -230,10 +229,10 @@ export default function FieldEditor() {
       title: `Custom Field ${nextId}`,
       description: '',
       placeholder: '',
-      object_id: "",
+      object_id: `custom_obj_id_${nextId}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      id: 'Null',
+      id: `custom_id_${nextId}`,
       type: "string",
       owner: "user",
       mutable: true,
