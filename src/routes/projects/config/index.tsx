@@ -10,6 +10,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
 import { Database, Globe, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
+import PermissionTable from '@/features/permission/ui/PermissionTable';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -18,6 +19,8 @@ export const Route = createFileRoute('/projects/config/')({
     if (typeof window !== 'undefined' && !currentProjectId) throw redirect({ to: '/projects' });
   },
   loader: async ({ context: { queryClient }}) => {
+    if (typeof window === 'undefined') return { }
+    
     const id = navigationStore.state.currentProjectId;
     queryClient.prefetchQuery(usersQueryOptions(id || ""))
     return { }
@@ -51,13 +54,18 @@ function RouteComponent() {
       icon: Globe,
       content: <ScopeTable project_id={currentProjectId} />,
     },
+    { 
+      value: 'permissions', 
+      label: 'Permissions', 
+      icon: Shield, 
+      content: <PermissionTable project_id={currentProjectId} />
+    },
     {
       value: 'users',
       label: 'Users',
       icon: UserCog,
       content: <UserTable data={users}/>
     },
-    { value: 'permissions', label: 'Permissions', icon: Shield, content: <p>Gerenciamento de permissões...</p> },
     { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
   ];
 
