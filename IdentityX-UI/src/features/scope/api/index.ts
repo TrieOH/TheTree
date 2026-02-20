@@ -11,7 +11,6 @@ import { queryOptions } from "@tanstack/react-query";
  */
 export const createScopeFn = createClientOnlyFn((scopeData: Omit<ScopeCRUD, "id">) => {
   const { project_id, ...dataToSend } = scopeData;
-  console.log(scopeData)
   return authFetcher<Scope>(`/projects/${project_id}/scopes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default

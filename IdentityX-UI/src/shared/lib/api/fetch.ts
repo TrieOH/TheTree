@@ -30,6 +30,18 @@ export type ApiSuccessResponse<T> = RawSuccessResponse<T> & { success: true };
 export type ApiErrorResponse = RawErrorResponse & { success: false; details?: unknown; };
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
+// Errors
+export class ApiError extends Error {
+  code: number;
+  trace?: string[];
+
+  constructor(response: ApiResponse<unknown>) {
+    super(response.message);
+    this.code = response.code;
+    this.trace = !response.success ? response.trace : [];
+  }
+}
+
 const authenticatedFetch = createAuthenticatedFetch({
   baseURL: env.VITE_API_URL,
 });
@@ -44,8 +56,11 @@ const authenticatedFetch = createAuthenticatedFetch({
  */
 export async function authFetcher<TData>(
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
+  options?: { showErrorToast?: boolean }
 ): Promise<ApiResponse<TData>> {
+  const showErrorToast = options?.showErrorToast !== false; // Default to true
+
   try {
     let baseUrlString = env.VITE_API_URL;
     if (!baseUrlString.startsWith('http://') && !baseUrlString.startsWith('https://')) {
@@ -69,7 +84,7 @@ export async function authFetcher<TData>(
       const errorResponse = rawResponse as RawErrorResponse;
       const errorMessage = errorResponse.message || response.statusText || "An unknown error occurred";
       
-      toast.error(errorMessage, {description: errorResponse.trace?.join("\n")});
+      if (showErrorToast) toast.error(errorMessage, {description: errorResponse.trace?.join("\n")});
 
       return {
         success: false,
@@ -99,7 +114,7 @@ export async function authFetcher<TData>(
       ? error.message 
       : "A network or unknown error occurred.";
     
-    toast.error(errorMessage);
+    if (showErrorToast) toast.error(errorMessage);
 
     return {
       success: false,
@@ -122,7 +137,7 @@ export async function authFetcher<TData>(
  * @throws An error if the fetch fails.
  */
 export const tanstackQueryFetcher = async <TData>(path: string): Promise<TData> => {
-  const response = await authFetcher<TData>(path);
-  if (!response.success) throw new Error(response.message);
+  const response = await authFetcher<TData>(path, undefined, { showErrorToast: false });
+  if (!response.success) throw new ApiError(response); 
   return response.data;
 };
