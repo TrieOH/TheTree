@@ -11,6 +11,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
 import { Database, Globe, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
 import PermissionTable from '@/features/permission/ui/PermissionTable';
+import RoleTable from '@/features/role/ui/RoleTable';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -55,6 +56,12 @@ function RouteComponent() {
       content: <ScopeTable project_id={currentProjectId} />,
     },
     { 
+      value: 'roles', 
+      label: 'Roles', 
+      icon: ShieldCheck, 
+      content: <RoleTable project_id={currentProjectId}/>
+    },
+    { 
       value: 'permissions', 
       label: 'Permissions', 
       icon: Shield, 
@@ -66,7 +73,6 @@ function RouteComponent() {
       icon: UserCog,
       content: <UserTable data={users}/>
     },
-    { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
   ];
 
   return (
