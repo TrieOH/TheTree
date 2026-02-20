@@ -32,7 +32,6 @@ export type ColumnDef<T> = {
   key: keyof T;
   header: string;
   responsive?: 'default' | 'icon' | 'hidden';
-  width?: string;
   sortable?: boolean;
   /** Disables sorting for this column entirely */
   disabled?: boolean;
@@ -322,7 +321,6 @@ export default function CustomDataTable<T extends object>({
                       key={String(col.key)}
                       className={`
                         h-12 px-4 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap
-                        ${col.width || ''}
                         ${isSortable ? 'cursor-pointer select-none hover:text-foreground' : ''}
                         ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}
                         ${isSortable ? 'group' : ''}

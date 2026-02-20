@@ -28,9 +28,6 @@ export default function PermissionDialog({ project_id }: PropsI) {
         queryClient.setQueryData(["permissions", project_id, response.data.id], response.data);
       } else toast.error(`Failed to create permission: ${response.message}`);
     },
-    onError: (error) => {
-      toast.error(`Failed to create scope: ${error.message}`);
-    },
   });
 
   const { handleSubmit } = useCrudOperations({
