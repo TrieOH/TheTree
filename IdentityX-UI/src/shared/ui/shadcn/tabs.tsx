@@ -1,18 +1,22 @@
-"use client"
-
-import * as TabsPrimitive from "@radix-ui/react-tabs"
+import { Tabs as TabsPrimitive } from "radix-ui"
 import type * as React from "react"
 
 import { cn } from "@/shared/lib/utils"
 
+
 function Tabs({
   className,
+  orientation = "horizontal",
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
+      data-orientation={orientation}
+      className={cn(
+        "gap-2 group/tabs flex data-horizontal:flex-col",
+        className
+      )}
       {...props}
     />
   )

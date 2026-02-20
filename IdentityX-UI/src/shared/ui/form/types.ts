@@ -18,4 +18,5 @@ export interface FieldConfig {
   label: string;
   placeholder: string;
   autoComplete?: string;
+  errors?: string[]
 }
