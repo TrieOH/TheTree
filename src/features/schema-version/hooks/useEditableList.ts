@@ -132,16 +132,16 @@ export function useEditableList<T>({
     const diff = computeDiff();
 
     try {
+      if (diff.deletes.length && onDelete) await onDelete(diff.deletes);
+      if (diff.updates.length && onUpdate) await onUpdate(diff.updates);
+      if (diff.creates.length && onCreate) await onCreate(diff.creates);
+
       for(const d of (customDiffs || [])) 
         await d({
           diff, 
           getCurrentById: id => diff.currentMap.get(id),
           getOriginalById: id => diff.originalMap.get(id),
         });
-
-      if (diff.deletes.length && onDelete) await onDelete(diff.deletes);
-      if (diff.updates.length && onUpdate) await onUpdate(diff.updates);
-      if (diff.creates.length && onCreate) await onCreate(diff.creates);
     } finally { setIsSubmitting(false); }
   }, [computeDiff, onCreate, onUpdate, onDelete, customDiffs]);
 
