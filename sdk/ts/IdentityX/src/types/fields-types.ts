@@ -1,17 +1,20 @@
 export type DevStatus = "draft" | "published" | "archived";
 
-export type Operator = 
-  | "exists" 
-  | "not_exists" 
-  | "equals" 
-  | "not_equals" 
-  | "contains" 
-  | "gt" 
-  | "gte" 
-  | "lt" 
-  | "lte" 
-  | "in" 
-  | "not_in";
+export const OPERATORS = [
+  "equals",
+  "not_equals",
+  "in",
+  "not_in",
+  "exists",
+  "not_exists",
+  "greater_than",
+  "greater_than_equal",
+  "lower_than",
+  "lower_than_equal",
+  "contains",
+] as const;
+
+export type Operator = typeof OPERATORS[number];
 
 export type FieldValue = string | number | boolean | string[] | undefined;
 
@@ -39,7 +42,7 @@ export interface FieldDefinitionResultI {
   description: string;
   position: number;
   options: OptionResultI[];
-  default_value: string;
+  default_value: FieldValue;
   mutable: boolean;
   required: boolean;
   owner: "user" | "admin" | "system"

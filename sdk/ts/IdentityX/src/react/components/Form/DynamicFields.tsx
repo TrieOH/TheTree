@@ -22,6 +22,7 @@ export default function DynamicFields({
   const fieldsMap = useMemo(() => {
     return fields.reduce((acc, field) => {
       acc[field.id] = { key: field.key, title: field.title };
+      if (field.object_id) acc[field.object_id] = { key: field.key, title: field.title };
       return acc;
     }, {} as Record<string, { key: string; title: string }>);
   }, [fields]);
@@ -62,10 +63,12 @@ function FieldRenderer({
   fieldsMap,
 }: FieldRendererProps) {
   const visibilityResult = useFieldRules(field.visibility_rules, values, fieldsMap);
-  const isVisible = visibilityResult.satisfied;
+  const hasVisibilityRules = field.visibility_rules && field.visibility_rules.length > 0;
+  const isVisible = !hasVisibilityRules || visibilityResult.satisfied;
 
   const requiredResult = useFieldRules(field.required_rules, values, fieldsMap);
-  const isRequiredByRules = requiredResult.satisfied;
+  const hasRequiredRules = field.required_rules && field.required_rules.length > 0;
+  const isRequiredByRules = hasRequiredRules && requiredResult.satisfied;
   const isRequired = field.required || isRequiredByRules;
 
   const value = values[field.key] ?? field.default_value ?? "";
