@@ -1,5 +1,4 @@
 import { tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import { createClientOnlyFn } from "@tanstack/react-start";
 import type { User } from "../model/types";
 import { queryOptions } from "@tanstack/react-query";
 
@@ -7,13 +6,8 @@ import { queryOptions } from "@tanstack/react-query";
  * Fetches all users from the server.
  * @returns A promise that resolves to an array of User objects.
  */
-export const getUsersFn = createClientOnlyFn(async ({
-  queryKey,
-}: {
-  queryKey: ["users", string];
-}) => {
+export const getUsersFn = (async ({ queryKey,}: { queryKey: ["users", string] }) => {
   const [, projectId] = queryKey;
-
   try {
     return await tanstackQueryFetcher<User[]>(
       `/projects/${projectId}/users`
