@@ -15,7 +15,6 @@ import { DragOverlay } from "@dnd-kit/core";
 import type { FieldDefinitionResultI } from "../model/types";
 import { DraggableFieldEditPanel } from './DraggableFieldEditPanel';
 import { FieldEditForm } from './FieldEditForm';
-import { defaultEmailVersionField, defaultPasswordVersionField } from "../model/default";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Plus, SaveAll } from "lucide-react"; 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +26,7 @@ import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 import { optionsDiff } from '../lib/field-options-diff-utils';
 import { rulesDiff } from '../lib/field-rules-diff-utils';
-import { SignUp } from '@trieoh/node-auth-sdk/react';
+import { EditorForm } from '@trieoh/node-auth-sdk/react';
 import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
 
 export default function FieldEditor() {
@@ -172,9 +171,7 @@ export default function FieldEditor() {
 
   useEffect(() => {
     const allKeys = [
-      ...(schemaVData?.fields || []).map(field => field.key),
-      defaultEmailVersionField.key,
-      defaultPasswordVersionField.key
+      ...(schemaVData?.fields || []).map(field => field.key)
     ];
     let maxSuffix = -1;
     allKeys.forEach(key => {
@@ -284,19 +281,6 @@ export default function FieldEditor() {
                 label: "Field",
                 content: (
                   <div className="flex-1 py-4 px-2 space-y-2">
-                    <FieldCard
-                      key={defaultEmailVersionField.key}
-                      field={defaultEmailVersionField}
-                      isFixed={true}
-                      isSelected={editingField?.key === defaultEmailVersionField.key}
-                    />
-                    <FieldCard
-                      key={defaultPasswordVersionField.key}
-                      field={{ ...defaultPasswordVersionField }}
-                      overwriteType="password"
-                      isFixed={true}
-                      isSelected={editingField?.key === defaultPasswordVersionField.key}
-                    />
                     <SortableContext items={fields.items.map((item) => item.key)}>
                       {fields.items.map((item) => (
                         <FieldCard
@@ -323,27 +307,18 @@ export default function FieldEditor() {
                 value: "preview",
                 label: "Preview",
                 content: (
-                  <SignUp fields={fields.items} />
-                ),
+                  <EditorForm 
+                    title='Schema Fields'
+                    description='Add, edit, and configure the fields that define your form.'
+                    fields={fields.items} 
+                  />
+                )
               },
             ]}
           />
         ) : (
           <>
             <div className="flex-1 max-w-79 border-r border-r-border py-4 px-2 space-y-2">
-              <FieldCard
-                key={defaultEmailVersionField.key}
-                field={defaultEmailVersionField}
-                isFixed={true}
-                isSelected={editingField?.key === defaultEmailVersionField.key}
-                />
-              <FieldCard
-                key={defaultPasswordVersionField.key}
-                field={{ ...defaultPasswordVersionField }}
-                overwriteType="password"
-                isFixed={true}
-                isSelected={editingField?.key === defaultPasswordVersionField.key}
-                />
               <SortableContext items={fields.items.map((item) => item.key)}>
                 {fields.items.map((item) => (
                   <FieldCard
@@ -366,7 +341,11 @@ export default function FieldEditor() {
               
             </div>
             <div className='flex-1 flex justify-center items-center sticky top-16 h-(--screen--minus-header)'>
-              <SignUp fields={fields.items} />
+              <EditorForm 
+                title='Schema Fields'
+                description='Add, edit, and configure the fields that define your form.'
+                fields={fields.items} 
+              />
             </div>
           </>
         )}
