@@ -7,6 +7,7 @@ export type HeaderAction =
   | { id: string; type: 'button'; label?: string; icon?: React.ReactNode; onClick: () => void; visibleOn?: VisibleOn, collapseToMenu?: boolean }
   | { id: string; type: 'authButton'; visibleOn?: VisibleOn, collapseToMenu?: boolean }
   | { id: string; type: 'createProject'; visibleOn?: VisibleOn, collapseToMenu?: boolean; }
+  | { id: string; type: 'schemaVersionSelector'; visibleOn?: VisibleOn, collapseToMenu?: boolean; }
   | { id: string; type: 'back'; visibleOn?: VisibleOn, collapseToMenu?: boolean, to?: string; }
 
 export interface HeaderConfigI {

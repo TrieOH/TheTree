@@ -7,7 +7,7 @@ export const scopeCRUDSchema = z.object({
   external_id: z.string().optional()
     .refine(
       val => val === undefined || val === "" || val.length >= 3,
-      "External ID must be at least 3 characters long"
+      "External ID must be at least 3 characters long or empty"
     )
 });
 

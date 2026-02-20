@@ -4,6 +4,7 @@ import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import AuthButton from '@/features/auth/ui/AuthButton'
 import BackButton from '@/features/navigation/ui/BackButton'
 import CreateProjectButton from '@/features/project/ui/CreateProjectButton'
+import SchemaVersionSelector from '@/features/schema-version/ui/SchemaVersionSelector'
 
 export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
   
@@ -20,20 +21,13 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
         <ShadowButton value={action.label} leftIcon={action.icon} onClick={action.onClick} />
       )
 
-    case 'createProject':
-      return (
-        <CreateProjectButton />
-      )
+    case 'createProject': return  <CreateProjectButton />
 
-    case 'back':
-      return (
-        <BackButton value='Back' to={action.to} />
-      )
+    case 'schemaVersionSelector': return <SchemaVersionSelector />
 
-    case 'authButton':
-      return (
-        <AuthButton />
-      )
+    case 'back': return <BackButton value='Back' to={action.to} />
+
+    case 'authButton': return <AuthButton />
 
     default:
       return null

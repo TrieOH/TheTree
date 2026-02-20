@@ -8,6 +8,7 @@ import { ProjectsEmptyState } from '@/features/project/ui/ProjectsEmptyState';
 import { projectActions } from '@/features/project/store';
 import { cn } from '@/shared/lib/utils';
 import { ProjectAddButton } from '@/features/project/ui/ProjectAddButon';
+import { useQuery } from '@tanstack/react-query';
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
@@ -16,16 +17,12 @@ export const Route = createFileRoute('/projects/')({
       header: "projects"
     }
   },
-  loader: async ({ context: { queryClient }}) => {
-    const projects = await queryClient.ensureQueryData(projectsQueryOptions)
-    return { projects }
-  },
   pendingComponent: ProjectsSkeleton,
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { projects } = Route.useLoaderData()
+  const { data: projects = [] } = useQuery(projectsQueryOptions)
 
   const hasProjects = projects && projects.length > 0
 
