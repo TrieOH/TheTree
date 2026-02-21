@@ -41,8 +41,8 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		Validate(t, val, spec)
 	})
 
-	t.Run("UpdateRoleComment", func(t *testing.T) {
-		suite.NewClient(t).WithAuth(user.auth).PATCH("/projects/" + projectID + "/roles/" + adminRoleID).
+	t.Run("UpdateRoleDescription", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).PATCH("/projects/" + projectID + "/roles/" + adminRoleID + "/description").
 			WithBody(map[string]interface{}{
 				"description": "can do stuff and more stuff",
 			}).
@@ -70,8 +70,8 @@ func testRoles(t *testing.T, suite *TestSuite) {
 		assert.NotEqual(t, adminCreateDate, adminUpdate1Date)
 	})
 
-	t.Run("UpdateRoleCommentAgain", func(t *testing.T) {
-		suite.NewClient(t).WithAuth(user.auth).PATCH("/projects/" + projectID + "/roles/" + adminRoleID).
+	t.Run("UpdateRoleDescriptionAgain", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).PATCH("/projects/" + projectID + "/roles/" + adminRoleID + "/description").
 			WithBody(map[string]interface{}{
 				"description": "can do stuff and more stuff but not that",
 			}).

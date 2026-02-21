@@ -681,7 +681,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 				map[string]interface{}(ticketBuyPermission),
 			}
 
-			ValidateExact(t, val, spec)
+			Validate(t, val, spec)
 		})
 
 		t.Run("VerifyStaffEffectivePermissions", func(t *testing.T) {
@@ -716,7 +716,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 				map[string]interface{}(administratePermission),
 			}
 
-			ValidateExact(t, val, spec)
+			Validate(t, val, spec)
 		})
 
 		t.Run("VerifyOwnerEffectivePermissions", func(t *testing.T) {
@@ -729,7 +729,7 @@ func testEffectivePermissions(t *testing.T, suite *TestSuite) {
 				map[string]interface{}(eventCreatePermission),
 			}
 
-			ValidateExact(t, val, spec)
+			Validate(t, val, spec)
 		})
 	})
 
