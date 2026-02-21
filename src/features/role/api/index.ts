@@ -99,3 +99,14 @@ export const removePermissionOfRoleFn = createClientOnlyFn((roleData: Role, perm
     method: "DELETE",
   });
 });
+
+/**
+ * Deletes a role from the server.
+ * @param id - The ID of the role to delete.
+ * @returns A promise that resolves to the API response.
+ */
+export const deleteRoleFn = createClientOnlyFn(({project_id, id}: {project_id: string, id: string}) => {
+  return authFetcher<void>(`/projects/${project_id}/roles/${id}`, {
+    method: "DELETE",
+  });
+});

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { roleStore } from "../store";
-import { createRoleFn, patchRoleFn } from "../api";
+import { createRoleFn, deleteRoleFn, patchRoleFn } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -41,6 +41,16 @@ export default function RoleDialog({ project_id }: PropsI) {
     },
   });
 
+  const deleteRoleMutation = useMutation({
+    mutationFn: deleteRoleFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message || "Role deleted sucessfuly!");
+        queryClient.invalidateQueries({ queryKey: ["roles"] });
+      } else toast.error(`Failed to delete role: ${response.message}`);
+    },
+  });
+
   const { handleSubmit } = useCrudOperations({
     store: roleStore,
     autoClose: true,
@@ -50,6 +60,9 @@ export default function RoleDialog({ project_id }: PropsI) {
     onUpdate: async (id, data) => {
       patchRoleMutation.mutate({ id, ...data } as RoleCRUD);
     },
+    onDelete: async (id) => {
+      deleteRoleMutation.mutate({project_id, id});
+    }
   });
 
   const fields: FieldConfig[] = [

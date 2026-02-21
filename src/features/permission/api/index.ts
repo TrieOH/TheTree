@@ -49,3 +49,14 @@ export const permissionsQueryOptions = (project_id: string, object?: string, act
     enabled: !!project_id
   })
 }
+
+/**
+ * Deletes a permission from the server.
+ * @param id - The ID of the permission to delete.
+ * @returns A promise that resolves to the API response.
+ */
+export const deletePermissionFn = createClientOnlyFn(({project_id, id}: {project_id: string, id: string}) => {
+  return authFetcher<void>(`/projects/${project_id}/permissions/${id}`, {
+    method: "DELETE",
+  });
+});
