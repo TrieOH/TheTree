@@ -2,17 +2,19 @@ package dto
 
 import (
 	"GoAuth/internal/ports/inbounds"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type PermissionResponse struct {
-	ID        uuid.UUID  `json:"id"`
-	ProjectID *uuid.UUID `json:"project_id"`
-	Object    string     `json:"object"`
-	Action    string     `json:"action"`
-	CreatedAt time.Time  `json:"created_at"`
+	ID        uuid.UUID        `json:"id"`
+	ProjectID *uuid.UUID       `json:"project_id"`
+	Object    string           `json:"object"`
+	Action    string           `json:"action"`
+	Meta      *json.RawMessage `json:"meta"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 func PermissionOutputToPermissionResponse(in inbounds.PermissionOutput) PermissionResponse {
@@ -21,6 +23,7 @@ func PermissionOutputToPermissionResponse(in inbounds.PermissionOutput) Permissi
 		ProjectID: in.Permission.ProjectID,
 		Object:    in.Permission.Object,
 		Action:    in.Permission.Action,
+		Meta:      in.Permission.Meta,
 		CreatedAt: in.Permission.CreatedAt,
 	}
 }
