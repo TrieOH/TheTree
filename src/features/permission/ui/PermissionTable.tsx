@@ -2,7 +2,7 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import { permissionsQueryOptions } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "@/shared/lib/date-utils";
-import { Shield } from "lucide-react";
+import { Shield, Trash2 } from "lucide-react";
 import { permissionActions } from "../store";
 import PermissionDialog from "./PermissionDialog";
 import { Badge } from "@/shared/ui/shadcn/badge";
@@ -52,6 +52,14 @@ export default function PermissionTable({ project_id }: PropsI) {
             render: (value) => formatDate(value as string),
             searchableTextExtractor: (value) => formatDate(value as string),
           },
+        ]}
+        rowActions={[
+          {
+            label: "Delete",
+            icon: Trash2,
+            onClick: permissionActions.openDelete,
+            variant: "destructive",
+          }
         ]}
         tableActions={[
           {
