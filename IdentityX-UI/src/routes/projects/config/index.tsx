@@ -9,9 +9,10 @@ import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
-import { Database, Globe, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
+import { Database, Globe, KeySquare, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
 import PermissionTable from '@/features/permission/ui/PermissionTable';
 import RoleTable from '@/features/role/ui/RoleTable';
+import APIKeyManager from '@/features/api-keys/ui/APIKeyManager';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -72,6 +73,12 @@ function RouteComponent() {
       label: 'Users',
       icon: UserCog,
       content: <UserTable data={users}/>
+    },
+    {
+      value: 'api-keys',
+      label: 'API Keys',
+      icon: KeySquare,
+      content: <APIKeyManager publicKey={currentProjectId}/>
     },
   ];
 

@@ -2,6 +2,7 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import type { User } from "../model/types";
 import { formatDate } from "@/shared/lib/date-utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
+import TruncatedId from "@/shared/ui/TruncatedId";
 
 
 interface PropsI {
@@ -44,6 +45,12 @@ export default function UserTable({ data }: PropsI) {
           key: "user_type",
           header: "Type",
           sortable: true,
+        },
+        {
+          key: "id",
+          header: "ID",
+          sortable: true,
+          render: (value) => <TruncatedId id={value as string} />,
         },
         {
           key: "created_at",

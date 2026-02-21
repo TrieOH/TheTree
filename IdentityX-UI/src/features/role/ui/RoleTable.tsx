@@ -4,7 +4,7 @@ import { roleQueryOptions } from "../api";
 import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import { formatDate } from "@/shared/lib/date-utils";
 import { roleActions } from "../store";
-import { Edit, ShieldCheck } from "lucide-react";
+import { Edit, ShieldCheck, Trash2 } from "lucide-react";
 import RoleDialog from "./RoleDialog";
 import TruncatedId from "@/shared/ui/TruncatedId";
 
@@ -68,6 +68,12 @@ export default function RoleTable({ project_id }: PropsI) {
             icon: Edit,
             variant: "ghost-primary",
           },
+          {
+            label: "Delete",
+            icon: Trash2,
+            onClick: roleActions.openDelete,
+            variant: "destructive",
+          }
         ]}
         tableActions={[
           {

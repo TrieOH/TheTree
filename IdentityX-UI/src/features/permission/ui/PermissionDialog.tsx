@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { permissionStore } from "../store";
-import { createPermissionFn } from "../api";
+import { createPermissionFn, deletePermissionFn } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -30,12 +30,25 @@ export default function PermissionDialog({ project_id }: PropsI) {
     },
   });
 
+  const deletePermissionMutation = useMutation({
+    mutationFn: deletePermissionFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message || "Permission deleted sucessfuly!");
+        queryClient.invalidateQueries({ queryKey: ["permissions"] });
+      } else toast.error(`Failed to delete permission: ${response.message}`);
+    },
+  });
+
   const { handleSubmit } = useCrudOperations({
     store: permissionStore,
     autoClose: true,
     onCreate: async (data) => {
       createPermissionMutation.mutate({ ...data, project_id });
     },
+    onDelete: async (id) => {
+      deletePermissionMutation.mutate({project_id, id});
+    }
   });
 
   const fields: FieldConfig[] = [
