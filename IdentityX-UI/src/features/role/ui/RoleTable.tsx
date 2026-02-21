@@ -21,6 +21,11 @@ export default function RoleTable({ project_id }: PropsI) {
         data={data}
         columns={[
           {
+            key: "id",
+            header: "ID",
+            sortable: true,
+          },
+          {
             key: "name",
             header: "Name",
             sortable: true,
