@@ -7,7 +7,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   X,
-  Search
+  Search,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger 
 } from '@/shared/ui/shadcn/dropdown-menu';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
+import { cn } from '@/shared/lib/utils';
 
 // --- Type Definitions ---
 
@@ -73,6 +74,7 @@ export type DataTableProps<T> = {
   itemsPerPage?: number;
   searchPlaceholder?: string;
   initialSort?: { key: keyof T; direction: SortDirection };
+  renderExpandedRow?: (row: T) => React.ReactNode;
 };
 
 
@@ -92,25 +94,25 @@ const SortIndicator = ({ columnKey, sortConfig }: Pick<SortIndicatorProps, 'colu
     <div className="flex flex-col items-center justify-center ml-2 pointer-events-none">
       <ChevronUp 
         size={14} 
-        className={`
-          transition-all duration-200
-          ${isAsc 
+        className={cn(
+          "transition-all duration-200",
+          isAsc 
             ? 'text-primary opacity-100' 
             : isDesc
               ? 'text-muted-foreground opacity-30'
-              : 'text-muted-foreground opacity-0 group-hover:opacity-40'}
-        `}
+              : 'text-muted-foreground opacity-0 group-hover:opacity-40'
+        )}
       />
       <ChevronDown 
         size={14} 
-        className={`
-          -mt-1 transition-all duration-200
-          ${isDesc 
+        className={cn(
+          "-mt-1 transition-all duration-200",
+          isDesc 
             ? 'text-primary opacity-100' 
             : isAsc
               ? 'text-muted-foreground opacity-30'
-              : 'text-muted-foreground opacity-0 group-hover:opacity-40'}
-        `}
+              : 'text-muted-foreground opacity-0 group-hover:opacity-40'
+        )}
       />
     </div>
   );
@@ -138,6 +140,7 @@ export default function CustomDataTable<T extends object>({
   itemsPerPage = 10,
   searchPlaceholder = "Search...",
   initialSort,
+  renderExpandedRow,
 }: DataTableProps<T>) {
   
   const defaultSortColumn = columns.find(col => col.primary && col.sortable) || columns.find(col => col.sortable);
@@ -147,14 +150,20 @@ export default function CustomDataTable<T extends object>({
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilters, setActiveFilters] = useState<Partial<Record<keyof T, string>>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
+
+  const toggleRow = (id: string | number) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(id)) newExpandedRows.delete(id);
+    else newExpandedRows.add(id);
+    setExpandedRows(newExpandedRows);
+  };
 
   const handleSort = (key: keyof T, disabled?: boolean) => {
     if (disabled) return;
     
     let direction: SortDirection = 'asc';
-    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
     setCurrentPage(1);
   };
@@ -171,10 +180,9 @@ export default function CustomDataTable<T extends object>({
       return data.filter((item) => {
         const itemSearchableString = columns.reduce((acc, col) => {
           let cellValue: string = '';
-          if (col.searchableTextExtractor) {
-            cellValue = col.searchableTextExtractor(item[col.key], item);
-          } else cellValue = String(item[col.key] ?? '');
-          
+          if (col.searchableTextExtractor) cellValue = col.searchableTextExtractor(item[col.key], item);
+          else cellValue = String(item[col.key] ?? '');
+
           return `${acc} ${cellValue}`;
         }, "").toLowerCase();
   
@@ -319,17 +327,17 @@ export default function CustomDataTable<T extends object>({
                   return (
                     <th
                       key={String(col.key)}
-                      className={`
-                        h-12 px-4 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap
-                        ${isSortable ? 'cursor-pointer select-none hover:text-foreground' : ''}
-                        ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}
-                        ${isSortable ? 'group' : ''}
-                      `}
+                      className={cn(
+                        "h-12 px-4 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap",
+                        isSortable && "cursor-pointer select-none hover:text-foreground",
+                        isDisabled && "cursor-not-allowed opacity-60",
+                        isSortable && "group"
+                      )}
                       onClick={() => handleSort(col.key, col.disabled)}
                     >
                       <div className="flex items-center justify-between">
                         {/* Label - Left aligned */}
-                        <span className={isSortable ? 'pr-2' : ''}>
+                        <span className={cn(isSortable && 'pr-2')}>
                           {col.responsive === 'icon' ? (
                             <>
                               <span className="hidden lg:inline">{col.header}</span>
@@ -361,49 +369,79 @@ export default function CustomDataTable<T extends object>({
             </thead>
             <tbody className="divide-y divide-border">
               {paginatedData.length > 0 ? (
-                paginatedData.map((row, rowIndex) => (
-                  <tr 
-                    key={String(row[idKey] ?? rowIndex)} 
-                    className="transition-colors hover:bg-muted/70"
-                  >
-                    {columns.map((col) => (
-                      <td key={String(col.key)} className="p-4 align-middle whitespace-nowrap">
-                        {col.render 
-                          ? col.render(row[col.key], row) 
-                          : String(row[col.key] ?? '-')
-                        }
-                      </td>
-                    ))}
-                    {rowActions && rowActions.length > 0 && (
-                      <td className="p-4 align-middle text-right whitespace-nowrap">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <ShadowButton
-                              leftIcon={<MoreHorizontal size={16} />}
-                              label='More Actions'
-                              variant="ghost-primary"
-                            />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            {rowActions.map((action, idx) => {
-                              const Icon = action.icon;
-                              return (
-                                <DropdownMenuItem
-                                  key={`${action.label}${idx}`}
-                                  onClick={() => action.onClick(row)}
-                                  className="cursor-pointer"
-                                >
-                                  {Icon && React.createElement(Icon, { size: 16, className: "mr-2" })}
-                                  <span>{action.label}</span>
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
+                paginatedData.map((row, rowIndex) => {
+                  const id = String(row[idKey] ?? rowIndex);
+                  const isExpanded = expandedRows.has(id);
+                  
+                  return (
+                  <React.Fragment key={id}>
+                    <tr 
+                      onClick={() => renderExpandedRow && toggleRow(id)}
+                      className={cn(
+                        "transition-colors hover:bg-muted/70",
+                        renderExpandedRow && "cursor-pointer"
+                      )}
+                    >
+                      {columns.map((col, colIndex) => (
+                        <td key={String(col.key)} className="p-4 align-middle whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            {renderExpandedRow && colIndex === 0 && (
+                              <button
+                                type='button'
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRow(id);
+                                }}
+                                className="flex items-center justify-center"
+                              >
+                                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                              </button>
+                            )}
+                            {col.render 
+                              ? col.render(row[col.key], row) 
+                              : String(row[col.key] ?? '-')
+                            }
+                          </div>
+                        </td>
+                      ))}
+                      {rowActions && rowActions.length > 0 && (
+                        <td className="p-4 align-middle text-right whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <ShadowButton
+                                leftIcon={<MoreHorizontal size={16} />}
+                                label='More Actions'
+                                variant="ghost-primary"
+                              />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              {rowActions.map((action, idx) => {
+                                const Icon = action.icon;
+                                return (
+                                  <DropdownMenuItem
+                                    key={`${action.label}${idx}`}
+                                    onClick={() => action.onClick(row)}
+                                    className="cursor-pointer"
+                                  >
+                                    {Icon && React.createElement(Icon, { size: 16, className: "mr-2" })}
+                                    <span>{action.label}</span>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      )}
+                    </tr>
+                    {isExpanded && renderExpandedRow && (
+                      <tr className="bg-muted/30">
+                        <td colSpan={columns.length + (rowActions ? 1 : 0)}>
+                          {renderExpandedRow(row)}
+                        </td>
+                      </tr>
                     )}
-                  </tr>
-                ))
+                  </React.Fragment>
+                )})
               ) : (
                 <tr>
                   <td 
@@ -422,10 +460,19 @@ export default function CustomDataTable<T extends object>({
       {/* Mobile Card View */}
       <div className="space-y-3 md:hidden">
         {paginatedData.length > 0 ? (
-          paginatedData.map((row, rowIndex) => (
-            <div 
-              key={String(row[idKey] ?? rowIndex)} 
-              className="rounded-md border border-border bg-background p-4 shadow-sm"
+          paginatedData.map((row, rowIndex) => {
+            const id = String(row[idKey] ?? rowIndex);
+            const isExpanded = expandedRows.has(id);
+            
+            return (
+            <button 
+              key={id} 
+              type='button'
+              className={cn(
+                "rounded-md border border-border bg-background p-4 shadow-sm text-left w-full",
+                renderExpandedRow && "cursor-pointer"
+              )}
+              onClick={() => renderExpandedRow && toggleRow(id)}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -445,21 +492,20 @@ export default function CustomDataTable<T extends object>({
                   )}
                 </div>
                 
-                {rowActions && (
-                  <div className="flex shrink-0 gap-1">
-                    {rowActions.slice(0, 2).map((action, idx) => {
-                      const Icon = action.icon;
-                      if (!Icon) return null;
-                      return (
-                        <ShadowButton
-                          key={`${action.label}${idx}`} 
-                          onClick={() => action.onClick(row)}
-                          variant={action.variant}
-                          leftIcon={<Icon size={18} />}
-                        />
-                      );
-                    })}
-                    {rowActions.length > 2 && (
+                <div className="flex shrink-0 items-center gap-1">
+                    {renderExpandedRow && (
+                      <button
+                        type='button'
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          toggleRow(id);
+                        }}
+                        className="p-2 text-muted-foreground"
+                      >
+                        <ChevronDown size={18} className={cn("transition-transform", isExpanded && "rotate-180")} />
+                      </button>
+                    )}
+                    {rowActions && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button type="button" className="p-2 text-muted-foreground">
@@ -467,15 +513,15 @@ export default function CustomDataTable<T extends object>({
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 bg-popover rounded-md shadow-lg z-50">
-                          {rowActions.slice(2).map((action, idx) => (
+                          {rowActions.map((action, idx) => (
                             <DropdownMenuItem 
                               key={`${action.label}${idx}`} 
                               onClick={() => action.onClick(row)}
-                              className={`
-                                flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors
-                                hover:bg-muted hover:text-muted-foreground
-                                ${action.variant === 'destructive' ? 'text-destructive' : ''}
-                              `}
+                              className={cn(
+                                "flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors",
+                                "hover:bg-muted hover:text-muted-foreground",
+                                action.variant === 'destructive' && "text-destructive"
+                              )}
                             >
                               {action.icon && React.createElement(action.icon, { size: 16, className: "mr-2" })}
                               {action.label}
@@ -485,12 +531,12 @@ export default function CustomDataTable<T extends object>({
                       </DropdownMenu>
                     )}
                   </div>
-                )}
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
                 {mobileVisibleColumns
                   .filter(c => String(c.key) !== String(primaryColumn.key))
+                  .slice(0, 3) // Show first 3 after primary
                   .map((col) => (
                     <div key={String(col.key)} className="flex flex-col">
                       <span className="text-xs text-muted-foreground uppercase tracking-wider truncate">{col.header}</span>
@@ -503,8 +549,33 @@ export default function CustomDataTable<T extends object>({
                     </div>
                   ))}
               </div>
-            </div>
-          ))
+              
+              {isExpanded && (
+                <div className="mt-4 border-t border-border pt-4">
+                  {renderExpandedRow 
+                    ? renderExpandedRow(row)
+                    : (
+                      <div className="space-y-3">
+                        {mobileVisibleColumns
+                          .slice(3) // Show the rest of the columns
+                          .map((col) => (
+                          <div key={String(col.key)} className="flex flex-col">
+                            <span className="text-xs text-muted-foreground uppercase tracking-wider truncate">{col.header}</span>
+                            <span className="text-sm font-medium text-foreground">
+                              {col.render 
+                                ? col.render(row[col.key], row) 
+                                : String(row[col.key] ?? '-')
+                              }
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
+                </div>
+              )}
+            </button>
+          )})
         ) : (
           <div className="rounded-md border border-border bg-background p-4 shadow-sm">
             <NoResultsState />

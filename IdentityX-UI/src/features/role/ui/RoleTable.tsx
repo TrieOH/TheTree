@@ -62,6 +62,7 @@ export default function RoleTable({ project_id }: PropsI) {
             searchableTextExtractor: (value) => formatDate(value as string),
           },
         ]}
+        renderExpandedRow={(_row) => <div>dwdw</div>}
         rowActions={[
           {
             label: "Update",
