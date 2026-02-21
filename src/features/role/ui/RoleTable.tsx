@@ -1,3 +1,4 @@
+import RolePermissionsEditor from "./RolePermissionsEditor";
 import { useQuery } from "@tanstack/react-query";
 import { roleQueryOptions } from "../api";
 import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
@@ -38,16 +39,6 @@ export default function RoleTable({ project_id }: PropsI) {
             )
           },
           {
-            key: "scope_name",
-            header: "Scope",
-            sortable: true,
-          },
-          {
-            key: "external_id",
-            header: "External ID",
-            sortable: true,
-          },
-          {
             key: "created_at",
             header: "Created At",
             sortable: true,
@@ -62,7 +53,7 @@ export default function RoleTable({ project_id }: PropsI) {
             searchableTextExtractor: (value) => formatDate(value as string),
           },
         ]}
-        renderExpandedRow={(_row) => <div>dwdw</div>}
+        renderExpandedRow={(row) => <RolePermissionsEditor project_id={project_id} role={row} />}
         rowActions={[
           {
             label: "Update",
