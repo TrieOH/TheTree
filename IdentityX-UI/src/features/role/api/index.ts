@@ -28,7 +28,7 @@ export const createRoleFn = createClientOnlyFn((roleData: Omit<RoleCRUD, "id">) 
 export const patchRoleFn = createClientOnlyFn((roleData: RoleCRUD) => {
   const { id, project_id, ...dataToSend } = roleData;
 
-  return authFetcher<null>(`/projects/${project_id}/roles/${id}`, {
+  return authFetcher<null>(`/projects/${project_id}/roles/${id}/description`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(dataToSend),
