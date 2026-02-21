@@ -2,6 +2,7 @@ import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type { Role, RoleCRUD } from "../model/types";
 import { queryOptions } from "@tanstack/react-query";
+import type { Permission } from "@/features/permission/model/types";
 
 
 /**
@@ -59,3 +60,42 @@ export const roleQueryOptions = (project_id: string) => {
     enabled: !!project_id
   })
 }
+
+// Permissions
+
+export const getRolePermissionsFn = createClientOnlyFn(async ({
+  queryKey,
+}: {
+  queryKey: ["rolePermissions", string, string];
+}) => {
+  const [, projectId, roleId] = queryKey;
+  try {
+    return await tanstackQueryFetcher<Permission[]>(`/projects/${projectId}/roles/${roleId}/permissions`);
+  } catch {
+    return [] as Permission[];
+  }
+});
+
+export const rolePermissionsQueryOptions = (project_id: string, role_id: string) => {
+  return queryOptions({
+    queryKey: ['rolePermissions', project_id, role_id],
+    queryFn: getRolePermissionsFn,
+    enabled: !!project_id && !!role_id
+  })
+}
+
+
+export const givePermissionToRoleFn = createClientOnlyFn((roleData: Role, permission_id: string) => {
+  const { project_id, id } = roleData;
+  return authFetcher<null>(`/projects/${project_id}/roles/${id}/permissions/${permission_id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+  });
+});
+
+export const removePermissionOfRoleFn = createClientOnlyFn((roleData: Role, permission_id: string) => {
+  const { project_id, id } = roleData;
+  return authFetcher<null>(`/projects/${project_id}/roles/${id}/permissions/${permission_id}`, {
+    method: "DELETE",
+  });
+});
