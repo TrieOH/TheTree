@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/shared/lib/utils';
+import { useNavigate } from '@tanstack/react-router';
 
 type TabItem = {
   value: string;
@@ -32,6 +33,7 @@ export default function CustomTabs({
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [direction, setDirection] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -58,6 +60,7 @@ export default function CustomTabs({
       setActiveTab(newValue);
       setDisplayTab(newValue);
     }
+    navigate({ from: "/projects/config", search: {tab: newValue} })
   };
 
   const contentVariants = {
