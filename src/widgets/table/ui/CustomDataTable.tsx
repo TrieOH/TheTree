@@ -420,7 +420,10 @@ export default function CustomDataTable<T extends object>({
                                 return (
                                   <DropdownMenuItem
                                     key={`${action.label}${idx}`}
-                                    onClick={() => action.onClick(row)}
+                                    onClick={(e) => {
+                                    e.stopPropagation();
+                                    action.onClick(row);
+                                  }}
                                     className="cursor-pointer"
                                   >
                                     {Icon && React.createElement(Icon, { size: 16, className: "mr-2" })}
@@ -516,7 +519,10 @@ export default function CustomDataTable<T extends object>({
                           {rowActions.map((action, idx) => (
                             <DropdownMenuItem 
                               key={`${action.label}${idx}`} 
-                              onClick={() => action.onClick(row)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                action.onClick(row);
+                              }}
                               className={cn(
                                 "flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors",
                                 "hover:bg-muted hover:text-muted-foreground",
@@ -551,7 +557,11 @@ export default function CustomDataTable<T extends object>({
               </div>
               
               {isExpanded && (
-                <div className="mt-4 border-t border-border pt-4">
+                <button
+                  type='button'
+                  className="mt-4 border-t border-border pt-4 w-full"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {renderExpandedRow 
                     ? renderExpandedRow(row)
                     : (
@@ -572,7 +582,7 @@ export default function CustomDataTable<T extends object>({
                       </div>
                     )
                   }
-                </div>
+                </button>
               )}
             </button>
           )})
