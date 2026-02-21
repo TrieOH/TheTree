@@ -11,6 +11,7 @@ import (
 type PermissionRepository interface {
 	Create(ctx context.Context, toCreate permissions.Permission) (*permissions.Permission, error)
 	UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID, projectID *uuid.UUID) error
 
 	// Read Operations //
 

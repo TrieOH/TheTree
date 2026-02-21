@@ -109,10 +109,47 @@ func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.UpdatePermissionI
 	}
 
 	if !permissionBelongs {
-		return fail.New(errx.ROLENotOwnedByPrincipal).RecordCtx(ctx)
+		return fail.New(errx.PERMissionNotOwnedByPrincipal).RecordCtx(ctx)
 	}
 
 	err = uc.permissions.UpdateMeta(ctx, in.Meta, in.ID, in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) Delete(ctx context.Context, in inbounds.DeletePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.Delete")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot delete permissions in a project you don't own").RecordCtx(ctx)
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.ID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return fail.New(errx.PERMissionNotOwnedByPrincipal).RecordCtx(ctx)
+	}
+
+	err = uc.permissions.Delete(ctx, in.ID, in.ProjectID)
 	if err != nil {
 		return err
 	}
@@ -221,7 +258,7 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return fail.New(errx.ROLENotOwnedByPrincipal).RecordCtx(ctx)
+		return fail.New(errx.PERMissionNotOwnedByPrincipal).RecordCtx(ctx)
 	}
 
 	var userBelongs bool
@@ -275,7 +312,7 @@ func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionI
 	}
 
 	if !permissionBelongs {
-		return fail.New(errx.ROLENotOwnedByPrincipal).RecordCtx(ctx)
+		return fail.New(errx.PERMissionNotOwnedByPrincipal).RecordCtx(ctx)
 	}
 
 	var userBelongs bool

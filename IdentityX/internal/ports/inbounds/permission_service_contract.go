@@ -20,6 +20,11 @@ type UpdatePermissionInput struct {
 	Meta      *json.RawMessage
 }
 
+type DeletePermissionInput struct {
+	ID        uuid.UUID
+	ProjectID *uuid.UUID
+}
+
 type GetPermissionInput struct {
 	PermissionID uuid.UUID
 	ProjectID    *uuid.UUID

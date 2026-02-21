@@ -97,6 +97,22 @@ func (repo *permissionRepo) UpdateMeta(ctx context.Context, meta *json.RawMessag
 	return nil
 }
 
+func (repo *permissionRepo) Delete(ctx context.Context, id uuid.UUID, projectID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.Delete",
+		trace.WithAttributes(attribute.String("permission.id", id.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeletePermission(ctx, sqlc.DeletePermissionParams{
+		ID:        id,
+		ProjectID: projectID,
+	}); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
 func (repo *permissionRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*permissions.Permission, error) {
 	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.GetByIDInternal",
 		trace.WithAttributes(

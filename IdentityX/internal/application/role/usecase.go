@@ -138,6 +138,33 @@ func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.RoleInput) error 
 	return nil
 }
 
+func (uc *UseCase) Delete(ctx context.Context, in inbounds.RoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.Delete")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot delete roles in a project you don't own").RecordCtx(ctx)
+	}
+
+	err = uc.roles.Delete(ctx, in.RoleID, in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetRoleInput) (*inbounds.RoleOutput, error) {
 	ctx, span := usecaseTracer.Start(ctx, "RoleService.GetByIDExternal")
 	defer span.End()

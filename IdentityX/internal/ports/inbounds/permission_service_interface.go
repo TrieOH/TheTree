@@ -7,6 +7,7 @@ import (
 type PermissionService interface {
 	Create(ctx context.Context, in CreatePermissionInput) (*PermissionOutput, error)
 	UpdateMeta(ctx context.Context, in UpdatePermissionInput) error
+	Delete(ctx context.Context, in DeletePermissionInput) error
 
 	// Read Operations //
 

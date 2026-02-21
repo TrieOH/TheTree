@@ -19,6 +19,11 @@ SET
     updated_at = NOW()
 WHERE id = $2 AND project_id = $3;
 
+-- name: DeleteRole :exec
+DELETE FROM roles
+WHERE id = $1 AND project_id = $2;
+
+
 -- name: GetRoleByIDInternal :one
 SELECT *
 FROM roles

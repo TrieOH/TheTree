@@ -13,6 +13,7 @@ type RoleRepository interface {
 	Create(ctx context.Context, toCreate roles.Role) (*roles.Role, error)
 	UpdateDescription(ctx context.Context, description string, id uuid.UUID, projectID *uuid.UUID) error
 	UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID, projectID *uuid.UUID) error
 	GetByIDInternal(ctx context.Context, id uuid.UUID) (*roles.Role, error)
 	GetByIDExternal(ctx context.Context, id, projectID uuid.UUID) (*roles.Role, error)
 	GetByName(ctx context.Context, name string, projectID *uuid.UUID) (*roles.Role, error)
