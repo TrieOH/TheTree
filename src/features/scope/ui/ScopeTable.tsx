@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { scopesQueryOptions } from "../api";
 import { Badge } from "@/shared/ui/shadcn/badge";
 import type { Scope } from "../model/types";
+import TruncatedId from "@/shared/ui/TruncatedId";
 
 interface PropsI {
   project_id: string;
@@ -19,11 +20,6 @@ export default function ScopeTable({ project_id }: PropsI) {
       <CustomDataTable
         data={data}
         columns={[
-          {
-            key: "id",
-            header: "ID",
-            sortable: true,
-          },
           {
             key: "name",
             header: "Name",
@@ -59,6 +55,12 @@ export default function ScopeTable({ project_id }: PropsI) {
             sortable: true,
             render: (value) => (value ? (value as string) : "N/A"),
             searchableTextExtractor: (value) => (value ? (value as string) : "N/A"),
+          },
+          {
+            key: "id",
+            header: "ID",
+            sortable: true,
+            render: (value) => <TruncatedId id={value as string} />,
           },
           {
             key: "created_at",
