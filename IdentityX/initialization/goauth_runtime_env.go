@@ -23,6 +23,14 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// First, rotate any expired keys to clear the way for new key creation
+	if err := queries.RotateExpiredGoAuthKeys(ctx); err != nil {
+		log.Printf("Warning: failed to rotate expired GoAuth keys: %v", err)
+	}
+	if err := queries.RotateExpiredProjectKeys(ctx); err != nil {
+		log.Printf("Warning: failed to rotate expired project keys: %v", err)
+	}
+
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
 		if fail.Is(fail.From(err), errx.SQLNotFound) {
@@ -77,6 +85,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 		ProjectID:  nil,
 		Name:       nil,
 		ExternalID: nil,
+		ParentID:   nil,
 	})
 
 	fe := fail.From(err)

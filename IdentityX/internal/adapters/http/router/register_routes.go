@@ -235,6 +235,7 @@ func registerScopeRoutes(
 			r.Post("/", h.Create)
 			r.Get("/", h.GetProjectScopes)
 			r.Get("/{scope_id}", h.GetByID)
+			r.Patch("/{scope_id}/meta", h.UpdateMeta)
 		})
 	})
 }

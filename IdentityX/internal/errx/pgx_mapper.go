@@ -56,6 +56,8 @@ func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 				return fail.New(SCOPEOneProjectRootPerProject).Debug(err.Error()), true
 			case "scopes_unique_siblings", "scopes_unique_resource_siblings":
 				return fail.New(SCOPEDuplicateSibling).Debug(err.Error()), true
+			case "uniq_goauth_single_active_signing_key":
+				return fail.New(SCOPEDuplicateSibling).Debug(err.Error()), true
 			default:
 				panic(err.Error())
 				//return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true

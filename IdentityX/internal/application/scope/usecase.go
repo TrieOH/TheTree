@@ -93,6 +93,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 		ParentID:   parentID,
 		ProjectID:  &in.ProjectID,
 		Name:       &in.Name,
+		Meta:       in.Meta,
 		ExternalID: in.ExternalID,
 	})
 	if err != nil {
@@ -100,6 +101,38 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	}
 
 	return inbounds.ScopeToScopeOutput(scope), nil
+}
+
+func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.UpdateProjectScopeMetaInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "ScopeService.UpdateMeta")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot get a scope for a project you don't own").RecordCtx(ctx)
+	}
+
+	_, err = uc.scopes.GetByIDExternal(ctx, in.ID, in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	err = uc.scopes.UpdateMeta(ctx, in.Meta, in.ID, &in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetScopeInput) (*inbounds.ScopeOutput, error) {

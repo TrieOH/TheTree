@@ -146,6 +146,29 @@ WHERE
 ORDER BY created_at DESC
     LIMIT 1;
 
+-- name: RotateExpiredGoAuthKeys :exec
+UPDATE key_pair
+SET
+    status = 'rotated',
+    usage = 'verify'
+WHERE
+    key_type = 'goauth'
+  AND project_id IS NULL
+  AND usage = 'sign'
+  AND status = 'active'
+  AND expires_at < now();
+
+-- name: RotateExpiredProjectKeys :exec
+UPDATE key_pair
+SET
+    status = 'rotated',
+    usage = 'verify'
+WHERE
+    key_type = 'project'
+  AND usage = 'sign'
+  AND status = 'active'
+  AND expires_at < now();
+
 -- INFRA ONLY --
 
 -- name: ListProjectsWithActiveSigningKeys :many

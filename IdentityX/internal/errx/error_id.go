@@ -160,6 +160,7 @@ var (
 	SYSPublicKeyParseFailed     = fail.ID(9, "SYS", 8, false, "SYSPublicKeyParseFailed")
 	SYSInvalidPublicKeyType     = fail.ID(9, "SYS", 9, false, "SYSInvalidPublicKeyType")
 	SYSInvalidPublicKeyByteSize = fail.ID(9, "SYS", 10, false, "SYSInvalidPublicKeyByteSize")
+	SYSErrorCreatingKey         = fail.ID(9, "SYS", 11, false, "SYSErrorCreatingKey")
 
 	SYSFunctionalityNotImplemented = fail.ID(9, "SYS", 0, true, "SYSFunctionalityNotImplemented")
 	SYSTransactionNilContext       = fail.ID(9, "SYS", 1, true, "SYSTransactionNilContext")
