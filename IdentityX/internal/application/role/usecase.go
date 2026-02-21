@@ -70,6 +70,7 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.RoleInput) (*inbounds
 		ProjectID:   in.ProjectID,
 		Name:        in.Name,
 		Description: in.Description,
+		Meta:        in.Meta,
 	})
 	if err != nil {
 		return nil, err
@@ -103,6 +104,33 @@ func (uc *UseCase) UpdateDescription(ctx context.Context, in inbounds.RoleInput)
 		err = uc.roles.UpdateDescription(ctx, *in.Description, in.RoleID, in.ProjectID)
 	}
 
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.RoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.UpdateMeta")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot update roles in a project you don't own").RecordCtx(ctx)
+	}
+
+	err = uc.roles.UpdateMeta(ctx, in.Meta, in.RoleID, in.ProjectID)
 	if err != nil {
 		return err
 	}

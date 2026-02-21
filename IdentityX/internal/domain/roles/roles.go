@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,7 @@ type Role struct {
 	ProjectID   *uuid.UUID
 	Name        string
 	Description *string
+	Meta        *json.RawMessage
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 

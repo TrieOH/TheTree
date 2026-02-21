@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -43,10 +44,11 @@ func mapPermissionFromDB(dst *permissions.Permission, src *sqlc.Permission) {
 	dst.ProjectID = src.ProjectID
 	dst.Object = src.Object
 	dst.Action = src.Action
+	dst.Meta = src.Meta
 	dst.CreatedAt = src.CreatedAt
 }
 
-func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.CreatePermissionInput) (*permissions.Permission, error) {
+func (repo *permissionRepo) Create(ctx context.Context, toCreate permissions.Permission) (*permissions.Permission, error) {
 	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.Create")
 	defer span.End()
 
@@ -58,6 +60,7 @@ func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.Creat
 		ProjectID: toCreate.ProjectID,
 		Object:    toCreate.Object,
 		Action:    toCreate.Action,
+		Meta:      toCreate.Meta,
 	})
 	if err != nil {
 		return nil, fail.From(err).WithArgs(toCreate.Object, toCreate.Action).RecordCtx(ctx)
@@ -68,6 +71,30 @@ func (repo *permissionRepo) Create(ctx context.Context, toCreate outbounds.Creat
 	var outPermission permissions.Permission
 	mapPermissionFromDB(&outPermission, &sqlcPermission)
 	return &outPermission, nil
+}
+
+func (repo *permissionRepo) UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.UpdateMeta",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+		),
+	)
+	defer span.End()
+
+	if projectID != nil {
+		span.SetAttributes(attribute.String("role.project_id", projectID.String()))
+	}
+
+	err := repo.queries(ctx).UpdatePermissionMeta(ctx, sqlc.UpdatePermissionMetaParams{
+		ID:        id,
+		ProjectID: projectID,
+		Meta:      meta,
+	})
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }
 
 func (repo *permissionRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*permissions.Permission, error) {

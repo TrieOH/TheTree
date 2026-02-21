@@ -1,6 +1,6 @@
 -- name: CreateRole :one
-INSERT INTO roles (name, description, project_id)
-VALUES ($1, $2, $3)
+INSERT INTO roles (name, description, project_id, meta)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- pass nil to project_id if you want GoAuth roles
@@ -8,6 +8,14 @@ RETURNING *;
 UPDATE roles
 SET
     description = $1,
+    updated_at = NOW()
+WHERE id = $2 AND project_id = $3;
+
+-- pass nil to project_id if you want GoAuth roles
+-- name: UpdateRoleMeta :exec
+UPDATE roles
+SET
+    meta = $1,
     updated_at = NOW()
 WHERE id = $2 AND project_id = $3;
 

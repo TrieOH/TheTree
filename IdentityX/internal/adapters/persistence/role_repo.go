@@ -7,6 +7,7 @@ import (
 	"GoAuth/internal/domain/roles"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -44,6 +45,7 @@ func mapRoleFromDB(dst *roles.Role, src *sqlc.Role) {
 	dst.ProjectID = src.ProjectID
 	dst.Name = src.Name
 	dst.Description = src.Description
+	dst.Meta = src.Meta
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }
@@ -72,6 +74,7 @@ func (repo *roleRepo) Create(ctx context.Context, toCreate roles.Role) (*roles.R
 		Name:        toCreate.Name,
 		Description: toCreate.Description,
 		ProjectID:   toCreate.ProjectID,
+		Meta:        toCreate.Meta,
 	})
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)
@@ -100,6 +103,30 @@ func (repo *roleRepo) UpdateDescription(ctx context.Context, description string,
 		ID:          id,
 		ProjectID:   projectID,
 		Description: &description,
+	})
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *roleRepo) UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.UpdateMeta",
+		trace.WithAttributes(
+			attribute.String("role.id", id.String()),
+		),
+	)
+	defer span.End()
+
+	if projectID != nil {
+		span.SetAttributes(attribute.String("role.project_id", projectID.String()))
+	}
+
+	err := repo.queries(ctx).UpdateRoleMeta(ctx, sqlc.UpdateRoleMetaParams{
+		ID:        id,
+		ProjectID: projectID,
+		Meta:      meta,
 	})
 	if err != nil {
 		return fail.From(err).RecordCtx(ctx)

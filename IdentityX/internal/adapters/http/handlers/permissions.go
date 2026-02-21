@@ -49,6 +49,7 @@ func (handler *PermissionHandler) Create(w http.ResponseWriter, r *http.Request)
 		ProjectID: &projectID,
 		Object:    req.Object,
 		Action:    req.Action,
+		Meta:      req.Meta,
 	}
 
 	ctx := r.Context()
@@ -59,6 +60,56 @@ func (handler *PermissionHandler) Create(w http.ResponseWriter, r *http.Request)
 	}
 
 	resp.Created("Permission Created").WithData(dto.PermissionOutputToPermissionResponse(*perm)).Send(w)
+}
+
+// UpdateMeta godoc
+// @Summary Update Permission meta
+// @Description Updates the meta of an existing permission.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param permission_id path string true "Permission ID"
+// @Param permissionInfo body dto.UpdatePermissionRequest true "Permission update information"
+// @Success 200 {object} object "Permission updated"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/permissions/{permission_id}/meta [patch]
+func (handler *PermissionHandler) UpdateMeta(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	permID, rs := getUUID(r, "permission_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UpdatePermissionRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.UpdatePermissionInput{
+		ProjectID: &projectID,
+		ID:        permID,
+		Meta:      req.Meta,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.UpdateMeta(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
 }
 
 // GetByID godoc

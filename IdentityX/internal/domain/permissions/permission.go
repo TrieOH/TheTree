@@ -3,6 +3,7 @@ package permissions
 import (
 	"GoAuth/internal/errx"
 	"context"
+	"encoding/json"
 	"regexp"
 	"time"
 
@@ -15,6 +16,7 @@ type Permission struct {
 	ProjectID *uuid.UUID
 	Object    string
 	Action    string
+	Meta      *json.RawMessage
 	CreatedAt time.Time
 }
 

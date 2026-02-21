@@ -79,6 +79,7 @@ CREATE TABLE permissions (
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     object TEXT NOT NULL, -- plain object name, e.g. "document", "event"
     action TEXT NOT NULL, -- plain action name, e.g. "read", "write"
+    meta JSONB NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CHECK (length(object) BETWEEN 1 AND 100),
@@ -100,6 +101,8 @@ CREATE TABLE roles (
 
     name VARCHAR(64) NOT NULL,
     description TEXT,
+
+    meta JSONB NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
