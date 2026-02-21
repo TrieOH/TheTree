@@ -243,6 +243,48 @@ func (handler *RoleHandler) UpdateMeta(w http.ResponseWriter, r *http.Request) {
 	resp.OK().Send(w)
 }
 
+// Delete godoc
+// @Summary Deletes a role
+// @Description Deletes a role
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Success 200 {object} object "Role deleted"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id} [delete]
+func (handler *RoleHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	roleID, rs := getUUID(r, "role_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.RoleInput{
+		ProjectID: &projectID,
+		RoleID:    roleID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.Delete(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
+}
+
 // ListByProject godoc
 // @Summary List project roles
 // @Description Retrieves all role definitions for a project.

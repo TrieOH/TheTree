@@ -135,6 +135,22 @@ func (repo *roleRepo) UpdateMeta(ctx context.Context, meta *json.RawMessage, id 
 	return nil
 }
 
+func (repo *roleRepo) Delete(ctx context.Context, id uuid.UUID, projectID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "RoleRepo.Delete",
+		trace.WithAttributes(attribute.String("role.id", id.String())),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteRole(ctx, sqlc.DeleteRoleParams{
+		ID:        id,
+		ProjectID: projectID,
+	}); err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
 func (repo *roleRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*roles.Role, error) {
 	ctx, span := repo.tracer.Start(ctx, "RoleRepo.GetByIDInternal",
 		trace.WithAttributes(

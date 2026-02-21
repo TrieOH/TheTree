@@ -112,6 +112,48 @@ func (handler *PermissionHandler) UpdateMeta(w http.ResponseWriter, r *http.Requ
 	resp.OK().Send(w)
 }
 
+// Delete godoc
+// @Summary delete a Permission
+// @Description Deletes a permission
+// @Tags permissions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param permission_id path string true "Permission ID"
+// @Success 200 {object} object "Permission deleted"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/permissions/{permission_id} [delete]
+func (handler *PermissionHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	permID, rs := getUUID(r, "permission_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.DeletePermissionInput{
+		ProjectID: &projectID,
+		ID:        permID,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.Delete(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
+}
+
 // GetByID godoc
 // @Summary Get permission by ID
 // @Description Retrieves a permission definition by its ID.

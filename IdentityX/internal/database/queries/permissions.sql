@@ -11,6 +11,10 @@ SET
     updated_at = NOW()
 WHERE id = $2 AND project_id = $3;
 
+-- name: DeletePermission :exec
+DELETE FROM permissions
+WHERE id = $1 AND project_id = $2;
+
 -- name: GetPermissionByIDInternal :one
 SELECT *
 FROM permissions
