@@ -1,12 +1,19 @@
 package dto
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 )
 
 type CreatePermissionRequest struct {
-	Object string `json:"object" validate:"required"`
-	Action string `json:"action" validate:"required"`
+	Object string           `json:"object" validate:"required"`
+	Action string           `json:"action" validate:"required"`
+	Meta   *json.RawMessage `json:"meta"`
+}
+
+type UpdatePermissionRequest struct {
+	Meta *json.RawMessage `json:"meta"`
 }
 
 type UserPermissionRequest struct {

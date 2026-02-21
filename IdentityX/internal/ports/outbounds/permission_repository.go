@@ -3,13 +3,14 @@ package outbounds
 import (
 	"GoAuth/internal/domain/permissions"
 	"context"
-	"time"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
 
 type PermissionRepository interface {
-	Create(ctx context.Context, toCreate CreatePermissionInput) (*permissions.Permission, error)
+	Create(ctx context.Context, toCreate permissions.Permission) (*permissions.Permission, error)
+	UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error
 
 	// Read Operations //
 
@@ -24,12 +25,4 @@ type PermissionRepository interface {
 	TakeDirect(ctx context.Context, id, identityID uuid.UUID, scopeID *uuid.UUID) error
 
 	GetEffective(ctx context.Context, identityID uuid.UUID, projectID, scopeID *uuid.UUID) ([]permissions.Permission, error)
-}
-
-type CreatePermissionInput struct {
-	ID        uuid.UUID
-	ProjectID *uuid.UUID
-	Object    string
-	Action    string
-	CreatedAt time.Time
 }

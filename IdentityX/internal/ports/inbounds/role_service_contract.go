@@ -2,6 +2,7 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/roles"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +12,7 @@ type RoleInput struct {
 	ProjectID   *uuid.UUID
 	Name        string
 	Description *string
+	Meta        *json.RawMessage
 }
 
 type GetRoleInput struct {

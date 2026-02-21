@@ -1,7 +1,15 @@
 -- name: CreatePermission :one
-INSERT INTO permissions (object, action, project_id)
-VALUES ($1, $2, $3)
+INSERT INTO permissions (object, action, project_id, meta)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
+
+-- pass nil to project_id if you want GoAuth roles
+-- name: UpdatePermissionMeta :exec
+UPDATE permissions
+SET
+    meta = $1,
+    updated_at = NOW()
+WHERE id = $2 AND project_id = $3;
 
 -- name: GetPermissionByIDInternal :one
 SELECT *

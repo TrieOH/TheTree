@@ -255,6 +255,7 @@ func registerPermissionRoutes(
 		r.Route("/projects/{project_id}/permissions", func(r chi.Router) {
 			r.Post("/", h.Create)
 			r.Get("/{permission_id}", h.GetByID)
+			r.Patch("/{permission_id}/meta", h.UpdateMeta)
 			r.With(middleware.AllowOnlyQueryParams("object", "action")).
 				Get("/", h.ListByProject)
 		})
@@ -272,7 +273,8 @@ func registerRoleRoutes(
 
 		r.Post("/projects/{project_id}/roles", h.Create)
 		r.Get("/projects/{project_id}/roles/{role_id}", h.GetByID)
-		r.Patch("/projects/{project_id}/roles/{role_id}", h.UpdateDescription)
+		r.Patch("/projects/{project_id}/roles/{role_id}/description", h.UpdateDescription)
+		r.Patch("/projects/{project_id}/roles/{role_id}/meta", h.UpdateMeta)
 		r.Get("/projects/{project_id}/roles", h.ListByProject)
 		r.With(middleware.RequireOnlyQueryParams("name")).
 			Get("/projects/{project_id}/roles/search", h.GetByName)

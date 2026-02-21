@@ -48,6 +48,7 @@ func (handler *RoleHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ProjectID:   &projectID,
 		Name:        req.Name,
 		Description: req.Description,
+		Meta:        req.Meta,
 	}
 
 	ctx := r.Context()
@@ -151,12 +152,12 @@ func (handler *RoleHandler) GetByName(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Param project_id path string true "Project ID"
 // @Param role_id path string true "Role ID"
-// @Param roleInfo body dto.UpdateRoleRequest true "Role update information"
+// @Param roleInfo body dto.UpdateRoleDescriptionRequest true "Role update information"
 // @Success 200 {object} object "Role updated"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /projects/{project_id}/roles/{role_id} [patch]
+// @Router /projects/{project_id}/roles/{role_id}/description [patch]
 func (handler *RoleHandler) UpdateDescription(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := getUUID(r, "project_id")
 	if rs != nil {
@@ -170,7 +171,7 @@ func (handler *RoleHandler) UpdateDescription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var req dto.UpdateRoleRequest
+	var req dto.UpdateRoleDescriptionRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -184,6 +185,56 @@ func (handler *RoleHandler) UpdateDescription(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 	err := handler.role.UpdateDescription(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
+}
+
+// UpdateMeta godoc
+// @Summary Update role meta
+// @Description Updates the meta of an existing role.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param role_id path string true "Role ID"
+// @Param roleInfo body dto.UpdateRoleMetaRequest true "Role update information"
+// @Success 200 {object} object "Role updated"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/{role_id}/meta [patch]
+func (handler *RoleHandler) UpdateMeta(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	roleID, rs := getUUID(r, "role_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UpdateRoleMetaRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.RoleInput{
+		ProjectID: &projectID,
+		RoleID:    roleID,
+		Meta:      req.Meta,
+	}
+
+	ctx := r.Context()
+	err := handler.role.UpdateMeta(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

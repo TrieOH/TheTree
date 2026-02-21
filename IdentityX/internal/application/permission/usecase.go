@@ -70,16 +70,54 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreatePermissionInput
 		return nil, err
 	}
 
-	permission, err := uc.permissions.Create(ctx, outbounds.CreatePermissionInput{
+	permission, err := uc.permissions.Create(ctx, permissions.Permission{
 		ProjectID: in.ProjectID,
 		Object:    in.Object,
 		Action:    in.Action,
+		Meta:      in.Meta,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return inbounds.PermissionToPermissionOutput(*permission), nil
+}
+
+func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.UpdatePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.UpdateMeta")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot update permissions in a project you don't own").RecordCtx(ctx)
+	}
+
+	var permissionBelongs bool
+	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.ID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !permissionBelongs {
+		return fail.New(errx.ROLENotOwnedByPrincipal).RecordCtx(ctx)
+	}
+
+	err = uc.permissions.UpdateMeta(ctx, in.Meta, in.ID, in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (uc *UseCase) GetByIDExternal(ctx context.Context, in inbounds.GetPermissionInput) (*inbounds.PermissionOutput, error) {

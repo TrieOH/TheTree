@@ -1,14 +1,23 @@
 package dto
 
-import "github.com/google/uuid"
+import (
+	"encoding/json"
+
+	"github.com/google/uuid"
+)
 
 type CreateRoleRequest struct {
-	Name        string  `json:"name" validate:"required"`
+	Name        string           `json:"name" validate:"required"`
+	Description *string          `json:"description"`
+	Meta        *json.RawMessage `json:"meta"`
+}
+
+type UpdateRoleDescriptionRequest struct {
 	Description *string `json:"description"`
 }
 
-type UpdateRoleRequest struct {
-	Description *string `json:"description"`
+type UpdateRoleMetaRequest struct {
+	Meta *json.RawMessage `json:"meta"`
 }
 
 type UserRoleRequest struct {
