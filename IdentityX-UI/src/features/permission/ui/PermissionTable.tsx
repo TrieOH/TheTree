@@ -19,6 +19,11 @@ export default function PermissionTable({ project_id }: PropsI) {
         data={data}
         columns={[
           {
+            key: "id",
+            header: "ID",
+            sortable: true,
+          },
+          {
             key: "object",
             header: "Object",
             sortable: true,
