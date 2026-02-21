@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -58,6 +59,7 @@ func mapScopeFromDB(dst *scopes.Scope, src *sqlc.Scope) {
 	dst.ProjectID = src.ProjectID
 	dst.ExternalID = src.ExternalID
 	dst.Name = src.Name
+	dst.Meta = src.Meta
 	dst.CreatedAt = src.CreatedAt
 }
 
@@ -92,6 +94,7 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 		ProjectID:  toCreate.ProjectID,
 		Name:       toCreate.Name,
 		ExternalID: toCreate.ExternalID,
+		Meta:       toCreate.Meta,
 	})
 
 	if err != nil {
@@ -101,6 +104,30 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 	var created scopes.Scope
 	mapScopeFromDB(&created, &sqlcScope)
 	return &created, nil
+}
+
+func (repo *scopeRepo) UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.UpdateMeta",
+		trace.WithAttributes(
+			attribute.String("scope.id", id.String()),
+		),
+	)
+	defer span.End()
+
+	if projectID != nil {
+		span.SetAttributes(attribute.String("scope.project_id", projectID.String()))
+	}
+
+	err := repo.queries(ctx).UpdateProjectScopeMeta(ctx, sqlc.UpdateProjectScopeMetaParams{
+		ID:        id,
+		ProjectID: projectID,
+		Meta:      meta,
+	})
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }
 
 func (repo *scopeRepo) GetByIDInternal(ctx context.Context, id uuid.UUID) (*scopes.Scope, error) {

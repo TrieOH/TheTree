@@ -3,12 +3,14 @@ package outbounds
 import (
 	"GoAuth/internal/domain/scopes"
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
 
 type ScopeRepository interface {
 	Create(ctx context.Context, toCreate scopes.Scope) (*scopes.Scope, error)
+	UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error
 	GetByIDInternal(ctx context.Context, id uuid.UUID) (*scopes.Scope, error)
 	GetByIDExternal(ctx context.Context, id, projectID uuid.UUID) (*scopes.Scope, error)
 	GetRootByProjectID(ctx context.Context, projectID uuid.UUID) (*scopes.Scope, error)

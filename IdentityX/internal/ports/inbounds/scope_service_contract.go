@@ -2,6 +2,7 @@ package inbounds
 
 import (
 	"GoAuth/internal/domain/scopes"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,13 @@ type CreateScopeInput struct {
 	ExternalID *string
 	ProjectID  uuid.UUID
 	ParentID   *uuid.UUID // nil = default to project root
+	Meta       *json.RawMessage
+}
+
+type UpdateProjectScopeMetaInput struct {
+	ID        uuid.UUID
+	ProjectID uuid.UUID
+	Meta      *json.RawMessage
 }
 
 type GetScopeInput struct {
@@ -26,6 +34,7 @@ type ScopeOutput struct {
 	ProjectID  *uuid.UUID
 	Name       *string
 	ExternalID *string
+	Meta       *json.RawMessage
 	CreatedAt  time.Time
 }
 
@@ -41,6 +50,7 @@ func ScopeToScopeOutput(scope *scopes.Scope) *ScopeOutput {
 		ProjectID:  scope.ProjectID,
 		Name:       scope.Name,
 		ExternalID: scope.ExternalID,
+		Meta:       scope.Meta,
 		CreatedAt:  scope.CreatedAt,
 	}
 }
@@ -59,6 +69,7 @@ func ScopeSliceToScopeSliceOutput(scopes []scopes.Scope) []ScopeOutput {
 			ProjectID:  scope.ProjectID,
 			Name:       scope.Name,
 			ExternalID: scope.ExternalID,
+			Meta:       scope.Meta,
 			CreatedAt:  scope.CreatedAt,
 		})
 	}

@@ -1,6 +1,7 @@
 package scopes
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,5 +23,6 @@ type Scope struct {
 	ProjectID  *uuid.UUID
 	Name       *string
 	ExternalID *string
+	Meta       *json.RawMessage
 	CreatedAt  time.Time
 }

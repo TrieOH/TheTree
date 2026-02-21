@@ -65,7 +65,7 @@ func (handler *PermissionHandler) Create(w http.ResponseWriter, r *http.Request)
 // UpdateMeta godoc
 // @Summary Update Permission meta
 // @Description Updates the meta of an existing permission.
-// @Tags roles
+// @Tags permissions
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"

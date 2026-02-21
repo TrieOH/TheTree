@@ -497,6 +497,7 @@ var (
 					AddLocalization("pt-BR", "tipo de chave pública inválido: %s")
 	ErrSYSInvalidPublicKeySize = fail.Form(SYSInvalidPublicKeyByteSize, "invalid public key size: %s", false, map[string]any{"code": 500}, "UNSET").
 					AddLocalization("pt-BR", "tamanho da chave pública inválido: %s")
+	ErrSYSErrorCreatingKey = fail.Form(SYSErrorCreatingKey, "error generating signing key", true, map[string]any{"code": 500})
 
 	ErrSystemFunctionalityNotImplemented = fail.Form(SYSFunctionalityNotImplemented, "this system functionality is not yet implemented", true, map[string]any{"code": 500}).
 						AddLocalization("pt-BR", "essa funcionalidade do sistema ainda não foi implementada")

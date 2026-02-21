@@ -19,6 +19,8 @@ CREATE TABLE scopes (
     -- Optional reference to a specific resource inside that namespace
     external_id TEXT,
 
+    meta JSONB NULL,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT scope_shape_check CHECK (

@@ -61,6 +61,7 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Name:       req.Name,
 		ExternalID: req.ExternalID,
 		ParentID:   parentID,
+		Meta:       req.Meta,
 	}
 
 	ctx := r.Context()
@@ -71,6 +72,56 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Created("Scope Created").WithData(dto.ScopeOutputToScopeResponse(scope)).Send(w)
+}
+
+// UpdateMeta godoc
+// @Summary Update scope meta
+// @Description Updates the meta of an existing scope.
+// @Tags scopes
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param scope_id path string true "Scope ID"
+// @Param scopeInfo body dto.UpdateProjectScopeMetaRequest true "Scope update information"
+// @Success 200 {object} object "Scope updated"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/scopes/{scope_id}/meta [patch]
+func (handler *ScopeHandler) UpdateMeta(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	scopeID, rs := getUUID(r, "scope_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UpdateProjectScopeMetaRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.UpdateProjectScopeMetaInput{
+		ProjectID: projectID,
+		ID:        scopeID,
+		Meta:      req.Meta,
+	}
+
+	ctx := r.Context()
+	err := handler.scopes.UpdateMeta(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
 }
 
 // GetByID godoc
