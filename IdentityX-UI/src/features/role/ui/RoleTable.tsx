@@ -6,6 +6,7 @@ import { formatDate } from "@/shared/lib/date-utils";
 import { roleActions } from "../store";
 import { Edit, ShieldCheck } from "lucide-react";
 import RoleDialog from "./RoleDialog";
+import TruncatedId from "@/shared/ui/TruncatedId";
 
 
 interface PropsI {
@@ -20,11 +21,6 @@ export default function RoleTable({ project_id }: PropsI) {
       <CustomDataTable
         data={data}
         columns={[
-          {
-            key: "id",
-            header: "ID",
-            sortable: true,
-          },
           {
             key: "name",
             header: "Name",
@@ -42,6 +38,12 @@ export default function RoleTable({ project_id }: PropsI) {
                 {value}
               </p>
             )
+          },
+          {
+            key: "id",
+            header: "ID",
+            sortable: true,
+            render: (value) => <TruncatedId id={value as string} />,
           },
           {
             key: "created_at",

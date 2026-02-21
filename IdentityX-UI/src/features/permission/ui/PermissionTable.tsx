@@ -6,6 +6,7 @@ import { Shield } from "lucide-react";
 import { permissionActions } from "../store";
 import PermissionDialog from "./PermissionDialog";
 import { Badge } from "@/shared/ui/shadcn/badge";
+import TruncatedId from "@/shared/ui/TruncatedId";
 
 interface PropsI {
   project_id: string;
@@ -18,11 +19,6 @@ export default function PermissionTable({ project_id }: PropsI) {
       <CustomDataTable
         data={data}
         columns={[
-          {
-            key: "id",
-            header: "ID",
-            sortable: true,
-          },
           {
             key: "object",
             header: "Object",
@@ -42,6 +38,12 @@ export default function PermissionTable({ project_id }: PropsI) {
               if (val === "*") return <Badge variant="secondary">{val}</Badge>;
               return <Badge variant="outline">{val}</Badge>
             },
+          },
+          {
+            key: "id",
+            header: "ID",
+            sortable: true,
+            render: (value) => <TruncatedId id={value as string} />,
           },
           {
             key: "created_at",
