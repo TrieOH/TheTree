@@ -1,7 +1,8 @@
 package router
 
 import (
-	eventhttp "univents/internal/eventcore/interfaces/http"
+	eventhttp "univents/internal/core/interfaces/http"
+	editionhttp "univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	systemhttp "univents/internal/interfaces/http/system"
 
@@ -11,6 +12,7 @@ import (
 func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerSystemRoutes(r, deps.SystemHandler, deps.AuthMiddleware)
 	registerEventsRoutes(r, deps.EventsHandler, deps.AuthMiddleware)
+	registerEditionsRoutes(r, deps.EditionsHandler, deps.AuthMiddleware)
 }
 
 func registerSystemRoutes(
@@ -30,13 +32,26 @@ func registerEventsRoutes(
 	h *eventhttp.EventsHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
+	r.Get("/events", h.ListEvents)
 	r.Group(func(r chi.Router) {
-		r.Route("/events", func(r chi.Router) {
-			r.Get("/", h.List)
-			r.With(authMW.Auth()).
-				Post("/", h.Create)
-			r.With(authMW.Auth()).
-				Post("/{event_id}/publish", h.Publish)
-		})
+		r.Use(authMW.Auth())
+		r.Get("/events/own", h.ListOwnEvents)
+		r.Post("/events", h.CreateEvent)
+		r.Patch("/events/{event_id}", h.PatchEvent)
+		r.Post("/events/{event_id}/publish", h.PublishEvent)
+		r.Get("/events/{event_id}/audit", h.ListEventAudits)
+	})
+}
+
+func registerEditionsRoutes(
+	r *chi.Mux,
+	h *editionhttp.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Get("/events/{event_id}/editions", h.List)
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/events/{event_id}/editions", h.Create)
+		r.Post("/events/{event_id}/editions/{edition_id}", h.Announce)
 	})
 }

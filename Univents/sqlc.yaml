@@ -186,12 +186,12 @@ sql:
           - db_type: "event_status"
             nullable: false
             go_type:
-              import: "univents/internal/eventcore/domain"
-              type: "Status"
+              import: "univents/internal/core/domain"
+              type: "EventStatus"
               pointer: false
           - db_type: "event_status"
             nullable: true
             go_type:
-              import: "univents/internal/eventcore/domain"
-              type: "Status"
+              import: "univents/internal/core/domain"
+              type: "EventStatus"
               pointer: true

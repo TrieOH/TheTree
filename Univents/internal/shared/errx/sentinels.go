@@ -91,6 +91,12 @@ var (
 	// ------ EVENT ------
 	ErrEventSlugAlreadyInUser = fail.Form(EventSlugAlreadyInUse, "slug already in use", false, map[string]any{"code": 409}).
 					AddLocalization("pt-BR", "slug já está em uso")
+	ErrEventPublishNonDraft = fail.Form(EventPublishNonDraft, "can't publish event in non draft status: status(%s)", false, map[string]any{"code": 400}, "UNSET").
+				AddLocalization("pt-BR", "não pode se publicar um evento que não seja draft: status(%s)")
+	ErrEventCannotAddEditions = fail.Form(EventCannotAddEditions, "cannot add editions to a non is_series event", false, map[string]any{"code": 400})
+
+	ErrEditionInvalidID        = fail.Form(EditionInvalidID, "event_id is %s is invalid", false, map[string]any{"code": 400}, "UNSET")
+	ErrEditionValidationFailed = fail.Form(EditionValidationFailed, "edition validation error", false, map[string]any{"code": 400})
 
 	// ------ SQL ------
 	ErrSQLNotFound = fail.Form(SQLResourceNotFound, "%s not found", false, map[string]any{"code": 404}, "FORGOT TO SET RESOURCE ON ErrSQLNotFound").

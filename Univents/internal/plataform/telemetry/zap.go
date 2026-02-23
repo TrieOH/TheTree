@@ -22,7 +22,7 @@ func Init() {
 	})
 }
 
-func L() *zap.Logger {
+func Log() *zap.Logger {
 	if logger == nil {
 		Init()
 	}

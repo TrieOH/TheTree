@@ -1,7 +1,29 @@
 -- name: CreateEvent :one
-INSERT INTO events (id, organization_id, name, acronym, slug, tagline, description, is_series, logo_url, contact_email, social_links, created_by, goauth_scope_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+INSERT INTO events (id, owner_id, organization_id, name, acronym, slug, tagline, description, is_series, logo_url, contact_email, social_links, created_by, goauth_scope_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
+
+-- name: PatchEvent :one
+UPDATE events
+SET
+    name = $1,
+    acronym = $2,
+    slug = $3,
+    tagline = $4,
+    description = $5,
+    is_series = $6,
+    logo_url = $7,
+    banner_url = $8,
+    has_gallery = $9,
+    contact_email = $10,
+    social_links = $11,
+    updated_at = now(),
+    owner_id = $14
+WHERE
+    id = $12
+    AND goauth_scope_id = $13
+    AND deleted_at IS NULL
+    RETURNING *;
 
 -- name: GetEventByID :one
 SELECT *
@@ -13,25 +35,38 @@ SELECT *
 FROM events
 WHERE status != 'draft';
 
+-- name: ListOwnEvents :many
+SELECT *
+FROM events
+WHERE owner_id = $1
+ORDER BY created_at DESC;
+
 -- name: PublishEvent :exec
 UPDATE events
 SET status = 'active'
 WHERE id = $1;
 
+-- name: AddEdition :execrows
+UPDATE events
+SET editions_count = editions_count + 1
+WHERE id = $1
+    AND (
+        is_series = true
+        OR editions_count = 0
+    );
+
 -------------------------------------------------------------------------------------------
 ------------------------------------------ Audit ------------------------------------------
 -------------------------------------------------------------------------------------------
 
--- name: AppendEventAudit :one
-INSERT INTO event_audit (event_id,actor_type,actor_id,action,from_status,to_status,metadata)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING *;
+-- name: AppendEventAudits :copyfrom
+INSERT INTO event_audit (event_id, actor_type, actor_id, action, state, from_status, to_status, metadata)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
 -- name: ListEventAuditByEvent :many
 SELECT * FROM event_audit
 WHERE event_id = $1
-ORDER BY created_at DESC
-    LIMIT $2 OFFSET $3;
+ORDER BY created_at DESC;
 
 -- name: ListEventAuditByEventAndAction :many
 SELECT * FROM event_audit

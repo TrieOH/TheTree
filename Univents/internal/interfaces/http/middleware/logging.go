@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/errx"
@@ -18,6 +19,11 @@ import (
 
 func Logs(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/admin/asynq") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		start := time.Now()
 
 		ww := &statusWriter{ResponseWriter: w, status: 200}
@@ -35,7 +41,7 @@ func Logs(next http.Handler) http.Handler {
 			}
 		}
 
-		telemetry.L().Info("http_request",
+		telemetry.Log().Info("http_request",
 			zap.String("request_id", reqID),
 			zap.String("user_id", userID),
 			zap.String("method", r.Method),

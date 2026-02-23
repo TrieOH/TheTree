@@ -11,6 +11,7 @@ CREATE TYPE event_status AS ENUM (
 
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
+    owner_id UUID NULL,
     organization_id UUID NULL,
     goauth_scope_id UUID NOT NULL,
 
@@ -72,7 +73,14 @@ CREATE TYPE event_audit_action AS ENUM (
     'gallery_updated',
 
     -- metadata
+    'name_changed',
+    'acronym_changed',
     'slug_changed',
+    'tagline_changed',
+    'description_changed',
+    'is_series_changed',
+    'has_gallery_changed',
+
     'contact_updated',
     'social_links_updated',
 
@@ -85,11 +93,21 @@ CREATE TYPE event_audit_action AS ENUM (
     'ownership_transferred'
 );
 
-CREATE TYPE event_actor_type AS ENUM (
+CREATE TYPE audit_actor_type AS ENUM (
+    'unknown',
     'owner',
     'admin',
     'staff',
+    'participant',
+    'presenter',
     'system'
+);
+
+CREATE TYPE action_state AS ENUM (
+    'succeeded',
+    'failed',
+    'pending',
+    'unset'
 );
 
 CREATE TABLE event_audit (
@@ -97,10 +115,11 @@ CREATE TABLE event_audit (
 
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
 
-    actor_type event_actor_type NOT NULL,
+    actor_type audit_actor_type NOT NULL,
     actor_id UUID NULL,
 
     action event_audit_action NOT NULL,
+    state action_state NOT NULL,
 
     -- state tracking
     from_status event_status NULL,

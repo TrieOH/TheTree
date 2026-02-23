@@ -29,17 +29,17 @@ CREATE TABLE editions (
     event_id UUID NOT NULL REFERENCES events(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
+    goauth_scope_id UUID NOT NULL,
 
     -- naming
     type edition_type NOT NULL,
     edition_name VARCHAR(256) NOT NULL,
-    name_template VARCHAR(512) NULL,
+    -- name_template VARCHAR(512) NULL,
     tagline VARCHAR(512) NULL,
     description TEXT NULL,
 
     -- status & visibility
     status edition_status NOT NULL DEFAULT 'draft',
-    visible_from TIMESTAMPTZ NULL,
     registration_opens_at TIMESTAMPTZ NULL,
     registration_closes_at TIMESTAMPTZ NULL,
 
@@ -47,24 +47,24 @@ CREATE TABLE editions (
 
     -- tickets
     monetary_type edition_monetary_type NOT NULL,
-    has_tickets BOOLEAN NOT NULL DEFAULT FALSE, -- if false there is just a register button and makes the event free, if true capacity is defined by ticket amount
-    has_ticket_tiers BOOLEAN NOT NULL DEFAULT FALSE, -- allows tickets to give access to different things, normally all tickets give access to the same things
-    CONSTRAINT chk_tiers_require_tickets
-        CHECK (has_ticket_tiers = FALSE OR has_tickets = TRUE),
-    has_capacity BOOLEAN NOT NULL DEFAULT FALSE, -- only if it has_tickets is false, then you can define max participants
-    capacity INT NOT NULL DEFAULT 0,
-    remaining_capacity INT NOT NULL DEFAULT 0,
+    -- has_tickets BOOLEAN NOT NULL DEFAULT FALSE, -- if false there is just a register button and makes the event free, if true capacity is defined by ticket amount
+    -- has_ticket_tiers BOOLEAN NOT NULL DEFAULT FALSE, -- allows tickets to give access to different things, normally all tickets give access to the same things
+    -- CONSTRAINT chk_tiers_require_tickets
+    --    CHECK (has_ticket_tiers = FALSE OR has_tickets = TRUE),
+    -- has_capacity BOOLEAN NOT NULL DEFAULT FALSE, -- only if it has_tickets is false, then you can define max participants
+    -- capacity INT NOT NULL DEFAULT 0,
+    -- remaining_capacity INT NOT NULL DEFAULT 0,
 
-    CHECK (has_capacity = FALSE OR capacity > 0),
-    CHECK (capacity >= remaining_capacity),
+    -- CHECK (has_capacity = FALSE OR capacity > 0),
+    -- CHECK (capacity >= remaining_capacity),
 
     -- products
-    has_products BOOLEAN NOT NULL DEFAULT FALSE,
-    has_bundles BOOLEAN NOT NULL DEFAULT FALSE,
-    has_tokens BOOLEAN NOT NULL DEFAULT FALSE, -- tokens are an internal currency that events can use to block stuff, like block an activity behind 2 tokens, forces a token product on the store
-    max_tokens_per_user INT NOT NULL DEFAULT 1,
-    CONSTRAINT chk_tokens_config_requires_enabled
-        CHECK (has_tokens = TRUE OR max_tokens_per_user = 1),
+    -- has_products BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_bundles BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_tokens BOOLEAN NOT NULL DEFAULT FALSE, -- tokens are an internal currency that events can use to block stuff, like block an activity behind 2 tokens, forces a token product on the store
+    -- max_tokens_per_user INT NOT NULL DEFAULT 1,
+    -- CONSTRAINT chk_tokens_config_requires_enabled
+    --    CHECK (has_tokens = TRUE OR max_tokens_per_user = 1),
 
     -- dates
     starts_at TIMESTAMPTZ NOT NULL,
@@ -82,25 +82,25 @@ CREATE TABLE editions (
     banner_url TEXT NULL,
 
     -- media
-    has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
-    gallery_urls TEXT[] NULL,
+    -- has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
+    -- gallery_urls TEXT[] NULL,
 
     -- schedule
-    has_schedule BOOLEAN NOT NULL DEFAULT FALSE,
-    schedule_id UUID NULL,
+    -- has_schedule BOOLEAN NOT NULL DEFAULT FALSE,
+    -- schedule_id UUID NULL,
 
     -- activities
-    has_activities BOOLEAN NOT NULL DEFAULT FALSE,
-    has_activity_interest_marking BOOLEAN NOT NULL DEFAULT FALSE,
-    has_paid_activities BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_activities BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_activity_interest_marking BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_paid_activities BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- interest options
-    has_interest_list BOOLEAN NOT NULL DEFAULT FALSE,
-    interest_list_opens_at TIMESTAMPTZ NULL,
+    -- has_interest_list BOOLEAN NOT NULL DEFAULT FALSE,
+    -- interest_list_opens_at TIMESTAMPTZ NULL,
 
     -- checkout, if the event requires a checkout to mark the user as attended
     -- if single day, checkout at the exit at days end, if multiday checkout at exit at last days end
-    has_checkout BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_checkout BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- contact
     contact_email VARCHAR(256) NULL,
@@ -114,8 +114,8 @@ CREATE TABLE editions (
 );
 
 CREATE INDEX idx_editions_event_status ON editions(event_id, status, starts_at DESC);
-CREATE INDEX idx_editions_visible ON editions(visible_from, status)
-    WHERE status IN ('announced', 'open', 'ongoing');
+-- CREATE INDEX idx_editions_visible ON editions(visible_from, status)
+--    WHERE status IN ('announced', 'open', 'ongoing');
 
 CREATE TABLE edition_interest_list (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -170,7 +170,123 @@ CREATE TABLE edition_registrations (
 CREATE INDEX idx_registrations_edition_status ON edition_registrations(edition_id, status, registered_at);
 CREATE INDEX idx_registrations_user ON edition_registrations(user_id, status);
 
+CREATE TYPE edition_audit_action AS ENUM (
+    -- lifecycle
+    'created',
+    'edited',
+    'announced',
+    'opened',
+    'started',
+    'completed',
+    'cancelled',
+    'postponed',
+    'deleted',
+    'restored',
+
+    -- naming
+    'name_changed',
+    'tagline_changed',
+    'description_changed',
+    'type_changed',
+
+    -- status/visibility
+    'status_changed',
+    'visible_from_changed',
+    'registration_opens_changed',
+    'registration_closes_changed',
+
+    -- tickets
+    'monetary_type_changed',
+    'tickets_enabled',
+    'tickets_disabled',
+    'ticket_tiers_enabled',
+    'ticket_tiers_disabled',
+    'capacity_changed',
+    'capacity_enabled',
+    'capacity_disabled',
+
+    -- products
+    'products_enabled',
+    'products_disabled',
+    'bundles_enabled',
+    'bundles_disabled',
+    'tokens_enabled',
+    'tokens_disabled',
+    'max_tokens_changed',
+
+    -- dates
+    'dates_changed',
+    'timezone_changed',
+
+    -- location
+    'location_changed',
+
+    -- branding
+    'logo_updated',
+    'banner_updated',
+    'gallery_enabled',
+    'gallery_disabled',
+    'gallery_updated',
+
+    -- features
+    'schedule_enabled',
+    'schedule_disabled',
+    'activities_enabled',
+    'activities_disabled',
+    'activity_interest_enabled',
+    'activity_interest_disabled',
+    'paid_activities_enabled',
+    'paid_activities_disabled',
+    'interest_list_enabled',
+    'interest_list_disabled',
+    'interest_list_opens_changed',
+    'checkout_enabled',
+    'checkout_disabled',
+
+    -- contact
+    'contact_updated',
+
+    -- registration
+    'user_registered',
+    'registration_cancelled',
+    'user_checked_in',
+    'user_checked_out',
+    'attendance_marked',
+    'status_manually_changed',
+
+    -- access
+    'ownership_transferred'
+);
+
+CREATE TABLE edition_audit (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+
+    edition_id UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
+
+    actor_type audit_actor_type NOT NULL,
+    actor_id UUID NULL,
+
+    action edition_audit_action NOT NULL,
+    state action_state NOT NULL,
+
+    -- state tracking
+    from_status edition_status NULL,
+    to_status edition_status NULL,
+
+    -- change context
+    metadata JSONB NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_edition_audit_edition_lookup ON edition_audit(edition_id, created_at DESC);
+CREATE INDEX idx_edition_audit_action ON edition_audit(action, created_at DESC);
+
 -- +goose Down
+DROP INDEX IF EXISTS idx_edition_audit_action;
+DROP INDEX IF EXISTS idx_edition_audit_edition_lookup;
+DROP TABLE IF EXISTS edition_audit;
+DROP TYPE IF EXISTS edition_audit_action;
 DROP INDEX IF EXISTS idx_registrations_user;
 DROP INDEX IF EXISTS idx_registrations_edition_status;
 DROP TABLE IF EXISTS edition_registrations;

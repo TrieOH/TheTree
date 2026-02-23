@@ -1,0 +1,180 @@
+package infrastructure
+
+import (
+	"context"
+	"univents/internal/core/domain"
+	"univents/internal/plataform/database"
+	"univents/internal/plataform/database/sqlc"
+
+	"github.com/MintzyG/fail/v3"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+)
+
+type editionsRepo struct {
+	q      *sqlc.Queries
+	log    *zap.Logger
+	tracer trace.Tracer
+}
+
+var _ domain.EditionsRepository = (*editionsRepo)(nil)
+
+func NewEditionRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) domain.EditionsRepository {
+	return &editionsRepo{
+		q:      q,
+		log:    log,
+		tracer: tracer,
+	}
+}
+
+func (repo *editionsRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
+}
+
+func mapEditionFromDB(src *sqlc.Edition) *domain.Edition {
+	return &domain.Edition{
+		ID:              src.ID,
+		GoauthScopeID:   src.GoauthScopeID,
+		EventID:         src.EventID,
+		Type:            domain.EditionType(src.Type),
+		EditionName:     src.EditionName,
+		Tagline:         src.Tagline,
+		Description:     src.Description,
+		Status:          domain.EditionStatus(src.Status),
+		MonetaryType:    domain.EditionMonetaryType(src.MonetaryType),
+		StartsAt:        src.StartsAt,
+		EndsAt:          src.EndsAt,
+		Timezone:        src.Timezone,
+		LocationName:    src.LocationName,
+		LocationAddress: src.LocationAddress,
+		LogoUrl:         src.LogoUrl,
+		BannerUrl:       src.BannerUrl,
+		ContactEmail:    src.ContactEmail,
+		ContactPhone:    src.ContactPhone,
+		OrganizerName:   src.OrganizerName,
+		CreatedBy:       src.CreatedBy,
+		CreatedAt:       src.CreatedAt,
+		UpdatedAt:       src.UpdatedAt,
+		DeletedAt:       src.DeletedAt,
+	}
+}
+
+func EditionStatusPtrToString(p *domain.EditionStatus) string {
+	if p == nil {
+		return ""
+	}
+	return string(*p)
+}
+
+func (repo *editionsRepo) Create(ctx context.Context, toCreate *domain.Edition) (*domain.Edition, error) {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Create")
+	defer span.End()
+
+	edition, err := repo.queries(ctx).CreateEdition(ctx, sqlc.CreateEditionParams{
+		ID:              toCreate.ID,
+		GoauthScopeID:   toCreate.GoauthScopeID,
+		EventID:         toCreate.EventID,
+		Type:            sqlc.EditionType(toCreate.Type),
+		EditionName:     toCreate.EditionName,
+		Tagline:         toCreate.Tagline,
+		Description:     toCreate.Description,
+		Status:          sqlc.EditionStatus(domain.EditionStatusDraft),
+		MonetaryType:    sqlc.EditionMonetaryType(toCreate.MonetaryType),
+		EndsAt:          toCreate.EndsAt,
+		Timezone:        toCreate.Timezone,
+		LocationName:    toCreate.LocationName,
+		LocationAddress: toCreate.LocationAddress,
+		LogoUrl:         toCreate.LogoUrl,
+		BannerUrl:       toCreate.BannerUrl,
+		ContactEmail:    toCreate.ContactEmail,
+		ContactPhone:    toCreate.ContactPhone,
+		OrganizerName:   toCreate.OrganizerName,
+		CreatedBy:       toCreate.CreatedBy,
+	})
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return mapEditionFromDB(&edition), nil
+}
+
+func (repo *editionsRepo) GetByID(ctx context.Context, editionID uuid.UUID) (*domain.Edition, error) {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.GetByID")
+	defer span.End()
+
+	sqlcEdition, err := repo.queries(ctx).GetEditionByID(ctx, editionID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return mapEditionFromDB(&sqlcEdition), nil
+}
+
+func (repo *editionsRepo) List(ctx context.Context, eventID uuid.UUID) ([]domain.Edition, error) {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.List")
+	defer span.End()
+
+	sqlcEditions, err := repo.queries(ctx).ListEditions(ctx, eventID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	outEditions := make([]domain.Edition, 0, len(sqlcEditions))
+	for _, sqlcEdition := range sqlcEditions {
+		outEditions = append(outEditions, *mapEditionFromDB(&sqlcEdition))
+	}
+	return outEditions, nil
+}
+
+func (repo *editionsRepo) Announce(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Announce")
+	defer span.End()
+
+	err := repo.queries(ctx).AnnounceEdition(ctx, editionID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *editionsRepo) Open(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Open")
+	defer span.End()
+
+	err := repo.queries(ctx).OpenEditionRegistrations(ctx, editionID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *editionsRepo) Start(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Start")
+	defer span.End()
+
+	err := repo.queries(ctx).StartEdition(ctx, editionID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *editionsRepo) End(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.End")
+	defer span.End()
+
+	err := repo.queries(ctx).EndEdition(ctx, editionID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}

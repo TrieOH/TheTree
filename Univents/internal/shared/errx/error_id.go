@@ -35,7 +35,12 @@ var (
 
 	ValidationUUIDWasNil = fail.ID(1, "VAL", 0, false, "VALidationUUIDWasNil")
 
-	EventSlugAlreadyInUse = fail.ID(0, "EVENT", 0, false, "EventSlugAlreadyInUse")
+	EventSlugAlreadyInUse  = fail.ID(0, "EVENT", 0, false, "EventSlugAlreadyInUse")
+	EventPublishNonDraft   = fail.ID(0, "EVENT", 1, false, "EventPublishNonDraft")
+	EventCannotAddEditions = fail.ID(0, "EVENT", 2, false, "EventCannotAddEditions")
+
+	EditionInvalidID        = fail.ID(0, "EDITION", 0, false, "EditionInvalidID")
+	EditionValidationFailed = fail.ID(0, "EDITION", 1, false, "EditionValidationFailed")
 
 	SQLResourceNotFound         = fail.ID(0, "SQL", 0, false, "SQLResourceNotFound")
 	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")

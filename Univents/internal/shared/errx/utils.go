@@ -23,7 +23,7 @@ func ErrToResp(err error) *resp.Response {
 		return rs
 	}
 
-	telemetry.L().Error("FAILED ErrToResp")
+	telemetry.Log().Error("FAILED ErrToResp")
 	// unknown error = 500
 	return resp.InternalServerError().
 		WithTracePrefix("unhandled-error").

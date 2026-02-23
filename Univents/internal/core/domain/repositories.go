@@ -1,0 +1,33 @@
+package domain
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
+
+type EventsRepository interface {
+	CreateEvent(ctx context.Context, toCreate *Event) (*Event, error)
+	PatchEvent(ctx context.Context, toPatch *Event) (*Event, error)
+	GetEventByID(ctx context.Context, id uuid.UUID) (*Event, error)
+	ListEvents(ctx context.Context) ([]Event, error)
+	ListOwnEvents(ctx context.Context, ownerID uuid.UUID) ([]Event, error)
+	PublishEvent(ctx context.Context, id uuid.UUID) error
+	AppendEventAudits(ctx context.Context, audits []Audit) error
+	ListEventAuditByEvent(ctx context.Context, eventID uuid.UUID) ([]Audit, error)
+	AddEdition(ctx context.Context, eventID uuid.UUID) error
+}
+
+type EditionsRepository interface {
+	Create(ctx context.Context, toCreate *Edition) (*Edition, error)
+	//Patch(ctx context.Context, toPatch *Edition) (*Edition, error)
+	GetByID(ctx context.Context, editionID uuid.UUID) (*Edition, error)
+	List(ctx context.Context, editionID uuid.UUID) ([]Edition, error)
+	Announce(ctx context.Context, editionID uuid.UUID) error
+	Open(ctx context.Context, editionID uuid.UUID) error
+	Start(ctx context.Context, editionID uuid.UUID) error
+	End(ctx context.Context, editionID uuid.UUID) error
+	//Publish(ctx context.Context, id uuid.UUID) error
+	//AppendEditionAudits(ctx context.Context, audits []Audit) error
+	//ListEditionAuditByEdition(ctx context.Context, editionID uuid.UUID) ([]Audit, error)
+}

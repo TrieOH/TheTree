@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	eventhttp "univents/internal/eventcore/interfaces/http"
+	eventhttp "univents/internal/core/interfaces/http"
+	"univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	systemhttp "univents/internal/interfaces/http/system"
 
@@ -24,9 +25,11 @@ import (
 )
 
 type HTTPDeps struct {
-	EventsHandler  *eventhttp.EventsHandler
-	SystemHandler  *systemhttp.UniventsHandler
-	AuthMiddleware *middleware.AuthMiddleware
+	EventsHandler   *eventhttp.EventsHandler
+	EditionsHandler *editions.Handler
+	SystemHandler   *systemhttp.UniventsHandler
+	AuthMiddleware  *middleware.AuthMiddleware
+	AsynqmonHandler http.Handler
 }
 
 // CreateRouter godoc
@@ -81,6 +84,8 @@ func CreateRouter(deps *HTTPDeps) http.Handler {
 
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 	r.Handle("/metrics", middleware.Handler())
+
+	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 
 	registerRoutes(r, deps)
 	return otelhttp.NewHandler(r, "http.server")

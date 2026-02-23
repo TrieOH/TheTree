@@ -1,14 +1,14 @@
-package commands
+package queries
 
 import (
-	"univents/internal/eventcore/domain"
+	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
 
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/trace"
 )
 
-type CommandService struct {
+type QueryService struct {
 	events   domain.EventsRepository
 	gaClient *goauth.Client
 	tracer   trace.Tracer
@@ -20,8 +20,8 @@ func New(
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
-) *CommandService {
-	return &CommandService{
+) *QueryService {
+	return &QueryService{
 		events:   events,
 		gaClient: gaClient,
 		tracer:   tracer,
