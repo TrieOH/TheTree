@@ -2,7 +2,6 @@ import type { Role } from "@/features/role/model/types";
 import { cn } from "@/shared/lib/utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { Checkbox } from "@/shared/ui/shadcn/checkbox";
-import { ChevronRight } from "lucide-react";
 
 interface PropsI {
   roles: Role[];
@@ -20,7 +19,7 @@ export default function AssignRoleEditor({
   setIsReview
 }: PropsI) {
   return (
-    <div className="flex flex-col items-center p-4 gap-3">
+    <div className="flex flex-col items-center gap-3">
       <div className="text-center w-full">
         <span className="text-primary">ASSIGN ROLES</span>
         <p className="text-xs text-muted-foreground">
@@ -29,23 +28,25 @@ export default function AssignRoleEditor({
       </div>
       <div className="w-full space-y-2">
         {roles.map(role => (
-          <div 
+          <div
+            id={role.id}
             className={cn(
-              "w-full flex items-center xs:justify-between justify-center bg-muted rounded-sm p-4",
+              "w-full flex items-start p-4 gap-3",
               "cursor-pointer transition-colors duration-300 hover:bg-secondary/20 border border-transparent",
               selectedRolesMap.get(role.id) && "bg-secondary/20 border-border"
             )}
             onClick={() => handleSelectRole(role)}
           >
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                className="rounded-sm w-5 h-5 cursor-pointer" 
-                checked={!!selectedRolesMap.get(role.id)}
-              />
-              <span className="text-primary">{role.name}</span>
-              <p className="text-muted-foreground text-xs">{role.description}</p>
+            <Checkbox 
+              className="rounded-sm w-5 h-5 cursor-pointer" 
+              checked={!!selectedRolesMap.get(role.id)}
+            />
+            <div className="flex gap-x-2 items-baseline flex-wrap">
+              <span className="text-primary text-sm font-medium">{role.name}</span>
+              <span className="text-muted-foreground text-xs">
+                {role.description}
+              </span>
             </div>
-            <ChevronRight className="text-muted-foreground" />
           </div>
         ))}
       </div>

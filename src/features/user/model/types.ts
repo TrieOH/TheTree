@@ -1,3 +1,5 @@
+import type { Permission } from "@/features/permission/model/types";
+import type { Role } from "@/features/role/model/types";
 import type { JsonValue } from "@/shared/model/types";
 
 
@@ -13,4 +15,20 @@ export interface User {
   verified_at: string;
   created_at: string;
   updated_at: string;
+}
+
+export type RoleWithPermissions = {
+  role: Role;
+  permissions: Permission[];
+};
+
+export interface NodeCustomName {
+  receiverName: string;
+  applicationName: string;
+}
+
+export interface Node {
+  id: string
+  name: string | NodeCustomName
+  children?: Node[]
 }
