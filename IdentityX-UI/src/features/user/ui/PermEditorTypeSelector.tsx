@@ -1,17 +1,46 @@
 import { cn } from "@/shared/lib/utils";
-import { ChevronRight, Key, Shield } from "lucide-react";
+import { ChevronRight, Key, Shield, UserCheck } from "lucide-react";
 
 interface PropsI {
-  setCurrentType: (value: "Roles" | "Permissions") => void
+  setCurrentType: (value: "Roles" | "Permissions" | "Current") => void
 }
 
 export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="text-center w-full">
-        <span className="text-primary">GRANT ACCESS</span>
-        <p className="text-xs text-muted-foreground">What type of access do you want to grant?</p>
+        <span className="text-primary font-bold">MANAGE ACCESS</span>
+        <p className="text-xs text-muted-foreground">What would you like to do?</p>
       </div>
+
+      <div
+        onClick={() => setCurrentType("Current")}
+        className={cn(
+          "w-full flex items-center xs:justify-between justify-center bg-muted rounded-md p-4",
+          "cursor-pointer group transition-colors duration-300 hover:bg-secondary/20"
+        )}
+      >
+        <div className="flex xs:flex-row flex-col items-center gap-2">
+          <UserCheck className="w-10 h-10 text-primary" />
+          <div className="flex flex-col items-start">
+            <span className="w-full xs:text-start text-sm text-center font-medium text-primary">
+              Current Access
+            </span>
+            <p className="text-muted-foreground text-xs xs:text-start text-center">
+              View and remove existing roles/permissions
+            </p>
+          </div>
+        </div>
+        <ChevronRight 
+          className={cn(
+            "text-muted-foreground group-hover:opacity-100 opacity-0",
+            "transition-opacity duration-300 xs:block hidden"
+          )}
+        />
+      </div>
+
+      <div className="w-full border-t border-muted my-1" />
+
       <div
         onClick={() => setCurrentType("Roles")}
         className={cn(
@@ -20,13 +49,13 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
         )}
       >
         <div className="flex xs:flex-row flex-col items-center gap-2">
-          <Shield className="w-10 h-10 text-primary"/>
+          <Shield className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors"/>
           <div className="flex flex-col items-start">
             <span className="w-full xs:text-start text-sm text-center font-medium">
-              Roles
+              Grant Roles
             </span>
             <p className="text-muted-foreground text-xs xs:text-start text-center">
-              Assign predefined role blundes
+              Assign predefined role bundles
             </p>
           </div>
         </div>
@@ -45,10 +74,10 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
         )}
       >
         <div className="flex xs:flex-row flex-col items-center gap-2">
-          <Key className="w-10 h-10 text-accent" />
+          <Key className="w-10 h-10 text-muted-foreground group-hover:text-accent transition-colors" />
           <div className="flex flex-col items-start">
             <span className="w-full xs:text-start text-sm text-center font-medium">
-              Permissions
+              Grant Permissions
             </span>
             <p className="text-muted-foreground text-xs xs:text-start text-center">
               Fine-grained object:action access
