@@ -2,10 +2,18 @@ import type { User } from "../model/types";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { userRolesQueryOptions, userPermissionsQueryOptions, removeRoleOfUserFn, removePermissionOfUserFn } from "../api";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/shared/ui/shadcn/select";
 import { Shield, Key, Trash2, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Scope } from "@/features/scope/model/types";
+import { useState } from "react";
 
 interface PropsI {
   user: User;
@@ -16,6 +24,7 @@ interface PropsI {
 
 export default function CurrentAccessList({ user, project_id, onBack, allScopes }: PropsI) {
   const queryClient = useQueryClient();
+  const [selectedScopeId, setSelectedScopeId] = useState<string | 'all'>('all');
   
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery(
     userRolesQueryOptions(project_id, user.id)
@@ -116,8 +125,27 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
           {/* Permissions Section */}
           {allPermissions.length > 0 && (
             <div className="space-y-6">
-              <h3 className="text-xs font-bold text-muted-foreground uppercase px-1">Direct Permissions by Scope</h3>
+              <div className="flex items-center justify-between py-1 gap-1 sm:flex-row flex-col">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase">
+                  Direct Permissions by Scope
+                </h3>
+                <Select value={selectedScopeId} onValueChange={setSelectedScopeId}>
+                  <SelectTrigger className="w-45">
+                    <SelectValue placeholder="Filter by scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Scopes</SelectItem>
+                    {allScopes.map((scope) => (
+                      <SelectItem key={scope.id} value={scope.id}>
+                        {scope.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {allScopes.map((scope, index) => {
+                if (selectedScopeId !== 'all' && selectedScopeId !== scope.id) return null;
+
                 const scopePermissions = permissionQueries[index]?.data || [];
 
                 if (scopePermissions.length === 0) return null;

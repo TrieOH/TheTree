@@ -21,7 +21,7 @@ export default function AssignRoleEditor({
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="text-center w-full">
-        <span className="text-primary">ASSIGN ROLES</span>
+        <span className="text-primary font-bold">ASSIGN ROLES</span>
         <p className="text-xs text-muted-foreground">
           Select roles to assign. Click the arrow to inspect permissions.
         </p>
