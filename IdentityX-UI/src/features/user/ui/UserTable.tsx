@@ -14,6 +14,8 @@ interface PropsI {
 export default function UserTable({ data, project_id }: PropsI) {
   return (
     <CustomDataTable
+      forceMobileView={true}
+      mobileColumnCount={5}
       data={data}
       columns={[
         {
