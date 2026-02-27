@@ -1,4 +1,4 @@
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { ApiError, authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import type { User } from "../model/types";
 import { queryOptions } from "@tanstack/react-query";
 import { createClientOnlyFn } from "@tanstack/react-start";
@@ -33,31 +33,36 @@ export const usersQueryOptions = (project_id: string) => {
 export const getUserPermissionsFn = createClientOnlyFn(async ({
   queryKey,
 }: {
-  queryKey: ["userPermissions", string, string];
+  queryKey: ["userPermissions", string, string, string];
 }) => {
-  const [, projectId, id] = queryKey;
+  const [, projectId, id, scope_id] = queryKey;
   try {
-    return await tanstackQueryFetcher<Permission[]>(`/projects/${projectId}/identities/${id}/permissions`);
+    return await tanstackQueryFetcher<Permission[]>(
+      `/projects/${projectId}/identities/${id}/permissions?scope_id=${scope_id}`);
   } catch {
     return [] as Permission[];
   }
 });
 
-export const userPermissionsQueryOptions = (project_id: string, id: string) => {
+export const userPermissionsQueryOptions = (project_id: string, id: string, scope_id: string) => {
   return queryOptions({
-    queryKey: ['userPermissions', project_id, id],
+    queryKey: ['userPermissions', project_id, id, scope_id],
     queryFn: getUserPermissionsFn,
-    enabled: !!project_id && !!id
+    enabled: !!project_id && !!id && !!scope_id,
+    refetchOnMount: true,
   })
 }
 
-export const givePermissionToUserFn = createClientOnlyFn((userData: User, permission_id: string, scope_id: string) => {
+export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, permission_id: string, scope_id: string) => {
   const { project_id, id } = userData;
-  return authFetcher<void>(`/projects/${project_id}/identities/${id}/permissions`, {
+  const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/permissions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
     body: JSON.stringify({ permission_id, scope_id })
   });
+  if (!response.success) throw new ApiError(response);
+  
+  return response.data;
 });
 
 export const removePermissionOfUserFn = createClientOnlyFn((userData: User, permission_id: string,  scope_id: string) => {
@@ -88,17 +93,20 @@ export const userRolesQueryOptions = (project_id: string, id: string) => {
   return queryOptions({
     queryKey: ['userRoles', project_id, id],
     queryFn: getUserRolesFn,
-    enabled: !!project_id && !!id
+    enabled: !!project_id && !!id,
+    refetchOnMount: true,
   })
 }
 
-export const giveRoleToUserFn = createClientOnlyFn((userData: User, role_id: string, scope_id: string) => {
+export const giveRoleToUserFn = createClientOnlyFn(async (userData: User, role_id: string, scope_id: string) => {
   const { project_id, id } = userData;
-  return authFetcher<void>(`/projects/${project_id}/identities/${id}/roles`, {
+  const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/roles`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
     body: JSON.stringify({ role_id, scope_id })
   });
+  if (!response.success) throw new ApiError(response);
+  return response.data;
 });
 
 export const removeRoleOfUserFn = createClientOnlyFn((userData: User, role_id: string,  scope_id: string) => {
