@@ -37,7 +37,7 @@ export default function AssignPermissionEditor({
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="text-center w-full">
-          <span className="text-primary font-bold uppercase tracking-wider">
+          <span className="text-primary font-bold uppercase">
             Actions for {selectedObject}
           </span>
           <p className="text-xs text-muted-foreground mt-1">

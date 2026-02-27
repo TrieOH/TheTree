@@ -14,7 +14,9 @@ export default function ScopeEditorSelector({ setCurrentScopeID, setCurrentType,
   return (
     <div className="flex flex-col items-center gap-3 text-foreground">
       <div className="text-center w-full">
-        <span className="text-primary">SELECT SCOPE FOR {currentType.toUpperCase()}</span>
+        <span className="text-primary font-bold">
+          SELECT SCOPE FOR {currentType.toUpperCase()}
+        </span>
         <p className="text-xs text-muted-foreground">What type of access do you want to grant?</p>
       </div>
       <div className="w-full">
