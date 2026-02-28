@@ -61,6 +61,22 @@ export default function UserPermEditor({
   const { data: allRoles = [] } = useQuery(roleQueryOptions(project_id));
   const { data: allPermissions = [] } = useQuery(permissionsQueryOptions(project_id));
 
+  const { data: userCurrentRoles = [] } = useQuery(userRolesQueryOptions(project_id, user.id));
+  const { data: userCurrentPermissionsForScope = [] } = useQuery({
+    ...userPermissionsQueryOptions(project_id, user.id, currentScopeID!),
+    enabled: !!currentScopeID,
+  });
+
+  const assignedRolesInCurrentScope = new Set(
+    userCurrentRoles
+      .filter(role => role.scope_id === currentScopeID)
+      .map(role => role.id)
+  );
+  const availableRoles = allRoles.filter(role => !assignedRolesInCurrentScope.has(role.id));
+
+  const userCurrentPermissionIdsForScope = new Set(userCurrentPermissionsForScope.map(permission => permission.id));
+  const availablePermissions = allPermissions.filter(permission => !userCurrentPermissionIdsForScope.has(permission.id));
+
   const rolePermissionsQueries = useQueries({
     queries: [...selectedRolesMap.values()].map((role) =>
       rolePermissionsQueryOptions(project_id, role.id)
@@ -177,7 +193,7 @@ export default function UserPermEditor({
       {/* Roles Section */}
       {currentScopeID !== null && currentType === "Roles" && !isReview &&
         <AssignRoleEditor 
-          roles={allRoles} 
+          roles={availableRoles} 
           setCurrentScopeID={setCurrentScopeID}
           selectedRolesMap={selectedRolesMap}
           handleSelectRole={handleSelectRole}
@@ -203,7 +219,7 @@ export default function UserPermEditor({
       {/* Permissions Sections */}
       {currentScopeID !== null && currentType === "Permissions" && !isReview &&
         <AssignPermissionEditor 
-          permissions={allPermissions} 
+          permissions={availablePermissions} 
           setCurrentScopeID={setCurrentScopeID}
           selectedPermissionsMap={selectedPermissionsMap}
           handleSelectPermission={handleSelectPermission}
