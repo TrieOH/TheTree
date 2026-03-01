@@ -32,22 +32,16 @@ export default function AssignRoleEditor({
             key={role.id}
             htmlFor={`check-${role.id}`}
             className={cn(
-              "w-full flex items-start p-4 gap-3",
+              "w-full flex items-start p-4 gap-3 text-left",
               "cursor-pointer transition-colors duration-300 hover:bg-secondary/20 border border-transparent",
               selectedRolesMap.get(role.id) && "bg-secondary/20 border-border"
             )}
-            onClick={() => handleSelectRole(role)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                handleSelectRole(role)
-              }
-            }}
           >
             <Checkbox 
               id={`check-${role.id}`}
               className="rounded-sm w-5 h-5 cursor-pointer" 
               checked={!!selectedRolesMap.get(role.id)}
+              onCheckedChange={() => handleSelectRole(role)}
             />
             <div className="flex gap-x-2 items-baseline flex-wrap">
               <span className="text-primary text-sm font-medium">{role.name}</span>
