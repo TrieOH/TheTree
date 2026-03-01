@@ -50,23 +50,17 @@ export default function AssignPermissionEditor({
               key={perm.id}
               htmlFor={`check-${perm.id}`}
               className={cn(
-                "w-full flex items-center p-4 gap-3 rounded-sm",
+                "w-full flex items-center p-4 gap-3 rounded-sm text-left",
                 "cursor-pointer transition-all duration-200 border border-transparent",
                 "hover:bg-secondary/20",
                 selectedPermissionsMap.has(perm.id) ? "bg-secondary/30 border-primary/20" : "bg-muted/50"
               )}
-              onClick={() => handleSelectPermission(perm)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  handleSelectPermission(perm)
-                }
-              }}
             >
               <Checkbox
                 id={`check-${perm.id}`}
                 className="rounded-sm w-5 h-5 cursor-pointer" 
                 checked={selectedPermissionsMap.has(perm.id)}
+                onCheckedChange={() => handleSelectPermission(perm)}
               />
               <div className="flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-muted-foreground"/>
