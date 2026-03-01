@@ -60,6 +60,7 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
           style={{ marginLeft: `${level * 24}px` }}
         >
           <button
+            type='button'
             onClick={() => hasChildren && setIsExpanded(!isExpanded)}
             className={`
               w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
@@ -84,12 +85,12 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
 
       {hasChildren && isExpanded && (
         <div className="relative">
-          {node.children!.map((child, index) => (
+          {node.children?.map((child, index) => (
             <TreeNode
               key={child.id}
               node={child}
               level={level + 1}
-              isLast={index === node.children!.length - 1}
+              isLast={index === (node.children?.length || 0) - 1}
             />
           ))}
         </div>

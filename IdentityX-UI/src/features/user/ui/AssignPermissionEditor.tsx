@@ -46,8 +46,9 @@ export default function AssignPermissionEditor({
         </div>
         <div className="w-full space-y-2 max-h-100 overflow-y-auto pr-1">
            {actionsForSelectedObject.map(perm => (
-            <div
+            <label
               key={perm.id}
+              htmlFor={`check-${perm.id}`}
               className={cn(
                 "w-full flex items-center p-4 gap-3 rounded-sm",
                 "cursor-pointer transition-all duration-200 border border-transparent",
@@ -55,8 +56,15 @@ export default function AssignPermissionEditor({
                 selectedPermissionsMap.has(perm.id) ? "bg-secondary/30 border-primary/20" : "bg-muted/50"
               )}
               onClick={() => handleSelectPermission(perm)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  handleSelectPermission(perm)
+                }
+              }}
             >
-              <Checkbox 
+              <Checkbox
+                id={`check-${perm.id}`}
                 className="rounded-sm w-5 h-5 cursor-pointer" 
                 checked={selectedPermissionsMap.has(perm.id)}
               />
@@ -64,7 +72,7 @@ export default function AssignPermissionEditor({
                 <Zap className="w-3.5 h-3.5 text-muted-foreground"/>
                 <span className="text-primary text-sm">{perm.action}</span>
               </div>
-            </div>
+            </label>
           ))}
         </div>
         <hr className="w-full border-muted"/>
@@ -92,7 +100,8 @@ export default function AssignPermissionEditor({
         {objects.map(obj => {
           const count = permissions.filter(p => p.object === obj && selectedPermissionsMap.has(p.id)).length;
           return (
-            <div
+            <button
+              type="button"
               key={obj}
               className={cn(
                 "w-full flex justify-between items-center bg-muted/50 rounded-sm p-4 group",
@@ -124,7 +133,7 @@ export default function AssignPermissionEditor({
                   count > 0 ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 )}
               />
-            </div>
+            </button>
           );
         })}
       </div>
