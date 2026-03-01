@@ -29,6 +29,8 @@ import { rulesDiff } from '../lib/field-rules-diff-utils';
 import { EditorForm } from '@trieoh/node-auth-sdk/react';
 import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
 
+const EMPTY_FIELDS: FieldDefinitionResultI[] = [];
+
 export default function FieldEditor() {
   const queryClient = useQueryClient();
   const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
@@ -72,7 +74,7 @@ export default function FieldEditor() {
   );
 
   const fields = useEditableList<FieldDefinitionResultI>({
-    initial: schemaVData?.fields || [],
+    initial: schemaVData?.fields || EMPTY_FIELDS,
 
     getId: (f) => f.object_id,
     isEqual: areFieldsEqual,
@@ -377,7 +379,7 @@ export default function FieldEditor() {
             await queryClient.invalidateQueries({
               queryKey: schemaVersionByIdQueryOptions(currentProjectId, currentSchemaId, currentSchemaVersion).queryKey
             });
-            fields.syncWith(schemaVData?.fields || []);
+            fields.syncWith(schemaVData?.fields || EMPTY_FIELDS);
           }}
           disabled={!fields.hasChanges || isVersionNull || fields.isSubmitting || schemaVData?.status !== 'draft'}
           leftIcon={<SaveAll className="w-4 h-4" />}

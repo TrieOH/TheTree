@@ -60,7 +60,13 @@ export default function CustomTabs({
       setActiveTab(newValue);
       setDisplayTab(newValue);
     }
-    navigate({ from: "/projects/config", search: {tab: newValue} })
+    navigate({
+      to: ".",
+      search: (prev) => ({
+        ...prev,
+        tab: newValue,
+      }),
+    })
   };
 
   const contentVariants = {
