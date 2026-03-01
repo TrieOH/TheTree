@@ -22,6 +22,7 @@ export default function TruncatedId({ id }: TruncatedIdProps) {
       <ShadowButton
         variant="ghost"
         onClick={handleCopy}
+        className="p-0"
         leftIcon={<Copy className="h-4 w-4"/>}
       />
     </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   givePermissionToRoleFn,
@@ -12,6 +13,7 @@ import { X, Loader2 } from "lucide-react";
 import type { Role } from "../model/types";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
+import { SearchInput } from "@/shared/ui/form/SearchInput";
 
 interface RolePermissionsEditorProps {
   project_id: string;
@@ -23,6 +25,7 @@ export default function RolePermissionsEditor({
   role,
 }: RolePermissionsEditorProps) {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { data: allPermissions, isLoading: isLoadingAllPermissions } = useQuery(
     permissionsQueryOptions(project_id)
@@ -78,6 +81,12 @@ export default function RolePermissionsEditor({
 
   const isMutating = givePermissionMutation.isPending || removePermissionMutation.isPending;
 
+  const filteredPermissions = allPermissions?.filter((permission) =>
+    `${permission.object}:${permission.action}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
   if (isLoadingAllPermissions || isLoadingRolePermissions) {
     return (
       <div className="flex flex-col items-center py-4 min-h-52 space-y-6">
@@ -115,9 +124,17 @@ export default function RolePermissionsEditor({
         </p>
       </div>
 
-      {allPermissions && allPermissions.length > 0 ? (
-        <div className="flex flex-wrap justify-center gap-2 max-w-3xl">
-          {allPermissions.map((permission) => {
+      <div className="w-full max-w-sm mb-4">
+        <SearchInput
+          placeholder="Search permissions (e.g., project:read)"
+          value={searchTerm}
+          onChange={(value) => setSearchTerm(value)}
+        />
+      </div>
+
+      {filteredPermissions && filteredPermissions.length > 0 ? (
+        <div className="flex flex-wrap justify-center gap-2 max-w-3xl max-h-80 overflow-y-auto">
+          {filteredPermissions.map((permission) => {
             const isAssigned = isPermissionAssigned(permission.id);
             const isPending = 
               (givePermissionMutation.isPending && 

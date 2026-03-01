@@ -18,7 +18,7 @@ export default function APIKeyManager ({ publicKey}: PropsI) {
 
   const handlePublicKeyCopy = () => {
     navigator.clipboard.writeText(publicKey);
-    toast.success("Public Key copied to clipboard");
+    toast.success("Project ID copied to clipboard");
   };
 
   const handleSecretKeyCopy = () => {
@@ -55,10 +55,10 @@ export default function APIKeyManager ({ publicKey}: PropsI) {
         <p className="text-sm text-muted-foreground">Manage your API keys for accessing the platform.</p>
       </div>
 
-      {/* Public Key Section */}
+      {/* Project ID Section */}
       <section className='bg-card py-4 rounded-sm border border-border'>
         <div className='border-b border-border pb-2 px-4'>
-          <span>Public Key</span>
+          <span>Project ID</span>
           <p className='text-muted-foreground text-sm'>
             Safe to embed in client-side code. This key never changes.
           </p>

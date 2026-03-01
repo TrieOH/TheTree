@@ -72,7 +72,7 @@ function RouteComponent() {
       value: 'users',
       label: 'Users',
       icon: UserCog,
-      content: <UserTable data={users}/>
+      content: <UserTable data={users} project_id={currentProjectId} />
     },
     {
       value: 'api-keys',
