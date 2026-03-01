@@ -107,6 +107,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                     </div>
                   </div>
                   <button
+                    type="button"
                     disabled={removeRoleMutation.isPending}
                     onClick={() => removeRoleMutation.mutate({ roleId: role.id, scopeId: role.scope_id })}
                     className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
@@ -170,6 +171,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                           </div>
                         </div>
                         <button
+                          type="button"
                           disabled={removePermissionMutation.isPending}
                           onClick={() => removePermissionMutation.mutate({ 
                             permissionId: perm.id, 

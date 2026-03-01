@@ -63,7 +63,7 @@ export default function UserPermEditor({
 
   const { data: userCurrentRoles = [] } = useQuery(userRolesQueryOptions(project_id, user.id));
   const { data: userCurrentPermissionsForScope = [] } = useQuery({
-    ...userPermissionsQueryOptions(project_id, user.id, currentScopeID!),
+    ...userPermissionsQueryOptions(project_id, user.id, currentScopeID || ""),
     enabled: !!currentScopeID,
   });
 
@@ -169,7 +169,7 @@ export default function UserPermEditor({
 
 
   return (
-    <div className="cursor-default">
+    <>
       {currentType === null && <PermEditorTypeSelector setCurrentType={setCurrentType} />}
       
       {currentType === "Current" && (
@@ -241,6 +241,6 @@ export default function UserPermEditor({
           onExit={resetAllStates}
         />
       )}
-    </div>
+    </>
   )
 }

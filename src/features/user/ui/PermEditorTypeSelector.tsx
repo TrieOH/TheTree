@@ -13,7 +13,8 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
         <p className="text-xs text-muted-foreground">What would you like to do?</p>
       </div>
 
-      <div
+      <button
+        type="button"
         onClick={() => setCurrentType("Current")}
         className={cn(
           "w-full flex items-center xs:justify-between justify-center bg-muted rounded-md p-4",
@@ -37,11 +38,12 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
             "transition-opacity duration-300 xs:block hidden"
           )}
         />
-      </div>
+      </button>
 
       <div className="w-full border-t border-muted my-1" />
 
-      <div
+      <button
+        type="button"
         onClick={() => setCurrentType("Roles")}
         className={cn(
           "w-full flex items-center xs:justify-between justify-center bg-muted rounded-md",
@@ -65,8 +67,9 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
             "transition-opacity duration-300 xs:block hidden"
           )}
         />
-      </div>
-      <div 
+      </button>
+      <button
+        type="button"
         onClick={() => setCurrentType("Permissions")}
         className={cn(
           "w-full flex items-center xs:justify-between justify-center bg-muted rounded-md p-4",
@@ -90,7 +93,7 @@ export default function PermEditorTypeSelector({ setCurrentType }: PropsI) {
             "transition-opacity duration-300 xs:block hidden"
           )}
         />
-      </div>
+      </button>
     </div>
   )
 }

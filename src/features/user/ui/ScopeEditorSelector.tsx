@@ -21,7 +21,8 @@ export default function ScopeEditorSelector({ setCurrentScopeID, setCurrentType,
       </div>
       <div className="w-full">
         {allScopes.map(scope => (
-          <div
+          <button
+            type="button"
             key={scope.id}
             onClick={() => setCurrentScopeID(scope.id)}
             className={cn(
@@ -46,7 +47,7 @@ export default function ScopeEditorSelector({ setCurrentScopeID, setCurrentType,
                 "transition-opacity duration-300"
               )}
             />
-          </div>
+          </button>
         ))}
       </div>
       <hr className="w-full"/>
