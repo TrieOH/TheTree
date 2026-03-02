@@ -1,12 +1,15 @@
 import type { Permission } from "@/features/permission/model/types";
 import type { Node, RoleWithPermissions } from "../model/types";
 
-export const buildRolePermissionsToNodeTree = (roleWithPermissions: RoleWithPermissions[]) => {
+export const buildRolePermissionsToNodeTree = (
+  roleWithPermissions: RoleWithPermissions[],
+  scope: string,
+) => {
   const nodeTree: Node = {
     id: 'root',
     name: {
       receiverName: "User",
-      applicationName: "Scope"
+      applicationName: scope
     },
     children: []
   };
@@ -45,12 +48,15 @@ export const buildRolePermissionsToNodeTree = (roleWithPermissions: RoleWithPerm
   return nodeTree;
 }
 
-export const buildDirectPermissionsToNodeTree = (permissions: Permission[]) => {
+export const buildDirectPermissionsToNodeTree = (
+  permissions: Permission[], 
+  scope: string
+) => {
   const nodeTree: Node = {
     id: 'root',
     name: {
       receiverName: "User",
-      applicationName: "Scope"
+      applicationName: scope
     },
     children: []
   };

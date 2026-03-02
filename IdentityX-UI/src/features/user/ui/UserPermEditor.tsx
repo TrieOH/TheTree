@@ -165,6 +165,10 @@ export default function UserPermEditor({
     setIsTheEnd(true);
   };
 
+  const getScopeName = () => {
+    return currentScopeID === null ? "root" : 
+      `${allScopes.find(item => item.id === currentScopeID)?.name}`
+  }
 
   return (
     <>
@@ -200,7 +204,7 @@ export default function UserPermEditor({
       }
       {currentType === "Roles" && isReview && !isTheEnd &&
         <UserPermTree
-          node={buildRolePermissionsToNodeTree(rolesWithPermissions)}
+          node={buildRolePermissionsToNodeTree(rolesWithPermissions, getScopeName())}
           goBack={() => setIsReview(false)}
           onSubmit={handleGrantRoles}
         />
@@ -226,7 +230,7 @@ export default function UserPermEditor({
       }
       {currentType === "Permissions" && isReview && !isTheEnd &&
         <UserPermTree
-          node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()])}
+          node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()], getScopeName())}
           goBack={() => setIsReview(false)}
           onSubmit={handleGrantPermissions}
         />
