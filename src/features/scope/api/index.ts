@@ -46,3 +46,17 @@ export const scopesQueryOptions = (project_id: string) => {
     enabled: !!project_id
   })
 }
+
+
+/**
+ * Update a scope's metadata on the server.
+ * @param metaData - The metadata for the scope.
+ */
+export const patchScopeMetaFn = createClientOnlyFn((metaData: Partial<ScopeCRUD>) => {
+  const { project_id, id, meta } = metaData;
+  return authFetcher<void>(`/projects/${project_id}/scopes/${id}/meta`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+    body: JSON.stringify({ meta }),
+  });
+});
