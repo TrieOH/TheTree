@@ -1,5 +1,5 @@
 import { SearchInput } from '@/shared/ui/form/SearchInput';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -7,7 +7,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   X,
-  Search
+  Search,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -15,7 +15,16 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/shared/ui/shadcn/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/shadcn/select';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
+import { cn } from '@/shared/lib/utils';
+import { AnimatePresence, motion } from 'motion/react';
 
 // --- Type Definitions ---
 
@@ -32,7 +41,6 @@ export type ColumnDef<T> = {
   key: keyof T;
   header: string;
   responsive?: 'default' | 'icon' | 'hidden';
-  width?: string;
   sortable?: boolean;
   /** Disables sorting for this column entirely */
   disabled?: boolean;
@@ -74,6 +82,10 @@ export type DataTableProps<T> = {
   itemsPerPage?: number;
   searchPlaceholder?: string;
   initialSort?: { key: keyof T; direction: SortDirection };
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  /** Force the mobile card view even on desktop */
+  forceMobileView?: boolean;
+  mobileColumnCount?: number;
 };
 
 
@@ -84,7 +96,7 @@ type SortIndicatorProps = {
   sortConfig: { key: string; direction: SortDirection } | null;
 };
 
-const SortIndicator = ({ columnKey, sortConfig }: Pick<SortIndicatorProps, 'columnKey' | 'sortConfig'>) => {
+const SortIndicator = React.memo(({ columnKey, sortConfig }: Pick<SortIndicatorProps, 'columnKey' | 'sortConfig'>) => {
   const isSorted = sortConfig?.key === columnKey;
   const isAsc = isSorted && sortConfig.direction === 'asc';
   const isDesc = isSorted && sortConfig.direction === 'desc';
@@ -93,38 +105,316 @@ const SortIndicator = ({ columnKey, sortConfig }: Pick<SortIndicatorProps, 'colu
     <div className="flex flex-col items-center justify-center ml-2 pointer-events-none">
       <ChevronUp 
         size={14} 
-        className={`
-          transition-all duration-200
-          ${isAsc 
+        className={cn(
+          "transition-all duration-200",
+          isAsc 
             ? 'text-primary opacity-100' 
             : isDesc
               ? 'text-muted-foreground opacity-30'
-              : 'text-muted-foreground opacity-0 group-hover:opacity-40'}
-        `}
+              : 'text-muted-foreground opacity-0 group-hover:opacity-40'
+        )}
       />
       <ChevronDown 
         size={14} 
-        className={`
-          -mt-1 transition-all duration-200
-          ${isDesc 
+        className={cn(
+          "-mt-1 transition-all duration-200",
+          isDesc 
             ? 'text-primary opacity-100' 
             : isAsc
               ? 'text-muted-foreground opacity-30'
-              : 'text-muted-foreground opacity-0 group-hover:opacity-40'}
-        `}
+              : 'text-muted-foreground opacity-0 group-hover:opacity-40'
+        )}
       />
     </div>
   );
-};
+});
 
-// --- No Results State Component ---
+SortIndicator.displayName = 'SortIndicator';
 
-const NoResultsState = () => (
+const NoResultsState = React.memo(() => (
   <div className="flex flex-col items-center justify-center gap-2 py-8 text-muted-foreground">
     <Search size={32} className="opacity-20" />
     <p>No results found.</p>
   </div>
-);
+));
+
+NoResultsState.displayName = 'NoResultsState';
+
+
+// --- Desktop Row Component ---
+
+interface DesktopRowProps<T> {
+  row: T;
+  columns: ColumnDef<T>[];
+  rowActions?: RowAction<T>[];
+  isExpanded: boolean;
+  onToggle: (id: string | number) => void;
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  id: string | number;
+}
+
+function DesktopRowInner<T extends object>({ 
+  row, 
+  columns, 
+  rowActions, 
+  isExpanded, 
+  onToggle, 
+  renderExpandedRow,
+  id 
+}: DesktopRowProps<T>) {
+  return (
+    <React.Fragment>
+      <tr 
+        className={cn(
+          "transition-colors hover:bg-muted/70",
+          renderExpandedRow && "cursor-pointer"
+        )}
+        onClick={() => renderExpandedRow && onToggle(id)}
+      >
+        {columns.map((col, colIndex) => (
+          <td key={String(col.key)} className="p-4 align-middle whitespace-nowrap">
+            <div className="flex items-center gap-3">
+              {renderExpandedRow && colIndex === 0 && (
+                <div className="transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                  <ChevronRight size={16} />
+                </div>
+              )}
+              <span className="flex-1">
+                {col.render 
+                  ? col.render(row[col.key], row) 
+                  : String(row[col.key] ?? '-')
+                }
+              </span>
+            </div>
+          </td>
+        ))}
+        {rowActions && rowActions.length > 0 && (
+          <td className="p-4 align-middle text-right whitespace-nowrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ShadowButton
+                  leftIcon={<MoreHorizontal size={16} />}
+                  label='More Actions'
+                  variant="ghost-primary"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                {rowActions.map((action, idx) => {
+                  const Icon = action.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={`${action.label}${idx}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        action.onClick(row);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {Icon && <Icon size={16} className="mr-2" />}
+                      <span>{action.label}</span>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </td>
+        )}
+      </tr>
+      
+      <tr>
+        <td colSpan={columns.length + (rowActions ? 1 : 0)} className="p-0 border-none">
+          <AnimatePresence initial={false}>
+            {isExpanded && renderExpandedRow && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden bg-muted/30"
+              >
+                <div className="p-4">
+                  {renderExpandedRow(row)}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </td>
+      </tr>
+    </React.Fragment>
+  );
+}
+
+const DesktopRow = React.memo(DesktopRowInner) as typeof DesktopRowInner;
+
+// --- Mobile Card Component ---
+
+interface MobileCardProps<T> {
+  row: T;
+  primaryColumn: ColumnDef<T>;
+  mobileVisibleColumns: ColumnDef<T>[];
+  mobileColumnCount: number;
+  isExpanded: boolean;
+  onToggle: (id: string | number) => void;
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  rowActions?: RowAction<T>[];
+  id: string | number;
+}
+
+function MobileCardInner<T extends object>({
+  row,
+  primaryColumn,
+  mobileVisibleColumns,
+  mobileColumnCount,
+  isExpanded,
+  onToggle,
+  renderExpandedRow,
+  rowActions,
+  id
+}: MobileCardProps<T>) {
+  const interactiveProps = renderExpandedRow ? {
+    onClick: () => onToggle(id),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onToggle(id);
+      }
+    },
+    role: "button" as const,
+    tabIndex: 0
+  } : {};
+
+  return (
+    <div className='relative'>
+      <div 
+        className={cn(
+          "rounded-md border border-border bg-background shadow-sm text-left",
+          "w-full overflow-hidden"
+        )}
+      >
+        <div 
+          className={cn("p-4", renderExpandedRow && "cursor-pointer")} 
+          {...interactiveProps}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground truncate">
+                {primaryColumn.render 
+                  ? primaryColumn.render(row[primaryColumn.key], row)
+                  : String(row[primaryColumn.key])
+                }
+              </h3>
+              {mobileVisibleColumns[1] && (
+                <div className="text-sm text-muted-foreground mt-1 truncate">
+                  {mobileVisibleColumns[1].render 
+                    ? mobileVisibleColumns[1].render(row[mobileVisibleColumns[1].key], row)
+                    : String(row[mobileVisibleColumns[1].key])
+                  }
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
+            {mobileVisibleColumns
+              .filter(c => String(c.key) !== String(primaryColumn.key))
+              .slice(0, mobileColumnCount)
+              .map((col) => (
+                <div key={String(col.key)} className="flex flex-col justify-center">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider truncate">{col.header}</span>
+                  <span className="text-sm font-medium text-foreground truncate">
+                    {col.render 
+                      ? col.render(row[col.key], row) 
+                      : String(row[col.key] ?? '-')
+                    }
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+        
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden border-t border-border bg-muted/30"
+            >
+              <div className="p-4">
+                {renderExpandedRow 
+                  ? renderExpandedRow(row)
+                  : (
+                    <div className="space-y-3">
+                      {mobileVisibleColumns
+                        .slice(mobileColumnCount) 
+                        .map((col) => (
+                        <div key={String(col.key)} className="flex flex-col">
+                          <span className="text-xs text-muted-foreground uppercase tracking-wider truncate">{col.header}</span>
+                          <span className="text-sm font-medium text-foreground">
+                            {col.render 
+                              ? col.render(row[col.key], row) 
+                              : String(row[col.key] ?? '-')
+                            }
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                }
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      {renderExpandedRow && (
+        <ChevronDown 
+          size={18} 
+          className={cn(
+            "transition-transform", isExpanded && "rotate-180",
+            "absolute top-6 right-12 pointer-events-none"
+          )} 
+        />
+      )}
+      {rowActions && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button 
+              type="button" 
+              className="p-2 text-muted-foreground hover:bg-muted rounded absolute top-4 right-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal size={18} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 bg-popover rounded-md shadow-lg z-50">
+            {rowActions.map((action, idx) => (
+              <DropdownMenuItem 
+                key={`${action.label}${idx}`} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick(row);
+                }}
+                className={cn(
+                  "flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors",
+                  "hover:bg-muted hover:text-muted-foreground",
+                  action.variant === 'destructive' && "text-destructive"
+                )}
+              >
+                {action.icon && <action.icon size={16} className="mr-2" />}
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+}
+
+const MobileCard = React.memo(MobileCardInner) as typeof MobileCardInner;
 
 
 // --- Main Component ---
@@ -139,6 +429,9 @@ export default function CustomDataTable<T extends object>({
   itemsPerPage = 10,
   searchPlaceholder = "Search...",
   initialSort,
+  renderExpandedRow,
+  forceMobileView = false,
+  mobileColumnCount = 3,
 }: DataTableProps<T>) {
   
   const defaultSortColumn = columns.find(col => col.primary && col.sortable) || columns.find(col => col.sortable);
@@ -148,66 +441,77 @@ export default function CustomDataTable<T extends object>({
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilters, setActiveFilters] = useState<Partial<Record<keyof T, string>>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
-  const handleSort = (key: keyof T, disabled?: boolean) => {
+  const toggleRow = useCallback((id: string | number) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSort = useCallback((key: keyof T, disabled?: boolean) => {
     if (disabled) return;
     
-    let direction: SortDirection = 'asc';
-    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
+    setSortConfig(prev => {
+      let direction: SortDirection = 'asc';
+      if (prev?.key === key && prev.direction === 'asc') direction = 'desc';
+      return { key, direction };
+    });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm('');
     setActiveFilters({});
     setCurrentPage(1);
-  };
+  }, []);
 
   const hasActiveFilters = searchTerm || Object.values(activeFilters).some(v => v !== undefined && v !== '');
 
-    const filteredData = useMemo(() => {
-      return data.filter((item) => {
-        const itemSearchableString = columns.reduce((acc, col) => {
-          let cellValue: string = '';
-          if (col.searchableTextExtractor) {
-            cellValue = col.searchableTextExtractor(item[col.key], item);
-          } else cellValue = String(item[col.key] ?? '');
-          
-          return `${acc} ${cellValue}`;
-        }, "").toLowerCase();
-  
-        const matchesSearch = !searchTerm || itemSearchableString.includes(searchTerm.toLowerCase());
-      const matchesCustomFilters = Object.entries(activeFilters).every(([key, filterValue]) => {
-        if (!filterValue) return true;
-        const itemValue = String(item[key as keyof T]).toLowerCase();
-        return itemValue === String(filterValue).toLowerCase() || itemValue.includes(String(filterValue).toLowerCase());
+  const filteredData = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const filterEntries = Object.entries(activeFilters).filter(([_, v]) => v);
+
+    return data.filter((item) => {
+      const matchesSearch = !term || columns.some(col => {
+        const val = col.searchableTextExtractor 
+          ? col.searchableTextExtractor(item[col.key], item)
+          : String(item[col.key] ?? '');
+        return val.toLowerCase().includes(term);
       });
 
-      return matchesSearch && matchesCustomFilters;
+      if (!matchesSearch) return false;
+
+      return filterEntries.every(([key, filterValue]) => {
+        const itemValue = String(item[key as keyof T]).toLowerCase();
+        const fv = String(filterValue).toLowerCase();
+        return itemValue === fv || itemValue.includes(fv);
+      });
     });
   }, [data, searchTerm, activeFilters, columns]);
 
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
     
+    const { key, direction } = sortConfig;
+    const isAsc = direction === 'asc';
+
     return [...filteredData].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      const aVal = a[key];
+      const bVal = b[key];
 
       if (aVal == null) return 1;
       if (bVal == null) return -1;
       if (aVal === bVal) return 0;
 
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortConfig.direction === 'asc' 
-          ? aVal.localeCompare(bVal) 
-          : bVal.localeCompare(aVal);
+        return isAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
       
-      return sortConfig.direction === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal > bVal ? -1 : 1);
+      return isAsc ? (aVal > bVal ? 1 : -1) : (aVal > bVal ? -1 : 1);
     });
   }, [filteredData, sortConfig]);
 
@@ -245,23 +549,27 @@ export default function CustomDataTable<T extends object>({
             />
           </div>
 
-          {/* Filters - TODO: I need to make a custom for select and input */}
+          {/* Filters */}
           {filters?.map((filter) => (
             <div key={String(filter.key)}>
               {filter.type === 'select' ? (
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={activeFilters[filter.key] || ''}
-                  onChange={(e) => {
-                    setActiveFilters(prev => ({ ...prev, [filter.key]: e.target.value }));
+                <Select
+                  value={activeFilters[filter.key] || 'all'}
+                  onValueChange={(value) => {
+                    setActiveFilters(prev => ({ ...prev, [filter.key]: value === 'all' ? '' : value }));
                     setCurrentPage(1);
                   }}
                 >
-                  <option value="">{filter.placeholder || `All ${String(filter.key)}`}</option>
-                  {filter.options?.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  <SelectTrigger size="sm" className="w-45 h-full!">
+                    <SelectValue placeholder={filter.placeholder || `All ${String(filter.key)}`} />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="all">{filter.placeholder || `All ${String(filter.key)}`}</SelectItem>
+                    {filter.options?.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
                 <input
                   type={filter.type === 'date' ? 'date' : 'text'}
@@ -287,7 +595,6 @@ export default function CustomDataTable<T extends object>({
             />
           )}
 
-          {/* Spacer to push actions right on desktop */}
           <div className="hidden lg:block lg:flex-1" />
 
           {/* Table Actions */}
@@ -308,7 +615,10 @@ export default function CustomDataTable<T extends object>({
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden rounded-md border border-border bg-card shadow-sm md:block">
+      <div className={cn(
+        "rounded-md border border-border bg-card shadow-sm",
+        forceMobileView ? "hidden" : "hidden md:block"
+      )}>
         <div className="overflow-x-auto">
           <table className="w-full caption-bottom text-sm">
             <thead className="border-b border-border bg-muted/60">
@@ -320,18 +630,17 @@ export default function CustomDataTable<T extends object>({
                   return (
                     <th
                       key={String(col.key)}
-                      className={`
-                        h-12 px-4 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap
-                        ${col.width || ''}
-                        ${isSortable ? 'cursor-pointer select-none hover:text-foreground' : ''}
-                        ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}
-                        ${isSortable ? 'group' : ''}
-                      `}
+                      className={cn(
+                        "h-12 px-4 text-left align-middle text-xs font-medium text-muted-foreground whitespace-nowrap",
+                        isSortable && "cursor-pointer select-none hover:text-foreground",
+                        isDisabled && "cursor-not-allowed opacity-60",
+                        isSortable && "group"
+                      )}
                       onClick={() => handleSort(col.key, col.disabled)}
                     >
                       <div className="flex items-center justify-between">
                         {/* Label - Left aligned */}
-                        <span className={isSortable ? 'pr-2' : ''}>
+                        <span className={cn(isSortable && 'pr-2')}>
                           {col.responsive === 'icon' ? (
                             <>
                               <span className="hidden lg:inline">{col.header}</span>
@@ -363,49 +672,21 @@ export default function CustomDataTable<T extends object>({
             </thead>
             <tbody className="divide-y divide-border">
               {paginatedData.length > 0 ? (
-                paginatedData.map((row, rowIndex) => (
-                  <tr 
-                    key={String(row[idKey] ?? rowIndex)} 
-                    className="transition-colors hover:bg-muted/70"
-                  >
-                    {columns.map((col) => (
-                      <td key={String(col.key)} className="p-4 align-middle whitespace-nowrap">
-                        {col.render 
-                          ? col.render(row[col.key], row) 
-                          : String(row[col.key] ?? '-')
-                        }
-                      </td>
-                    ))}
-                    {rowActions && rowActions.length > 0 && (
-                      <td className="p-4 align-middle text-right whitespace-nowrap">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <ShadowButton
-                              leftIcon={<MoreHorizontal size={16} />}
-                              label='More Actions'
-                              variant="ghost-primary"
-                            />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            {rowActions.map((action, idx) => {
-                              const Icon = action.icon;
-                              return (
-                                <DropdownMenuItem
-                                  key={`${action.label}${idx}`}
-                                  onClick={() => action.onClick(row)}
-                                  className="cursor-pointer"
-                                >
-                                  {Icon && React.createElement(Icon, { size: 16, className: "mr-2" })}
-                                  <span>{action.label}</span>
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    )}
-                  </tr>
-                ))
+                paginatedData.map((row, rowIndex) => {
+                  const id = String(row[idKey] ?? rowIndex);
+                  return (
+                    <DesktopRow
+                      key={id}
+                      id={id}
+                      row={row}
+                      columns={columns}
+                      rowActions={rowActions}
+                      isExpanded={expandedRows.has(id)}
+                      onToggle={toggleRow}
+                      renderExpandedRow={renderExpandedRow}
+                    />
+                  );
+                })
               ) : (
                 <tr>
                   <td 
@@ -422,91 +703,28 @@ export default function CustomDataTable<T extends object>({
       </div>
 
       {/* Mobile Card View */}
-      <div className="space-y-3 md:hidden">
+      <div className={cn(
+        "space-y-3",
+        forceMobileView ? "block" : "md:hidden"
+      )}>
         {paginatedData.length > 0 ? (
-          paginatedData.map((row, rowIndex) => (
-            <div 
-              key={String(row[idKey] ?? rowIndex)} 
-              className="rounded-md border border-border bg-background p-4 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground truncate">
-                    {primaryColumn.render 
-                      ? primaryColumn.render(row[primaryColumn.key], row)
-                      : String(row[primaryColumn.key])
-                    }
-                  </h3>
-                  {mobileVisibleColumns[1] && (
-                    <div className="text-sm text-muted-foreground mt-1 truncate">
-                      {mobileVisibleColumns[1].render 
-                        ? mobileVisibleColumns[1].render(row[mobileVisibleColumns[1].key], row)
-                        : String(row[mobileVisibleColumns[1].key])
-                      }
-                    </div>
-                  )}
-                </div>
-                
-                {rowActions && (
-                  <div className="flex shrink-0 gap-1">
-                    {rowActions.slice(0, 2).map((action, idx) => {
-                      const Icon = action.icon;
-                      if (!Icon) return null;
-                      return (
-                        <ShadowButton
-                          key={`${action.label}${idx}`} 
-                          onClick={() => action.onClick(row)}
-                          variant={action.variant}
-                          leftIcon={<Icon size={18} />}
-                        />
-                      );
-                    })}
-                    {rowActions.length > 2 && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button type="button" className="p-2 text-muted-foreground">
-                            <MoreHorizontal size={18} />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 bg-popover rounded-md shadow-lg z-50">
-                          {rowActions.slice(2).map((action, idx) => (
-                            <DropdownMenuItem 
-                              key={`${action.label}${idx}`} 
-                              onClick={() => action.onClick(row)}
-                              className={`
-                                flex cursor-pointer items-center px-2 py-1.5 text-sm transition-colors
-                                hover:bg-muted hover:text-muted-foreground
-                                ${action.variant === 'destructive' ? 'text-destructive' : ''}
-                              `}
-                            >
-                              {action.icon && React.createElement(action.icon, { size: 16, className: "mr-2" })}
-                              {action.label}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
-                {mobileVisibleColumns
-                  .filter(c => String(c.key) !== String(primaryColumn.key))
-                  .map((col) => (
-                    <div key={String(col.key)} className="flex flex-col">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider truncate">{col.header}</span>
-                      <span className="text-sm font-medium text-foreground truncate">
-                        {col.render 
-                          ? col.render(row[col.key], row) 
-                          : String(row[col.key] ?? '-')
-                        }
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))
+          paginatedData.map((row, rowIndex) => {
+            const id = String(row[idKey] ?? rowIndex);
+            return (
+              <MobileCard
+                key={id}
+                id={id}
+                row={row}
+                primaryColumn={primaryColumn}
+                mobileVisibleColumns={mobileVisibleColumns}
+                mobileColumnCount={mobileColumnCount}
+                isExpanded={expandedRows.has(id)}
+                onToggle={toggleRow}
+                renderExpandedRow={renderExpandedRow}
+                rowActions={rowActions}
+              />
+            );
+          })
         ) : (
           <div className="rounded-md border border-border bg-background p-4 shadow-sm">
             <NoResultsState />

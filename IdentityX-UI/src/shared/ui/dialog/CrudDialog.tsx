@@ -59,7 +59,7 @@ export function CrudDialog<T extends { id: string }>({
       <DialogContent 
         className={cn(
           state.mode === 'delete' ? 'max-w-md' : 'max-w-lg',
-          "min-w-[320px] w-11/12"
+          "min-w-[320px] w-11/12 max-h-11/12 overflow-y-auto"
         )}
       >
         <DialogHeader>

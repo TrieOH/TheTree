@@ -30,7 +30,7 @@ interface PropsI extends VariantProps<typeof buttonVariants> {
   type?: "button" | "submit";
   formId?: string;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
 }
 

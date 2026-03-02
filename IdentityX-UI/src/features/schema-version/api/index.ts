@@ -86,7 +86,7 @@ export const schemaVersionByIdQueryOptions = (project_id: string, schema_id: str
   return queryOptions({
     queryKey: ['schemaVersionById', project_id, schema_id, version],
     queryFn: getSchemaVersionByIdFn,
-    enabled: Boolean(project_id && schema_id && version !== undefined)
+    enabled: !!(project_id && schema_id && version)
   })
 }
 
