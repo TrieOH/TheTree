@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { permissionStore } from "../store";
-import { createPermissionFn, deletePermissionFn } from "../api";
+import { createPermissionFn, deletePermissionFn, patchPermissionMetaFn } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -13,6 +13,13 @@ import { CrudDialog } from "@/shared/ui/dialog/CrudDialog";
 
 interface PropsI {
   project_id: string;
+}
+
+interface PermissionFormValues extends Omit<PermissionCRUD, 'meta'> {
+  icon?: string;
+  color?: string;
+  description?: string;
+  status?: "active" | "restricted" | "beta" | "deprecated";
 }
 
 export default function PermissionDialog({ project_id }: PropsI) {
@@ -30,6 +37,17 @@ export default function PermissionDialog({ project_id }: PropsI) {
     },
   });
 
+  const patchPermissionMetaMutation = useMutation({
+    mutationFn: patchPermissionMetaFn,
+    onSuccess: (response, data) => {
+      if (response.success) {
+        toast.success(response.message || "Updated permission");
+        queryClient.setQueryData(["permissions", project_id, data.id], data);
+        queryClient.invalidateQueries({ queryKey: ["permissions", project_id] });
+      } else toast.error(`Failed to update permissions: ${response.message}`);
+    },
+  });
+
   const deletePermissionMutation = useMutation({
     mutationFn: deletePermissionFn,
     onSuccess: (response) => {
@@ -44,14 +62,28 @@ export default function PermissionDialog({ project_id }: PropsI) {
     store: permissionStore,
     autoClose: true,
     onCreate: async (data) => {
-      createPermissionMutation.mutate({ ...data, project_id });
+      const { icon, color, description, status, ...rest } = data as PermissionFormValues;
+      const finalData: PermissionCRUD = {
+        ...rest,
+        meta: { icon, color, description, status }
+      };
+      createPermissionMutation.mutate({ ...finalData, project_id });
+    },
+    onUpdate: async (id, data) => {
+      const { icon, color, description, status, ...rest } = data as PermissionFormValues;
+      const finalData: PermissionCRUD = {
+        ...rest,
+        id,
+        meta: { icon, color, description, status }
+      };
+      patchPermissionMetaMutation.mutate(finalData);
     },
     onDelete: async (id) => {
-      deletePermissionMutation.mutate({project_id, id});
+      deletePermissionMutation.mutate({ project_id, id });
     }
   });
 
-  const fields: FieldConfig[] = [
+  const allFields: FieldConfig[] = [
     {
       name: "object", 
       label: "Object", 
@@ -65,15 +97,44 @@ export default function PermissionDialog({ project_id }: PropsI) {
       placeholder: "read", 
       autoComplete: "action",
       errors: getFieldError(permissionCRUDSchema.shape.action)
+    },
+    {
+      name: "description",
+      label: "Description",
+      placeholder: "Brief explanation",
+      type: "text"
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Active", value: "active" },
+        { label: "Restricted", value: "restricted" },
+        { label: "Beta", value: "beta" },
+        { label: "Deprecated", value: "deprecated" }
+      ]
+    },
+    {
+      name: "icon",
+      label: "Select Icon",
+      type: "icon"
+    },
+    {
+      name: "color",
+      label: "Select Color / Gradient",
+      type: "color"
     }
   ];
 
+  const fields = mode === 'edit' 
+    ? allFields.filter(f => ["description", "status", "icon", "color"].includes(f.name))
+    : allFields;
+
   const permissionOpts = formOptions({
-    defaultValues: (mode === 'create' ? { id: "", object: "", action: "", project_id: "" } : formData) as PermissionCRUD,
-    validators: {
-      onChange: permissionCRUDSchema,
-      onMount: permissionCRUDSchema,
-    }
+    defaultValues: (mode === 'create' 
+      ? { id: "", object: "", action: "", project_id: "", icon: "Shield", color: "#6366f1", status: "active", description: "" } 
+      : { ...formData, ...formData?.meta }) as PermissionFormValues,
   });
 
   return (
@@ -88,7 +149,6 @@ export default function PermissionDialog({ project_id }: PropsI) {
         fields={fields}
         options={{
           defaultValues: permissionOpts.defaultValues,
-          validators: permissionOpts.validators,
           onSubmit: async ({ value }) => handleSubmit(value)
         }}
       />
