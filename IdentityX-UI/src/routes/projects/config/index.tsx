@@ -9,7 +9,7 @@ import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
-import { Database, Globe, KeySquare, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
+import { Database, Globe, KeySquare, Shield, ShieldCheck, UserCog } from 'lucide-react';
 import PermissionTable from '@/features/permission/ui/PermissionTable';
 import RoleTable from '@/features/role/ui/RoleTable';
 import APIKeyManager from '@/features/api-keys/ui/APIKeyManager';
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/projects/config/')({
     queryClient.prefetchQuery(usersQueryOptions(id || ""))
     return { }
   },
-  validateSearch: z.object({ tab: z.string().optional().default('dashboard') }),
+  validateSearch: z.object({ tab: z.string().optional().default('schema') }),
   component: RouteComponent,
   staticData: {
     components: {
@@ -43,7 +43,7 @@ function RouteComponent() {
   const { tab } = Route.useSearch();
 
   const items = [
-    { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
+    // { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
     {
       value: 'schema',
       label: 'Schema',

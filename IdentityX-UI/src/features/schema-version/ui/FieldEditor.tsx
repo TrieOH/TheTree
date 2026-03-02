@@ -29,6 +29,8 @@ import { rulesDiff } from '../lib/field-rules-diff-utils';
 import { EditorForm } from '@trieoh/node-auth-sdk/react';
 import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
 
+const EMPTY_FIELDS: FieldDefinitionResultI[] = [];
+
 export default function FieldEditor() {
   const queryClient = useQueryClient();
   const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
@@ -37,7 +39,7 @@ export default function FieldEditor() {
   const [nextId, setNextId] = useState(-1);
 
   const { data: schemaVData } = useQuery(schemaVersionByIdQueryOptions(
-    currentProjectId || "", currentSchemaId || "", currentSchemaVersion || 1
+    currentProjectId || "", currentSchemaId || "", currentSchemaVersion as number
   ));
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -72,13 +74,12 @@ export default function FieldEditor() {
   );
 
   const fields = useEditableList<FieldDefinitionResultI>({
-    initial: schemaVData?.fields || [],
+    initial: schemaVData?.fields || EMPTY_FIELDS,
 
     getId: (f) => f.object_id,
     isEqual: areFieldsEqual,
 
     onCreate: async (creates) => {
-      console.log("Create:", creates);
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
       await createSchemaVersionFieldFn({
         fields: mapFieldDefinitionResultToSchemaFieldCreateRequest(creates),
@@ -89,7 +90,6 @@ export default function FieldEditor() {
     },
 
     onUpdate: async (updates) => {
-      console.log("Update:", updates.map(item => item.value));
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
       await setSchemaVersionFieldsFn({
         project_id: currentProjectId,
@@ -100,7 +100,6 @@ export default function FieldEditor() {
     },
 
     onDelete: async (deletes) => {
-      console.log("DELETE:", deletes)
       if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
       await Promise.all(
         deletes.map(d =>
@@ -116,7 +115,6 @@ export default function FieldEditor() {
     customDiffs: [
       optionsDiff({
         deleteOptions: async (fieldId, optionsDiff) => {
-          console.log("DELETE OPTIONS:", optionsDiff);
           if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
           await Promise.all(
             optionsDiff.map(id =>
@@ -131,7 +129,6 @@ export default function FieldEditor() {
           );
         },
         putOptions: async (fieldId, options) => {
-          console.log("PUT OPTIONS:", options);
           if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
           await setSchemaFieldOptionsFn({
             project_id: currentProjectId,
@@ -144,7 +141,6 @@ export default function FieldEditor() {
       }),
       rulesDiff({
         putRequiredRules: async (fieldId, rules) => {
-          console.log("PUT REQUIRED RULES:", rules);
           if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
           await setSchemaFieldRequiredRulesFn({
             project_id: currentProjectId,
@@ -155,7 +151,6 @@ export default function FieldEditor() {
           })
         },
         putVisibilityRules: async (fieldId, rules) => {
-          console.log("PUT VISIBILITY RULES:", rules);
           if(!currentProjectId || !currentSchemaId || !currentSchemaVersion) return;
           await setSchemaFieldVisibilityRulesFn({
             project_id: currentProjectId,
@@ -298,7 +293,7 @@ export default function FieldEditor() {
                       value="Add Field"
                       variant="solid"
                       leftIcon={<Plus className="w-4 h-4" />}
-                      disabled={isVersionNull}
+                      disabled={isVersionNull || (schemaVData && schemaVData.status !== 'draft')}
                     />
                   </div>
                 ),
@@ -336,7 +331,7 @@ export default function FieldEditor() {
                 value="Add Field"
                 variant="solid"
                 leftIcon={<Plus className="w-4 h-4" />}
-                disabled={isVersionNull || schemaVData?.status !== 'draft'}
+                disabled={isVersionNull || (schemaVData && schemaVData.status !== 'draft')}
                 />
               
             </div>
@@ -384,7 +379,7 @@ export default function FieldEditor() {
             await queryClient.invalidateQueries({
               queryKey: schemaVersionByIdQueryOptions(currentProjectId, currentSchemaId, currentSchemaVersion).queryKey
             });
-            fields.syncWith(schemaVData?.fields || []);
+            fields.syncWith(schemaVData?.fields || EMPTY_FIELDS);
           }}
           disabled={!fields.hasChanges || isVersionNull || fields.isSubmitting || schemaVData?.status !== 'draft'}
           leftIcon={<SaveAll className="w-4 h-4" />}

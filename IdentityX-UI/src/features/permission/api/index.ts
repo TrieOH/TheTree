@@ -60,3 +60,17 @@ export const deletePermissionFn = createClientOnlyFn(({project_id, id}: {project
     method: "DELETE",
   });
 });
+
+
+/**
+ * Update a permission's metadata on the server.
+ * @param metaData - The metadata for the permission.
+ */
+export const patchPermissionMetaFn = createClientOnlyFn((metaData: Partial<PermissionCRUD>) => {
+  const { project_id, id, meta } = metaData;
+  return authFetcher<void>(`/projects/${project_id}/permissions/${id}/meta`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
+    body: JSON.stringify({ meta }),
+  });
+});
