@@ -37,7 +37,7 @@ export default function UserPermEditor({
   user,
 }: UserPermEditorProps) {
   const [currentType, setCurrentType] = useState<null | "Roles" | "Permissions" | "Current">(null);
-  const [currentScopeID, setCurrentScopeID] = useState<null | string>(null);
+  const [currentScopeID, setCurrentScopeID] = useState<string | null | undefined>(undefined);
   const [selectedRolesMap, setSelectedRolesMap] = useState<Map<string, Role>>(new Map());
   const [selectedPermissionsMap, setSelectedPermissionsMap] = useState<Map<string, Permission>>(new Map());
   const [isReview, setIsReview] = useState(false);
@@ -48,12 +48,12 @@ export default function UserPermEditor({
   const queryClient = useQueryClient();
 
   const givePermissionMutation = useMutation({
-    mutationFn: ({ permission_id, scope_id }: { permission_id: string, scope_id: string }) =>
+    mutationFn: ({ permission_id, scope_id }: { permission_id: string, scope_id: string | null }) =>
       givePermissionToUserFn(user, permission_id, scope_id),
   });
 
   const giveRoleMutation = useMutation({
-    mutationFn: ({ role_id, scope_id }: { role_id: string, scope_id: string }) =>
+    mutationFn: ({ role_id, scope_id }: { role_id: string, scope_id: string | null }) =>
       giveRoleToUserFn(user, role_id, scope_id)
   });
 
@@ -63,8 +63,8 @@ export default function UserPermEditor({
 
   const { data: userCurrentRoles = [] } = useQuery(userRolesQueryOptions(project_id, user.id));
   const { data: userCurrentPermissionsForScope = [] } = useQuery({
-    ...userPermissionsQueryOptions(project_id, user.id, currentScopeID || ""),
-    enabled: !!currentScopeID,
+    ...userPermissionsQueryOptions(project_id, user.id, currentScopeID ?? null),
+    enabled: currentScopeID !== undefined,
   });
 
   const assignedRolesInCurrentScope = new Set(
@@ -115,7 +115,7 @@ export default function UserPermEditor({
 
   const resetAllStates = () => {
     setCurrentType(null);
-    setCurrentScopeID(null);
+    setCurrentScopeID(undefined);
     setSelectedRolesMap(new Map());
     setSelectedPermissionsMap(new Map());
     setIsReview(false);
@@ -123,8 +123,7 @@ export default function UserPermEditor({
   }
 
   const handleGrantRoles = async () => {
-    if (!currentScopeID) return;
-
+    if (currentScopeID === undefined) return;
     const rolePromises = [...selectedRolesMap.values()].map((role) =>
       giveRoleMutation.mutateAsync({
         role_id: role.id,
@@ -146,8 +145,7 @@ export default function UserPermEditor({
   };
 
   const handleGrantPermissions = async () => {
-    if (!currentScopeID) return;
-
+    if (currentScopeID === undefined) return;
     const permissionPromises = [...selectedPermissionsMap.values()].map(
       (permission) =>
         givePermissionMutation.mutateAsync({
@@ -167,11 +165,15 @@ export default function UserPermEditor({
     setIsTheEnd(true);
   };
 
+  const getScopeName = () => {
+    return currentScopeID === null ? "root" : 
+      `${allScopes.find(item => item.id === currentScopeID)?.name}`
+  }
 
   return (
     <>
       {currentType === null && <PermEditorTypeSelector setCurrentType={setCurrentType} />}
-      
+
       {currentType === "Current" && (
         <CurrentAccessList 
           user={user} 
@@ -181,7 +183,7 @@ export default function UserPermEditor({
         />
       )}
 
-      {currentType !== null && currentType !== "Current" && currentScopeID === null && 
+      {currentType !== null && currentType !== "Current" && currentScopeID === undefined && 
         <ScopeEditorSelector 
           allScopes={allScopes} 
           currentType={currentType} 
@@ -191,7 +193,7 @@ export default function UserPermEditor({
       }
 
       {/* Roles Section */}
-      {currentScopeID !== null && currentType === "Roles" && !isReview &&
+      {currentScopeID !== undefined && currentType === "Roles" && !isReview &&
         <AssignRoleEditor 
           roles={availableRoles} 
           setCurrentScopeID={setCurrentScopeID}
@@ -202,7 +204,7 @@ export default function UserPermEditor({
       }
       {currentType === "Roles" && isReview && !isTheEnd &&
         <UserPermTree
-          node={buildRolePermissionsToNodeTree(rolesWithPermissions)}
+          node={buildRolePermissionsToNodeTree(rolesWithPermissions, getScopeName())}
           goBack={() => setIsReview(false)}
           onSubmit={handleGrantRoles}
         />
@@ -210,14 +212,14 @@ export default function UserPermEditor({
       {currentType === "Roles" && isTheEnd && (
         <AccessConfirmationPanel
           title={isError ? "Error assigning roles" : `Access granted to ${user.email}`}
-          subTitle={isError ? errorMessage : `on scope ${allScopes.find(item => item.id === currentScopeID)?.name}`}
+          subTitle={isError ? errorMessage : `on ${currentScopeID === null ? "root" : `scope ${allScopes.find(item => item.id === currentScopeID)?.name}`}`}
           state={isError ? "error" : "success"}
           onExit={resetAllStates}
         />
       )}
 
       {/* Permissions Sections */}
-      {currentScopeID !== null && currentType === "Permissions" && !isReview &&
+      {currentScopeID !== undefined && currentType === "Permissions" && !isReview &&
         <AssignPermissionEditor 
           permissions={availablePermissions} 
           setCurrentScopeID={setCurrentScopeID}
@@ -228,7 +230,7 @@ export default function UserPermEditor({
       }
       {currentType === "Permissions" && isReview && !isTheEnd &&
         <UserPermTree
-          node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()])}
+          node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()], getScopeName())}
           goBack={() => setIsReview(false)}
           onSubmit={handleGrantPermissions}
         />
@@ -236,7 +238,7 @@ export default function UserPermEditor({
       {currentType === "Permissions" && isTheEnd && (
         <AccessConfirmationPanel
           title={isError ? "Error assigning permissions" : `Access granted to ${user.email}`}
-          subTitle={isError ? errorMessage : `on scope ${allScopes.find(item => item.id === currentScopeID)?.name}`}
+          subTitle={isError ? errorMessage : `on ${currentScopeID === null ? "root" : `scope ${allScopes.find(item => item.id === currentScopeID)?.name}`}`}
           state={isError ? "error" : "success"}
           onExit={resetAllStates}
         />
