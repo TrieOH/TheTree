@@ -152,3 +152,31 @@ func (s *RoleService) TakeFromUser(ctx context.Context, entityID, roleID uuid.UU
 
 	return s.client.do(req, nil)
 }
+
+func (s *RoleService) Give(ctx context.Context, entityID uuid.UUID, roleName string, scopeID *uuid.UUID) error {
+	reqBody := map[string]any{
+		"role_name": roleName,
+		"scope_id":  scopeID,
+	}
+	path := fmt.Sprintf("/projects/%s/identities/%s/roles/by-name", s.client.projectID, entityID)
+	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(req, nil)
+}
+
+func (s *RoleService) Take(ctx context.Context, entityID uuid.UUID, roleName string, scopeID *uuid.UUID) error {
+	reqBody := map[string]any{
+		"role_name": roleName,
+		"scope_id":  scopeID,
+	}
+	path := fmt.Sprintf("/projects/%s/identities/%s/roles/by-name", s.client.projectID, entityID)
+	req, err := s.client.newRequest(ctx, "DELETE", path, reqBody)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(req, nil)
+}
