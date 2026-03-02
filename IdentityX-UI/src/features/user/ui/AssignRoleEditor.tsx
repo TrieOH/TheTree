@@ -5,7 +5,7 @@ import { Checkbox } from "@/shared/ui/shadcn/checkbox";
 
 interface PropsI {
   roles: Role[];
-  setCurrentScopeID: (value: null) => void;
+  setCurrentScopeID: (value: undefined) => void;
   selectedRolesMap: Map<string, Role>;
   handleSelectRole: (role: Role) => void;
   setIsReview: (value: boolean) => void;
@@ -54,7 +54,7 @@ export default function AssignRoleEditor({
       </div>
       <hr className="w-full"/>
       <div className="w-full flex justify-between items-center">
-        <ShadowButton value="Back" variant="ghost" onClick={() => setCurrentScopeID(null)}/>
+        <ShadowButton value="Back" variant="ghost" onClick={() => setCurrentScopeID(undefined)}/>
         <ShadowButton 
           value={`Assign Roles (${selectedRolesMap.size})`} 
           variant="solid"

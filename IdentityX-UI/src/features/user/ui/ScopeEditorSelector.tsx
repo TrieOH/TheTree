@@ -4,7 +4,7 @@ import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import { ChevronRight, MapPin } from "lucide-react"
 
 interface PropsI {
-  setCurrentScopeID: (value: string) => void;
+  setCurrentScopeID: (value: string | null) => void;
   setCurrentType: (value: null) => void;
   allScopes: Scope[];
   currentType: string;
@@ -20,6 +20,32 @@ export default function ScopeEditorSelector({ setCurrentScopeID, setCurrentType,
         <p className="text-xs text-muted-foreground">What type of access do you want to grant?</p>
       </div>
       <div className="w-full">
+        <button
+          type="button"
+          onClick={() => setCurrentScopeID(null)}
+          className={cn(
+            "w-full flex justify-between bg-muted rounded-sm p-4 group",
+            "cursor-pointer group transition-colors duration-300 hover:bg-secondary/20"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <MapPin 
+              className={cn(
+                "text-muted-foreground inline w-4 h-4 shrink-0",
+                "group-hover:text-primary transition-colors duration-300"
+              )}
+            />
+            <span className="font-medium text-sm">
+              Root
+            </span>
+          </div>
+          <ChevronRight
+            className={cn(
+              "text-muted-foreground group-hover:opacity-100 opacity-0",
+              "transition-opacity duration-300"
+            )}
+          />
+        </button>
         {allScopes.map(scope => (
           <button
             type="button"
