@@ -24,7 +24,7 @@ export default function ColorSelector({ label }: PropsI) {
   return (
     <fieldset className="flex flex-col gap-2 mb-4 border-none p-0 m-0">
       <legend className="text-sm font-medium text-foreground">{label}</legend>
-      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 p-1 border rounded-md bg-muted/20">
+      <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 p-1">
         {COMMON_COLORS.map((color) => {
           const isSelected = currentValue === color;
           const isGradient = color.includes("linear-gradient");
