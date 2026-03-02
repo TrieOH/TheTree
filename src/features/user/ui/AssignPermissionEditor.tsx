@@ -7,7 +7,7 @@ import { Checkbox } from "@/shared/ui/shadcn/checkbox";
 
 interface PropsI {
   permissions: Permission[];
-  setCurrentScopeID: (value: null) => void;
+  setCurrentScopeID: (value: undefined) => void;
   selectedPermissionsMap: Map<string, Permission>;
   handleSelectPermission: (permission: Permission) => void;
   enableReview: () => void;
@@ -133,7 +133,7 @@ export default function AssignPermissionEditor({
       </div>
       <hr className="w-full border-muted"/>
       <div className="w-full flex justify-between items-center">
-        <ShadowButton value="Back" variant="ghost" onClick={() => setCurrentScopeID(null)}/>
+        <ShadowButton value="Back" variant="ghost" onClick={() => setCurrentScopeID(undefined)}/>
         <ShadowButton 
           value={`Review Permissions (${selectedPermissionsMap.size})`} 
           variant="solid"
