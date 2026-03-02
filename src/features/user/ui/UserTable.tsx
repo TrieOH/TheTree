@@ -2,15 +2,20 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import type { User } from "../model/types";
 import { formatDate } from "@/shared/lib/date-utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
+import TruncatedId from "@/shared/ui/TruncatedId";
+import UserPermEditor from "./UserPermEditor";
 
 
 interface PropsI {
-  data: User[]
+  data: User[];
+  project_id: string;
 }
 
-export default function UserTable({ data }: PropsI) {
+export default function UserTable({ data, project_id }: PropsI) {
   return (
     <CustomDataTable
+      forceMobileView={true}
+      mobileColumnCount={5}
       data={data}
       columns={[
         {
@@ -46,6 +51,12 @@ export default function UserTable({ data }: PropsI) {
           sortable: true,
         },
         {
+          key: "id",
+          header: "ID",
+          sortable: true,
+          render: (value) => <TruncatedId id={value as string} />,
+        },
+        {
           key: "created_at",
           header: "Created At",
           sortable: true,
@@ -74,6 +85,7 @@ export default function UserTable({ data }: PropsI) {
           searchableTextExtractor: (value) => formatDate(value as string),
         },
       ]}
+      renderExpandedRow={(row) => <UserPermEditor project_id={project_id} user={row} />}
     />
   )
 }

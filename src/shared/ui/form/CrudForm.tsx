@@ -24,6 +24,7 @@ export default function CrudForm<TFormData>({
       setSubmitted(false);
     }
   });
+
   return (
     <form
       id={formId}
@@ -34,22 +35,41 @@ export default function CrudForm<TFormData>({
         await form.handleSubmit();
       }}
     >
-      {fields.map(item => (
-        <form.AppField
-          key={item.name}
-          name={item.name}
-        >
-          {(field) => (
-            <field.TextField 
-              label={item.label} 
-              placeholder={item.placeholder}
-              autoComplete={item.autoComplete}
-              errors={item.errors}
-              submitted={submitted}
-            />
-          )}
-        </form.AppField>
-      ))}
+      <div className="flex flex-col gap-1">
+        {fields.map(item => (
+          <form.AppField
+            key={item.name}
+            name={item.name}
+          >
+            {(field) => {
+              switch (item.type) {
+                case "select":
+                  return (
+                    <field.SelectField 
+                      label={item.label} 
+                      placeholder={item.placeholder}
+                      options={item.options || []}
+                    />
+                  );
+                case "icon":
+                  return <field.IconSelector label={item.label} />;
+                case "color":
+                  return <field.ColorSelector label={item.label} />;
+                default:
+                  return (
+                    <field.TextField 
+                      label={item.label} 
+                      placeholder={item.placeholder || ""}
+                      autoComplete={item.autoComplete}
+                      errors={item.errors}
+                      submitted={submitted}
+                    />
+                  );
+              }
+            }}
+          </form.AppField>
+        ))}
+      </div>
     </form>
   )
 }

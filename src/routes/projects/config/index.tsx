@@ -9,7 +9,10 @@ import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
-import { Database, Globe, LayoutDashboard, Shield, ShieldCheck, UserCog } from 'lucide-react';
+import { Database, Globe, KeySquare, Shield, ShieldCheck, UserCog } from 'lucide-react';
+import PermissionTable from '@/features/permission/ui/PermissionTable';
+import RoleTable from '@/features/role/ui/RoleTable';
+import APIKeyManager from '@/features/api-keys/ui/APIKeyManager';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -18,11 +21,13 @@ export const Route = createFileRoute('/projects/config/')({
     if (typeof window !== 'undefined' && !currentProjectId) throw redirect({ to: '/projects' });
   },
   loader: async ({ context: { queryClient }}) => {
+    if (typeof window === 'undefined') return { }
+    
     const id = navigationStore.state.currentProjectId;
     queryClient.prefetchQuery(usersQueryOptions(id || ""))
     return { }
   },
-  validateSearch: z.object({ tab: z.string().optional().default('dashboard') }),
+  validateSearch: z.object({ tab: z.string().optional().default('schema') }),
   component: RouteComponent,
   staticData: {
     components: {
@@ -38,7 +43,7 @@ function RouteComponent() {
   const { tab } = Route.useSearch();
 
   const items = [
-    { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
+    // { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
     {
       value: 'schema',
       label: 'Schema',
@@ -51,14 +56,30 @@ function RouteComponent() {
       icon: Globe,
       content: <ScopeTable project_id={currentProjectId} />,
     },
+    { 
+      value: 'roles', 
+      label: 'Roles', 
+      icon: ShieldCheck, 
+      content: <RoleTable project_id={currentProjectId}/>
+    },
+    { 
+      value: 'permissions', 
+      label: 'Permissions', 
+      icon: Shield, 
+      content: <PermissionTable project_id={currentProjectId} />
+    },
     {
       value: 'users',
       label: 'Users',
       icon: UserCog,
-      content: <UserTable data={users}/>
+      content: <UserTable data={users} project_id={currentProjectId} />
     },
-    { value: 'permissions', label: 'Permissions', icon: Shield, content: <p>Gerenciamento de permissões...</p> },
-    { value: 'roles', label: 'Roles', icon: ShieldCheck, content: <p>Gerenciamento de roles...</p> },
+    {
+      value: 'api-keys',
+      label: 'API Keys',
+      icon: KeySquare,
+      content: <APIKeyManager publicKey={currentProjectId}/>
+    },
   ];
 
   return (

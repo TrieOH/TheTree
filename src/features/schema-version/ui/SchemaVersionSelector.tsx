@@ -46,6 +46,9 @@ export default function SchemaVersionSelector() {
         queryClient.invalidateQueries({ 
           queryKey: ["latestSchemaVersion", currentProjectId, currentSchemaId] 
         });
+        queryClient.invalidateQueries({
+          queryKey: ["schemaVersionById", currentProjectId, currentSchemaId, response.data.version_number]
+        });
         navigationActions.setCurrentSchemaVersion(response.data.version_number);
         setOpen(false);
       }

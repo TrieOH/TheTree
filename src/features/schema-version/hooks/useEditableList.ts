@@ -82,12 +82,15 @@ export function useEditableList<T>({
   const canRedo = indexRef.current < historyRef.current.length - 1;
 
   useEffect(() => {
+    if (original.length === initial.length && 
+      original.every((item, i) => isEqual(item, initial[i]))) return;
+    
     itemsRef.current = initial;
     setOriginal(initial);
     historyRef.current = [structuredClone(initial)];
     indexRef.current = 0;
     forceRender(prev => prev + 1); 
-  }, [initial]);
+  }, [initial, isEqual, original]);
 
   // DIFF
   const computeDiff = useCallback((): DiffResult<T> => {
