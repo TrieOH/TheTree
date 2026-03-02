@@ -28,7 +28,7 @@ export default function AccessConfirmationPanel({
           className="p-2 border-2 rounded-full border-destructive text-destructive" 
         />
       }
-      <span className="text-primary font-medium text-sm">{title}</span>
+      <span className="text-primary font-medium text-sm text-center">{title}</span>
       <span className="text-muted-foreground text-xs">{subTitle}</span>
       <ShadowButton 
         value="Done" 
