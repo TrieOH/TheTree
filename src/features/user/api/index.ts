@@ -33,27 +33,28 @@ export const usersQueryOptions = (project_id: string) => {
 export const getUserPermissionsFn = createClientOnlyFn(async ({
   queryKey,
 }: {
-  queryKey: ["userPermissions", string, string, string];
+  queryKey: ["userPermissions", string, string, string | null];
 }) => {
   const [, projectId, id, scope_id] = queryKey;
   try {
-    return await tanstackQueryFetcher<Permission[]>(
-      `/projects/${projectId}/identities/${id}/permissions?scope_id=${scope_id}`);
+    let url = `/projects/${projectId}/identities/${id}/permissions`;
+    if (scope_id) url += `?scope_id=${scope_id}`;
+    return await tanstackQueryFetcher<Permission[]>(url);
   } catch {
     return [] as Permission[];
   }
 });
 
-export const userPermissionsQueryOptions = (project_id: string, id: string, scope_id: string) => {
+export const userPermissionsQueryOptions = (project_id: string, id: string, scope_id: string | null) => {
   return queryOptions({
     queryKey: ['userPermissions', project_id, id, scope_id],
     queryFn: getUserPermissionsFn,
-    enabled: !!project_id && !!id && !!scope_id,
+    enabled: !!project_id && !!id && scope_id !== undefined,
     refetchOnMount: true,
   })
 }
 
-export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, permission_id: string, scope_id: string) => {
+export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, permission_id: string, scope_id: string | null) => {
   const { project_id, id } = userData;
   const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/permissions`, {
     method: "POST",
@@ -65,7 +66,7 @@ export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, 
   return response.data;
 });
 
-export const removePermissionOfUserFn = createClientOnlyFn((userData: User, permission_id: string,  scope_id: string) => {
+export const removePermissionOfUserFn = createClientOnlyFn((userData: User, permission_id: string,  scope_id: string | null) => {
   const { project_id, id } = userData;
   return authFetcher<null>(`/projects/${project_id}/identities/${id}/permissions`, {
     method: "DELETE",
@@ -98,7 +99,7 @@ export const userRolesQueryOptions = (project_id: string, id: string) => {
   })
 }
 
-export const giveRoleToUserFn = createClientOnlyFn(async (userData: User, role_id: string, scope_id: string) => {
+export const giveRoleToUserFn = createClientOnlyFn(async (userData: User, role_id: string, scope_id: string | null) => {
   const { project_id, id } = userData;
   const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/roles`, {
     method: "POST",
@@ -109,7 +110,7 @@ export const giveRoleToUserFn = createClientOnlyFn(async (userData: User, role_i
   return response.data;
 });
 
-export const removeRoleOfUserFn = createClientOnlyFn((userData: User, role_id: string,  scope_id: string) => {
+export const removeRoleOfUserFn = createClientOnlyFn((userData: User, role_id: string,  scope_id: string | null) => {
   const { project_id, id } = userData;
   return authFetcher<null>(`/projects/${project_id}/identities/${id}/roles`, {
     method: "DELETE",

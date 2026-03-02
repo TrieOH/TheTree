@@ -26,13 +26,16 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
   const queryClient = useQueryClient();
   const [selectedScopeId, setSelectedScopeId] = useState<string | 'all'>('all');
   
+  const scopesWithGlobal = [{ id: 'global-scope', name: 'Root', project_id, created_at: '', type: 'global', external_id: 'global' }, ...allScopes];
+  const scopeIdMapping = (id: string) => id === 'global-scope' ? null : id;
+
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery(
     userRolesQueryOptions(project_id, user.id)
   );
 
   const permissionQueries = useQueries({
-    queries: allScopes.map((scope) =>
-      userPermissionsQueryOptions(project_id, user.id, scope.id)
+    queries: scopesWithGlobal.map((scope) =>
+      userPermissionsQueryOptions(project_id, user.id, scopeIdMapping(scope.id))
     ),
   });
 
@@ -40,22 +43,22 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
   const isLoadingPerms = permissionQueries.some((query) => query.isLoading);
 
   const removeRoleMutation = useMutation({
-    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string }) => 
+    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string | null }) => 
       removeRoleOfUserFn(user, roleId, scopeId),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['userRoles', project_id, user.id] });
       queryClient.invalidateQueries({ queryKey: ['userPermissions', project_id, user.id, variables.scopeId] });
-      toast.success(data.message);
+      toast.success(data?.message);
     },
     onError: () => toast.error("Failed to remove role")
   });
 
   const removePermissionMutation = useMutation({
-    mutationFn: ({ permissionId, scopeId }: { permissionId: string; scopeId: string }) => 
+    mutationFn: ({ permissionId, scopeId }: { permissionId: string; scopeId: string | null }) => 
       removePermissionOfUserFn(user, permissionId, scopeId),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['userPermissions', project_id, user.id, variables.scopeId] });
-      toast.success(data.message);
+      toast.success(data?.message);
     },
     onError: () => toast.error("Failed to remove permission")
   });
@@ -102,7 +105,9 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{role.name}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        Scope: <span className="text-foreground">{role.scope_name || role.scope_id}</span>
+                        Scope: <span className="text-foreground">
+                          {role.scope_name || "Root"}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -136,7 +141,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Scopes</SelectItem>
-                    {allScopes.map((scope) => (
+                    {scopesWithGlobal.map((scope) => (
                       <SelectItem key={scope.id} value={scope.id}>
                         {scope.name}
                       </SelectItem>
@@ -144,7 +149,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                   </SelectContent>
                 </Select>
               </div>
-              {allScopes.map((scope, index) => {
+              {scopesWithGlobal.map((scope, index) => {
                 if (selectedScopeId !== 'all' && selectedScopeId !== scope.id) return null;
 
                 const scopePermissions = permissionQueries[index]?.data || [];
@@ -175,7 +180,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                           disabled={removePermissionMutation.isPending}
                           onClick={() => removePermissionMutation.mutate({ 
                             permissionId: perm.id, 
-                            scopeId: scope.id 
+                            scopeId: scopeIdMapping(scope.id)
                           })}
                           className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
                         >
