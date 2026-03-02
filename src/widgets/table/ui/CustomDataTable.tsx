@@ -15,6 +15,13 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/shared/ui/shadcn/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/shadcn/select';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { cn } from '@/shared/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
@@ -546,19 +553,23 @@ export default function CustomDataTable<T extends object>({
           {filters?.map((filter) => (
             <div key={String(filter.key)}>
               {filter.type === 'select' ? (
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={activeFilters[filter.key] || ''}
-                  onChange={(e) => {
-                    setActiveFilters(prev => ({ ...prev, [filter.key]: e.target.value }));
+                <Select
+                  value={activeFilters[filter.key] || 'all'}
+                  onValueChange={(value) => {
+                    setActiveFilters(prev => ({ ...prev, [filter.key]: value === 'all' ? '' : value }));
                     setCurrentPage(1);
                   }}
                 >
-                  <option value="">{filter.placeholder || `All ${String(filter.key)}`}</option>
-                  {filter.options?.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  <SelectTrigger size="sm" className="w-45 h-full!">
+                    <SelectValue placeholder={filter.placeholder || `All ${String(filter.key)}`} />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="all">{filter.placeholder || `All ${String(filter.key)}`}</SelectItem>
+                    {filter.options?.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
                 <input
                   type={filter.type === 'date' ? 'date' : 'text'}

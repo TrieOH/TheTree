@@ -1,4 +1,5 @@
 import z from "zod";
+import type { VisualMetadata } from "@/shared/ui/MetadataVisualizer";
 
 export const scopeCRUDSchema = z.object({
   id: z.string(),
@@ -8,7 +9,8 @@ export const scopeCRUDSchema = z.object({
     .refine(
       val => val === undefined || val === "" || val.length >= 3,
       "External ID must be at least 3 characters long or empty"
-    )
+    ),
+  meta: z.record(z.string(), z.any()).optional(),
 });
 
 export type ScopeCRUD = z.infer<typeof scopeCRUDSchema>;
@@ -19,5 +21,6 @@ export interface Scope {
   type: string;
   project_id: string;
   external_id?: string;
+  meta?: VisualMetadata;
   created_at: string;
 }

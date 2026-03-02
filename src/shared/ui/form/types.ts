@@ -13,10 +13,19 @@ export interface CrudFormConfig<TFormData> {
   onSubmit: (props: { value: TFormData, formApi: AnyFormApi }) => Promise<void> | void;
 }
 
+export type FieldType = "text" | "select" | "icon" | "color";
+
+export interface FieldOption {
+  label: string;
+  value: string;
+}
+
 export interface FieldConfig {
   name: string;
   label: string;
-  placeholder: string;
+  placeholder?: string;
+  type?: FieldType;
   autoComplete?: string;
-  errors?: string[]
+  errors?: string[];
+  options?: FieldOption[];
 }
