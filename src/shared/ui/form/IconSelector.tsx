@@ -19,7 +19,7 @@ export default function IconSelector({ label }: PropsI) {
   return (
     <fieldset className="flex flex-col gap-2 mb-4 border-none p-0 m-0">
       <legend className="text-sm font-medium text-foreground">{label}</legend>
-      <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1 border rounded-md bg-muted/20">
+      <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1">
         {COMMON_ICONS.map((iconName) => {
           const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[iconName];
           const isSelected = currentValue === iconName;
