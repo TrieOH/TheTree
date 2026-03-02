@@ -55,10 +55,9 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
           />
         )}
         
-        <div 
-          className="relative z-10 flex items-center gap-2"
-          style={{ marginLeft: `${level * 24}px` }}
-        >
+        <div
+          className="relative z-10 flex items-center gap-2 shrink-0 min-w-0"
+          style={{ marginLeft: `${level * 24}px` }}        >
           <button
             type='button'
             onClick={() => hasChildren && setIsExpanded(!isExpanded)}
@@ -108,7 +107,7 @@ interface TreePropsI {
 export default function UserPermTree({ node, goBack, onSubmit }: TreePropsI) {
   return (
     <>
-      <div className="min-w-100 overflow-x-auto">
+      <div className="overflow-x-auto">
         <TreeNode
           node={node}
           level={0}

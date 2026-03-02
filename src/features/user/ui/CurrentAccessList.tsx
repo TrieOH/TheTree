@@ -1,6 +1,7 @@
 import type { User } from "../model/types";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { userRolesQueryOptions, userPermissionsQueryOptions, removeRoleOfUserFn, removePermissionOfUserFn } from "../api";
+import { rolePermissionsQueryOptions } from "@/features/role/api";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import {
   Select,
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 
 import type { Scope } from "@/features/scope/model/types";
 import { useState } from "react";
+import type { Permission } from "@/features/permission/model/types";
 
 interface PropsI {
   user: User;
@@ -22,10 +24,14 @@ interface PropsI {
   allScopes: Scope[];
 }
 
+interface PermissionWithScope extends Permission {
+  scope_id: string | null;
+}
+
 export default function CurrentAccessList({ user, project_id, onBack, allScopes }: PropsI) {
   const queryClient = useQueryClient();
   const [selectedScopeId, setSelectedScopeId] = useState<string | 'all'>('all');
-  
+
   const scopesWithGlobal = [{ id: 'global-scope', name: 'Root', project_id, created_at: '', type: 'global', external_id: 'global' }, ...allScopes];
   const scopeIdMapping = (id: string) => id === 'global-scope' ? null : id;
 
@@ -33,17 +39,47 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
     userRolesQueryOptions(project_id, user.id)
   );
 
+  const rolePermissionsQueries = useQueries({
+    queries: roles.map((role) =>
+      rolePermissionsQueryOptions(project_id, role.id)
+    ),
+  });
+
+  const allRolePermissions = rolePermissionsQueries.flatMap((query, index) => {
+    const role = roles[index];
+    const roleScopeId = role.scope_id;
+    return (query.data || []).map(perm => ({ ...perm, scope_id: roleScopeId }));
+  });
+
+  const rolePermissionKeys = new Set(
+    allRolePermissions.map(perm => `${perm.object}:${perm.action}:${perm.scope_id}`)
+  );
+
+  const isLoadingRolePerms = rolePermissionsQueries.some((query) => query.isLoading);
+
   const permissionQueries = useQueries({
     queries: scopesWithGlobal.map((scope) =>
       userPermissionsQueryOptions(project_id, user.id, scopeIdMapping(scope.id))
     ),
   });
 
-  const allPermissions = permissionQueries.flatMap((query) => query.data || []);
+  const allPermissionsWithScope: PermissionWithScope[] = permissionQueries.flatMap((query, index) => {
+    const scope = scopesWithGlobal[index];
+    const currentScopeId = scopeIdMapping(scope.id);
+    return (query.data || []).map(perm => ({ ...perm, scope_id: currentScopeId }));
+  });
+
   const isLoadingPerms = permissionQueries.some((query) => query.isLoading);
 
-  const removeRoleMutation = useMutation({
-    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string | null }) => 
+  const isRedundantByScope = (currentPerm: PermissionWithScope) => {
+    const similarPermissions = allPermissionsWithScope.filter(
+      p => p.object === currentPerm.object && p.action === currentPerm.action
+    );
+    const hasGlobalSimilar = similarPermissions.some(p => p.scope_id === null);
+    return hasGlobalSimilar && currentPerm.scope_id !== null;
+  };
+
+  const removeRoleMutation = useMutation({    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string | null }) => 
       removeRoleOfUserFn(user, roleId, scopeId),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['userRoles', project_id, user.id] });
@@ -63,8 +99,8 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
     onError: () => toast.error("Failed to remove permission")
   });
 
-  const isLoading = isLoadingRoles || isLoadingPerms;
-  const hasAccess = roles.length > 0 || allPermissions.length > 0;
+  const isLoading = isLoadingRoles || isLoadingPerms || isLoadingRolePerms;
+  const hasAccess = roles.length > 0 || allPermissionsWithScope.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,7 +165,7 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
           )}
 
           {/* Permissions Section */}
-          {allPermissions.length > 0 && (
+          {allPermissionsWithScope.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between py-1 gap-1 sm:flex-row flex-col">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase">
@@ -158,40 +194,49 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
                 return (
                   <div key={scope.id} className="space-y-2">
                     <p className="text-sm font-semibold text-foreground px-1">{scope.name}</p>
-                    {scopePermissions.map((perm) => (
-                      <div 
-                        key={`${scope.id}-${perm.id}`}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-md border border-transparent hover:border-border transition-all group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-accent/10 rounded-full">
-                            <Key className="w-4 h-4 text-accent" />
-                          </div>
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-medium">{perm.object}</span>
-                              <span className="text-[10px] text-muted-foreground">:</span>
-                              <span className="text-sm font-medium text-accent">{perm.action}</span>
+                    {scopePermissions.map((perm) => {
+                      const permWithScope: PermissionWithScope = {
+                        ...perm,
+                        scope_id: scopeIdMapping(scope.id)
+                      };
+                      const isInheritedFromRole = rolePermissionKeys.has(
+                        `${permWithScope.object}:${permWithScope.action}:${permWithScope.scope_id}`
+                      );
+                      return (
+                        <div 
+                          key={`${scope.id}-${permWithScope.id}`}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-md border border-transparent hover:border-border transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-accent/10 rounded-full">
+                              <Key className="w-4 h-4 text-accent" />
+                            </div>
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-sm font-medium">{permWithScope.object}</span>
+                                <span className="text-[10px] text-muted-foreground">:</span>
+                                <span className="text-sm font-medium text-accent">{permWithScope.action}</span>
+                              </div>
                             </div>
                           </div>
+                          <button
+                            type="button"
+                            disabled={removePermissionMutation.isPending || isRedundantByScope(permWithScope) || isInheritedFromRole}
+                            onClick={() => removePermissionMutation.mutate({ 
+                              permissionId: permWithScope.id, 
+                              scopeId: permWithScope.scope_id
+                            })}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+                          >
+                            {removePermissionMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          disabled={removePermissionMutation.isPending}
-                          onClick={() => removePermissionMutation.mutate({ 
-                            permissionId: perm.id, 
-                            scopeId: scopeIdMapping(scope.id)
-                          })}
-                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
-                        >
-                          {removePermissionMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}
