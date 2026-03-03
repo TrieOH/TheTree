@@ -4,7 +4,7 @@ import CrudForm from "@/shared/ui/form/CrudForm";
 import { scopeStore } from "../store";
 import { useStore } from "@tanstack/react-store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createScopeFn, patchScopeMetaFn } from "../api";
+import { createScopeFn, deleteScopeFn, patchScopeMetaFn } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -52,6 +52,16 @@ export default function ScopeDialog({ project_id }: PropsI) {
     },
   });
 
+  const deleteScopeMutation = useMutation({
+    mutationFn: deleteScopeFn,
+    onSuccess: (response) => {
+      if (response.success) {
+        toast.success(response.message || "Scope deleted sucessfuly!");
+        queryClient.invalidateQueries({ queryKey: ["scopes", project_id] });
+      } else toast.error(`Failed to delete scope: ${response.message}`);
+    },
+  });
+
   const { handleSubmit } = useCrudOperations({
     store: scopeStore,
     autoClose: true,
@@ -71,6 +81,9 @@ export default function ScopeDialog({ project_id }: PropsI) {
         meta: { icon, color, description, status }
       };
       patchScopeMetaMutation.mutate(finalData);
+    },
+    onDelete: async (id) => {
+      deleteScopeMutation.mutate({ project_id, id });
     }
   });
 
