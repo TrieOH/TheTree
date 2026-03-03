@@ -26,6 +26,22 @@ func NewEditionsHandler(
 	}
 }
 
+// Create godoc
+// @Summary Create a new edition
+// @Description Creates a new edition for an event.
+// @Tags editions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param request body dto.CreateEditionRequest true "Edition creation request"
+// @Success 201 {object} object "Edition created successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -70,6 +86,17 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	resp.Created().WithData(out).Send(w)
 }
 
+// List godoc
+// @Summary List editions for an event
+// @Description Retrieves a list of editions for a specific event.
+// @Tags editions
+// @Accept json
+// @Produce json
+// @Param event_id path string true "Event ID"
+// @Success 200 {object} object "Editions retrieved successfully"
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -87,6 +114,22 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	resp.Created().WithData(out).Send(w)
 }
 
+// Announce godoc
+// @Summary Announce an edition
+// @Description Announces an edition making it publicly available.
+// @Tags editions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Success 201 {object} object "Edition announced successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id} [post]
 func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {

@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"time"
+	ticketsCommands "univents/internal/commerce/application/ticket/commands"
+	commerceInfra "univents/internal/commerce/infrastructure"
+	tickethttp "univents/internal/commerce/interfaces/http/tickets"
 	"univents/internal/core/application/edition/async"
 	editionCommands "univents/internal/core/application/edition/commands"
 	editionQueries "univents/internal/core/application/edition/queries"
@@ -91,6 +94,7 @@ func UniventsStart(app *UniventsApp) {
 
 	eventRepo := infrastructure.NewEventRepo(q, logs, tracer)
 	editionRepo := infrastructure.NewEditionRepo(q, logs, tracer)
+	ticketRepo := commerceInfra.NewTicketsRepo(q, logs, tracer)
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	server, asynqClient, scheduler, err := worker.InitAsynq(worker.Deps{
@@ -108,9 +112,11 @@ func UniventsStart(app *UniventsApp) {
 	eventQueries := queries.New(eventRepo, app.GaClient, tracer, txRunner)
 	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)
+	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
+	ticketHandler := tickethttp.NewTicketsHandler(ticketsC)
 
 	systemHandler := system.NewUniventsHandler()
 
@@ -126,6 +132,7 @@ func UniventsStart(app *UniventsApp) {
 	deps := &router.HTTPDeps{
 		EventsHandler:   eventHandler,
 		EditionsHandler: editionHandler,
+		TicketsHandler:  ticketHandler,
 		SystemHandler:   systemHandler,
 		AuthMiddleware:  authMW,
 		AsynqmonHandler: asynqmonHandler,

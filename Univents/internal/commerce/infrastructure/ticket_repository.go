@@ -41,12 +41,6 @@ func mapTicketFromDB(src *sqlc.Ticket) *domain.Ticket {
 	dst.EditionID = src.EditionID
 	dst.Name = src.Name
 	dst.Description = src.Description
-	dst.PriceCents = src.PriceCents
-	dst.QuantitySold = src.QuantitySold
-	dst.QuantityReserved = src.QuantityReserved
-	dst.HasLimitedQuantity = src.HasLimitedQuantity
-	dst.QuantityAvailable = src.QuantityAvailable
-	dst.Status = domain.TicketStatus(src.Status)
 	dst.CreatedBy = src.CreatedBy
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
@@ -59,12 +53,10 @@ func (repo *ticketsRepo) Create(ctx context.Context, toCreate domain.Ticket) (*d
 	defer span.End()
 
 	sqlcTicket, err := repo.queries(ctx).CreateTicket(ctx, sqlc.CreateTicketParams{
-		EditionID:          toCreate.EditionID,
-		Name:               toCreate.Name,
-		Description:        toCreate.Description,
-		PriceCents:         toCreate.PriceCents,
-		HasLimitedQuantity: toCreate.HasLimitedQuantity,
-		QuantityAvailable:  toCreate.QuantityAvailable,
+		EditionID:   toCreate.EditionID,
+		Name:        toCreate.Name,
+		Description: toCreate.Description,
+		CreatedBy:   toCreate.CreatedBy,
 	})
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)

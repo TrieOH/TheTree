@@ -2,6 +2,7 @@ package commands
 
 import (
 	"univents/internal/commerce/domain"
+	coreDomain "univents/internal/core/domain"
 	"univents/internal/plataform/database"
 
 	"github.com/TrieOH/goauth-sdk-go"
@@ -10,6 +11,7 @@ import (
 )
 
 type CommandService struct {
+	editions coreDomain.EditionsRepository
 	tickets  domain.TicketsRepository
 	asynq    *asynq.Client
 	gaClient *goauth.Client
@@ -18,6 +20,7 @@ type CommandService struct {
 }
 
 func New(
+	editions coreDomain.EditionsRepository,
 	tickets domain.TicketsRepository,
 	asynq *asynq.Client,
 	gaClient *goauth.Client,
@@ -25,6 +28,7 @@ func New(
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
+		editions: editions,
 		tickets:  tickets,
 		asynq:    asynq,
 		gaClient: gaClient,

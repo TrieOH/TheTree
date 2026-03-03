@@ -1,13 +1,5 @@
 -- +goose Up
 -- Tickets (access control)
-CREATE TYPE ticket_status AS ENUM (
-    'draft',
-    'on_sale',
-    'paused',
-    'sold_out',
-    'unavailable'
-);
-
 CREATE TABLE tickets (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     edition_id UUID NOT NULL REFERENCES editions(id)
@@ -17,21 +9,6 @@ CREATE TABLE tickets (
     -- identity
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
-
-    -- pricing
-    price_cents INT NOT NULL DEFAULT 0, -- 0 = free ticket
-    
-    has_limited_quantity BOOLEAN NOT NULL DEFAULT FALSE,
-    quantity_available INT NOT NULL,
-
-    quantity_sold INT NOT NULL DEFAULT 0,
-    quantity_reserved INT NOT NULL DEFAULT 0, -- pending checkouts
-
-    CHECK (has_limited_quantity OR (quantity_available = 0 AND quantity_sold = 0)),
-    CHECK (quantity_sold + quantity_reserved <= quantity_available OR NOT has_limited_quantity),
-
-    -- visibility
-    status ticket_status NOT NULL DEFAULT 'draft',
 
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

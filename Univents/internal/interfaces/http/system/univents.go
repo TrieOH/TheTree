@@ -31,11 +31,15 @@ func (handler *UniventsHandler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 // ProtectedHealth godoc
-// @Summary Health check
-// @Description Returns service health status and user id
+// @Summary Protected health check
+// @Description Returns service health status and authenticated user id
 // @Tags system
+// @Accept json
 // @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
 // @Success 200 {object} dto.HealthResponse
+// @Failure 401 {object} swag.ErrorResponse
 // @Router /protected/health [get]
 func (handler *UniventsHandler) ProtectedHealth(w http.ResponseWriter, r *http.Request) {
 	sub, err := authz.RequireSubject(r.Context())

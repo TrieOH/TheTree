@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"univents/internal/commerce/interfaces/http/tickets"
 	eventhttp "univents/internal/core/interfaces/http"
 	"univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
@@ -27,6 +28,7 @@ import (
 type HTTPDeps struct {
 	EventsHandler   *eventhttp.EventsHandler
 	EditionsHandler *editions.Handler
+	TicketsHandler  *tickets.TicketsHandler
 	SystemHandler   *systemhttp.UniventsHandler
 	AuthMiddleware  *middleware.AuthMiddleware
 	AsynqmonHandler http.Handler
@@ -34,22 +36,28 @@ type HTTPDeps struct {
 
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
-// @title GoAuth API
-// @version 0.17.0
-// @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
-// @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
-// @contact.name TrieOH
-// @contact.url https://github.com/TrieOH
-// @contact.email trieoh@trieoh.com
+// @title Univents API
+// @version 1.0.0
+// @description API for managing events, editions, and tickets.
+// @termsOfService https://github.com/Univents/Univents/blob/main/LICENSE
+// @contact.name Univents Team
+// @contact.url https://github.com/Univents
+// @contact.email support@univents.io
 // @license.name MIT License
-// @license.url https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @license.url https://github.com/Univents/Univents/blob/main/LICENSE
 // @host localhost:8080
 // @BasePath /
 // @schemes http https
 // @tag.name auth
 // @tag.description "Operations related to user authentication and authorization"
-// @tag.name projects
-// @tag.description "Operations related to project management"
+// @tag.name events
+// @tag.description "Operations related to event management"
+// @tag.name editions
+// @tag.description "Operations related to edition management"
+// @tag.name tickets
+// @tag.description "Operations related to ticket management"
+// @tag.name system
+// @tag.description "System operations"
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
@@ -60,6 +68,10 @@ type HTTPDeps struct {
 // @response 413 {object} swag.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} swag.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} swag.ErrorResponse "Standard error response for internal server errors"
+// @securityDefinitions.apikey Cookie
+// @in header
+// @name Cookie
+// @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
 func CreateRouter(deps *HTTPDeps) http.Handler {
 	r := chi.NewRouter()
 
