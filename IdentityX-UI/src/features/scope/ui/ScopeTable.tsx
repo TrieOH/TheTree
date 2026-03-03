@@ -1,5 +1,5 @@
 import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
-import { Edit, Globe } from "lucide-react";
+import { Edit, Globe, Trash2 } from "lucide-react";
 import { formatDate } from "../../../shared/lib/date-utils";
 import ScopeDialog from "./ScopeDialog";
 import { scopeActions } from "../store";
@@ -108,6 +108,12 @@ export default function ScopeTable({ project_id }: PropsI) {
             icon: Edit,
             variant: "ghost-primary",
           },
+          {
+            label: "Delete",
+            icon: Trash2,
+            onClick: scopeActions.openDelete,
+            variant: "destructive",
+          }
         ]}
         tableActions={[
           {

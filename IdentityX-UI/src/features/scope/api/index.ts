@@ -60,3 +60,15 @@ export const patchScopeMetaFn = createClientOnlyFn((metaData: Partial<ScopeCRUD>
     body: JSON.stringify({ meta }),
   });
 });
+
+
+/**
+ * Deletes a scope from the server.
+ * @param id - The ID of the scope to delete.
+ * @returns A promise that resolves to the API response.
+ */
+export const deleteScopeFn = createClientOnlyFn(({project_id, id}: {project_id: string, id: string}) => {
+  return authFetcher<void>(`/projects/${project_id}/scopes/${id}`, {
+    method: "DELETE",
+  });
+});
