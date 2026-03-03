@@ -563,6 +563,108 @@ func (handler *RoleHandler) TakeRole(w http.ResponseWriter, r *http.Request) {
 	resp.OK("Removed role from user").Send(w)
 }
 
+// GiveRoleByName godoc
+// @Summary Assign role to user by name
+// @Description Assigns a role to a user (entity) within a specific scope using role name.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param roleInfo body dto.UserRoleByNameRequest true "Role assignment details"
+// @Success 200 {object} object "Added role to user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/roles/by-name [post]
+func (handler *RoleHandler) GiveRoleByName(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserRoleByNameRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManageRoleInput{
+		ProjectID: &projectID,
+		RoleName:  req.RoleName,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.GiveRoleByName(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Added role to user").Send(w)
+}
+
+// TakeRoleByName godoc
+// @Summary Remove role from user by name
+// @Description Removes a role assignment from a user (entity) using role name.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param roleInfo body dto.UserRoleByNameRequest true "Role revocation details"
+// @Success 200 {object} object "Removed role from user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/roles/by-name [delete]
+func (handler *RoleHandler) TakeRoleByName(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserRoleByNameRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManageRoleInput{
+		ProjectID: &projectID,
+		RoleName:  req.RoleName,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.role.TakeRoleByName(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Removed role from user").Send(w)
+}
+
 // GetUserRoles godoc
 // @Summary Get user roles
 // @Description Retrieves all roles assigned to a user (entity).

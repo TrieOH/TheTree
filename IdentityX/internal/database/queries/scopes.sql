@@ -10,6 +10,10 @@ SET
     updated_at = NOW()
 WHERE id = $2 AND project_id = $3 AND type = 'project_scope';
 
+-- name: DeleteScope :exec
+DELETE FROM scopes
+WHERE id = $1 AND project_id = $2 AND type = 'project_scope';
+
 -- name: GetScopeByIDInternal :one
 SELECT *
 FROM scopes

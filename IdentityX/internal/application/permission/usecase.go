@@ -428,15 +428,6 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 		if !belongs {
 			return false, fail.New(errx.ProjectUserNotFromProject).RecordCtx(ctx)
 		}
-
-		// CHECK COMPATIBILITY
-		isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, in.EntityID, *in.ProjectID)
-		if err != nil {
-			return false, err
-		}
-		if !isUpToDate {
-			return false, fail.New(errx.AuthUserSchemaOutdated).RecordCtx(ctx)
-		}
 	}
 
 	var userIdentity *session.Identity

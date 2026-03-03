@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"strings"
 
 	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel"
@@ -477,6 +478,52 @@ func (uc *UseCase) TakeRole(ctx context.Context, in inbounds.ManageRoleInput) er
 	}
 
 	return nil
+}
+
+func (uc *UseCase) GiveRoleByName(ctx context.Context, in inbounds.ManageRoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.GiveRoleByName")
+	defer span.End()
+
+	if in.RoleName == "" {
+		return &inbounds.InvalidRoleNameError{Name: in.RoleName}
+	}
+
+	span.SetAttributes(attribute.String("role.name", in.RoleName))
+
+	role, err := uc.roles.GetByName(ctx, in.RoleName, in.ProjectID)
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") || strings.Contains(err.Error(), "not found") {
+			return &inbounds.RoleNotFoundByNameError{Name: in.RoleName, ProjectID: in.ProjectID}
+		}
+		return err
+	}
+
+	in.RoleID = role.ID
+
+	return uc.GiveRole(ctx, in)
+}
+
+func (uc *UseCase) TakeRoleByName(ctx context.Context, in inbounds.ManageRoleInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.TakeRoleByName")
+	defer span.End()
+
+	if in.RoleName == "" {
+		return &inbounds.InvalidRoleNameError{Name: in.RoleName}
+	}
+
+	span.SetAttributes(attribute.String("role.name", in.RoleName))
+
+	role, err := uc.roles.GetByName(ctx, in.RoleName, in.ProjectID)
+	if err != nil {
+		if strings.Contains(err.Error(), "no rows") || strings.Contains(err.Error(), "not found") {
+			return &inbounds.RoleNotFoundByNameError{Name: in.RoleName, ProjectID: in.ProjectID}
+		}
+		return err
+	}
+
+	in.RoleID = role.ID
+
+	return uc.TakeRole(ctx, in)
 }
 
 func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) ([]inbounds.RoleOutput, error) {
