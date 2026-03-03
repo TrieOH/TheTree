@@ -83,7 +83,7 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Param project_id path string true "Project ID"
 // @Param scope_id path string true "Scope ID"
-// @Success 200 {string} "Scope Deleted"
+// @Success 200 {object} object "Scope Deleted"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
