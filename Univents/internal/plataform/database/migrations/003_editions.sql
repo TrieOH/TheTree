@@ -13,7 +13,8 @@ CREATE TYPE edition_status AS ENUM (
     'announced',    -- visible, registration not open
     'open',         -- registration open
     'ongoing',      -- currently happening
-    'completed',    -- ended
+    'finished',       -- finished
+    'completed',    -- completed
     'cancelled',    -- edition cancelled
     'postponed'     -- rescheduled to new dates
 );

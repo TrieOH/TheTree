@@ -30,12 +30,12 @@ func (uc *AsynqHandlers) HandleStartEdition(ctx context.Context, t *asynq.Task) 
 	return uc.editions.Start(ctx, payload.EditionID)
 }
 
-func (uc *AsynqHandlers) HandleEndEdition(ctx context.Context, t *asynq.Task) error {
+func (uc *AsynqHandlers) HandleFinishEdition(ctx context.Context, t *asynq.Task) error {
 	var payload domain.EditionPayload
 	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		telemetry.Log().Error("HandleEndEdition error", zap.Error(err))
+		telemetry.Log().Error("HandleFinishEdition error", zap.Error(err))
 		return err
 	}
 
-	return uc.editions.End(ctx, payload.EditionID)
+	return uc.editions.Finish(ctx, payload.EditionID)
 }

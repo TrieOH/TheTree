@@ -9,7 +9,6 @@ import (
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
@@ -28,8 +27,9 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 			auditor.Emit()
 			ae := uc.events.AppendEventAudits(ctx, auditor.GetAudits()) // FIXME make this outbox later
 			if ae != nil {
-				telemetry.Log().Error("failed to insert create event audits", zap.Error(ae))
+				telemetry.Log().Info("failed to insert create event audits", zap.Error(ae))
 			}
+			telemetry.Log().Info("Audits", zap.Any("slice", auditor.GetAudits()))
 		}
 	}()
 
@@ -63,7 +63,7 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 		Action("create").
 		Allowed(ctx)
 	if err != nil {
-		auditor.AddMetadata("reason", "Internal System Error")
+		auditor.AddMetadata("reason", "Authorization Check Error: "+fail.AsFail(err).Error())
 		return nil, fail.AsFail(err).System().RecordCtx(ctx)
 	}
 	if !allowed {
@@ -81,21 +81,14 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 	var idStr = validEvent.ID.String()
 	scope, err = ga.Scopes.Create(ctx, validEvent.Slug, &idStr)
 	if err != nil {
-		auditor.AddMetadata("reason", "Internal System Error")
+		auditor.AddMetadata("reason", "Scope Creation Error: "+fail.AsFail(err).Error())
 		return nil, fail.AsFail(err).System().RecordCtx(ctx)
 	}
 	validEvent.AddScope(scope.ID)
 
-	roleID, err := uuid.Parse("019c8138-bc3b-7bfa-9140-7d5fe5e3bc73")
+	err = uc.gaClient.Roles.Give(ctx, sub.ID, "Event Owner", &scope.ID)
 	if err != nil {
-		auditor.AddMetadata("reason", "Internal System Error")
-		telemetry.Log().Error("Error parsing UUID", zap.Error(err))
-		return nil, err
-	}
-
-	err = uc.gaClient.Roles.GiveToUser(ctx, sub.ID, roleID, &scope.ID)
-	if err != nil {
-		auditor.AddMetadata("reason", "Internal System Error")
+		auditor.AddMetadata("reason", "Role Assignment Error: "+fail.AsFail(err).Error())
 		return nil, fail.AsFail(err).System().RecordCtx(ctx)
 	}
 

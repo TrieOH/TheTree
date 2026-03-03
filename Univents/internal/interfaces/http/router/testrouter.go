@@ -9,6 +9,7 @@ import (
 
 func CreateTestRouter(deps *HTTPDeps) http.Handler {
 	r := chi.NewRouter()
+	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 	registerRoutes(r, deps)
 	return r
 }

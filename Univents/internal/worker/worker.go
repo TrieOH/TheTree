@@ -41,7 +41,7 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(domain.AsynqEditionOpen, deps.Handlers.HandleOpenEdition)
 	mux.HandleFunc(domain.AsynqEditionStart, deps.Handlers.HandleStartEdition)
-	mux.HandleFunc(domain.AsynqEditionEnd, deps.Handlers.HandleEndEdition)
+	mux.HandleFunc(domain.AsynqEditionFinish, deps.Handlers.HandleFinishEdition)
 
 	// Run server in background
 	go func() {

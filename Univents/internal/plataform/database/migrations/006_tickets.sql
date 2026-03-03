@@ -17,34 +17,21 @@ CREATE TABLE tickets (
     -- identity
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
-    tier_level INT NOT NULL DEFAULT 0, -- 0 = base, higher = more access
 
     -- pricing
     price_cents INT NOT NULL DEFAULT 0, -- 0 = free ticket
-    quantity_sold INT NOT NULL DEFAULT 0,
-    quantity_reserved INT NOT NULL DEFAULT 0, -- pending checkouts
+    
     has_limited_quantity BOOLEAN NOT NULL DEFAULT FALSE,
     quantity_available INT NOT NULL,
+
+    quantity_sold INT NOT NULL DEFAULT 0,
+    quantity_reserved INT NOT NULL DEFAULT 0, -- pending checkouts
 
     CHECK (has_limited_quantity OR (quantity_available = 0 AND quantity_sold = 0)),
     CHECK (quantity_sold + quantity_reserved <= quantity_available OR NOT has_limited_quantity),
 
-    -- limits
-    max_per_user INT NULL,
-    min_per_order INT NOT NULL DEFAULT 1,
-
-
-    -- make this better and let owner set individual products as discounted if you buy this
-    -- you can choose products, discount per product, max discount amount in cents, etc
-    -- grants_product_discount BOOLEAN NOT NULL DEFAULT FALSE,
-    -- discount_percentage INT NULL CHECK (discount_percentage BETWEEN 0 AND 100),
-
     -- visibility
     status ticket_status NOT NULL DEFAULT 'draft',
-    sales_start_at TIMESTAMPTZ NULL,
-    sales_end_at TIMESTAMPTZ NULL,
-
-    CHECK (sales_end_at > sales_start_at),
 
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -52,7 +39,7 @@ CREATE TABLE tickets (
     deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE INDEX idx_tickets_edition ON tickets(edition_id, status, tier_level)
+CREATE INDEX idx_tickets_edition ON tickets(edition_id, status)
     WHERE deleted_at IS NULL;
 
 CREATE TYPE permission_type AS ENUM (
@@ -61,8 +48,8 @@ CREATE TYPE permission_type AS ENUM (
     'checkpoint'
 );
 
--- Ticket tier permissions (what each tier can access)
-CREATE TABLE ticket_tier_permissions (
+-- Ticket permissions (what each tier can access)
+CREATE TABLE ticket_permissions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
 

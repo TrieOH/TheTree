@@ -28,6 +28,7 @@ const (
 	EditionStatusAnnounced EditionStatus = "announced"
 	EditionStatusOpen      EditionStatus = "open"
 	EditionStatusOngoing   EditionStatus = "ongoing"
+	EditionStatusFinished  EditionStatus = "finished"
 	EditionStatusCompleted EditionStatus = "completed"
 	EditionStatusCancelled EditionStatus = "cancelled"
 	EditionStatusPostponed EditionStatus = "postponed"
@@ -144,6 +145,14 @@ func (e *Edition) validate() error {
 		return fail.New(errx.EditionValidationFailed).Trace("start and end times are required")
 	}
 
+	now := time.Now()
+	if e.StartsAt.Before(now) {
+		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy editions are not supported for now")
+	}
+	if e.EndsAt.Before(now) {
+		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy editions are not supported for now")
+	}
+
 	if !e.StartsAt.Before(e.EndsAt) {
 		return fail.New(errx.EditionValidationFailed).Trace("starts_must_be_before_ends")
 	}
@@ -245,9 +254,8 @@ const (
 )
 
 const AsynqEditionOpen = "edition:open"
-const AsynqEditionClose = "edition:close"
 const AsynqEditionStart = "edition:start"
-const AsynqEditionEnd = "edition:end"
+const AsynqEditionFinish = "edition:finish"
 
 type EditionPayload struct {
 	EditionID uuid.UUID `json:"edition_id"`
@@ -279,14 +287,14 @@ func NewStartEditionTask(editionID uuid.UUID, startsAt time.Time) (*asynq.Task, 
 	), nil
 }
 
-func NewEndEditionTask(editionID uuid.UUID, endsAt time.Time) (*asynq.Task, error) {
+func NewFinishEditionTask(editionID uuid.UUID, endsAt time.Time) (*asynq.Task, error) {
 	payload, err := json.Marshal(EditionPayload{EditionID: editionID})
 	if err != nil {
 		return nil, err
 	}
 
-	return asynq.NewTask(AsynqEditionEnd, payload,
-		asynq.TaskID(fmt.Sprintf("%s:%s", editionID, AsynqEditionEnd)),
+	return asynq.NewTask(AsynqEditionFinish, payload,
+		asynq.TaskID(fmt.Sprintf("%s:%s", editionID, AsynqEditionFinish)),
 		asynq.ProcessAt(endsAt),
 		asynq.Unique(time.Hour),
 	), nil

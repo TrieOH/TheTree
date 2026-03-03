@@ -98,6 +98,8 @@ var (
 	ErrEditionInvalidID        = fail.Form(EditionInvalidID, "event_id is %s is invalid", false, map[string]any{"code": 400}, "UNSET")
 	ErrEditionValidationFailed = fail.Form(EditionValidationFailed, "edition validation error", false, map[string]any{"code": 400})
 
+	ErrTicketValidationFailed = fail.Form(TicketValidationFailed, "ticket validation error", false, map[string]any{"code": 400})
+
 	// ------ SQL ------
 	ErrSQLNotFound = fail.Form(SQLResourceNotFound, "%s not found", false, map[string]any{"code": 404}, "FORGOT TO SET RESOURCE ON ErrSQLNotFound").
 			AddLocalization("pt-BR", "%s não foi encontrado")

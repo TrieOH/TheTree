@@ -86,7 +86,7 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 		return err
 	}
 
-	task, err = domain.NewEndEditionTask(edition.ID, edition.EndsAt)
+	task, err = domain.NewFinishEditionTask(edition.ID, edition.EndsAt)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (uc *CommandService) Start(ctx context.Context, editionID uuid.UUID) (err e
 }
 
 func (uc *CommandService) End(ctx context.Context, editionID uuid.UUID) (err error) {
-	ctx, span := uc.tracer.Start(ctx, "EditionService.End")
+	ctx, span := uc.tracer.Start(ctx, "EditionService.Finish")
 	defer span.End()
 	defer func() {
 		span.SetAttributes(attribute.Bool("end.success", err == nil))
@@ -163,7 +163,7 @@ func (uc *CommandService) End(ctx context.Context, editionID uuid.UUID) (err err
 		return errors.New("can't end editions on statuses different than completed")
 	}
 
-	if err = uc.editions.End(ctx, editionID); err != nil {
+	if err = uc.editions.Finish(ctx, editionID); err != nil {
 		return err
 	}
 

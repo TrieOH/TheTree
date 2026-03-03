@@ -85,6 +85,7 @@ func (repo *editionsRepo) Create(ctx context.Context, toCreate *domain.Edition) 
 		Description:     toCreate.Description,
 		Status:          sqlc.EditionStatus(domain.EditionStatusDraft),
 		MonetaryType:    sqlc.EditionMonetaryType(toCreate.MonetaryType),
+		StartsAt:        toCreate.StartsAt,
 		EndsAt:          toCreate.EndsAt,
 		Timezone:        toCreate.Timezone,
 		LocationName:    toCreate.LocationName,
@@ -167,11 +168,11 @@ func (repo *editionsRepo) Start(ctx context.Context, editionID uuid.UUID) error 
 	return nil
 }
 
-func (repo *editionsRepo) End(ctx context.Context, editionID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.End")
+func (repo *editionsRepo) Finish(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Finish")
 	defer span.End()
 
-	err := repo.queries(ctx).EndEdition(ctx, editionID)
+	err := repo.queries(ctx).FinishEdition(ctx, editionID)
 	if err != nil {
 		return fail.From(err).RecordCtx(ctx)
 	}

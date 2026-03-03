@@ -42,6 +42,8 @@ var (
 	EditionInvalidID        = fail.ID(0, "EDITION", 0, false, "EditionInvalidID")
 	EditionValidationFailed = fail.ID(0, "EDITION", 1, false, "EditionValidationFailed")
 
+	TicketValidationFailed = fail.ID(0, "TICKET", 0, false, "TicketValidationFailed")
+
 	SQLResourceNotFound         = fail.ID(0, "SQL", 0, false, "SQLResourceNotFound")
 	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
 	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")

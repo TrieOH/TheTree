@@ -37,7 +37,7 @@ func SetupGoAuth(app *UniventsApp) {
 			log.Fatalf("error fetching initial JWKS: %s", err.Error())
 		}
 	}()
-	app.gaClient = client
+	app.GaClient = client
 }
 
 func SetupFail() {
@@ -109,13 +109,13 @@ func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
 
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
-		log.Fatalf("Failed to create scheduler: %v", err)
+		log.Fatalf("Failed to create Scheduler: %v", err)
 	}
 
-	app.scheduler = scheduler
+	app.Scheduler = scheduler
 
 	_ = database.NewPGXTxRunner(db)
 
 	go scheduler.Start()
-	log.Println("Started the cron scheduler")
+	log.Println("Started the cron Scheduler")
 }

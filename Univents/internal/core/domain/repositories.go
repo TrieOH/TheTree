@@ -20,14 +20,10 @@ type EventsRepository interface {
 
 type EditionsRepository interface {
 	Create(ctx context.Context, toCreate *Edition) (*Edition, error)
-	//Patch(ctx context.Context, toPatch *Edition) (*Edition, error)
 	GetByID(ctx context.Context, editionID uuid.UUID) (*Edition, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Edition, error)
 	Announce(ctx context.Context, editionID uuid.UUID) error
 	Open(ctx context.Context, editionID uuid.UUID) error
 	Start(ctx context.Context, editionID uuid.UUID) error
-	End(ctx context.Context, editionID uuid.UUID) error
-	//Publish(ctx context.Context, id uuid.UUID) error
-	//AppendEditionAudits(ctx context.Context, audits []Audit) error
-	//ListEditionAuditByEdition(ctx context.Context, editionID uuid.UUID) ([]Audit, error)
+	Finish(ctx context.Context, editionID uuid.UUID) error
 }

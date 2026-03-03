@@ -97,7 +97,7 @@ UPDATE editions
 SET status = 'ongoing'
 WHERE id = $1 AND status = 'open';
 
--- name: EndEdition :exec
+-- name: FinishEdition :exec
 UPDATE editions
-SET status = 'completed'
+SET status = 'finished'
 WHERE id = $1 AND status = 'ongoing';

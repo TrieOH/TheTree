@@ -1,10 +1,12 @@
-package initialization
+package testing
 
 import (
 	"context"
 	"log"
 	"net/http"
-	"time"
+	"net/http/httptest"
+	"testing"
+	"univents/initialization"
 	"univents/internal/core/application/edition/async"
 	editionCommands "univents/internal/core/application/edition/commands"
 	editionQueries "univents/internal/core/application/edition/queries"
@@ -21,44 +23,43 @@ import (
 	"univents/internal/plataform/telemetry"
 	"univents/internal/worker"
 
-	"github.com/TrieOH/goauth-sdk-go"
-	"github.com/go-co-op/gocron/v2"
+	"github.com/gavv/httpexpect/v2"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-type UniventsApp struct {
-	Port      string
-	DB        *pgxpool.Pool
-	Redis     *redis.Client
-	Scheduler gocron.Scheduler
-	GaClient  *goauth.Client
+// ============================================================================
+// TEST FRAMEWORK - Core Infrastructure
+// ============================================================================
+
+// TestSuite manages the entire test environment
+type TestSuite struct {
+	Server *httptest.Server
+	App    *initialization.UniventsApp
+	t      *testing.T
 }
 
-func UniventsSetup() *UniventsApp {
-	var app UniventsApp
+func NewTestSuite(t *testing.T) *TestSuite {
+	suite := &TestSuite{t: t}
+	suite.setup()
 
-	LoadEnv(&app)
-	SetupGoAuth(&app)
-	SetupFail()
-	SetupFUN()
-	SetupDB(&app, "./internal/plataform/database/migrations")
-	app.Redis = SetupRedis(15 * time.Second)
-	SetupCron(app.DB, &app)
+	t.Cleanup(func() {
+		suite.teardown()
+	})
 
-	return &app
+	return suite
 }
 
-func UniventsStart(app *UniventsApp) {
+func (s *TestSuite) setup() {
+	s.App = initialization.UniventsSetup()
+
 	ctx := context.Background()
 
-	defer app.DB.Close()
-	defer app.Redis.Close()
+	defer s.App.DB.Close()
+	defer s.App.Redis.Close()
 
 	shutdown, err := telemetry.InitTracer(ctx)
 	if err != nil {
@@ -72,27 +73,27 @@ func UniventsStart(app *UniventsApp) {
 	}(ctx)
 
 	defer func() {
-		err := app.Scheduler.StopJobs()
+		err := s.App.Scheduler.StopJobs()
 		if err != nil {
 			log.Printf("Error stopping jobs: %v", err)
 		}
-		err = app.Scheduler.Shutdown()
+		err = s.App.Scheduler.Shutdown()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	q := sqlc.New(app.DB)
-	txRunner := database.NewPGXTxRunner(app.DB)
+	q := sqlc.New(s.App.DB)
+	txRunner := database.NewPGXTxRunner(s.App.DB)
 	tracer := otel.Tracer(string(telemetry.UniventsTracer))
 	logs := telemetry.Log()
 
-	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
+	authMW := middleware.NewAuthMiddleware(s.App.GaClient, tracer)
 
 	eventRepo := infrastructure.NewEventRepo(q, logs, tracer)
 	editionRepo := infrastructure.NewEditionRepo(q, logs, tracer)
 
-	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
+	workerHandlers := async.New(editionRepo, s.App.GaClient, tracer, txRunner)
 	server, asynqClient, scheduler, err := worker.InitAsynq(worker.Deps{
 		Handlers: workerHandlers,
 	})
@@ -104,10 +105,10 @@ func UniventsStart(app *UniventsApp) {
 		}
 	}()
 
-	eventCommands := commands.New(eventRepo, app.GaClient, tracer, txRunner)
-	eventQueries := queries.New(eventRepo, app.GaClient, tracer, txRunner)
-	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
-	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)
+	eventCommands := commands.New(eventRepo, s.App.GaClient, tracer, txRunner)
+	eventQueries := queries.New(eventRepo, s.App.GaClient, tracer, txRunner)
+	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, s.App.GaClient, tracer, txRunner)
+	editionQ := editionQueries.New(eventRepo, editionRepo, s.App.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
@@ -131,8 +132,40 @@ func UniventsStart(app *UniventsApp) {
 		AsynqmonHandler: asynqmonHandler,
 	}
 
-	mux := router.CreateRouter(deps)
+	r := createTestRouter(deps)
+	s.Server = httptest.NewServer(r)
+}
 
-	log.Printf("GoAuth listening on :%s", app.Port)
-	log.Fatal(http.ListenAndServe(":"+app.Port, mux))
+func (s *TestSuite) teardown() {
+	if s.Server != nil {
+		s.Server.Close()
+	}
+	if s.App.DB != nil {
+		s.App.DB.Close()
+	}
+	if s.App.Redis != nil {
+		s.App.Redis.Close()
+	}
+}
+
+// NewClient creates a new API client for testing
+func (s *TestSuite) NewClient(t *testing.T) *Client {
+	return &Client{
+		expect: httpexpect.WithConfig(httpexpect.Config{
+			BaseURL:  s.Server.URL,
+			Reporter: httpexpect.NewAssertReporter(t),
+		}),
+		t:       t,
+		baseURL: s.Server.URL,
+	}
+}
+
+func createTestRouter(deps *router.HTTPDeps) http.Handler {
+	return router.CreateTestRouter(deps)
+}
+
+func zero(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
 }
