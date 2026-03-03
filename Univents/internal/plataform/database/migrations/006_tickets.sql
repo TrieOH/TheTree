@@ -16,9 +16,6 @@ CREATE TABLE tickets (
     deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE INDEX idx_tickets_edition ON tickets(edition_id, status)
-    WHERE deleted_at IS NULL;
-
 CREATE TYPE permission_type AS ENUM (
     'activity',
     'product',
@@ -72,8 +69,6 @@ CREATE INDEX idx_user_tickets_ticket ON user_tickets(ticket_id, status);
 DROP INDEX IF EXISTS idx_user_tickets_ticket;
 DROP INDEX IF EXISTS idx_user_tickets_user;
 DROP TABLE IF EXISTS user_tickets;
-DROP TABLE IF EXISTS ticket_tier_permissions;
-DROP INDEX IF EXISTS idx_tickets_edition;
+DROP TABLE IF EXISTS ticket_permissions;
 DROP TABLE IF EXISTS tickets;
-DROP TYPE IF EXISTS ticket_status;
 

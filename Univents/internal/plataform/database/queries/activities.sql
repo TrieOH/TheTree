@@ -1,3 +1,8 @@
+-- name: CreateActivity :one
+INSERT INTO activities (id, edition_id, title, description, location, starts_at, ends_at, presenter_name, token_cost, has_capacity, capacity, remaining_capacity, difficulty, created_by, scope_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+RETURNING *;
+
 -- name: WaitlistAppend :one
 INSERT INTO waitlist_entries (activity_id, user_id, position)
 SELECT $1, $2, COALESCE(MAX(position) + 1, 0)

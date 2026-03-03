@@ -44,6 +44,8 @@ var (
 
 	TicketValidationFailed = fail.ID(0, "TICKET", 0, false, "TicketValidationFailed")
 
+	ActivityValidationFailed = fail.ID(0, "ACTIVITY", 0, false, "ActivityValidationFailed")
+
 	SQLResourceNotFound         = fail.ID(0, "SQL", 0, false, "SQLResourceNotFound")
 	SQLInternalDBError          = fail.ID(9, "SQL", 1, false, "SQLInternalDBError")
 	SQLForeignKeyViolation      = fail.ID(0, "SQL", 2, false, "SQLForeignKeyViolation")

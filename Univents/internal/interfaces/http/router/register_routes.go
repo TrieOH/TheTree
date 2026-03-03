@@ -3,6 +3,7 @@ package router
 import (
 	"univents/internal/commerce/interfaces/http/tickets"
 	eventhttp "univents/internal/core/interfaces/http"
+	activityhttp "univents/internal/core/interfaces/http/activities"
 	editionhttp "univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	systemhttp "univents/internal/interfaces/http/system"
@@ -15,6 +16,7 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerEventsRoutes(r, deps.EventsHandler, deps.AuthMiddleware)
 	registerEditionsRoutes(r, deps.EditionsHandler, deps.AuthMiddleware)
 	registerTicketsRoutes(r, deps.TicketsHandler, deps.AuthMiddleware)
+	registerActivitiesRoutes(r, deps.ActivitiesHandler, deps.AuthMiddleware)
 }
 
 func registerSystemRoutes(
@@ -66,5 +68,16 @@ func registerTicketsRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/tickets", h.Create)
+	})
+}
+
+func registerActivitiesRoutes(
+	r *chi.Mux,
+	h *activityhttp.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/events/{event_id}/editions/{edition_id}/activities", h.Create)
 	})
 }

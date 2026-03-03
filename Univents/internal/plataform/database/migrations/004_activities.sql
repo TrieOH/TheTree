@@ -5,7 +5,7 @@ CREATE TYPE activity_status AS ENUM (
     'published',    -- visible, open for registration
     'ongoing',      -- currently happening, check-in open
     'completed',    -- ended, read-only
-    'cancelled'     -- activity cancelled, not just attendance
+    'canceled'     -- activity canceled, not just attendance
 );
 
 CREATE TYPE difficulty_level AS ENUM (
@@ -18,11 +18,11 @@ CREATE TYPE difficulty_level AS ENUM (
 
 CREATE TABLE activities (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
+    scope_id UUID NOT NULL,
     edition_id UUID NOT NULL REFERENCES editions(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
 
-    created_by UUID NOT NULL,
     title VARCHAR(256) NOT NULL,
     description TEXT NULL,
     status activity_status NOT NULL DEFAULT 'draft',
@@ -33,27 +33,27 @@ CREATE TABLE activities (
     CHECK (ends_at > starts_at),
 
     -- images
-    has_activity_banner BOOLEAN NOT NULL DEFAULT FALSE,
-    activity_banner_url VARCHAR(1024) NULL,
-    has_activity_photo BOOLEAN NOT NULL DEFAULT FALSE,
-    activity_photo_url VARCHAR(1024) NULL,
-    has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
-    gallery_image_urls VARCHAR(1024)[] NULL,
+    -- has_activity_banner BOOLEAN NOT NULL DEFAULT FALSE,
+    -- activity_banner_url VARCHAR(1024) NULL,
+    -- has_activity_photo BOOLEAN NOT NULL DEFAULT FALSE,
+    -- activity_photo_url VARCHAR(1024) NULL,
+    -- has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
+    -- gallery_image_urls VARCHAR(1024)[] NULL,
 
     -- presenter
-    has_presenter BOOLEAN NOT NULL DEFAULT FALSE,
-    presenter_id UUID NULL,
+    -- has_presenter BOOLEAN NOT NULL DEFAULT FALSE,
+    -- presenter_id UUID NULL,
     presenter_name VARCHAR(256) NULL,
-    has_presenter_photo BOOLEAN NOT NULL DEFAULT FALSE,
-    presenter_photo_url VARCHAR(1024) NULL,
+    -- has_presenter_photo BOOLEAN NOT NULL DEFAULT FALSE,
+    -- presenter_photo_url VARCHAR(1024) NULL,
 
     -- tokens
-    is_blocked_by_tokens BOOLEAN NOT NULL DEFAULT FALSE,
+    --is_blocked_by_tokens BOOLEAN NOT NULL DEFAULT FALSE,
     token_cost INT NOT NULL DEFAULT 0,
 
     -- paid entry
-    has_paid_entry BOOLEAN NOT NULL DEFAULT FALSE, -- if an event wants to sell access to an activity without the participant having to buy access to the event, event participants get it for free no matter the price unless its blocked by tokens
-    price_cents INT NOT NULL DEFAULT 0,
+    -- has_paid_entry BOOLEAN NOT NULL DEFAULT FALSE, -- if an event wants to sell access to an activity without the participant having to buy access to the event, event participants get it for free no matter the price unless its blocked by tokens
+    -- price_cents INT NOT NULL DEFAULT 0,
 
     -- capacity
     has_capacity BOOLEAN NOT NULL DEFAULT FALSE,
@@ -64,44 +64,41 @@ CREATE TABLE activities (
     CHECK (capacity >= remaining_capacity),
 
     -- waitlist (depends on capacity)
-    has_waitlist BOOLEAN NOT NULL DEFAULT FALSE,
-    has_waitlist_capacity BOOLEAN NOT NULL DEFAULT FALSE,
-    waitlist_capacity INT NOT NULL DEFAULT 0,
-    waitlist_remaining_capacity INT NOT NULL DEFAULT 0,
+    -- has_waitlist BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_waitlist_capacity BOOLEAN NOT NULL DEFAULT FALSE,
+    -- waitlist_capacity INT NOT NULL DEFAULT 0,
+    -- waitlist_remaining_capacity INT NOT NULL DEFAULT 0,
 
-    CHECK (has_waitlist = FALSE OR waitlist_capacity > 0),
-    CHECK (waitlist_capacity >= waitlist_remaining_capacity),
+    -- CHECK (has_waitlist = FALSE OR waitlist_capacity > 0),
+    -- CHECK (waitlist_capacity >= waitlist_remaining_capacity),
 
     -- attendance
-    has_attendance BOOLEAN NOT NULL DEFAULT FALSE,
+    --has_attendance BOOLEAN NOT NULL DEFAULT FALSE,
+    --minimum_duration_for_attendance_minutes INT NOT NULL DEFAULT 0,
 
     -- check-in
-    has_check_in BOOLEAN NOT NULL DEFAULT FALSE,
-    check_in_closes_at TIMESTAMPTZ NULL,                        -- explicit time override
-    check_in_grace_before_start_minutes INT NOT NULL DEFAULT 0, -- time before activity start that check in is allowed
+    --check_in_closes_at TIMESTAMPTZ NULL,                        -- explicit time override
+    --check_in_grace_before_start_minutes INT NOT NULL DEFAULT 0, -- time before activity start that check in is allowed
 
     -- checkout & duration
-    has_checkout BOOLEAN NOT NULL DEFAULT FALSE,
-    check_out_grace_after_end_minutes INT NOT NULL DEFAULT 0, -- time after activity ends that check out is allowed, in case of delays
-    has_minimum_duration BOOLEAN NOT NULL DEFAULT FALSE,
-    minimum_duration_minutes INT NOT NULL DEFAULT 0,
+    --check_out_grace_after_end_minutes INT NOT NULL DEFAULT 0, -- time after activity ends that check out is allowed, in case of delays
 
     -- ratings
-    has_ratings BOOLEAN NOT NULL DEFAULT FALSE,
-    prompt_rating_at_exit BOOLEAN NOT NULL DEFAULT FALSE,
+    -- has_ratings BOOLEAN NOT NULL DEFAULT FALSE,
+    -- prompt_rating_at_exit BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- materials
-    has_materials BOOLEAN NOT NULL DEFAULT FALSE,
-    materials JSONB NULL,
+    -- has_materials BOOLEAN NOT NULL DEFAULT FALSE,
+    -- materials JSONB NULL,
 
     -- difficulty
-    has_difficulty BOOLEAN NOT NULL DEFAULT FALSE,
-    difficulty difficulty_level NOT NULL DEFAULT 'no_prerequisites',
+    difficulty difficulty_level NULL,
 
     -- requirements
-    has_requirements BOOLEAN NOT NULL DEFAULT FALSE,
-    requirements TEXT[] NULL,  -- ['React', 'Docker', 'Laptop']
+    -- has_requirements BOOLEAN NOT NULL DEFAULT FALSE,
+    -- requirements TEXT[] NULL,  -- ['React', 'Docker', 'Laptop']
 
+    created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ NULL

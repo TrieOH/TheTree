@@ -195,3 +195,15 @@ sql:
               import: "univents/internal/core/domain"
               type: "EventStatus"
               pointer: true
+          - db_type: "difficulty_level"
+            nullable: false
+            go_type:
+              import: "univents/internal/core/domain"
+              type: "DifficultyLevel"
+              pointer: false
+          - db_type: "difficulty_level"
+            nullable: true
+            go_type:
+              import: "univents/internal/core/domain"
+              type: "DifficultyLevel"
+              pointer: true

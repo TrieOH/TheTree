@@ -27,3 +27,7 @@ type EditionsRepository interface {
 	Start(ctx context.Context, editionID uuid.UUID) error
 	Finish(ctx context.Context, editionID uuid.UUID) error
 }
+
+type ActivitiesRepository interface {
+	Create(ctx context.Context, toCreate *Activity) (*Activity, error)
+}
