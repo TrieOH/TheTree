@@ -79,3 +79,37 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp.Created().WithData(out).Send(w)
 }
+
+// Publish godoc
+// @Summary publishes an activity
+// @Description Publishes an activity making it publicly available.
+// @Tags activities
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param activity_id path string true "Activity ID"
+// @Success 200 {object} object "Activity published successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id} [post]
+func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
+	activityID, rs := validation.GetUUID(r, "activity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	err := handler.commands.Publish(ctx, activityID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
+}

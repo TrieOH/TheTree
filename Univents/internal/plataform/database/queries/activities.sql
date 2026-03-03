@@ -3,6 +3,27 @@ INSERT INTO activities (id, edition_id, title, description, location, starts_at,
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 RETURNING *;
 
+-- name: PublishActivity :exec
+UPDATE activities
+SET
+    status = 'published'
+WHERE id = $1 and status = 'draft';
+
+-- name: StartActivity :exec
+UPDATE activities
+SET status = 'ongoing'
+WHERE id = $1 AND status = 'published';
+
+-- name: FinishActivity :exec
+UPDATE activities
+SET status = 'completed'
+WHERE id = $1 AND status = 'ongoing';
+
+-- name: GetActivityByID :one
+SELECT *
+FROM activities
+WHERE id = $1;
+
 -- name: WaitlistAppend :one
 INSERT INTO waitlist_entries (activity_id, user_id, position)
 SELECT $1, $2, COALESCE(MAX(position) + 1, 0)

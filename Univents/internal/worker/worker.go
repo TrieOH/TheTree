@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"log"
+	activityAsync "univents/internal/core/application/activity/async"
 	"univents/internal/core/application/edition/async"
 	"univents/internal/core/domain"
 
@@ -11,7 +12,8 @@ import (
 )
 
 type Deps struct {
-	Handlers *async.AsynqHandlers
+	Handlers         *async.AsynqHandlers
+	ActivityHandlers *activityAsync.AsynqHandlers
 }
 
 func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error) {
@@ -42,6 +44,8 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error
 	mux.HandleFunc(domain.AsynqEditionOpen, deps.Handlers.HandleOpenEdition)
 	mux.HandleFunc(domain.AsynqEditionStart, deps.Handlers.HandleStartEdition)
 	mux.HandleFunc(domain.AsynqEditionFinish, deps.Handlers.HandleFinishEdition)
+	mux.HandleFunc(domain.AsynqActivityStart, deps.ActivityHandlers.HandleStartActivity)
+	mux.HandleFunc(domain.AsynqActivityEnd, deps.ActivityHandlers.HandleFinishActivity)
 
 	// Run server in background
 	go func() {

@@ -30,4 +30,8 @@ type EditionsRepository interface {
 
 type ActivitiesRepository interface {
 	Create(ctx context.Context, toCreate *Activity) (*Activity, error)
+	Publish(ctx context.Context, id uuid.UUID) error
+	GetByID(ctx context.Context, id uuid.UUID) (*Activity, error)
+	Start(ctx context.Context, id uuid.UUID) error
+	Finish(ctx context.Context, id uuid.UUID) error
 }

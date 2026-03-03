@@ -7,6 +7,7 @@ import (
 	"univents/internal/plataform/database/sqlc"
 
 	"github.com/MintzyG/fail/v3"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -85,4 +86,52 @@ func (repo *activitiesRepo) Create(ctx context.Context, toCreate *domain.Activit
 	}
 
 	return mapActivityFromDB(&sqlcActivity), nil
+}
+
+func (repo *activitiesRepo) Publish(ctx context.Context, id uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.Publish")
+	defer span.End()
+
+	err := repo.queries(ctx).PublishActivity(ctx, id)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *activitiesRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Activity, error) {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.GetByID")
+	defer span.End()
+
+	sqlcActivity, err := repo.queries(ctx).GetActivityByID(ctx, id)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return mapActivityFromDB(&sqlcActivity), nil
+}
+
+func (repo *activitiesRepo) Start(ctx context.Context, activityID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.Start")
+	defer span.End()
+
+	err := repo.queries(ctx).StartActivity(ctx, activityID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func (repo *activitiesRepo) Finish(ctx context.Context, activityID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.Finish")
+	defer span.End()
+
+	err := repo.queries(ctx).FinishActivity(ctx, activityID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }

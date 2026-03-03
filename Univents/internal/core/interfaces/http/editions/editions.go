@@ -124,7 +124,7 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Security Cookie
 // @Param event_id path string true "Event ID"
 // @Param edition_id path string true "Edition ID"
-// @Success 201 {object} object "Edition announced successfully"
+// @Success 200 {object} object "Edition announced successfully"
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
@@ -150,5 +150,5 @@ func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Created().Send(w)
+	resp.OK().Send(w)
 }

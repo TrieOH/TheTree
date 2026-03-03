@@ -1,11 +1,14 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 	"univents/internal/shared/errx"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 )
 
 type ActivityStatus string
@@ -151,4 +154,37 @@ func (a *Activity) validate(edition *Edition) error {
 
 func (e *Activity) AddScope(scopeID uuid.UUID) {
 	e.ScopeID = scopeID
+}
+
+const AsynqActivityStart = "activity:start"
+const AsynqActivityEnd = "activity:end"
+
+type ActivityPayload struct {
+	ActivityID uuid.UUID `json:"activity_id"`
+}
+
+func NewStartActivityTask(activityID uuid.UUID, startAt time.Time) (*asynq.Task, error) {
+	payload, err := json.Marshal(ActivityPayload{ActivityID: activityID})
+	if err != nil {
+		return nil, err
+	}
+
+	return asynq.NewTask(AsynqActivityStart, payload,
+		asynq.TaskID(fmt.Sprintf("%s:%s", activityID, AsynqActivityStart)),
+		asynq.ProcessAt(startAt),
+		asynq.Unique(time.Hour),
+	), nil
+}
+
+func NewEndActivityTask(activityID uuid.UUID, endAt time.Time) (*asynq.Task, error) {
+	payload, err := json.Marshal(ActivityPayload{ActivityID: activityID})
+	if err != nil {
+		return nil, err
+	}
+
+	return asynq.NewTask(AsynqActivityEnd, payload,
+		asynq.TaskID(fmt.Sprintf("%s:%s", activityID, AsynqActivityEnd)),
+		asynq.ProcessAt(endAt),
+		asynq.Unique(time.Hour),
+	), nil
 }

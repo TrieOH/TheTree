@@ -8,6 +8,7 @@ import (
 	ticketsCommands "univents/internal/commerce/application/ticket/commands"
 	commerceInfra "univents/internal/commerce/infrastructure"
 	tickethttp "univents/internal/commerce/interfaces/http/tickets"
+	activityAsync "univents/internal/core/application/activity/async"
 	activityCommands "univents/internal/core/application/activity/commands"
 	"univents/internal/core/application/edition/async"
 	editionCommands "univents/internal/core/application/edition/commands"
@@ -100,8 +101,10 @@ func UniventsStart(app *UniventsApp) {
 	ticketRepo := commerceInfra.NewTicketsRepo(q, logs, tracer)
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
+	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
 	server, asynqClient, scheduler, err := worker.InitAsynq(worker.Deps{
-		Handlers: workerHandlers,
+		Handlers:         workerHandlers,
+		ActivityHandlers: activitiesAsyncHandlers,
 	})
 	defer func() {
 		scheduler.Shutdown()
