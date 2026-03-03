@@ -235,6 +235,7 @@ func registerScopeRoutes(
 			r.Post("/", h.Create)
 			r.Get("/", h.GetProjectScopes)
 			r.Get("/{scope_id}", h.GetByID)
+			r.Delete("/{scope_id}", h.Delete)
 			r.Patch("/{scope_id}/meta", h.UpdateMeta)
 		})
 	})
@@ -289,6 +290,8 @@ func registerRoleRoutes(
 		r.Get("/projects/{project_id}/identities/{entity_id}/roles", h.GetUserRoles)
 		r.Post("/projects/{project_id}/identities/{entity_id}/roles", h.GiveRole)
 		r.Delete("/projects/{project_id}/identities/{entity_id}/roles", h.TakeRole)
+		r.Post("/projects/{project_id}/identities/{entity_id}/roles/by-name", h.GiveRoleByName)
+		r.Delete("/projects/{project_id}/identities/{entity_id}/roles/by-name", h.TakeRoleByName)
 	})
 }
 

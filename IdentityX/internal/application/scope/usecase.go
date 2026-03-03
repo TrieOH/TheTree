@@ -103,6 +103,28 @@ func (uc *UseCase) Create(ctx context.Context, in inbounds.CreateScopeInput) (*i
 	return inbounds.ScopeToScopeOutput(scope), nil
 }
 
+func (uc *UseCase) Delete(ctx context.Context, in inbounds.GetScopeInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "ScopeService.Delete")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot delete scopes for a project you don't own").RecordCtx(ctx)
+	}
+
+	return uc.scopes.Delete(ctx, in.ScopeID, in.ProjectID)
+}
+
 func (uc *UseCase) UpdateMeta(ctx context.Context, in inbounds.UpdateProjectScopeMetaInput) error {
 	ctx, span := usecaseTracer.Start(ctx, "ScopeService.UpdateMeta")
 	defer span.End()

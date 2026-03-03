@@ -877,6 +877,108 @@ func testRoles(t *testing.T, suite *TestSuite) {
 			HasMessage("Removed role from user")
 	})
 
+	t.Run("GiveUserAdminRoleByName", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "admin",
+				"scope_id":  eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Added role to user")
+	})
+
+	t.Run("GetUserRolesByName", func(t *testing.T) {
+		val := suite.NewClient(t).WithAuth(user.auth).GET("/projects/" + projectID + "/identities/" + projectUserID + "/roles").
+			Expect(http.StatusOK).
+			RequireDataValue()
+
+		spec := []interface{}{
+			map[string]interface{}{
+				"id":          AsString{Value: adminRoleID, Matcher: AnyUUID{}},
+				"project_id":  AsString{Value: projectID, Matcher: AnyUUID{}},
+				"name":        "admin",
+				"description": "can do stuff and more stuff but not that",
+				"created_at":  AnyDate{},
+				"updated_at":  AnyDate{},
+				"scope_id":    AsString{Value: eventScopeID, Matcher: AnyUUID{}},
+				"scope_name":  "events",
+				"external_id": nil,
+			},
+		}
+
+		Validate(t, val, spec)
+	})
+
+	t.Run("GiveUserUserRoleByName", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "user",
+				"scope_id":  eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Added role to user")
+	})
+
+	t.Run("GiveUserRoleByNameNotFound", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "nonexistent_role",
+				"scope_id":  nil,
+			}).
+			Expect(http.StatusNotFound).
+			HasMessage("role not found by name: nonexistent_role")
+	})
+
+	t.Run("GiveUserRoleByNameEmpty", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "",
+				"scope_id":  nil,
+			}).
+			Expect(http.StatusBadRequest).
+			HasMessage("invalid role name:")
+	})
+
+	t.Run("GiveUserScopelessRoleByName", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "scopeless",
+				"scope_id":  nil,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Added role to user")
+	})
+
+	t.Run("TakeUserAdminRoleByName", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "admin",
+				"scope_id":  eventScopeID,
+			}).
+			Expect(http.StatusOK).
+			HasMessage("Removed role from user")
+	})
+
+	t.Run("TakeUserRoleByNameNotFound", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "nonexistent_role",
+				"scope_id":  nil,
+			}).
+			Expect(http.StatusNotFound).
+			HasMessage("role not found by name: nonexistent_role")
+	})
+
+	t.Run("TakeUserRoleByNameEmpty", func(t *testing.T) {
+		suite.NewClient(t).WithAuth(user.auth).DELETE("/projects/" + projectID + "/identities/" + projectUserID + "/roles/by-name").
+			WithBody(map[string]interface{}{
+				"role_name": "",
+				"scope_id":  nil,
+			}).
+			Expect(http.StatusBadRequest).
+			HasMessage("invalid role name:")
+	})
+
 	t.Run("GiveUserDirectEventPermissionNoScope", func(t *testing.T) {
 		suite.NewClient(t).WithAuth(user.auth).POST("/projects/" + projectID + "/identities/" + projectUserID + "/permissions").
 			WithBody(map[string]interface{}{

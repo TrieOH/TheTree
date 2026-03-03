@@ -21,5 +21,8 @@ type RoleService interface {
 	GiveRole(ctx context.Context, in ManageRoleInput) error
 	TakeRole(ctx context.Context, in ManageRoleInput) error
 
+	GiveRoleByName(ctx context.Context, in ManageRoleInput) error
+	TakeRoleByName(ctx context.Context, in ManageRoleInput) error
+
 	GetUserRoles(ctx context.Context, in GetRoleInput) ([]RoleOutput, error)
 }

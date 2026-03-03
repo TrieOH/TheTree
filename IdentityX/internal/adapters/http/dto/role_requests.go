@@ -24,3 +24,8 @@ type UserRoleRequest struct {
 	RoleID  uuid.UUID  `json:"role_id" validate:"required"`
 	ScopeID *uuid.UUID `json:"scope_id"`
 }
+
+type UserRoleByNameRequest struct {
+	RoleName string     `json:"role_name" validate:"required"`
+	ScopeID  *uuid.UUID `json:"scope_id"`
+}

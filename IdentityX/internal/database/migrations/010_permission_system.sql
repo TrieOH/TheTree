@@ -16,12 +16,15 @@ CREATE TABLE scopes (
     -- Namespace inside a project (NULL for global + project_root)
     name TEXT,
 
+    UNIQUE NULLS DISTINCT (type, name),
+
     -- Optional reference to a specific resource inside that namespace
     external_id TEXT,
 
     meta JSONB NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT scope_shape_check CHECK (
         -- 🌍 One true global scope (root of IdP scopes, isolated from projects)
@@ -83,6 +86,7 @@ CREATE TABLE permissions (
     action TEXT NOT NULL, -- plain action name, e.g. "read", "write"
     meta JSONB NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CHECK (length(object) BETWEEN 1 AND 100),
     CHECK (length(action) BETWEEN 1 AND 100),

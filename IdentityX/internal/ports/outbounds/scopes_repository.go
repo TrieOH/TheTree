@@ -15,6 +15,7 @@ type ScopeRepository interface {
 	GetByIDExternal(ctx context.Context, id, projectID uuid.UUID) (*scopes.Scope, error)
 	GetRootByProjectID(ctx context.Context, projectID uuid.UUID) (*scopes.Scope, error)
 	GetProjectScopes(ctx context.Context, projectID uuid.UUID) ([]scopes.Scope, error)
+	Delete(ctx context.Context, id, projectID uuid.UUID) error
 
 	// Hierarchy methods
 	GetAncestors(ctx context.Context, scopeID uuid.UUID) ([]scopes.Scope, error)

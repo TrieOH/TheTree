@@ -106,6 +106,22 @@ func (repo *scopeRepo) Create(ctx context.Context, toCreate scopes.Scope) (*scop
 	return &created, nil
 }
 
+func (repo *scopeRepo) Delete(ctx context.Context, id, projectID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.Delete")
+	defer span.End()
+
+	err := repo.queries(ctx).DeleteScope(ctx, sqlc.DeleteScopeParams{
+		ID:        id,
+		ProjectID: &projectID,
+	})
+
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
 func (repo *scopeRepo) UpdateMeta(ctx context.Context, meta *json.RawMessage, id uuid.UUID, projectID *uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "ScopeRepo.UpdateMeta",
 		trace.WithAttributes(

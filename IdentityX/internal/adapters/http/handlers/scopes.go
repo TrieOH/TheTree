@@ -74,6 +74,48 @@ func (handler *ScopeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	resp.Created("Scope Created").WithData(dto.ScopeOutputToScopeResponse(scope)).Send(w)
 }
 
+// Delete godoc
+// @Summary Deletes a scope
+// @Description Deletes scope from a project.
+// @Tags scopes
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param scope_id path string true "Scope ID"
+// @Success 200 {object} object "Scope Deleted"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/scopes/{scope_id} [delete]
+func (handler *ScopeHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	scopeID, rs := getUUID(r, "scope_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := inbounds.GetScopeInput{
+		ProjectID: projectID,
+		ScopeID:   scopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.scopes.Delete(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Scope Deleted").Send(w)
+}
+
 // UpdateMeta godoc
 // @Summary Update scope meta
 // @Description Updates the meta of an existing scope.
