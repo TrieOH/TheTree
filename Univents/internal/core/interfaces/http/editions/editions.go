@@ -129,7 +129,7 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id} [post]
+// @Router /events/{event_id}/editions/{edition_id}/announce [post]
 func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {

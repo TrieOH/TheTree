@@ -10,8 +10,8 @@ INSERT INTO editions (
     description,
     status,
     -- visible_from,
-    -- registration_opens_at,
-    -- registration_closes_at,
+    registration_opens_at,
+    registration_closes_at,
     monetary_type,
     -- has_tickets,
     -- has_ticket_tiers,
@@ -67,6 +67,8 @@ VALUES (
     $18,
     $19,
     $20,
+    $21,
+    $22,
     now(),
     now()
 )

@@ -142,6 +142,13 @@ func NotFound(resource string) Error {
 	}
 }
 
+func Violation(resource string) Error {
+	return Error{
+		Kind:     "violation",
+		Resource: resource,
+	}
+}
+
 func Internal(resource string) Error {
 	return Error{
 		Kind:     "internal",
@@ -175,7 +182,7 @@ func FromDB(err error, resource string) Error {
 
 	// check_violation
 	case "23514":
-		return Invalid(resource).
+		return Violation(resource).
 			SetConstraint(pgErr.ConstraintName).
 			SetCause(err)
 
@@ -197,6 +204,12 @@ func UniqueViolation(resource, constraint string, err error) Error {
 
 func ForeignKeyViolation(resource, constraint string, err error) Error {
 	return Invalid(resource).
+		SetConstraint(constraint).
+		SetCause(err)
+}
+
+func ViolationError(resource, constraint string, err error) Error {
+	return Violation(resource).
 		SetConstraint(constraint).
 		SetCause(err)
 }

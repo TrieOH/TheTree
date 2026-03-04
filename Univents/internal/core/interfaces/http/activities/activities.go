@@ -96,7 +96,7 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id} [post]
+// @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish [post]
 func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	activityID, rs := validation.GetUUID(r, "activity_id")
 	if rs != nil {

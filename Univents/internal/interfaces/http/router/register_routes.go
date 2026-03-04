@@ -55,7 +55,7 @@ func registerEditionsRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions", h.Create)
-		r.Post("/events/{event_id}/editions/{edition_id}", h.Announce)
+		r.Post("/events/{event_id}/editions/{edition_id}/announce", h.Announce)
 	})
 }
 
@@ -78,6 +78,6 @@ func registerActivitiesRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/activities", h.Create)
-		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}", h.Publish)
+		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish", h.Publish)
 	})
 }

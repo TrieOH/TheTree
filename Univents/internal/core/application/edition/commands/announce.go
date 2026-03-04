@@ -60,9 +60,6 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 	if edition.StartsAt.Before(now.Add(time.Minute * 5)) {
 		return errors.New("announcement must be at least 5 minutes out from right now")
 	}
-	if edition.RegistrationOpensAt != nil && edition.RegistrationOpensAt.Before(now.Add(time.Minute*5)) {
-		return errors.New("registration opening must be at least 5 minutes out from right now")
-	}
 
 	var task *asynq.Task
 	opensAt := edition.RegistrationOpensAt
