@@ -16,8 +16,6 @@ CREATE TABLE scopes (
     -- Namespace inside a project (NULL for global + project_root)
     name TEXT,
 
-    UNIQUE NULLS DISTINCT (type, name),
-
     -- Optional reference to a specific resource inside that namespace
     external_id TEXT,
 
@@ -65,7 +63,7 @@ CREATE UNIQUE INDEX scopes_one_project_root_per_project
 
 -- Unique named scopes per parent (sibling uniqueness)
 CREATE UNIQUE INDEX scopes_unique_siblings
-    ON scopes (parent_id, name)
+    ON scopes (COALESCE(parent_id, '00000000-0000-0000-0000-000000000000'), name)
     WHERE external_id IS NULL;
 
 -- Unique resource-bound scopes per parent (sibling uniqueness with external_id)

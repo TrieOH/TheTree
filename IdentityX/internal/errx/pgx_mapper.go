@@ -1,12 +1,14 @@
 package errx
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"database/sql"
 	"errors"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"go.uber.org/zap"
 )
 
 type PGXMapper struct {
@@ -59,6 +61,7 @@ func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 			case "uniq_goauth_single_active_signing_key":
 				return fail.New(SCOPEDuplicateSibling).Debug(err.Error()), true
 			default:
+				logs.L().Info("error", zap.Error(err))
 				panic(err.Error())
 				//return fail.New(SQLUnmatchedUniqueViolation).Debug(err.Error()), true
 			}
