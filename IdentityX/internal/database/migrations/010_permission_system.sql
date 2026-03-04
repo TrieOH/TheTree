@@ -5,7 +5,7 @@ CREATE TABLE scopes (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
     -- Hierarchy reference (null only for global scope)
-    parent_id UUID REFERENCES scopes(id) ON DELETE RESTRICT,
+    parent_id UUID REFERENCES scopes(id) ON DELETE CASCADE,
 
     -- Internal hierarchy type (controlled by the IdP only)
     type TEXT NOT NULL CHECK (type IN ('global', 'project_root', 'project_scope')),
