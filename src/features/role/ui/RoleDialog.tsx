@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { roleStore } from "../store";
-import { createRoleFn, deleteRoleFn, patchRoleFn } from "../api";
+import { createRoleFn, deleteRoleFn, patchRoleFn, patchRoleMetaFn } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -13,6 +13,12 @@ import CrudForm from "@/shared/ui/form/CrudForm";
 
 interface PropsI {
   project_id: string;
+}
+
+interface RoleFormValues extends Omit<RoleCRUD, 'meta'> {
+  icon?: string;
+  color?: string;
+  status?: "active" | "restricted" | "beta" | "deprecated";
 }
 
 export default function RoleDialog({ project_id }: PropsI) {
@@ -41,6 +47,17 @@ export default function RoleDialog({ project_id }: PropsI) {
     },
   });
 
+  const patchRoleMetaMutation = useMutation({
+    mutationFn: patchRoleMetaFn,
+    onSuccess: (response, data) => {
+      if (response.success) {
+        toast.success(response.message || "Updated role metadata");
+        queryClient.setQueryData(["roles", project_id, data.id], data);
+        queryClient.invalidateQueries({ queryKey: ["roles", project_id] });
+      } else toast.error(`Failed to update role metadata: ${response.message}`);
+    },
+  });
+
   const deleteRoleMutation = useMutation({
     mutationFn: deleteRoleFn,
     onSuccess: (response) => {
@@ -55,38 +72,75 @@ export default function RoleDialog({ project_id }: PropsI) {
     store: roleStore,
     autoClose: true,
     onCreate: async (data) => {
-      createRoleMutation.mutate({ ...data, project_id });
+      const { icon, color, status, ...rest } = data as RoleFormValues;
+      const finalData: RoleCRUD = {
+        ...rest,
+        meta: { icon, color, status, description: rest.description }
+      };
+      createRoleMutation.mutate({ ...finalData, project_id });
     },
     onUpdate: async (id, data) => {
-      patchRoleMutation.mutate({ id, ...data } as RoleCRUD);
+      const { icon, color, status, ...rest } = data as RoleFormValues;
+      const finalData: RoleCRUD = {
+        ...rest,
+        id,
+        meta: { icon, color, status, description: rest.description }
+      };
+
+      await patchRoleMutation.mutateAsync(finalData);
+      patchRoleMetaMutation.mutate(finalData);
     },
     onDelete: async (id) => {
       deleteRoleMutation.mutate({project_id, id});
     }
   });
 
-  const fields: FieldConfig[] = [
+  const allFields: FieldConfig[] = [
+    {
+      name: "name", 
+      label: "Name", 
+      placeholder: "My Awesome Role", 
+      autoComplete: "name",
+      errors: getFieldError(roleCRUDSchema.shape.name, "a")
+    },
     {
       name: "description", 
       label: "Description", 
       placeholder: "My Awesome Description", 
       autoComplete: "description",
       errors: getFieldError(roleCRUDSchema.shape.description, "a")
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { label: "Active", value: "active" },
+        { label: "Restricted", value: "restricted" },
+        { label: "Beta", value: "beta" },
+        { label: "Deprecated", value: "deprecated" }
+      ]
+    },
+    {
+      name: "icon",
+      label: "Select Icon",
+      type: "icon"
+    },
+    {
+      name: "color",
+      label: "Select Color / Gradient",
+      type: "color"
     }
   ];
-  if(mode !== "edit") {
-    fields.push({
-      name: "name", 
-      label: "Name", 
-      placeholder: "My Awesome Role", 
-      autoComplete: "name",
-      errors: getFieldError(roleCRUDSchema.shape.name, "a")
-    })
-    fields.reverse();
-  }
+
+  const fields = mode === 'edit' 
+    ? allFields.filter(f => ["description", "status", "icon", "color"].includes(f.name))
+    : allFields;
 
   const roleOpts = formOptions({
-    defaultValues: (mode === 'create' ? { id: "", project_id: "" } : formData) as RoleCRUD,
+    defaultValues: (mode === 'create' 
+      ? { id: "", project_id: "", name: "", description: "", icon: "Shield", color: "#6366f1", status: "active" } 
+      : { ...formData, ...formData?.meta }) as RoleFormValues,
     validators: {
       onChange: roleCRUDSchema,
       onMount: roleCRUDSchema,
