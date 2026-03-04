@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Edit, Trash2, ChevronRight, ChevronDown, PlusCircle, ChevronUp, MoreHorizontal } from 'lucide-react'
-import { Badge } from "@/shared/ui/shadcn/badge"
 import { MetadataVisualizer } from "@/shared/ui/MetadataVisualizer"
 import TruncatedId from "@/shared/ui/TruncatedId"
 import { formatDate } from "@/shared/lib/date-utils"
@@ -165,10 +164,6 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             </div>
           </div>
 
-          <div className="p-4 text-sm">
-            <ScopeBadge type={node.type} />
-          </div>
-
           {node.external_id ? <TruncatedId id={node.external_id} /> : <span className="text-muted-foreground/50">-</span>}
 
           <TruncatedId id={node.id} />
@@ -240,7 +235,6 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
               GRID_COLS_CLASS
             )}>
               <HeaderItem label="Scope Identity" sortKey="name" currentSort={sortConfig} onSort={handleSort} />
-              <HeaderItem label="Category" sortKey="type" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="External ID" sortKey="external_id" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="ID" sortKey="id" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="Created At" sortKey="created_at" currentSort={sortConfig} onSort={handleSort} />
@@ -287,17 +281,4 @@ function HeaderItem({ label, sortKey, currentSort, onSort }: {
       <SortIndicator isAsc={isAsc} isDesc={isDesc} />
     </button>
   )
-}
-
-function ScopeBadge({ type }: { type: string }) {
-  let variant: "default" | "secondary" | "destructive" | "outline" = "default"
-  let displayType = type
-  
-  switch (type) {
-    case "global": variant = "outline"; break;
-    case "project_root": variant = "secondary"; displayType = "Root"; break;
-    case "project_scope": variant = "default"; displayType = "Scope"; break;
-  }
-  
-  return <Badge variant={variant} className="capitalize text-[10px] px-2 h-5 font-bold">{displayType}</Badge>
 }
