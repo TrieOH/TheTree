@@ -3,8 +3,8 @@ import { scopeCRUDSchema, type ScopeCRUD } from "../model/types";
 import CrudForm from "@/shared/ui/form/CrudForm";
 import { scopeStore } from "../store";
 import { useStore } from "@tanstack/react-store";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createScopeFn, deleteScopeFn, patchScopeMetaFn } from "../api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createScopeFn, deleteScopeFn, patchScopeMetaFn, scopesQueryOptions } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -26,6 +26,7 @@ interface ScopeFormValues extends Omit<ScopeCRUD, 'meta'> {
 export default function ScopeDialog({ project_id }: PropsI) {
   const queryClient = useQueryClient();
   const { formData, mode } = useStore(scopeStore, (state) => state);
+  const { data: scopes } = useQuery(scopesQueryOptions(project_id));
 
   const createScopeMutation = useMutation({
     mutationFn: createScopeFn,
@@ -69,6 +70,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
       const { icon, color, description, status, ...rest } = data as ScopeFormValues;
       const finalData: ScopeCRUD = {
         ...rest,
+        parent_id: (rest.parent_id === "" || rest.parent_id === "none") ? null : rest.parent_id,
         meta: { icon, color, description, status }
       };
       createScopeMutation.mutate({ ...finalData, project_id });
@@ -78,6 +80,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
       const finalData: Partial<ScopeCRUD> = {
         ...rest,
         id,
+        parent_id: (rest.parent_id === "" || rest.parent_id === "none") ? null : rest.parent_id,
         meta: { icon, color, description, status }
       };
       patchScopeMetaMutation.mutate(finalData);
@@ -100,7 +103,16 @@ export default function ScopeDialog({ project_id }: PropsI) {
       label: "External ID", 
       placeholder: "Event", 
       autoComplete: "external_id",
-      errors: getFieldError(scopeCRUDSchema.shape.external_id, "d")
+      errors: getFieldError(scopeCRUDSchema.shape.external_id)
+    },
+    {
+      name: "parent_id",
+      label: "Parent Scope",
+      type: "select",
+      options: [
+        { label: "No Parent (Root)", value: "none" },
+        ...(scopes?.filter(s => s.id !== formData?.id).map(s => ({ label: s.name, value: s.id })) || [])
+      ]
     },
     {
       name: "description",
@@ -137,8 +149,12 @@ export default function ScopeDialog({ project_id }: PropsI) {
 
   const scopeOpts = formOptions({
     defaultValues: (mode === 'create' 
-      ? { id: "", external_id: "", name: "", project_id: "", icon: "Shield", color: "#6366f1", status: "active", description: "" } 
-      : { ...formData, ...formData?.meta }) as ScopeFormValues,
+      ? { id: "", external_id: "", name: "", project_id, parent_id: "none", icon: "Shield", color: "#6366f1", status: "active", description: "" } 
+      : { ...formData, ...formData?.meta, parent_id: formData?.parent_id || "none" }) as ScopeFormValues,
+    validators: {
+      onChange: scopeCRUDSchema,
+      onMount: scopeCRUDSchema,
+    }
   });
 
   return (
@@ -153,6 +169,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
         fields={fields}
         options={{
           defaultValues: scopeOpts.defaultValues,
+          validators: scopeOpts.validators,
           onSubmit: async ({ value }) => handleSubmit(value)
         }}
       />
