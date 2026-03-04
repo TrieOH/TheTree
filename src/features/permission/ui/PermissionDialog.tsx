@@ -135,6 +135,10 @@ export default function PermissionDialog({ project_id }: PropsI) {
     defaultValues: (mode === 'create' 
       ? { id: "", object: "", action: "", project_id: "", icon: "Shield", color: "#6366f1", status: "active", description: "" } 
       : { ...formData, ...formData?.meta }) as PermissionFormValues,
+    validators: {
+      onChange: permissionCRUDSchema,
+      onMount: permissionCRUDSchema,
+    }
   });
 
   return (
@@ -149,6 +153,7 @@ export default function PermissionDialog({ project_id }: PropsI) {
         fields={fields}
         options={{
           defaultValues: permissionOpts.defaultValues,
+          validators: permissionOpts.validators,
           onSubmit: async ({ value }) => handleSubmit(value)
         }}
       />

@@ -47,8 +47,10 @@ export default function CrudForm<TFormData>({
                   return (
                     <field.SelectField 
                       label={item.label} 
-                      placeholder={item.placeholder}
+                      placeholder={item.placeholder || ""}
                       options={item.options || []}
+                      errors={item.errors}
+                      submitted={submitted}
                     />
                   );
                 case "icon":

@@ -21,13 +21,23 @@ interface NodePropsI {
   node: Node
   level: number
   isLast: boolean
+  onNodeClick?: (node: Node) => void
+  isExpandedByDefault?: boolean
+  childrenExpandedByDefault?: boolean
 }
 
 // Each tree item height (py-2 = 8px + 8px, h-6 = 24px, gap-2 = 8px ≈ 48px total)
 const ITEM_HEIGHT = 48
 
-function TreeNode({ node, level, isLast }: NodePropsI) {
-  const [isExpanded, setIsExpanded] = useState(true)
+function TreeNode({ 
+  node, 
+  level, 
+  isLast, 
+  onNodeClick, 
+  isExpandedByDefault = true,
+  childrenExpandedByDefault = true
+}: NodePropsI) {
+  const [isExpanded, setIsExpanded] = useState(isExpandedByDefault)
   const hasChildren = node.children && node.children.length > 0
 
   return (
@@ -42,7 +52,7 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
           }}
         />
       )}
-      
+
       <div className="flex items-center relative" style={{ height: ITEM_HEIGHT }}>
         {level > 0 && (
           <div 
@@ -54,7 +64,7 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
             }}
           />
         )}
-        
+
         <div
           className="relative z-10 flex items-center gap-2 shrink-0 min-w-0"
           style={{ marginLeft: `${level * 24}px` }}        >
@@ -72,13 +82,18 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
           >
             {hasChildren ? (isExpanded ? '−' : '+') : '•'}
           </button>
-          
-          {typeof node.name === "string" ?
-            <span className="text-sm font-medium px-3 py-1.5 rounded-lg border shadow-sm">
-              {node.name}
-            </span>
-          : <CustomNameLabelBuilder {...node.name}/>
-          }
+
+          <div 
+            onClick={() => onNodeClick?.(node)}
+            className={onNodeClick ? "cursor-pointer hover:bg-secondary/20 transition-colors rounded-lg" : ""}
+          >
+            {typeof node.name === "string" ?
+              <span className="text-sm font-medium px-3 py-1.5 rounded-lg border shadow-sm block">
+                {node.name}
+              </span>
+            : <CustomNameLabelBuilder {...node.name}/>
+            }
+          </div>
         </div>
       </div>
 
@@ -90,6 +105,9 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
               node={child}
               level={level + 1}
               isLast={index === (node.children?.length || 0) - 1}
+              onNodeClick={onNodeClick}
+              isExpandedByDefault={childrenExpandedByDefault}
+              childrenExpandedByDefault={childrenExpandedByDefault}
             />
           ))}
         </div>
@@ -101,10 +119,22 @@ function TreeNode({ node, level, isLast }: NodePropsI) {
 interface TreePropsI {
   node: Node;
   goBack: () => void;
-  onSubmit: () => void;
+  onSubmit?: () => void;
+  onNodeClick?: (node: Node) => void;
+  submitLabel?: string;
+  defaultExpanded?: boolean;
+  rootDefaultExpanded?: boolean;
 }
 
-export default function UserPermTree({ node, goBack, onSubmit }: TreePropsI) {
+export default function UserPermTree({ 
+  node, 
+  goBack, 
+  onSubmit, 
+  onNodeClick, 
+  submitLabel = "Grant Access", 
+  defaultExpanded = true,
+  rootDefaultExpanded = true
+}: TreePropsI) {
   return (
     <>
       <div className="overflow-x-auto">
@@ -112,16 +142,21 @@ export default function UserPermTree({ node, goBack, onSubmit }: TreePropsI) {
           node={node}
           level={0}
           isLast={true}
+          onNodeClick={onNodeClick}
+          isExpandedByDefault={rootDefaultExpanded}
+          childrenExpandedByDefault={defaultExpanded}
         />
       </div>
       <hr className="w-full"/>
       <div className="w-full flex justify-between items-center mt-3">
-        <ShadowButton value="Add More" variant="ghost" onClick={goBack}/>
-        <ShadowButton
-          value="Grant Access" 
-          variant="solid"
-          onClick={onSubmit}
-        />
+        <ShadowButton value="Back" variant="ghost" onClick={goBack}/>
+        {onSubmit && (
+          <ShadowButton
+            value={submitLabel} 
+            variant="solid"
+            onClick={onSubmit}
+          />
+        )}
       </div>
     </>
   )
