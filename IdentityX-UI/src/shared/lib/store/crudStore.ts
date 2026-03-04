@@ -10,7 +10,7 @@ export interface CrudState<T extends { id: string }> {
 }
 
 export interface CrudActions<T extends { id: string }> {
-  openCreate: () => void;
+  openCreate: (data?: Partial<T>) => void;
   openEdit: (item: T) => void;
   openDelete: (item: T) => void;
   close: () => void;
@@ -34,13 +34,13 @@ export function createCrudActions<T extends { id: string }>(
   store: CrudStore<T>
 ): CrudActions<T> {
   return {
-    openCreate: () => {
+    openCreate: (data = {}) => {
       store.setState((state) => ({
         ...state,
         mode: 'create',
         selectedItem: null,
         isOpen: true,
-        formData: {},
+        formData: data,
       }));
     },
 
