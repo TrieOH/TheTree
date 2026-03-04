@@ -149,7 +149,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
 
   const scopeOpts = formOptions({
     defaultValues: (mode === 'create' 
-      ? { id: "", external_id: "", name: "", project_id, parent_id: "none", icon: "Shield", color: "#6366f1", status: "active", description: "" } 
+      ? { id: "", external_id: "", name: "", project_id, parent_id: "none", icon: "Shield", color: "#6366f1", status: "active", description: "", ...formData } 
       : { ...formData, ...formData?.meta, parent_id: formData?.parent_id || "none" }) as ScopeFormValues,
     validators: {
       onChange: scopeCRUDSchema,
