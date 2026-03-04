@@ -7,7 +7,6 @@ import (
 	"univents/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -38,7 +37,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
-			var rs *resp.Response
+			var rs = resp.BadRequest().WithCode(400).WithModule("AuthMW")
 			var err error
 			defer func() {
 				span.SetAttributes(attribute.Bool("success", err == nil))
@@ -48,43 +47,23 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			accessTokenCookie, err = r.Cookie("access_token")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthMissingAccessCookie).Trace(err.Error()).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
-						return
-					}
-					rs.WithModule("AuthMW").Send(w)
+					rs.WithCode(401).WithMsg(errx.NotFound("access_token cookie").Error()).Send(w)
 					return
 				}
-				rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthInvalidAccessCookie).Trace(err.Error()).RecordCtx(ctx), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
-					return
-				}
-				rs.WithModule("AuthMW").Send(w)
+				rs.WithCode(401).WithMsg(errx.Invalid("access_token").Error()).Send(w)
 				return
 			}
 
 			accessToken := accessTokenCookie.Value
 			token, err := mw.gaClient.Tokens.ValidateToken(ctx, accessToken)
 			if err != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
-					return
-				}
-				rs.WithModule("AuthMW").Send(w)
+				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
 				return
 			}
 
 			subject, err := authz.GetSubjectFromToken(token)
 			if err != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("AuthMW").Send(w)
-					return
-				}
-				rs.WithModule("AuthMW").Send(w)
+				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
 				return
 			}
 

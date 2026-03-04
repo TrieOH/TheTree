@@ -6,7 +6,6 @@ import (
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -28,7 +27,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateTicketSpec
 	var validTicket *domain.Ticket
 	validTicket, err = domain.NewTicket(sub.ID, in)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 
 	var allowed bool
@@ -38,10 +37,10 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateTicketSpec
 		Scope(in.EditionScopeID).
 		Allowed(ctx)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	if !allowed {
-		return nil, fail.New(errx.AuthzInsufficientPermissions)
+		return nil, errx.Forbidden("ticket").SetMessage("insufficient permissions")
 	}
 
 	span.SetAttributes(attribute.String("ticket.id", validTicket.ID.String()))

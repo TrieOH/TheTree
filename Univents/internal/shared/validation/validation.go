@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -53,16 +53,16 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 		return nil
 	}
 
-	verr := fail.New(errx.RequestValidationError)
+	var errs []error
 	validationErrors, ok := err.(validator.ValidationErrors)
 	if !ok {
-		return fail.New(errx.RequestValidationError).With(err)
+		return errx.Invalid("request").SetMessage("error validating request").SetCause(err)
 	}
 	for _, e := range validationErrors {
 		msg := formatValidationMessage(e, fieldName, value)
-		verr = verr.Trace(msg)
+		errs = append(errs, errors.New(msg))
 	}
-	return verr.AddMeta("module", "validation")
+	return errx.Combine("validation", errs...)
 }
 
 func formatValue(v interface{}) string {
@@ -123,10 +123,10 @@ func ValidateStruct(s interface{}) error {
 		return nil
 	}
 
-	verr := fail.New(errx.RequestValidationError)
+	var errs []error
 	var validationErrors validator.ValidationErrors
 	if !errors.As(err, &validationErrors) {
-		return fail.New(errx.RequestValidationError).With(err)
+		return errx.Invalid("request").SetMessage("error validating request").SetCause(err)
 	}
 	for _, err := range validationErrors {
 		structFieldName := err.StructField()
@@ -149,29 +149,101 @@ func ValidateStruct(s interface{}) error {
 		}
 
 		msg = formatValidationMessage(err, fieldName, value)
-		verr = verr.Trace(msg)
+		errs = append(errs, errors.New(msg))
 	}
-	return verr
+	return errx.Combine("validation", errs...)
 }
 
 // ValidateInto validates JSON into a provided pointer
 func ValidateInto[T any](r *http.Request, target *T) error {
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		return fail.New(errx.RequestNotApplicationJSON)
+		return errx.Invalid("request").SetMessage("content type is not application/json")
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return fail.New(errx.RequestInvalidJSONFormat).With(err)
+		return errx.Invalid("request").SetMessage("invalid JSON").SetCause(err)
 	}
 
 	if err := ValidateStruct(*target); err != nil {
-		fe, ok := fail.As(err)
-		if ok {
-			return fe.AddMeta("module", "validation")
-		}
 		return err
 	}
 
 	return nil
+}
+
+type Validator func() error
+
+func Run(validators ...Validator) error {
+	var errs []error
+
+	for _, v := range validators {
+		if v == nil {
+			continue
+		}
+		if err := v(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errx.Combine("validation", errs...)
+}
+
+func RequireUUID(domain, field string, value uuid.UUID) Validator {
+	return func() error {
+		if value == uuid.Nil {
+			return errx.Invalid(domain).
+				SetField(field).
+				SetMessage("cannot be nil")
+		}
+		return nil
+	}
+}
+
+func RequireString(domain, field, value string) Validator {
+	return func() error {
+		if value == "" {
+			return errx.Invalid(domain).
+				SetField(field).
+				SetMessage("missing required field")
+		}
+		return nil
+	}
+}
+
+func RequireTime(domain, field string, value time.Time) Validator {
+	return func() error {
+		if value.IsZero() {
+			return errx.Invalid(domain).
+				SetField(field).
+				SetMessage("missing required field")
+		}
+		return nil
+	}
+}
+
+func Assert(domain string, condition bool, message string) Validator {
+	return func() error {
+		if !condition {
+			return errx.Invalid(domain).
+				SetMessage(message)
+		}
+		return nil
+	}
+}
+
+func AssertIf(domain string, guard func() bool, condition func() bool, message string) Validator {
+	return func() error {
+		if !guard() {
+			return nil
+		}
+		if !condition() {
+			return errx.Invalid(domain).SetMessage(message)
+		}
+		return nil
+	}
 }

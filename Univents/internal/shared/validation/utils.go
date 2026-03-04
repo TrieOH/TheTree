@@ -11,7 +11,6 @@ import (
 	"univents/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -35,12 +34,12 @@ func GetUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
 func GetNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 	numberStr := chi.URLParam(r, fieldName)
 	if numberStr == "" {
-		return 0, resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
+		return 0, resp.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
 	}
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return 0, resp.FromError(fail.New(errx.RequestParseNumberError).WithArgs(err.Error()))
+		return 0, resp.BadRequest(errx.Invalid("parameter").SetMessage("parse number error: " + err.Error()).Error())
 	}
 	return number, nil
 }
@@ -48,7 +47,7 @@ func GetNumber(r *http.Request, fieldName string) (int, *resp.Response) {
 func GetString(r *http.Request, fieldName string) (string, *resp.Response) {
 	fieldStr := r.URL.Query().Get(fieldName)
 	if fieldStr == "" {
-		return "", resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
+		return "", resp.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
 	}
 	return fieldStr, nil
 }
@@ -58,15 +57,17 @@ func SetTrustProxyHeaders() {
 }
 
 func SetTrustedProxies() error {
-	raw := viper.GetStringSlice("TRUSTED_PROXIES")
-	if len(raw) == 0 {
+	raw := viper.GetString("TRUSTED_PROXIES")
+
+	if raw == "" {
 		HTTPProxyConfig.TrustedProxies = nil
 		return nil
 	}
 
-	proxies := make([]netip.Prefix, 0, len(raw))
+	parts := strings.Split(raw, ",")
+	proxies := make([]netip.Prefix, 0, len(parts))
 
-	for _, cidr := range raw {
+	for _, cidr := range parts {
 		cidr = strings.TrimSpace(cidr)
 		if cidr == "" {
 			continue

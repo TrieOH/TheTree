@@ -6,7 +6,6 @@ import (
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -43,7 +42,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 	var validEdition *domain.Edition
 	validEdition, err = domain.NewEdition(sub.ID, in)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 
 	var allowed bool
@@ -53,10 +52,10 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 		Scope(in.GoAuthEventScopeID).
 		Allowed(ctx)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	if !allowed {
-		return nil, fail.New(errx.AuthzInsufficientPermissions)
+		return nil, errx.Forbidden("edition").SetMessage("insufficient permissions")
 	}
 
 	span.SetAttributes(attribute.String("event.id", validEdition.ID.String()))
@@ -65,7 +64,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 	var idStr = validEdition.ID.String()
 	scope, err = ga.Scopes.CreateWithParent(ctx, validEdition.EditionName, &idStr, &in.GoAuthEventScopeID)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	validEdition.AddScope(scope.ID)
 

@@ -1,0 +1,29 @@
+{
+  "name": "testing_framework",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "axios": "^1.13.6",
+    "dotenv": "^17.3.1",
+    "jest": "^30.2.0",
+    "vitest": "^4.0.18",
+    "zod": "^4.3.6"
+  },
+  "dependencies": {
+    "axios-cookiejar-support": "^6.0.5",
+    "tough-cookie": "^6.0.0"
+  }
+}

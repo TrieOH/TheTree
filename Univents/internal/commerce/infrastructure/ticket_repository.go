@@ -5,8 +5,8 @@ import (
 	"univents/internal/commerce/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
+	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -59,7 +59,7 @@ func (repo *ticketsRepo) Create(ctx context.Context, toCreate domain.Ticket) (*d
 		CreatedBy:   toCreate.CreatedBy,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "ticket")
 	}
 
 	return mapTicketFromDB(&sqlcTicket), nil

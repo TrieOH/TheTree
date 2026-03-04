@@ -5,7 +5,6 @@ import (
 	"time"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -73,7 +72,7 @@ type PatchEventSpec struct {
 func NewEvent(creatorID uuid.UUID, ownerID *uuid.UUID, spec CreateEventSpec) (*Event, error) {
 	eventUUID, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).WithArgs("NewEvent")
+		return nil, errx.Internal("event").SetMessage("error generating uuid").SetCause(err)
 	}
 
 	now := time.Now()

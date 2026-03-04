@@ -3,14 +3,11 @@ package commands
 import (
 	"context"
 	"univents/internal/core/domain"
-	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
 )
 
 func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEventSpec) (out *domain.Event, err error) {
@@ -18,19 +15,6 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 	defer span.End()
 	defer func() {
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
-	}()
-
-	// FIXME send to BG Worker and return
-	var auditor *domain.AuditBuilder
-	defer func() {
-		if auditor != nil {
-			auditor.Emit()
-			ae := uc.events.AppendEventAudits(ctx, auditor.GetAudits()) // FIXME make this outbox later
-			if ae != nil {
-				telemetry.Log().Info("failed to insert create event audits", zap.Error(ae))
-			}
-			telemetry.Log().Info("Audits", zap.Any("slice", auditor.GetAudits()))
-		}
 	}()
 
 	ga := uc.gaClient
@@ -44,17 +28,7 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 	var validEvent *domain.Event
 	validEvent, err = domain.NewEvent(sub.ID, &sub.ID, in)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
-	}
-
-	auditor = domain.StartAudit(validEvent.ID, domain.ActorTypeUnknown, &sub.ID).
-		Action(string(domain.EventAuditActionCreated)).
-		State(domain.ActionStateFailed)
-
-	isOwner := sub.ID == validEvent.CreatedBy
-
-	if isOwner {
-		auditor.Actor(domain.ActorTypeOwner)
+		return nil, err
 	}
 
 	var allowed bool
@@ -63,16 +37,10 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 		Action("create").
 		Allowed(ctx)
 	if err != nil {
-		auditor.AddMetadata("reason", "Authorization Check Error: "+fail.AsFail(err).Error())
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	if !allowed {
-		auditor.AddMetadata("reason", "Forbidden")
-		return nil, fail.New(errx.AuthzInsufficientPermissions)
-	}
-
-	if !isOwner {
-		auditor.Actor(domain.ActorTypeAdmin)
+		return nil, errx.Forbidden("event").SetMessage("insufficient permissions")
 	}
 
 	span.SetAttributes(attribute.String("event.id", validEvent.ID.String()))
@@ -81,24 +49,20 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 	var idStr = validEvent.ID.String()
 	scope, err = ga.Scopes.Create(ctx, validEvent.Slug, &idStr)
 	if err != nil {
-		auditor.AddMetadata("reason", "Scope Creation Error: "+fail.AsFail(err).Error())
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	validEvent.AddScope(scope.ID)
 
 	err = uc.gaClient.Roles.Give(ctx, sub.ID, "Event Owner", &scope.ID)
 	if err != nil {
-		auditor.AddMetadata("reason", "Role Assignment Error: "+fail.AsFail(err).Error())
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 
 	var created *domain.Event
 	created, err = uc.events.CreateEvent(ctx, validEvent) // FIXME if this fails the scope must be undone (SAGA PATTERN)
 	if err != nil {
-		auditor.AddMetadata("reason", err.Error())
 		return nil, err
 	}
 
-	auditor.State(domain.ActionStateSucceeded).StatusTo(string(domain.StatusDraft))
 	return created, nil
 }

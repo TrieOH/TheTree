@@ -5,8 +5,8 @@ import (
 	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
+	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
@@ -82,7 +82,7 @@ func (repo *activitiesRepo) Create(ctx context.Context, toCreate *domain.Activit
 		ScopeID:           toCreate.ScopeID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "activity")
 	}
 
 	return mapActivityFromDB(&sqlcActivity), nil
@@ -94,7 +94,7 @@ func (repo *activitiesRepo) Publish(ctx context.Context, id uuid.UUID) error {
 
 	err := repo.queries(ctx).PublishActivity(ctx, id)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "activity")
 	}
 
 	return nil
@@ -106,7 +106,7 @@ func (repo *activitiesRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 
 	sqlcActivity, err := repo.queries(ctx).GetActivityByID(ctx, id)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "activity")
 	}
 
 	return mapActivityFromDB(&sqlcActivity), nil
@@ -118,7 +118,7 @@ func (repo *activitiesRepo) Start(ctx context.Context, activityID uuid.UUID) err
 
 	err := repo.queries(ctx).StartActivity(ctx, activityID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "activity")
 	}
 
 	return nil
@@ -130,7 +130,7 @@ func (repo *activitiesRepo) Finish(ctx context.Context, activityID uuid.UUID) er
 
 	err := repo.queries(ctx).FinishActivity(ctx, activityID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "activity")
 	}
 
 	return nil

@@ -8,7 +8,6 @@ import (
 	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -76,7 +75,7 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				_ = fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
+				telemetry.Log().Error("request_id error", zap.Error(errx.Internal("request_id").SetMessage("error generating uuid").SetCause(err)))
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

@@ -5,8 +5,8 @@ import (
 	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
+	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
@@ -98,7 +98,7 @@ func (repo *editionsRepo) Create(ctx context.Context, toCreate *domain.Edition) 
 		CreatedBy:       toCreate.CreatedBy,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "edition")
 	}
 
 	return mapEditionFromDB(&edition), nil
@@ -110,7 +110,7 @@ func (repo *editionsRepo) GetByID(ctx context.Context, editionID uuid.UUID) (*do
 
 	sqlcEdition, err := repo.queries(ctx).GetEditionByID(ctx, editionID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "edition")
 	}
 
 	return mapEditionFromDB(&sqlcEdition), nil
@@ -122,7 +122,7 @@ func (repo *editionsRepo) List(ctx context.Context, eventID uuid.UUID) ([]domain
 
 	sqlcEditions, err := repo.queries(ctx).ListEditions(ctx, eventID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "edition")
 	}
 
 	outEditions := make([]domain.Edition, 0, len(sqlcEditions))
@@ -138,7 +138,7 @@ func (repo *editionsRepo) Announce(ctx context.Context, editionID uuid.UUID) err
 
 	err := repo.queries(ctx).AnnounceEdition(ctx, editionID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "edition")
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (repo *editionsRepo) Open(ctx context.Context, editionID uuid.UUID) error {
 
 	err := repo.queries(ctx).OpenEditionRegistrations(ctx, editionID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "edition")
 	}
 
 	return nil
@@ -162,7 +162,7 @@ func (repo *editionsRepo) Start(ctx context.Context, editionID uuid.UUID) error 
 
 	err := repo.queries(ctx).StartEdition(ctx, editionID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "edition")
 	}
 
 	return nil
@@ -174,7 +174,7 @@ func (repo *editionsRepo) Finish(ctx context.Context, editionID uuid.UUID) error
 
 	err := repo.queries(ctx).FinishEdition(ctx, editionID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.FromDB(err, "edition")
 	}
 
 	return nil

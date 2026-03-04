@@ -13,8 +13,6 @@ type EventsRepository interface {
 	ListEvents(ctx context.Context) ([]Event, error)
 	ListOwnEvents(ctx context.Context, ownerID uuid.UUID) ([]Event, error)
 	PublishEvent(ctx context.Context, id uuid.UUID) error
-	AppendEventAudits(ctx context.Context, audits []Audit) error
-	ListEventAuditByEvent(ctx context.Context, eventID uuid.UUID) ([]Audit, error)
 	AddEdition(ctx context.Context, eventID uuid.UUID) error
 }
 

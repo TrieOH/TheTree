@@ -198,34 +198,3 @@ func (handler *EventsHandler) PublishEvent(w http.ResponseWriter, r *http.Reques
 
 	resp.OK().Send(w)
 }
-
-// ListEventAudits godoc
-// @Summary List audit logs for an event
-// @Description Retrieves the audit logs for a specific event.
-// @Tags events
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param event_id path string true "Event ID"
-// @Success 200 {object} object "Audit logs retrieved successfully"
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
-// @Router /events/{event_id}/audit [get]
-func (handler *EventsHandler) ListEventAudits(w http.ResponseWriter, r *http.Request) {
-	eventID, rs := validation.GetUUID(r, "event_id")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	ctx := r.Context()
-	out, err := handler.queries.ListEventAudits(ctx, eventID)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK().WithData(out).Send(w)
-}

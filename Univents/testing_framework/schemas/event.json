@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "required": ["id", "goauth_scope_id", "name", "slug", "is_series", "editions_count", "has_gallery", "gallery_urls", "status", "created_by", "created_at", "updated_at"],
+  "properties": {
+    "id":               { "type": "string", "format": "uuid" },
+    "owner_id":         { "type": ["string", "null"] },
+    "organization_id":  { "type": ["string", "null"] },
+    "goauth_scope_id":  { "type": "string", "format": "uuid" },
+    "name":             { "type": "string" },
+    "acronym":          { "type": ["string", "null"] },
+    "slug":             { "type": "string" },
+    "tagline":          { "type": ["string", "null"] },
+    "description":      { "type": ["string", "null"] },
+    "is_series":        { "type": "boolean" },
+    "editions_count":   { "type": "integer" },
+    "logo_url":         { "type": ["string", "null"] },
+    "banner_url":       { "type": ["string", "null"] },
+    "has_gallery":      { "type": "boolean" },
+    "gallery_urls":     { "type": ["array", "null"], "items": { "type": "string" } },
+    "contact_email":    { "type": ["string", "null"] },
+    "social_links":     { "type": ["array", "null"] },
+    "status":           { "type": "string" },
+    "created_by":       { "type": "string", "format": "uuid" },
+    "created_at":       { "type": "string", "format": "date-time" },
+    "updated_at":       { "type": "string", "format": "date-time" },
+    "deleted_at":       { "type": ["string", "null"] }
+  }
+}

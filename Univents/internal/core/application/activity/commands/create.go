@@ -6,7 +6,6 @@ import (
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -35,7 +34,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 	var validActivity *domain.Activity
 	validActivity, err = domain.NewActivity(sub.ID, in, edition)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 
 	var allowed bool
@@ -45,10 +44,10 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 		Scope(in.EditionScopeID).
 		Allowed(ctx)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	if !allowed {
-		return nil, fail.New(errx.AuthzInsufficientPermissions)
+		return nil, errx.Forbidden("activity").SetMessage("insufficient permissions")
 	}
 
 	span.SetAttributes(attribute.String("activity.id", validActivity.ID.String()))
@@ -57,7 +56,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 	var idStr = validActivity.ID.String()
 	scope, err = ga.Scopes.CreateWithParent(ctx, validActivity.Title, &idStr, &in.EditionScopeID)
 	if err != nil {
-		return nil, fail.AsFail(err).System().RecordCtx(ctx)
+		return nil, err
 	}
 	validActivity.AddScope(scope.ID)
 

@@ -7,6 +7,8 @@ github.com/MintzyG/FastUtilitiesNet v0.5.4 h1:7BXvnEYFtF16wr5zFli6WEE8ahmDseWMxC
 github.com/MintzyG/FastUtilitiesNet v0.5.4/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/MintzyG/fail/v3 v3.2.0 h1:tAyTfiCl2ufcSvi3w8WHHf/iKX16mcfRqdXULHDfD5s=
 github.com/MintzyG/fail/v3 v3.2.0/go.mod h1:Nr7t8S5qnwL9np0+gCl3s6BgfcXW5nDOwomu/VVgjrw=
+github.com/MintzyG/traily v1.0.0 h1:FucGM8lqZe/gX5D8hgeB3zvXkajxrrjfMSWiQL7a5ws=
+github.com/MintzyG/traily v1.0.0/go.mod h1:giwCen0HNlwOOpdPwrIzFiNIPgst+OuGiRmtOotpr9g=
 github.com/TrieOH/goauth-sdk-go v0.4.6 h1:/nzBuft647c6maXoITO5rsHAbRYIfi29bTmsDUE4ozU=
 github.com/TrieOH/goauth-sdk-go v0.4.6/go.mod h1:yJUYZq8cf9hL0e9XAHX+DvRgttqL6tJ6042/X9diSiQ=
 github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2 h1:ZBbLwSJqkHBuFDA6DUhhse0IGJ7T5bemHyNILUjvOq4=

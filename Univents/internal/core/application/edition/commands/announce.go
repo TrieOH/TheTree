@@ -8,7 +8,6 @@ import (
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,10 +41,10 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 		Scope(event.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
-		return fail.AsFail(err).System().RecordCtx(ctx)
+		return err
 	}
 	if !allowed {
-		return fail.New(errx.AuthzInsufficientPermissions)
+		return errx.Forbidden("edition").SetMessage("insufficient permissions")
 	}
 
 	edition, err := uc.editions.GetByID(ctx, editionID)

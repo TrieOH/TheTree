@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -27,22 +26,22 @@ type UserSubject struct {
 func GetSubjectFromToken(token *jwt.Token) (*UserSubject, error) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fail.New(errx.TokenInvalidAccessClaims).WithArgs("access")
+		return nil, errx.Invalid("access claims")
 	}
 
 	subInterface, exists := claims["sub"]
 	if !exists {
-		return nil, fail.New(errx.TokenMissingSubClaim)
+		return nil, errx.NotFound("sub claims")
 	}
 
 	subBytes, err := json.Marshal(subInterface)
 	if err != nil {
-		return nil, fail.New(errx.TokenSubMarshalFailed)
+		return nil, errx.Internal("sub").SetMessage("marshal failed")
 	}
 
 	var userSubject UserSubject
 	if err := json.Unmarshal(subBytes, &userSubject); err != nil {
-		return nil, fail.New(errx.TokenSubUnmarshallingFailed)
+		return nil, errx.Internal("sub").SetMessage("unmarshal failed")
 	}
 
 	return &userSubject, nil
@@ -59,14 +58,12 @@ func WithSubject(ctx context.Context, subject *UserSubject) context.Context {
 func RequireSubject(ctx context.Context) (*UserSubject, error) {
 	val := ctx.Value(UserContextKey)
 	if val == nil {
-		return nil, fail.New(errx.AuthSubjectNotInContext).RecordCtx(ctx)
+		return nil, errx.NotFound("subject").SetMessage("subject not found in context")
 	}
 
 	u, ok := val.(*UserSubject)
 	if !ok {
-		return nil, fail.New(errx.AuthInvalidSubject).
-			WithArgs(fmt.Sprintf("type was %T", val)).
-			RecordCtx(ctx)
+		return nil, errx.Invalid("subject").SetMessage(fmt.Sprintf("type was %T", val))
 	}
 
 	return u, nil

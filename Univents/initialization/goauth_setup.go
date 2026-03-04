@@ -44,6 +44,8 @@ type UniventsApp struct {
 	Redis     *redis.Client
 	Scheduler gocron.Scheduler
 	GaClient  *goauth.Client
+
+	Deps *router.HTTPDeps
 }
 
 func UniventsSetup() *UniventsApp {
@@ -51,16 +53,20 @@ func UniventsSetup() *UniventsApp {
 
 	LoadEnv(&app)
 	SetupGoAuth(&app)
-	SetupFail()
 	SetupFUN()
-	SetupDB(&app, "./internal/plataform/database/migrations")
+	if viper.GetString("ENV") != "test" {
+		SetupDB(&app, "./internal/plataform/database/migrations")
+	} else {
+		log.Println("WE'RE TESTING")
+		SetupDB(&app, "../internal/plataform/database/migrations")
+	}
 	app.Redis = SetupRedis(15 * time.Second)
 	SetupCron(app.DB, &app)
 
 	return &app
 }
 
-func UniventsStart(app *UniventsApp) {
+func UniventsStart(app *UniventsApp, skipMux bool) {
 	ctx := context.Background()
 
 	defer app.DB.Close()
@@ -148,8 +154,12 @@ func UniventsStart(app *UniventsApp) {
 		AsynqmonHandler:   asynqmonHandler,
 	}
 
-	mux := router.CreateRouter(deps)
+	app.Deps = deps
 
-	log.Printf("GoAuth listening on :%s", app.Port)
-	log.Fatal(http.ListenAndServe(":"+app.Port, mux))
+	if !skipMux {
+		mux := router.CreateRouter(deps)
+
+		log.Printf("GoAuth listening on :%s", app.Port)
+		log.Fatal(http.ListenAndServe(":"+app.Port, mux))
+	}
 }

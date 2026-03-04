@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 	"univents/internal/shared/errx"
+	"univents/internal/shared/validation"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -97,7 +97,7 @@ type CreateEditionSpec struct {
 func NewEdition(creatorID uuid.UUID, spec CreateEditionSpec) (*Edition, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).WithArgs("NewEdition")
+		return nil, errx.Internal("edition").SetMessage("error generating uuid").SetCause(err)
 	}
 
 	e := &Edition{
@@ -131,55 +131,34 @@ func NewEdition(creatorID uuid.UUID, spec CreateEditionSpec) (*Edition, error) {
 	return e, nil
 }
 
-// FIXME make me unique errors
 func (e *Edition) validate() error {
-	if e.EventID == uuid.Nil {
-		return fail.New(errx.EditionInvalidID).WithArgs(uuid.Nil.String())
-	}
-
-	if e.EditionName == "" {
-		return fail.New(errx.EditionValidationFailed).Trace("edition_name is required")
-	}
-
-	if e.StartsAt.IsZero() || e.EndsAt.IsZero() {
-		return fail.New(errx.EditionValidationFailed).Trace("start and end times are required")
-	}
-
 	now := time.Now()
-	if e.StartsAt.Before(now) {
-		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy editions are not supported for now")
-	}
-	if e.EndsAt.Before(now) {
-		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy editions are not supported for now")
-	}
-
-	if !e.StartsAt.Before(e.EndsAt) {
-		return fail.New(errx.EditionValidationFailed).Trace("starts_must_be_before_ends")
-	}
-
-	if e.RegistrationOpensAt != nil {
-		if e.RegistrationClosesAt != nil {
-			if e.RegistrationClosesAt.Before(*e.RegistrationOpensAt) {
-				return fail.New(errx.EditionValidationFailed).Trace("registration closing time cant be before registration opening time")
-			}
-		}
-
-		if e.StartsAt.Before(*e.RegistrationOpensAt) {
-			return fail.New(errx.EditionValidationFailed).Trace("registration cant open after event start")
-		}
-	}
-
-	if e.RegistrationClosesAt != nil {
-		if e.EndsAt.Before(*e.RegistrationClosesAt) {
-			return fail.New(errx.EditionValidationFailed).Trace("registration cant close after event end")
-		}
-	}
-
-	if e.Timezone == "" {
-		return fail.New(errx.EditionValidationFailed).Trace("timezone is required")
-	}
-
-	return nil
+	return validation.Run(
+		validation.RequireUUID("edition", "event_id", e.EventID),
+		validation.RequireUUID("edition", "created_by", e.CreatedBy),
+		validation.RequireString("edition", "name", e.EditionName),
+		validation.RequireString("edition", "timezone", e.Timezone),
+		validation.RequireTime("edition", "starts_at", e.StartsAt),
+		validation.RequireTime("edition", "ends_at", e.EndsAt),
+		validation.Assert("edition", e.StartsAt.After(now), "start at must not be before now, legacy editions are not supported for now"),
+		validation.Assert("edition", e.EndsAt.After(now), "ends at must not be before now, legacy editions are not supported for now"),
+		validation.Assert("edition", e.StartsAt.Before(e.EndsAt), "edition start must be before edition end"),
+		validation.AssertIf("edition",
+			func() bool { return e.RegistrationOpensAt != nil && e.RegistrationClosesAt != nil },
+			func() bool { return e.RegistrationOpensAt.Before(*e.RegistrationClosesAt) },
+			"registration closing time cant be before registration opening time",
+		),
+		validation.AssertIf("edition",
+			func() bool { return e.RegistrationOpensAt != nil },
+			func() bool { return e.RegistrationOpensAt.Before(e.StartsAt) },
+			"registration cant open after event start",
+		),
+		validation.AssertIf("edition",
+			func() bool { return e.RegistrationClosesAt != nil },
+			func() bool { return e.RegistrationClosesAt.Before(e.EndsAt) },
+			"registration cant close after event end",
+		),
+	)
 }
 
 func (e *Edition) AddScope(scopeID uuid.UUID) {

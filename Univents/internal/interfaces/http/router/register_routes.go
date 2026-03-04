@@ -43,7 +43,6 @@ func registerEventsRoutes(
 		r.Post("/events", h.CreateEvent)
 		r.Patch("/events/{event_id}", h.PatchEvent)
 		r.Post("/events/{event_id}/publish", h.PublishEvent)
-		r.Get("/events/{event_id}/audit", h.ListEventAudits)
 	})
 }
 

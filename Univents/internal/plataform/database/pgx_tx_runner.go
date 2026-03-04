@@ -5,7 +5,6 @@ import (
 	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/errx"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -35,11 +34,11 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		return fail.New(errx.SYSTransactionNilContext)
+		return errx.Internal("transaction").SetMessage("transaction had nil context")
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		return fail.New(errx.DBNestedTransactionNotAllowed)
+		return errx.Internal("transaction").SetMessage("nested transactions not allowed")
 	}
 
 	pgxOpts := pgx.TxOptions{
@@ -50,7 +49,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		return fail.New(errx.DBBeginTransactionFailed).With(err)
+		return errx.Internal("transaction").SetCause(err)
 	}
 
 	committed := false
@@ -64,7 +63,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 				}
 			}
 			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
-			err = fail.New(errx.DBTransactionPanicked).AddMeta("panic", p)
+			err = errx.Internal("transaction").SetMessage("transaction panicked")
 		}
 	}()
 
@@ -83,7 +82,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		return fail.New(errx.DBTransactionCommitFailed).With(err)
+		return errx.Internal("transaction").SetCause(err)
 	}
 	committed = true
 	return nil

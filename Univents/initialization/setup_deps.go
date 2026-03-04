@@ -5,12 +5,8 @@ import (
 	"log"
 	"time"
 	"univents/internal/plataform/database"
-	"univents/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
-	"github.com/MintzyG/fail/v3/plugins/localization"
-	"github.com/MintzyG/fail/v3/plugins/tracing/otel"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
@@ -40,29 +36,6 @@ func SetupGoAuth(app *UniventsApp) {
 	app.GaClient = client
 }
 
-func SetupFail() {
-	fail.AllowInternalLogs(true)
-	fail.AllowStaticMutations(true, false)
-	fail.AllowRuntimePanics(true)
-
-	if err := fail.RegisterTranslator(&errx.HTTPTranslator{}); err != nil {
-		log.Fatal(err)
-	}
-
-	fail.RegisterMapper(&errx.PGXMapper{})
-
-	fail.SetLocalizer(localization.New())
-	fail.SetDefaultLocale("en-US")
-
-	tracerPlugin := otel.New(
-		otel.WithTracerName("goauth-service"),
-		otel.WithMode(otel.RecordSmart),
-		otel.WithStackTrace(),
-		otel.WithAttributePrefix("goauth.error"),
-	)
-	fail.SetTracer(tracerPlugin)
-}
-
 func SetupFUN() {
 	module := viper.GetString("MODULE")
 	if module == "" {
@@ -76,7 +49,6 @@ func SetupFUN() {
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        module,
-		ErrorHandler:         errx.ErrToResp,
 	})
 }
 

@@ -3,8 +3,8 @@ package domain
 import (
 	"time"
 	"univents/internal/shared/errx"
+	"univents/internal/shared/validation"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -30,7 +30,7 @@ type CreateTicketSpec struct {
 func NewTicket(creatorID uuid.UUID, spec CreateTicketSpec) (*Ticket, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).WithArgs("NewTicket")
+		return nil, errx.Internal("ticket").SetMessage("error generating uuid").SetCause(err)
 	}
 
 	t := &Ticket{
@@ -48,19 +48,10 @@ func NewTicket(creatorID uuid.UUID, spec CreateTicketSpec) (*Ticket, error) {
 	return t, nil
 }
 
-// FIXME make me unique errors
 func (t *Ticket) validate() error {
-	if t.EditionID == uuid.Nil {
-		return fail.New(errx.TicketValidationFailed).WithArgs("edition id is nil: " + uuid.Nil.String())
-	}
-
-	if t.CreatedBy == uuid.Nil {
-		return fail.New(errx.TicketValidationFailed).WithArgs("created by id is nil: " + uuid.Nil.String())
-	}
-
-	if t.Name == "" {
-		return fail.New(errx.TicketValidationFailed).Trace("ticket name is required")
-	}
-
-	return nil
+	return validation.Run(
+		validation.RequireUUID("ticket", "edition_id", t.EditionID),
+		validation.RequireUUID("ticket", "created_by", t.CreatedBy),
+		validation.RequireString("ticket", "name", t.Name),
+	)
 }

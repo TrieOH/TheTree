@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 	"univents/internal/shared/errx"
+	"univents/internal/shared/validation"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -71,7 +71,7 @@ type CreateActivitySpec struct {
 func NewActivity(creatorID uuid.UUID, spec CreateActivitySpec, edition *Edition) (*Activity, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).WithArgs("NewActivity")
+		return nil, errx.Internal("activity").SetMessage("error generating uuid").SetCause(err)
 	}
 
 	e := &Activity{
@@ -99,57 +99,35 @@ func NewActivity(creatorID uuid.UUID, spec CreateActivitySpec, edition *Edition)
 	return e, nil
 }
 
-// FIXME make me unique errors
 func (a *Activity) validate(edition *Edition) error {
-	if a.EditionID == uuid.Nil {
-		return fail.New(errx.ActivityValidationFailed).WithArgs(uuid.Nil.String())
-	}
-
-	if a.Title == "" {
-		return fail.New(errx.ActivityValidationFailed).Trace("activity title is required")
-	}
-
-	if a.StartsAt.IsZero() || a.EndsAt.IsZero() {
-		return fail.New(errx.EditionValidationFailed).Trace("start and end times are required")
-	}
-
 	now := time.Now()
-	if a.StartsAt.Before(now) {
-		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy activities are not supported for now")
-	}
-	if a.EndsAt.Before(now) {
-		return fail.New(errx.EditionValidationFailed).Trace("start at must not be before now, legacy activities are not supported for now")
-	}
-
-	if a.StartsAt.Before(edition.StartsAt) || a.StartsAt.After(edition.EndsAt) {
-		return fail.New(errx.EditionValidationFailed).Trace("activity start must be within edition duration")
-	}
-
-	if a.EndsAt.Before(edition.StartsAt) || a.EndsAt.After(edition.EndsAt) {
-		return fail.New(errx.EditionValidationFailed).Trace("activity end must be within edition duration")
-	}
-
-	if !a.StartsAt.Before(a.EndsAt) {
-		return fail.New(errx.EditionValidationFailed).Trace("starts_must_be_before_ends")
-	}
-
-	if a.HasCapacity {
-		if a.Capacity == 0 {
-			return fail.New(errx.EditionValidationFailed).Trace("activity must have at least 1 capacity")
-		}
-		if a.Capacity != a.RemainingCapacity {
-			return fail.New(errx.EditionValidationFailed).Trace("remaining capacity must be equal to capacity on creation")
-		}
-		if a.Capacity < 0 {
-			return fail.New(errx.EditionValidationFailed).Trace("invalid capacity amount")
-		}
-	}
-
-	if a.TokenCost < 0 {
-		return fail.New(errx.EditionValidationFailed).Trace("invalid token cost amount")
-	}
-
-	return nil
+	return validation.Run(
+		validation.RequireUUID("activity", "edition_id", a.EditionID),
+		validation.RequireString("activity", "title", a.Title),
+		validation.RequireTime("activity", "starts_at", a.StartsAt),
+		validation.RequireTime("activity", "ends_at", a.EndsAt),
+		validation.Assert("activity", a.StartsAt.After(now), "start at must not be before now, legacy activities are not supported for now"),
+		validation.Assert("activity", a.EndsAt.After(now), "ends at must not be before now, legacy activities are not supported for now"),
+		validation.Assert("activity", a.StartsAt.Before(a.EndsAt), "starts must be before ends"),
+		validation.Assert("activity", !a.StartsAt.Before(edition.StartsAt) && !a.StartsAt.After(edition.EndsAt), "activity start must be within edition duration"),
+		validation.Assert("activity", !a.EndsAt.Before(edition.StartsAt) && !a.EndsAt.After(edition.EndsAt), "activity end must be within edition duration"),
+		validation.Assert("activity", a.TokenCost >= 0, "invalid token cost amount"),
+		validation.AssertIf("activity",
+			func() bool { return a.HasCapacity },
+			func() bool { return a.Capacity > 0 },
+			"activity must have at least 1 capacity",
+		),
+		validation.AssertIf("activity",
+			func() bool { return a.HasCapacity },
+			func() bool { return a.Capacity == a.RemainingCapacity },
+			"remaining capacity must be equal to capacity on creation",
+		),
+		validation.AssertIf("activity",
+			func() bool { return a.HasCapacity },
+			func() bool { return a.Capacity >= 0 },
+			"invalid capacity amount",
+		),
+	)
 }
 
 func (e *Activity) AddScope(scopeID uuid.UUID) {
