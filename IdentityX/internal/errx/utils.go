@@ -6,6 +6,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
+	"go.uber.org/zap"
 )
 
 func ErrToResp(err error) *resp.Response {
@@ -23,7 +24,7 @@ func ErrToResp(err error) *resp.Response {
 		return rs
 	}
 
-	logs.L().Error("FAILED ErrToResp")
+	logs.L().Info("FAILED ErrToResp", zap.Error(err))
 	// unknown error = 500
 	return resp.InternalServerError().
 		WithTracePrefix("unhandled-error").
