@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Node, NodeCustomName } from '../model/types'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
+import { cn } from '@/shared/lib/utils'
 
 const CustomNameLabelBuilder = (custom: NodeCustomName) => {
   return (
@@ -83,9 +84,13 @@ function TreeNode({
             {hasChildren ? (isExpanded ? '−' : '+') : '•'}
           </button>
 
-          <div 
+          <button
+            type='button'
             onClick={() => onNodeClick?.(node)}
-            className={onNodeClick ? "cursor-pointer hover:bg-secondary/20 transition-colors rounded-lg" : ""}
+            className={cn(
+              onNodeClick && "cursor-pointer hover:bg-secondary/20 transition-colors rounded-lg",
+              "space-x-2"
+            )}
           >
             {typeof node.name === "string" ?
               <span className="text-sm font-medium px-3 py-1.5 rounded-lg border shadow-sm block">
@@ -93,7 +98,7 @@ function TreeNode({
               </span>
             : <CustomNameLabelBuilder {...node.name}/>
             }
-          </div>
+          </button>
         </div>
       </div>
 
