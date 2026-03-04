@@ -1,4 +1,5 @@
 import type { Permission } from "@/features/permission/model/types";
+import type { Scope } from "@/features/scope/model/types";
 import type { Node, RoleWithPermissions } from "../model/types";
 
 export const buildRolePermissionsToNodeTree = (
@@ -83,4 +84,33 @@ export const buildDirectPermissionsToNodeTree = (
   });
 
   return nodeTree;
+}
+
+export const buildScopeHierarchyToNodeTree = (scopes: Scope[]) => {
+  const rootNode: Node = {
+    id: 'null',
+    name: "Root",
+    children: []
+  };
+
+  const scopeMap: Record<string, Node> = {
+    'null': rootNode
+  };
+
+  // Create all nodes
+  scopes.forEach(scope => {
+    scopeMap[scope.id] = {
+      id: scope.id,
+      name: scope.name,
+      children: []
+    };
+  });
+
+  // Link them
+  scopes.forEach(scope => {
+    const parentId = scope.parent_id && scopeMap[scope.parent_id] ? scope.parent_id : 'null';
+    scopeMap[parentId].children?.push(scopeMap[scope.id]);
+  });
+
+  return rootNode;
 }
