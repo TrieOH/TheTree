@@ -1,7 +1,7 @@
 import { describe, test, beforeAll, expect } from "vitest";
-import {loginAs, fixture, schema, post, validate} from "./helpers.js";
-
-const validateEvent = schema("event");
+import { loginAs, post, validate } from "./helpers.js";
+import { createEvent } from "./fixtures/events/create.js";
+import { EventSchema } from "./schemas/event.js";
 
 let owner;
 beforeAll(async () => {
@@ -10,8 +10,8 @@ beforeAll(async () => {
 
 describe("events", () => {
     test("create event", async () => {
-        const event = await post(owner, "/events", fixture("events/create"));
-        expect(validate(validateEvent, event)).toBe(true);
-        expect(event.name).toBe(fixture("events/create").name);
+        const event = await post(owner, "/events", createEvent);
+        expect(validate(EventSchema, event)).toBe(true);
+        expect(event.name).toBe(createEvent.name);
     });
 });

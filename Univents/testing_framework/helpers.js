@@ -1,31 +1,12 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import axios from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
-import Ajv from "ajv";
-import addFormats from "ajv-formats"; // for uuid format
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-import {config} from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, ".env"), override: true });
-
-console.log("loaded from", resolve(__dirname, ".env"));
-console.log("BASE_URL", process.env.BASE_URL);
-
-const ajv = new Ajv();
-addFormats(ajv);
-
-export function fixture(path) {
-    return JSON.parse(readFileSync(resolve(__dirname, `fixtures/${path}.json`), "utf-8"));
-}
-
-export function schema(path) {
-    const s = JSON.parse(readFileSync(resolve(__dirname, `schemas/${path}.json`), "utf-8"));
-    return ajv.compile(s);
-}
 
 export function createClient() {
     return wrapper(axios.create({
@@ -33,17 +14,6 @@ export function createClient() {
         jar: new CookieJar(),
         withCredentials: true,
     }));
-}
-
-export async function loginAsGoAuthAccount(email, password) {
-    const client = createClient();
-    try {
-        await client.post(`${process.env.GOAUTH_URL}/auth/login`, { email, password });
-    } catch (e) {
-        console.log(e.response?.status, JSON.stringify(e.response?.data, null, 2));
-        throw e;
-    }
-    return client;
 }
 
 export async function loginAs(email, password) {
@@ -54,7 +24,7 @@ export async function loginAs(email, password) {
             { email, password }
         );
     } catch (e) {
-        console.log(e.response?.status, JSON.stringify(e.response?.data, null, 2));
+        console.error(`LOGIN failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2));
         throw e;
     }
     return client;
@@ -81,9 +51,10 @@ export async function get(client, path) {
 }
 
 export function validate(schema, data) {
-    const valid = schema(data);
-    if (!valid) {
-        console.error("schema errors:", JSON.stringify(schema.errors, null, 2));
+    const result = schema.safeParse(data);
+    if (!result.success) {
+        console.error("schema errors:", JSON.stringify(result.error.format(), null, 2));
+        return false;
     }
-    return valid;
+    return true;
 }
