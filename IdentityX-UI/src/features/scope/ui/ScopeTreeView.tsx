@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Edit, Trash2, ChevronRight, ChevronDown, PlusCircle, ChevronUp, MoreHorizontal } from 'lucide-react'
+import { Edit, Trash2, ChevronRight, ChevronDown, PlusCircle, ChevronUp } from 'lucide-react'
 import { MetadataVisualizer, type VisualMetadata } from "@/shared/ui/MetadataVisualizer"
 import TruncatedId from "@/shared/ui/TruncatedId"
 import { formatDate } from "@/shared/lib/date-utils"
@@ -8,12 +8,6 @@ import type { Scope } from "../model/types"
 import { SearchInput } from "@/shared/ui/form/SearchInput"
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton"
 import { cn } from "@/shared/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/shadcn/dropdown-menu';
 
 interface ScopeNode {
   id: string
@@ -34,7 +28,7 @@ interface ScopeTreeViewProps {
 type SortDirection = 'asc' | 'desc';
 type SortConfig = { key: keyof Scope; direction: SortDirection } | null;
 
-const GRID_COLS_CLASS = "grid grid-cols-[minmax(400px,1fr)_140px_180px_180px_160px_80px] items-center"
+const GRID_COLS_CLASS = "grid grid-cols-[minmax(400px,1fr)_140px_180px_180px_320px] items-center"
 
 const SortIndicator = ({ isAsc, isDesc }: { isAsc: boolean; isDesc: boolean }) => (
   <div className="flex flex-col items-center justify-center ml-2 pointer-events-none">
@@ -205,32 +199,28 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             {!isFolder && node.created_at ? formatDate(node.created_at) : "-"}
           </div>
 
-          <div className="p-4 flex justify-end">
+          <div className="p-4 flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
             {!isFolder ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <ShadowButton
-                    leftIcon={<MoreHorizontal size={16} />}
-                    label='More Actions'
-                    variant="ghost-primary"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openCreate({ parent_id: node.id }); }} className="cursor-pointer">
-                    <PlusCircle size={16} className="mr-2" />
-                    <span>Add Child</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openEdit(node as unknown as Scope); }} className="cursor-pointer">
-                    <Edit size={16} className="mr-2 text-primary" />
-                    <span>Update</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openDelete(node as unknown as Scope); }} className="cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 size={16} className="mr-2" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <ShadowButton
+                  leftIcon={<PlusCircle size={16} />}
+                  onClick={() => scopeActions.openCreate({ parent_id: node.id })}
+                  variant="ghost-primary"
+                  label="Add Child"
+                />
+                <ShadowButton
+                  leftIcon={<Edit size={16} />}
+                  onClick={() => scopeActions.openEdit(node as unknown as Scope)}
+                  variant="ghost-primary"
+                  label="Update"
+                />
+                <ShadowButton
+                  leftIcon={<Trash2 size={16} />}
+                  onClick={() => scopeActions.openDelete(node as unknown as Scope)}
+                  variant="destructive"
+                  label="Delete"
+                />
+              </>
             ) : (
               <div className="h-9 w-9" />
             )}
