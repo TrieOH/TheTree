@@ -57,15 +57,15 @@ export default function UserTable({ data, project_id }: PropsI) {
           key: "last_login_at",
           header: "Last Login",
           sortable: true,
-          render: (value) => formatDate(value as string),
-          searchableTextExtractor: (value) => formatDate(value as string),
+          render: (value) => (value ? formatDate(value as string) : "Never"),
+          searchableTextExtractor: (value) => (value ? formatDate(value as string) : "Never"),
         },
         {
           key: "verified_at",
           header: "Verified At",
           sortable: true,
-          render: (value) => formatDate(value as string),
-          searchableTextExtractor: (value) => formatDate(value as string),
+          render: (value) => (value ? formatDate(value as string) : "Unverified"),
+          searchableTextExtractor: (value) => (value ? formatDate(value as string) : "Unverified"),
         },
       ]}
       renderExpandedRow={(row) => <UserPermEditor project_id={project_id} user={row} />}
