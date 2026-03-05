@@ -4,6 +4,7 @@ import { Badge } from "@/shared/ui/shadcn/badge";
 export interface VisualMetadata {
   icon?: string;
   color?: string;
+  folder?: string;
   description?: string;
   status?: "active" | "restricted" | "beta" | "deprecated";
 }

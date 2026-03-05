@@ -19,6 +19,7 @@ interface PropsI {
 interface ScopeFormValues extends Omit<ScopeCRUD, 'meta'> {
   icon?: string;
   color?: string;
+  folder?: string;
   description?: string;
   status?: "active" | "restricted" | "beta" | "deprecated";
 }
@@ -67,21 +68,21 @@ export default function ScopeDialog({ project_id }: PropsI) {
     store: scopeStore,
     autoClose: true,
     onCreate: async (data) => {
-      const { icon, color, description, status, ...rest } = data as ScopeFormValues;
+      const { icon, color, folder, description, status, ...rest } = data as ScopeFormValues;
       const finalData: ScopeCRUD = {
         ...rest,
         parent_id: (rest.parent_id === "" || rest.parent_id === "none") ? null : rest.parent_id,
-        meta: { icon, color, description, status }
+        meta: { icon, color, folder, description, status }
       };
       createScopeMutation.mutate({ ...finalData, project_id });
     },
     onUpdate: async (id, data) => {
-      const { icon, color, description, status, ...rest } = data as ScopeFormValues;
+      const { icon, color, folder, description, status, ...rest } = data as ScopeFormValues;
       const finalData: Partial<ScopeCRUD> = {
         ...rest,
         id,
         parent_id: (rest.parent_id === "" || rest.parent_id === "none") ? null : rest.parent_id,
-        meta: { icon, color, description, status }
+        meta: { icon, color, folder, description, status }
       };
       patchScopeMetaMutation.mutate(finalData);
     },
@@ -104,6 +105,12 @@ export default function ScopeDialog({ project_id }: PropsI) {
       placeholder: "Event", 
       autoComplete: "external_id",
       errors: getFieldError(scopeCRUDSchema.shape.external_id)
+    },
+    {
+      name: "folder",
+      label: "Folder",
+      placeholder: "e.g. Activity or Settings",
+      type: "text"
     },
     {
       name: "parent_id",
@@ -144,12 +151,12 @@ export default function ScopeDialog({ project_id }: PropsI) {
   ]
 
   const fields = mode === 'edit' 
-    ? allFields.filter(f => ["description", "status", "icon", "color"].includes(f.name))
+    ? allFields.filter(f => ["description", "status", "icon", "color", "folder"].includes(f.name))
     : allFields;
 
   const scopeOpts = formOptions({
     defaultValues: (mode === 'create' 
-      ? { id: "", external_id: "", name: "", project_id, parent_id: "none", icon: "Shield", color: "#6366f1", status: "active", description: "", ...formData } 
+      ? { id: "", external_id: "", name: "", project_id, parent_id: "none", icon: "Shield", color: "#6366f1", status: "active", description: "", folder: "", ...formData } 
       : { ...formData, ...formData?.meta, parent_id: formData?.parent_id || "none" }) as ScopeFormValues,
     validators: {
       onChange: scopeCRUDSchema,

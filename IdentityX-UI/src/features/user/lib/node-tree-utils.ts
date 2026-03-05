@@ -109,7 +109,28 @@ export const buildScopeHierarchyToNodeTree = (scopes: Scope[]) => {
   // Link them
   scopes.forEach(scope => {
     const parentId = scope.parent_id && scopeMap[scope.parent_id] ? scope.parent_id : 'null';
-    scopeMap[parentId].children?.push(scopeMap[scope.id]);
+    const parentNode = scopeMap[parentId];
+    
+    const folderName = scope.meta?.folder;
+    
+    if (folderName) {
+      if (!parentNode.children) parentNode.children = [];
+      
+      let folderNode = parentNode.children.find(c => 
+        c.name === folderName && c.id.startsWith(`folder-${parentId}-`)
+      );
+      
+      if (!folderNode) {
+        folderNode = {
+          id: `folder-${parentId}-${folderName}`,
+          name: folderName,
+          children: []
+        };
+        parentNode.children.push(folderNode);
+      }
+      
+      folderNode.children?.push(scopeMap[scope.id]);
+    } else parentNode.children?.push(scopeMap[scope.id]);
   });
 
   return rootNode;
