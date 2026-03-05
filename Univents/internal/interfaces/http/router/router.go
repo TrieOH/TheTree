@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"univents/internal/commerce/interfaces/http/products"
 	"univents/internal/commerce/interfaces/http/tickets"
 	eventhttp "univents/internal/core/interfaces/http"
 	activityhttp "univents/internal/core/interfaces/http/activities"
+	"univents/internal/core/interfaces/http/checkpoints"
 	"univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	systemhttp "univents/internal/interfaces/http/system"
@@ -27,13 +29,15 @@ import (
 )
 
 type HTTPDeps struct {
-	EventsHandler     *eventhttp.EventsHandler
-	EditionsHandler   *editions.Handler
-	ActivitiesHandler *activityhttp.Handler
-	TicketsHandler    *tickets.TicketsHandler
-	SystemHandler     *systemhttp.UniventsHandler
-	AuthMiddleware    *middleware.AuthMiddleware
-	AsynqmonHandler   http.Handler
+	EventsHandler      *eventhttp.EventsHandler
+	EditionsHandler    *editions.Handler
+	ActivitiesHandler  *activityhttp.Handler
+	CheckpointsHandler *checkpoints.Handler
+	TicketsHandler     *tickets.TicketsHandler
+	ProductsHandler    *products.Handler
+	SystemHandler      *systemhttp.UniventsHandler
+	AuthMiddleware     *middleware.AuthMiddleware
+	AsynqmonHandler    http.Handler
 }
 
 // CreateRouter godoc

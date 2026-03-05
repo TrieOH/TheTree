@@ -5,11 +5,14 @@ import (
 	"log"
 	"net/http"
 	"time"
+	productsCommands "univents/internal/commerce/application/product/commands"
 	ticketsCommands "univents/internal/commerce/application/ticket/commands"
 	commerceInfra "univents/internal/commerce/infrastructure"
+	productshttp "univents/internal/commerce/interfaces/http/products"
 	tickethttp "univents/internal/commerce/interfaces/http/tickets"
 	activityAsync "univents/internal/core/application/activity/async"
 	activityCommands "univents/internal/core/application/activity/commands"
+	checkpointCommands "univents/internal/core/application/checkpoint/commands"
 	"univents/internal/core/application/edition/async"
 	editionCommands "univents/internal/core/application/edition/commands"
 	editionQueries "univents/internal/core/application/edition/queries"
@@ -18,6 +21,7 @@ import (
 	"univents/internal/core/infrastructure"
 	eventhttp "univents/internal/core/interfaces/http"
 	activityhttp "univents/internal/core/interfaces/http/activities"
+	checkpointshttp "univents/internal/core/interfaces/http/checkpoints"
 	editionhttp "univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	"univents/internal/interfaces/http/router"
@@ -104,7 +108,9 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	eventRepo := infrastructure.NewEventRepo(q, logs, tracer)
 	editionRepo := infrastructure.NewEditionRepo(q, logs, tracer)
 	activityRepo := infrastructure.NewActivityRepo(q, logs, tracer)
+	checkpointRepo := infrastructure.NewCheckpointRepo(q, logs, tracer)
 	ticketRepo := commerceInfra.NewTicketsRepo(q, logs, tracer)
+	productRepo := commerceInfra.NewProductsRepo(q, logs, tracer)
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
@@ -125,13 +131,17 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)
 	activitiesC := activityCommands.New(activityRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
+	checkpointsC := checkpointCommands.New(checkpointRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
 	activityHandler := activityhttp.NewActivitiesHandler(activitiesC)
+	checkpointHandler := checkpointshttp.NewCheckpointsHandler(checkpointsC)
 	ticketHandler := tickethttp.NewTicketsHandler(ticketsC)
+	productHandler := productshttp.NewProductsHandler(productsC)
 
 	systemHandler := system.NewUniventsHandler()
 
@@ -145,13 +155,15 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	})
 
 	deps := &router.HTTPDeps{
-		EventsHandler:     eventHandler,
-		EditionsHandler:   editionHandler,
-		ActivitiesHandler: activityHandler,
-		TicketsHandler:    ticketHandler,
-		SystemHandler:     systemHandler,
-		AuthMiddleware:    authMW,
-		AsynqmonHandler:   asynqmonHandler,
+		EventsHandler:      eventHandler,
+		EditionsHandler:    editionHandler,
+		ActivitiesHandler:  activityHandler,
+		CheckpointsHandler: checkpointHandler,
+		TicketsHandler:     ticketHandler,
+		ProductsHandler:    productHandler,
+		SystemHandler:      systemHandler,
+		AuthMiddleware:     authMW,
+		AsynqmonHandler:    asynqmonHandler,
 	}
 
 	app.Deps = deps

@@ -1,9 +1,11 @@
 package router
 
 import (
+	"univents/internal/commerce/interfaces/http/products"
 	"univents/internal/commerce/interfaces/http/tickets"
 	eventhttp "univents/internal/core/interfaces/http"
 	activityhttp "univents/internal/core/interfaces/http/activities"
+	"univents/internal/core/interfaces/http/checkpoints"
 	editionhttp "univents/internal/core/interfaces/http/editions"
 	"univents/internal/interfaces/http/middleware"
 	systemhttp "univents/internal/interfaces/http/system"
@@ -17,6 +19,8 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerEditionsRoutes(r, deps.EditionsHandler, deps.AuthMiddleware)
 	registerTicketsRoutes(r, deps.TicketsHandler, deps.AuthMiddleware)
 	registerActivitiesRoutes(r, deps.ActivitiesHandler, deps.AuthMiddleware)
+	registerCheckpointsRoutes(r, deps.CheckpointsHandler, deps.AuthMiddleware)
+	registerProductsRoutes(r, deps.ProductsHandler, deps.AuthMiddleware)
 }
 
 func registerSystemRoutes(
@@ -79,5 +83,27 @@ func registerActivitiesRoutes(
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/activities", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish", h.Publish)
+	})
+}
+
+func registerCheckpointsRoutes(
+	r *chi.Mux,
+	h *checkpoints.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/events/{event_id}/editions/{edition_id}/checkpoints", h.Create)
+	})
+}
+
+func registerProductsRoutes(
+	r *chi.Mux,
+	h *products.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/events/{event_id}/editions/{edition_id}/products", h.Create)
 	})
 }

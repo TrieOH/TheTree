@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySpec) (out *domain.Activity, err error) {
-	ctx, span := uc.tracer.Start(ctx, "ActivityService.Create")
+func (uc *CommandService) Create(ctx context.Context, in domain.CreateCheckpointSpec) (out *domain.Checkpoint, err error) {
+	ctx, span := uc.tracer.Start(ctx, "CheckpointService.Create")
 	defer span.End()
 	defer func() {
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
@@ -32,15 +32,15 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 		return nil, err
 	}
 
-	var validActivity *domain.Activity
-	validActivity, err = domain.NewActivity(sub.ID, in, edition)
+	var validCheckpoint *domain.Checkpoint
+	validCheckpoint, err = domain.NewCheckpoint(sub.ID, in, edition)
 	if err != nil {
 		return nil, err
 	}
 
 	var allowed bool
 	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("activities").
+		Object("checkpoints").
 		Action("create").
 		Scope(in.EditionScopeID).
 		Allowed(ctx)
@@ -48,22 +48,22 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("activity").SetMessage("insufficient permissions")
+		return nil, errx.Forbidden("checkpoint").SetMessage("insufficient permissions")
 	}
 
-	span.SetAttributes(attribute.String("activity.id", validActivity.ID.String()))
+	span.SetAttributes(attribute.String("checkpoint.id", validCheckpoint.ID.String()))
 
-	meta := json.RawMessage(`{"color": "#5f57ff", "icon": "Play", "folder": "activities"}`)
+	meta := json.RawMessage(`{"color": "#fc620f", "icon": "FlagTriangleRight", "folder": "checkpoints"}`)
 	var scope *goauth.Scope
-	var idStr = validActivity.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validActivity.Title, &idStr, &in.EditionScopeID, meta)
+	var idStr = validCheckpoint.ID.String()
+	scope, err = ga.Scopes.CreateWithParent(ctx, validCheckpoint.Name, &idStr, &in.EditionScopeID, meta)
 	if err != nil {
 		return nil, err
 	}
-	validActivity.AddScope(scope.ID)
+	validCheckpoint.AddScope(scope.ID)
 
-	var created *domain.Activity
-	created, err = uc.activities.Create(ctx, validActivity)
+	var created *domain.Checkpoint
+	created, err = uc.checkpoints.Create(ctx, validCheckpoint)
 	if err != nil {
 		return nil, err
 	}

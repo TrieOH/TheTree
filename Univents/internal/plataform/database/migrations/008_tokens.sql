@@ -22,7 +22,7 @@ CREATE TYPE token_transaction_type AS ENUM (
     'purchased',    -- bought token pack
     'granted',      -- admin grant
     'spent',        -- used for activity/product
-    'refunded',     -- activity cancelled
+    'refunded',     -- activity canceled
     'expired'       -- cleanup
 );
 

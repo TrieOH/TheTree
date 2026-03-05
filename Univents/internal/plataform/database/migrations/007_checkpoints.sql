@@ -11,38 +11,23 @@ CREATE TYPE checkpoint_type AS ENUM (
 
 CREATE TYPE checkpoint_access AS ENUM (
     'open',         -- no ticket required, just count
-    'ticket_any',   -- any valid ticket
-    'ticket_tier',  -- specific tier minimum
+    'ticket',       -- any valid ticket
     'staff_only'    -- manual override required
 );
 
 CREATE TABLE checkpoints (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
+    scope_id UUID NOT NULL,
     edition_id UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
 
     name VARCHAR(256) NOT NULL,
     type checkpoint_type NOT NULL,
 
+    starts_at TIMESTAMPTZ NULL,
+    ends_at TIMESTAMPTZ NULL,
+
     -- access rules
     access_mode checkpoint_access NOT NULL DEFAULT 'open',
-    required_ticket_tier INT NULL,
-
-    -- capacity (for amenities)
-    track_occupancy BOOLEAN NOT NULL DEFAULT FALSE,  -- count people in/out
-    occupancy_count INT NOT NULL DEFAULT 0,          -- current people present
-
-    has_capacity_limit BOOLEAN NOT NULL DEFAULT FALSE, -- enforce max occupancy
-    max_capacity INT NOT NULL DEFAULT 0,               -- hard limit
-
-    CHECK (has_capacity_limit = FALSE OR max_capacity > 0),
-    CHECK (occupancy_count >= 0),
-
-    -- time windows
-    open_at TIMESTAMPTZ NULL,
-    close_at TIMESTAMPTZ NULL,
-
-    -- location
-    location_description VARCHAR(256) NULL,
 
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -61,10 +46,10 @@ CREATE TABLE checkpoint_scans (
 
     -- access validation at time of scan
     access_granted BOOLEAN NOT NULL,
-    denial_reason VARCHAR(64) NULL, -- 'no_ticket', 'insufficient_tier', 'no_tokens', 'capacity_full', 'not_open'
+    denial_reason VARCHAR(64) NULL, -- 'no_ticket', 'not_open'
 
     -- what was used
-    user_ticket_id UUID NULL REFERENCES user_tickets(id),
+    --user_ticket_id UUID NULL REFERENCES user_tickets(id),
 
     -- scan metadata
     scanned_at TIMESTAMPTZ NOT NULL DEFAULT now(),

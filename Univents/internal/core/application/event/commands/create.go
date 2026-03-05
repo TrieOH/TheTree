@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
@@ -45,9 +46,10 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in domain.CreateEvent
 
 	span.SetAttributes(attribute.String("event.id", validEvent.ID.String()))
 
+	meta := json.RawMessage(`{"color": "#ae20fa", "icon": "CalendarRange"}`)
 	var scope *goauth.Scope
 	var idStr = validEvent.ID.String()
-	scope, err = ga.Scopes.Create(ctx, validEvent.Slug, &idStr)
+	scope, err = ga.Scopes.Create(ctx, validEvent.Slug, &idStr, meta)
 	if err != nil {
 		return nil, err
 	}

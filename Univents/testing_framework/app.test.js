@@ -6,6 +6,10 @@ import {createEdition} from "./fixtures/editions/create.js";
 import {EditionSchema} from "./schemas/edition.js";
 import {createKubernetesActivity, createRustActivity} from "./fixtures/activities/create.js";
 import {ActivitySchema} from "./schemas/activity.js";
+import {createCoffeeBreak} from "./fixtures/checkpoints/create.js";
+import {CheckpointSchema} from "./schemas/checkpoint.js";
+import {createMug, createShirt} from "./fixtures/products/create.js";
+import {ProductSchema} from "./schemas/product.js";
 
 let owner;
 beforeAll(async () => {
@@ -62,3 +66,33 @@ describe("activities", () => {
         await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${kubernetesActivity.id}/publish`)
     })
 })
+
+let coffeeBreak
+describe("checkpoints", () => {
+    test("create coffee break", async () => {
+        let toCreate = createCoffeeBreak
+        toCreate.edition_scope_id = edition.goauth_scope_id
+        coffeeBreak = await post(owner, `/events/${event.id}/editions/${edition.id}/checkpoints`, toCreate)
+        expect(validate(CheckpointSchema, coffeeBreak)).toBe(true)
+        expect(coffeeBreak.edition_id).toBe(edition.id)
+    })
+})
+
+let mug
+let shirt
+describe('products', () => {
+    test("create mug", async () => {
+        let toCreate = createMug
+        toCreate.edition_scope_id = edition.goauth_scope_id
+        mug = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+        expect(validate(ProductSchema, mug)).toBe(true)
+        expect(mug.edition_id).toBe(edition.id)
+    })
+    test("create shirt", async () => {
+        let toCreate = createShirt
+        toCreate.edition_scope_id = edition.goauth_scope_id
+        shirt = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+        expect(validate(ProductSchema, shirt)).toBe(true)
+        expect(shirt.edition_id).toBe(edition.id)
+    })
+});

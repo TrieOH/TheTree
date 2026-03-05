@@ -2,6 +2,7 @@
 -- Products (merchandise, addons, token packs)
 CREATE TYPE product_type AS ENUM (
     'merchandise',  -- shirts, stickers, etc
+    'ticket',       -- event access
     'token',        -- bundles of tokens
     'bundle'        -- composite product
 );
@@ -13,14 +14,15 @@ CREATE TYPE product_status AS ENUM (
     'unavailable'
 );
 
-CREATE TYPE bundle_discount_type AS ENUM (
-    'percentage',
-    'fixed_amount',
-    'none'
-);
+-- CREATE TYPE bundle_discount_type AS ENUM (
+--    'percentage',
+--    'fixed_amount',
+--    'none'
+--);
 
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
+    scope_id UUID NOT NULL,
     edition_id UUID NOT NULL REFERENCES editions(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -29,66 +31,70 @@ CREATE TABLE products (
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
     type product_type NOT NULL,
+    ticket_id UUID NULL REFERENCES tickets(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CHECK (type != 'ticket' OR ticket_id IS NOT NULL),
 
     -- pricing
     price_cents INT NOT NULL DEFAULT 0, -- 0 = free
-    compare_at_price_cents INT NULL, -- original price for sales
-
-    -- inventory
-    has_inventory BOOLEAN NOT NULL DEFAULT FALSE,
-    inventory_quantity INT NOT NULL DEFAULT 0,
-    inventory_remaining INT NOT NULL DEFAULT 0,
-
-    -- bundles
-    bundle_display_comparison BOOLEAN NOT NULL DEFAULT TRUE, -- show "was $X, now $Y"
-    bundle_discount_type bundle_discount_type NULL,
-    bundle_discount_value INT NULL,
-
-    CHECK (has_inventory = FALSE OR inventory_quantity > 0),
-    CHECK (inventory_quantity >= inventory_remaining),
-
-    -- purchase limits
-    has_user_limit BOOLEAN NOT NULL DEFAULT FALSE,
-    max_per_user INT NOT NULL DEFAULT 1,
-    min_per_order INT NOT NULL DEFAULT 1,
-
-    -- tokens (if type = token)
-    has_tokens_included BOOLEAN NOT NULL DEFAULT FALSE,
-    tokens_included INT NOT NULL DEFAULT 0,
-    CONSTRAINT chk_tokens_if_pack
-        CHECK (type != 'token' OR tokens_included > 0),
 
     -- visibility
     status product_status NOT NULL DEFAULT 'draft',
     available_from TIMESTAMPTZ NULL,
     available_until TIMESTAMPTZ NULL,
 
+    -- inventory
+    has_inventory BOOLEAN NOT NULL DEFAULT FALSE,
+    inventory_quantity INT NOT NULL DEFAULT 0,
+    inventory_remaining INT NOT NULL DEFAULT 0,
+
+    CHECK (has_inventory = FALSE OR inventory_quantity > 0),
+    CHECK (inventory_quantity >= inventory_remaining),
+
+    -- bundles
+    -- bundle_display_comparison BOOLEAN NOT NULL DEFAULT TRUE, -- show "was $X, now $Y"
+    -- bundle_discount_type bundle_discount_type NULL,
+    -- bundle_discount_value INT NULL,
+
+    -- purchase limits
+    -- has_user_limit BOOLEAN NOT NULL DEFAULT FALSE,
+    -- max_per_user INT NOT NULL DEFAULT 1,
+    -- min_per_order INT NOT NULL DEFAULT 1,
+
+    -- tokens (if type = token)
+    -- has_tokens_included BOOLEAN NOT NULL DEFAULT FALSE,
+    -- tokens_included INT NOT NULL DEFAULT 0,
+    -- CONSTRAINT chk_tokens_if_pack
+    --    CHECK (type != 'token' OR tokens_included > 0),
+
     -- media
-    has_thumbnail BOOLEAN NOT NULL DEFAULT FALSE,
-    thumbnail_url TEXT NULL,
-    has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
-    gallery_image_urls TEXT[] NULL,
+    -- has_thumbnail BOOLEAN NOT NULL DEFAULT FALSE,
+    -- thumbnail_url TEXT NULL,
+    -- has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
+    -- gallery_image_urls TEXT[] NULL,
 
     -- fulfillment methods (at least one must be true)
-    has_event_pickup BOOLEAN NOT NULL DEFAULT FALSE,      -- collect at venue
-    has_physical_shipping BOOLEAN NOT NULL DEFAULT FALSE, -- mail delivery
-    has_digital_delivery BOOLEAN NOT NULL DEFAULT FALSE,  -- instant download
-    has_auto_fulfillment BOOLEAN NOT NULL DEFAULT FALSE,  -- tokens, tier upgrades, virtual goods
+    -- has_event_pickup BOOLEAN NOT NULL DEFAULT FALSE,      -- collect at venue
+    -- has_physical_shipping BOOLEAN NOT NULL DEFAULT FALSE, -- mail delivery
+    -- has_digital_delivery BOOLEAN NOT NULL DEFAULT FALSE,  -- instant download
+    -- has_auto_fulfillment BOOLEAN NOT NULL DEFAULT FALSE,  -- tokens, tier upgrades, virtual goods
 
-    CONSTRAINT chk_one_fulfillment_method
-        CHECK (has_event_pickup OR has_physical_shipping OR has_digital_delivery OR has_auto_fulfillment),
+    -- CONSTRAINT chk_one_fulfillment_method
+    --    CHECK (has_event_pickup OR has_physical_shipping OR has_digital_delivery OR has_auto_fulfillment),
 
     -- shipping config
-    shipping_required_at_checkout BOOLEAN NOT NULL DEFAULT FALSE,
-    shipping_address_fields JSONB NULL, -- {country: true, phone: true}
+    -- shipping_required_at_checkout BOOLEAN NOT NULL DEFAULT FALSE,
+    -- shipping_address_fields JSONB NULL, -- {country: true, phone: true}
 
     -- digital config
-    digital_content JSONB NULL, -- {download_url: "...", expires_at: "...", access_code: "..."}
+    -- digital_content JSONB NULL, -- {download_url: "...", expires_at: "...", access_code: "..."}
 
     -- pickup config
-    pickup_location VARCHAR(256) NULL, -- "Registration Desk", "VIP Lounge"
-    pickup_window_start TIMESTAMPTZ NULL,
-    pickup_window_end TIMESTAMPTZ NULL,
+    -- pickup_location VARCHAR(256) NULL, -- "Registration Desk", "VIP Lounge"
+    -- pickup_window_start TIMESTAMPTZ NULL,
+    -- pickup_window_end TIMESTAMPTZ NULL,
 
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

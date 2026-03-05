@@ -1,0 +1,127 @@
+package domain
+
+import (
+	"time"
+	"univents/internal/shared/errx"
+	"univents/internal/shared/validation"
+
+	"github.com/google/uuid"
+)
+
+type ProductType string
+
+const (
+	ProductTypeMerchandise ProductType = "merchandise"
+	ProductTypeTicket      ProductType = "ticket"
+	ProductTypeToken       ProductType = "token"
+	ProductTypeBundle      ProductType = "bundle"
+)
+
+type ProductStatus string
+
+const (
+	ProductStatusDraft       ProductStatus = "draft"
+	ProductStatusAvailable   ProductStatus = "available"
+	ProductStatusSoldOut     ProductStatus = "sold_out"
+	ProductStatusUnavailable ProductStatus = "unavailable"
+)
+
+type Product struct {
+	ID                 uuid.UUID     `json:"id"`
+	ScopeID            uuid.UUID     `json:"scope_id"`
+	EditionID          uuid.UUID     `json:"edition_id"`
+	Name               string        `json:"name"`
+	Description        *string       `json:"description"`
+	Type               ProductType   `json:"type"`
+	TicketID           *uuid.UUID    `json:"ticket_id"`
+	PriceCents         int           `json:"price_cents"`
+	Status             ProductStatus `json:"status"`
+	AvailableFrom      *time.Time    `json:"available_from"`
+	AvailableUntil     *time.Time    `json:"available_until"`
+	HasInventory       bool          `json:"has_inventory"`
+	InventoryQuantity  int           `json:"inventory_quantity"`
+	InventoryRemaining int           `json:"inventory_remaining"`
+	CreatedBy          uuid.UUID     `json:"created_by"`
+	CreatedAt          time.Time     `json:"created_at"`
+	UpdatedAt          time.Time     `json:"updated_at"`
+	DeletedAt          *time.Time    `json:"deleted_at"`
+}
+
+type CreateProductSpec struct {
+	EditionScopeID     uuid.UUID   `json:"edition_scope_id"`
+	EditionID          uuid.UUID   `json:"edition_id"`
+	Name               string      `json:"name"`
+	Description        *string     `json:"description"`
+	Type               ProductType `json:"type"`
+	TicketID           *uuid.UUID  `json:"ticket_id"`
+	PriceCents         int         `json:"price_cents"`
+	AvailableFrom      *time.Time  `json:"available_from"`
+	AvailableUntil     *time.Time  `json:"available_until"`
+	HasInventory       bool        `json:"has_inventory"`
+	InventoryQuantity  int         `json:"inventory_quantity"`
+	InventoryRemaining int         `json:"inventory_remaining"`
+}
+
+func NewProduct(creatorID uuid.UUID, spec CreateProductSpec) (*Product, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, errx.Internal("product").SetMessage("error generating uuid").SetCause(err)
+	}
+
+	p := &Product{
+		ID:                 id,
+		EditionID:          spec.EditionID,
+		Name:               spec.Name,
+		Description:        spec.Description,
+		Type:               spec.Type,
+		TicketID:           spec.TicketID,
+		PriceCents:         spec.PriceCents,
+		Status:             ProductStatusDraft,
+		AvailableFrom:      spec.AvailableFrom,
+		AvailableUntil:     spec.AvailableUntil,
+		HasInventory:       spec.HasInventory,
+		InventoryQuantity:  spec.InventoryQuantity,
+		InventoryRemaining: spec.InventoryQuantity,
+		CreatedBy:          creatorID,
+	}
+
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func (p *Product) AddScope(scopeID uuid.UUID) {
+	p.ScopeID = scopeID
+}
+
+func (p *Product) validate() error {
+	return validation.Run(
+		validation.RequireUUID("product", "edition_id", p.EditionID),
+		validation.RequireUUID("product", "created_by", p.CreatedBy),
+		validation.RequireString("product", "name", p.Name),
+		validation.RequireString("product", "type", string(p.Type)),
+		validation.Assert("product", p.PriceCents >= 0, "invalid price amount"),
+		validation.AssertIf("product",
+			func() bool { return p.Type == ProductTypeTicket },
+			func() bool { return p.TicketID != nil && *p.TicketID != uuid.Nil },
+			"if the product is a ticket, ticket_id is required",
+		),
+		validation.AssertIf("product",
+			func() bool { return p.AvailableFrom != nil && p.AvailableUntil != nil },
+			func() bool { return p.AvailableFrom.Before(*p.AvailableUntil) },
+			"available_from must be before available_until",
+		),
+		validation.AssertIf("product",
+			func() bool { return p.HasInventory },
+			func() bool { return p.InventoryQuantity > 0 },
+			"product must have at least 1 item available",
+		),
+		validation.AssertIf("product",
+			func() bool { return p.HasInventory },
+			func() bool { return p.InventoryQuantity == p.InventoryRemaining },
+			"remaining quantity must be equal to starting quantity on creation",
+		),
+	)
+}

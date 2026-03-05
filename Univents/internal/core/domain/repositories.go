@@ -33,3 +33,7 @@ type ActivitiesRepository interface {
 	Start(ctx context.Context, id uuid.UUID) error
 	Finish(ctx context.Context, id uuid.UUID) error
 }
+
+type CheckpointsRepository interface {
+	Create(ctx context.Context, toCreate *Checkpoint) (*Checkpoint, error)
+}
