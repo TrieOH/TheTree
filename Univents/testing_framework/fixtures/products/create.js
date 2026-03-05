@@ -26,3 +26,16 @@ export const createMug = {
     has_inventory: false,
     inventory_quantity: 0,
 };
+
+export const createTicketProduct = (scope, name, description, ticket_id, price_cents, from, to, has_inventory, quantity)=> ({
+    edition_scope_id: scope,
+    name: name,
+    description: description,
+    type: "ticket",
+    ticket_id: ticket_id,
+    price_cents: price_cents,
+    available_from: inMinutes(from),
+    available_until: inMinutes(to),
+    has_inventory: has_inventory,
+    inventory_quantity: quantity,
+});

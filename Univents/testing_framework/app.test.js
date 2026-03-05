@@ -8,7 +8,7 @@ import {createKubernetesActivity, createPremiumWorkshop, createRustActivity} fro
 import {ActivitySchema} from "./schemas/activity.js";
 import {createCheckInArea, createCoffeeBreak} from "./fixtures/checkpoints/create.js";
 import {CheckpointSchema} from "./schemas/checkpoint.js";
-import {createMug, createShirt} from "./fixtures/products/create.js";
+import {createMug, createShirt, createTicketProduct} from "./fixtures/products/create.js";
 import {ProductSchema} from "./schemas/product.js";
 import {createFullAccessTicket, createStandardTicket, createVIPTicket} from "./fixtures/tickets/create.js";
 import {TicketSchema} from "./schemas/ticket.js";
@@ -233,5 +233,58 @@ describe('products', () => {
         shirt = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
         expect(validate(ProductSchema, shirt)).toBe(true)
         expect(shirt.edition_id).toBe(edition.id)
+    })
+    describe('create ticket products', () => {
+        test("create standard ticket", async () => {
+            let toCreate = createTicketProduct(
+                edition.goauth_scope_id,
+                standardTicket.name,
+                standardTicket.description,
+                standardTicket.id,
+                0,
+                0,
+                15,
+                false,
+                0,
+            )
+            const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            expect(validate(ProductSchema, ticketProduct)).toBe(true)
+            expect(ticketProduct.edition_id).toBe(edition.id)
+            expect(ticketProduct.ticket_id).toBe(standardTicket.id)
+        })
+        test("create vip ticket", async () => {
+            let toCreate = createTicketProduct(
+                edition.goauth_scope_id,
+                vipTicket.name,
+                vipTicket.description,
+                vipTicket.id,
+                1000,
+                0,
+                15,
+                true,
+                100,
+            )
+            const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            expect(validate(ProductSchema, ticketProduct)).toBe(true)
+            expect(ticketProduct.edition_id).toBe(edition.id)
+            expect(ticketProduct.ticket_id).toBe(vipTicket.id)
+        })
+        test("create full access ticket", async () => {
+            let toCreate = createTicketProduct(
+                edition.goauth_scope_id,
+                fullTicket.name,
+                fullTicket.description,
+                fullTicket.id,
+                2500,
+                0,
+                15,
+                true,
+                10,
+            )
+            const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            expect(validate(ProductSchema, ticketProduct)).toBe(true)
+            expect(ticketProduct.edition_id).toBe(edition.id)
+            expect(ticketProduct.ticket_id).toBe(fullTicket.id)
+        })
     })
 });
