@@ -304,18 +304,10 @@ function MobileCardInner<T extends object>({
                   : String(row[primaryColumn.key])
                 }
               </h3>
-              {mobileVisibleColumns[1] && (
-                <div className="text-sm text-muted-foreground mt-1 truncate">
-                  {mobileVisibleColumns[1].render 
-                    ? mobileVisibleColumns[1].render(row[mobileVisibleColumns[1].key], row)
-                    : String(row[mobileVisibleColumns[1].key])
-                  }
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {mobileVisibleColumns
               .filter(c => String(c.key) !== String(primaryColumn.key))
               .slice(0, mobileColumnCount)
