@@ -189,35 +189,23 @@ function DesktopRowInner<T extends object>({
           </td>
         ))}
         {rowActions && rowActions.length > 0 && (
-          <td className="p-4 align-middle text-right whitespace-nowrap">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+          <td className="p-4 flex items-center gap-2 text-right whitespace-nowrap">
+            {rowActions.map((action, idx) => {
+              const Icon = action.icon;
+              if(!Icon) return null;
+              return (
                 <ShadowButton
-                  leftIcon={<MoreHorizontal size={16} />}
-                  label='More Actions'
-                  variant="ghost-primary"
-                  onClick={(e) => e.stopPropagation()}
+                  key={`${action.label}${idx}`}
+                  leftIcon={<Icon size={16} className="" />}
+                  label={action.label}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    action.onClick(row);
+                  }}
+                  variant={action.variant}
                 />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                {rowActions.map((action, idx) => {
-                  const Icon = action.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={`${action.label}${idx}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        action.onClick(row);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      {Icon && <Icon size={16} className="mr-2" />}
-                      <span>{action.label}</span>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              );
+            })}
           </td>
         )}
       </tr>
