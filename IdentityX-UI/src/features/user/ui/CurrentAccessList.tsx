@@ -123,32 +123,60 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
   }, [allPermissionsWithScope]);
 
   const getInheritanceInfo = (perm: PermissionWithScope) => {
-    const scopeId = perm.scope_id || 'root-node-id';
-    
-    // Check if inherited from a role in the SAME scope
-    const rolesInSameScope = rolesByScope.get(scopeId) || [];
-    const hasRoleInSameScope = rolesInSameScope.some(r => 
-      r.permissions.some(p => p.object === perm.object && p.action === perm.action)
-    );
-    if (hasRoleInSameScope) {
-      const scopeName = getScopeDisplayName(scopesWithGlobal.find(s => s.id === (perm.scope_id || 'global-scope')) || { id: null, name: 'Root' });
-      return `Role in ${scopeName}`;
-    }
+    const currentScopeId = perm.scope_id; // null for Root
+    const normalizedCurrentScopeId = currentScopeId || 'root-node-id';
 
-    // Check if inherited from Root (Direct or Role)
-    if (scopeId !== 'root-node-id') {
-      const rootRoles = rolesByScope.get('root-node-id') || [];
-      const hasRoleInRoot = rootRoles.some(r => 
+    // Helper to check if a permission is provided in a specific scope
+    const checkInScope = (sid: string | null) => {
+      const normalizedSid = sid || 'root-node-id';
+      
+      // Check roles
+      const rolesInScope = rolesByScope.get(normalizedSid) || [];
+      const roleProvidingPerm = rolesInScope.find(r => 
         r.permissions.some(p => p.object === perm.object && p.action === perm.action)
       );
-      if (hasRoleInRoot) return "Role in Root";
+      
+      if (roleProvidingPerm) {
+        const scopeObj = scopesWithGlobal.find(s => scopeIdMapping(s.id) === sid) || { id: null, name: 'Root' };
+        const scopeName = getScopeDisplayName(scopeObj);
+        return `role ${roleProvidingPerm.name} in ${scopeName}`;
+      }
 
-      const rootDirects = directPermsByScope.get('root-node-id') || [];
-      const hasDirectInRoot = rootDirects.some(p => p.object === perm.object && p.action === perm.action);
-      if (hasDirectInRoot) return "Direct in Root";
+      // Check direct
+      const permsInScope = directPermsByScope.get(normalizedSid) || [];
+      const isDirectInScope = permsInScope.some(p => p.object === perm.object && p.action === perm.action);
+      
+      if (isDirectInScope) {
+        const scopeObj = scopesWithGlobal.find(s => scopeIdMapping(s.id) === sid) || { id: null, name: 'Root' };
+        const scopeName = getScopeDisplayName(scopeObj);
+        return scopeName;
+      }
+      
+      return null;
+    };
+
+    // 1. First check if it's in a Role in the SAME scope
+    const rolesInSameScope = rolesByScope.get(normalizedCurrentScopeId) || [];
+    const roleInSameScope = rolesInSameScope.find(r => 
+      r.permissions.some(p => p.object === perm.object && p.action === perm.action)
+    );
+    if (roleInSameScope) {
+      const scopeName = getScopeDisplayName(scopesWithGlobal.find(s => scopeIdMapping(s.id) === currentScopeId) || { id: null, name: 'Root' });
+      return `role ${roleInSameScope.name} in ${scopeName}`;
     }
 
-    return null;
+    // 2. Check parents recursively
+    if (!currentScopeId) return null; // Root has no parents
+    
+    let parentId: string | null = allScopes.find(s => s.id === currentScopeId)?.parent_id || null;
+    while (parentId) {
+      const info = checkInScope(parentId);
+      if (info) return info;
+      parentId = allScopes.find(s => s.id === parentId)?.parent_id || null;
+    }
+
+    // 3. Finally check Root
+    return checkInScope(null);
   };
 
   const accessTree = useMemo(() => {
