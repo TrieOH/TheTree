@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { roleStore } from "../store";
-import { createRoleFn, deleteRoleFn, patchRoleFn, patchRoleMetaFn } from "../api";
+import { createRoleFn, deleteRoleFn, patchRoleFn, patchRoleMetaFn, roleQueryOptions } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -30,7 +30,7 @@ export default function RoleDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["roles", project_id] });
+        queryClient.invalidateQueries(roleQueryOptions(project_id));
         queryClient.setQueryData(["roles", project_id, response.data.id], response.data);
       } else toast.error(`Failed to create role: ${response.message}`);
     },
@@ -42,7 +42,7 @@ export default function RoleDialog({ project_id }: PropsI) {
       if (response.success) {
         toast.success(response.message || "Updated role");
         queryClient.setQueryData(["roles", project_id, data.id], data);
-        queryClient.invalidateQueries({ queryKey: ["roles", project_id] });
+        queryClient.invalidateQueries(roleQueryOptions(project_id));
       } else toast.error(`Failed to update roles: ${response.message}`);
     },
   });
@@ -53,7 +53,7 @@ export default function RoleDialog({ project_id }: PropsI) {
       if (response.success) {
         toast.success(response.message || "Updated role metadata");
         queryClient.setQueryData(["roles", project_id, data.id], data);
-        queryClient.invalidateQueries({ queryKey: ["roles", project_id] });
+        queryClient.invalidateQueries(roleQueryOptions(project_id));
       } else toast.error(`Failed to update role metadata: ${response.message}`);
     },
   });
@@ -63,7 +63,7 @@ export default function RoleDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || "Role deleted sucessfuly!");
-        queryClient.invalidateQueries({ queryKey: ["roles"] });
+        queryClient.invalidateQueries(roleQueryOptions(project_id));
       } else toast.error(`Failed to delete role: ${response.message}`);
     },
   });

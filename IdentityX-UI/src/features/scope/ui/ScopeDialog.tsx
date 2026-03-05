@@ -34,7 +34,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["scopes", project_id] });
+        queryClient.invalidateQueries(scopesQueryOptions(project_id));
         queryClient.setQueryData(["scopes", project_id, response.data.id], response.data);
       } else toast.error(`Failed to create scope: ${response.message}`);
     },
@@ -49,7 +49,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
       if (response.success) {
         toast.success(response.message || "Updated scope");
         queryClient.setQueryData(["scopes", project_id, data.id], data);
-        queryClient.invalidateQueries({ queryKey: ["scopes", project_id] });
+        queryClient.invalidateQueries(scopesQueryOptions(project_id));
       } else toast.error(`Failed to update scopes: ${response.message}`);
     },
   });
@@ -59,7 +59,7 @@ export default function ScopeDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || "Scope deleted sucessfuly!");
-        queryClient.invalidateQueries({ queryKey: ["scopes", project_id] });
+        queryClient.invalidateQueries(scopesQueryOptions(project_id));
       } else toast.error(`Failed to delete scope: ${response.message}`);
     },
   });
