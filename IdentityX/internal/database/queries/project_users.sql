@@ -3,6 +3,12 @@ INSERT INTO project_users (project_id, email, password_hash, metadata)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
+-- name: UpdateLastLoginProjectUser :exec
+UPDATE project_users
+SET
+    last_login_at = now()
+WHERE id = $1;
+
 -- name: ResetProjectUserPassword :exec
 UPDATE project_users
 SET password_hash = $1
