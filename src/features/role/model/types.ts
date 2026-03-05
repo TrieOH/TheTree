@@ -1,4 +1,5 @@
 import z from "zod";
+import type { VisualMetadata } from "@/shared/ui/MetadataVisualizer";
 
 export const roleCRUDSchema = z
   .object({
@@ -9,6 +10,7 @@ export const roleCRUDSchema = z
       .string()
       .min(3, "Description must be at least 3 characters long")
       .optional(),
+    meta: z.record(z.string(), z.any()).optional(),
   })
   .superRefine((data, ctx) => {
     const isUpdate = data.id.trim().length > 0;
@@ -55,6 +57,7 @@ export interface Role {
   project_id: string;
   scope_id: string;
   scope_name: string;
+  meta?: VisualMetadata;
   created_at: string;
   updated_at: string;
 }

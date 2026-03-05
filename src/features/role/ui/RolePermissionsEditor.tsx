@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   givePermissionToRoleFn,
@@ -9,15 +9,20 @@ import { permissionsQueryOptions } from "@/features/permission/api";
 import type { Permission } from "@/features/permission/model/types";
 import { Checkbox } from "@/shared/ui/shadcn/checkbox";
 import { Skeleton } from "@/shared/ui/shadcn/skeleton";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import type { Role } from "../model/types";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 import { SearchInput } from "@/shared/ui/form/SearchInput";
+import { Badge } from "@/shared/ui/shadcn/badge";
 
 interface RolePermissionsEditorProps {
   project_id: string;
   role: Role;
+}
+
+interface GroupedPermissions {
+  [object: string]: Permission[];
 }
 
 export default function RolePermissionsEditor({
@@ -26,6 +31,7 @@ export default function RolePermissionsEditor({
 }: RolePermissionsEditorProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedObjects, setExpandedObjects] = useState<Record<string, boolean>>({});
 
   const { data: allPermissions, isLoading: isLoadingAllPermissions } = useQuery(
     permissionsQueryOptions(project_id)
@@ -81,22 +87,36 @@ export default function RolePermissionsEditor({
 
   const isMutating = givePermissionMutation.isPending || removePermissionMutation.isPending;
 
-  const filteredPermissions = allPermissions?.filter((permission) =>
-    `${permission.object}:${permission.action}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
+  const groupedPermissions = useMemo(() => {
+    if (!allPermissions) return {};
+    
+    const filtered = allPermissions.filter((permission) =>
+      `${permission.object}:${permission.action}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    );
+
+    return filtered.reduce((acc: GroupedPermissions, p) => {
+      if (!acc[p.object]) acc[p.object] = [];
+      acc[p.object].push(p);
+      return acc;
+    }, {});
+  }, [allPermissions, searchTerm]);
+
+  const toggleObject = (object: string) => {
+    setExpandedObjects(prev => ({ ...prev, [object]: !prev[object] }));
+  };
 
   if (isLoadingAllPermissions || isLoadingRolePermissions) {
     return (
-      <div className="flex flex-col items-center py-4 min-h-52 space-y-6">
+      <div className="flex flex-col items-center py-8 min-h-52 space-y-6">
         <div className="text-center space-y-2">
           <Skeleton className="h-6 w-48 mx-auto" />
           <Skeleton className="h-4 w-64 mx-auto" />
         </div>
-        <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
-          {[...Array(12)].map(() => (
-            <Skeleton key={crypto.randomUUID()} className="h-8 w-32" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl">
+          {[...Array(6)].map(() => (
+            <Skeleton key={crypto.randomUUID()} className="h-24 w-full rounded-lg" />
           ))}
         </div>
       </div>
@@ -113,75 +133,109 @@ export default function RolePermissionsEditor({
     );
   }
 
+  const objects = Object.keys(groupedPermissions).sort();
+
   return (
-    <div className="flex flex-col items-center min-h-36 py-4 px-4">
-      <div className="text-center space-y-1 mb-4">
-        <h2 className="text-xl font-semibold flex items-center justify-center gap-2">
-          Manage Permissions
+    <div className="flex flex-col items-center min-h-36 py-6 px-4 bg-muted/20 rounded-lg border border-border/50 my-2">
+      <div className="text-center space-y-1 mb-6">
+        <h2 className="text-lg font-semibold flex items-center justify-center gap-2">
+          Assign Permissions to <span className="text-primary">{role.name}</span>
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Configure permissions for "{role.name}"
+        <p className="text-xs text-muted-foreground">
+          Select the specific actions this role is allowed to perform across different objects.
         </p>
       </div>
 
-      <div className="w-full max-w-sm mb-4">
+      <div className="w-full max-w-md mb-8">
         <SearchInput
-          placeholder="Search permissions (e.g., project:read)"
+          placeholder="Filter by object or action..."
           value={searchTerm}
-          onChange={(value) => setSearchTerm(value)}
+          onChange={setSearchTerm}
         />
       </div>
 
-      {filteredPermissions && filteredPermissions.length > 0 ? (
-        <div className="flex flex-wrap justify-center gap-2 max-w-3xl max-h-80 overflow-y-auto">
-          {filteredPermissions.map((permission) => {
-            const isAssigned = isPermissionAssigned(permission.id);
-            const isPending = 
-              (givePermissionMutation.isPending && 
-               givePermissionMutation.variables?.permission_id === permission.id) ||
-              (removePermissionMutation.isPending && 
-               removePermissionMutation.variables?.permission_id === permission.id);
+      {objects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-6xl items-start">
+          {objects.map((object) => {
+            const permissions = groupedPermissions[object];
+            const assignedCount = permissions.filter(p => isPermissionAssigned(p.id)).length;
+            const isExpanded = expandedObjects[object] !== false; // Default expanded
 
             return (
-              <div
-                key={permission.id}
-                className={cn(
-                  "group flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-all duration-200",
-                  "hover:border-primary/40 hover:bg-accent/40",
-                  isAssigned 
-                    ? "border-primary/30 bg-primary/5 text-foreground" 
-                    : "border-border text-muted-foreground",
-                  isPending && "opacity-60"
-                )}
+              <div 
+                key={object}
+                className="flex flex-col border border-border bg-background rounded-lg overflow-hidden shadow-sm h-fit"
               >
-                <div className="relative flex items-center justify-center">
-                  <Checkbox
-                    id={`permission-${role.id}-${permission.id}`}
-                    checked={isAssigned}
-                    onCheckedChange={(checked) =>
-                      handlePermissionChange(permission, checked as boolean)
-                    }
-                    disabled={isMutating}
-                    className="h-3.5 w-3.5"
-                  />
-                  {isPending && (
-                    <Loader2 className="absolute h-3 w-3 animate-spin text-primary" />
-                  )}
-                </div>
-                
-                <label
-                  htmlFor={`permission-${role.id}-${permission.id}`}
-                  className="cursor-pointer select-none font-mono text-xs whitespace-nowrap"
+                <div 
+                  className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border cursor-pointer hover:bg-muted/60 transition-colors"
+                  onClick={() => toggleObject(object)}
                 >
-                  {permission.object}:{permission.action}
-                </label>
+                  <div className="flex items-center gap-2 overflow-hidden text-muted-foreground">
+                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    <span className="font-bold text-xs truncate uppercase tracking-wider">
+                      {object}
+                    </span>
+                  </div>
+                  <Badge variant={assignedCount > 0 ? "secondary" : "outline"} className="text-[10px] h-4.5 px-1.5 shrink-0">
+                    {assignedCount}/{permissions.length}
+                  </Badge>
+                </div>
+
+                {isExpanded && (
+                  <div className="p-3 grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                    {permissions.map((permission) => {
+                      const isAssigned = isPermissionAssigned(permission.id);
+                      const isPending = 
+                        (givePermissionMutation.isPending && 
+                         givePermissionMutation.variables?.permission_id === permission.id) ||
+                        (removePermissionMutation.isPending && 
+                         removePermissionMutation.variables?.permission_id === permission.id);
+
+                      return (
+                        <div
+                          key={permission.id}
+                          className={cn(
+                            "flex items-center gap-2.5 px-2 py-1.5 rounded-md text-xs transition-all",
+                            isAssigned 
+                              ? "bg-primary/3 text-foreground font-medium" 
+                              : "text-muted-foreground hover:bg-accent/50",
+                            isPending && "opacity-50 pointer-events-none"
+                          )}
+                        >
+                          <div className="relative flex items-center shrink-0">
+                            <Checkbox
+                              id={`perm-${role.id}-${permission.id}`}
+                              checked={isAssigned}
+                              onCheckedChange={(checked) =>
+                                handlePermissionChange(permission, checked as boolean)
+                              }
+                              disabled={isMutating}
+                              className="h-4 w-4 rounded-lg border-muted-foreground/30"
+                            />
+                            {isPending && (
+                              <Loader2 className="absolute inset-0 h-4 w-4 animate-spin text-primary m-auto" />
+                            )}
+                          </div>
+                          
+                          <label
+                            htmlFor={`perm-${role.id}-${permission.id}`}
+                            className="flex-1 cursor-pointer select-none truncate font-mono"
+                            title={permission.action}
+                          >
+                            {permission.action}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="text-center text-muted-foreground">
-          <p>No permissions available</p>
+        <div className="text-center py-10 text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border w-full">
+          <p className="text-sm">No permissions match your search.</p>
         </div>
       )}
     </div>

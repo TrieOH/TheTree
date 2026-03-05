@@ -10,13 +10,13 @@ export default function CreateProjectButton() {
         leftIcon={ <FolderPlus size={20}/> }
         className="xs:flex hidden"
         variant="accent-solid"
-        onClick={projectActions.openCreate}
+        onClick={() => projectActions.openCreate()}
       />
       <ShadowButton
         leftIcon={ <FolderPlus size={16}/> }
         className="xs:hidden flex"
         variant="accent-solid"
-        onClick={projectActions.openCreate}
+        onClick={() => projectActions.openCreate()}
       />
     </>
   )

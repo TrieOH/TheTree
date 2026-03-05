@@ -7,37 +7,47 @@ import { roleActions } from "../store";
 import { Edit, ShieldCheck, Trash2 } from "lucide-react";
 import RoleDialog from "./RoleDialog";
 import TruncatedId from "@/shared/ui/TruncatedId";
+import { MetadataVisualizer } from "@/shared/ui/MetadataVisualizer";
+import type { Role } from "../model/types";
 
 
 interface PropsI {
   project_id: string;
 }
 
+/**
+ * Extended role type to include flattened meta fields for table filtering.
+ */
+interface FlattenedRole extends Role {
+  status: string;
+}
+
 export default function RoleTable({ project_id }: PropsI) {
   const { data = [] } = useQuery(roleQueryOptions(project_id));
 
+  const tableData: FlattenedRole[] = data.map((r) => {
+    return {
+      ...r,
+      status: r.meta?.status || "active",
+    };
+  });
+
   return (
     <>
-      <CustomDataTable
-        data={data}
+      <CustomDataTable<FlattenedRole>
+        data={tableData}
+        searchPlaceholder="Search roles by name or status..."
         columns={[
           {
             key: "name",
             header: "Name",
             sortable: true,
-          },
-          {
-            key: "description",
-            header: "Description",
-            sortable: true,
-            render: (value) => (
-              <p 
-                title={value}
-                className="max-w-64 line-clamp-3 whitespace-normal"
-              >
-                {value}
-              </p>
-            )
+            searchableTextExtractor: (_, row) => `${row.name} ${row.status}`,
+            render: (value, row) => (
+              <div className="flex items-center gap-2">
+                <MetadataVisualizer name={String(value)} meta={row.meta} />
+              </div>
+            ),
           },
           {
             key: "id",
@@ -59,6 +69,20 @@ export default function RoleTable({ project_id }: PropsI) {
             render: (value) => formatDate(value as string),
             searchableTextExtractor: (value) => formatDate(value as string),
           },
+        ]}
+        filters={[
+          {
+            key: "status",
+            type: "select",
+            label: "Status",
+            placeholder: "Filter by status",
+            options: [
+              { label: "Active", value: "active" },
+              { label: "Restricted", value: "restricted" },
+              { label: "Beta", value: "beta" },
+              { label: "Deprecated", value: "deprecated" }
+            ]
+          }
         ]}
         renderExpandedRow={(row) => <RolePermissionsEditor project_id={project_id} role={row} />}
         rowActions={[
