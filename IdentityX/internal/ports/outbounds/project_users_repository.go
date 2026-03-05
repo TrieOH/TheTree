@@ -17,6 +17,7 @@ type ProjectUserRepository interface {
 	ListExternal(ctx context.Context, projectID, ownerID uuid.UUID) ([]project_users.ProjectUser, error)
 	ListInternal(ctx context.Context, projectID uuid.UUID) ([]project_users.ProjectUser, error)
 	Update(ctx context.Context, toUpdate project_users.ProjectUser, ownerID uuid.UUID) (*project_users.ProjectUser, error)
+	UpdateLastLogin(ctx context.Context, id uuid.UUID) error
 	Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error
 	UpdateMetadata(ctx context.Context, userID, projectID uuid.UUID, metadata *json.RawMessage) error
 	UpdateSubContext(ctx context.Context, userID, projectID uuid.UUID, subContext json.RawMessage) error

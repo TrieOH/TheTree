@@ -285,6 +285,20 @@ func (repo *projectUserRepo) Update(ctx context.Context, toUpdate project_users.
 	return &toUpdate, nil
 }
 
+func (repo *projectUserRepo) UpdateLastLogin(ctx context.Context, id uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.UpdateLastLogin",
+		trace.WithAttributes(
+			attribute.String("project_user.id", id.String()),
+		),
+	)
+	defer span.End()
+
+	if err := repo.queries(ctx).UpdateLastLoginProjectUser(ctx, id); err != nil {
+		return fail.From(err).WithArgs("project user").RecordCtx(ctx)
+	}
+	return nil
+}
+
 func (repo *projectUserRepo) Delete(ctx context.Context, projectUserID, projectID, ownerID uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "ProjectUserRepo.Delete",
 		trace.WithAttributes(

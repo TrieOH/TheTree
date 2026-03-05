@@ -882,6 +882,10 @@ func (uc *UseCase) LoginProjectUser(
 		return nil, err
 	}
 
+	if err = projectUsers.UpdateLastLogin(ctx, identity.EntityID); err != nil {
+		return nil, err
+	}
+
 	var accessJTI uuid.UUID
 	accessJTI, err = uuid.NewV7()
 	if err != nil {
