@@ -28,3 +28,17 @@ export const createKubernetesActivity = {
     capacity: 50,
     difficulty: "advanced",
 };
+
+export const createPremiumWorkshop = {
+    edition_scope_id: "", // fill in at test time
+    title: "Premium Workshop",
+    description: "only accessible with full access",
+    location: "Apitão",
+    starts_at: inMinutes(11),
+    ends_at: inMinutes(14),
+    presenter_name: "Obama",
+    token_cost: 0,
+    has_capacity: false,
+    capacity: 0,
+    difficulty: "beginner",
+};

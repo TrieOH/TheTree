@@ -42,10 +42,10 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateProductSpe
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("ticket").SetMessage("insufficient permissions")
+		return nil, errx.Forbidden("product").SetMessage("insufficient permissions")
 	}
 
-	span.SetAttributes(attribute.String("ticket.id", validProduct.ID.String()))
+	span.SetAttributes(attribute.String("prodcut.id", validProduct.ID.String()))
 
 	meta := json.RawMessage(`{"color": "#3bde09", "icon": "Gift", "folder": "products"}`)
 	var scope *goauth.Scope

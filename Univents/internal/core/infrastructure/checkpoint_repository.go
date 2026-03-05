@@ -57,7 +57,7 @@ func (repo *checkpointsRepo) Create(ctx context.Context, toCreate *domain.Checkp
 	defer span.End()
 
 	sqlcCheckpoint, err := repo.queries(ctx).CreateCheckpoint(ctx, sqlc.CreateCheckpointParams{
-		ID:         toCreate.CreatedBy,
+		ID:         toCreate.ID,
 		ScopeID:    toCreate.ScopeID,
 		EditionID:  toCreate.EditionID,
 		Name:       toCreate.Name,

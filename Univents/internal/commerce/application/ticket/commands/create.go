@@ -2,10 +2,12 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"univents/internal/commerce/domain"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
+	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -44,6 +46,15 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateTicketSpec
 	}
 
 	span.SetAttributes(attribute.String("ticket.id", validTicket.ID.String()))
+
+	meta := json.RawMessage(`{"color": "#aa21ff", "icon": "TicketCheck", "folder": "tickets"}`)
+	var scope *goauth.Scope
+	var idStr = validTicket.ID.String()
+	scope, err = ga.Scopes.CreateWithParent(ctx, validTicket.Name, &idStr, &in.EditionScopeID, meta)
+	if err != nil {
+		return nil, err
+	}
+	validTicket.AddScope(scope.ID)
 
 	var created *domain.Ticket
 	created, err = uc.tickets.Create(ctx, *validTicket)

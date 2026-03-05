@@ -2,6 +2,7 @@
 -- Tickets (access control)
 CREATE TABLE tickets (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
+    scope_id UUID NOT NULL,
     edition_id UUID NOT NULL REFERENCES editions(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
@@ -10,29 +11,12 @@ CREATE TABLE tickets (
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
 
+    UNIQUE (name, edition_id),
+
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at TIMESTAMPTZ NULL
-);
-
-CREATE TYPE permission_type AS ENUM (
-    'activity',
-    'product',
-    'checkpoint'
-);
-
--- Ticket permissions (what each tier can access)
-CREATE TABLE ticket_permissions (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
-
-    permission_type permission_type NOT NULL, -- 'activity', 'product', 'checkpoint', 'zone'
-    target_id UUID NULL, -- specific activity/product ID, null = all of type
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    UNIQUE(ticket_id, permission_type, target_id)
 );
 
 -- User ticket grants (effective access after purchase)
@@ -69,6 +53,5 @@ CREATE TABLE ticket_permissions (
 --DROP INDEX IF EXISTS idx_user_tickets_ticket;
 --DROP INDEX IF EXISTS idx_user_tickets_user;
 --DROP TABLE IF EXISTS user_tickets;
-DROP TABLE IF EXISTS ticket_permissions;
 DROP TABLE IF EXISTS tickets;
 

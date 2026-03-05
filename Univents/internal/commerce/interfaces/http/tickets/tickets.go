@@ -71,3 +71,100 @@ func (handler *TicketsHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp.Created().WithData(out).Send(w)
 }
+
+// AddPermission godoc
+// @Summary Adds a new permission to a ticket
+// @Description Attaches a new permission to a ticket to allow user access to that object when they have the ticket
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param ticket_id path string true "Ticket ID"
+// @Param request body dtos.AddTicketPermissionRequest true "Ticket Permission attach request"
+// @Success 201 {object} object "Ticket Permission added successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions [post]
+func (handler *TicketsHandler) AddPermission(w http.ResponseWriter, r *http.Request) {
+	var req dtos.AddTicketPermissionRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	ticketID, rs := validation.GetUUID(r, "ticket_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	in := domain.CreateTicketPermissionSpec{
+		TicketScopeID:  req.TicketScopeID,
+		TicketID:       ticketID,
+		PermissionType: req.PermissionType,
+		ActivityID:     req.ActivityID,
+		ProductID:      req.ProductID,
+		CheckpointID:   req.CheckpointID,
+	}
+
+	ctx := r.Context()
+	out, err := handler.commands.AddPermission(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.Created("Ticket Permission added successfully").WithData(out).Send(w)
+}
+
+// RemovePermission godoc
+// @Summary Removes a permission from a ticket
+// @Description Removes a certain permission from a ticket therefore revoking access to all users that have that ticket from that permission
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param ticket_id path string true "Ticket ID"
+// @Param request body dtos.RemoveTicketPermissionRequest true "Ticket Permission removal request"
+// @Success 201 {object} object "Ticket Permission removed successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions/{permission_id} [delete]
+func (handler *TicketsHandler) RemovePermission(w http.ResponseWriter, r *http.Request) {
+	var req dtos.RemoveTicketPermissionRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	ticketID, rs := validation.GetUUID(r, "ticket_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	permissionID, rs := validation.GetUUID(r, "permission_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	err := handler.commands.RemovePermission(ctx, permissionID, ticketID, req.TicketScopeID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Ticket Permission removed successfully").Send(w)
+}
