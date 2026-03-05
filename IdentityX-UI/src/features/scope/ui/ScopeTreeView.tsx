@@ -28,7 +28,7 @@ interface ScopeTreeViewProps {
 type SortDirection = 'asc' | 'desc';
 type SortConfig = { key: keyof Scope; direction: SortDirection } | null;
 
-const GRID_COLS_CLASS = "grid grid-cols-[minmax(400px,1fr)_140px_180px_180px_320px] items-center"
+const GRID_COLS_CLASS = "grid grid-cols-[minmax(300px,1.5fr)_120px_140px_140px_150px] items-center"
 
 const SortIndicator = ({ isAsc, isDesc }: { isAsc: boolean; isDesc: boolean }) => (
   <div className="flex flex-col items-center justify-center ml-2 pointer-events-none">
@@ -175,7 +175,7 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             isFolder && "bg-muted/30"
           )}
         >
-          <div className="flex items-center gap-3 min-w-0 p-4" style={{ paddingLeft: `${level * 16 + 16}px` }}>
+          <div className="flex items-center gap-3 p-4" style={{ paddingLeft: `${level * 20 + 16}px` }}>
             <button
               type='button'
               onClick={(e) => toggleExpand(node.id, e)}
@@ -186,7 +186,7 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             >
               {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1">
               <MetadataVisualizer name={node.name} meta={node.meta} />
             </div>
           </div>
@@ -199,30 +199,30 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             {!isFolder && node.created_at ? formatDate(node.created_at) : "-"}
           </div>
 
-          <div className="p-4 flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="p-4 flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
             {!isFolder ? (
               <>
                 <ShadowButton
-                  leftIcon={<PlusCircle size={16} />}
+                  leftIcon={<PlusCircle size={15} />}
                   onClick={() => scopeActions.openCreate({ parent_id: node.id })}
                   variant="ghost-primary"
                   label="Add Child"
                 />
                 <ShadowButton
-                  leftIcon={<Edit size={16} />}
+                  leftIcon={<Edit size={15} />}
                   onClick={() => scopeActions.openEdit(node as unknown as Scope)}
                   variant="ghost-primary"
                   label="Update"
                 />
                 <ShadowButton
-                  leftIcon={<Trash2 size={16} />}
+                  leftIcon={<Trash2 size={15} />}
                   onClick={() => scopeActions.openDelete(node as unknown as Scope)}
                   variant="destructive"
                   label="Delete"
                 />
               </>
             ) : (
-              <div className="h-9 w-9" />
+              <div className="h-8 w-8" />
             )}
           </div>
         </div>
@@ -256,24 +256,24 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
 
       <div className="rounded-md border border-border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <div className="min-w-max">
+          <div className="min-w-full w-max">
             <div className={cn(
-              "sticky top-0 z-10 h-12 border-b border-border bg-muted/60 backdrop-blur-sm text-xs font-medium text-muted-foreground whitespace-nowrap select-none",
+              "sticky top-0 z-10 h-11 border-b border-border bg-muted/60 backdrop-blur-sm text-xs font-medium text-muted-foreground whitespace-nowrap select-none",
               GRID_COLS_CLASS
             )}>
               <HeaderItem label="Scope Identity" sortKey="name" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="External ID" sortKey="external_id" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="ID" sortKey="id" currentSort={sortConfig} onSort={handleSort} />
               <HeaderItem label="Created At" sortKey="created_at" currentSort={sortConfig} onSort={handleSort} />
-              <div className="px-4" /> {/* Actions header spacer */}
+              <div className="px-4 text-right">Actions</div>
             </div>
 
             {/* Body */}
-            <div className="divide-y divide-border max-h-175 overflow-y-auto">
+            <div className="divide-y divide-border">
               {processedData.length > 0 ? (
                 processedData.map(node => renderNode(node))
               ) : (
-                <div className="py-20 text-center text-muted-foreground min-w-250">
+                <div className="py-20 text-center text-muted-foreground">
                   <p>No results found.</p>
                 </div>
               )}
