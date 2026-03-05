@@ -3,12 +3,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/shared/lib/utils';
 import { useNavigate } from '@tanstack/react-router';
+import { RefreshCcw } from 'lucide-react';
 
 type TabItem = {
   value: string;
   label: string;
   icon?: React.ElementType;
   content: React.ReactNode;
+  onRefresh?: () => void;
 };
 
 type Props = {
@@ -33,6 +35,18 @@ const TabTriggerItem = React.memo(({
   isActive: boolean; 
   isMobile: boolean 
 }) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tab.onRefresh) {
+      setIsRefreshing(true);
+      await tab.onRefresh();
+      // Artificial delay to show the animation
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [tab]);
+
   return (
     <TabsTrigger
       value={tab.value}
@@ -66,10 +80,25 @@ const TabTriggerItem = React.memo(({
           transition={{ type: isMobile ? 'tween' : 'spring', stiffness: 400, damping: 30 }}
         />
       )}
-      <span className="relative z-20 flex items-center gap-2">
-        {tab.icon && <TabIcon icon={tab.icon} />}
-        <span className="hidden sm:inline">{tab.label}</span>
-        <span className="sm:hidden text-xs">{tab.label.split(' ')[0]}</span>
+      <span className="relative z-20 flex items-center justify-between w-full gap-2">
+        <div className="flex items-center gap-2">
+          {tab.icon && <TabIcon icon={tab.icon} />}
+          <span className="hidden sm:inline">{tab.label}</span>
+          <span className="sm:hidden text-xs">{tab.label.split(' ')[0]}</span>
+        </div>
+        
+        {isActive && tab.onRefresh && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleRefresh}
+            className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors hidden md:block"
+          >
+            <RefreshCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+          </motion.button>
+        )}
       </span>
     </TabsTrigger>
   );
@@ -101,6 +130,16 @@ export default function CustomTabs({
     mql.addEventListener('change', onChange);
     return () => mql.removeEventListener('change', onChange);
   }, []);
+
+  // Auto-refresh when tab enters
+  useEffect(() => {
+    if (activeTab) {
+      const activeItem = safeItems.find(item => item.value === activeTab);
+      if (activeItem?.onRefresh) {
+        activeItem.onRefresh();
+      }
+    }
+  }, [activeTab, safeItems]);
 
   const idxOf = useCallback((v: string) => safeItems.findIndex((t) => t.value === v), [safeItems]);
 
@@ -154,7 +193,7 @@ export default function CustomTabs({
       onValueChange={handleTabChange} 
       orientation="vertical" 
       className={cn(
-        "flex flex-col-reverse md:flex-row w-full max-w-7xl h-full",
+        "flex flex-col-reverse md:flex-row w-full h-full",
         "gap-4 md:gap-8 mx-auto items-start",
         className
       )}

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { permissionStore } from "../store";
-import { createPermissionFn, deletePermissionFn, patchPermissionMetaFn } from "../api";
+import { createPermissionFn, deletePermissionFn, patchPermissionMetaFn, permissionsQueryOptions } from "../api";
 import { toast } from "sonner";
 import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
 import type { FieldConfig } from "@/shared/ui/form/types";
@@ -31,7 +31,7 @@ export default function PermissionDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["permissions", project_id] });
+        queryClient.invalidateQueries(permissionsQueryOptions(project_id));
         queryClient.setQueryData(["permissions", project_id, response.data.id], response.data);
       } else toast.error(`Failed to create permission: ${response.message}`);
     },
@@ -43,7 +43,7 @@ export default function PermissionDialog({ project_id }: PropsI) {
       if (response.success) {
         toast.success(response.message || "Updated permission");
         queryClient.setQueryData(["permissions", project_id, data.id], data);
-        queryClient.invalidateQueries({ queryKey: ["permissions", project_id] });
+        queryClient.invalidateQueries(permissionsQueryOptions(project_id));
       } else toast.error(`Failed to update permissions: ${response.message}`);
     },
   });
@@ -53,7 +53,7 @@ export default function PermissionDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message || "Permission deleted sucessfuly!");
-        queryClient.invalidateQueries({ queryKey: ["permissions"] });
+        queryClient.invalidateQueries(permissionsQueryOptions(project_id));
       } else toast.error(`Failed to delete permission: ${response.message}`);
     },
   });

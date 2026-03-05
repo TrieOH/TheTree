@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { schemaStore } from "../store";
-import { createSchemaFn } from "../api";
+import { createSchemaFn, schemasQueryOptions } from "../api";
 import  { type SchemaCRUD, schemaCRUDSchema } from "../model/types";
 import { getFieldError } from "@/shared/lib/utils";
 
@@ -24,7 +24,7 @@ export function SchemaDialog({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["schemas"] });
+        queryClient.invalidateQueries(schemasQueryOptions(project_id));
       } else toast.error(`Failed to create schema: ${response.message}`);
     },
     onError: (error) => {

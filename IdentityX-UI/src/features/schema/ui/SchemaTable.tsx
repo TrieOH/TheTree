@@ -29,7 +29,7 @@ export default function SchemaTable({ project_id }: PropsI) {
     onSuccess: (response) => {
       if (response.success) {
         toast.success(response.message);
-        queryClient.invalidateQueries({ queryKey: ["schemas"] });
+        queryClient.invalidateQueries(schemasQueryOptions(project_id));
       } else toast.error(`Failed to publish schema: ${response.message}`);
     },
     onError: (error) => {

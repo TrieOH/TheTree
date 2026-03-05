@@ -6,13 +6,17 @@ import ScopeTable from '@/features/scope/ui/ScopeTable';
 import { usersQueryOptions } from '@/features/user/api';
 import UserTable from '@/features/user/ui/UserTable';
 import CustomTabs from '@/widgets/tabs/ui/CustomTabs';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store';
 import { Database, Globe, KeySquare, Shield, ShieldCheck, UserCog } from 'lucide-react';
 import PermissionTable from '@/features/permission/ui/PermissionTable';
 import RoleTable from '@/features/role/ui/RoleTable';
 import APIKeyManager from '@/features/api-keys/ui/APIKeyManager';
+import { schemasQueryOptions } from '@/features/schema/api';
+import { scopesQueryOptions } from '@/features/scope/api';
+import { roleQueryOptions } from '@/features/role/api';
+import { permissionsQueryOptions } from '@/features/permission/api';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -38,41 +42,46 @@ export const Route = createFileRoute('/projects/config/')({
 
 
 function RouteComponent() {
+  const queryClient = useQueryClient();
   const currentProjectId = useStore(navigationStore, (state) => state.currentProjectId || "");
   const { data: users } = useSuspenseQuery(usersQueryOptions(currentProjectId))
   const { tab } = Route.useSearch();
 
   const items = [
-    // { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, content: <p></p> },
     {
       value: 'schema',
       label: 'Schema',
       icon: Database,
-      content: <SchemaTable project_id={currentProjectId}/>
+      content: <SchemaTable project_id={currentProjectId}/>,
+      onRefresh: () => queryClient.invalidateQueries(schemasQueryOptions(currentProjectId))
     },
     {
       value: 'scope',
       label: 'Scope',
       icon: Globe,
       content: <ScopeTable project_id={currentProjectId} />,
+      onRefresh: () => queryClient.invalidateQueries(scopesQueryOptions(currentProjectId))
     },
     { 
       value: 'roles', 
       label: 'Roles', 
       icon: ShieldCheck, 
-      content: <RoleTable project_id={currentProjectId}/>
+      content: <RoleTable project_id={currentProjectId}/>,
+      onRefresh: () => queryClient.invalidateQueries(roleQueryOptions(currentProjectId))
     },
     { 
       value: 'permissions', 
       label: 'Permissions', 
       icon: Shield, 
-      content: <PermissionTable project_id={currentProjectId} />
+      content: <PermissionTable project_id={currentProjectId} />,
+      onRefresh: () => queryClient.invalidateQueries(permissionsQueryOptions(currentProjectId))
     },
     {
       value: 'users',
       label: 'Users',
       icon: UserCog,
-      content: <UserTable data={users} project_id={currentProjectId} />
+      content: <UserTable data={users} project_id={currentProjectId} />,
+      onRefresh: () => queryClient.invalidateQueries(usersQueryOptions(currentProjectId))
     },
     {
       value: 'api-keys',
