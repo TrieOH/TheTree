@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Edit, Trash2, ChevronRight, ChevronDown, PlusCircle, ChevronUp, MoreHorizontal } from 'lucide-react'
-import { MetadataVisualizer } from "@/shared/ui/MetadataVisualizer"
+import { MetadataVisualizer, type VisualMetadata } from "@/shared/ui/MetadataVisualizer"
 import TruncatedId from "@/shared/ui/TruncatedId"
 import { formatDate } from "@/shared/lib/date-utils"
 import { scopeActions } from "../store"
@@ -15,9 +15,16 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/shadcn/dropdown-menu';
 
-interface ScopeNode extends Scope {
+interface ScopeNode {
+  id: string
+  name: string
+  external_id?: string
+  created_at?: string
+  meta?: VisualMetadata
+  parent_id?: string | null
   children: ScopeNode[]
   isMatch?: boolean
+  isFolder?: boolean
 }
 
 interface ScopeTreeViewProps {
@@ -96,6 +103,7 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
     })
 
     const roots: ScopeNode[] = []
+    const folders: Record<string, ScopeNode> = {}
     const normalizedSearch = searchTerm.toLowerCase().trim()
 
     sortedScopes.forEach(scope => {
@@ -105,15 +113,38 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
         const matchesId = node.id.toLowerCase().includes(normalizedSearch)
         const matchesExternalId = node.external_id?.toLowerCase().includes(normalizedSearch)
         const matchesStatus = node.meta?.status?.toLowerCase().includes(normalizedSearch)
-        if (matchesName || matchesId || matchesExternalId || matchesStatus) {
+        const matchesFolder = node.meta?.folder?.toLowerCase().includes(normalizedSearch)
+        if (matchesName || matchesId || matchesExternalId || matchesStatus || matchesFolder) {
           node.isMatch = true
         }
       }
 
-      if (scope.parent_id && scopeMap[scope.parent_id]) {
-        scopeMap[scope.parent_id].children.push(node)
+      const parentId = scope.parent_id || 'root'
+      const folderName = scope.meta?.folder
+      
+      if (folderName) {
+        const folderId = `folder-${parentId}-${folderName}`
+        if (!folders[folderId]) {
+          folders[folderId] = {
+            id: folderId,
+            name: folderName,
+            children: [],
+            isFolder: true,
+            parent_id: scope.parent_id,
+            meta: { icon: 'Folder', color: '#64748b', description: "" }
+          }
+          
+          if (scope.parent_id && scopeMap[scope.parent_id]) {
+            scopeMap[scope.parent_id].children.push(folders[folderId])
+          } else roots.push(folders[folderId])
+        }
+        folders[folderId].children.push(node)
       } else {
-        roots.push(node)
+        if (scope.parent_id && scopeMap[scope.parent_id]) {
+          scopeMap[scope.parent_id].children.push(node)
+        } else {
+          roots.push(node)
+        }
       }
     })
 
@@ -137,6 +168,7 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
   const renderNode = (node: ScopeNode, level: number = 0) => {
     const isExpanded = expandedIds.has(node.id) || (searchTerm && node.children.length > 0)
     const hasChildren = node.children.length > 0
+    const isFolder = node.isFolder
 
     return (
       <div key={node.id} className="w-full">
@@ -145,7 +177,8 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
           className={cn(
             "group hover:bg-muted/70 border-b border-border transition-colors cursor-pointer",
             GRID_COLS_CLASS,
-            node.isMatch && "bg-indigo-50/50"
+            node.isMatch && "bg-indigo-50/50",
+            isFolder && "bg-muted/30"
           )}
         >
           <div className="flex items-center gap-3 min-w-0 p-4" style={{ paddingLeft: `${level * 16 + 16}px` }}>
@@ -164,39 +197,43 @@ export default function ScopeTreeView({ scopes }: ScopeTreeViewProps) {
             </div>
           </div>
 
-          {node.external_id ? <TruncatedId id={node.external_id} /> : <span className="text-muted-foreground/50">-</span>}
+          {!isFolder && node.external_id ? <TruncatedId id={node.external_id} /> : <span className="text-muted-foreground/50">-</span>}
 
-          <TruncatedId id={node.id} />
+          {!isFolder ? <TruncatedId id={node.id} /> : <span className="text-muted-foreground/50">-</span>}
 
           <div className="p-4 text-sm text-muted-foreground whitespace-nowrap">
-            {formatDate(node.created_at)}
+            {!isFolder && node.created_at ? formatDate(node.created_at) : "-"}
           </div>
 
           <div className="p-4 flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <ShadowButton
-                  leftIcon={<MoreHorizontal size={16} />}
-                  label='More Actions'
-                  variant="ghost-primary"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openCreate({ parent_id: node.id }); }} className="cursor-pointer">
-                  <PlusCircle size={16} className="mr-2" />
-                  <span>Add Child</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openEdit(node); }} className="cursor-pointer">
-                  <Edit size={16} className="mr-2 text-primary" />
-                  <span>Update</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openDelete(node); }} className="cursor-pointer text-destructive focus:text-destructive">
-                  <Trash2 size={16} className="mr-2" />
-                  <span>Delete</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isFolder ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <ShadowButton
+                    leftIcon={<MoreHorizontal size={16} />}
+                    label='More Actions'
+                    variant="ghost-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openCreate({ parent_id: node.id }); }} className="cursor-pointer">
+                    <PlusCircle size={16} className="mr-2" />
+                    <span>Add Child</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openEdit(node as unknown as Scope); }} className="cursor-pointer">
+                    <Edit size={16} className="mr-2 text-primary" />
+                    <span>Update</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); scopeActions.openDelete(node as unknown as Scope); }} className="cursor-pointer text-destructive focus:text-destructive">
+                    <Trash2 size={16} className="mr-2" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="h-9 w-9" />
+            )}
           </div>
         </div>
         
