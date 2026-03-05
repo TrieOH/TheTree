@@ -2,14 +2,35 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import type { User } from "../model/types";
 import { formatDate } from "@/shared/lib/date-utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
-import TruncatedId from "@/shared/ui/TruncatedId";
 import UserPermEditor from "./UserPermEditor";
-
+import { User as UserIcon } from "lucide-react";
+import TruncatedId from "@/shared/ui/TruncatedId";
 
 interface PropsI {
   data: User[];
   project_id: string;
 }
+
+const UserInfo = ({ user }: { user: User }) => {
+  return (
+    <div className="flex items-center gap-3 py-1 text-left">
+      <div className="shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
+        <UserIcon className="w-5 h-5 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-base font-bold text-foreground truncate">{user.email}</span>
+          {user.is_verified && (
+            <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider font-bold">Verified</Badge>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          <TruncatedId id={user.id} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function UserTable({ data, project_id }: PropsI) {
   return (
@@ -20,52 +41,14 @@ export default function UserTable({ data, project_id }: PropsI) {
       columns={[
         {
           key: "email",
-          header: "Email",
+          header: "User",
+          primary: true,
           sortable: true,
-        },
-        {
-          key: "is_active",
-          header: "Active",
-          sortable: true,
-          render: (value) =>
-            value ? (
-              <Badge variant="default">Yes</Badge>
-            ) : (
-              <Badge variant="destructive">No</Badge>
-            ),
-        },
-        {
-          key: "is_verified",
-          header: "Verified",
-          sortable: true,
-          render: (value) =>
-            value ? (
-              <Badge variant="default">Yes</Badge>
-            ) : (
-              <Badge variant="destructive">No</Badge>
-            ),
-        },
-        {
-          key: "user_type",
-          header: "Type",
-          sortable: true,
-        },
-        {
-          key: "id",
-          header: "ID",
-          sortable: true,
-          render: (value) => <TruncatedId id={value as string} />,
+          render: (_, row) => <UserInfo user={row} />,
         },
         {
           key: "created_at",
-          header: "Created At",
-          sortable: true,
-          render: (value) => formatDate(value as string),
-          searchableTextExtractor: (value) => formatDate(value as string),
-        },
-        {
-          key: "updated_at",
-          header: "Updated At",
+          header: "Joined At",
           sortable: true,
           render: (value) => formatDate(value as string),
           searchableTextExtractor: (value) => formatDate(value as string),
