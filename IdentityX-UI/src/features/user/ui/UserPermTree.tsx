@@ -40,6 +40,7 @@ function TreeNode({
 }: NodePropsI) {
   const [isExpanded, setIsExpanded] = useState(isExpandedByDefault)
   const hasChildren = node.children && node.children.length > 0
+  const isFolder = node.id.startsWith('folder-');
 
   return (
     <div className="relative">
@@ -86,10 +87,14 @@ function TreeNode({
 
           <button
             type='button'
-            onClick={() => onNodeClick?.(node)}
+            onClick={() => {
+              if (!isFolder) onNodeClick?.(node);
+            }}
+            disabled={isFolder}
             className={cn(
-              onNodeClick && "cursor-pointer hover:bg-secondary/20 transition-colors rounded-lg",
-              "space-x-2"
+              onNodeClick && !isFolder && "cursor-pointer hover:bg-secondary/20 transition-colors rounded-lg",
+              "space-x-2",
+              isFolder && "opacity-50"
             )}
           >
             {typeof node.name === "string" ?

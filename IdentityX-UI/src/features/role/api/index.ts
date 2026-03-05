@@ -110,3 +110,17 @@ export const deleteRoleFn = createClientOnlyFn(({project_id, id}: {project_id: s
     method: "DELETE",
   });
 });
+
+
+/**
+ * Update a role's metadata on the server.
+ * @param metaData - The metadata for the role.
+ */
+export const patchRoleMetaFn = createClientOnlyFn((metaData: Partial<RoleCRUD>) => {
+  const { project_id, id, meta } = metaData;
+  return authFetcher<void>(`/projects/${project_id}/roles/${id}/meta`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ meta }),
+  });
+});
