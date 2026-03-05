@@ -154,7 +154,7 @@ export default function CustomTabs({
       onValueChange={handleTabChange} 
       orientation="vertical" 
       className={cn(
-        "flex flex-col-reverse md:flex-row w-full max-w-7xl h-full",
+        "flex flex-col-reverse md:flex-row w-full h-full",
         "gap-4 md:gap-8 mx-auto items-start",
         className
       )}
