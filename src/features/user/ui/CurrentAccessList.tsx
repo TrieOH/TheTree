@@ -3,19 +3,14 @@ import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/rea
 import { userRolesQueryOptions, userPermissionsQueryOptions, removeRoleOfUserFn, removePermissionOfUserFn } from "../api";
 import { rolePermissionsQueryOptions } from "@/features/role/api";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/shared/ui/shadcn/select";
-import { Shield, Key, Trash2, Loader2, Info } from "lucide-react";
+import { Shield, Key, Trash2, Loader2, Info, ChevronDown, ChevronRight, Folder as FolderIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/shared/lib/utils";
 
 import type { Scope } from "@/features/scope/model/types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Permission } from "@/features/permission/model/types";
+import type { Role } from "@/features/role/model/types";
 
 interface PropsI {
   user: User;
@@ -28,12 +23,27 @@ interface PermissionWithScope extends Permission {
   scope_id: string | null;
 }
 
+interface RoleWithPerms extends Role {
+  permissions: Permission[];
+  isLoadingPerms: boolean;
+}
+
+interface AccessTreeNode {
+  scope: Scope | { id: string | null; name: string; isFolder?: boolean };
+  roles: RoleWithPerms[];
+  directPermissions: PermissionWithScope[];
+  children: AccessTreeNode[];
+}
+
 export default function CurrentAccessList({ user, project_id, onBack, allScopes }: PropsI) {
   const queryClient = useQueryClient();
-  const [selectedScopeId, setSelectedScopeId] = useState<string | 'all'>('all');
 
-  const scopesWithGlobal = [{ id: 'global-scope', name: 'Root', project_id, created_at: '', type: 'global', external_id: 'global' }, ...allScopes];
-  const scopeIdMapping = (id: string) => id === 'global-scope' ? null : id;
+  const scopesWithGlobal = useMemo(() => [
+    { id: 'global-scope', name: 'Root', project_id, created_at: '', type: 'global', external_id: 'global', parent_id: null },
+    ...allScopes
+  ], [allScopes, project_id]);
+
+  const scopeIdMapping = (id: string | null) => id === 'global-scope' ? null : id;
 
   const { data: roles = [], isLoading: isLoadingRoles } = useQuery(
     userRolesQueryOptions(project_id, user.id)
@@ -45,17 +55,11 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
     ),
   });
 
-  const allRolePermissions = rolePermissionsQueries.flatMap((query, index) => {
-    const role = roles[index];
-    const roleScopeId = role.scope_id;
-    return (query.data || []).map(perm => ({ ...perm, scope_id: roleScopeId }));
-  });
-
-  const rolePermissionKeys = new Set(
-    allRolePermissions.map(perm => `${perm.object}:${perm.action}:${perm.scope_id}`)
-  );
-
-  const isLoadingRolePerms = rolePermissionsQueries.some((query) => query.isLoading);
+  const rolesWithPerms: RoleWithPerms[] = roles.map((role, index) => ({
+    ...role,
+    permissions: rolePermissionsQueries[index]?.data || [],
+    isLoadingPerms: rolePermissionsQueries[index]?.isLoading || false,
+  }));
 
   const permissionQueries = useQueries({
     queries: scopesWithGlobal.map((scope) =>
@@ -70,16 +74,10 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
   });
 
   const isLoadingPerms = permissionQueries.some((query) => query.isLoading);
+  const isLoadingRolePerms = rolePermissionsQueries.some((query) => query.isLoading);
 
-  const isRedundantByScope = (currentPerm: PermissionWithScope) => {
-    const similarPermissions = allPermissionsWithScope.filter(
-      p => p.object === currentPerm.object && p.action === currentPerm.action
-    );
-    const hasGlobalSimilar = similarPermissions.some(p => p.scope_id === null);
-    return hasGlobalSimilar && currentPerm.scope_id !== null;
-  };
-
-  const removeRoleMutation = useMutation({    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string | null }) => 
+  const removeRoleMutation = useMutation({
+    mutationFn: ({ roleId, scopeId }: { roleId: string; scopeId: string | null }) => 
       removeRoleOfUserFn(user, roleId, scopeId),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['userRoles', project_id, user.id] });
@@ -98,6 +96,127 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
     },
     onError: () => toast.error("Failed to remove permission")
   });
+
+  const getScopeDisplayName = (scope: Scope | { id: string | null; name: string; isFolder?: boolean }) => {
+    if (!scope.id || scope.id === 'global-scope' || scope.id === 'root-node-id') return "Root";
+    return scope.name;
+  };
+
+  const rolesByScope = useMemo(() => {
+    const map = new Map<string, RoleWithPerms[]>();
+    rolesWithPerms.forEach(role => {
+      const scopeId = role.scope_id || 'root-node-id';
+      if (!map.has(scopeId)) map.set(scopeId, []);
+      map.get(scopeId)?.push(role);
+    });
+    return map;
+  }, [rolesWithPerms]);
+
+  const directPermsByScope = useMemo(() => {
+    const map = new Map<string, PermissionWithScope[]>();
+    allPermissionsWithScope.forEach(perm => {
+      const scopeId = perm.scope_id || 'root-node-id';
+      if (!map.has(scopeId)) map.set(scopeId, []);
+      map.get(scopeId)?.push(perm);
+    });
+    return map;
+  }, [allPermissionsWithScope]);
+
+  const getInheritanceInfo = (perm: PermissionWithScope) => {
+    const scopeId = perm.scope_id || 'root-node-id';
+    
+    // Check if inherited from a role in the SAME scope
+    const rolesInSameScope = rolesByScope.get(scopeId) || [];
+    const hasRoleInSameScope = rolesInSameScope.some(r => 
+      r.permissions.some(p => p.object === perm.object && p.action === perm.action)
+    );
+    if (hasRoleInSameScope) {
+      const scopeName = getScopeDisplayName(scopesWithGlobal.find(s => s.id === (perm.scope_id || 'global-scope')) || { id: null, name: 'Root' });
+      return `Role in ${scopeName}`;
+    }
+
+    // Check if inherited from Root (Direct or Role)
+    if (scopeId !== 'root-node-id') {
+      const rootRoles = rolesByScope.get('root-node-id') || [];
+      const hasRoleInRoot = rootRoles.some(r => 
+        r.permissions.some(p => p.object === perm.object && p.action === perm.action)
+      );
+      if (hasRoleInRoot) return "Role in Root";
+
+      const rootDirects = directPermsByScope.get('root-node-id') || [];
+      const hasDirectInRoot = rootDirects.some(p => p.object === perm.object && p.action === perm.action);
+      if (hasDirectInRoot) return "Direct in Root";
+    }
+
+    return null;
+  };
+
+  const accessTree = useMemo(() => {
+    const nodesMap: Record<string, AccessTreeNode> = {};
+    const folderNodesMap: Record<string, AccessTreeNode> = {};
+    
+    // Initialize Root Node
+    const rootNode: AccessTreeNode = {
+      scope: { id: 'root-node-id', name: 'Root' },
+      roles: [],
+      directPermissions: [],
+      children: []
+    };
+    nodesMap['root-node-id'] = rootNode;
+
+    // Map all scopes from the project
+    allScopes.forEach(scope => {
+      nodesMap[scope.id] = {
+        scope,
+        roles: [],
+        directPermissions: [],
+        children: []
+      };
+    });
+
+    // Distribute Roles into the tree
+    rolesWithPerms.forEach(role => {
+      const targetId = role.scope_id || 'root-node-id';
+      const targetNode = nodesMap[targetId] || rootNode;
+      targetNode.roles.push(role);
+    });
+
+    // Distribute Direct Permissions into the tree
+    allPermissionsWithScope.forEach(perm => {
+      const targetId = perm.scope_id || 'root-node-id';
+      const targetNode = nodesMap[targetId] || rootNode;
+      targetNode.directPermissions.push(perm);
+    });
+
+    // Build the hierarchy with folders
+    allScopes.forEach(scope => {
+      const parentId = scope.parent_id || 'root-node-id';
+      const parentNode = nodesMap[parentId] || rootNode;
+      const folderName = scope.meta?.folder;
+
+      if (folderName) {
+        const folderId = `folder-${parentId}-${folderName}`;
+        let folderNode = folderNodesMap[folderId];
+        
+        if (!folderNode) {
+          folderNode = {
+            scope: { id: folderId, name: folderName, isFolder: true },
+            roles: [],
+            directPermissions: [],
+            children: []
+          };
+          folderNodesMap[folderId] = folderNode;
+          parentNode.children.push(folderNode);
+        }
+        
+        folderNode.children.push(nodesMap[scope.id]);
+      } else {
+        parentNode.children.push(nodesMap[scope.id]);
+      }
+    });
+
+    return [rootNode];
+  }, [allScopes, rolesWithPerms, allPermissionsWithScope]);
 
   const isLoading = isLoadingRoles || isLoadingPerms || isLoadingRolePerms;
   const hasAccess = roles.length > 0 || allPermissionsWithScope.length > 0;
@@ -124,124 +243,20 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
           </p>
         </div>
       ) : (
-        <div className="space-y-6 max-h-112.5 overflow-y-auto pr-1">
-          {/* Roles Section */}
-          {roles.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-bold text-muted-foreground uppercase px-1">Assigned Roles</h3>
-              {roles.map((role) => (
-                <div 
-                  key={`${role.id}-${role.scope_id}`}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-md border border-transparent hover:border-border transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <Shield className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{role.name}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Scope: <span className="text-foreground">
-                          {role.scope_name || "Root"}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={removeRoleMutation.isPending}
-                    onClick={() => removeRoleMutation.mutate({ roleId: role.id, scopeId: role.scope_id })}
-                    className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
-                  >
-                    {removeRoleMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Permissions Section */}
-          {allPermissionsWithScope.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between py-1 gap-1 sm:flex-row flex-col">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase">
-                  Direct Permissions by Scope
-                </h3>
-                <Select value={selectedScopeId} onValueChange={setSelectedScopeId}>
-                  <SelectTrigger className="w-45">
-                    <SelectValue placeholder="Filter by scope" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Scopes</SelectItem>
-                    {scopesWithGlobal.map((scope) => (
-                      <SelectItem key={scope.id} value={scope.id}>
-                        {scope.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {scopesWithGlobal.map((scope, index) => {
-                if (selectedScopeId !== 'all' && selectedScopeId !== scope.id) return null;
-
-                const scopePermissions = permissionQueries[index]?.data || [];
-
-                if (scopePermissions.length === 0) return null;
-                return (
-                  <div key={scope.id} className="space-y-2">
-                    <p className="text-sm font-semibold text-foreground px-1">{scope.name}</p>
-                    {scopePermissions.map((perm) => {
-                      const permWithScope: PermissionWithScope = {
-                        ...perm,
-                        scope_id: scopeIdMapping(scope.id)
-                      };
-                      const isInheritedFromRole = rolePermissionKeys.has(
-                        `${permWithScope.object}:${permWithScope.action}:${permWithScope.scope_id}`
-                      );
-                      return (
-                        <div 
-                          key={`${scope.id}-${permWithScope.id}`}
-                          className="flex items-center justify-between p-3 bg-muted/50 rounded-md border border-transparent hover:border-border transition-all group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-accent/10 rounded-full">
-                              <Key className="w-4 h-4 text-accent" />
-                            </div>
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-medium">{permWithScope.object}</span>
-                                <span className="text-[10px] text-muted-foreground">:</span>
-                                <span className="text-sm font-medium text-accent">{permWithScope.action}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            disabled={removePermissionMutation.isPending || isRedundantByScope(permWithScope) || isInheritedFromRole}
-                            onClick={() => removePermissionMutation.mutate({ 
-                              permissionId: permWithScope.id, 
-                              scopeId: permWithScope.scope_id
-                            })}
-                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
-                          >
-                            {removePermissionMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <div className="space-y-2 max-h-112.5 overflow-auto pr-1 pb-2">
+          {accessTree.map(node => (
+            <AccessNode 
+              key={node.scope.id || 'root'} 
+              node={node} 
+              level={0}
+              onRemoveRole={(roleId, scopeId) => removeRoleMutation.mutate({ roleId, scopeId })}
+              onRemovePermission={(permId, scopeId) => removePermissionMutation.mutate({ permissionId: permId, scopeId })}
+              isRemovingRole={removeRoleMutation.isPending}
+              isRemovingPermission={removePermissionMutation.isPending}
+              getInheritanceInfo={getInheritanceInfo}
+              getScopeDisplayName={getScopeDisplayName}
+            />
+          ))}
         </div>
       )}
 
@@ -254,6 +269,201 @@ export default function CurrentAccessList({ user, project_id, onBack, allScopes 
           className="w-full justify-center"
         />
       </div>
+    </div>
+  );
+}
+
+function AccessNode({ 
+  node, 
+  level,
+  onRemoveRole,
+  onRemovePermission,
+  isRemovingRole,
+  isRemovingPermission,
+  getInheritanceInfo,
+  getScopeDisplayName
+}: { 
+  node: AccessTreeNode; 
+  level: number;
+  onRemoveRole: (roleId: string, scopeId: string | null) => void;
+  onRemovePermission: (permId: string, scopeId: string | null) => void;
+  isRemovingRole: boolean;
+  isRemovingPermission: boolean;
+  getInheritanceInfo: (perm: PermissionWithScope) => string | null;
+  getScopeDisplayName: (scope: Scope | { id: string | null; name: string; isFolder?: boolean }) => string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const hasDirectContent = node.roles.length > 0 || node.directPermissions.length > 0;
+  
+  const checkContent = (n: AccessTreeNode): boolean => {
+    if (n.roles.length > 0 || n.directPermissions.length > 0) return true;
+    return n.children.some(checkContent);
+  };
+  
+  const hasVisibleChildren = node.children.some(checkContent);
+  const isFolder = 'isFolder' in node.scope && node.scope.isFolder;
+
+  if (!hasDirectContent && !hasVisibleChildren) return null;
+
+  return (
+    <div className={cn("flex flex-col", level > 0 && "ml-4 border-l border-muted/50 pl-4")}>
+      <div 
+        className="flex items-center gap-2 py-2 cursor-pointer group"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {node.children.length > 0 ? (
+          isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <div className="w-4" />
+        )}
+        
+        {isFolder && <FolderIcon className="w-3.5 h-3.5 text-indigo-400" />}
+        
+        <span className={cn(
+          "text-[11px] font-bold uppercase tracking-wider transition-colors",
+          level === 0 ? "text-primary" : (isFolder ? "text-indigo-500/80" : "text-muted-foreground group-hover:text-foreground")
+        )}>
+          {getScopeDisplayName(node.scope)}
+        </span>
+      </div>
+
+      {isExpanded && (
+        <div className="flex flex-col gap-2 mt-1 pb-2">
+          {/* Roles */}
+          {node.roles.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {node.roles.map(role => (
+                <RoleItem 
+                  key={`${role.id}-${role.scope_id}`}
+                  role={role}
+                  onRemove={() => onRemoveRole(role.id, role.scope_id)}
+                  isRemoving={isRemovingRole}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Direct Permissions */}
+          {node.directPermissions.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {node.directPermissions.map(perm => {
+                const inheritanceInfo = getInheritanceInfo(perm);
+                return (
+                  <PermissionItem 
+                    key={`${perm.id}-${perm.scope_id}`}
+                    permission={perm}
+                    onRemove={() => onRemovePermission(perm.id, perm.scope_id)}
+                    isRemoving={isRemovingPermission}
+                    inheritedFrom={inheritanceInfo}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Children Scopes & Folders */}
+          {node.children.map(child => (
+            <AccessNode 
+              key={child.scope.id || 'root'} 
+              node={child} 
+              level={level + 1}
+              onRemoveRole={onRemoveRole}
+              onRemovePermission={onRemovePermission}
+              isRemovingRole={isRemovingRole}
+              isRemovingPermission={isRemovingPermission}
+              getInheritanceInfo={getInheritanceInfo}
+              getScopeDisplayName={getScopeDisplayName}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoleItem({ role, onRemove, isRemoving }: { role: RoleWithPerms; onRemove: () => void; isRemoving: boolean }) {
+  const [showPerms, setShowPerms] = useState(false);
+
+  return (
+    <div className="flex flex-col bg-muted/30 rounded-md border border-transparent hover:border-border transition-all overflow-hidden">
+      <div className="flex items-center justify-between p-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-full">
+            <Shield className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{role.name}</span>
+            <button 
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowPerms(!showPerms); }}
+              className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1"
+            >
+              {showPerms ? "Hide permissions" : "Show permissions"}
+              {showPerms ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          disabled={isRemoving}
+          onClick={onRemove}
+          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+        >
+          {isRemoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+        </button>
+      </div>
+      
+      {showPerms && (
+        <div className="px-4 pb-3 flex flex-wrap gap-1.5 border-t border-muted/50 pt-2 bg-muted/20">
+          {role.isLoadingPerms ? (
+            <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+          ) : role.permissions.length > 0 ? (
+            role.permissions.map(p => (
+              <span key={p.id} className="text-[10px] px-2 py-0.5 bg-background rounded-full border border-border text-muted-foreground">
+                <span className="font-semibold text-foreground">{p.object}</span>:{p.action}
+              </span>
+            ))
+          ) : (
+            <span className="text-[10px] text-muted-foreground">No permissions in this role</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PermissionItem({ permission, onRemove, isRemoving, inheritedFrom }: { 
+  permission: PermissionWithScope; 
+  onRemove: () => void; 
+  isRemoving: boolean;
+  inheritedFrom: string | null;
+}) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border border-transparent hover:border-border transition-all group">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-accent/10 rounded-full">
+          <Key className="w-4 h-4 text-accent" />
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium">{permission.object}</span>
+            <span className="text-[10px] text-muted-foreground">:</span>
+            <span className="text-sm font-medium text-accent">{permission.action}</span>
+          </div>
+          {inheritedFrom && (
+            <span className="text-[9px] text-muted-foreground italic">inherited from {inheritedFrom}</span>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled={isRemoving || !!inheritedFrom}
+        onClick={onRemove}
+        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+      >
+        {isRemoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+      </button>
     </div>
   );
 }
