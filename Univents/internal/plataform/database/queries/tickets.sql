@@ -11,3 +11,8 @@ RETURNING *;
 -- name: RemoveTicketPermission :exec
 DELETE FROM ticket_permissions
 WHERE id = $1 AND ticket_id = $2;
+
+-- name: ListEditionTickets :many
+SELECT *
+FROM tickets
+WHERE edition_id = $1;

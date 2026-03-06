@@ -70,6 +70,7 @@ func registerTicketsRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
+		r.Get("/events/{event_id}/editions/{edition_id}/tickets", h.List)
 		r.Post("/events/{event_id}/editions/{edition_id}/tickets", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions", h.AddPermission)
 		r.Delete("/events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions/{permission_id}", h.RemovePermission)

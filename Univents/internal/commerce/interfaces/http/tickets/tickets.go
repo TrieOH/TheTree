@@ -3,6 +3,7 @@ package tickets
 import (
 	"net/http"
 	"univents/internal/commerce/application/ticket/commands"
+	"univents/internal/commerce/application/ticket/queries"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
 	"univents/internal/shared/validation"
@@ -12,16 +13,16 @@ import (
 
 type TicketsHandler struct {
 	commands *commands.CommandService
-	//queries  *queries.QueryService
+	queries  *queries.QueryService
 }
 
 func NewTicketsHandler(
 	commands *commands.CommandService,
-	// queries *queries.QueryService,
+	queries *queries.QueryService,
 ) *TicketsHandler {
 	return &TicketsHandler{
 		commands: commands,
-		//queries:  queries,
+		queries:  queries,
 	}
 }
 
@@ -167,4 +168,37 @@ func (handler *TicketsHandler) RemovePermission(w http.ResponseWriter, r *http.R
 	}
 
 	resp.OK("Ticket Permission removed successfully").Send(w)
+}
+
+// List godoc
+// @Summary List all edition tickets
+// @Description if user has permission tickets:read list all edition tickets
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Success 201 {object} object
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/tickets [get]
+func (handler *TicketsHandler) List(w http.ResponseWriter, r *http.Request) {
+	editionID, rs := validation.GetUUID(r, "edition_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	out, err := handler.queries.List(ctx, editionID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
 }

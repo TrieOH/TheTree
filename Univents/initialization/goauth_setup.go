@@ -7,6 +7,7 @@ import (
 	"time"
 	productsCommands "univents/internal/commerce/application/product/commands"
 	ticketsCommands "univents/internal/commerce/application/ticket/commands"
+	ticketsQueries "univents/internal/commerce/application/ticket/queries"
 	commerceInfra "univents/internal/commerce/infrastructure"
 	productshttp "univents/internal/commerce/interfaces/http/products"
 	tickethttp "univents/internal/commerce/interfaces/http/tickets"
@@ -134,13 +135,14 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	checkpointsC := checkpointCommands.New(checkpointRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
+	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
 	productsC := productsCommands.New(editionRepo, productRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
 	activityHandler := activityhttp.NewActivitiesHandler(activitiesC)
 	checkpointHandler := checkpointshttp.NewCheckpointsHandler(checkpointsC)
-	ticketHandler := tickethttp.NewTicketsHandler(ticketsC)
+	ticketHandler := tickethttp.NewTicketsHandler(ticketsC, ticketsQ)
 	productHandler := productshttp.NewProductsHandler(productsC)
 
 	systemHandler := system.NewUniventsHandler()

@@ -114,3 +114,18 @@ func (repo *ticketsRepo) RemovePermission(ctx context.Context, id, ticketID uuid
 
 	return nil
 }
+func (repo *ticketsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Ticket, error) {
+	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.List")
+	defer span.End()
+
+	sqlcTickets, err := repo.queries(ctx).ListEditionTickets(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "ticket permission")
+	}
+
+	out := make([]domain.Ticket, len(sqlcTickets))
+	for _, ticket := range sqlcTickets {
+		out = append(out, *mapTicketFromDB(&ticket))
+	}
+	return out, nil
+}
