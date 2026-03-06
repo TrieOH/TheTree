@@ -87,10 +87,18 @@ func (s *PermissionService) List(ctx context.Context, object, action string) ([]
 	return res.Data, nil
 }
 
-func (s *PermissionService) GiveDirect(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
+func (s *PermissionService) GiveDirect(ctx context.Context, entityID uuid.UUID, object, action string, scopeID *uuid.UUID) error {
+	if err := validateObject(object); err != nil {
+		return err
+	}
+	if err := validateAction(action); err != nil {
+		return err
+	}
+
 	reqBody := map[string]any{
-		"permission_id": permissionID,
-		"scope_id":      scopeID,
+		"object":   object,
+		"action":   action,
+		"scope_id": scopeID,
 	}
 	path := fmt.Sprintf("/projects/%s/identities/%s/permissions", s.client.projectID, entityID)
 	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
@@ -101,12 +109,48 @@ func (s *PermissionService) GiveDirect(ctx context.Context, entityID uuid.UUID, 
 	return s.client.do(req, nil)
 }
 
-func (s *PermissionService) TakeDirect(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
+func (s *PermissionService) TakeDirect(ctx context.Context, entityID uuid.UUID, object, action string, scopeID *uuid.UUID) error {
+	if err := validateObject(object); err != nil {
+		return err
+	}
+	if err := validateAction(action); err != nil {
+		return err
+	}
+
+	reqBody := map[string]any{
+		"object":   object,
+		"action":   action,
+		"scope_id": scopeID,
+	}
+	path := fmt.Sprintf("/projects/%s/identities/%s/permissions", s.client.projectID, entityID)
+	req, err := s.client.newRequest(ctx, "DELETE", path, reqBody)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(req, nil)
+}
+
+func (s *PermissionService) GiveDirectByID(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
 	reqBody := map[string]any{
 		"permission_id": permissionID,
 		"scope_id":      scopeID,
 	}
-	path := fmt.Sprintf("/projects/%s/identities/%s/permissions", s.client.projectID, entityID)
+	path := fmt.Sprintf("/projects/%s/identities/%s/permissions/by-id", s.client.projectID, entityID)
+	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
+	if err != nil {
+		return err
+	}
+
+	return s.client.do(req, nil)
+}
+
+func (s *PermissionService) TakeDirectByID(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
+	reqBody := map[string]any{
+		"permission_id": permissionID,
+		"scope_id":      scopeID,
+	}
+	path := fmt.Sprintf("/projects/%s/identities/%s/permissions/by-id", s.client.projectID, entityID)
 	req, err := s.client.newRequest(ctx, "DELETE", path, reqBody)
 	if err != nil {
 		return err
