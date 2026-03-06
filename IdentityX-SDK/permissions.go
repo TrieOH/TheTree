@@ -135,3 +135,38 @@ func (s *PermissionService) GetEffective(ctx context.Context, entityID uuid.UUID
 
 	return res.Data, nil
 }
+
+type PermissionDefinition struct {
+	Object string
+	Action string
+	Meta   map[string]interface{}
+}
+
+type EnsurePermissionResult struct {
+	Object  string `json:"object"`
+	Action  string `json:"action"`
+	Created bool   `json:"created"`
+}
+
+func (s *PermissionService) EnsureExists(ctx context.Context, permissions []PermissionDefinition) ([]EnsurePermissionResult, error) {
+	reqBody := map[string]any{
+		"permissions": permissions,
+	}
+	path := fmt.Sprintf("/projects/%s/permissions/ensure", s.client.projectID)
+	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var res struct {
+		Data struct {
+			Permissions []EnsurePermissionResult `json:"permissions"`
+		} `json:"data"`
+	}
+	err = s.client.do(req, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Data.Permissions, nil
+}

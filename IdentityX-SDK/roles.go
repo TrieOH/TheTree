@@ -180,3 +180,42 @@ func (s *RoleService) Take(ctx context.Context, entityID uuid.UUID, roleName str
 
 	return s.client.do(req, nil)
 }
+
+type RoleDefinition struct {
+	Name        string
+	Permissions []PermissionRef
+	Meta        map[string]interface{}
+}
+
+type PermissionRef struct {
+	Object string
+	Action string
+}
+
+type EnsureRoleResult struct {
+	Name    string `json:"name"`
+	Created bool   `json:"created"`
+}
+
+func (s *RoleService) EnsureExists(ctx context.Context, roles []RoleDefinition) ([]EnsureRoleResult, error) {
+	reqBody := map[string]any{
+		"roles": roles,
+	}
+	path := fmt.Sprintf("/projects/%s/roles/ensure", s.client.projectID)
+	req, err := s.client.newRequest(ctx, "POST", path, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	var res struct {
+		Data struct {
+			Roles []EnsureRoleResult `json:"roles"`
+		} `json:"data"`
+	}
+	err = s.client.do(req, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Data.Roles, nil
+}

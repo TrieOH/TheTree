@@ -24,11 +24,11 @@ type ScopeService struct {
 	client *Client
 }
 
-func (s *ScopeService) Create(ctx context.Context, name string, externalID *string, meta ...json.RawMessage) (*Scope, error) {
+func (s *ScopeService) Create(ctx context.Context, name string, externalID *string, meta ...any) (*Scope, error) {
 	return s.CreateWithParent(ctx, name, externalID, nil, meta...)
 }
 
-func (s *ScopeService) CreateWithParent(ctx context.Context, name string, externalID *string, parentID *uuid.UUID, meta ...json.RawMessage) (*Scope, error) {
+func (s *ScopeService) CreateWithParent(ctx context.Context, name string, externalID *string, parentID *uuid.UUID, meta ...any) (*Scope, error) {
 	reqBody := map[string]any{
 		"name":        name,
 		"external_id": externalID,
