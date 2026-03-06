@@ -38,5 +38,6 @@ type ActivitiesRepository interface {
 
 type CheckpointsRepository interface {
 	Create(ctx context.Context, toCreate *Checkpoint) (*Checkpoint, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Checkpoint, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Checkpoint, error)
 }

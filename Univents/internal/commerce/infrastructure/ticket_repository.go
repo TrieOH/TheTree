@@ -81,6 +81,18 @@ func (repo *ticketsRepo) Create(ctx context.Context, toCreate domain.Ticket) (*d
 	return mapTicketFromDB(&sqlcTicket), nil
 }
 
+func (repo *ticketsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Ticket, error) {
+	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.GetByID")
+	defer span.End()
+
+	sqlcTicket, err := repo.queries(ctx).GetTicketByID(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "ticket")
+	}
+
+	return mapTicketFromDB(&sqlcTicket), nil
+}
+
 func (repo *ticketsRepo) AddPermission(ctx context.Context, toCreate domain.TicketPermission) (*domain.TicketPermission, error) {
 	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.AddPermission")
 	defer span.End()
@@ -114,6 +126,7 @@ func (repo *ticketsRepo) RemovePermission(ctx context.Context, id, ticketID uuid
 
 	return nil
 }
+
 func (repo *ticketsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Ticket, error) {
 	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.List")
 	defer span.End()
@@ -123,9 +136,25 @@ func (repo *ticketsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domai
 		return nil, errx.FromDB(err, "ticket")
 	}
 
-	out := make([]domain.Ticket, len(sqlcTickets))
+	out := make([]domain.Ticket, 0, len(sqlcTickets))
 	for _, ticket := range sqlcTickets {
 		out = append(out, *mapTicketFromDB(&ticket))
+	}
+	return out, nil
+}
+
+func (repo *ticketsRepo) GetPermissions(ctx context.Context, ticketID uuid.UUID) ([]domain.TicketPermission, error) {
+	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.List")
+	defer span.End()
+
+	sqlcTicketPermissions, err := repo.queries(ctx).GetTicketPermissions(ctx, ticketID)
+	if err != nil {
+		return nil, errx.FromDB(err, "ticket")
+	}
+
+	out := make([]domain.TicketPermission, 0, len(sqlcTicketPermissions))
+	for _, perms := range sqlcTicketPermissions {
+		out = append(out, *mapTicketPermissionFromDB(&perms))
 	}
 	return out, nil
 }

@@ -145,7 +145,7 @@ func (repo *activitiesRepo) List(ctx context.Context, editionID uuid.UUID) ([]do
 		return nil, errx.FromDB(err, "activity")
 	}
 
-	out := make([]domain.Activity, len(sqlcActivities))
+	out := make([]domain.Activity, 0, len(sqlcActivities))
 	for _, activity := range sqlcActivities {
 		out = append(out, *mapActivityFromDB(&activity))
 	}
@@ -161,7 +161,7 @@ func (repo *activitiesRepo) ListAdmin(ctx context.Context, editionID uuid.UUID) 
 		return nil, errx.FromDB(err, "activity")
 	}
 
-	out := make([]domain.Activity, len(sqlcActivities))
+	out := make([]domain.Activity, 0, len(sqlcActivities))
 	for _, activity := range sqlcActivities {
 		out = append(out, *mapActivityFromDB(&activity))
 	}

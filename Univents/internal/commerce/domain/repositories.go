@@ -2,19 +2,35 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type TicketsRepository interface {
 	Create(ctx context.Context, toCreate Ticket) (*Ticket, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Ticket, error)
 	AddPermission(ctx context.Context, toCreate TicketPermission) (*TicketPermission, error)
 	RemovePermission(ctx context.Context, id, ticketID uuid.UUID) error
 	List(ctx context.Context, editionID uuid.UUID) ([]Ticket, error)
+	GetPermissions(ctx context.Context, ticketID uuid.UUID) ([]TicketPermission, error)
 }
 
 type ProductsRepository interface {
 	Create(ctx context.Context, toCreate Product) (*Product, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Product, error)
+	GetByIDs(ctx context.Context, ids []uuid.UUID) ([]Product, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Product, error)
 	AdminList(ctx context.Context, editionID uuid.UUID) ([]Product, error)
+	ReserveItems(ctx context.Context, sessionID uuid.UUID, items []CartItem, expiresAt time.Time) error
+	UnreserveItems(ctx context.Context, sessionID uuid.UUID) error
+	DeleteReservation(ctx context.Context, sessionID uuid.UUID) error
+}
+
+type PurchaseRepository interface {
+	Create(ctx context.Context, toCreate Purchase) (*Purchase, error)
+	CreateLineItem(ctx context.Context, toCreate LineItem) (*LineItem, error)
+	ConfirmPurchase(ctx context.Context, paymentID string) error
+	CancelPurchase(ctx context.Context, paymentID string) error
+	GetTicketIDsByPaymentIntent(ctx context.Context, paymentID string) ([]TicketGrant, error)
 }

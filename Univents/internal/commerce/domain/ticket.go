@@ -1,11 +1,14 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/validation"
 
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 )
 
 type Ticket struct {
@@ -142,4 +145,29 @@ func (tp *TicketPermission) validate() error {
 			"checkpoint permission must have checkpoint_id only",
 		),
 	)
+}
+
+const (
+	TypeGrantTicketPermissions = "ticket:grant_permissions"
+	MaxGrantRetries            = 5
+)
+
+type TicketGrant struct {
+	TicketID uuid.UUID `json:"ticket_id"`
+	UserID   uuid.UUID `json:"user_id"` // assigned_to_user_id if set, else buyer
+}
+
+type GrantTicketPermissionsPayload struct {
+	Grants []TicketGrant `json:"grants"`
+}
+
+func NewGrantTicketPermissionsTask(grants []TicketGrant, paymentID string) (*asynq.Task, error) {
+	payload, err := json.Marshal(GrantTicketPermissionsPayload{Grants: grants})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal grant permissions payload: %w", err)
+	}
+	return asynq.NewTask(TypeGrantTicketPermissions, payload,
+		asynq.TaskID(fmt.Sprintf("%s:%s", paymentID, TypeReservationExpired)),
+		asynq.MaxRetry(MaxGrantRetries),
+	), nil
 }

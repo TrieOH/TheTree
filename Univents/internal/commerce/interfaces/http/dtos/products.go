@@ -19,3 +19,18 @@ type CreateProductRequest struct {
 	HasInventory      bool               `json:"has_inventory"`
 	InventoryQuantity int                `json:"inventory_quantity"`
 }
+
+type BuyRequest struct {
+	Items []domain.CartItem `json:"items"`
+}
+
+type ReservationConfirmedPayload struct {
+	SessionID    uuid.UUID `json:"session_id"`
+	ClientSecret string    `json:"client_secret"`
+	ExpiresAt    time.Time `json:"expires_at"`
+}
+
+type ConfirmPaymentRequest struct {
+	SessionID       uuid.UUID `json:"session_id"`
+	PaymentIntentID string    `json:"payment_intent_id"`
+}

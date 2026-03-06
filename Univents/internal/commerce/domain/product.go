@@ -1,12 +1,21 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/validation"
 
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 )
+
+type CartItem struct {
+	ProductID    uuid.UUID `json:"product_id"`
+	Quantity     int       `json:"quantity"`
+	HasInventory bool      `json:"-"`
+}
 
 type ProductType string
 
@@ -124,4 +133,30 @@ func (p *Product) validate() error {
 			"remaining quantity must be equal to starting quantity on creation",
 		),
 	)
+}
+
+const (
+	TypeReservationExpired = "reservation:expired"
+	ReservationDuration    = 10 * time.Minute
+)
+
+type ReservationExpiredPayload struct {
+	SessionID       uuid.UUID `json:"session_id"`
+	PaymentIntentID string    `json:"payment_intent_id"`
+}
+
+func NewReservationExpiredTask(sessionID uuid.UUID, paymentIntentID string, expiresAt time.Time) (*asynq.Task, error) {
+	payload, err := json.Marshal(ReservationExpiredPayload{
+		SessionID:       sessionID,
+		PaymentIntentID: paymentIntentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal reservation expired payload: %w", err)
+	}
+
+	return asynq.NewTask(TypeReservationExpired, payload,
+		asynq.TaskID(fmt.Sprintf("%s:%s:%s", sessionID, paymentIntentID, TypeReservationExpired)),
+		asynq.ProcessAt(expiresAt),
+		asynq.Unique(time.Hour),
+	), nil
 }

@@ -7,3 +7,8 @@ RETURNING *;
 SELECT *
 FROM checkpoints
 WHERE edition_id = $1;
+
+-- name: GetCheckpointByID :one
+SELECT *
+FROM checkpoints
+WHERE id = $1;

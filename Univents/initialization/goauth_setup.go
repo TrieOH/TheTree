@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"time"
+	productsAsync "univents/internal/commerce/application/product/asynq"
 	productsCommands "univents/internal/commerce/application/product/commands"
 	productsQueries "univents/internal/commerce/application/product/queries"
+	ticketsAsync "univents/internal/commerce/application/ticket/asynq"
 	ticketsCommands "univents/internal/commerce/application/ticket/commands"
 	ticketsQueries "univents/internal/commerce/application/ticket/queries"
 	commerceInfra "univents/internal/commerce/infrastructure"
@@ -30,9 +32,11 @@ import (
 	"univents/internal/interfaces/http/middleware"
 	"univents/internal/interfaces/http/router"
 	"univents/internal/interfaces/http/system"
+	"univents/internal/payments"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
 	"univents/internal/plataform/telemetry"
+	"univents/internal/shared/sockets"
 	"univents/internal/worker"
 
 	"github.com/TrieOH/goauth-sdk-go"
@@ -106,6 +110,8 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	txRunner := database.NewPGXTxRunner(app.DB)
 	tracer := otel.Tracer(string(telemetry.UniventsTracer))
 	logs := telemetry.Log()
+	ws := sockets.New()
+	mockPayments := &payments.MockPayments{}
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
 
@@ -115,12 +121,17 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	checkpointRepo := infrastructure.NewCheckpointRepo(q, logs, tracer)
 	ticketRepo := commerceInfra.NewTicketsRepo(q, logs, tracer)
 	productRepo := commerceInfra.NewProductsRepo(q, logs, tracer)
+	purchaseRepo := commerceInfra.NewPurchaseRepo(q, logs, tracer)
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
-	server, asynqClient, scheduler, err := worker.InitAsynq(worker.Deps{
+	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, ws, mockPayments, app.GaClient, tracer, txRunner)
+	ticketsAsyncHandlers := ticketsAsync.New(ticketRepo, productRepo, activityRepo, checkpointRepo, app.GaClient, tracer, txRunner)
+	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{
 		Handlers:         workerHandlers,
 		ActivityHandlers: activitiesAsyncHandlers,
+		ProductsHandlers: productsAsyncHandlers,
+		TicketsHandler:   ticketsAsyncHandlers,
 	})
 	defer func() {
 		scheduler.Shutdown()
@@ -141,7 +152,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, asynqClient, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, mockPayments, ws, asynqClient, inspector, app.GaClient, tracer, txRunner)
 	productsQ := productsQueries.New(productRepo, editionRepo, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)

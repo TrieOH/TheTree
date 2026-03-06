@@ -3,6 +3,9 @@ package worker
 import (
 	"context"
 	"log"
+	productsAsync "univents/internal/commerce/application/product/asynq"
+	ticketsAsync "univents/internal/commerce/application/ticket/asynq"
+	domain2 "univents/internal/commerce/domain"
 	activityAsync "univents/internal/core/application/activity/async"
 	"univents/internal/core/application/edition/async"
 	"univents/internal/core/domain"
@@ -14,13 +17,16 @@ import (
 type Deps struct {
 	Handlers         *async.AsynqHandlers
 	ActivityHandlers *activityAsync.AsynqHandlers
+	ProductsHandlers *productsAsync.AsynqHandlers
+	TicketsHandler   *ticketsAsync.AsynqHandlers
 }
 
-func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error) {
+func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, *asynq.Inspector, error) {
 	redisOpt := asynq.RedisClientOpt{Addr: viper.GetString("REDIS_ADDR"), Password: viper.GetString("REDIS_PASSWORD"), DB: viper.GetInt("REDIS_DB")}
 
 	// Client for enqueueing tasks
 	client := asynq.NewClient(redisOpt)
+	inspector := asynq.NewInspector(redisOpt)
 
 	// Server for processing tasks
 	server := asynq.NewServer(redisOpt, asynq.Config{
@@ -46,6 +52,8 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error
 	mux.HandleFunc(domain.AsynqEditionFinish, deps.Handlers.HandleFinishEdition)
 	mux.HandleFunc(domain.AsynqActivityStart, deps.ActivityHandlers.HandleStartActivity)
 	mux.HandleFunc(domain.AsynqActivityEnd, deps.ActivityHandlers.HandleFinishActivity)
+	mux.HandleFunc(domain2.TypeReservationExpired, deps.ProductsHandlers.HandleProductReservationExpiration)
+	mux.HandleFunc(domain2.TypeGrantTicketPermissions, deps.TicketsHandler.HandleGrantTicketPermissions)
 
 	// Run server in background
 	go func() {
@@ -61,5 +69,5 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, error
 		}
 	}()
 
-	return server, client, scheduler, nil
+	return server, client, scheduler, inspector, nil
 }

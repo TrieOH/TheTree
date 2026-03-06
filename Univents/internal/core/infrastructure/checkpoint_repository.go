@@ -75,6 +75,18 @@ func (repo *checkpointsRepo) Create(ctx context.Context, toCreate *domain.Checkp
 	return mapCheckpointFromDB(&sqlcCheckpoint), nil
 }
 
+func (repo *checkpointsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Checkpoint, error) {
+	ctx, span := repo.tracer.Start(ctx, "CheckpointRepo.GetByID")
+	defer span.End()
+
+	sqlcCheckpoint, err := repo.queries(ctx).GetCheckpointByID(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "checkpoint")
+	}
+
+	return mapCheckpointFromDB(&sqlcCheckpoint), nil
+}
+
 func (repo *checkpointsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Checkpoint, error) {
 	ctx, span := repo.tracer.Start(ctx, "CheckpointRepo.List")
 	defer span.End()
@@ -84,7 +96,7 @@ func (repo *checkpointsRepo) List(ctx context.Context, editionID uuid.UUID) ([]d
 		return nil, errx.FromDB(err, "checkpoint")
 	}
 
-	out := make([]domain.Checkpoint, len(sqlcCheckpoints))
+	out := make([]domain.Checkpoint, 0, len(sqlcCheckpoints))
 	for _, checkpoint := range sqlcCheckpoints {
 		out = append(out, *mapCheckpointFromDB(&checkpoint))
 	}

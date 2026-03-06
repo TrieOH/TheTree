@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
@@ -86,6 +87,34 @@ func (repo *productsRepo) Create(ctx context.Context, toCreate domain.Product) (
 	return mapProductFromDB(&sqlcProduct), nil
 }
 
+func (repo *productsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.GetByID")
+	defer span.End()
+
+	sqlcProduct, err := repo.queries(ctx).GetProductByID(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	return mapProductFromDB(&sqlcProduct), nil
+}
+
+func (repo *productsRepo) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.GetByIDs")
+	defer span.End()
+
+	sqlcProducts, err := repo.queries(ctx).GetProductsByIDs(ctx, ids)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	out := make([]domain.Product, 0, len(sqlcProducts))
+	for _, product := range sqlcProducts {
+		out = append(out, *mapProductFromDB(&product))
+	}
+	return out, nil
+}
+
 func (repo *productsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Product, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.List")
 	defer span.End()
@@ -95,7 +124,7 @@ func (repo *productsRepo) List(ctx context.Context, editionID uuid.UUID) ([]doma
 		return nil, errx.FromDB(err, "product")
 	}
 
-	out := make([]domain.Product, len(sqlcProducts))
+	out := make([]domain.Product, 0, len(sqlcProducts))
 	for _, product := range sqlcProducts {
 		out = append(out, *mapProductFromDB(&product))
 	}
@@ -111,9 +140,62 @@ func (repo *productsRepo) AdminList(ctx context.Context, editionID uuid.UUID) ([
 		return nil, errx.FromDB(err, "product")
 	}
 
-	out := make([]domain.Product, len(sqlcProducts))
+	out := make([]domain.Product, 0, len(sqlcProducts))
 	for _, product := range sqlcProducts {
 		out = append(out, *mapProductFromDB(&product))
 	}
 	return out, nil
+}
+
+func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID, items []domain.CartItem, expiresAt time.Time) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ReserveItems")
+	defer span.End()
+
+	for _, item := range items {
+		if item.HasInventory {
+			_, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
+				SessionID: sessionID,
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+				ExpiresAt: expiresAt,
+			})
+			if err != nil {
+				return errx.FromDB(err, "product")
+			}
+		} else {
+			err := repo.queries(ctx).ReserveProductNoInventory(ctx, sqlc.ReserveProductNoInventoryParams{
+				SessionID: sessionID,
+				ProductID: item.ProductID,
+				Quantity:  item.Quantity,
+				ExpiresAt: expiresAt,
+			})
+			if err != nil {
+				return errx.FromDB(err, "product")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (repo *productsRepo) UnreserveItems(ctx context.Context, sessionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.UnreserveItems")
+	defer span.End()
+
+	if err := repo.queries(ctx).UnreserveProducts(ctx, sessionID); err != nil {
+		return errx.FromDB(err, "product")
+	}
+
+	return nil
+}
+
+func (repo *productsRepo) DeleteReservation(ctx context.Context, sessionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.DeleteReservation")
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteReservation(ctx, sessionID); err != nil {
+		return errx.FromDB(err, "product")
+	}
+
+	return nil
 }

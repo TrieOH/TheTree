@@ -123,6 +123,20 @@ CREATE TABLE product_bundle_components (
     UNIQUE(bundle_product_id, component_type, component_id)
 );
 
+CREATE TABLE product_reservations (
+    id UUID PRIMARY KEY DEFAULT uuidv7(),
+    session_id UUID NOT NULL,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    quantity INT NOT NULL DEFAULT 1,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE(session_id, product_id)
+);
+
+CREATE INDEX idx_reservations_session ON product_reservations(session_id);
+CREATE INDEX idx_reservations_expires ON product_reservations(expires_at); -- for cleanup jobs
+
 -- Purchases (unified for tickets + products)
 CREATE TYPE purchase_status AS ENUM (
     'pending',        -- cart reserved, unpaid

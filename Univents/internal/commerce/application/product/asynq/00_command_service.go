@@ -1,50 +1,39 @@
-package commands
+package async
 
 import (
 	"univents/internal/commerce/domain"
-	coreDomain "univents/internal/core/domain"
 	"univents/internal/payments"
 	"univents/internal/plataform/database"
 	"univents/internal/shared/sockets"
 
 	"github.com/TrieOH/goauth-sdk-go"
-	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
 
-type CommandService struct {
-	editions  coreDomain.EditionsRepository
+type AsynqHandlers struct {
 	products  domain.ProductsRepository
 	purchases domain.PurchaseRepository
 	payments  *payments.MockPayments
 	ws        *sockets.Registry
-	asynq     *asynq.Client
-	inspector *asynq.Inspector
 	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	tx        database.TxRunner
 }
 
 func New(
-	editions coreDomain.EditionsRepository,
 	products domain.ProductsRepository,
 	purchases domain.PurchaseRepository,
-	payments *payments.MockPayments,
 	ws *sockets.Registry,
-	asynq *asynq.Client,
-	inspector *asynq.Inspector,
+	payments *payments.MockPayments,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		editions:  editions,
+) *AsynqHandlers {
+	return &AsynqHandlers{
 		products:  products,
 		purchases: purchases,
 		payments:  payments,
 		ws:        ws,
-		asynq:     asynq,
-		inspector: inspector,
 		gaClient:  gaClient,
 		tracer:    tracer,
 		tx:        tx,

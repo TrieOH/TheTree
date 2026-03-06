@@ -77,6 +77,7 @@ func SetupGoAuth(app *UniventsApp) {
 		BaseURL:   viper.GetString("GOAUTH_URL"),
 		APIKey:    viper.GetString("GOAUTH_API_KEY"),
 		ProjectID: projectID,
+		Debug:     false,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())
@@ -90,7 +91,12 @@ func SetupGoAuth(app *UniventsApp) {
 		}
 	}()
 
-	perms, err := client.Permissions.EnsureExists(context.Background(), []goauth.PermissionDefinition{EventsCreate})
+	perms, err := client.Permissions.EnsureExists(context.Background(), []goauth.PermissionDefinition{
+		EventsCreate,
+		ActivitiesAttend,
+		ProductsPurchase,
+		CheckpointsAccess,
+	})
 	for _, p := range perms {
 		if p.Created {
 			log.Println("Created: " + p.Object + ":" + p.Action)
@@ -188,6 +194,14 @@ var (
 			"icon":  "Eye",
 		},
 	}
+	ActivitiesAttend = goauth.PermissionDefinition{
+		Object: "activities",
+		Action: "attend",
+		Meta: map[string]interface{}{
+			"color": "#203ee6",
+			"icon":  "CircleUserRound",
+		},
+	}
 	ProductsCreate = goauth.PermissionDefinition{
 		Object: "products",
 		Action: "create",
@@ -204,6 +218,14 @@ var (
 			"icon":  "Eye",
 		},
 	}
+	ProductsPurchase = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "purchase",
+		Meta: map[string]interface{}{
+			"color": "#203ee6",
+			"icon":  "CircleDollarSign",
+		},
+	}
 	CheckpointsCreate = goauth.PermissionDefinition{
 		Object: "checkpoints",
 		Action: "create",
@@ -218,6 +240,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#f59e0b",
 			"icon":  "Eye",
+		},
+	}
+	CheckpointsAccess = goauth.PermissionDefinition{
+		Object: "checkpoints",
+		Action: "access",
+		Meta: map[string]interface{}{
+			"color": "#203ee6",
+			"icon":  "CircleUserRound",
 		},
 	}
 	TicketsCreate = goauth.PermissionDefinition{

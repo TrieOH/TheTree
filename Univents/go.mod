@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.4
-	github.com/TrieOH/goauth-sdk-go v0.4.9
+	github.com/TrieOH/goauth-sdk-go v0.4.13
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
@@ -13,6 +13,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/hibiken/asynq v0.26.0
 	github.com/hibiken/asynqmon v0.7.2
 	github.com/jackc/pgx/v5 v5.8.0
