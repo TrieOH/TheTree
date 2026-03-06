@@ -18,6 +18,8 @@ type PermissionRepository interface {
 	GetByIDInternal(ctx context.Context, id uuid.UUID) (*permissions.Permission, error)
 	GetByIDExternal(ctx context.Context, id, projectID uuid.UUID) (*permissions.Permission, error)
 
+	GetByObjectAction(ctx context.Context, object, action string, projectID uuid.UUID) (*permissions.Permission, error)
+
 	ListByProject(ctx context.Context, object, action *string, projectID uuid.UUID) ([]permissions.Permission, error)
 
 	BelongsToProject(ctx context.Context, id, projectID uuid.UUID) (bool, error)

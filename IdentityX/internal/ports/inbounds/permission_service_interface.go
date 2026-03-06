@@ -20,4 +20,6 @@ type PermissionService interface {
 	GetEffective(ctx context.Context, in ManagePermissionInput) ([]PermissionOutput, error)
 
 	Check(ctx context.Context, in CheckPermissionInput) (bool, error)
+
+	EnsureExists(ctx context.Context, in EnsurePermissionsInput) ([]EnsurePermissionResult, error)
 }

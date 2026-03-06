@@ -52,6 +52,8 @@ func (m *PGXMapper) Map(err error) (fe *fail.Error, ok bool) {
 				return fail.New(ROLEAlreadyGranted).Debug(err.Error()), true
 			case "identity_permissions_identity_id_permission_id_scope_id_key":
 				return fail.New(PERMissionAlreadyGranted).Debug(err.Error()), true
+			case "role_permissions_pkey":
+				return fail.New(ROLEPermissionAlreadyGranted).Debug(err.Error()), true
 			case "scopes_one_global":
 				return fail.New(SCOPEOneGlobal).Debug(err.Error()), true
 			case "scopes_one_project_root_per_project":

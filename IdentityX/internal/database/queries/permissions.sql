@@ -25,6 +25,11 @@ SELECT *
 FROM permissions
 WHERE id = $1 AND project_id = $2;
 
+-- name: GetPermissionByObjectAction :one
+SELECT *
+FROM permissions
+WHERE object = $1 AND action = $2 AND project_id = $3;
+
 -- name: ListPermissionsByProject :many
 SELECT *
 FROM permissions

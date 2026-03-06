@@ -256,6 +256,7 @@ func registerPermissionRoutes(
 		r.Delete("/projects/{project_id}/identities/{entity_id}/permissions", h.TakeDirect)
 		r.Route("/projects/{project_id}/permissions", func(r chi.Router) {
 			r.Post("/", h.Create)
+			r.Post("/ensure", h.EnsureExists)
 			r.Get("/{permission_id}", h.GetByID)
 			r.Delete("/{permission_id}", h.Delete)
 			r.Patch("/{permission_id}/meta", h.UpdateMeta)
@@ -274,6 +275,7 @@ func registerRoleRoutes(
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
 
+		r.Post("/projects/{project_id}/roles/ensure", h.EnsureExists)
 		r.Post("/projects/{project_id}/roles", h.Create)
 		r.Get("/projects/{project_id}/roles/{role_id}", h.GetByID)
 		r.Patch("/projects/{project_id}/roles/{role_id}/description", h.UpdateDescription)

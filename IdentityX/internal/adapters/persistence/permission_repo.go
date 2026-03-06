@@ -157,6 +157,30 @@ func (repo *permissionRepo) GetByIDExternal(ctx context.Context, id, projectID u
 	return &outPermission, nil
 }
 
+func (repo *permissionRepo) GetByObjectAction(ctx context.Context, object, action string, projectID uuid.UUID) (*permissions.Permission, error) {
+	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.GetByObjectAction",
+		trace.WithAttributes(
+			attribute.String("permission.object", object),
+			attribute.String("permission.action", action),
+			attribute.String("permission.project_id", projectID.String()),
+		),
+	)
+	defer span.End()
+
+	sqlcPermission, err := repo.queries(ctx).GetPermissionByObjectAction(ctx, sqlc.GetPermissionByObjectActionParams{
+		Object:    object,
+		Action:    action,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	var outPermission permissions.Permission
+	mapPermissionFromDB(&outPermission, &sqlcPermission)
+	return &outPermission, nil
+}
+
 func (repo *permissionRepo) ListByProject(ctx context.Context, object, action *string, projectID uuid.UUID) ([]permissions.Permission, error) {
 	ctx, span := repo.tracer.Start(ctx, "PermissionRepo.ListByProject",
 		trace.WithAttributes(

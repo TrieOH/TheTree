@@ -524,6 +524,9 @@ var (
 	ErrRoleNameAlreadyTaken = fail.Form(ROLENameAlreadyTaken, "role name already taken", false, map[string]any{"code": 409}).
 				AddLocalization("pt-BR", "nome do papel já em uso")
 
+	ErrRolePermissionAlreadyGranted = fail.Form(ROLEPermissionAlreadyGranted, "permission already granted to role", false, map[string]any{"code": 409}).
+					AddLocalization("pt-BR", "permissão já atribuída ao papel")
+
 	// ------ SCOPE ------
 	ErrScopeDuplicateNameAndExternalID = fail.Form(SCOPEDuplicateNameAndExternalID, "scope with name and external id (%s, %s) already exists", false, map[string]any{"code": 409}, "SCOPE NOT SET", "EXTERNAL_ID NOT SET").
 						AddLocalization("pt-BR", "escopo com nome e id externo (%s, %s) já existe")
