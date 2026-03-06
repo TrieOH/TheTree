@@ -7,9 +7,9 @@ import { env } from "./env";
 
 export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
-    if (env.PROJECT_KEY) {
+    if (env.PROJECT_ID) {
       validateProjectKey();
-      const url = `/projects/${env.PROJECT_KEY}/login`;
+      const url = `/projects/${env.PROJECT_ID}/login`;
       const res = await apiInstance.post<{is_up_to_date: boolean}>(url, { email, password });
       if(res.code === 200) await fetchAndSaveClaims(apiInstance);
       return res;
@@ -21,22 +21,14 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
-    if (env.PROJECT_KEY) {
+    if (env.PROJECT_ID) {
       validateProjectKey();
-      if (!flow_id) {
-        return Promise.reject({
-          code: 400,
-          message: "flow_id is required when a project_id is provided.",
-          module: "auth",
-          timestamp: new Date().toISOString(),
-        });
-      }
       
       const params = new URLSearchParams();
-      params.append("flow_id", flow_id);
+      params.append("flow_id", flow_id || "none");
       params.append("schema_type", "context");
       params.append("version", "1");
-      const url = `/projects/${env.PROJECT_KEY}/register?${params.toString()}`;
+      const url = `/projects/${env.PROJECT_ID}/register?${params.toString()}`;
       return apiInstance.post<string>(url, { email, password, custom_fields: custom });
     }
 
@@ -82,22 +74,22 @@ export const createAuthService = (apiInstance: Api) => ({
 
   getProfileUpgradeForms: async () => {
     validateProjectKey();
-    const url = `/projects/${env.PROJECT_KEY}/upgrade-form`;
+    const url = `/projects/${env.PROJECT_ID}/upgrade-form`;
     return apiInstance.get<ProjectFieldDefinitionResultI>(url, { requiresAuth: true });
   },
 
   updateProfile: async (custom: Record<string, FieldValue>) => {
     validateProjectKey();
-    const url = `/projects/${env.PROJECT_KEY}/metadata`;
+    const url = `/projects/${env.PROJECT_ID}/metadata`;
     return apiInstance.post<string>(url, { custom_fields: custom }, { requiresAuth: true });
   },
 
   sendForgotPassword: async (email: string) => {
-    if (env.PROJECT_KEY) {
+    if (env.PROJECT_ID) {
       validateProjectKey();
       return apiInstance.post<string>(
         "/auth/forgot-password",
-        {email, project_id: env.PROJECT_KEY}, 
+        {email, project_id: env.PROJECT_ID}, 
       );
     }
     return apiInstance.post<string>("/auth/forgot-password", {email});
@@ -131,7 +123,7 @@ export const createServerAuthService = (apiInstance: Api) => ({
     validateProjectKey();
     validateApiKey();
 
-    let url = `/projects/${env.PROJECT_KEY}/schemas/lookup/latest`
+    let url = `/projects/${env.PROJECT_ID}/schemas/lookup/latest`
     const params = new URLSearchParams();
     params.append("flow_id", flow_id);
     params.append("schema_type", "context");
@@ -153,7 +145,7 @@ export const createServerAuthService = (apiInstance: Api) => ({
     validateApiKey();
 
     const version = 1;
-    let url = `/projects/${env.PROJECT_KEY}/schemas/lookup/v${version}`
+    let url = `/projects/${env.PROJECT_ID}/schemas/lookup/v${version}`
     const params = new URLSearchParams();
     params.append("flow_id", flow_id);
     params.append("schema_type", "context");
@@ -161,6 +153,42 @@ export const createServerAuthService = (apiInstance: Api) => ({
 
     return apiInstance.get<ProjectFieldDefinitionResultI>(
       url,
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  },
+
+  assignRoleByNameToUser: async (user_id: string, role_name: string, scope_id: string | null) => {
+    validateProjectKey();
+    validateApiKey();
+
+    const url = `/projects/${env.PROJECT_ID}/identities/${user_id}/roles/by-name`
+
+    return apiInstance.post<void>(
+      url,
+      { role_name, scope_id },
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  },
+
+  removeRoleByNameFromUser: async (user_id: string, role_name: string, scope_id: string | null) => {
+    validateProjectKey();
+    validateApiKey();
+
+    const url = `/projects/${env.PROJECT_ID}/identities/${user_id}/roles/by-name`
+
+    return apiInstance.delete<void>(
+      url,
+      { role_name, scope_id },
       {
         headers: {
           "Authorization": `Bearer ${env.API_KEY}`,

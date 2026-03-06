@@ -87,7 +87,11 @@ export class Api {
     });
   }
 
-  delete<T = unknown>(path: string, options?: RequestOptions) {
-    return this.request<T>(path, { ...options, method: "DELETE" });
+  delete<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
+    return this.request<T>(path, { 
+      ...options, 
+      method: "DELETE", 
+      body: body ? JSON.stringify(body) : undefined // TEMP
+    });
   }
 }
