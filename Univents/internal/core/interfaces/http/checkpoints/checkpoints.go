@@ -3,6 +3,7 @@ package checkpoints
 import (
 	"net/http"
 	"univents/internal/core/application/checkpoint/commands"
+	"univents/internal/core/application/checkpoint/queries"
 	"univents/internal/core/domain"
 	"univents/internal/core/interfaces/http/dto"
 	"univents/internal/shared/validation"
@@ -12,16 +13,16 @@ import (
 
 type Handler struct {
 	commands *commands.CommandService
-	//queries  *queries.QueryService
+	queries  *queries.QueryService
 }
 
 func NewCheckpointsHandler(
 	commands *commands.CommandService,
-	// queries *queries.QueryService,
+	queries *queries.QueryService,
 ) *Handler {
 	return &Handler{
 		commands: commands,
-		//queries:  queries,
+		queries:  queries,
 	}
 }
 
@@ -73,4 +74,37 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.Created().WithData(out).Send(w)
+}
+
+// List godoc
+// @Summary List all edition checkpoints
+// @Description if user has permission checkpoints:read list all edition checkpoints
+// @Tags checkpoints
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Success 201 {object} object
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/checkpoints [get]
+func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
+	editionID, rs := validation.GetUUID(r, "edition_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	out, err := handler.queries.List(ctx, editionID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
 }

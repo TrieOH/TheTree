@@ -7,6 +7,7 @@ import (
 	"univents/internal/plataform/database/sqlc"
 	"univents/internal/shared/errx"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -72,4 +73,20 @@ func (repo *checkpointsRepo) Create(ctx context.Context, toCreate *domain.Checkp
 	}
 
 	return mapCheckpointFromDB(&sqlcCheckpoint), nil
+}
+
+func (repo *checkpointsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Checkpoint, error) {
+	ctx, span := repo.tracer.Start(ctx, "CheckpointRepo.List")
+	defer span.End()
+
+	sqlcCheckpoints, err := repo.queries(ctx).ListEditionCheckpoints(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "checkpoint")
+	}
+
+	out := make([]domain.Checkpoint, len(sqlcCheckpoints))
+	for _, checkpoint := range sqlcCheckpoints {
+		out = append(out, *mapCheckpointFromDB(&checkpoint))
+	}
+	return out, nil
 }
