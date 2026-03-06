@@ -14,6 +14,8 @@ export default defineConfig((options) => {
     bundle: true,
     clean: true,
     injectStyle: true,
+    treeshake: true,
+    shims: true,
     external: ["react", "react-dom"],
     outExtension({ format }) {
       return format === "esm" ? { js: ".js" } : { js: ".js" };
