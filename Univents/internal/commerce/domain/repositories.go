@@ -15,4 +15,6 @@ type TicketsRepository interface {
 
 type ProductsRepository interface {
 	Create(ctx context.Context, toCreate Product) (*Product, error)
+	List(ctx context.Context, editionID uuid.UUID) ([]Product, error)
+	AdminList(ctx context.Context, editionID uuid.UUID) ([]Product, error)
 }

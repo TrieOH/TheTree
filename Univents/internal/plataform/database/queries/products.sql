@@ -7,3 +7,8 @@ RETURNING *;
 SELECT *
 FROM products
 WHERE edition_id = $1 AND status != 'draft';
+
+-- name: ListEditionProductsAdmin :many
+SELECT *
+FROM products
+WHERE edition_id = $1;

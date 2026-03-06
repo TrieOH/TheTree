@@ -120,7 +120,7 @@ func (repo *ticketsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domai
 
 	sqlcTickets, err := repo.queries(ctx).ListEditionTickets(ctx, editionID)
 	if err != nil {
-		return nil, errx.FromDB(err, "ticket permission")
+		return nil, errx.FromDB(err, "ticket")
 	}
 
 	out := make([]domain.Ticket, len(sqlcTickets))

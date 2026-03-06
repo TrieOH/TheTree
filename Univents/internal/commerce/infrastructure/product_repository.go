@@ -7,6 +7,7 @@ import (
 	"univents/internal/plataform/database/sqlc"
 	"univents/internal/shared/errx"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -83,4 +84,36 @@ func (repo *productsRepo) Create(ctx context.Context, toCreate domain.Product) (
 	}
 
 	return mapProductFromDB(&sqlcProduct), nil
+}
+
+func (repo *productsRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.List")
+	defer span.End()
+
+	sqlcProducts, err := repo.queries(ctx).ListEditionProducts(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	out := make([]domain.Product, len(sqlcProducts))
+	for _, product := range sqlcProducts {
+		out = append(out, *mapProductFromDB(&product))
+	}
+	return out, nil
+}
+
+func (repo *productsRepo) AdminList(ctx context.Context, editionID uuid.UUID) ([]domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.AdminList")
+	defer span.End()
+
+	sqlcProducts, err := repo.queries(ctx).ListEditionProductsAdmin(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	out := make([]domain.Product, len(sqlcProducts))
+	for _, product := range sqlcProducts {
+		out = append(out, *mapProductFromDB(&product))
+	}
+	return out, nil
 }
