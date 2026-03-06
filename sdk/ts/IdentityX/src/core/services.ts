@@ -23,17 +23,9 @@ export const createAuthService = (apiInstance: Api) => ({
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
     if (env.PROJECT_ID) {
       validateProjectKey();
-      if (!flow_id) {
-        return Promise.reject({
-          code: 400,
-          message: "flow_id is required when a project_id is provided.",
-          module: "auth",
-          timestamp: new Date().toISOString(),
-        });
-      }
       
       const params = new URLSearchParams();
-      params.append("flow_id", flow_id);
+      params.append("flow_id", flow_id || "none");
       params.append("schema_type", "context");
       params.append("version", "1");
       const url = `/projects/${env.PROJECT_ID}/register?${params.toString()}`;
