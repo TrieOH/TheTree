@@ -85,19 +85,19 @@ func (b *checkBuilder) Allowed(ctx context.Context) (bool, error) {
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, err
+	}
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusForbidden {
-		return false, b.client.handleErrorResponse(resp)
+		return false, b.client.handleErrorResponse(resp, body)
 	}
 
 	var res struct {
 		Data struct {
 			Allowed bool `json:"allowed"`
 		} `json:"data"`
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, err
 	}
 
 	if err := json.Unmarshal(body, &res); err != nil {
