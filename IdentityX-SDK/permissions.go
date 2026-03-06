@@ -3,6 +3,7 @@ package goauth
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -106,7 +107,13 @@ func (s *PermissionService) GiveDirect(ctx context.Context, entityID uuid.UUID, 
 		return err
 	}
 
-	return s.client.do(req, nil)
+	err = s.client.do(req, nil)
+	if err != nil {
+		log.Printf("[GiveDirect] error: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *PermissionService) TakeDirect(ctx context.Context, entityID uuid.UUID, object, action string, scopeID *uuid.UUID) error {
@@ -128,7 +135,13 @@ func (s *PermissionService) TakeDirect(ctx context.Context, entityID uuid.UUID, 
 		return err
 	}
 
-	return s.client.do(req, nil)
+	err = s.client.do(req, nil)
+	if err != nil {
+		log.Printf("[TakeDirect] error: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *PermissionService) GiveDirectByID(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
@@ -142,7 +155,13 @@ func (s *PermissionService) GiveDirectByID(ctx context.Context, entityID uuid.UU
 		return err
 	}
 
-	return s.client.do(req, nil)
+	err = s.client.do(req, nil)
+	if err != nil {
+		log.Printf("[GiveDirectByID] error: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *PermissionService) TakeDirectByID(ctx context.Context, entityID uuid.UUID, permissionID uuid.UUID, scopeID *uuid.UUID) error {
@@ -156,7 +175,13 @@ func (s *PermissionService) TakeDirectByID(ctx context.Context, entityID uuid.UU
 		return err
 	}
 
-	return s.client.do(req, nil)
+	err = s.client.do(req, nil)
+	if err != nil {
+		log.Printf("[TakeDirectByID] error: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *PermissionService) GetEffective(ctx context.Context, entityID uuid.UUID, scopeID *uuid.UUID) ([]Permission, error) {
