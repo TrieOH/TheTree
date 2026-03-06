@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "axios-cookiejar-support": "^6.0.5",
-    "tough-cookie": "^6.0.0"
+    "tough-cookie": "^6.0.0",
+    "ws": "^8.19.0"
   }
 }

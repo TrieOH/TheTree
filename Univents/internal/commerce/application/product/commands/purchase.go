@@ -147,9 +147,10 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	_ = conn.WriteJSON(sockets.WSMessage{
 		Type: "reservation_confirmed",
 		Payload: dtos.ReservationConfirmedPayload{
-			SessionID:    sessionID,
-			ClientSecret: clientSecret,
-			ExpiresAt:    expiresAt,
+			SessionID:       sessionID,
+			ClientSecret:    clientSecret,
+			PaymentIntentID: paymentIntentID,
+			ExpiresAt:       expiresAt,
 		},
 	})
 

@@ -14,6 +14,7 @@ import {createFullAccessTicket, createStandardTicket, createVIPTicket} from "./f
 import {TicketSchema} from "./schemas/ticket.js";
 import {addActivityPermission, addCheckpointPermission} from "./fixtures/ticket_permissions/add.js";
 import {TicketPermissionSchema} from "./schemas/ticket_permission.js";
+import WebSocket from "ws"
 
 let owner;
 beforeAll(async () => {
@@ -219,6 +220,9 @@ describe('ticket permissions', () => {
 
 let mug
 let shirt
+let vipTicketProduct
+let fullTicketProduct
+let standardTicketProduct
 describe('products', () => {
     test("create mug", async () => {
         let toCreate = createMug
@@ -248,6 +252,7 @@ describe('products', () => {
                 0,
             )
             const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            standardTicketProduct = ticketProduct
             expect(validate(ProductSchema, ticketProduct)).toBe(true)
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(standardTicket.id)
@@ -265,6 +270,7 @@ describe('products', () => {
                 100,
             )
             const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            vipTicketProduct = ticketProduct
             expect(validate(ProductSchema, ticketProduct)).toBe(true)
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(vipTicket.id)
@@ -282,9 +288,67 @@ describe('products', () => {
                 10,
             )
             const ticketProduct = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+            fullTicketProduct = ticketProduct
             expect(validate(ProductSchema, ticketProduct)).toBe(true)
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(fullTicket.id)
         })
     })
 });
+
+describe('purchase', () => {
+    test("buy 2x VIP, 1x Full Access, 1x shirt, 2x standard", async () => {
+        const cookies = await owner.defaults.jar.getCookies(process.env.BASE_URL)
+        const cookieHeader = cookies.map(c => `${c.key}=${c.value}`).join('; ')
+
+        const wsURL = process.env.BASE_URL
+            .replace('http://', 'ws://')
+            .replace('https://', 'wss://')
+
+        const ws = new WebSocket(
+            `${wsURL}/events/${event.id}/editions/${edition.id}/products/purchase`,
+            { headers: { Cookie: cookieHeader } }
+        )
+
+        await new Promise((resolve, reject) => {
+            let sessionID = null
+
+            ws.on("open", () => {
+                ws.send(JSON.stringify({
+                    items: [
+                        { product_id: vipTicketProduct.id, quantity: 2 },
+                        { product_id: fullTicketProduct.id, quantity: 1 },
+                        { product_id: shirt.id, quantity: 1 },
+                        { product_id: standardTicketProduct.id, quantity: 2 },
+                    ]
+                }))
+            })
+
+            ws.on("message", async (data) => {
+                const msg = JSON.parse(data)
+
+                if (msg.type === "reservation_failed") return reject(new Error("reservation failed"))
+                if (msg.type === "error") return reject(new Error(msg.payload))
+
+                if (msg.type === "reservation_confirmed") {
+                    sessionID = msg.payload.session_id
+                    await post(owner, `/events/${event.id}/editions/${edition.id}/products/purchase/confirm`, {
+                        session_id: sessionID,
+                        payment_intent_id: msg.payload.payment_intent_id,
+                    })
+                }
+
+                if (msg.type === "order_confirmed") {
+                    resolve()
+                }
+            })
+
+            ws.on("error", reject)
+            ws.on("close", () => {
+                if (!sessionID) reject(new Error("ws closed before reservation_confirmed"))
+            })
+        })
+
+        ws.close()
+    }, 10000)
+})
