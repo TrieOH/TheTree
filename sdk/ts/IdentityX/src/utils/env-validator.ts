@@ -1,9 +1,9 @@
 import { env } from "../core/env";
 
 export const validateProjectKey = () => {
-  if (!env.PROJECT_KEY || env.PROJECT_KEY.trim() === "") {
+  if (!env.PROJECT_ID || env.PROJECT_ID.trim() === "") {
     throw new Error(
-      "[TRIEOH SDK] Project Key is missing. Please set PUBLIC_TRIEOH_AUTH_PROJECT_KEY, NEXT_PUBLIC_TRIEOH_AUTH_PROJECT_KEY or VITE_TRIEOH_AUTH_PROJECT_KEY."
+      "[TRIEOH SDK] Project ID is missing. Please set PUBLIC_TRIEOH_AUTH_PROJECT_ID, NEXT_PUBLIC_TRIEOH_AUTH_PROJECT_ID or VITE_TRIEOH_AUTH_PROJECT_ID."
     );
   }
 };

@@ -13,14 +13,14 @@ import BasicInputField from "./Form/BasicInputField"
 import BasicSelectField from "./Form/BasicSelectField";
 
 export { 
-    SignIn, 
-    SignUp, 
-    TabbedSignUp, 
-    BasicLogoutButton, 
-    Copyright, 
-    Sessions, 
-    UpdateProfile,
-    EditorForm,
-    BasicInputField,
-    BasicSelectField
+  SignIn, 
+  SignUp, 
+  TabbedSignUp, 
+  BasicLogoutButton, 
+  Copyright, 
+  Sessions, 
+  UpdateProfile,
+  EditorForm,
+  BasicInputField,
+  BasicSelectField
 };

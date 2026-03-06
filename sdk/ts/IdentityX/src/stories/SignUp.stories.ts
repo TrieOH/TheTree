@@ -10,23 +10,15 @@ const meta = {
   argTypes: {
     flow_id: { control: 'text' },
   },
-  args: {
-    flow_id: 'default',
-  },
 } satisfies Meta<typeof SignUpWithProvider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: {
-    flow_id: "test"
-  }
-};
+export const Default: Story = { };
 
 export const WithLoginLink: Story = {
   args: {
-    flow_id: 'test',
     loginRedirect: () => alert("Redirect to Login")
   },
 };
