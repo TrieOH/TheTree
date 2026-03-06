@@ -183,13 +183,8 @@ func (s *RoleService) Take(ctx context.Context, entityID uuid.UUID, roleName str
 
 type RoleDefinition struct {
 	Name        string
-	Permissions []PermissionRef
+	Permissions []PermissionDefinition
 	Meta        map[string]interface{}
-}
-
-type PermissionRef struct {
-	Object string
-	Action string
 }
 
 type EnsureRoleResult struct {
