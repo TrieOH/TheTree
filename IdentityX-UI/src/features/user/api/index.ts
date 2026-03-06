@@ -56,7 +56,7 @@ export const userPermissionsQueryOptions = (project_id: string, id: string, scop
 
 export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, permission_id: string, scope_id: string | null) => {
   const { project_id, id } = userData;
-  const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/permissions`, {
+  const response = await authFetcher<void>(`/projects/${project_id}/identities/${id}/permissions/by-id`, {
     method: "POST",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
     body: JSON.stringify({ permission_id, scope_id })
@@ -68,7 +68,7 @@ export const givePermissionToUserFn = createClientOnlyFn(async (userData: User, 
 
 export const removePermissionOfUserFn = createClientOnlyFn((userData: User, permission_id: string,  scope_id: string | null) => {
   const { project_id, id } = userData;
-  return authFetcher<null>(`/projects/${project_id}/identities/${id}/permissions`, {
+  return authFetcher<null>(`/projects/${project_id}/identities/${id}/permissions/by-id`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
     body: JSON.stringify({ permission_id, scope_id })
