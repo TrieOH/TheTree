@@ -29,6 +29,11 @@ SELECT *
 FROM activities
 WHERE edition_id = $1 AND status != 'draft';
 
+-- name: ListEditionActivitiesAdmin :many
+SELECT *
+FROM activities
+WHERE edition_id = $1;
+
 -- name: WaitlistAppend :one
 INSERT INTO waitlist_entries (activity_id, user_id, position)
 SELECT $1, $2, COALESCE(MAX(position) + 1, 0)

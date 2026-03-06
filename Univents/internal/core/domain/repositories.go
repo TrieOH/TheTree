@@ -32,6 +32,8 @@ type ActivitiesRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Activity, error)
 	Start(ctx context.Context, id uuid.UUID) error
 	Finish(ctx context.Context, id uuid.UUID) error
+	List(ctx context.Context, editionID uuid.UUID) ([]Activity, error)
+	ListAdmin(ctx context.Context, editionID uuid.UUID) ([]Activity, error)
 }
 
 type CheckpointsRepository interface {

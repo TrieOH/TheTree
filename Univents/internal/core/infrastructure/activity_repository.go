@@ -135,3 +135,35 @@ func (repo *activitiesRepo) Finish(ctx context.Context, activityID uuid.UUID) er
 
 	return nil
 }
+
+func (repo *activitiesRepo) List(ctx context.Context, editionID uuid.UUID) ([]domain.Activity, error) {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.List")
+	defer span.End()
+
+	sqlcActivities, err := repo.queries(ctx).ListEditionActivities(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "activity")
+	}
+
+	out := make([]domain.Activity, len(sqlcActivities))
+	for _, activity := range sqlcActivities {
+		out = append(out, *mapActivityFromDB(&activity))
+	}
+	return out, nil
+}
+
+func (repo *activitiesRepo) ListAdmin(ctx context.Context, editionID uuid.UUID) ([]domain.Activity, error) {
+	ctx, span := repo.tracer.Start(ctx, "ActivitiesRepo.ListAdmin")
+	defer span.End()
+
+	sqlcActivities, err := repo.queries(ctx).ListEditionActivitiesAdmin(ctx, editionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "activity")
+	}
+
+	out := make([]domain.Activity, len(sqlcActivities))
+	for _, activity := range sqlcActivities {
+		out = append(out, *mapActivityFromDB(&activity))
+	}
+	return out, nil
+}

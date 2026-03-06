@@ -17,7 +17,7 @@ func (uc *QueryService) List(ctx context.Context, editionID uuid.UUID) (out []do
 }
 
 func (uc *QueryService) AdminList(ctx context.Context, editionID uuid.UUID) (out []domain.Product, err error) { // FIXME Pagination
-	ctx, span := uc.tracer.Start(ctx, "ProductService.List")
+	ctx, span := uc.tracer.Start(ctx, "ProductService.AdminList")
 	defer span.End()
 
 	edition, err := uc.editions.GetByID(ctx, editionID)

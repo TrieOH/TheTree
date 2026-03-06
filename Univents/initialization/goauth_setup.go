@@ -14,6 +14,7 @@ import (
 	tickethttp "univents/internal/commerce/interfaces/http/tickets"
 	activityAsync "univents/internal/core/application/activity/async"
 	activityCommands "univents/internal/core/application/activity/commands"
+	activityQueries "univents/internal/core/application/activity/queries"
 	checkpointCommands "univents/internal/core/application/checkpoint/commands"
 	"univents/internal/core/application/edition/async"
 	editionCommands "univents/internal/core/application/edition/commands"
@@ -133,6 +134,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)
 	activitiesC := activityCommands.New(activityRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
+	activitiesQ := activityQueries.New(activityRepo, editionRepo, app.GaClient, tracer, txRunner)
 	checkpointsC := checkpointCommands.New(checkpointRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
@@ -142,7 +144,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
-	activityHandler := activityhttp.NewActivitiesHandler(activitiesC)
+	activityHandler := activityhttp.NewActivitiesHandler(activitiesC, activitiesQ)
 	checkpointHandler := checkpointshttp.NewCheckpointsHandler(checkpointsC)
 	ticketHandler := tickethttp.NewTicketsHandler(ticketsC, ticketsQ)
 	productHandler := productshttp.NewProductsHandler(productsC, productsQ)

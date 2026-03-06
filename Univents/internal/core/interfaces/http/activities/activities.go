@@ -3,6 +3,7 @@ package editions
 import (
 	"net/http"
 	"univents/internal/core/application/activity/commands"
+	"univents/internal/core/application/activity/queries"
 	"univents/internal/core/domain"
 	"univents/internal/core/interfaces/http/dto"
 	"univents/internal/shared/validation"
@@ -12,16 +13,16 @@ import (
 
 type Handler struct {
 	commands *commands.CommandService
-	//queries  *queries.QueryService
+	queries  *queries.QueryService
 }
 
 func NewActivitiesHandler(
 	commands *commands.CommandService,
-	// queries *queries.QueryService,
+	queries *queries.QueryService,
 ) *Handler {
 	return &Handler{
 		commands: commands,
-		//queries:  queries,
+		queries:  queries,
 	}
 }
 
@@ -112,4 +113,70 @@ func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK().Send(w)
+}
+
+// List godoc
+// @Summary List all edition activities
+// @Description List all publicly available activities of the edition
+// @Tags activities
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Success 201 {object} object
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/activities [get]
+func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
+	editionID, rs := validation.GetUUID(r, "edition_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	out, err := handler.queries.List(ctx, editionID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
+}
+
+// ListAdmin godoc
+// @Summary List all edition activities
+// @Description if user has permission activities:read list all edition activities
+// @Tags activities
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Success 201 {object} object
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/activities/admin [get]
+func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
+	editionID, rs := validation.GetUUID(r, "edition_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	out, err := handler.queries.AdminList(ctx, editionID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
 }
