@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.4
-	github.com/TrieOH/goauth-sdk-go v0.4.7
+	github.com/TrieOH/goauth-sdk-go v0.4.9
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2

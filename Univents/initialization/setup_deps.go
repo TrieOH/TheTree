@@ -15,27 +15,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func SetupGoAuth(app *UniventsApp) {
-	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
-	client, err := goauth.NewClient(goauth.Config{
-		BaseURL:   viper.GetString("GOAUTH_URL"),
-		APIKey:    viper.GetString("GOAUTH_API_KEY"),
-		ProjectID: projectID,
-	})
-	if err != nil {
-		log.Fatalf("Error creating goauth client: %s", err.Error())
-	}
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err = client.Tokens.GetJWKS(ctx, false)
-		if err != nil {
-			log.Fatalf("error fetching initial JWKS: %s", err.Error())
-		}
-	}()
-	app.GaClient = client
-}
-
 func SetupFUN() {
 	module := viper.GetString("MODULE")
 	if module == "" {
@@ -91,3 +70,178 @@ func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
 	go scheduler.Start()
 	log.Println("Started the cron Scheduler")
 }
+
+func SetupGoAuth(app *UniventsApp) {
+	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
+	client, err := goauth.NewClient(goauth.Config{
+		BaseURL:   viper.GetString("GOAUTH_URL"),
+		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		ProjectID: projectID,
+	})
+	if err != nil {
+		log.Fatalf("Error creating goauth client: %s", err.Error())
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, err = client.Tokens.GetJWKS(ctx, false)
+		if err != nil {
+			log.Fatalf("error fetching initial JWKS: %s", err.Error())
+		}
+	}()
+
+	perms, err := client.Permissions.EnsureExists(context.Background(), []goauth.PermissionDefinition{EventsCreate})
+	for _, p := range perms {
+		if p.Created {
+			log.Println("Created: " + p.Object + ":" + p.Action)
+		}
+	}
+
+	roles, err := client.Roles.EnsureExists(context.Background(), []goauth.RoleDefinition{
+		{
+			Name: "Event Owner",
+			Permissions: []goauth.PermissionDefinition{
+				EventsPublish,
+				EditionsCreate,
+				EditionsAnnounce,
+				ActivitiesCreate,
+				ActivitiesPublish,
+				ActivitiesRead,
+				ProductsCreate,
+				ProductsRead,
+				CheckpointsCreate,
+				CheckpointsRead,
+				TicketsCreate,
+				TicketsEdit,
+				TicketsRead,
+			},
+			Meta: map[string]interface{}{
+				"color": "#ef4444",
+				"icon":  "Shield",
+			},
+		},
+	})
+
+	for _, r := range roles {
+		if r.Created {
+			log.Println("Created: " + r.Name)
+		}
+	}
+
+	app.GaClient = client
+}
+
+var (
+	EventsCreate = goauth.PermissionDefinition{
+		Object: "events",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	EventsPublish = goauth.PermissionDefinition{
+		Object: "events",
+		Action: "publish",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Mail",
+		},
+	}
+	EditionsCreate = goauth.PermissionDefinition{
+		Object: "editions",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	EditionsAnnounce = goauth.PermissionDefinition{
+		Object: "editions",
+		Action: "announce",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Mail",
+		},
+	}
+	ActivitiesCreate = goauth.PermissionDefinition{
+		Object: "activities",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	ActivitiesPublish = goauth.PermissionDefinition{
+		Object: "activities",
+		Action: "publish",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Mail",
+		},
+	}
+	ActivitiesRead = goauth.PermissionDefinition{
+		Object: "activities",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
+		},
+	}
+	ProductsCreate = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	ProductsRead = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
+		},
+	}
+	CheckpointsCreate = goauth.PermissionDefinition{
+		Object: "checkpoints",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	CheckpointsRead = goauth.PermissionDefinition{
+		Object: "checkpoints",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
+		},
+	}
+	TicketsCreate = goauth.PermissionDefinition{
+		Object: "tickets",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	TicketsRead = goauth.PermissionDefinition{
+		Object: "tickets",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
+		},
+	}
+	TicketsEdit = goauth.PermissionDefinition{
+		Object: "tickets",
+		Action: "edit",
+		Meta: map[string]interface{}{
+			"color": "#6366f1",
+			"icon":  "PenLine",
+		},
+	}
+)
