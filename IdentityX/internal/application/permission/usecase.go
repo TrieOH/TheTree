@@ -467,3 +467,73 @@ func (uc *UseCase) Check(ctx context.Context, in inbounds.CheckPermissionInput) 
 	span.SetAttributes(attribute.Bool("permission.found", false))
 	return false, fail.New(errx.PERMissionInsufficient).RecordCtx(ctx)
 }
+
+func (uc *UseCase) EnsureExists(ctx context.Context, in inbounds.EnsurePermissionsInput) ([]inbounds.EnsurePermissionResult, error) {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.EnsureExists")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.ProjectID == nil {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("project ID is required").RecordCtx(ctx)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot ensure permissions for a project you don't own").RecordCtx(ctx)
+	}
+
+	results := make([]inbounds.EnsurePermissionResult, 0, len(in.Permissions))
+
+	for _, permDef := range in.Permissions {
+		if err := permissions.ValidatePermission(ctx, permDef.Object, permDef.Action); err != nil {
+			return nil, err
+		}
+
+		existing, err := uc.permissions.GetByObjectAction(ctx, permDef.Object, permDef.Action, *in.ProjectID)
+		if err == nil && existing != nil {
+			results = append(results, inbounds.EnsurePermissionResult{
+				Object:  permDef.Object,
+				Action:  permDef.Action,
+				Created: false,
+			})
+			continue
+		}
+
+		created, err := uc.permissions.Create(ctx, permissions.Permission{
+			ProjectID: in.ProjectID,
+			Object:    permDef.Object,
+			Action:    permDef.Action,
+			Meta:      permDef.Meta,
+		})
+		if err != nil {
+			if fail.Is(err, errx.PERMissionAlreadyExists) {
+				results = append(results, inbounds.EnsurePermissionResult{
+					Object:  permDef.Object,
+					Action:  permDef.Action,
+					Created: false,
+				})
+				continue
+			}
+			return nil, err
+		}
+
+		_ = created
+
+		results = append(results, inbounds.EnsurePermissionResult{
+			Object:  permDef.Object,
+			Action:  permDef.Action,
+			Created: true,
+		})
+	}
+
+	return results, nil
+}

@@ -441,3 +441,64 @@ func (handler *PermissionHandler) Check(w http.ResponseWriter, r *http.Request) 
 
 	resp.Forbidden("Permission Denied").WithData(map[string]bool{"allowed": hasPermission}).Send(w)
 }
+
+// EnsureExists godoc
+// @Summary Ensure permissions exist
+// @Description Ensures that the specified permissions exist, creating any that are missing. Idempotent operation.
+// @Tags permissions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param permissionInfo body dto.EnsurePermissionsRequest true "Permissions to ensure exist"
+// @Success 200 {object} dto.EnsurePermissionsResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/permissions/ensure [post]
+func (handler *PermissionHandler) EnsureExists(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.EnsurePermissionsRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.EnsurePermissionsInput{
+		ProjectID: &projectID,
+	}
+
+	in.Permissions = make([]inbounds.PermissionDefinition, 0, len(req.Permissions))
+	for _, p := range req.Permissions {
+		in.Permissions = append(in.Permissions, inbounds.PermissionDefinition{
+			Object: p.Object,
+			Action: p.Action,
+			Meta:   p.Meta,
+		})
+	}
+
+	ctx := r.Context()
+	results, err := handler.permission.EnsureExists(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	response := dto.EnsurePermissionsResponse{
+		Permissions: make([]dto.EnsurePermissionResultDTO, 0, len(results)),
+	}
+	for _, res := range results {
+		response.Permissions = append(response.Permissions, dto.EnsurePermissionResultDTO{
+			Object:  res.Object,
+			Action:  res.Action,
+			Created: res.Created,
+		})
+	}
+
+	resp.OK().WithData(response).Send(w)
+}

@@ -77,3 +77,19 @@ func RoleSliceToRoleOutputSlice(roles []roles.Role) []RoleOutput {
 	}
 	return out
 }
+
+type EnsureRolesInput struct {
+	ProjectID *uuid.UUID
+	Roles     []RoleDefinition
+}
+
+type RoleDefinition struct {
+	Name        string
+	Permissions []PermissionDefinition
+	Meta        *json.RawMessage
+}
+
+type EnsureRoleResult struct {
+	Name    string
+	Created bool
+}

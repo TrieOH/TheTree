@@ -706,3 +706,71 @@ func (handler *RoleHandler) GetUserRoles(w http.ResponseWriter, r *http.Request)
 
 	resp.OK().WithData(dto.RoleOutputSliceToRoleResponseSlice(roles)).Send(w)
 }
+
+// EnsureExists godoc
+// @Summary Ensure roles exist
+// @Description Ensures that the specified roles exist with the specified permissions, creating any missing roles and permissions. Idempotent operation.
+// @Tags roles
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param roleInfo body dto.EnsureRolesRequest true "Roles to ensure exist"
+// @Success 200 {object} dto.EnsureRolesResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/roles/ensure [post]
+func (handler *RoleHandler) EnsureExists(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.EnsureRolesRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.EnsureRolesInput{
+		ProjectID: &projectID,
+	}
+
+	in.Roles = make([]inbounds.RoleDefinition, 0, len(req.Roles))
+	for _, role := range req.Roles {
+		perms := make([]inbounds.PermissionDefinition, 0, len(role.Permissions))
+		for _, p := range role.Permissions {
+			perms = append(perms, inbounds.PermissionDefinition{
+				Object: p.Object,
+				Action: p.Action,
+				Meta:   p.Meta,
+			})
+		}
+		in.Roles = append(in.Roles, inbounds.RoleDefinition{
+			Name:        role.Name,
+			Permissions: perms,
+			Meta:        role.Meta,
+		})
+	}
+
+	ctx := r.Context()
+	results, err := handler.role.EnsureExists(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	response := dto.EnsureRolesResponse{
+		Roles: make([]dto.EnsureRoleResultDTO, 0, len(results)),
+	}
+	for _, res := range results {
+		response.Roles = append(response.Roles, dto.EnsureRoleResultDTO{
+			Name:    res.Name,
+			Created: res.Created,
+		})
+	}
+
+	resp.OK().WithData(response).Send(w)
+}

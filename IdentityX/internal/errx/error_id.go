@@ -171,9 +171,10 @@ var (
 
 	DBNestedTransactionNotAllowed = fail.ID(9, "DB", 0, true, "DBNestedTransactionNotAllowed")
 
-	ROLENotOwnedByPrincipal = fail.ID(0, "ROLE", 0, false, "ROLENotOwnedByPrincipal")
-	ROLEAlreadyGranted      = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
-	ROLENameAlreadyTaken    = fail.ID(0, "ROLE", 2, false, "ROLENameAlreadyTaken")
+	ROLENotOwnedByPrincipal      = fail.ID(0, "ROLE", 0, false, "ROLENotOwnedByPrincipal")
+	ROLEAlreadyGranted           = fail.ID(0, "ROLE", 1, false, "ROLEAlreadyGranted")
+	ROLENameAlreadyTaken         = fail.ID(0, "ROLE", 2, false, "ROLENameAlreadyTaken")
+	ROLEPermissionAlreadyGranted = fail.ID(0, "ROLE", 3, false, "ROLEPermissionAlreadyGranted")
 
 	SCOPEDuplicateNameAndExternalID = fail.ID(0, "SCOPE", 0, false, "SCOPEDDuplicateNameAndExternalID")
 	SCOPEInvalidShape               = fail.ID(0, "SCOPE", 1, false, "SCOPEInvalidShape")

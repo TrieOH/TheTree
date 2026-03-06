@@ -67,3 +67,20 @@ func PermissionSliceToPermissionOutputSlice(permissions []permissions.Permission
 	}
 	return out
 }
+
+type EnsurePermissionsInput struct {
+	ProjectID   *uuid.UUID
+	Permissions []PermissionDefinition
+}
+
+type PermissionDefinition struct {
+	Object string
+	Action string
+	Meta   *json.RawMessage
+}
+
+type EnsurePermissionResult struct {
+	Object  string
+	Action  string
+	Created bool
+}

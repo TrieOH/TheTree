@@ -2,6 +2,7 @@ package role
 
 import (
 	"GoAuth/internal/domain/authz"
+	"GoAuth/internal/domain/permissions"
 	"GoAuth/internal/domain/roles"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/errx"
@@ -566,4 +567,103 @@ func (uc *UseCase) GetUserRoles(ctx context.Context, in inbounds.GetRoleInput) (
 	}
 
 	return inbounds.RoleSliceToRoleOutputSlice(foundRoles), nil
+}
+
+func (uc *UseCase) EnsureExists(ctx context.Context, in inbounds.EnsureRolesInput) ([]inbounds.EnsureRoleResult, error) {
+	ctx, span := usecaseTracer.Start(ctx, "RoleService.EnsureExists")
+	defer span.End()
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return nil, err
+	}
+
+	if in.ProjectID == nil {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("project ID is required").RecordCtx(ctx)
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isOwner {
+		return nil, fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot ensure roles for a project you don't own").RecordCtx(ctx)
+	}
+
+	results := make([]inbounds.EnsureRoleResult, 0, len(in.Roles))
+
+	for _, roleDef := range in.Roles {
+		existingRole, err := uc.roles.GetByName(ctx, roleDef.Name, in.ProjectID)
+		roleCreated := false
+
+		if err != nil {
+			if fail.Is(err, errx.SQLNotFound) {
+				createdRole, createErr := uc.roles.Create(ctx, roles.Role{
+					ProjectID: in.ProjectID,
+					Name:      roleDef.Name,
+					Meta:      roleDef.Meta,
+				})
+				if createErr != nil {
+					if fail.Is(createErr, errx.ROLENameAlreadyTaken) {
+						existingRole, err = uc.roles.GetByName(ctx, roleDef.Name, in.ProjectID)
+						if err != nil {
+							return nil, err
+						}
+					} else {
+						return nil, createErr
+					}
+				} else {
+					existingRole = createdRole
+					roleCreated = true
+				}
+			} else {
+				return nil, err
+			}
+		}
+
+		for _, permRef := range roleDef.Permissions {
+			existingPerm, err := uc.permissions.GetByObjectAction(ctx, permRef.Object, permRef.Action, *in.ProjectID)
+
+			if err != nil {
+				if fail.Is(err, errx.SQLNotFound) {
+					createdPerm, createErr := uc.permissions.Create(ctx, permissions.Permission{
+						ProjectID: in.ProjectID,
+						Object:    permRef.Object,
+						Action:    permRef.Action,
+						Meta:      permRef.Meta,
+					})
+					if createErr != nil {
+						if fail.Is(createErr, errx.PERMissionAlreadyExists) {
+							existingPerm, err = uc.permissions.GetByObjectAction(ctx, permRef.Object, permRef.Action, *in.ProjectID)
+							if err != nil {
+								return nil, err
+							}
+						} else {
+							return nil, createErr
+						}
+					} else {
+						existingPerm = createdPerm
+					}
+				} else {
+					return nil, err
+				}
+			}
+
+			addPermErr := uc.roles.AddPermission(ctx, existingRole.ID, existingPerm.ID)
+			if addPermErr != nil {
+				if !fail.Is(addPermErr, errx.PERMissionAlreadyGranted) && !fail.Is(addPermErr, errx.ROLEPermissionAlreadyGranted) {
+					return nil, addPermErr
+				}
+			}
+		}
+
+		results = append(results, inbounds.EnsureRoleResult{
+			Name:    roleDef.Name,
+			Created: roleCreated,
+		})
+	}
+
+	return results, nil
 }
