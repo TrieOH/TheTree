@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,12 +20,14 @@ type Config struct {
 	APIKey     string
 	ProjectID  uuid.UUID
 	HTTPClient *http.Client
+	Debug      bool
 }
 
 type Client struct {
 	config     Config
 	httpClient *http.Client
 	projectID  uuid.UUID
+	debug      bool
 
 	Roles       *RoleService
 	Scopes      *ScopeService
@@ -56,6 +59,7 @@ func NewClient(config Config) (*Client, error) {
 		config:     config,
 		httpClient: config.HTTPClient,
 		projectID:  config.ProjectID,
+		debug:      config.Debug,
 	}
 
 	c.Roles = &RoleService{client: c}
@@ -108,12 +112,18 @@ func (c *Client) do(req *http.Request, v any) error {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+
+	if c.debug {
+		log.Printf("[DEBUG] %s %s -> %d body: %s", req.Method, req.URL.String(), resp.StatusCode, string(body))
+	}
+
 	if resp.StatusCode >= 400 {
-		return c.handleErrorResponse(resp)
+		return c.handleErrorResponse(resp, body)
 	}
 
 	if v != nil {
-		err = json.NewDecoder(resp.Body).Decode(v)
+		err = json.Unmarshal(body, v)
 		if err != nil {
 			return fail.New(SDKResponseUnmarshalingErrorID).WithArgs(err.Error())
 		}
@@ -129,9 +139,8 @@ type apiErrorResponse struct {
 	Code    int      `json:"code"`
 }
 
-func (c *Client) handleErrorResponse(resp *http.Response) error {
+func (c *Client) handleErrorResponse(resp *http.Response, body []byte) error {
 	var errResp apiErrorResponse
-	body, _ := io.ReadAll(resp.Body)
 	_ = json.Unmarshal(body, &errResp)
 
 	return fail.From(&httpStatusError{
