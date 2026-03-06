@@ -7,9 +7,11 @@ export interface TrieOHEnv {
 export function resolveEnv(): TrieOHEnv {
   const isServer = typeof window === "undefined";
 
-  let viteEnv: ImportMetaEnv | Record<string, never> = {};
-
-  if (typeof import.meta !== "undefined") viteEnv = import.meta.env;
+  const viteEnv = (
+    typeof import.meta !== "undefined" && import.meta.env
+      ? import.meta.env
+      : {}
+  ) as Partial<ImportMetaEnv>;
 
   const safeProcessEnv: NodeJS.ProcessEnv = 
     typeof process !== "undefined" ? process.env : {};
@@ -30,5 +32,35 @@ export function resolveEnv(): TrieOHEnv {
     BASE_URL: "https://api.default.com",
   };
 }
+let memoizedEnv: TrieOHEnv | null = null;
+let overrides: Partial<TrieOHEnv> = {};
 
-export const env = resolveEnv();
+/**
+ * Configure the SDK manually. This will override any environment variables.
+ */
+export function configure(config: Partial<TrieOHEnv>) {
+  overrides = { ...overrides, ...config };
+  memoizedEnv = null; // Reset memoization to apply new config
+}
+
+function getEnv(): TrieOHEnv {
+  if (!memoizedEnv) {
+    const resolved = resolveEnv();
+    memoizedEnv = {
+      ...resolved,
+      ...overrides,
+    };
+  }
+  return memoizedEnv;
+}
+export const env: TrieOHEnv = {
+  get PROJECT_ID() {
+    return getEnv().PROJECT_ID;
+  },
+  get API_KEY() {
+    return getEnv().API_KEY;
+  },
+  get BASE_URL() {
+    return getEnv().BASE_URL;
+  },
+};

@@ -3,6 +3,7 @@ import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
 import { getTokenClaims } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
+import { configure } from "../core/env";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -15,14 +16,26 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({
   children,
   baseURL,
+  projectId,
   isClient = true,
 }: {
   children: React.ReactNode;
   baseURL?: string;
+  projectId?: string;
   isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Apply manual configuration if provided
+  useMemo(() => {
+    if (projectId || baseURL) {
+      configure({
+        ...(projectId ? { PROJECT_ID: projectId } : {}),
+        ...(baseURL ? { BASE_URL: baseURL } : {}),
+      });
+    }
+  }, [projectId, baseURL]);
 
   const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
   const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
