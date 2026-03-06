@@ -2,10 +2,12 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
 import { getTokenClaims } from "../utils/token-utils";
+import { validateProjectKey } from "../utils/env-validator";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
+  isClient?: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -13,9 +15,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({
   children,
   baseURL,
+  isClient = true,
 }: {
   children: React.ReactNode;
   baseURL?: string;
+  isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,6 +28,8 @@ export function AuthProvider({
   const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
 
   useEffect(() => {
+    if (isClient) validateProjectKey();
+
     const loadAuthStatus = async () => {
       if(getTokenClaims()) {
         setIsAuthenticated(true);
@@ -46,11 +52,11 @@ export function AuthProvider({
       } finally { setReady(true); }
     }
     loadAuthStatus();
-  }, [auth]);
+  }, [auth, isClient]);
 
   if (!ready) return null;
   return (
-    <AuthContext.Provider value={{ auth, isAuthenticated }}>
+    <AuthContext.Provider value={{ auth, isAuthenticated, isClient }}>
       {children}
     </AuthContext.Provider>
   );
