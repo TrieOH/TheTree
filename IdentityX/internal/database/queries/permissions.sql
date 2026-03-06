@@ -64,7 +64,8 @@ SELECT EXISTS(
 
 -- name: GiveDirectPermission :exec
 INSERT INTO identity_permissions (identity_id, permission_id, scope_id)
-VALUES ($1, $2, $3);
+VALUES ($1, $2, $3)
+ON CONFLICT DO NOTHING;
 
 -- name: TakeDirectPermission :exec
 DELETE FROM identity_permissions

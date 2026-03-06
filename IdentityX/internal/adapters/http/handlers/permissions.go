@@ -240,14 +240,14 @@ func (handler *PermissionHandler) ListByProject(w http.ResponseWriter, r *http.R
 
 // GiveDirect godoc
 // @Summary Give direct permission to user
-// @Description Grants a permission directly to a user (entity) within a specific scope.
+// @Description Grants a permission directly to a user (entity) within a specific scope using object:action. Idempotent.
 // @Tags permissions
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Param project_id path string true "Project ID"
 // @Param entity_id path string true "Identity ID"
-// @Param permissionInfo body dto.UserPermissionRequest true "Permission assignment details"
+// @Param permissionInfo body dto.UserPermissionRequest true "Permission assignment details (object:action)"
 // @Success 200 {object} object "Added permission to user"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
@@ -273,10 +273,11 @@ func (handler *PermissionHandler) GiveDirect(w http.ResponseWriter, r *http.Requ
 	}
 
 	in := inbounds.ManagePermissionInput{
-		ProjectID:    &projectID,
-		PermissionID: req.PermissionID,
-		EntityID:     entityID,
-		ScopeID:      req.ScopeID,
+		ProjectID: &projectID,
+		Object:    req.Object,
+		Action:    req.Action,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
 	}
 
 	ctx := r.Context()
@@ -291,14 +292,14 @@ func (handler *PermissionHandler) GiveDirect(w http.ResponseWriter, r *http.Requ
 
 // TakeDirect godoc
 // @Summary Revoke direct permission from user
-// @Description Revokes a directly granted permission from a user (entity).
+// @Description Revokes a directly granted permission from a user (entity) using object:action.
 // @Tags permissions
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Param project_id path string true "Project ID"
 // @Param entity_id path string true "Identity ID"
-// @Param permissionInfo body dto.UserPermissionRequest true "Permission revocation details"
+// @Param permissionInfo body dto.UserPermissionRequest true "Permission revocation details (object:action)"
 // @Success 200 {object} object "Removed permission from user"
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
@@ -324,6 +325,58 @@ func (handler *PermissionHandler) TakeDirect(w http.ResponseWriter, r *http.Requ
 	}
 
 	in := inbounds.ManagePermissionInput{
+		ProjectID: &projectID,
+		Object:    req.Object,
+		Action:    req.Action,
+		EntityID:  entityID,
+		ScopeID:   req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.TakeDirect(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Removed permission from user").Send(w)
+}
+
+// GiveDirectByID godoc
+// @Summary Give direct permission to user by ID
+// @Description Grants a permission directly to a user (entity) within a specific scope using permission ID. Not idempotent.
+// @Tags permissions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param permissionInfo body dto.UserPermissionByIDRequest true "Permission assignment details (permission_id)"
+// @Success 200 {object} object "Added permission to user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/permissions/by-id [post]
+func (handler *PermissionHandler) GiveDirectByID(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserPermissionByIDRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManagePermissionByIDInput{
 		ProjectID:    &projectID,
 		PermissionID: req.PermissionID,
 		EntityID:     entityID,
@@ -331,7 +384,58 @@ func (handler *PermissionHandler) TakeDirect(w http.ResponseWriter, r *http.Requ
 	}
 
 	ctx := r.Context()
-	err := handler.permission.TakeDirect(ctx, in)
+	err := handler.permission.GiveDirectByID(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Added permission to user").Send(w)
+}
+
+// TakeDirectByID godoc
+// @Summary Revoke direct permission from user by ID
+// @Description Revokes a directly granted permission from a user (entity) using permission ID.
+// @Tags permissions
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
+// @Param project_id path string true "Project ID"
+// @Param entity_id path string true "Identity ID"
+// @Param permissionInfo body dto.UserPermissionByIDRequest true "Permission revocation details (permission_id)"
+// @Success 200 {object} object "Removed permission from user"
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /projects/{project_id}/identities/{entity_id}/permissions/by-id [delete]
+func (handler *PermissionHandler) TakeDirectByID(w http.ResponseWriter, r *http.Request) {
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	entityID, rs := getUUID(r, "entity_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dto.UserPermissionByIDRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	in := inbounds.ManagePermissionByIDInput{
+		ProjectID:    &projectID,
+		PermissionID: req.PermissionID,
+		EntityID:     entityID,
+		ScopeID:      req.ScopeID,
+	}
+
+	ctx := r.Context()
+	err := handler.permission.TakeDirectByID(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

@@ -17,6 +17,12 @@ type UpdatePermissionRequest struct {
 }
 
 type UserPermissionRequest struct {
+	ScopeID *uuid.UUID `json:"scope_id"`
+	Object  string     `json:"object" validate:"required"`
+	Action  string     `json:"action" validate:"required"`
+}
+
+type UserPermissionByIDRequest struct {
 	ScopeID      *uuid.UUID `json:"scope_id"`
 	PermissionID uuid.UUID  `json:"permission_id" validate:"required"`
 }

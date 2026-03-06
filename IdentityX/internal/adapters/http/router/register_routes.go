@@ -254,6 +254,8 @@ func registerPermissionRoutes(
 			Get("/projects/{project_id}/identities/{entity_id}/permissions", h.GetEffective)
 		r.Post("/projects/{project_id}/identities/{entity_id}/permissions", h.GiveDirect)
 		r.Delete("/projects/{project_id}/identities/{entity_id}/permissions", h.TakeDirect)
+		r.Post("/projects/{project_id}/identities/{entity_id}/permissions/by-id", h.GiveDirectByID)
+		r.Delete("/projects/{project_id}/identities/{entity_id}/permissions/by-id", h.TakeDirectByID)
 		r.Route("/projects/{project_id}/permissions", func(r chi.Router) {
 			r.Post("/", h.Create)
 			r.Post("/ensure", h.EnsureExists)

@@ -251,6 +251,110 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own").RecordCtx(ctx)
 	}
 
+	permission, err := uc.permissions.GetByObjectAction(ctx, in.Object, in.Action, *in.ProjectID)
+	if err != nil {
+		if errx.IsNotFound(err) {
+			return fail.New(errx.PERMissionNotOwnedByPrincipal).WithArgs("permission not found").RecordCtx(ctx)
+		}
+		return err
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return fail.New(errx.ProjectUserNotFromProject).RecordCtx(ctx)
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.permissions.GiveDirect(ctx, permission.ID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.TakeDirect")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own").RecordCtx(ctx)
+	}
+
+	permission, err := uc.permissions.GetByObjectAction(ctx, in.Object, in.Action, *in.ProjectID)
+	if err != nil {
+		if errx.IsNotFound(err) {
+			return fail.New(errx.PERMissionNotOwnedByPrincipal).WithArgs("permission not found").RecordCtx(ctx)
+		}
+		return err
+	}
+
+	var userBelongs bool
+	userBelongs, err = uc.projectUsers.BelongsToProject(ctx, in.EntityID, *in.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	if !userBelongs {
+		return fail.New(errx.ProjectUserNotFromProject).RecordCtx(ctx)
+	}
+
+	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.permissions.TakeDirect(ctx, permission.ID, userIdentity.ID, in.ScopeID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UseCase) GiveDirectByID(ctx context.Context, in inbounds.ManagePermissionByIDInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.GiveDirectByID")
+	defer span.End()
+
+	isProjectGlobal := in.ScopeID == nil
+	span.SetAttributes(attribute.Bool("permission.project_global", isProjectGlobal))
+
+	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
+	if err != nil {
+		return err
+	}
+
+	var isOwner bool
+	isOwner, err = uc.projects.IsOwnerOf(ctx, *in.ProjectID, principal.UserID)
+	if err != nil {
+		return err
+	}
+
+	if !isOwner {
+		return fail.New(errx.ProjectNotOwnedByPrincipal).WithArgs("cannot edit a project you don't own").RecordCtx(ctx)
+	}
+
 	var permissionBelongs bool
 	permissionBelongs, err = uc.permissions.BelongsToProject(ctx, in.PermissionID, *in.ProjectID)
 	if err != nil {
@@ -283,8 +387,8 @@ func (uc *UseCase) GiveDirect(ctx context.Context, in inbounds.ManagePermissionI
 	return nil
 }
 
-func (uc *UseCase) TakeDirect(ctx context.Context, in inbounds.ManagePermissionInput) error {
-	ctx, span := usecaseTracer.Start(ctx, "PermissionService.TakeDirect")
+func (uc *UseCase) TakeDirectByID(ctx context.Context, in inbounds.ManagePermissionByIDInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "PermissionService.TakeDirectByID")
 	defer span.End()
 
 	isProjectGlobal := in.ScopeID == nil
