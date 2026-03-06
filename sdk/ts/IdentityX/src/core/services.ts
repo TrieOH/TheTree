@@ -161,4 +161,40 @@ export const createServerAuthService = (apiInstance: Api) => ({
       }
     );
   },
+
+  assignRoleByNameToUser: async (user_id: string, role_name: string, scope_id: string | null) => {
+    validateProjectKey();
+    validateApiKey();
+
+    const url = `/projects/${env.PROJECT_ID}/identities/${user_id}/roles/by-name`
+
+    return apiInstance.post<void>(
+      url,
+      { role_name, scope_id },
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  },
+
+  removeRoleByNameFromUser: async (user_id: string, role_name: string, scope_id: string | null) => {
+    validateProjectKey();
+    validateApiKey();
+
+    const url = `/projects/${env.PROJECT_ID}/identities/${user_id}/roles/by-name`
+
+    return apiInstance.delete<void>(
+      url,
+      { role_name, scope_id },
+      {
+        headers: {
+          "Authorization": `Bearer ${env.API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  },
 });
