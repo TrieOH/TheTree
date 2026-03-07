@@ -203,11 +203,13 @@ export default function UserPermEditor({
         />
       }
       {currentType === "Roles" && isReview && !isTheEnd &&
-        <UserPermTree
-          node={buildRolePermissionsToNodeTree(rolesWithPermissions, getScopeName())}
-          goBack={() => setIsReview(false)}
-          onSubmit={handleGrantRoles}
-        />
+        <div className="w-full max-h-112.5 overflow-auto">
+          <UserPermTree
+            node={buildRolePermissionsToNodeTree(rolesWithPermissions, getScopeName())}
+            goBack={() => setIsReview(false)}
+            onSubmit={handleGrantRoles}
+          />
+        </div>
       }
       {currentType === "Roles" && isTheEnd && (
         <AccessConfirmationPanel
@@ -229,11 +231,13 @@ export default function UserPermEditor({
         />
       }
       {currentType === "Permissions" && isReview && !isTheEnd &&
-        <UserPermTree
-          node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()], getScopeName())}
-          goBack={() => setIsReview(false)}
-          onSubmit={handleGrantPermissions}
-        />
+        <div className="w-full max-h-112.5 overflow-auto">
+          <UserPermTree
+            node={buildDirectPermissionsToNodeTree([...selectedPermissionsMap.values()], getScopeName())}
+            goBack={() => setIsReview(false)}
+            onSubmit={handleGrantPermissions}
+          />
+        </div>
       }
       {currentType === "Permissions" && isTheEnd && (
         <AccessConfirmationPanel

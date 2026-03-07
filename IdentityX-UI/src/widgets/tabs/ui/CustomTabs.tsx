@@ -122,6 +122,25 @@ export default function CustomTabs({
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const navigate = useNavigate();
 
+  const idxOf = useCallback((v: string) => safeItems.findIndex((t) => t.value === v), [safeItems]);
+
+  // Sync with initialValue (e.g. from search params)
+  useEffect(() => {
+    if (initialValue && initialValue !== activeTab) {
+      const newIndex = idxOf(initialValue);
+      const currentIndex = idxOf(activeTab);
+      if (newIndex !== -1) {
+        setDirection(newIndex > currentIndex ? 1 : -1);
+        setActiveTab(initialValue);
+        setDisplayTab(initialValue);
+        
+        // Refresh when navigating via initialValue (back/forward)
+        const item = safeItems[newIndex];
+        if (item?.onRefresh) item.onRefresh();
+      }
+    }
+  }, [initialValue, activeTab, idxOf, safeItems]);
+
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 767px)');
     const onChange = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile(e.matches);
@@ -131,19 +150,11 @@ export default function CustomTabs({
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  // Auto-refresh when tab enters
-  useEffect(() => {
-    if (activeTab) {
-      const activeItem = safeItems.find(item => item.value === activeTab);
-      if (activeItem?.onRefresh) {
-        activeItem.onRefresh();
-      }
-    }
-  }, [activeTab, safeItems]);
-
-  const idxOf = useCallback((v: string) => safeItems.findIndex((t) => t.value === v), [safeItems]);
-
   const handleTabChange = useCallback((newValue: string) => {
+    // Call refresh on every click, even if it's the active tab
+    const activeItem = safeItems.find(item => item.value === newValue);
+    if (activeItem?.onRefresh) activeItem.onRefresh();
+
     if (newValue === activeTab && !deferTabSwitch) return;
     const newIndex = idxOf(newValue);
     const currentIndex = idxOf(activeTab);
@@ -165,7 +176,7 @@ export default function CustomTabs({
         tab: newValue,
       }),
     });
-  }, [activeTab, deferTabSwitch, idxOf, navigate, pendingTab]);
+  }, [activeTab, deferTabSwitch, idxOf, navigate, pendingTab, safeItems]);
 
   const contentVariants = useMemo(() => ({
     enter: (dir: number) => ({

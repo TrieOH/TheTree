@@ -20,7 +20,7 @@ export default function ScopeEditorSelector({ setCurrentScopeID, setCurrentType,
         </span>
         <p className="text-xs text-muted-foreground">What type of access do you want to grant?</p>
       </div>
-      <div className="w-full">
+      <div className="w-full max-h-112.5 overflow-auto">
         <UserPermTree
           node={scopeTree}
           goBack={() => setCurrentType(null)}
