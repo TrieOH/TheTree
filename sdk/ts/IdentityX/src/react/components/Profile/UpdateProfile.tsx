@@ -43,8 +43,9 @@ export function UpdateProfile({
 
     setLoading(true);
     const res = await auth.updateProfile(values);
-    if (res.code === 201 && onSuccess) await onSuccess();
-    else if (onFailed) await onFailed(res.message, res.trace);
+    if(res.success) {
+      if(onSuccess) await onSuccess();
+    } else if(onFailed) await onFailed(res.message, res.trace);
     setLoading(false);
   };
 

@@ -52,7 +52,7 @@ export function AuthProvider({
       console.log("[TRIEOH SDK] Attempting to refresh session...");
       try {
         const res = await auth.refreshProfileInfo();
-        if (res.code === 200) {
+        if (res.success) {
           setIsAuthenticated(true);
           console.log("[TRIEOH SDK] Session restored successfully.");
         } else {

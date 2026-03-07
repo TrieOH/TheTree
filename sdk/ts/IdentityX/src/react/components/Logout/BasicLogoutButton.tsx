@@ -21,7 +21,7 @@ export function BasicLogoutButton({
     setLoading(true);
 
     const res = await auth.logout();
-    if(res.code === 200 && onSuccess) await onSuccess();
+    if(res.success && onSuccess) await onSuccess();
     else if(onFailed) await onFailed(res.message);
     setLoading(false);
   }

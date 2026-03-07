@@ -60,7 +60,7 @@ export function SignIn({
     setLoadingSubmit(true);
 
     const res = await auth.login(email, password);
-    if(res.code === 200 && onSuccess) await onSuccess(res.data?.is_up_to_date || true);
+    if(res.success && onSuccess) await onSuccess(res.data.is_up_to_date || true);
     else if(onFailed) await onFailed(res.message);
     setLoadingSubmit(false);
   }
