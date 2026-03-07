@@ -3,6 +3,9 @@
 package router
 
 import (
+	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
+	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
 	"TriePayments/internal/interfaces/http/system"
 	"log"
@@ -23,9 +26,12 @@ import (
 )
 
 type HTTPDeps struct {
-	SystemHandler   *system.SystemHandler
-	AuthMiddleware  *middleware.AuthMiddleware
-	AsynqmonHandler http.Handler
+	SystemHandler     *system.SystemHandler
+	IntentsHandler    *intents.Handler
+	WorkspacesHandler *workspaces.Handler
+	ApiKeysHandler    *apiKeys.Handler
+	AuthMiddleware    *middleware.AuthMiddleware
+	AsynqmonHandler   http.Handler
 }
 
 // CreateRouter godoc

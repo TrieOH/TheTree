@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -161,6 +162,10 @@ func Internal(resource string) Error {
 */
 
 func FromDB(err error, resource string) Error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return NotFound(resource)
+	}
+
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
 		return Internal(resource).SetCause(err)

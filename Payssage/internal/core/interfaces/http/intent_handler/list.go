@@ -1,0 +1,37 @@
+package workspaces_handler
+
+import (
+	"TriePayments/internal/core/interfaces/http/dto"
+	"net/http"
+
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
+)
+
+// List godoc
+// @Summary List payment intents
+// @Description Lists all payment intents for the authenticated workspace. Accessible via API key or user session.
+// @Tags intents
+// @Accept json
+// @Produce json
+// @Param X-API-Key header string false "X-API-Key: tp_xxxxxxxx"
+// @Param Cookie header string false "Cookie: access_token=xxx"
+// @Security APIKey
+// @Security Cookie
+// @Success 200 {array} dto.IntentResponse "Intents retrieved successfully"
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /intents [get]
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	intents, err := h.queries.List(r.Context())
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	out := make([]dto.IntentResponse, 0, len(intents))
+	for _, i := range intents {
+		out = append(out, dto.MapIntentResponse(&i))
+	}
+
+	resp.OK().WithData(out).Send(w)
+}

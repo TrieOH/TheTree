@@ -18,7 +18,7 @@ import (
 func SetupFUN() {
 	module := viper.GetString("MODULE")
 	if module == "" {
-		module = "univents-module"
+		module = "trie-payments-module"
 	}
 
 	resp.SetConfig(resp.Config{
@@ -91,14 +91,27 @@ func SetupGoAuth(app *TriePayments) {
 		}
 	}()
 
-	perms, err := client.Permissions.EnsureExists(context.Background(), []goauth.PermissionDefinition{})
+	/*perms, err := client.Permissions.EnsureExists(context.Background(), []goauth.PermissionDefinition{})
 	for _, p := range perms {
 		if p.Created {
 			log.Println("Created: " + p.Object + ":" + p.Action)
 		}
-	}
+	}*/
 
-	roles, err := client.Roles.EnsureExists(context.Background(), []goauth.RoleDefinition{})
+	roles, err := client.Roles.EnsureExists(context.Background(), []goauth.RoleDefinition{
+		{
+			Name: "Client",
+			Permissions: []goauth.PermissionDefinition{
+				ApiKeysCreate,
+				ApiKeysRevoke,
+				WorkspacesCreate,
+			},
+			Meta: map[string]interface{}{
+				"color": "#10b981",
+				"icon":  "UserStar",
+			},
+		},
+	})
 
 	for _, r := range roles {
 		if r.Created {
@@ -109,4 +122,29 @@ func SetupGoAuth(app *TriePayments) {
 	app.GaClient = client
 }
 
-var ()
+var (
+	ApiKeysCreate = goauth.PermissionDefinition{
+		Object: "api_keys",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	ApiKeysRevoke = goauth.PermissionDefinition{
+		Object: "api_keys",
+		Action: "revoke",
+		Meta: map[string]interface{}{
+			"color": "#ef4444",
+			"icon":  "Trash2",
+		},
+	}
+	WorkspacesCreate = goauth.PermissionDefinition{
+		Object: "workspaces",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+)

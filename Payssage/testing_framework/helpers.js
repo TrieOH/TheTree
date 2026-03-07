@@ -16,6 +16,17 @@ export function createClient() {
     }));
 }
 
+export function createAPIKeyClient(apiKey) {
+    return wrapper(axios.create({
+        baseURL: process.env.BASE_URL,
+        jar: new CookieJar(),
+        withCredentials: true,
+        headers: {
+            "X-API-Key": apiKey,
+        },
+    }))
+}
+
 export async function loginAs(email, password) {
     const client = createClient();
     try {
@@ -47,6 +58,16 @@ export async function get(client, path) {
     } catch (e) {
         console.error(`GET ${path} failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2));
         throw e;
+    }
+}
+
+export async function deleteReq(client, path) {
+    try {
+        const res = await client.delete(path)
+        return res.data.data
+    } catch (e) {
+        console.error(`DELETE ${path} failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2))
+        throw e
     }
 }
 

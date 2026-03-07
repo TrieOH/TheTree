@@ -1,9 +1,21 @@
 package initialization
 
 import (
+	apiKeyCommands "TriePayments/internal/core/application/api_keys/commands"
+	apiKeyQueries "TriePayments/internal/core/application/api_keys/queries"
+	intentCommands "TriePayments/internal/core/application/intents/commands"
+	intentQueries "TriePayments/internal/core/application/intents/queries"
+	workspaceCommands "TriePayments/internal/core/application/workspaces/commands"
+	workspaceQueries "TriePayments/internal/core/application/workspaces/queries"
+	"TriePayments/internal/core/infrastructure"
+	apiKeysHandler "TriePayments/internal/core/interfaces/http/api_keys_handler"
+	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
 	"TriePayments/internal/interfaces/http/router"
 	"TriePayments/internal/interfaces/http/system"
+	"TriePayments/internal/plataform/database"
+	"TriePayments/internal/plataform/database/sqlc"
 	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/worker"
 	"context"
@@ -78,15 +90,18 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		}
 	}()
 
-	//q := sqlc.New(app.DB)
-	//txRunner := database.NewPGXTxRunner(app.DB)
+	q := sqlc.New(app.DB)
+	txRunner := database.NewPGXTxRunner(app.DB)
 	tracer := otel.Tracer(string(telemetry.TriePaymentsTracer))
-	//logs := telemetry.Log()
+	logs := telemetry.Log()
 	//ws := sockets.New()
 
-	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
-
 	// Init Repos
+	intentRepo := infrastructure.NewIntentsRepo(q, logs, tracer)
+	workspaceRepo := infrastructure.NewWorkspaceRepo(q, logs, tracer)
+	apiKeysRepo := infrastructure.NewApiKeyRepo(q, logs, tracer)
+
+	authMW := middleware.NewAuthMiddleware(app.GaClient, apiKeysRepo, workspaceRepo, tracer)
 
 	// init Async Handlers
 	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{})
@@ -102,10 +117,18 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	}()
 
 	// Init Commands and Queries
+	intentC := intentCommands.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	intentQ := intentQueries.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	workspaceC := workspaceCommands.New(workspaceRepo, app.GaClient, txRunner, tracer)
+	workspaceQ := workspaceQueries.New(workspaceRepo, app.GaClient, txRunner, tracer)
+	apiKeyC := apiKeyCommands.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
-
 	systemHandler := system.NewSystemHandler()
+	intentHandler := intents.NewIntentsHandler(intentC, intentQ)
+	workspaceHandler := workspaces.NewWorkspacesHandler(workspaceC, workspaceQ)
+	apiKeyHandler := apiKeysHandler.NewApiKeysHandler(apiKeyC, apiKeyQ)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
@@ -117,9 +140,12 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	})
 
 	deps := &router.HTTPDeps{
-		SystemHandler:   systemHandler,
-		AuthMiddleware:  authMW,
-		AsynqmonHandler: asynqmonHandler,
+		SystemHandler:     systemHandler,
+		IntentsHandler:    intentHandler,
+		WorkspacesHandler: workspaceHandler,
+		ApiKeysHandler:    apiKeyHandler,
+		AuthMiddleware:    authMW,
+		AsynqmonHandler:   asynqmonHandler,
 	}
 
 	app.Deps = deps
