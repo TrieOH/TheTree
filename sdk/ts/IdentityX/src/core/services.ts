@@ -7,20 +7,30 @@ import { env } from "./env";
 
 export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
+    const options = { requiresAuth: false };
     if (env.PROJECT_ID) {
       validateProjectKey();
       const url = `/projects/${env.PROJECT_ID}/login`;
-      const res = await apiInstance.post<{is_up_to_date: boolean}>(url, { email, password });
-      if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+      const res = await apiInstance.post<{is_up_to_date: boolean}>(
+        url,
+        { email, password },
+        options
+      );
+      if(res.success) await fetchAndSaveClaims(apiInstance);
       return res;
     }
 
-    const res = await apiInstance.post<{is_up_to_date: boolean}>("/auth/login", { email, password });
-    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+    const res = await apiInstance.post<{is_up_to_date: boolean}>(
+      "/auth/login", 
+      { email, password }, 
+      options
+    );
+    if(res.success) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
+    const options = { requiresAuth: false };
     if (env.PROJECT_ID) {
       validateProjectKey();
       
@@ -33,19 +43,15 @@ export const createAuthService = (apiInstance: Api) => ({
       const bodyData = {...{email, password}, ...flow_id && { custom_fields: custom } };
       const paramsUrl = params.toString() ? `?${params.toString()}` : "";
       const url = `/projects/${env.PROJECT_ID}/register${paramsUrl}`;
-      return apiInstance.post<string>(url, bodyData );
+      return apiInstance.post<string>(url, bodyData, options);
     }
 
-    return apiInstance.post<string>("/auth/register", { email, password });
+    return apiInstance.post<string>("/auth/register", { email, password }, options);
   },  
   
   logout: async () => {
-    const res = await apiInstance.post<string>(
-      "/auth/logout",
-      undefined, 
-      { requiresAuth: true }
-    );
-    if(res.code === 200) clearAuthTokens();
+    const res = await apiInstance.post<string>("/auth/logout");
+    if(res.success) clearAuthTokens();
     return res;
   },
 
@@ -53,23 +59,23 @@ export const createAuthService = (apiInstance: Api) => ({
     const res = await apiInstance.post<{is_up_to_date: boolean}>(
       "/auth/refresh",
       undefined,
-      { requiresAuth: true, skipRefresh: true }
+      { skipRefresh: true }
     );
-    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+    if(res.success) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 
   sessions: async () => {
-    return apiInstance.get<SessionI[]>("/sessions", { requiresAuth: true });
+    return apiInstance.get<SessionI[]>("/sessions");
   },
 
   revokeASession: async (id: string) => {
-    return apiInstance.delete<string>(`/sessions/${id}`, { requiresAuth: true });
+    return apiInstance.delete<string>(`/sessions/${id}`);
   },
 
   revokeSessions: async (revokeAll: boolean = false) => {
     const path = revokeAll ? "/sessions" : "/sessions/others"
-    return apiInstance.delete<string>(path, { requiresAuth: true });
+    return apiInstance.delete<string>(path);
   },
 
   refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
@@ -79,45 +85,44 @@ export const createAuthService = (apiInstance: Api) => ({
   getProfileUpgradeForms: async () => {
     validateProjectKey();
     const url = `/projects/${env.PROJECT_ID}/upgrade-form`;
-    return apiInstance.get<ProjectFieldDefinitionResultI>(url, { requiresAuth: true });
+    return apiInstance.get<ProjectFieldDefinitionResultI>(url);
   },
 
   updateProfile: async (custom: Record<string, FieldValue>) => {
     validateProjectKey();
     const url = `/projects/${env.PROJECT_ID}/metadata`;
-    return apiInstance.post<string>(url, { custom_fields: custom }, { requiresAuth: true });
+    return apiInstance.post<string>(url, { custom_fields: custom });
   },
 
   sendForgotPassword: async (email: string) => {
+    const options = { requiresAuth: false };
     if (env.PROJECT_ID) {
       validateProjectKey();
       return apiInstance.post<string>(
         "/auth/forgot-password",
         {email, project_id: env.PROJECT_ID}, 
+        options
       );
     }
-    return apiInstance.post<string>("/auth/forgot-password", {email});
+    return apiInstance.post<string>("/auth/forgot-password", {email}, options);
   },
 
   resetPassword: async (token: string, new_password: string) => {
     return apiInstance.post<string>(
       `/auth/reset-password?token=${token}`,
       {new_password}, 
+      { requiresAuth: false }
     );
   },
 
   resendVerifyEmail: async () => {
-    return apiInstance.post<string>(
-      "/auth/verify/resend",
-      undefined,
-      { requiresAuth: true } 
-    );
+    return apiInstance.post<string>("/auth/verify/resend");
   },
 
   verifyEmail: async () => {
     return apiInstance.get<string>(
       "/auth/verify",
-      undefined,
+      { requiresAuth: false }
     );
   },
 
@@ -125,8 +130,7 @@ export const createAuthService = (apiInstance: Api) => ({
     validateProjectKey();
     return apiInstance.post<void>(
       `/projects/${env.PROJECT_ID}/sub-context`,
-      { data, user_id },
-      { requiresAuth: true }
+      { data, user_id }
     );
   },
 
@@ -134,8 +138,7 @@ export const createAuthService = (apiInstance: Api) => ({
     validateProjectKey();
     return apiInstance.delete<void>(
       `/projects/${env.PROJECT_ID}/sub-context`,
-      { keys, user_id },
-      { requiresAuth: true }
+      { keys, user_id }
     );
   },
 
