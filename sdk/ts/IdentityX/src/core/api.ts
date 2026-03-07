@@ -21,7 +21,7 @@ export class Api {
 
   constructor(baseURL?: string) {
     this.baseURL = baseURL || env.BASE_URL;
-    this.authInterceptor = new AuthInterceptor({ baseURL: this.baseURL });
+    this.authInterceptor = new AuthInterceptor();
   }
 
   private get headers() {

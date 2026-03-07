@@ -24,12 +24,16 @@ export const createAuthService = (apiInstance: Api) => ({
     if (env.PROJECT_ID) {
       validateProjectKey();
       
-      const params = new URLSearchParams();
-      params.append("flow_id", flow_id || "none");
-      params.append("schema_type", "context");
-      params.append("version", "1");
-      const url = `/projects/${env.PROJECT_ID}/register?${params.toString()}`;
-      return apiInstance.post<string>(url, { email, password, custom_fields: custom });
+      const params = new URLSearchParams();      
+      if(flow_id) {
+        params.append("flow_id", flow_id);
+        params.append("schema_type", "context");
+        params.append("version", "1");
+      }
+      const bodyData = {...{email, password}, ...flow_id && { custom_fields: custom } };
+      const paramsUrl = params.toString() ? `?${params.toString()}` : "";
+      const url = `/projects/${env.PROJECT_ID}/register${paramsUrl}`;
+      return apiInstance.post<string>(url, bodyData );
     }
 
     return apiInstance.post<string>("/auth/register", { email, password });
@@ -116,6 +120,25 @@ export const createAuthService = (apiInstance: Api) => ({
       undefined,
     );
   },
+
+  addSubContext: async (user_id: string, data: Record<string, unknown>) => {
+    validateProjectKey();
+    return apiInstance.post<void>(
+      `/projects/${env.PROJECT_ID}/sub-context`,
+      { data, user_id },
+      { requiresAuth: true }
+    );
+  },
+
+  removeSubContext: async (user_id: string, keys: string[]) => {
+    validateProjectKey();
+    return apiInstance.delete<void>(
+      `/projects/${env.PROJECT_ID}/sub-context`,
+      { keys, user_id },
+      { requiresAuth: true }
+    );
+  },
+
 });
 
 export const createServerAuthService = (apiInstance: Api) => ({

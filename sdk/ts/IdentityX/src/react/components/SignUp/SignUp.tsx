@@ -49,7 +49,7 @@ export function SignUp({
       { message: "Digite um e-mail válido, ex: exemplo@dominio.com", test: v => /\S+@\S+\.\S+/.test(v) },
     ],
     password: passwordRules || [
-      { message: "Mínimo de 6 caracteres.", test: v => v.length >= 6 },
+      { message: "Mínimo de 8 caracteres.", test: v => v.length >= 8 },
       { message: "Deve conter uma letra maiúscula.", test: v => /[A-Z]/.test(v) },
       { 
         message: "Inclua pelo menos um caractere especial, ex: ! @ # $ % & * . ,", 
