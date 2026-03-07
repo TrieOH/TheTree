@@ -42,13 +42,12 @@ type Checkpoint struct {
 }
 
 type CreateCheckpointSpec struct {
-	EditionScopeID uuid.UUID        `json:"edition_scope_id"`
-	EditionID      uuid.UUID        `json:"edition_id"`
-	StartsAt       *time.Time       `json:"starts_at"`
-	EndsAt         *time.Time       `json:"ends_at"`
-	Name           string           `json:"name"`
-	Type           CheckpointType   `json:"type"`
-	AccessMode     CheckpointAccess `json:"access_mode"`
+	EditionID  uuid.UUID        `json:"edition_id"`
+	StartsAt   *time.Time       `json:"starts_at"`
+	EndsAt     *time.Time       `json:"ends_at"`
+	Name       string           `json:"name"`
+	Type       CheckpointType   `json:"type"`
+	AccessMode CheckpointAccess `json:"access_mode"`
 }
 
 func NewCheckpoint(creatorID uuid.UUID, spec CreateCheckpointSpec, edition *Edition) (*Checkpoint, error) {

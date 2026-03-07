@@ -42,7 +42,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateCheckpoint
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("checkpoints").
 		Action("create").
-		Scope(in.EditionScopeID).
+		Scope(edition.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateCheckpoint
 	meta := json.RawMessage(`{"color": "#fc620f", "icon": "FlagTriangleRight", "folder": "checkpoints"}`)
 	var scope *goauth.Scope
 	var idStr = validCheckpoint.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validCheckpoint.Name, &idStr, &in.EditionScopeID, meta)
+	scope, err = ga.Scopes.CreateWithParent(ctx, validCheckpoint.Name, &idStr, &edition.GoauthScopeID, meta)
 	if err != nil {
 		return nil, err
 	}

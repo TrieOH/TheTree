@@ -42,7 +42,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("activities").
 		Action("create").
-		Scope(in.EditionScopeID).
+		Scope(edition.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateActivitySp
 	meta := json.RawMessage(`{"color": "#5f57ff", "icon": "Play", "folder": "activities"}`)
 	var scope *goauth.Scope
 	var idStr = validActivity.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validActivity.Title, &idStr, &in.EditionScopeID, meta)
+	scope, err = ga.Scopes.CreateWithParent(ctx, validActivity.Title, &idStr, &edition.GoauthScopeID, meta)
 	if err != nil {
 		return nil, err
 	}

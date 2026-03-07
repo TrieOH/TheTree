@@ -63,7 +63,6 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := domain.CreateProductSpec{
-		EditionScopeID:     req.EditionScopeID,
 		EditionID:          editionID,
 		Name:               req.Name,
 		Description:        req.Description,

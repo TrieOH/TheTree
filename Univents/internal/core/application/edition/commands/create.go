@@ -46,11 +46,17 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 		return nil, err
 	}
 
+	var event *domain.Event
+	event, err = uc.events.GetEventByID(ctx, in.EventID)
+	if err != nil {
+		return nil, err
+	}
+
 	var allowed bool
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("editions").
 		Action("create").
-		Scope(in.GoAuthEventScopeID).
+		Scope(event.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +70,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 	meta := json.RawMessage(`{"color": "#a84bfa", "icon": "Tickets"}`)
 	var scope *goauth.Scope
 	var idStr = validEdition.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validEdition.EditionName, &idStr, &in.GoAuthEventScopeID, meta)
+	scope, err = ga.Scopes.CreateWithParent(ctx, validEdition.EditionName, &idStr, &event.GoauthScopeID, meta)
 	if err != nil {
 		return nil, err
 	}

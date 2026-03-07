@@ -134,6 +134,9 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 		TicketsHandler:   ticketsAsyncHandlers,
 	})
 	defer func() {
+		if err = inspector.Close(); err != nil {
+			telemetry.Log().Error("error closing the asynq inspector", zap.Error(err))
+		}
 		scheduler.Shutdown()
 		server.Shutdown()
 		if err = asynqClient.Close(); err != nil {
@@ -190,7 +193,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	if !skipMux {
 		mux := router.CreateRouter(deps)
 
-		log.Printf("GoAuth listening on :%s", app.Port)
+		log.Printf("Univents listening on :%s", app.Port)
 		log.Fatal(http.ListenAndServe(":"+app.Port, mux))
 	}
 }

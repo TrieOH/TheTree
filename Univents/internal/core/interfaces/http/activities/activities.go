@@ -57,18 +57,17 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := domain.CreateActivitySpec{
-		EditionScopeID: req.EditionScopeID,
-		EditionID:      editionID,
-		Title:          req.Title,
-		Description:    req.Description,
-		Location:       req.Location,
-		StartsAt:       req.StartsAt,
-		EndsAt:         req.EndsAt,
-		PresenterName:  req.PresenterName,
-		TokenCost:      req.TokenCost,
-		HasCapacity:    req.HasCapacity,
-		Capacity:       req.Capacity,
-		Difficulty:     req.Difficulty,
+		EditionID:     editionID,
+		Title:         req.Title,
+		Description:   req.Description,
+		Location:      req.Location,
+		StartsAt:      req.StartsAt,
+		EndsAt:        req.EndsAt,
+		PresenterName: req.PresenterName,
+		TokenCost:     req.TokenCost,
+		HasCapacity:   req.HasCapacity,
+		Capacity:      req.Capacity,
+		Difficulty:    req.Difficulty,
 	}
 
 	ctx := r.Context()

@@ -25,10 +25,9 @@ type Ticket struct {
 }
 
 type CreateTicketSpec struct {
-	EditionScopeID uuid.UUID `json:"edition_scope_id"`
-	EditionID      uuid.UUID `json:"edition_id"`
-	Name           string    `json:"name"`
-	Description    *string   `json:"description"`
+	EditionID   uuid.UUID `json:"edition_id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description"`
 }
 
 func NewTicket(creatorID uuid.UUID, spec CreateTicketSpec) (*Ticket, error) {
@@ -83,7 +82,6 @@ type TicketPermission struct {
 }
 
 type CreateTicketPermissionSpec struct {
-	TicketScopeID  uuid.UUID      `json:"ticket_scope_id"`
 	TicketID       uuid.UUID      `json:"ticket_id"`
 	PermissionType PermissionType `json:"permission_type"`
 	ActivityID     *uuid.UUID     `json:"activity_id"`

@@ -30,11 +30,17 @@ func (uc *CommandService) AddPermission(ctx context.Context, in domain.CreateTic
 		return nil, err
 	}
 
+	var ticket *domain.Ticket
+	ticket, err = uc.tickets.GetByID(ctx, in.TicketID)
+	if err != nil {
+		return nil, err
+	}
+
 	var allowed bool
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("tickets").
 		Action("edit").
-		Scope(in.TicketScopeID).
+		Scope(ticket.ScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return nil, err

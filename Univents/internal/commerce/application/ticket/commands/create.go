@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"univents/internal/commerce/domain"
+	domain2 "univents/internal/core/domain"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 
@@ -32,11 +33,17 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateTicketSpec
 		return nil, err
 	}
 
+	var edition *domain2.Edition
+	edition, err = uc.editions.GetByID(ctx, in.EditionID)
+	if err != nil {
+		return nil, err
+	}
+
 	var allowed bool
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("tickets").
 		Action("create").
-		Scope(in.EditionScopeID).
+		Scope(edition.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return nil, err
@@ -50,7 +57,7 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateTicketSpec
 	meta := json.RawMessage(`{"color": "#aa21ff", "icon": "TicketCheck", "folder": "tickets"}`)
 	var scope *goauth.Scope
 	var idStr = validTicket.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validTicket.Name, &idStr, &in.EditionScopeID, meta)
+	scope, err = ga.Scopes.CreateWithParent(ctx, validTicket.Name, &idStr, &edition.GoauthScopeID, meta)
 	if err != nil {
 		return nil, err
 	}

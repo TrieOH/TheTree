@@ -3,12 +3,9 @@ package dto
 import (
 	"time"
 	"univents/internal/core/domain"
-
-	"github.com/google/uuid"
 )
 
 type CreateEditionRequest struct {
-	GoAuthEventScopeID   uuid.UUID          `json:"go_auth_event_scope_id" validate:"required"`
 	Type                 domain.EditionType `json:"type"`
 	EditionName          string             `json:"edition_name" validate:"required,min=3,max=256"`
 	Tagline              *string            `json:"tagline" validate:"omitempty,max=512"`

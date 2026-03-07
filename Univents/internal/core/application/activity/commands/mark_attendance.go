@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// FIXME Limit the times attendance can be marked to within the activity time
+
 func (uc *CommandService) MarkAttendance(ctx context.Context, activityID, recordID uuid.UUID) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "ActivityService.MarkAttendance")
 	defer span.End()

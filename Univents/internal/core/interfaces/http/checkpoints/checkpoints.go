@@ -57,13 +57,12 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := domain.CreateCheckpointSpec{
-		EditionScopeID: req.EditionScopeID,
-		EditionID:      editionID,
-		StartsAt:       req.StartsAt,
-		EndsAt:         req.EndsAt,
-		Name:           req.Name,
-		Type:           req.Type,
-		AccessMode:     req.AccessMode,
+		EditionID:  editionID,
+		StartsAt:   req.StartsAt,
+		EndsAt:     req.EndsAt,
+		Name:       req.Name,
+		Type:       req.Type,
+		AccessMode: req.AccessMode,
 	}
 
 	ctx := r.Context()

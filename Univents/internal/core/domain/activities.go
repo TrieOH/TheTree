@@ -54,18 +54,17 @@ type Activity struct {
 }
 
 type CreateActivitySpec struct {
-	EditionScopeID uuid.UUID        `json:"edition_scope_id"`
-	EditionID      uuid.UUID        `json:"edition_id"`
-	Title          string           `json:"title"`
-	Description    *string          `json:"description"`
-	Location       string           `json:"location"`
-	StartsAt       time.Time        `json:"starts_at"`
-	EndsAt         time.Time        `json:"ends_at"`
-	PresenterName  *string          `json:"presenter_name"`
-	TokenCost      int              `json:"token_cost"`
-	HasCapacity    bool             `json:"has_capacity"`
-	Capacity       int              `json:"capacity"`
-	Difficulty     *DifficultyLevel `json:"difficulty"`
+	EditionID     uuid.UUID        `json:"edition_id"`
+	Title         string           `json:"title"`
+	Description   *string          `json:"description"`
+	Location      string           `json:"location"`
+	StartsAt      time.Time        `json:"starts_at"`
+	EndsAt        time.Time        `json:"ends_at"`
+	PresenterName *string          `json:"presenter_name"`
+	TokenCost     int              `json:"token_cost"`
+	HasCapacity   bool             `json:"has_capacity"`
+	Capacity      int              `json:"capacity"`
+	Difficulty    *DifficultyLevel `json:"difficulty"`
 }
 
 func NewActivity(creatorID uuid.UUID, spec CreateActivitySpec, edition *Edition) (*Activity, error) {

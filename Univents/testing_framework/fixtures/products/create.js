@@ -2,7 +2,6 @@ const now = new Date();
 const inMinutes = (offset) => new Date(now.getTime() + offset * 60 * 1000).toISOString();
 
 export const createShirt = {
-    edition_scope_id: "",
     name: "SCTI 2026 T-Shirt",
     description: "Official SCTI 2026 event t-shirt",
     type: "merchandise",
@@ -15,7 +14,6 @@ export const createShirt = {
 };
 
 export const createMug = {
-    edition_scope_id: "",
     name: "SCTI 2026 Mug",
     description: "Official SCTI 2026 event mug",
     type: "merchandise",
@@ -27,8 +25,7 @@ export const createMug = {
     inventory_quantity: 0,
 };
 
-export const createTicketProduct = (scope, name, description, ticket_id, price_cents, from, to, has_inventory, quantity)=> ({
-    edition_scope_id: scope,
+export const createTicketProduct = (name, description, ticket_id, price_cents, from, to, has_inventory, quantity)=> ({
     name: name,
     description: description,
     type: "ticket",

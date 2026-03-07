@@ -57,7 +57,6 @@ type Product struct {
 }
 
 type CreateProductSpec struct {
-	EditionScopeID     uuid.UUID   `json:"edition_scope_id"`
 	EditionID          uuid.UUID   `json:"edition_id"`
 	Name               string      `json:"name"`
 	Description        *string     `json:"description"`

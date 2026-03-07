@@ -57,10 +57,9 @@ func (handler *TicketsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := domain.CreateTicketSpec{
-		EditionScopeID: req.EditionScopeID,
-		EditionID:      editionID,
-		Name:           req.Name,
-		Description:    req.Description,
+		EditionID:   editionID,
+		Name:        req.Name,
+		Description: req.Description,
 	}
 
 	ctx := r.Context()
@@ -105,7 +104,6 @@ func (handler *TicketsHandler) AddPermission(w http.ResponseWriter, r *http.Requ
 	}
 
 	in := domain.CreateTicketPermissionSpec{
-		TicketScopeID:  req.TicketScopeID,
 		TicketID:       ticketID,
 		PermissionType: req.PermissionType,
 		ActivityID:     req.ActivityID,
@@ -134,7 +132,6 @@ func (handler *TicketsHandler) AddPermission(w http.ResponseWriter, r *http.Requ
 // @Param event_id path string true "Event ID"
 // @Param edition_id path string true "Edition ID"
 // @Param ticket_id path string true "Ticket ID"
-// @Param request body dtos.RemoveTicketPermissionRequest true "Ticket Permission removal request"
 // @Success 201 {object} object "Ticket Permission removed successfully"
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 401 {object} swag.ErrorResponse
@@ -142,12 +139,6 @@ func (handler *TicketsHandler) AddPermission(w http.ResponseWriter, r *http.Requ
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions/{permission_id} [delete]
 func (handler *TicketsHandler) RemovePermission(w http.ResponseWriter, r *http.Request) {
-	var req dtos.RemoveTicketPermissionRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
 	ticketID, rs := validation.GetUUID(r, "ticket_id")
 	if rs != nil {
 		rs.Send(w)
@@ -161,7 +152,7 @@ func (handler *TicketsHandler) RemovePermission(w http.ResponseWriter, r *http.R
 	}
 
 	ctx := r.Context()
-	err := handler.commands.RemovePermission(ctx, permissionID, ticketID, req.TicketScopeID)
+	err := handler.commands.RemovePermission(ctx, permissionID, ticketID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

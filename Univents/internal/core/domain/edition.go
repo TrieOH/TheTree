@@ -72,7 +72,6 @@ type Edition struct {
 
 type CreateEditionSpec struct {
 	EventID              uuid.UUID           `json:"event_id"`
-	GoAuthEventScopeID   uuid.UUID           `json:"go_auth_event_scope_id"`
 	Type                 EditionType         `json:"type"`
 	EditionName          string              `json:"edition_name"`
 	Tagline              *string             `json:"tagline"`

@@ -57,7 +57,6 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	in := domain.CreateEditionSpec{
 		EventID:              eventID,
-		GoAuthEventScopeID:   req.GoAuthEventScopeID,
 		Type:                 req.Type,
 		EditionName:          req.EditionName,
 		Tagline:              req.Tagline,

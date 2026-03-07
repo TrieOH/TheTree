@@ -1,7 +1,7 @@
-import { describe, test, beforeAll, expect } from "vitest";
+import {beforeAll, describe, expect, test} from "vitest";
 import {get, loginAs, post, validate} from "./helpers.js";
-import { createEvent } from "./fixtures/events/create.js";
-import { EventSchema } from "./schemas/event.js";
+import {createEvent} from "./fixtures/events/create.js";
+import {EventSchema} from "./schemas/event.js";
 import {createEdition} from "./fixtures/editions/create.js";
 import {EditionSchema} from "./schemas/edition.js";
 import {createKubernetesActivity, createPremiumWorkshop, createRustActivity} from "./fixtures/activities/create.js";
@@ -36,9 +36,7 @@ describe("events", () => {
 let edition
 describe("editions", () => {
     test("create edition", async () => {
-        let toCreate = createEdition
-        toCreate.go_auth_event_scope_id = event.goauth_scope_id
-        edition = await post(owner, `/events/${event.id}/editions`, toCreate)
+        edition = await post(owner, `/events/${event.id}/editions`, createEdition)
         expect(validate(EditionSchema, edition)).toBe(true)
         expect(edition.event_id).toBe(event.id)
     })
@@ -52,23 +50,17 @@ let kubernetesActivity
 let premiumWorkshop
 describe("activities", () => {
     test("create rust activity", async () => {
-        let toCreate = createRustActivity
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        rustActivity = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, toCreate)
+        rustActivity = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, createRustActivity)
         expect(validate(ActivitySchema, rustActivity)).toBe(true)
         expect(rustActivity.edition_id).toBe(edition.id)
     })
     test("create kubernetes activity", async () => {
-        let toCreate = createKubernetesActivity
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        kubernetesActivity = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, toCreate)
+        kubernetesActivity = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, createKubernetesActivity)
         expect(validate(ActivitySchema, kubernetesActivity)).toBe(true)
         expect(kubernetesActivity.edition_id).toBe(edition.id)
     })
     test("create premium workshop", async () => {
-        let toCreate = createPremiumWorkshop
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        premiumWorkshop = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, toCreate)
+        premiumWorkshop = await post(owner, `/events/${event.id}/editions/${edition.id}/activities`, createPremiumWorkshop)
         expect(validate(ActivitySchema, premiumWorkshop)).toBe(true)
         expect(premiumWorkshop.edition_id).toBe(edition.id)
     })
@@ -87,16 +79,12 @@ let coffeeBreak
 let checkIn
 describe("checkpoints", () => {
     test("create coffee break", async () => {
-        let toCreate = createCoffeeBreak
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        coffeeBreak = await post(owner, `/events/${event.id}/editions/${edition.id}/checkpoints`, toCreate)
+        coffeeBreak = await post(owner, `/events/${event.id}/editions/${edition.id}/checkpoints`, createCoffeeBreak)
         expect(validate(CheckpointSchema, coffeeBreak)).toBe(true)
         expect(coffeeBreak.edition_id).toBe(edition.id)
     })
     test("create check in", async () => {
-        let toCreate = createCheckInArea
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        checkIn = await post(owner, `/events/${event.id}/editions/${edition.id}/checkpoints`, toCreate)
+        checkIn = await post(owner, `/events/${event.id}/editions/${edition.id}/checkpoints`, createCheckInArea)
         expect(validate(CheckpointSchema, checkIn)).toBe(true)
         expect(checkIn.edition_id).toBe(edition.id)
     })
@@ -107,23 +95,17 @@ let vipTicket
 let fullTicket
 describe("tickets", () => {
     test("create standard ticket", async () => {
-        let toCreate = createStandardTicket
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        standardTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, toCreate)
+        standardTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, createStandardTicket)
         expect(validate(TicketSchema, standardTicket)).toBe(true)
         expect(standardTicket.edition_id).toBe(edition.id)
     })
     test("create vip ticket", async () => {
-        let toCreate = createVIPTicket
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        vipTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, toCreate)
+        vipTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, createVIPTicket)
         expect(validate(TicketSchema, vipTicket)).toBe(true)
         expect(vipTicket.edition_id).toBe(edition.id)
     })
     test("create full ticket", async () => {
-        let toCreate = createFullAccessTicket
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        fullTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, toCreate)
+        fullTicket = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets`, createFullAccessTicket)
         expect(validate(TicketSchema, fullTicket)).toBe(true)
         expect(fullTicket.edition_id).toBe(edition.id)
     })
@@ -133,7 +115,6 @@ describe('ticket permissions', () => {
     describe('standard ticket', () => {
         test("add rust activity permission", async () => {
             let toAdd = addActivityPermission(rustActivity.id)
-            toAdd.ticket_scope_id = standardTicket.scope_id
             const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${standardTicket.id}/permissions`, toAdd)
             expect(validate(TicketPermissionSchema, resData)).toBe(true)
             expect(resData.ticket_id).toBe(standardTicket.id)
@@ -141,7 +122,6 @@ describe('ticket permissions', () => {
         })
         test("add check in checkpoint permission", async () => {
             let toAdd = addCheckpointPermission(checkIn.id)
-            toAdd.ticket_scope_id = standardTicket.scope_id
             const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${standardTicket.id}/permissions`, toAdd)
             expect(validate(TicketPermissionSchema, resData)).toBe(true)
             expect(resData.ticket_id).toBe(standardTicket.id)
@@ -151,7 +131,6 @@ describe('ticket permissions', () => {
     describe('vip ticket', () => {
         test("add rust activity permission", async () => {
             let toAdd = addActivityPermission(rustActivity.id)
-            toAdd.ticket_scope_id = vipTicket.scope_id
             const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${vipTicket.id}/permissions`, toAdd)
             expect(validate(TicketPermissionSchema, resData)).toBe(true)
             expect(resData.ticket_id).toBe(vipTicket.id)
@@ -159,7 +138,6 @@ describe('ticket permissions', () => {
         })
         test("add kubernetes activity permission", async () => {
             let toAdd = addActivityPermission(kubernetesActivity.id)
-            toAdd.ticket_scope_id = vipTicket.scope_id
             const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${vipTicket.id}/permissions`, toAdd)
             expect(validate(TicketPermissionSchema, resData)).toBe(true)
             expect(resData.ticket_id).toBe(vipTicket.id)
@@ -167,7 +145,6 @@ describe('ticket permissions', () => {
         })
         test("add check in checkpoint permission", async () => {
             let toAdd = addCheckpointPermission(checkIn.id)
-            toAdd.ticket_scope_id = vipTicket.scope_id
             const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${vipTicket.id}/permissions`, toAdd)
             expect(validate(TicketPermissionSchema, resData)).toBe(true)
             expect(resData.ticket_id).toBe(vipTicket.id)
@@ -176,7 +153,6 @@ describe('ticket permissions', () => {
         describe('full access ticket', () => {
             test("add rust activity permission", async () => {
                 let toAdd = addActivityPermission(rustActivity.id)
-                toAdd.ticket_scope_id = fullTicket.scope_id
                 const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${fullTicket.id}/permissions`, toAdd)
                 expect(validate(TicketPermissionSchema, resData)).toBe(true)
                 expect(resData.ticket_id).toBe(fullTicket.id)
@@ -184,7 +160,6 @@ describe('ticket permissions', () => {
             })
             test("add kubernetes activity permission", async () => {
                 let toAdd = addActivityPermission(kubernetesActivity.id)
-                toAdd.ticket_scope_id = fullTicket.scope_id
                 const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${fullTicket.id}/permissions`, toAdd)
                 expect(validate(TicketPermissionSchema, resData)).toBe(true)
                 expect(resData.ticket_id).toBe(fullTicket.id)
@@ -192,7 +167,6 @@ describe('ticket permissions', () => {
             })
             test("add premium workshop permission", async () => {
                 let toAdd = addActivityPermission(premiumWorkshop.id)
-                toAdd.ticket_scope_id = fullTicket.scope_id
                 const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${fullTicket.id}/permissions`, toAdd)
                 expect(validate(TicketPermissionSchema, resData)).toBe(true)
                 expect(resData.ticket_id).toBe(fullTicket.id)
@@ -200,7 +174,6 @@ describe('ticket permissions', () => {
             })
             test("add check in checkpoint permission", async () => {
                 let toAdd = addCheckpointPermission(checkIn.id)
-                toAdd.ticket_scope_id = fullTicket.scope_id
                 const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${fullTicket.id}/permissions`, toAdd)
                 expect(validate(TicketPermissionSchema, resData)).toBe(true)
                 expect(resData.ticket_id).toBe(fullTicket.id)
@@ -208,7 +181,6 @@ describe('ticket permissions', () => {
             })
             test("add coffee break checkpoint permission", async () => {
                 let toAdd = addCheckpointPermission(coffeeBreak.id)
-                toAdd.ticket_scope_id = fullTicket.scope_id
                 const resData = await post(owner, `/events/${event.id}/editions/${edition.id}/tickets/${fullTicket.id}/permissions`, toAdd)
                 expect(validate(TicketPermissionSchema, resData)).toBe(true)
                 expect(resData.ticket_id).toBe(fullTicket.id)
@@ -225,23 +197,18 @@ let fullTicketProduct
 let standardTicketProduct
 describe('products', () => {
     test("create mug", async () => {
-        let toCreate = createMug
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        mug = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+        mug = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, createMug)
         expect(validate(ProductSchema, mug)).toBe(true)
         expect(mug.edition_id).toBe(edition.id)
     })
     test("create shirt", async () => {
-        let toCreate = createShirt
-        toCreate.edition_scope_id = edition.goauth_scope_id
-        shirt = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, toCreate)
+        shirt = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, createShirt)
         expect(validate(ProductSchema, shirt)).toBe(true)
         expect(shirt.edition_id).toBe(edition.id)
     })
     describe('create ticket products', () => {
         test("create standard ticket", async () => {
             let toCreate = createTicketProduct(
-                edition.goauth_scope_id,
                 standardTicket.name,
                 standardTicket.description,
                 standardTicket.id,
@@ -259,7 +226,6 @@ describe('products', () => {
         })
         test("create vip ticket", async () => {
             let toCreate = createTicketProduct(
-                edition.goauth_scope_id,
                 vipTicket.name,
                 vipTicket.description,
                 vipTicket.id,
@@ -277,7 +243,6 @@ describe('products', () => {
         })
         test("create full access ticket", async () => {
             let toCreate = createTicketProduct(
-                edition.goauth_scope_id,
                 fullTicket.name,
                 fullTicket.description,
                 fullTicket.id,

@@ -2,7 +2,6 @@ const now = new Date();
 const inMinutes = (offset) => new Date(now.getTime() + offset * 60 * 1000).toISOString();
 
 export const createEdition = {
-    go_auth_event_scope_id: "", // fill in at test time
     type: "year",
     edition_name: "SCTI 2026",
     tagline: "Desenvolvendo o Futuro",
