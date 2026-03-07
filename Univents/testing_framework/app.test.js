@@ -312,7 +312,6 @@ describe('purchase', () => {
                 if (msg.type === "error") return reject(new Error(msg.payload))
 
                 if (msg.type === "reservation_confirmed") {
-                    console.log("[debug] reservation_confirmed payload:", JSON.stringify(msg.payload))
                     intentID = msg.payload.intent_id
                     await post(null, "/webhooks/mock", {
                         intent_id: intentID,
