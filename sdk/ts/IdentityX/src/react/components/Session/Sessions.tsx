@@ -20,14 +20,16 @@ export function Sessions({
 
   const fetchSessions = async () => {
     const res = await auth.sessions();
-    const currentSessionId = auth.profile()?.session_id;
+    if (res.success) {
+      const currentSessionId = auth.profile()?.session_id;
 
-    const sessions = (res.data || []).sort((a, b) => {
-      if (a.session_id === currentSessionId) return -1;
-      if (b.session_id === currentSessionId) return 1;
-      return 0;
-    });
-    setSessions(sessions);
+      const sessions = (res.data).sort((a, b) => {
+        if (a.session_id === currentSessionId) return -1;
+        if (b.session_id === currentSessionId) return 1;
+        return 0;
+      });
+      setSessions(sessions);
+    }
   }
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export function Sessions({
     setSessions(sessions.filter(s => s.session_id !== id))
     try {
       const res = await auth.revokeASession(id);
-      if(res.code !== 200) setSessions(prev => [...prev, sessionToRemove]);
+      if(!res.success) setSessions(prev => [...prev, sessionToRemove]);
     } catch {
       setSessions(prev => [...prev, sessionToRemove]);
     }
@@ -54,7 +56,7 @@ export function Sessions({
 
     const res = await auth.revokeSessions(revokeAll);
     const id = auth.profile()?.session_id;
-    if(res.code === 200) {
+    if(res.success) {
       setSessions(revokeAll ? [] : sessions.filter(s => s.session_id === id));
       if(onSuccess) onSuccess();
     }

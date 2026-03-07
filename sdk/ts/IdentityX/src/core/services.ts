@@ -11,12 +11,12 @@ export const createAuthService = (apiInstance: Api) => ({
       validateProjectKey();
       const url = `/projects/${env.PROJECT_ID}/login`;
       const res = await apiInstance.post<{is_up_to_date: boolean}>(url, { email, password });
-      if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+      if(res.success) await fetchAndSaveClaims(apiInstance);
       return res;
     }
 
     const res = await apiInstance.post<{is_up_to_date: boolean}>("/auth/login", { email, password });
-    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+    if(res.success) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 
@@ -45,7 +45,7 @@ export const createAuthService = (apiInstance: Api) => ({
       undefined, 
       { requiresAuth: true }
     );
-    if(res.code === 200) clearAuthTokens();
+    if(res.success) clearAuthTokens();
     return res;
   },
 
@@ -55,7 +55,7 @@ export const createAuthService = (apiInstance: Api) => ({
       undefined,
       { requiresAuth: true, skipRefresh: true }
     );
-    if(res.code === 200) await fetchAndSaveClaims(apiInstance);
+    if(res.success) await fetchAndSaveClaims(apiInstance);
     return res;
   },
 

@@ -94,9 +94,9 @@ export const fetchAndSaveClaims = async (apiInstance: Api) => {
       { requiresAuth: true }
     );
     
-    if (res.code === 200 && res.data) {
+    if (res.success) {
       saveTokenClaims(res.data);
-      return { code: 200 };
+      return res;
     }
     throw new Error(res.message || "Failed to fetch session claims");
   } catch (error) {

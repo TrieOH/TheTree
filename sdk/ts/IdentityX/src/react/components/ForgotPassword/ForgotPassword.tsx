@@ -47,8 +47,11 @@ export default function ForgotPassword({
     setLoadingSubmit(true);
 
     const res = await auth.sendForgotPassword(email);
-    if(res.code === 201 && onSuccess) await onSuccess();
-    else if(onFailed) await onFailed(res.message, res.trace);
+
+    if(res.success) {
+      if(onSuccess) await onSuccess();
+    } else if(onFailed) await onFailed(res.message, res.trace);
+    
     setLoadingSubmit(false);
   }
 
