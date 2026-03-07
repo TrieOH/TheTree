@@ -36,7 +36,7 @@ func (c *Client) DeleteWebhookEndpoint(ctx context.Context, workspaceName, endpo
 	return c.do(ctx, "DELETE", fmt.Sprintf("/workspaces/%s/webhooks/%s", workspaceName, endpointID), nil, nil)
 }
 
-// VerifyWebhookSignature verifies the X-TrieMint-Signature header on an inbound delivery.
+// VerifyWebhookSignature verifies the X-TriePayments-Signature header on an inbound delivery.
 // Call this in your webhook receiver handler.
 func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, error) {
 	sig := r.Header.Get("X-TriePayments-Signature")
@@ -49,11 +49,19 @@ func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, er
 		return nil, fmt.Errorf("triepayments: read body: %w", err)
 	}
 
+	// decode signature from hex
+	sigBytes, err := hex.DecodeString(sig)
+	if err != nil {
+		return nil, fmt.Errorf("triepayments: invalid signature encoding")
+	}
+
+	// compute expected HMAC
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(body)
-	expected := hex.EncodeToString(mac.Sum(nil))
+	expected := mac.Sum(nil)
 
-	if !hmac.Equal([]byte(sig), []byte(expected)) {
+	// constant-time comparison
+	if !hmac.Equal(expected, sigBytes) {
 		return nil, errors.New("triepayments: invalid signature")
 	}
 
