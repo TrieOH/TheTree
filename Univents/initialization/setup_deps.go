@@ -135,6 +135,7 @@ func SetupGoAuth(app *UniventsApp) {
 				ActivitiesManage,
 				ProductsCreate,
 				ProductsRead,
+				ProductsPublish,
 				CheckpointsCreate,
 				CheckpointsRead,
 				TicketsCreate,
@@ -252,6 +253,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#203ee6",
 			"icon":  "CircleDollarSign",
+		},
+	}
+	ProductsPublish = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "publish",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Mail",
 		},
 	}
 	CheckpointsCreate = goauth.PermissionDefinition{

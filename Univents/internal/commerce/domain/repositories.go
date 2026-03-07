@@ -18,6 +18,7 @@ type TicketsRepository interface {
 
 type ProductsRepository interface {
 	Create(ctx context.Context, toCreate Product) (*Product, error)
+	Publish(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (*Product, error)
 	GetByIDs(ctx context.Context, ids []uuid.UUID) ([]Product, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Product, error)

@@ -27,6 +27,7 @@ type BuyRequest struct {
 type ReservationConfirmedPayload struct {
 	SessionID uuid.UUID `json:"session_id"`
 	ExpiresAt time.Time `json:"expires_at"`
+	IntentID  string    `json:"intent_id"`
 }
 
 type ConfirmPaymentRequest struct {

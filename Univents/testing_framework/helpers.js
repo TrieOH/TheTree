@@ -30,13 +30,17 @@ export async function loginAs(email, password) {
     return client;
 }
 
-export async function post(client, path, body) {
+export async function post(client, url, body, baseURL) {
     try {
-        const res = await client.post(path, body);
-        return res.data.data;
+        if (client === null) {
+            const res = await axios.post(`${baseURL ?? process.env.BASE_URL}${url}`, body)
+            return res.data.data
+        }
+        const res = await client.post(url, body ?? {})
+        return res.data.data
     } catch (e) {
-        console.error(`POST ${path} failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2));
-        throw e;
+        console.error(`POST ${url} failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2))
+        throw e
     }
 }
 

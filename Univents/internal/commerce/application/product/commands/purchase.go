@@ -202,6 +202,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		Payload: dtos.ReservationConfirmedPayload{
 			SessionID: sessionID,
 			ExpiresAt: expiresAt,
+			IntentID:  paymentIntentID,
 		},
 	})
 

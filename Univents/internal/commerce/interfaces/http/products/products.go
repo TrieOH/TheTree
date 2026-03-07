@@ -89,6 +89,40 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	resp.Created().WithData(out).Send(w)
 }
 
+// Publish godoc
+// @Summary publishes a product
+// @Description Publishes a product making it publicly available.
+// @Tags activities
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Success 200 {object} object "Product published successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/publish [post]
+func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	err := handler.commands.Publish(ctx, productID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().Send(w)
+}
+
 // List godoc
 // @Summary List all edition products
 // @Description List all publicly available products of the edition

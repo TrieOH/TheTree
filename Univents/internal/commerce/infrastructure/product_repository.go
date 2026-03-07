@@ -87,6 +87,18 @@ func (repo *productsRepo) Create(ctx context.Context, toCreate domain.Product) (
 	return mapProductFromDB(&sqlcProduct), nil
 }
 
+func (repo *productsRepo) Publish(ctx context.Context, id uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.Publish")
+	defer span.End()
+
+	err := repo.queries(ctx).PublishProduct(ctx, id)
+	if err != nil {
+		return errx.FromDB(err, "product")
+	}
+
+	return nil
+}
+
 func (repo *productsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.GetByID")
 	defer span.End()

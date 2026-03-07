@@ -116,6 +116,7 @@ func registerProductsRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/products", h.Create)
+		r.Post("/events/{event_id}/editions/{edition_id}/products/{product_id}/publish", h.Publish)
 		r.Get("/events/{event_id}/editions/{edition_id}/products", h.List)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/admin", h.ListAdmin)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/purchase", h.Purchase) // WS upgrade

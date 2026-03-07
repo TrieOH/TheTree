@@ -201,10 +201,16 @@ describe('products', () => {
         expect(validate(ProductSchema, mug)).toBe(true)
         expect(mug.edition_id).toBe(edition.id)
     })
+    test("publish mug", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/products/${mug.id}/publish`)
+    })
     test("create shirt", async () => {
         shirt = await post(owner, `/events/${event.id}/editions/${edition.id}/products`, createShirt)
         expect(validate(ProductSchema, shirt)).toBe(true)
         expect(shirt.edition_id).toBe(edition.id)
+    })
+    test("publish shirt", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/products/${shirt.id}/publish`)
     })
     describe('create ticket products', () => {
         test("create standard ticket", async () => {
@@ -224,6 +230,9 @@ describe('products', () => {
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(standardTicket.id)
         })
+        test("publish standard ticket product", async () => {
+            await post(owner, `/events/${event.id}/editions/${edition.id}/products/${standardTicketProduct.id}/publish`)
+        })
         test("create vip ticket", async () => {
             let toCreate = createTicketProduct(
                 vipTicket.name,
@@ -240,6 +249,9 @@ describe('products', () => {
             expect(validate(ProductSchema, ticketProduct)).toBe(true)
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(vipTicket.id)
+        })
+        test("publish vip ticket product", async () => {
+            await post(owner, `/events/${event.id}/editions/${edition.id}/products/${vipTicketProduct.id}/publish`)
         })
         test("create full access ticket", async () => {
             let toCreate = createTicketProduct(
@@ -258,10 +270,12 @@ describe('products', () => {
             expect(ticketProduct.edition_id).toBe(edition.id)
             expect(ticketProduct.ticket_id).toBe(fullTicket.id)
         })
+        test("publish full access ticket product", async () => {
+            await post(owner, `/events/${event.id}/editions/${edition.id}/products/${fullTicketProduct.id}/publish`)
+        })
     })
-});
+})
 
-/*
 describe('purchase', () => {
     test("buy 2x VIP, 1x Full Access, 1x shirt, 2x standard", async () => {
         const cookies = await owner.defaults.jar.getCookies(process.env.BASE_URL)
@@ -277,7 +291,7 @@ describe('purchase', () => {
         )
 
         await new Promise((resolve, reject) => {
-            let sessionID = null
+            let intentID = null
 
             ws.on("open", () => {
                 ws.send(JSON.stringify({
@@ -294,14 +308,16 @@ describe('purchase', () => {
                 const msg = JSON.parse(data)
 
                 if (msg.type === "reservation_failed") return reject(new Error("reservation failed"))
+                if (msg.type === "purchase_failed") return reject(new Error(JSON.stringify(msg.payload)))
                 if (msg.type === "error") return reject(new Error(msg.payload))
 
                 if (msg.type === "reservation_confirmed") {
-                    sessionID = msg.payload.session_id
-                    await post(owner, `/events/${event.id}/editions/${edition.id}/products/purchase/confirm`, {
-                        session_id: sessionID,
-                        payment_intent_id: msg.payload.payment_intent_id,
-                    })
+                    console.log("[debug] reservation_confirmed payload:", JSON.stringify(msg.payload))
+                    intentID = msg.payload.intent_id
+                    await post(null, "/webhooks/mock", {
+                        intent_id: intentID,
+                        event: "payment.succeeded"
+                    }, process.env.TRIEPAYMENTS_URL)
                 }
 
                 if (msg.type === "order_confirmed") {
@@ -311,12 +327,12 @@ describe('purchase', () => {
 
             ws.on("error", reject)
             ws.on("close", () => {
-                if (!sessionID) reject(new Error("ws closed before reservation_confirmed"))
+                if (!intentID) reject(new Error("ws closed before reservation_confirmed"))
             })
         })
 
         ws.close()
-    }, 10000)
+    }, 15000)
 })
 
 describe('activity registration', () => {
@@ -361,4 +377,4 @@ describe('mark attendance', () => {
         const updated = records.find(r => r.id === attendanceRecord.id)
         expect(updated.status).toBe("completed")
     })
-})*/
+})

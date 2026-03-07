@@ -3,6 +3,12 @@ INSERT INTO products (id, scope_id, edition_id, name, description, type, price_c
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;
 
+-- name: PublishProduct :exec
+UPDATE products
+SET
+    status = 'available'
+WHERE id = $1 and status = 'draft';
+
 -- name: GetProductByID :one
 SELECT *
 FROM products
