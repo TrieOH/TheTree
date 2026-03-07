@@ -155,6 +155,63 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(out).Send(w)
 }
 
+// ListUserPurchases godoc
+// @Summary List user purchases
+// @Description Returns all purchases belonging to the authenticated user
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Success 200 {object} object
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /purchases [get]
+func (handler *Handler) ListUserPurchases(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	out, err := handler.queries.ListUserPurchases(ctx)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
+}
+
+// ListPurchaseItems godoc
+// @Summary List items of a purchase
+// @Description Returns all line items belonging to a purchase owned by the authenticated user
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param purchase_id path string true "Purchase ID"
+// @Success 200 {object} object
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /purchases/{purchase_id}/items [get]
+func (handler *Handler) ListPurchaseItems(w http.ResponseWriter, r *http.Request) {
+	purchaseID, rs := validation.GetUUID(r, "purchase_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+
+	out, err := handler.queries.ListPurchaseItems(ctx, purchaseID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK().WithData(out).Send(w)
+}
+
 var upgrader = websocket.Upgrader{}
 
 // Purchase godoc

@@ -95,3 +95,14 @@ RETURNING *;
 SELECT * FROM purchases
 WHERE payment_id = $1
   AND deleted_at IS NULL;
+
+-- name: ListUserPurchases :many
+SELECT * FROM purchases
+WHERE user_id = $1;
+
+-- name: ListPurchaseItems :many
+SELECT pi.*
+FROM purchase_items pi
+JOIN purchases p ON p.id = pi.purchase_id
+WHERE pi.purchase_id = $1
+  AND p.user_id = $2;

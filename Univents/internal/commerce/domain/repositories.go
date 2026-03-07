@@ -34,4 +34,6 @@ type PurchaseRepository interface {
 	ConfirmPurchase(ctx context.Context, paymentID string) error
 	CancelPurchase(ctx context.Context, paymentID string) error
 	GetTicketIDsByPaymentIntent(ctx context.Context, paymentID string) ([]TicketGrant, error)
+	ListUserPurchases(ctx context.Context, userID uuid.UUID) ([]Purchase, error)
+	ListPurchaseItems(ctx context.Context, purchaseID, userID uuid.UUID) ([]LineItem, error)
 }

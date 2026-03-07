@@ -119,5 +119,7 @@ func registerProductsRoutes(
 		r.Get("/events/{event_id}/editions/{edition_id}/products", h.List)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/admin", h.ListAdmin)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/purchase", h.Purchase) // WS upgrade
+		r.Get("/purchases", h.ListUserPurchases)
+		r.Get("/purchases/{purchase_id}/items", h.ListPurchaseItems)
 	})
 }

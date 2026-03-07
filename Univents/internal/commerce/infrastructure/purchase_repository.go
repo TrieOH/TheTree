@@ -7,6 +7,7 @@ import (
 	"univents/internal/plataform/database/sqlc"
 	"univents/internal/shared/errx"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -170,6 +171,41 @@ func (repo *purchaseRepo) GetTicketIDsByPaymentIntent(ctx context.Context, payme
 	out := make([]domain.TicketGrant, 0, len(sqlcTicketGrants))
 	for _, grant := range sqlcTicketGrants {
 		out = append(out, *mapTicketGrantFromDB(&grant))
+	}
+	return out, nil
+}
+
+func (repo *purchaseRepo) ListUserPurchases(ctx context.Context, userID uuid.UUID) ([]domain.Purchase, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ListUserPurchases")
+	defer span.End()
+
+	sqlcPurchases, err := repo.queries(ctx).ListUserPurchases(ctx, userID)
+	if err != nil {
+		return nil, errx.FromDB(err, "purchase")
+	}
+
+	out := make([]domain.Purchase, 0, len(sqlcPurchases))
+	for _, purchase := range sqlcPurchases {
+		out = append(out, *mapPurchaseFromDB(&purchase))
+	}
+	return out, nil
+}
+
+func (repo *purchaseRepo) ListPurchaseItems(ctx context.Context, purchaseID, userID uuid.UUID) ([]domain.LineItem, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ListPurchaseItems")
+	defer span.End()
+
+	sqlcItems, err := repo.queries(ctx).ListPurchaseItems(ctx, sqlc.ListPurchaseItemsParams{
+		PurchaseID: purchaseID,
+		UserID:     userID,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "purchase item")
+	}
+
+	out := make([]domain.LineItem, 0, len(sqlcItems))
+	for _, item := range sqlcItems {
+		out = append(out, *mapLineItemFromDB(&item))
 	}
 	return out, nil
 }
