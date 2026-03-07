@@ -1,0 +1,9 @@
+node_modules/*
+node_modules
+internal/plataform/database/sqlc/
+internal/plataform/database/sqlc/*
+docs/
+docs/*
+.env
+.idea/
+.idea
