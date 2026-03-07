@@ -162,7 +162,7 @@ func ValidateInto[T any](r *http.Request, target *T) error {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return errx.Invalid("request").SetMessage("invalid JSON").SetCause(err)
+		return errx.Invalid("request").SetMessage("invalid JSON: " + err.Error()).SetCause(err)
 	}
 
 	if err := ValidateStruct(*target); err != nil {
