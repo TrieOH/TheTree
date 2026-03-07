@@ -1,3 +1,4 @@
+import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
   isRefreshSessionExpired,
@@ -7,27 +8,37 @@ import {
 } from "../utils/token-utils";
 import { env } from "./env";
 
+
+export interface RequestOptions extends RequestInit {
+  requiresAuth?: boolean;
+  skipRefresh?: boolean;
+}
+
 interface InterceptorConfig {
-  apiKey?: string;
+  baseURL?: string;
+  authBaseURL?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
 }
 
 export class AuthInterceptor {
   private baseURL: string;
+  private authBaseURL: string;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   private onRefreshFailed?: (error: Error) => void;
 
-  constructor(config?: Omit<InterceptorConfig, "baseURL">) {
-    this.baseURL = env.BASE_URL;
+  constructor(config?: InterceptorConfig) {
+    this.authBaseURL = config?.authBaseURL || env.BASE_URL;
+    this.baseURL = config?.baseURL || this.authBaseURL;
+
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
   }
 
   private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
-    const response = await fetch(`${this.baseURL}/sessions/me`, {
+    const response = await fetch(joinUrl(this.authBaseURL, "/sessions/me"), {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -52,7 +63,7 @@ export class AuthInterceptor {
     this.refreshPromise = (async () => {
       let claims: AuthTokenClaims;
       try {
-        const response = await fetch(`${this.baseURL}/auth/refresh`, {
+        const response = await fetch(joinUrl(this.authBaseURL, "/auth/refresh"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -98,12 +109,10 @@ export class AuthInterceptor {
     }
   }
 
-  async fetch(url: string, options?: RequestInit): Promise<Response> {
-    await this.beforeRequest();
+  async fetch(url: string, options?: RequestOptions): Promise<Response> {
+    if (options?.requiresAuth && !options?.skipRefresh) await this.beforeRequest();
 
-    const finalUrl = url.startsWith("http")
-      ? url
-      : `${this.baseURL.replace(/\/$/, "")}/${url.replace(/^\//,"")}`;
+    const finalUrl = joinUrl(this.baseURL, url);
 
     return fetch(finalUrl, {
       ...options,
@@ -123,7 +132,7 @@ export const createAuthInterceptor = (config?: InterceptorConfig) => {
 export const createAuthenticatedFetch = (config?: InterceptorConfig) => {
   const interceptor = new AuthInterceptor(config);
   
-  return async (url: string, options?: RequestInit): Promise<Response> => {
+  return async (url: string, options?: RequestOptions): Promise<Response> => {
     return interceptor.fetch(url, options);
   };
 };

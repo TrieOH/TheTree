@@ -1,5 +1,5 @@
 import { env } from "./env";
-import { AuthInterceptor } from "./interceptor";
+import { AuthInterceptor, type RequestOptions } from "./interceptor";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -10,26 +10,20 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
-interface RequestOptions extends RequestInit {
-  requiresAuth?: boolean;
-  skipRefresh?: boolean;
-}
-
 export class Api {
   private baseURL: string;
   private authInterceptor: AuthInterceptor;
 
-  constructor(baseURL?: string) {
+  constructor(baseURL?: string, authBaseURL?: string) {
     this.baseURL = baseURL || env.BASE_URL;
-    this.authInterceptor = new AuthInterceptor();
+    this.authInterceptor = new AuthInterceptor({ 
+      baseURL: this.baseURL,
+      authBaseURL: authBaseURL
+    });
   }
 
   private get headers() {
     return { "Content-Type": "application/json" };
-  }
-
-  private buildUrl(path: string) {
-    return `${this.baseURL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   }
 
   async request<T = unknown>(
@@ -37,22 +31,18 @@ export class Api {
     options?: RequestOptions
   ): Promise<ApiResponse<T>> {
     try {
-      if(options?.requiresAuth && !options.skipRefresh) 
-        await this.authInterceptor.beforeRequest();
-      const res = await fetch(this.buildUrl(path), {
+      const res = await this.authInterceptor.fetch(path, {
         ...options,
         headers: { ...this.headers, ...(options?.headers ?? {}) },
-        credentials: "include"
       });
 
       const data = await res.json();
-
       return data as ApiResponse<T>;
     } catch (error) {
       return {
         code: 503,
-        message: "Network request failed — API may be offline.",
-        module: "network",
+        message: (error as Error).message || "Network request failed — API may be offline.",
+        module: "Network",
         timestamp: new Date().toISOString(),
         trace: [(error as Error).message || "Unknown network error"],
       };
@@ -91,7 +81,7 @@ export class Api {
     return this.request<T>(path, { 
       ...options, 
       method: "DELETE", 
-      body: body ? JSON.stringify(body) : undefined // TEMP
+      body: body ? JSON.stringify(body) : undefined 
     });
   }
 }
