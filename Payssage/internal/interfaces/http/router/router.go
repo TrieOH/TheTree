@@ -5,6 +5,7 @@ package router
 import (
 	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
 	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
 	"TriePayments/internal/interfaces/http/system"
@@ -30,6 +31,7 @@ type HTTPDeps struct {
 	IntentsHandler    *intents.Handler
 	WorkspacesHandler *workspaces.Handler
 	ApiKeysHandler    *apiKeys.Handler
+	WebhooksHandler   *webhooks.Handler
 	AuthMiddleware    *middleware.AuthMiddleware
 	AsynqmonHandler   http.Handler
 }

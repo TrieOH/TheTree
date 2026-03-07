@@ -3,6 +3,7 @@ package router
 import (
 	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
 	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
 	"TriePayments/internal/interfaces/http/system"
@@ -15,6 +16,7 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerIntentsRoutes(r, deps.IntentsHandler, deps.AuthMiddleware)
 	registerWorkspacesRoutes(r, deps.WorkspacesHandler, deps.AuthMiddleware)
 	registerApiKeysRoutes(r, deps.ApiKeysHandler, deps.AuthMiddleware)
+	registerWebhookRoutes(r, deps.WebhooksHandler, deps.AuthMiddleware)
 }
 
 func registerSystemRoutes(
@@ -65,5 +67,20 @@ func registerIntentsRoutes(
 		r.Post("/intents", h.CreateIntent)
 		r.Get("/intents/{intent_id}", h.GetByID)
 		r.Post("/intents/{intent_id}/cancel", h.CancelIntent)
+	})
+}
+
+func registerWebhookRoutes(
+	r *chi.Mux,
+	h *webhooks.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	// inbound from providers — no auth, verified by signature
+	r.Post("/webhooks/{provider}", h.HandleProviderWebhook)
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/workspaces/{name}/webhooks", h.RegisterWebhookEndpoint)
+		r.Get("/workspaces/{name}/webhooks", h.ListWebhookEndpoints)
+		r.Delete("/workspaces/{name}/webhooks/{endpoint_id}", h.DeleteWebhookEndpoint)
 	})
 }

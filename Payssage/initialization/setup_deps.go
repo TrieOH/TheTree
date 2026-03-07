@@ -105,6 +105,8 @@ func SetupGoAuth(app *TriePayments) {
 				ApiKeysCreate,
 				ApiKeysRevoke,
 				WorkspacesCreate,
+				WebhooksCreate,
+				WebhooksDelete,
 			},
 			Meta: map[string]interface{}{
 				"color": "#10b981",
@@ -145,6 +147,22 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#10b981",
 			"icon":  "Zap",
+		},
+	}
+	WebhooksCreate = goauth.PermissionDefinition{
+		Object: "webhooks",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	WebhooksDelete = goauth.PermissionDefinition{
+		Object: "webhooks",
+		Action: "delete",
+		Meta: map[string]interface{}{
+			"color": "#ef4444",
+			"icon":  "Trash2",
 		},
 	}
 )

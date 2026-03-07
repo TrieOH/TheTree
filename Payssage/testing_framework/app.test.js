@@ -6,6 +6,8 @@ import { createIntent, createIntentNoMetadata } from "./fixtures/intents/create.
 import { WorkspaceSchema } from "./schemas/workspace.js"
 import { APIKeySchema, CreateAPIKeySchema } from "./schemas/api_key.js"
 import { IntentSchema } from "./schemas/intent.js"
+import { WebhookEndpointSchema } from "./schemas/webhook_endpoint.js"
+
 
 let owner
 beforeAll(async () => {
@@ -48,6 +50,17 @@ describe("api keys", () => {
         const keys = await get(owner, `/workspaces/${workspace.name}/keys`)
         expect(Array.isArray(keys)).toBe(true)
         expect(keys.some(k => k.id === apiKey.id)).toBe(true)
+    })
+})
+
+let apiKey2
+let apiKeyClient2
+describe("second api key for webhook tests", () => {
+    test("create second api key", async () => {
+        const res = await post(owner, `/workspaces/${workspace.name}/keys`, { name: "webhook-test-key" })
+        expect(validate(CreateAPIKeySchema, res)).toBe(true)
+        apiKey2 = res
+        apiKeyClient2 = createAPIKeyClient(res.key)
     })
 })
 
@@ -113,5 +126,71 @@ describe("api key revocation", () => {
         } catch (e) {
             expect(e.response.status).toBe(401)
         }
+    })
+})
+
+let webhookEndpoint
+describe("webhook endpoints", () => {
+    test("register webhook endpoint", async () => {
+        webhookEndpoint = await post(owner, `/workspaces/${workspace.name}/webhooks`, {
+            url: "http://localhost:9999/webhook-sink"
+        })
+        expect(validate(WebhookEndpointSchema, webhookEndpoint)).toBe(true)
+        expect(webhookEndpoint.workspace_id).toBe(workspace.id)
+        expect(webhookEndpoint.url).toBe("http://localhost:9999/webhook-sink")
+        expect(webhookEndpoint.secret).toBeDefined() // only returned on creation
+    })
+
+    test("list webhook endpoints", async () => {
+        const endpoints = await get(owner, `/workspaces/${workspace.name}/webhooks`)
+        expect(Array.isArray(endpoints)).toBe(true)
+        expect(endpoints.some(e => e.id === webhookEndpoint.id)).toBe(true)
+        // secret must NOT be in list response
+        expect(endpoints[0].secret).toBeUndefined()
+    })
+})
+
+let succeededIntent
+describe("provider webhook", () => {
+    beforeAll(async () => {
+        // create a fresh intent to trigger payment.succeeded on
+        succeededIntent = await post(apiKeyClient2, "/intents", createIntent)
+        expect(validate(IntentSchema, succeededIntent)).toBe(true)
+    })
+
+    test("mock provider triggers payment.succeeded", async () => {
+        const res = await post(null, "/webhooks/mock", {
+            intent_id: succeededIntent.id,
+            event: "payment.succeeded"
+        })
+    })
+
+    test("intent status is succeeded after webhook", async () => {
+        // wait for asynq delivery task
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        const fetched = await get(apiKeyClient2, `/intents/${succeededIntent.id}`)
+        expect(fetched.status).toBe("succeeded")
+    })
+
+    test("mock provider triggers payment.failed", async () => {
+        const failedIntent = await post(apiKeyClient2, "/intents", createIntent)
+        await post(null, "/webhooks/mock", {
+            intent_id: failedIntent.id,
+            event: "payment.failed"
+        })
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        const fetched = await get(apiKeyClient2, `/intents/${failedIntent.id}`)
+        expect(fetched.status).toBe("failed")
+    })
+})
+
+describe("webhook endpoint deletion", () => {
+    test("delete webhook endpoint", async () => {
+        await deleteReq(owner, `/workspaces/${workspace.name}/webhooks/${webhookEndpoint.id}`)
+    })
+
+    test("endpoint no longer in list after deletion", async () => {
+        const endpoints = await get(owner, `/workspaces/${workspace.name}/webhooks`)
+        expect(endpoints.some(e => e.id === webhookEndpoint.id)).toBe(false)
     })
 })

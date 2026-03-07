@@ -5,11 +5,15 @@ import (
 	apiKeyQueries "TriePayments/internal/core/application/api_keys/queries"
 	intentCommands "TriePayments/internal/core/application/intents/commands"
 	intentQueries "TriePayments/internal/core/application/intents/queries"
+	async "TriePayments/internal/core/application/webhooks/asynq"
+	webhooksCommands "TriePayments/internal/core/application/webhooks/commands"
+	webhooksQueries "TriePayments/internal/core/application/webhooks/queries"
 	workspaceCommands "TriePayments/internal/core/application/workspaces/commands"
 	workspaceQueries "TriePayments/internal/core/application/workspaces/queries"
 	"TriePayments/internal/core/infrastructure"
 	apiKeysHandler "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
 	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
 	"TriePayments/internal/interfaces/http/router"
@@ -100,11 +104,16 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	intentRepo := infrastructure.NewIntentsRepo(q, logs, tracer)
 	workspaceRepo := infrastructure.NewWorkspaceRepo(q, logs, tracer)
 	apiKeysRepo := infrastructure.NewApiKeyRepo(q, logs, tracer)
+	endpointsRepo := infrastructure.NewWebhookEndpointRepo(q, logs, tracer)
+	deliveriesRepo := infrastructure.NewWebhookDeliveryRepo(q, logs, tracer)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, apiKeysRepo, workspaceRepo, tracer)
 
 	// init Async Handlers
-	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{})
+	webhooksAsyncHandler := async.New(deliveriesRepo, app.GaClient, tracer, txRunner)
+	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{
+		WebhookAsynq: webhooksAsyncHandler,
+	})
 	defer func() {
 		if err = inspector.Close(); err != nil {
 			telemetry.Log().Error("error closing the asynq inspector", zap.Error(err))
@@ -123,12 +132,15 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	workspaceQ := workspaceQueries.New(workspaceRepo, app.GaClient, txRunner, tracer)
 	apiKeyC := apiKeyCommands.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, workspaceRepo, intentRepo, asynqClient, app.GaClient, txRunner, tracer)
+	webhooksQ := webhooksQueries.New(endpointsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler()
 	intentHandler := intents.NewIntentsHandler(intentC, intentQ)
 	workspaceHandler := workspaces.NewWorkspacesHandler(workspaceC, workspaceQ)
 	apiKeyHandler := apiKeysHandler.NewApiKeysHandler(apiKeyC, apiKeyQ)
+	webhooksHandler := webhooks.NewWebhooksHandler(webhooksC, webhooksQ)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
@@ -143,6 +155,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		SystemHandler:     systemHandler,
 		IntentsHandler:    intentHandler,
 		WorkspacesHandler: workspaceHandler,
+		WebhooksHandler:   webhooksHandler,
 		ApiKeysHandler:    apiKeyHandler,
 		AuthMiddleware:    authMW,
 		AsynqmonHandler:   asynqmonHandler,

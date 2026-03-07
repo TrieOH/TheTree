@@ -29,3 +29,19 @@ type ApiKeysRepo interface {
 	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]APIKey, error)
 	Revoke(ctx context.Context, id, workspaceID uuid.UUID) (*APIKey, error)
 }
+
+type WebhookEndpointRepo interface {
+	Create(ctx context.Context, toCreate WebhookEndpoint) (*WebhookEndpoint, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*WebhookEndpoint, error)
+	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]WebhookEndpoint, error)
+	Delete(ctx context.Context, id, workspaceID uuid.UUID) error
+}
+
+type WebhookDeliveryRepo interface {
+	Create(ctx context.Context, toCreate WebhookDelivery) (*WebhookDelivery, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
+	ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]WebhookDelivery, error)
+	MarkDelivered(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
+	MarkFailed(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
+	IncrementAttempt(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
+}

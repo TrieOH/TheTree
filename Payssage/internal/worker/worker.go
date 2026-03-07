@@ -1,6 +1,8 @@
 package worker
 
 import (
+	webhooks "TriePayments/internal/core/application/webhooks/asynq"
+	"TriePayments/internal/core/domain"
 	"context"
 	"log"
 
@@ -9,6 +11,7 @@ import (
 )
 
 type Deps struct {
+	WebhookAsynq *webhooks.AsynqHandlers
 }
 
 func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, *asynq.Inspector, error) {
@@ -37,6 +40,7 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, *asyn
 
 	// Setup handlers
 	mux := asynq.NewServeMux()
+	mux.HandleFunc(domain.TypeDeliverWebhook, deps.WebhookAsynq.HandleDeliverWebhook)
 
 	// Run server in background
 	go func() {
