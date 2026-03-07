@@ -110,7 +110,10 @@ export class AuthInterceptor {
   }
 
   async fetch(url: string, options?: RequestOptions): Promise<Response> {
-    if (options?.requiresAuth && !options?.skipRefresh) await this.beforeRequest();
+    const shouldAuth = options?.requiresAuth !== false;
+    const shouldRefresh = !options?.skipRefresh;
+
+    if (shouldAuth && shouldRefresh) await this.beforeRequest();
 
     const finalUrl = joinUrl(this.baseURL, url);
 
