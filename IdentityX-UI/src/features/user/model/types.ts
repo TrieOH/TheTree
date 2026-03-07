@@ -27,8 +27,33 @@ export interface NodeCustomName {
   applicationName: string;
 }
 
+export type NodeType = 'scope' | 'role' | 'object' | 'action' | 'inherited' | 'direct' | 'folder'
+  | 'perm-folder' | 'role-folder';
+
+export interface InheritedPermissionSource {
+  object: string;
+  action: string;
+  sourceScope: string;
+  sourceRole?: string;
+  id: string;
+  scopeId: string | null;
+  icon?: string;
+  color?: string;
+}
+
 export interface Node {
   id: string
   name: string | NodeCustomName
+  type: NodeType
+  icon?: string
+  color?: string
   children?: Node[]
+  
+  roleId?: string
+  permissionId?: string
+  scopeId?: string | null
+  isInherited?: boolean
+  sourceScope?: string
+  isFromRole?: boolean
+  sources?: InheritedPermissionSource[]
 }

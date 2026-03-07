@@ -17,6 +17,7 @@ import { schemasQueryOptions } from '@/features/schema/api';
 import { scopesQueryOptions } from '@/features/scope/api';
 import { roleQueryOptions } from '@/features/role/api';
 import { permissionsQueryOptions } from '@/features/permission/api';
+import { useMemo } from 'react';
 
 export const Route = createFileRoute('/projects/config/')({
   beforeLoad: async (ctx) => {
@@ -47,13 +48,18 @@ function RouteComponent() {
   const { data: users } = useSuspenseQuery(usersQueryOptions(currentProjectId))
   const { tab } = Route.useSearch();
 
-  const items = [
+  const items = useMemo(() => [
     {
       value: 'schema',
       label: 'Schema',
       icon: Database,
       content: <SchemaTable project_id={currentProjectId}/>,
-      onRefresh: () => queryClient.invalidateQueries(schemasQueryOptions(currentProjectId))
+      onRefresh: () => {
+        queryClient.invalidateQueries(schemasQueryOptions(currentProjectId));
+        queryClient.invalidateQueries({ queryKey: ['latestSchemaVersion', currentProjectId] });
+        queryClient.invalidateQueries({ queryKey: ['currentSchemaVersion', currentProjectId] });
+        queryClient.invalidateQueries({ queryKey: ['schemaVersionById', currentProjectId] });
+      }
     },
     {
       value: 'scope',
@@ -67,7 +73,10 @@ function RouteComponent() {
       label: 'Roles', 
       icon: ShieldCheck, 
       content: <RoleTable project_id={currentProjectId}/>,
-      onRefresh: () => queryClient.invalidateQueries(roleQueryOptions(currentProjectId))
+      onRefresh: () => {
+        queryClient.invalidateQueries(roleQueryOptions(currentProjectId));
+        queryClient.invalidateQueries({ queryKey: ['rolePermissions', currentProjectId] });
+      }
     },
     { 
       value: 'permissions', 
@@ -81,7 +90,20 @@ function RouteComponent() {
       label: 'Users',
       icon: UserCog,
       content: <UserTable data={users} project_id={currentProjectId} />,
-      onRefresh: () => queryClient.invalidateQueries(usersQueryOptions(currentProjectId))
+      onRefresh: () => {
+        // Invalidate the main user list
+        queryClient.invalidateQueries(usersQueryOptions(currentProjectId));
+        
+        // Invalidate all potential sub-data for all users in this project
+        queryClient.invalidateQueries({ queryKey: ['userRoles', currentProjectId] });
+        queryClient.invalidateQueries({ queryKey: ['userPermissions', currentProjectId] });
+        queryClient.invalidateQueries({ queryKey: ['rolePermissions', currentProjectId] });
+        
+        // Also refresh core configuration that users depend on
+        queryClient.invalidateQueries(scopesQueryOptions(currentProjectId));
+        queryClient.invalidateQueries(roleQueryOptions(currentProjectId));
+        queryClient.invalidateQueries(permissionsQueryOptions(currentProjectId));
+      }
     },
     {
       value: 'api-keys',
@@ -89,7 +111,7 @@ function RouteComponent() {
       icon: KeySquare,
       content: <APIKeyManager publicKey={currentProjectId}/>
     },
-  ];
+  ], [currentProjectId, queryClient, users]);
 
   return (
     <main className='flex justify-center items-center h-(--screen--minus-header)'>
