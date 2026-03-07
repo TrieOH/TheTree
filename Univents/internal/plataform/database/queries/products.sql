@@ -82,11 +82,16 @@ JOIN products ON products.id = product_reservations.product_id
 WHERE product_reservations.session_id = sqlc.arg(session_id);
 
 -- name: CreatePurchase :one
-INSERT INTO purchases (edition_id, user_id, status, subtotal_cents, total_cents, payment_provider, payment_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO purchases (edition_id, session_id, user_id, status, subtotal_cents, total_cents, payment_provider, payment_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
 -- name: CreatePurchaseItem :one
 INSERT INTO purchase_items (purchase_id, item_type, item_id, quantity, unit_price_cents, total_price_cents)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
+
+-- name: GetPurchaseByPaymentID :one
+SELECT * FROM purchases
+WHERE payment_id = $1
+  AND deleted_at IS NULL;

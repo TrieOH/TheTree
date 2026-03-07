@@ -10,25 +10,28 @@ import (
 )
 
 type QueryService struct {
-	products domain.ProductsRepository
-	editions domain2.EditionsRepository
-	gaClient *goauth.Client
-	tracer   trace.Tracer
-	tx       database.TxRunner
+	products  domain.ProductsRepository
+	purchases domain.PurchaseRepository
+	editions  domain2.EditionsRepository
+	gaClient  *goauth.Client
+	tracer    trace.Tracer
+	tx        database.TxRunner
 }
 
 func New(
 	products domain.ProductsRepository,
+	purchases domain.PurchaseRepository,
 	editions domain2.EditionsRepository,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *QueryService {
 	return &QueryService{
-		products: products,
-		editions: editions,
-		gaClient: gaClient,
-		tracer:   tracer,
-		tx:       tx,
+		products:  products,
+		purchases: purchases,
+		editions:  editions,
+		gaClient:  gaClient,
+		tracer:    tracer,
+		tx:        tx,
 	}
 }

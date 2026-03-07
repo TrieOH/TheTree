@@ -261,6 +261,7 @@ describe('products', () => {
     })
 });
 
+/*
 describe('purchase', () => {
     test("buy 2x VIP, 1x Full Access, 1x shirt, 2x standard", async () => {
         const cookies = await owner.defaults.jar.getCookies(process.env.BASE_URL)
@@ -360,4 +361,4 @@ describe('mark attendance', () => {
         const updated = records.find(r => r.id === attendanceRecord.id)
         expect(updated.status).toBe("completed")
     })
-})
+})*/

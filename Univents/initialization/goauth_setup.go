@@ -32,13 +32,13 @@ import (
 	"univents/internal/interfaces/http/middleware"
 	"univents/internal/interfaces/http/router"
 	"univents/internal/interfaces/http/system"
-	"univents/internal/payments"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
 	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/sockets"
 	"univents/internal/worker"
 
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/hibiken/asynq"
@@ -56,6 +56,7 @@ type UniventsApp struct {
 	Redis     *redis.Client
 	Scheduler gocron.Scheduler
 	GaClient  *goauth.Client
+	Payments  *paymentsSDK.Client
 
 	Deps *router.HTTPDeps
 }
@@ -66,6 +67,7 @@ func UniventsSetup() *UniventsApp {
 	LoadEnv(&app)
 	SetupGoAuth(&app)
 	SetupFUN()
+	SetupPayments(&app)
 	if viper.GetString("ENV") != "test" {
 		SetupDB(&app, "./internal/plataform/database/migrations")
 	} else {
@@ -111,7 +113,6 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	tracer := otel.Tracer(string(telemetry.UniventsTracer))
 	logs := telemetry.Log()
 	ws := sockets.New()
-	mockPayments := &payments.MockPayments{}
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
 
@@ -125,7 +126,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
-	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, ws, mockPayments, app.GaClient, tracer, txRunner)
+	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, ws, app.Payments, app.GaClient, tracer, txRunner)
 	ticketsAsyncHandlers := ticketsAsync.New(ticketRepo, productRepo, activityRepo, checkpointRepo, app.GaClient, tracer, txRunner)
 	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{
 		Handlers:         workerHandlers,
@@ -155,15 +156,15 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, mockPayments, ws, asynqClient, inspector, app.GaClient, tracer, txRunner)
-	productsQ := productsQueries.New(productRepo, editionRepo, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, ws, asynqClient, inspector, app.GaClient, tracer, txRunner)
+	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
 	activityHandler := activityhttp.NewActivitiesHandler(activitiesC, activitiesQ)
 	checkpointHandler := checkpointshttp.NewCheckpointsHandler(checkpointsC, checkpointsQ)
 	ticketHandler := tickethttp.NewTicketsHandler(ticketsC, ticketsQ)
-	productHandler := productshttp.NewProductsHandler(productsC, productsQ)
+	productHandler := productshttp.NewProductsHandler(productsC, productsQ, ws)
 
 	systemHandler := system.NewUniventsHandler()
 

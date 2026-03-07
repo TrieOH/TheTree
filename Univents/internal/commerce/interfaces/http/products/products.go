@@ -2,7 +2,6 @@ package products
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"univents/internal/commerce/application/product/commands"
@@ -13,7 +12,9 @@ import (
 	"univents/internal/shared/validation"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/gorilla/websocket"
+	"github.com/spf13/viper"
 )
 
 type Handler struct {
@@ -25,10 +26,12 @@ type Handler struct {
 func NewProductsHandler(
 	commands *commands.CommandService,
 	queries *queries.QueryService,
+	registry *sockets.Registry,
 ) *Handler {
 	return &Handler{
 		commands: commands,
 		queries:  queries,
+		Registry: registry,
 	}
 }
 
@@ -202,28 +205,51 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ConfirmPayment godoc
-// @Summary Payment webhook callback
-// @Description Called by the payments service when a payment intent is confirmed
+// WebhookHandler godoc
+// @Summary TrieMint webhook receiver
+// @Description Receives normalized payment events from TrieMint
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param body body dtos.ConfirmPaymentRequest true "Payment confirmation"
 // @Success 200 {object} object
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id}/products/purchase/confirm [post]
-func (handler *Handler) ConfirmPayment(w http.ResponseWriter, r *http.Request) {
-	var req dtos.ConfirmPaymentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		resp.BadRequest("invalid payload").Send(w)
+// @Router /webhooks/payments [post]
+func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
+	payload, err := paymentsSDK.VerifyWebhookSignature(r, viper.GetString("TRIEPAYMENTS_WEBHOOK_SECRET"))
+	if err != nil {
+		log.Printf("[webhook] invalid signature: %v", err)
+		resp.BadRequest("invalid signature").Send(w)
 		return
 	}
+	log.Printf("[webhook] received event=%s intent=%s", payload.Event, payload.IntentID)
 
+	// ACK immediately
 	resp.OK().Send(w)
 
-	ctx := context.Background()
-	if err := handler.commands.ConfirmPayment(ctx, req.SessionID, req.PaymentIntentID); err != nil {
-		log.Printf("[webhook] failed to confirm payment for session %s: %v", req.SessionID, err)
-	}
+	go func() {
+		ctx := context.Background()
+		switch payload.Event {
+		case paymentsSDK.EventPaymentSucceeded:
+			if err := handler.commands.ConfirmPayment(ctx, payload.IntentID); err != nil {
+				log.Printf("[webhook] failed to confirm payment for intent %s: %v", payload.IntentID, err)
+			}
+		case paymentsSDK.EventPaymentFailed, paymentsSDK.EventPaymentCancelled:
+			purchase, err := handler.queries.GetPurchaseByPaymentID(ctx, payload.IntentID)
+			if err != nil {
+				log.Printf("[webhook] failed to fetch purchase for intent %s: %v", payload.IntentID, err)
+				return
+			}
+			if purchase.SessionID == nil {
+				return
+			}
+			if err := handler.Registry.Notify(purchase.SessionID.String(), sockets.WSMessage{
+				Type:    "payment_failed",
+				Payload: map[string]string{"payment_intent_id": payload.IntentID},
+			}); err != nil {
+				log.Printf("[webhook] ws already closed for session %s: %v", purchase.SessionID, err)
+			}
+			handler.Registry.Remove(purchase.SessionID.String())
+		}
+	}()
 }

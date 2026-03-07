@@ -3,10 +3,10 @@ package commands
 import (
 	"univents/internal/commerce/domain"
 	coreDomain "univents/internal/core/domain"
-	"univents/internal/payments"
 	"univents/internal/plataform/database"
 	"univents/internal/shared/sockets"
 
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
@@ -16,7 +16,7 @@ type CommandService struct {
 	editions  coreDomain.EditionsRepository
 	products  domain.ProductsRepository
 	purchases domain.PurchaseRepository
-	payments  *payments.MockPayments
+	payments  *paymentsSDK.Client
 	ws        *sockets.Registry
 	asynq     *asynq.Client
 	inspector *asynq.Inspector
@@ -29,7 +29,7 @@ func New(
 	editions coreDomain.EditionsRepository,
 	products domain.ProductsRepository,
 	purchases domain.PurchaseRepository,
-	payments *payments.MockPayments,
+	payments *paymentsSDK.Client,
 	ws *sockets.Registry,
 	asynq *asynq.Client,
 	inspector *asynq.Inspector,

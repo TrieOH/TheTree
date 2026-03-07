@@ -29,6 +29,7 @@ type ProductsRepository interface {
 
 type PurchaseRepository interface {
 	Create(ctx context.Context, toCreate Purchase) (*Purchase, error)
+	GetByPaymentID(ctx context.Context, paymentID string) (*Purchase, error)
 	CreateLineItem(ctx context.Context, toCreate LineItem) (*LineItem, error)
 	ConfirmPurchase(ctx context.Context, paymentID string) error
 	CancelPurchase(ctx context.Context, paymentID string) error

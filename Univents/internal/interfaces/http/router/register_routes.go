@@ -112,7 +112,7 @@ func registerProductsRoutes(
 	h *products.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
-	r.Post("/events/{event_id}/editions/{edition_id}/products/purchase/confirm", h.ConfirmPayment)
+	r.Post("/webhooks/payments", h.WebhookHandler)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/products", h.Create)

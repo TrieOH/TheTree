@@ -20,6 +20,7 @@ const (
 type Purchase struct {
 	ID              uuid.UUID        `json:"id"`
 	EditionID       uuid.UUID        `json:"edition_id"`
+	SessionID       *uuid.UUID       `json:"session_id"`
 	UserID          uuid.UUID        `json:"user_id"`
 	Status          PurchaseStatus   `json:"status"`
 	SubtotalCents   int              `json:"subtotal_cents"`
@@ -54,6 +55,7 @@ type LineItem struct {
 
 type CreatePurchaseSpec struct {
 	EditionID       uuid.UUID        `json:"edition_id"`
+	SessionID       *uuid.UUID       `json:"session_id"`
 	UserID          uuid.UUID        `json:"user_id"`
 	SubtotalCents   int              `json:"subtotal_cents"`
 	TaxCents        int              `json:"tax_cents"`
@@ -65,7 +67,7 @@ type CreatePurchaseSpec struct {
 
 func NewPurchase(spec CreatePurchaseSpec) *Purchase {
 	return &Purchase{
-		ID:              uuid.UUID{},
+		SessionID:       spec.SessionID,
 		EditionID:       spec.EditionID,
 		UserID:          spec.UserID,
 		Status:          PurchaseStatusPending,

@@ -33,6 +33,10 @@ services:
       GOAUTH_API_KEY: ${GOAUTH_API_KEY}
       GO_AUTH_PROJECT_ID: ${GO_AUTH_PROJECT_ID}
 
+      TRIEPAYMENTS_URL: ${TRIEPAYMENTS_URL:-http://trie-payments:8080}
+      TRIEPAYMENTS_API_KEY: ${TRIEPAYMENTS_API_KEY}
+      TRIEPAYMENTS_WEBHOOK_SECRET: ${TRIEPAYMENTS_WEBHOOK_SECRET}
+
   univents-database:
     image: postgres:18
     restart: unless-stopped

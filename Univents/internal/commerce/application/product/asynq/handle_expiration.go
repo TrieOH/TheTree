@@ -8,6 +8,7 @@ import (
 	"univents/internal/commerce/domain"
 	"univents/internal/shared/sockets"
 
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/hibiken/asynq"
 )
 
@@ -32,8 +33,13 @@ func (uc *AsynqHandlers) HandleProductReservationExpiration(ctx context.Context,
 	}
 
 	// 2. Cancel payment intent
-	if err := uc.payments.CancelPaymentIntent(ctx, p.PaymentIntentID); err != nil {
-		return fmt.Errorf("failed to cancel payment intent: %w", err)
+	if _, err := uc.payments.CancelIntent(ctx, p.PaymentIntentID); err != nil {
+		if paymentsSDK.IsNotFound(err) {
+			// intent already succeeded or was canceled — skip
+			log.Printf("[task] intent %s already gone, skipping cancel", p.PaymentIntentID)
+		} else {
+			return fmt.Errorf("failed to cancel payment intent: %w", err)
+		}
 	}
 
 	// 3. Notify WS connection if still alive

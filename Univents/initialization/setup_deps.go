@@ -7,6 +7,7 @@ import (
 	"univents/internal/plataform/database"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
@@ -29,6 +30,23 @@ func SetupFUN() {
 		EnableSizeValidation: true,
 		DefaultModule:        module,
 	})
+}
+
+func SetupPayments(app *UniventsApp) {
+	paymentsURL := viper.GetString("TRIEPAYMENTS_URL")
+	if paymentsURL == "" {
+		log.Fatal("TRIEPAYMENTS_URl not set")
+	}
+	paymentsAPIKey := viper.GetString("TRIEPAYMENTS_API_KEY")
+	if paymentsAPIKey == "" {
+		log.Fatal("TRIEPAYMENTS_API_KEY not set")
+	}
+	paymentsWebhookSecret := viper.GetString("TRIEPAYMENTS_WEBHOOK_SECRET")
+	if paymentsWebhookSecret == "" {
+		log.Fatal("TRIEPAYMENTS_WEBHOOK_SECRET not set")
+	}
+	client := paymentsSDK.New(paymentsURL, paymentsAPIKey)
+	app.Payments = client
 }
 
 func SetupDB(app *UniventsApp, migrationPath string) {

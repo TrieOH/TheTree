@@ -2,15 +2,18 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
+	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/sockets"
 
+	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/hibiken/asynq"
@@ -30,7 +33,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	if err != nil {
 		return err
 	}
-	var paymentIntentID, clientSecret, provider string
+	var paymentIntentID string
 
 	if err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		ids := make([]uuid.UUID, len(req.Items))
@@ -66,17 +69,26 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 			subtotal += p.PriceCents * quantityMap[p.ID]
 		}
 
-		paymentIntentID, clientSecret, provider, err = uc.payments.CreatePaymentIntent(ctx, req)
+		var intent *paymentsSDK.Intent
+		intent, err = uc.payments.CreateIntent(ctx, paymentsSDK.CreateIntentRequest{
+			Amount:   int64(subtotal),
+			Currency: "brl",
+			Provider: "mock",
+			Metadata: json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
+		})
 		if err != nil {
 			return err
 		}
 
+		paymentIntentID = intent.ID
+
 		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
 			EditionID:       editionID,
+			SessionID:       &sessionID,
 			UserID:          sub.ID,
-			SubtotalCents:   subtotal,
-			PaymentProvider: &provider,
-			PaymentID:       &paymentIntentID,
+			SubtotalCents:   int(intent.Amount),
+			PaymentProvider: &intent.Provider,
+			PaymentID:       &intent.ID,
 		})
 
 		var purchase *domain.Purchase
@@ -147,17 +159,37 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	_ = conn.WriteJSON(sockets.WSMessage{
 		Type: "reservation_confirmed",
 		Payload: dtos.ReservationConfirmedPayload{
-			SessionID:       sessionID,
-			ClientSecret:    clientSecret,
-			PaymentIntentID: paymentIntentID,
-			ExpiresAt:       expiresAt,
+			SessionID: sessionID,
+			ExpiresAt: expiresAt,
 		},
 	})
 
 	return nil
 }
 
-func (uc *CommandService) ConfirmPayment(ctx context.Context, sessionID uuid.UUID, paymentIntentID string) error {
+func (uc *CommandService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
+	purchase, err := uc.purchases.GetByPaymentID(ctx, paymentIntentID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch purchase for intent %s: %w", paymentIntentID, err)
+	}
+
+	switch purchase.Status {
+	case domain.PurchaseStatusCompleted:
+		log.Printf("[confirm] purchase already completed for intent %s", paymentIntentID)
+		return nil
+
+	case domain.PurchaseStatusCancelled:
+		log.Printf("[confirm] purchase cancelled, ignoring success webhook for %s", paymentIntentID)
+		return nil
+	}
+
+	msg := fmt.Sprintf("malformed sessionID for purchase %s", paymentIntentID)
+	if purchase.SessionID == nil {
+		telemetry.Log().Error(msg)
+		return errors.New(msg)
+	}
+	sessionID := *purchase.SessionID
+
 	// 1. mark items as sold in db
 	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := uc.products.DeleteReservation(ctx, sessionID); err != nil {
@@ -187,8 +219,7 @@ func (uc *CommandService) ConfirmPayment(ctx context.Context, sessionID uuid.UUI
 
 	// 3. notify the open purchase socket
 	if err := uc.ws.Notify(sessionID.String(), sockets.WSMessage{
-		Type:    "order_confirmed",
-		Payload: map[string]string{"payment_intent_id": paymentIntentID},
+		Type: "order_confirmed",
 	}); err != nil {
 		log.Printf("[confirm] ws already closed for session %s: %v", sessionID, err)
 	}

@@ -39,6 +39,7 @@ func mapPurchaseFromDB(src *sqlc.Purchase) *domain.Purchase {
 	return &domain.Purchase{
 		ID:              src.ID,
 		EditionID:       src.EditionID,
+		SessionID:       src.SessionID,
 		UserID:          src.UserID,
 		Status:          domain.PurchaseStatus(src.Status),
 		SubtotalCents:   src.SubtotalCents,
@@ -80,6 +81,7 @@ func (repo *purchaseRepo) Create(ctx context.Context, toCreate domain.Purchase) 
 
 	sqlcPurchase, err := repo.queries(ctx).CreatePurchase(ctx, sqlc.CreatePurchaseParams{
 		EditionID:       toCreate.EditionID,
+		SessionID:       toCreate.SessionID,
 		UserID:          toCreate.UserID,
 		Status:          sqlc.PurchaseStatus(toCreate.Status),
 		SubtotalCents:   toCreate.SubtotalCents,
@@ -87,6 +89,18 @@ func (repo *purchaseRepo) Create(ctx context.Context, toCreate domain.Purchase) 
 		PaymentProvider: toCreate.PaymentProvider,
 		PaymentID:       toCreate.PaymentID,
 	})
+	if err != nil {
+		return nil, errx.FromDB(err, "purchase")
+	}
+
+	return mapPurchaseFromDB(&sqlcPurchase), nil
+}
+
+func (repo *purchaseRepo) GetByPaymentID(ctx context.Context, paymentID string) (*domain.Purchase, error) {
+	ctx, span := repo.tracer.Start(ctx, "PurchaseRepo.GetByPaymentID")
+	defer span.End()
+
+	sqlcPurchase, err := repo.queries(ctx).GetPurchaseByPaymentID(ctx, &paymentID)
 	if err != nil {
 		return nil, errx.FromDB(err, "purchase")
 	}
