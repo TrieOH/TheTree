@@ -11,7 +11,7 @@ import (
 // ListAPIKeys godoc
 // @Summary List API keys
 // @Description Lists all API keys for the given workspace (raw keys are never returned)
-// @Tags workspaces
+// @Tags api_keys
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"

@@ -12,7 +12,7 @@ import (
 // Create godoc
 // @Summary Create an API key
 // @Description Creates a new API key for the given workspace. The raw key is returned once and never stored.
-// @Tags workspaces
+// @Tags api_keys
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"

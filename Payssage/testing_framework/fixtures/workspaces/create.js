@@ -1,3 +1,3 @@
 export const createWorkspace = {
-    name: "triemint-test-workspace",
+    name: "trie-payments-test-workspace",
 }

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	//_ "univents/docs"
+	_ "TriePayments/docs"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"

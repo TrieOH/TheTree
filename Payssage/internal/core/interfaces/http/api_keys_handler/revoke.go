@@ -11,7 +11,7 @@ import (
 // RevokeAPIKey godoc
 // @Summary Revoke an API key
 // @Description Revokes the given API key, immediately invalidating it
-// @Tags workspaces
+// @Tags api_keys
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
