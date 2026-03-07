@@ -46,6 +46,50 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 			return err
 		}
 
+		if len(toBuy) != len(ids) {
+			_ = conn.WriteJSON(sockets.WSMessage{
+				Type: "purchase_failed",
+				Payload: map[string]any{
+					"reason":      "one or more products do not exist",
+					"product_ids": ids,
+				},
+			})
+			return nil
+		}
+
+		invalid := make([]domain.InvalidProduct, 0)
+
+		for _, p := range toBuy {
+			if p.Status != domain.ProductStatusAvailable {
+				var reason string
+
+				switch p.Status {
+				case domain.ProductStatusDraft:
+					reason = "product is not yet available"
+				case domain.ProductStatusSoldOut:
+					reason = "product is sold out"
+				case domain.ProductStatusUnavailable:
+					reason = "product is unavailable"
+				default:
+					reason = "product cannot be purchased"
+				}
+
+				invalid = append(invalid, domain.InvalidProduct{
+					ProductID: p.ID,
+					Name:      p.Name,
+					Reason:    reason,
+				})
+			}
+		}
+
+		if len(invalid) > 0 {
+			_ = conn.WriteJSON(sockets.WSMessage{
+				Type:    "purchase_failed",
+				Payload: invalid,
+			})
+			return nil
+		}
+
 		// enrich cart items with inventory flag
 		productMap := make(map[uuid.UUID]domain.Product, len(toBuy))
 		for _, p := range toBuy {

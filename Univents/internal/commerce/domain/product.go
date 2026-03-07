@@ -11,6 +11,12 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+type InvalidProduct struct {
+	ProductID uuid.UUID `json:"product_id"`
+	Name      string    `json:"name"`
+	Reason    string    `json:"reason"`
+}
+
 type CartItem struct {
 	ProductID    uuid.UUID `json:"product_id"`
 	Quantity     int       `json:"quantity"`
