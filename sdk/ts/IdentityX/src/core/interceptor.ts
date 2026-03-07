@@ -8,7 +8,6 @@ import {
 import { env } from "./env";
 
 interface InterceptorConfig {
-  baseURL?: string;
   apiKey?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
@@ -21,8 +20,8 @@ export class AuthInterceptor {
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   private onRefreshFailed?: (error: Error) => void;
 
-  constructor(config?: InterceptorConfig) {
-    this.baseURL = config?.baseURL || env.BASE_URL;
+  constructor(config?: Omit<InterceptorConfig, "baseURL">) {
+    this.baseURL = env.BASE_URL;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
   }
@@ -101,8 +100,12 @@ export class AuthInterceptor {
 
   async fetch(url: string, options?: RequestInit): Promise<Response> {
     await this.beforeRequest();
-    
-    return fetch(url, {
+
+    const finalUrl = url.startsWith("http")
+      ? url
+      : `${this.baseURL.replace(/\/$/, "")}/${url.replace(/^\//,"")}`;
+
+    return fetch(finalUrl, {
       ...options,
       credentials: "include",
       headers: {
