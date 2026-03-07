@@ -31,7 +31,7 @@ func (h *AsynqHandlers) HandleDeliverWebhook(ctx context.Context, t *asynq.Task)
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-TrieMint-Signature", sig)
+	req.Header.Set("X-TriePayments-Signature", sig)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
