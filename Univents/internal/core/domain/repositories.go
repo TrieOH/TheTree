@@ -34,6 +34,14 @@ type ActivitiesRepository interface {
 	Finish(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, editionID uuid.UUID) ([]Activity, error)
 	ListAdmin(ctx context.Context, editionID uuid.UUID) ([]Activity, error)
+	Register(ctx context.Context, toCreate AttendanceRecord) (*AttendanceRecord, error)
+	Unregister(ctx context.Context, userID, activityID uuid.UUID) error
+	MarkAttendanceRecordStatus(ctx context.Context, id uuid.UUID, scannedBy *uuid.UUID, status AttendanceStatus) error
+	GetAttendanceRecordByID(ctx context.Context, id uuid.UUID) (*AttendanceRecord, error)
+	ListActivityAttendanceRecords(ctx context.Context, activityID uuid.UUID) ([]AttendanceRecord, error)
+	GetActiveUserActivityAttendanceRecords(ctx context.Context, userID, activityID uuid.UUID) (*AttendanceRecord, error)
+	GetUserActivityAttendanceRecords(ctx context.Context, userID, activityID uuid.UUID) ([]AttendanceRecord, error)
+	IsRegistered(ctx context.Context, userID, activityID uuid.UUID) (bool, error)
 }
 
 type CheckpointsRepository interface {

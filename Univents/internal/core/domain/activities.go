@@ -166,3 +166,43 @@ func NewEndActivityTask(activityID uuid.UUID, endAt time.Time) (*asynq.Task, err
 		asynq.Unique(time.Hour),
 	), nil
 }
+
+type AttendanceStatus string
+
+const (
+	AttendanceStatusRegistered AttendanceStatus = "registered"
+	AttendanceStatusWaitlisted AttendanceStatus = "waitlisted"
+	AttendanceStatusPromoted   AttendanceStatus = "promoted"
+	AttendanceStatusCheckedIn  AttendanceStatus = "checked_in"
+	AttendanceStatusCheckedOut AttendanceStatus = "checked_out"
+	AttendanceStatusCompleted  AttendanceStatus = "completed"
+	AttendanceStatusPartial    AttendanceStatus = "partial"
+	AttendanceStatusNoShow     AttendanceStatus = "no_show"
+	AttendanceStatusCancelled  AttendanceStatus = "cancelled"
+)
+
+type AttendanceRecord struct {
+	ID          uuid.UUID        `json:"id"`
+	ActivityID  uuid.UUID        `json:"activity_id"`
+	UserID      uuid.UUID        `json:"user_id"`
+	Status      AttendanceStatus `json:"status"`
+	CheckedInAt *time.Time       `json:"checked_in_at"`
+	CancelledAt *time.Time       `json:"cancelled_at"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+	DeletedAt   *time.Time       `json:"deleted_at"`
+}
+
+type CreateAttendanceRecordSpec struct {
+	ActivityID uuid.UUID        `json:"activity_id"`
+	UserID     uuid.UUID        `json:"user_id"`
+	Status     AttendanceStatus `json:"status"`
+}
+
+func NewAttendanceRecord(userID, activityID uuid.UUID) *AttendanceRecord {
+	return &AttendanceRecord{
+		ActivityID: activityID,
+		UserID:     userID,
+		Status:     AttendanceStatusRegistered,
+	}
+}

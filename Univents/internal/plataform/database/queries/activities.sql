@@ -34,26 +34,76 @@ SELECT *
 FROM activities
 WHERE edition_id = $1;
 
--- name: WaitlistAppend :one
-INSERT INTO waitlist_entries (activity_id, user_id, position)
-SELECT $1, $2, COALESCE(MAX(position) + 1, 0)
-FROM waitlist_entries
-WHERE activity_id = $1
+-- name: GetAttendanceRecordByID :one
+SELECT *
+FROM attendance_records
+WHERE id = $1;
+
+-- name: ListActivityAttendanceRecords :many
+SELECT *
+FROM attendance_records
+WHERE activity_id = $1;
+
+-- name: GetUserActivityAttendanceRecords :many
+SELECT *
+FROM attendance_records
+WHERE activity_id = $1 AND user_id = $2;
+
+-- name: GetActiveUserActivityAttendanceRecords :one
+SELECT *
+FROM attendance_records
+WHERE activity_id = $1 AND user_id = $2 AND status != 'cancelled';
+
+-- name: IsUserRegistered :one
+SELECT EXISTS (
+    SELECT 1
+    FROM attendance_records
+    WHERE activity_id = $1
+      AND user_id = $2
+      AND status != 'cancelled'
+) AS is_registered;
+
+-- name: RegisterToActivity :one
+INSERT INTO attendance_records (activity_id, user_id, status)
+VALUES ($1, $2, $3)
 RETURNING *;
 
+-- name: UnregisterFromActivity :exec
+UPDATE attendance_records
+SET
+    status = 'cancelled',
+    cancelled_at = now(),
+    updated_at = now()
+WHERE activity_id = $1 AND user_id = $2 AND status = 'registered';
+
+-- name: MarkAttendanceRecordStatus :exec
+UPDATE attendance_records
+SET
+    status = $1,
+    updated_at = now(),
+    scanned_by = $2
+WHERE id = $3;
+
+-- name: WaitlistAppend :one
+--INSERT INTO waitlist_entries (activity_id, user_id, position)
+--SELECT $1, $2, COALESCE(MAX(position) + 1, 0)
+--FROM waitlist_entries
+--WHERE activity_id = $1
+--RETURNING *;
+
 -- name: WaitlistGetFirst :one
-SELECT * FROM waitlist_entries
-WHERE activity_id = $1
-ORDER BY position
-LIMIT 1;
+--SELECT * FROM waitlist_entries
+--WHERE activity_id = $1
+--ORDER BY position
+--LIMIT 1;
 
 -- name: WaitlistRemove :exec
-DELETE FROM waitlist_entries WHERE id = $1;
+--DELETE FROM waitlist_entries WHERE id = $1;
 
 -- name: WaitlistGetOrdered :many
-SELECT
-    w.*,
-    ROW_NUMBER() OVER (ORDER BY w.position) as queue_position
-FROM waitlist_entries w
-WHERE activity_id = $1
-ORDER BY w.position;
+--SELECT
+--    w.*,
+--    ROW_NUMBER() OVER (ORDER BY w.position) as queue_position
+--FROM waitlist_entries w
+--WHERE activity_id = $1
+--ORDER BY w.position;

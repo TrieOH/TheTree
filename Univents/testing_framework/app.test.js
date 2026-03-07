@@ -1,5 +1,5 @@
 import { describe, test, beforeAll, expect } from "vitest";
-import { loginAs, post, validate } from "./helpers.js";
+import {get, loginAs, post, validate} from "./helpers.js";
 import { createEvent } from "./fixtures/events/create.js";
 import { EventSchema } from "./schemas/event.js";
 import {createEdition} from "./fixtures/editions/create.js";
@@ -351,4 +351,48 @@ describe('purchase', () => {
 
         ws.close()
     }, 10000)
+})
+
+describe('activity registration', () => {
+    beforeAll(async () => {
+        // wait for asynq grant permissions task to complete
+        await new Promise(resolve => setTimeout(resolve, 2000))
+    })
+
+    test("register to rust activity", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${rustActivity.id}/register`)
+    })
+
+    test("register to kubernetes activity", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${kubernetesActivity.id}/register`)
+    })
+
+    test("register to premium workshop", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${premiumWorkshop.id}/register`)
+    })
+
+    test("unregister from kubernetes activity", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${kubernetesActivity.id}/unregister`)
+    })
+
+    test("re-register to kubernetes activity after unregister", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${kubernetesActivity.id}/register`)
+    })
+})
+
+let attendanceRecord
+describe('mark attendance', () => {
+    test("get rust activity attendance record", async () => {
+        const records = await get(owner, `/events/${event.id}/editions/${edition.id}/activities/${rustActivity.id}/records`)
+        attendanceRecord = records[0]
+        expect(attendanceRecord).toBeDefined()
+        expect(attendanceRecord.status).toBe("registered")
+    })
+
+    test("mark rust activity attendance as completed", async () => {
+        await post(owner, `/events/${event.id}/editions/${edition.id}/activities/${rustActivity.id}/records/${attendanceRecord.id}`)
+        const records = await get(owner, `/events/${event.id}/editions/${edition.id}/activities/${rustActivity.id}/records`)
+        const updated = records.find(r => r.id === attendanceRecord.id)
+        expect(updated.status).toBe("completed")
+    })
 })

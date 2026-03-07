@@ -123,10 +123,8 @@ CREATE INDEX idx_activity_interest_user ON activity_interest_list(user_id);
 
 CREATE TYPE attendance_status AS ENUM (
     'registered',      -- signed up, not yet checked in
-    'waitlisted',      -- on waitlist, not confirmed
-    'promoted',        -- moved from waitlist to registered
+    --'waitlisted',      -- on waitlist, not confirmed
     'checked_in',      -- arrived, currently attending
-    'checked_out',     -- left, pending validation
     'completed',       -- met all requirements (duration, checkout)
     'partial',         -- attended but didn't meet min duration
     'no_show',         -- never checked in
@@ -137,108 +135,47 @@ CREATE TABLE attendance_records (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
-    registration_times INT NOT NULL DEFAULT 1,
 
     status attendance_status NOT NULL,
     checked_in_at TIMESTAMPTZ NULL,
-    checked_out_at TIMESTAMPTZ NULL,
+    -- checked_out_at TIMESTAMPTZ NULL,
     cancelled_at TIMESTAMPTZ NULL,
 
-    rating INT NULL CHECK (rating >= 1 AND rating <= 5),
-    rating_comment TEXT NULL,
-    rated_at TIMESTAMPTZ NULL,
+    -- rating INT NULL CHECK (rating >= 1 AND rating <= 5),
+    -- rating_comment TEXT NULL,
+    -- rated_at TIMESTAMPTZ NULL,
 
-    is_paid_entry BOOLEAN NOT NULL DEFAULT FALSE,
+    -- is_paid_entry BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- scan metadata
+    scanned_by UUID NULL,
+    -- device_id VARCHAR(64) NULL, -- scanner device
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ NULL,
-
-    UNIQUE(activity_id, user_id, registration_times)
+    deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE TABLE waitlist_entries (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-    activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    position DECIMAL(10,4) NOT NULL DEFAULT 0, -- order in line
-    promoted_at TIMESTAMPTZ NULL,              -- when moved to confirmed
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(activity_id, user_id)
-);
+CREATE UNIQUE INDEX idx_attendance_active_per_user_activity
+    ON attendance_records (activity_id, user_id)
+    WHERE status != 'cancelled';
 
-CREATE INDEX idx_waitlist_position ON waitlist_entries(activity_id, position);
+--CREATE TABLE waitlist_entries (
+--    id UUID PRIMARY KEY DEFAULT uuidv7(),
+--    activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+--    user_id UUID NOT NULL,
+--    position DECIMAL(10,4) NOT NULL DEFAULT 0, -- order in line
+--    promoted_at TIMESTAMPTZ NULL,              -- when moved to confirmed
+--    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+--    UNIQUE(activity_id, user_id)
+--);
 
-CREATE TYPE audit_action AS ENUM (
-    -- attendance lifecycle
-    'registered',
-    'waitlisted',
-    'promoted',
-    'checked_in',
-    'checked_out',
-    'completed',
-    'marked_partial',
-    'marked_no_show',
-    'registration_cancelled',
-    'rating_submitted',
-
-    -- activity management
-    'created',
-    'edited',
-    'published',
-    'started',
-    'ended',
-    'activity_cancelled',
-    'activity_reopened',
-    'deleted',
-
-    -- capacity/waitlist
-    'capacity_increased',
-    'capacity_decreased',
-    'waitlist_promoted'
-);
-
-CREATE TYPE actor_type AS ENUM (
-    'participant',
-    'staff',
-    'admin',
-    'owner',
-    'system'
-);
-
-CREATE TABLE activity_audit (
-    id UUID PRIMARY KEY DEFAULT uuidv7(),
-
-    -- polymorphic target (activity, attendance_record, etc.)
-    table_name VARCHAR(64) NOT NULL,
-    record_id UUID NOT NULL,
-
-    -- who did it
-    actor_type actor_type NOT NULL DEFAULT 'participant',
-    actor_id UUID NULL,  -- null for system
-
-    action audit_action NOT NULL,
-
-    -- state change (optional)
-    state_type VARCHAR(64) NULL,
-    from_status VARCHAR(32) NULL,
-    to_status VARCHAR(32) NULL,
-
-    -- change details
-    metadata JSONB NULL,        -- context
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_audit_lookup ON activity_audit(table_name, record_id, created_at DESC);
+--CREATE INDEX idx_waitlist_position ON waitlist_entries(activity_id, position);
 
 -- +goose Down
-DROP INDEX IF EXISTS idx_audit_lookup;
-DROP TABLE IF EXISTS activity_audit;
-DROP TYPE IF EXISTS actor_type;
-DROP TYPE IF EXISTS audit_action;
-DROP INDEX IF EXISTS idx_waitlist_position;
-DROP TABLE IF EXISTS waitlist_entries;
+--DROP INDEX IF EXISTS idx_waitlist_position;
+--DROP TABLE IF EXISTS waitlist_entries;
+DROP INDEX IF EXISTS idx_attendance_active_per_user_activity;
 DROP TABLE IF EXISTS attendance_records;
 DROP TYPE IF EXISTS attendance_status;
 DROP INDEX IF EXISTS idx_activity_interest_user;

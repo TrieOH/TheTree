@@ -88,6 +88,10 @@ func registerActivitiesRoutes(
 		r.Get("/events/{event_id}/editions/{edition_id}/activities", h.List)
 		r.Get("/events/{event_id}/editions/{edition_id}/activities/admin", h.ListAdmin)
 		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish", h.Publish)
+		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/register", h.Register)
+		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/unregister", h.Unregister)
+		r.Get("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/records", h.ListRecords)
+		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/records/{record_id}", h.MarkAttendance)
 	})
 }
 

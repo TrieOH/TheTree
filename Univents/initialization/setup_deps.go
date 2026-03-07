@@ -107,12 +107,14 @@ func SetupGoAuth(app *UniventsApp) {
 		{
 			Name: "Event Owner",
 			Permissions: []goauth.PermissionDefinition{
+				AttendanceMark,
 				EventsPublish,
 				EditionsCreate,
 				EditionsAnnounce,
 				ActivitiesCreate,
 				ActivitiesPublish,
 				ActivitiesRead,
+				ActivitiesManage,
 				ProductsCreate,
 				ProductsRead,
 				CheckpointsCreate,
@@ -202,6 +204,14 @@ var (
 			"icon":  "CircleUserRound",
 		},
 	}
+	ActivitiesManage = goauth.PermissionDefinition{
+		Object: "activities",
+		Action: "manage",
+		Meta: map[string]interface{}{
+			"color": "#203ee6",
+			"icon":  "Shield",
+		},
+	}
 	ProductsCreate = goauth.PermissionDefinition{
 		Object: "products",
 		Action: "create",
@@ -272,6 +282,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#6366f1",
 			"icon":  "PenLine",
+		},
+	}
+	AttendanceMark = goauth.PermissionDefinition{
+		Object: "attendance",
+		Action: "mark",
+		Meta: map[string]interface{}{
+			"color": "#028cdb",
+			"icon":  "UserCheck",
 		},
 	}
 )
