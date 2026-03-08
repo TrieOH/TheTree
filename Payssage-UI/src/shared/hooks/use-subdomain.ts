@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSubdomain } from './subdomain'
+import { getSubdomain } from '../lib/subdomain'
 
 export function useSubdomain() {
   const [subdomain, setSubdomain] = useState<string | null>(null)

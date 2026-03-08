@@ -1,5 +1,5 @@
+import { useSubdomain } from '#/shared/hooks/use-subdomain'
 import { createFileRoute, Outlet, Link } from '@tanstack/react-router'
-import { useSubdomain } from '../lib/use-subdomain'
 
 export const Route = createFileRoute('/test')({
   component: TestLayout,
@@ -13,7 +13,7 @@ function TestLayout() {
       <div className="mb-6 flex items-center justify-between rounded-xl bg-[rgba(79,184,178,0.1)] p-4">
         <div>
           <span className="text-sm font-medium opacity-70">Subdomínio detectado: </span>
-          <code className="rounded bg-white/50 px-2 py-1 font-bold text-[var(--lagoon-deep)]">
+          <code className="rounded bg-white/50 px-2 py-1 font-bold text-(--lagoon-deep)">
             {subdomain || 'nenhum'}
           </code>
         </div>

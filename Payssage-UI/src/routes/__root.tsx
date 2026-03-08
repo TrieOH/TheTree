@@ -12,11 +12,11 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
-import StoreDevtools from '../lib/demo-store-devtools'
-
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
+
+import { AuthProvider } from '@trieoh/node-auth-sdk/react';
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -58,20 +58,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
         <PostHogProvider>
           <TanStackQueryProvider>
-            {children}
-            <TanStackDevtools
-              config={{
-                position: 'bottom-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-                StoreDevtools,
-              ]}
-            />
+            <AuthProvider baseURL='http://localhost:8080'>
+              {children}
+              <TanStackDevtools
+                config={{
+                  position: 'bottom-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                  TanStackQueryDevtools,
+                ]}
+              />
+            </AuthProvider>
           </TanStackQueryProvider>
         </PostHogProvider>
         <Scripts />

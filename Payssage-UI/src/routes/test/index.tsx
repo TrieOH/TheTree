@@ -1,4 +1,4 @@
-import { useSubdomain } from '#/lib/use-subdomain'
+import { useSubdomain } from '#/shared/hooks/use-subdomain'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/test/')({
