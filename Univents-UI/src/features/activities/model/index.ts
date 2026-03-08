@@ -14,9 +14,9 @@ export const activityCreateSchema = z.object({
   starts_at: z.iso.datetime(),
   ends_at: z.iso.datetime(),
   presenter_name: z.string().optional().nullable(),
-  token_cost: z.number().gte(0),
-  has_capacity: z.boolean(),
-  capacity: z.int().gte(0),
+  token_cost: z.int().nonnegative(),
+  has_capacity: z.boolean().default(false),
+  capacity: z.int().nonnegative().default(0),
   difficulty: difficultyTypeSchema,
 })
 

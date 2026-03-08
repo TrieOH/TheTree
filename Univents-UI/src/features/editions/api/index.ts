@@ -1,5 +1,5 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
-import { queryOptions } from "node_modules/@tanstack/react-query/build/modern/queryOptions";
+import { queryOptions } from "@tanstack/react-query";
 import type { EditionCreateI, EditionI } from "../model";
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
