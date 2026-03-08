@@ -104,5 +104,11 @@ func registerOAuthRoutes(
 		r.Post("/workspaces/{name}/providers/{provider}/connect", h.ConnectSeller)
 		r.Put("/workspaces/{name}/marketplace", h.SetMarketplaceConfig)
 		r.Delete("/workspaces/{name}/marketplace", h.DeleteMarketplaceConfig)
+		r.Delete("/workspaces/{name}/providers/{credential_id}", h.RevokeProvider)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.APIKey())
+		r.Delete("/workspaces/{name}/providers/{credential_id}/disconnect", h.DisconnectProvider)
 	})
 }

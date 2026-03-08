@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"TriePayments/internal/core/domain"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,4 +33,24 @@ type SetupProviderRequest struct {
 
 type ConnectSellerRequest struct {
 	FinalRedirectURL string `json:"final_redirect_url" validate:"required,url"`
+}
+
+type ProviderCredentialResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	WorkspaceID uuid.UUID  `json:"workspace_id"`
+	Provider    string     `json:"provider"`
+	DisplayName string     `json:"display_name"`
+	CreatedAt   time.Time  `json:"created_at"`
+	RevokedAt   *time.Time `json:"revoked_at"`
+}
+
+func MapProviderCredentialResponse(c *domain.ProviderCredential) ProviderCredentialResponse {
+	return ProviderCredentialResponse{
+		ID:          c.ID,
+		WorkspaceID: c.WorkspaceID,
+		Provider:    c.Provider,
+		DisplayName: c.DisplayName,
+		CreatedAt:   c.CreatedAt,
+		RevokedAt:   c.RevokedAt,
+	}
 }
