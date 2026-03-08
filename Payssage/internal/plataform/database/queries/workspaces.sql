@@ -18,3 +18,15 @@ SELECT *
 FROM workspaces
 WHERE user_id = $1
 ORDER BY created_at DESC;
+
+-- name: EnableSandbox :one
+UPDATE workspaces
+SET sandbox = true, updated_at = now()
+WHERE id = $1
+RETURNING *;
+
+-- name: DisableSandbox :one
+UPDATE workspaces
+SET sandbox = false, updated_at = now()
+WHERE id = $1
+RETURNING *;

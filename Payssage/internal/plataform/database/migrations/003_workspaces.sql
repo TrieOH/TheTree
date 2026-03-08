@@ -4,6 +4,7 @@ CREATE TABLE workspaces (
     scope_id UUID NOT NULL,
     user_id UUID NOT NULL,
     name TEXT NOT NULL,
+    sandbox BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

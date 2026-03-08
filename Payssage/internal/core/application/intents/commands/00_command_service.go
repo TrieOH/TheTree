@@ -13,6 +13,7 @@ type CommandService struct {
 	workspaces       domain.WorkspaceRepo
 	credentials      domain.ProviderCredentialRepo
 	marketplace      domain.MarketplaceConfigRepo
+	webhooks         domain.WebhookDispatcher
 	paymentProviders map[string]domain.PaymentProvider
 	gaClient         *goauth.Client
 	tx               database.TxRunner
@@ -24,6 +25,7 @@ func New(
 	workspaces domain.WorkspaceRepo,
 	credentials domain.ProviderCredentialRepo,
 	marketplace domain.MarketplaceConfigRepo,
+	webhooks domain.WebhookDispatcher,
 	paymentProviders map[string]domain.PaymentProvider,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
@@ -34,6 +36,7 @@ func New(
 		workspaces:       workspaces,
 		credentials:      credentials,
 		marketplace:      marketplace,
+		webhooks:         webhooks,
 		paymentProviders: paymentProviders,
 		gaClient:         gaClient,
 		tx:               tx,

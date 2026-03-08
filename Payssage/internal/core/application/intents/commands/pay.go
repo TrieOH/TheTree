@@ -6,6 +6,7 @@ import (
 	"TriePayments/internal/shared/errx"
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -37,6 +38,22 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 
 	if intent.Status != domain.IntentStatusPending {
 		return nil, errx.Invalid("intent").SetMessage("intent is not in a payable state")
+	}
+
+	if workspace.Sandbox {
+		fakeProviderID := "sandbox_" + uuid.NewString()
+		updated, err := uc.intents.Pay(ctx, intentID, fakeProviderID, domain.IntentStatusSucceeded)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			if err := uc.webhooks.Dispatch(
+				context.Background(), "sandbox", updated.ID.String(), domain.EventPaymentSucceeded,
+			); err != nil {
+				log.Printf("[sandbox] webhook fan-out failed for intent=%s: %v", updated.ID, err)
+			}
+		}()
+		return updated, nil
 	}
 
 	provider, ok := uc.paymentProviders[intent.Provider]

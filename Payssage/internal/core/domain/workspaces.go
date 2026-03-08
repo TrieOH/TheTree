@@ -13,6 +13,7 @@ type Workspace struct {
 	ScopeID   uuid.UUID `json:"scope_id"`
 	UserID    uuid.UUID `json:"user_id"`
 	Name      string    `json:"name"`
+	Sandbox   bool      `json:"sandbox"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

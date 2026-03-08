@@ -35,9 +35,5 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Created().WithData(dto.WorkspaceResponse{
-		ID:        workspace.ID,
-		Name:      workspace.Name,
-		CreatedAt: workspace.CreatedAt,
-	}).Send(w)
+	resp.Created().WithData(dto.MapWorkspaceResponse(workspace)).Send(w)
 }

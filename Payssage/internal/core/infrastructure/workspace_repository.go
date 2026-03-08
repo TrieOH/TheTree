@@ -42,6 +42,7 @@ func mapWorkspaceFromDB(src *sqlc.Workspace) *domain.Workspace {
 		ScopeID:   src.ScopeID,
 		UserID:    src.UserID,
 		Name:      src.Name,
+		Sandbox:   src.Sandbox,
 		CreatedAt: src.CreatedAt,
 		UpdatedAt: src.UpdatedAt,
 	}
@@ -104,4 +105,28 @@ func (repo *workspaceRepo) List(ctx context.Context, userID uuid.UUID) ([]domain
 		out = append(out, *mapWorkspaceFromDB(&workspace))
 	}
 	return out, nil
+}
+
+func (repo *workspaceRepo) EnableSandbox(ctx context.Context, id uuid.UUID) (*domain.Workspace, error) {
+	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.EnableSandbox")
+	defer span.End()
+
+	sqlcWorkspace, err := repo.queries(ctx).EnableSandbox(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "workspace")
+	}
+
+	return mapWorkspaceFromDB(&sqlcWorkspace), nil
+}
+
+func (repo *workspaceRepo) DisableSandbox(ctx context.Context, id uuid.UUID) (*domain.Workspace, error) {
+	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.DisableSandbox")
+	defer span.End()
+
+	sqlcWorkspace, err := repo.queries(ctx).DisableSandbox(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "workspace")
+	}
+
+	return mapWorkspaceFromDB(&sqlcWorkspace), nil
 }

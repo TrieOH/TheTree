@@ -42,6 +42,8 @@ func registerWorkspacesRoutes(
 		r.Use(authMW.Auth())
 		r.Post("/workspaces", h.Create)
 		r.Get("/workspaces", h.List)
+		r.Post("/workspaces/{name}/sandbox/enable", h.EnableSandbox)
+		r.Post("/workspaces/{name}/sandbox/disable", h.DisableSandbox)
 	})
 }
 

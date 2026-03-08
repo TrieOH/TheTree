@@ -6,6 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type WebhookDispatcher interface {
+	Dispatch(ctx context.Context, provider, intentID, event string) error
+}
+
 type IntentRepository interface {
 	Create(ctx context.Context, toCreate Intent) (*Intent, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*Intent, error)
@@ -23,6 +27,8 @@ type WorkspaceRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*Workspace, error)
 	GetByName(ctx context.Context, name string, userID uuid.UUID) (*Workspace, error)
 	List(ctx context.Context, userID uuid.UUID) ([]Workspace, error)
+	EnableSandbox(ctx context.Context, id uuid.UUID) (*Workspace, error)
+	DisableSandbox(ctx context.Context, id uuid.UUID) (*Workspace, error)
 }
 
 type ApiKeysRepo interface {

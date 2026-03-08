@@ -28,12 +28,6 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]dto.WorkspaceResponse, 0, len(workspaces))
 	for _, ws := range workspaces {
-		out = append(out, dto.WorkspaceResponse{
-			ID:        ws.ID,
-			Name:      ws.Name,
-			CreatedAt: ws.CreatedAt,
-		})
+		out = append(out, dto.MapWorkspaceResponse(&ws))
 	}
-
-	resp.OK().WithData(out).Send(w)
 }
