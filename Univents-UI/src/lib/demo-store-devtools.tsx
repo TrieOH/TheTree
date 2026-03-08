@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 
 import { store, fullName } from './demo-store'
 
-type EventMap = {
+interface EventMap {
   'store-devtools:state': {
     firstName: string
     lastName: string
@@ -37,7 +37,7 @@ function DevtoolPanel() {
   }))
 
   useEffect(() => {
-    return sdec.on('state', (e) => setState(e.payload))
+    return sdec.on('state', (e) => { setState(e.payload); })
   }, [])
 
   return (
@@ -45,15 +45,15 @@ function DevtoolPanel() {
       <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
         First Name
       </div>
-      <div className="text-sm">{state?.firstName}</div>
+      <div className="text-sm">{state.firstName}</div>
       <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
         Last Name
       </div>
-      <div className="text-sm">{state?.lastName}</div>
+      <div className="text-sm">{state.lastName}</div>
       <div className="text-sm font-bold text-gray-500 whitespace-nowrap">
         Full Name
       </div>
-      <div className="text-sm">{state?.fullName}</div>
+      <div className="text-sm">{state.fullName}</div>
     </div>
   )
 }

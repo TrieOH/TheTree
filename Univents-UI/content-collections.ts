@@ -25,8 +25,8 @@ const blog = defineCollection({
       html: isMdx ? null : await compileMarkdown(context, document),
       mdx: isMdx
         ? await compileMDX(context, document, {
-            remarkPlugins: [remarkGfm],
-          })
+          remarkPlugins: [remarkGfm],
+        })
         : null,
     }
   },

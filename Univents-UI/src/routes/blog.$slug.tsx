@@ -1,9 +1,9 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { MDXContent } from '@content-collections/mdx/react'
 import { allBlogs } from 'content-collections'
-import { SITE_URL } from '#/lib/site'
-import { MdxCallout } from '#/components/MdxCallout'
-import { MdxMetrics } from '#/components/MdxMetrics'
+import { SITE_URL } from '@/lib/site'
+import { MdxCallout } from '@/components/MdxCallout'
+import { MdxMetrics } from '@/components/MdxMetrics'
 
 export const Route = createFileRoute('/blog/$slug')({
   loader: ({ params }) => {
@@ -17,6 +17,7 @@ export const Route = createFileRoute('/blog/$slug')({
           .map((entry) => [entry.slug, entry]),
       ).values(),
     ).find((entry) => entry.slug === params.slug)
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     if (!post) throw notFound()
     return post
   },
@@ -53,13 +54,13 @@ function BlogPost() {
           />
         ) : null}
         <p className="island-kicker mb-2">Post</p>
-        <h1 className="display-title mb-3 text-4xl font-bold text-[var(--sea-ink)] sm:text-5xl">
+        <h1 className="display-title mb-3 text-4xl font-bold text---sea-ink) sm:text-5xl">
           {post.title}
         </h1>
-        <p className="mb-6 text-sm text-[var(--sea-ink-soft)]">
+        <p className="mb-6 text-sm text-(--sea-ink-soft)">
           {new Date(post.pubDate).toLocaleDateString()}
         </p>
-        <div className="prose prose-slate prose-headings:text-[var(--sea-ink)] prose-p:text-[var(--sea-ink-soft)] prose-li:text-[var(--sea-ink-soft)] prose-ul:text-[var(--sea-ink-soft)] prose-ol:text-[var(--sea-ink-soft)] prose-strong:text-[var(--sea-ink)] prose-a:text-[var(--lagoon-deep)] max-w-none">
+        <div className="prose prose-slate prose-headings:text-(--sea-ink) prose-p:text-(--sea-ink-soft) prose-li:text-(--sea-ink-soft) prose-ul:text-(--sea-ink-soft) prose-ol:text-(--sea-ink-soft) prose-strong:text-(--sea-ink) prose-a:text-(--lagoon-deep) max-w-none">
           {post.mdx ? (
             <MDXContent
               code={post.mdx}

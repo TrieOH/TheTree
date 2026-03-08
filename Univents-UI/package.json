@@ -2,11 +2,9 @@
   "name": "univents-frontend",
   "private": true,
   "type": "module",
-  "imports": {
-    "#/*": "./src/*"
-  },
+  "imports": {},
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 3001",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -28,7 +26,7 @@
     "@tanstack/react-store": "^0.9.1",
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/store": "^0.9.1",
-    "@trieoh/node-auth-sdk": "^0.7.0",
+    "@trieoh/node-auth-sdk": "0.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.561.0",
@@ -55,6 +53,8 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "@vitejs/plugin-react": "^5.0.4",
     "jsdom": "^27.0.0",
     "prettier": "^3.5.3",
