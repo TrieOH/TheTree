@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+type ProviderCredential struct {
+	ID          string     `json:"id"`
+	WorkspaceID string     `json:"workspace_id"`
+	Provider    string     `json:"provider"`
+	DisplayName string     `json:"display_name"`
+	CreatedAt   time.Time  `json:"created_at"`
+	RevokedAt   *time.Time `json:"revoked_at"`
+}
+
 type Workspace struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
