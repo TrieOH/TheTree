@@ -7,16 +7,6 @@ import tsParser from '@typescript-eslint/parser'
 export default [
   ...tanstackConfig,
   {
-    rules: {
-      'import/no-cycle': 'error', // Re-enabled
-      'import/order': 'error',     // Re-enabled
-      'sort-imports': 'off',       // Keeping off as import/order handles it better
-      '@typescript-eslint/array-type': 'off', // Keep off for now, can be configured later if needed
-      '@typescript-eslint/require-await': 'error', // Set to error
-      'pnpm/json-enforce-catalog': 'off',
-    },
-  },
-  {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parser: tsParser,
@@ -42,6 +32,16 @@ export default [
       '@typescript-eslint/consistent-type-exports': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+  {
+    rules: {
+      'import/no-cycle': 'error',
+      'import/order': 'error',
+      'sort-imports': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/require-await': 'error',
+      'pnpm/json-enforce-catalog': 'off',
     },
   },
   {

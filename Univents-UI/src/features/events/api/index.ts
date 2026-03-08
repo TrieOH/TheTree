@@ -19,9 +19,9 @@ export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
  */
 export const getOwnEventsFn = createClientOnlyFn(async () => {
   try {
-    return await tanstackQueryFetcher<Array<EventI>>("/events/own");
+    return await tanstackQueryFetcher<EventI[]>("/events/own");
   } catch {
-    return [] as Array<EventI>;
+    return [];
   }
 });
 

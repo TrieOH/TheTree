@@ -21,7 +21,7 @@ function RouteComponent() {
   const defaultTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
   // events list and selection
-  const [events, setEvents] = useState<Array<EventI>>([])
+  const [events, setEvents] = useState<EventI[]>([])
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [result, setResult] = useState<EventI | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +72,7 @@ function RouteComponent() {
     contact_phone: undefined,
     organizer_name: undefined,
   })
-  const [editions, setEditions] = useState<Array<EditionI>>([])
+  const [editions, setEditions] = useState<EditionI[]>([])
   const [editionError, setEditionError] = useState<string | null>(null)
   const [editionCreated, setEditionCreated] = useState<boolean>(false);
 
@@ -198,17 +198,17 @@ function RouteComponent() {
                   setSelectedEventId(ev.id)
                 }}
               >
-                <strong>ID:</strong> {ev.id}<br/>
-                <strong>Name:</strong> {ev.name} ({ev.slug}) {ev.acronym ? `[${ev.acronym}]` : ''}<br/>
-                <strong>Tagline:</strong> {ev.tagline || 'N/A'}<br/>
-                <strong>Description:</strong> {ev.description || 'N/A'}<br/>
-                <strong>Is Series:</strong> {ev.is_series ? 'Yes' : 'No'}<br/>
-                <strong>Editions Count:</strong> {ev.editions_count}<br/>
-                <strong>Status:</strong> {ev.status}<br/>
-                <strong>Contact Email:</strong> {ev.contact_email || 'N/A'}<br/>
-                <strong>Created By:</strong> {ev.created_by}<br/>
-                <strong>Created At:</strong> {new Date(ev.created_at).toLocaleDateString()} {new Date(ev.created_at).toLocaleTimeString()}<br/>
-                <strong>Updated At:</strong> {new Date(ev.updated_at).toLocaleDateString()} {new Date(ev.updated_at).toLocaleTimeString()}<br/>
+                <strong>ID:</strong> {ev.id}<br />
+                <strong>Name:</strong> {ev.name} ({ev.slug}) {ev.acronym ? `[${ev.acronym}]` : ''}<br />
+                <strong>Tagline:</strong> {ev.tagline ?? 'N/A'}<br />
+                <strong>Description:</strong> {ev.description ?? 'N/A'}<br />
+                <strong>Is Series:</strong> {ev.is_series ? 'Yes' : 'No'}<br />
+                <strong>Editions Count:</strong> {ev.editions_count}<br />
+                <strong>Status:</strong> {ev.status}<br />
+                <strong>Contact Email:</strong> {ev.contact_email ?? 'N/A'}<br />
+                <strong>Created By:</strong> {ev.created_by}<br />
+                <strong>Created At:</strong> {new Date(ev.created_at).toLocaleDateString()} {new Date(ev.created_at).toLocaleTimeString()}<br />
+                <strong>Updated At:</strong> {new Date(ev.updated_at).toLocaleDateString()} {new Date(ev.updated_at).toLocaleTimeString()}<br />
                 <strong>Deleted At:</strong> {ev.deleted_at ? `${new Date(ev.deleted_at).toLocaleDateString()} ${new Date(ev.deleted_at).toLocaleTimeString()}` : 'N/A'}
               </button>
             </li>
@@ -468,25 +468,25 @@ function RouteComponent() {
             <ul className="list-disc pl-5">
               {editions.map((ed) => (
                 <li key={ed.id} className="mb-2 p-2 border rounded-md">
-                  <strong>ID:</strong> {ed.id}<br/>
-                  <strong>Edition Name:</strong> {ed.edition_name} ({ed.type})<br/>
-                  <strong>Tagline:</strong> {ed.tagline || 'N/A'}<br/>
-                  <strong>Description:</strong> {ed.description || 'N/A'}<br/>
-                  <strong>Status:</strong> {ed.status}<br/>
-                  <strong>Monetary Type:</strong> {ed.monetary_type}<br/>
-                  <strong>Registration Opens:</strong> {ed.registration_opens_at ? `${new Date(ed.registration_opens_at).toLocaleDateString()} ${new Date(ed.registration_opens_at).toLocaleTimeString()}` : 'N/A'}<br/>
-                  <strong>Registration Closes:</strong> {ed.registration_closes_at ? `${new Date(ed.registration_closes_at).toLocaleDateString()} ${new Date(ed.registration_closes_at).toLocaleTimeString()}` : 'N/A'}<br/>
-                  <strong>Starts:</strong> {new Date(ed.starts_at).toLocaleDateString()} {new Date(ed.starts_at).toLocaleTimeString()}<br/>
-                  <strong>Ends:</strong> {new Date(ed.ends_at).toLocaleDateString()} {new Date(ed.ends_at).toLocaleTimeString()}<br/>
-                  <strong>Timezone:</strong> {ed.timezone}<br/>
-                  <strong>Location Name:</strong> {ed.location_name}<br/>
-                  <strong>Location Address:</strong> {ed.location_address}<br/>
-                  <strong>Contact Email:</strong> {ed.contact_email || 'N/A'}<br/>
-                  <strong>Contact Phone:</strong> {ed.contact_phone || 'N/A'}<br/>
-                  <strong>Organizer Name:</strong> {ed.organizer_name || 'N/A'}<br/>
-                  <strong>Created By:</strong> {ed.created_by}<br/>
-                  <strong>Created At:</strong> {new Date(ed.created_at).toLocaleDateString()} {new Date(ed.created_at).toLocaleTimeString()}<br/>
-                  <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br/>
+                  <strong>ID:</strong> {ed.id}<br />
+                  <strong>Edition Name:</strong> {ed.edition_name} ({ed.type})<br />
+                  <strong>Tagline:</strong> {ed.tagline || 'N/A'}<br />
+                  <strong>Description:</strong> {ed.description || 'N/A'}<br />
+                  <strong>Status:</strong> {ed.status}<br />
+                  <strong>Monetary Type:</strong> {ed.monetary_type}<br />
+                  <strong>Registration Opens:</strong> {ed.registration_opens_at ? `${new Date(ed.registration_opens_at).toLocaleDateString()} ${new Date(ed.registration_opens_at).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Registration Closes:</strong> {ed.registration_closes_at ? `${new Date(ed.registration_closes_at).toLocaleDateString()} ${new Date(ed.registration_closes_at).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Starts:</strong> {new Date(ed.starts_at).toLocaleDateString()} {new Date(ed.starts_at).toLocaleTimeString()}<br />
+                  <strong>Ends:</strong> {new Date(ed.ends_at).toLocaleDateString()} {new Date(ed.ends_at).toLocaleTimeString()}<br />
+                  <strong>Timezone:</strong> {ed.timezone}<br />
+                  <strong>Location Name:</strong> {ed.location_name}<br />
+                  <strong>Location Address:</strong> {ed.location_address}<br />
+                  <strong>Contact Email:</strong> {ed.contact_email || 'N/A'}<br />
+                  <strong>Contact Phone:</strong> {ed.contact_phone || 'N/A'}<br />
+                  <strong>Organizer Name:</strong> {ed.organizer_name || 'N/A'}<br />
+                  <strong>Created By:</strong> {ed.created_by}<br />
+                  <strong>Created At:</strong> {new Date(ed.created_at).toLocaleDateString()} {new Date(ed.created_at).toLocaleTimeString()}<br />
+                  <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br />
                   <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
                 </li>
               ))}

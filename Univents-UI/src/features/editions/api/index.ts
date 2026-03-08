@@ -14,20 +14,20 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
 
 
 /**
- * Fetches all own editions from the server.
+ * Fetches all event editions from the server.
  * @returns A promise that resolves to an array of Edition objects.
  */
 export const getAllEditionsFn = createClientOnlyFn(async (eventId: string) => {
   try {
-    return await tanstackQueryFetcher<Array<EditionI>>(`/events/${eventId}/editions`);
+    return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions`);
   } catch {
-    return [] as Array<EditionI>;
+    return [];
   }
 });
 
 /**
- * Query options for fetching all editions, using TanStack Query.
- * @returns An object containing the query key and query function for fetching all editions.
+ * Query options for fetching all event editions, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching all event editions.
  */
 export const allEditionsQueryOptions = (eventId: string) => {
   return queryOptions({

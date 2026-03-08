@@ -39,7 +39,7 @@ export interface EventI {
   logo_url?: string;
   banner_url?: string;
   has_gallery: boolean;
-  gallery_urls: Array<string>;
+  gallery_urls: string[];
   contact_email?: string;
   social_links?: SocialLinks;
   status: "draft" | "active" | "archived" | "discontinued";

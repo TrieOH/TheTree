@@ -1,11 +1,11 @@
 import z from "zod";
 
-const EditionTypeSchema = z
-  .enum(["year", "season", "number", "ordinal", "custom"], {error: "Invalid edition type"})
-type EditionType = z.infer<typeof EditionTypeSchema>
+const editionTypeSchema = z
+  .enum(["year", "season", "number", "ordinal", "custom"], { error: "Invalid edition type" }).default("year")
+type EditionType = z.infer<typeof editionTypeSchema>
 
 export const editionCreateSchema = z.object({
-  type: EditionTypeSchema,
+  type: editionTypeSchema,
   edition_name: z.string().min(3).max(256),
   tagline: z.string().max(512).optional().nullable(),
   description: z.string().max(8000).optional().nullable(),
@@ -35,7 +35,7 @@ export interface EditionI {
   tagline: string | null;
   description: string | null;
   status: "draft" | "announced" | "open" | "ongoing" | "finished" |
-    "completed" | "cancelled" | "postponed";
+  "completed" | "cancelled" | "postponed";
   monetary_type: "free" | "paid" | "mixed";
   registration_opens_at: string | null;
   registration_closes_at: string | null;
