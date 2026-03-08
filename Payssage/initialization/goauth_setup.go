@@ -5,14 +5,18 @@ import (
 	apiKeyQueries "TriePayments/internal/core/application/api_keys/queries"
 	intentCommands "TriePayments/internal/core/application/intents/commands"
 	intentQueries "TriePayments/internal/core/application/intents/queries"
+	oauthCommands "TriePayments/internal/core/application/oauth/commands"
 	async "TriePayments/internal/core/application/webhooks/asynq"
 	webhooksCommands "TriePayments/internal/core/application/webhooks/commands"
 	webhooksQueries "TriePayments/internal/core/application/webhooks/queries"
 	workspaceCommands "TriePayments/internal/core/application/workspaces/commands"
 	workspaceQueries "TriePayments/internal/core/application/workspaces/queries"
+	"TriePayments/internal/core/domain"
 	"TriePayments/internal/core/infrastructure"
+	"TriePayments/internal/core/infrastructure/providers"
 	apiKeysHandler "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	"TriePayments/internal/core/interfaces/http/oauth_handler"
 	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
 	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
@@ -94,6 +98,19 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		}
 	}()
 
+	mpProvider, err := providers.NewMercadoPagoProvider(
+		viper.GetString("MP_CLIENT_ID"),
+		viper.GetString("MP_ACCESS_TOKEN"),
+		viper.GetString("MP_REDIRECT_URI"), // https://triepayments.com/oauth/mercadopago/callback
+	)
+	if err != nil {
+		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
+	}
+
+	providerMap := map[string]domain.OAuthProvider{
+		"mercadopago": mpProvider,
+	}
+
 	q := sqlc.New(app.DB)
 	txRunner := database.NewPGXTxRunner(app.DB)
 	tracer := otel.Tracer(string(telemetry.TriePaymentsTracer))
@@ -106,6 +123,8 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	apiKeysRepo := infrastructure.NewApiKeyRepo(q, logs, tracer)
 	endpointsRepo := infrastructure.NewWebhookEndpointRepo(q, logs, tracer)
 	deliveriesRepo := infrastructure.NewWebhookDeliveryRepo(q, logs, tracer)
+	oauthStatesRepo := infrastructure.NewOAuthStatesRepo(q, logs, tracer)
+	providerCredentialsRepo := infrastructure.NewProviderCredentialsRepo(q, logs, tracer)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, apiKeysRepo, workspaceRepo, tracer)
 
@@ -134,6 +153,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, workspaceRepo, intentRepo, asynqClient, app.GaClient, txRunner, tracer)
 	webhooksQ := webhooksQueries.New(endpointsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	oauthC := oauthCommands.New(intentRepo, workspaceRepo, oauthStatesRepo, providerCredentialsRepo, providerMap, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler()
@@ -141,6 +161,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	workspaceHandler := workspaces.NewWorkspacesHandler(workspaceC, workspaceQ)
 	apiKeyHandler := apiKeysHandler.NewApiKeysHandler(apiKeyC, apiKeyQ)
 	webhooksHandler := webhooks.NewWebhooksHandler(webhooksC, webhooksQ)
+	oauthHandler := oauth_handler.NewOAuthHandler(oauthC)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
@@ -157,6 +178,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		WorkspacesHandler: workspaceHandler,
 		WebhooksHandler:   webhooksHandler,
 		ApiKeysHandler:    apiKeyHandler,
+		OauthHandler:      oauthHandler,
 		AuthMiddleware:    authMW,
 		AsynqmonHandler:   asynqmonHandler,
 	}

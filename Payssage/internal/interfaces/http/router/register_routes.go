@@ -3,6 +3,7 @@ package router
 import (
 	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
+	"TriePayments/internal/core/interfaces/http/oauth_handler"
 	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
 	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
 	"TriePayments/internal/interfaces/http/middleware"
@@ -17,6 +18,7 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerWorkspacesRoutes(r, deps.WorkspacesHandler, deps.AuthMiddleware)
 	registerApiKeysRoutes(r, deps.ApiKeysHandler, deps.AuthMiddleware)
 	registerWebhookRoutes(r, deps.WebhooksHandler, deps.AuthMiddleware)
+	registerOAuthRoutes(r, deps.OauthHandler, deps.AuthMiddleware)
 }
 
 func registerSystemRoutes(
@@ -82,5 +84,20 @@ func registerWebhookRoutes(
 		r.Post("/workspaces/{name}/webhooks", h.RegisterWebhookEndpoint)
 		r.Get("/workspaces/{name}/webhooks", h.ListWebhookEndpoints)
 		r.Delete("/workspaces/{name}/webhooks/{endpoint_id}", h.DeleteWebhookEndpoint)
+	})
+}
+
+func registerOAuthRoutes(
+	r *chi.Mux,
+	h *oauth_handler.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	// callback from provider — no auth, browser redirect
+	r.Get("/oauth/{provider}/callback", h.CompleteOAuth)
+
+	// begin flow — requires user session
+	r.Group(func(r chi.Router) {
+		r.Use(authMW.Auth())
+		r.Post("/workspaces/{name}/oauth/{provider}/begin", h.BeginOAuth)
 	})
 }

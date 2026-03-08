@@ -77,7 +77,7 @@ func SetupGoAuth(app *TriePayments) {
 		BaseURL:   viper.GetString("GOAUTH_URL"),
 		APIKey:    viper.GetString("GOAUTH_API_KEY"),
 		ProjectID: projectID,
-		Debug:     false,
+		Debug:     true,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())
@@ -85,7 +85,7 @@ func SetupGoAuth(app *TriePayments) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_, err = client.Tokens.GetJWKS(ctx, false)
+		_, err = client.Tokens.GetJWKS(ctx, true)
 		if err != nil {
 			log.Fatalf("error fetching initial JWKS: %s", err.Error())
 		}

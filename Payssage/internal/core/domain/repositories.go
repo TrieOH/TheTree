@@ -45,3 +45,16 @@ type WebhookDeliveryRepo interface {
 	MarkFailed(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
 	IncrementAttempt(ctx context.Context, id uuid.UUID) (*WebhookDelivery, error)
 }
+
+type OAuthStateRepo interface {
+	Create(ctx context.Context, state OAuthState) (*OAuthState, error)
+	Get(ctx context.Context, state string) (*OAuthState, error)
+	Delete(ctx context.Context, state string) error
+}
+
+type ProviderCredentialRepo interface {
+	Create(ctx context.Context, cred ProviderCredential) (*ProviderCredential, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*ProviderCredential, error)
+	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ProviderCredential, error)
+	Revoke(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*ProviderCredential, error)
+}

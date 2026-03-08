@@ -33,6 +33,10 @@ services:
       GOAUTH_API_KEY: ${GOAUTH_API_KEY}
       GO_AUTH_PROJECT_ID: ${GO_AUTH_PROJECT_ID}
 
+      MP_CLIENT_ID: ${MP_CLIENT_ID}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_REDIRECT_URI: ${MP_REDIRECT_URI}
+
   payments-database:
     image: postgres:18
     restart: unless-stopped

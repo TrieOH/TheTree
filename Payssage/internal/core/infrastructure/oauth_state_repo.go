@@ -1,0 +1,84 @@
+package infrastructure
+
+import (
+	"TriePayments/internal/core/domain"
+	"TriePayments/internal/plataform/database"
+	"TriePayments/internal/plataform/database/sqlc"
+	"TriePayments/internal/shared/errx"
+	"context"
+
+	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+)
+
+type oauthStatesRepo struct {
+	q      *sqlc.Queries
+	log    *zap.Logger
+	tracer trace.Tracer
+}
+
+var _ domain.OAuthStateRepo = (*oauthStatesRepo)(nil)
+
+func NewOAuthStatesRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) domain.OAuthStateRepo {
+	return &oauthStatesRepo{q: q, log: log, tracer: tracer}
+}
+
+func (repo *oauthStatesRepo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
+}
+
+func mapOAuthStateFromDB(src *sqlc.OauthState) *domain.OAuthState {
+	return &domain.OAuthState{
+		State:            src.State,
+		WorkspaceID:      src.WorkspaceID,
+		Provider:         src.Provider,
+		FinalRedirectURL: src.FinalRedirectUrl,
+		CreatedAt:        src.CreatedAt,
+		ExpiresAt:        src.ExpiresAt,
+	}
+}
+
+func (repo *oauthStatesRepo) Create(ctx context.Context, state domain.OAuthState) (*domain.OAuthState, error) {
+	ctx, span := repo.tracer.Start(ctx, "OAuthStatesRepo.Create")
+	defer span.End()
+
+	row, err := repo.queries(ctx).CreateOAuthState(ctx, sqlc.CreateOAuthStateParams{
+		State:            state.State,
+		WorkspaceID:      state.WorkspaceID,
+		Provider:         state.Provider,
+		FinalRedirectUrl: state.FinalRedirectURL,
+		ExpiresAt:        state.ExpiresAt,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "oauth_state")
+	}
+
+	return mapOAuthStateFromDB(&row), nil
+}
+
+func (repo *oauthStatesRepo) Get(ctx context.Context, state string) (*domain.OAuthState, error) {
+	ctx, span := repo.tracer.Start(ctx, "OAuthStatesRepo.Get")
+	defer span.End()
+
+	row, err := repo.queries(ctx).GetOAuthState(ctx, state)
+	if err != nil {
+		return nil, errx.FromDB(err, "oauth_state")
+	}
+
+	return mapOAuthStateFromDB(&row), nil
+}
+
+func (repo *oauthStatesRepo) Delete(ctx context.Context, state string) error {
+	ctx, span := repo.tracer.Start(ctx, "OAuthStatesRepo.Delete")
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteOAuthState(ctx, state); err != nil {
+		return errx.FromDB(err, "oauth_state")
+	}
+
+	return nil
+}
