@@ -107,7 +107,11 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
 	}
 
-	providerMap := map[string]domain.OAuthProvider{
+	oauthProviderMap := map[string]domain.OAuthProvider{
+		"mercadopago": mpProvider,
+	}
+
+	paymentProviderMap := map[string]domain.PaymentProvider{
 		"mercadopago": mpProvider,
 	}
 
@@ -125,6 +129,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	deliveriesRepo := infrastructure.NewWebhookDeliveryRepo(q, logs, tracer)
 	oauthStatesRepo := infrastructure.NewOAuthStatesRepo(q, logs, tracer)
 	providerCredentialsRepo := infrastructure.NewProviderCredentialsRepo(q, logs, tracer)
+	marketplaceRepo := infrastructure.NewMarketplaceConfigRepo(q, logs, tracer)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, apiKeysRepo, workspaceRepo, tracer)
 
@@ -145,7 +150,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	}()
 
 	// Init Commands and Queries
-	intentC := intentCommands.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	intentC := intentCommands.New(intentRepo, workspaceRepo, providerCredentialsRepo, marketplaceRepo, paymentProviderMap, app.GaClient, txRunner, tracer)
 	intentQ := intentQueries.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	workspaceC := workspaceCommands.New(workspaceRepo, app.GaClient, txRunner, tracer)
 	workspaceQ := workspaceQueries.New(workspaceRepo, app.GaClient, txRunner, tracer)
@@ -153,7 +158,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, workspaceRepo, intentRepo, asynqClient, app.GaClient, txRunner, tracer)
 	webhooksQ := webhooksQueries.New(endpointsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
-	oauthC := oauthCommands.New(intentRepo, workspaceRepo, oauthStatesRepo, providerCredentialsRepo, providerMap, app.GaClient, txRunner, tracer)
+	oauthC := oauthCommands.New(intentRepo, workspaceRepo, oauthStatesRepo, providerCredentialsRepo, marketplaceRepo, oauthProviderMap, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler()

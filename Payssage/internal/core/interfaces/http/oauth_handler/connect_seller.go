@@ -10,36 +10,36 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// BeginOAuth godoc
-// @Summary Begin OAuth flow for a provider
-// @Description Returns a redirect URL to start the OAuth authorization flow
+// ConnectSeller godoc
+// @Summary Connect a seller account to a workspace
+// @Description Begins OAuth flow for a seller to connect their account for split payments
 // @Tags oauth
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param provider path string true "Provider name (e.g. mercadopago)"
 // @Param name path string true "Workspace name"
-// @Param request body dto.BeginOAuthRequest true "OAuth request"
+// @Param provider path string true "Provider name (e.g. mercadopago)"
+// @Param request body dto.ConnectSellerRequest true "Connect request"
 // @Success 200 {object} dto.BeginOAuthResponse
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /workspaces/{name}/oauth/{provider}/begin [post]
-func (h *Handler) BeginOAuth(w http.ResponseWriter, r *http.Request) {
-	provider := chi.URLParam(r, "provider")
+// @Router /workspaces/{name}/providers/{provider}/connect [post]
+func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
+	provider := chi.URLParam(r, "provider")
 
-	var req dto.BeginOAuthRequest
+	var req dto.ConnectSellerRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
 		resp.FromError(err).Send(w)
 		return
 	}
 
-	redirectURL, err := h.commands.BeginOAuth(r.Context(), commands.BeginOAuthRequest{
-		Provider:         provider,
+	redirectURL, err := h.commands.ConnectSeller(r.Context(), commands.ConnectSellerRequest{
 		WorkspaceName:    workspaceName,
+		Provider:         provider,
 		FinalRedirectURL: req.FinalRedirectURL,
 	})
 	if err != nil {

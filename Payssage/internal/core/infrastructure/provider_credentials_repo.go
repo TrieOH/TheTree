@@ -118,3 +118,18 @@ func (repo *providerCredentialsRepo) Revoke(ctx context.Context, id uuid.UUID, w
 
 	return mapProviderCredentialFromDB(&row)
 }
+
+func (repo *providerCredentialsRepo) GetByWorkspaceAndProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*domain.ProviderCredential, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.GetByWorkspaceAndProvider")
+	defer span.End()
+
+	row, err := repo.queries(ctx).GetWorkspaceProviderCredential(ctx, sqlc.GetWorkspaceProviderCredentialParams{
+		WorkspaceID: workspaceID,
+		Provider:    provider,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "provider_credential")
+	}
+
+	return mapProviderCredentialFromDB(&row)
+}

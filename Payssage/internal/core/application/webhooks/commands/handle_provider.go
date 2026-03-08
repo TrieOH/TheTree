@@ -26,17 +26,32 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 
 	switch event {
 	case domain.EventPaymentSucceeded:
+		log.Printf("[webhook] confirming intent=%s", id)
 		intent, err = uc.intents.Confirm(ctx, id)
 	case domain.EventPaymentFailed:
+		log.Printf("[webhook] failing intent=%s", id)
 		intent, err = uc.intents.Fail(ctx, id)
 	case domain.EventPaymentCancelled:
+		log.Printf("[webhook] cancelling intent=%s", id)
 		intent, err = uc.intents.Cancel(ctx, id)
 	default:
 		return errx.Invalid("event").SetMessage("unknown event type: " + event)
 	}
 	if err != nil {
-		return err
+		if errx.IsKind(err, "not_found") {
+			// intent already updated by PayIntent, fetch current state and continue
+			log.Printf("[webhook] intent=%s already updated, fetching current state", id)
+			intent, err = uc.intents.GetByID(ctx, id)
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Printf("[webhook] failed to update intent=%s event=%s err=%v", id, event, err)
+			return err
+		}
 	}
+
+	log.Printf("[webhook] intent=%s updated to status=%s", intent.ID, intent.Status)
 
 	// build normalized payload
 	payloadBytes, err := json.Marshal(domain.WebhookPayload{
@@ -56,6 +71,8 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 	if err != nil {
 		return err
 	}
+
+	log.Printf("[webhook] found %d endpoints for workspace=%s", len(endpoints), intent.WorkspaceID)
 
 	// enqueue delivery task per endpoint
 	for _, endpoint := range endpoints {
@@ -78,6 +95,8 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 
 		if _, err = uc.asynq.EnqueueContext(context.Background(), task); err != nil {
 			log.Printf("[webhook] failed to enqueue delivery task for endpoint %s: %v", endpoint.ID, err)
+		} else {
+			log.Printf("[webhook] enqueued delivery for endpoint=%s url=%s", endpoint.ID, endpoint.URL)
 		}
 	}
 

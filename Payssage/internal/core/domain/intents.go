@@ -10,16 +10,17 @@ import (
 )
 
 type Intent struct {
-	ID           uuid.UUID       `json:"id"`
-	WorkspaceID  uuid.UUID       `json:"workspace_id"`
-	Amount       int64           `json:"amount"`
-	Currency     string          `json:"currency"`
-	Status       IntentStatus    `json:"status"`
-	ClientSecret string          `json:"client_secret"`
-	Provider     string          `json:"provider"`
-	Metadata     json.RawMessage `json:"metadata"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
+	ID                uuid.UUID       `json:"id"`
+	WorkspaceID       uuid.UUID       `json:"workspace_id"`
+	Amount            int64           `json:"amount"`
+	Currency          string          `json:"currency"`
+	Status            IntentStatus    `json:"status"`
+	ClientSecret      string          `json:"client_secret"`
+	Provider          string          `json:"provider"`
+	ProviderPaymentID *string         `json:"provider_payment_id"`
+	Metadata          json.RawMessage `json:"metadata"`
+	CreatedAt         time.Time       `json:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at"`
 }
 
 type IntentStatus string

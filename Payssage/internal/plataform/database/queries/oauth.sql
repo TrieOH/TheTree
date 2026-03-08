@@ -1,6 +1,6 @@
 -- name: CreateOAuthState :one
-INSERT INTO oauth_states (state, workspace_id, provider, final_redirect_url, expires_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO oauth_states (state, workspace_id, provider, flow, is_marketplace, fee_bps, final_redirect_url, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *;
 
 -- name: GetOAuthState :one
@@ -29,3 +29,11 @@ UPDATE provider_credentials
 SET revoked_at = now()
 WHERE id = $1 AND workspace_id = $2 AND revoked_at IS NULL
     RETURNING *;
+
+-- name: GetWorkspaceProviderCredential :one
+SELECT * FROM provider_credentials
+WHERE workspace_id = $1
+  AND provider = $2
+  AND revoked_at IS NULL
+ORDER BY created_at DESC
+    LIMIT 1;

@@ -13,6 +13,7 @@ type CommandService struct {
 	workspaces  domain.WorkspaceRepo
 	oauthStates domain.OAuthStateRepo
 	credentials domain.ProviderCredentialRepo
+	marketplace domain.MarketplaceConfigRepo
 	providers   map[string]domain.OAuthProvider
 	gaClient    *goauth.Client
 	tx          database.TxRunner
@@ -24,6 +25,7 @@ func New(
 	workspaces domain.WorkspaceRepo,
 	oauthStates domain.OAuthStateRepo,
 	credentials domain.ProviderCredentialRepo,
+	marketplace domain.MarketplaceConfigRepo,
 	providers map[string]domain.OAuthProvider,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
@@ -34,6 +36,7 @@ func New(
 		workspaces:  workspaces,
 		oauthStates: oauthStates,
 		credentials: credentials,
+		marketplace: marketplace,
 		providers:   providers,
 		gaClient:    gaClient,
 		tx:          tx,

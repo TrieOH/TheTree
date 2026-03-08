@@ -3,9 +3,16 @@ package providers
 import (
 	"TriePayments/internal/core/domain"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
+	"github.com/mercadopago/sdk-go/pkg/payment"
 )
 
 const mpAuthURL = "https://auth.mercadopago.com/authorization"
@@ -16,7 +23,7 @@ type MercadoPagoProvider struct {
 	oauthClient oauth.Client
 }
 
-func NewMercadoPagoProvider(clientID, accessToken, redirectURI string) (domain.OAuthProvider, error) {
+func NewMercadoPagoProvider(clientID, accessToken, redirectURI string) (*MercadoPagoProvider, error) {
 	cfg, err := config.New(accessToken)
 	if err != nil {
 		return nil, err
@@ -44,4 +51,75 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code string) (do
 		RefreshToken:   resource.RefreshToken,
 		ProviderUserID: resource.PublicKey,
 	}, nil
+}
+
+func (p *MercadoPagoProvider) Charge(ctx context.Context, req domain.ChargeRequest) (*domain.ChargeResult, error) {
+	cfg, err := config.New(req.SellerToken)
+	if err != nil {
+		return nil, err
+	}
+
+	client := payment.NewClient(cfg)
+
+	amountInUnits := float64(req.Intent.Amount) / 100.0
+
+	resource, err := client.Create(ctx, payment.Request{
+		TransactionAmount: amountInUnits,
+		Token:             req.CardToken,
+		PaymentMethodID:   req.PaymentMethodID,
+		Installments:      req.Installments,
+		Payer: &payment.PayerRequest{
+			Email: req.PayerEmail,
+		},
+		ApplicationFee: req.ApplicationFee,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.ChargeResult{
+		ProviderPaymentID: fmt.Sprintf("%d", resource.ID),
+		Status:            mapMPStatus(resource.Status),
+	}, nil
+}
+
+func mapMPStatus(status string) domain.IntentStatus {
+	switch status {
+	case "approved":
+		return domain.IntentStatusSucceeded
+	case "rejected":
+		return domain.IntentStatusFailed
+	default:
+		return domain.IntentStatusPending
+	}
+}
+
+func VerifyMercadoPagoSignature(r *http.Request, secret string) bool {
+	xSignature := r.Header.Get("x-signature")
+	xRequestID := r.Header.Get("x-request-id")
+	dataID := r.URL.Query().Get("data.id")
+
+	var ts, hash string
+	for _, part := range strings.Split(xSignature, ",") {
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(kv[0])
+		val := strings.TrimSpace(kv[1])
+		switch key {
+		case "ts":
+			ts = val
+		case "v1":
+			hash = val
+		}
+	}
+
+	manifest := fmt.Sprintf("id:%s;request-id:%s;ts:%s;", dataID, xRequestID, ts)
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(manifest))
+	computed := hex.EncodeToString(mac.Sum(nil))
+
+	return hmac.Equal([]byte(computed), []byte(hash))
 }

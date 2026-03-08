@@ -42,3 +42,10 @@ func MapIntentResponse(i *domain.Intent) IntentResponse {
 		UpdatedAt:    i.UpdatedAt,
 	}
 }
+
+type PayIntentRequest struct {
+	CardToken       string `json:"card_token"       validate:"required"`
+	PaymentMethodID string `json:"payment_method_id" validate:"required"`
+	Installments    int    `json:"installments"      validate:"min=1"`
+	PayerEmail      string `json:"payer_email"       validate:"required,email"`
+}

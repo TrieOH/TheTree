@@ -29,3 +29,10 @@ type WebhookEndpointListResponse struct {
 	URL         string    `json:"url"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type MercadoPagoWebhookRequest struct {
+	Action string `json:"action"`
+	Data   struct {
+		ID string `json:"id"`
+	} `json:"data"`
+}

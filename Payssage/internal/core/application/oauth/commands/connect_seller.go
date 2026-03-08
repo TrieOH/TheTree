@@ -5,20 +5,18 @@ import (
 	"TriePayments/internal/shared/authz"
 	"TriePayments/internal/shared/errx"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"time"
 )
 
-type BeginOAuthRequest struct {
-	Provider         string
+type ConnectSellerRequest struct {
 	WorkspaceName    string
+	Provider         string
 	FinalRedirectURL string
 }
 
-func (uc *CommandService) BeginOAuth(ctx context.Context, req BeginOAuthRequest) (string, error) {
-	ctx, span := uc.tracer.Start(ctx, "CommandService.BeginOAuth")
+func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRequest) (string, error) {
+	ctx, span := uc.tracer.Start(ctx, "CommandService.ConnectSeller")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
@@ -31,9 +29,20 @@ func (uc *CommandService) BeginOAuth(ctx context.Context, req BeginOAuthRequest)
 		return "", err
 	}
 
-	provider, err := uc.getProvider(req.Provider)
+	// verify workspace has this provider set up
+	creds, err := uc.credentials.ListByWorkspace(ctx, workspace.ID)
 	if err != nil {
 		return "", err
+	}
+	hasProvider := false
+	for _, c := range creds {
+		if c.Provider == req.Provider && c.RevokedAt == nil {
+			hasProvider = true
+			break
+		}
+	}
+	if !hasProvider {
+		return "", errx.Invalid("provider").SetMessage(fmt.Sprintf("workspace has not set up provider: %s", req.Provider))
 	}
 
 	stateToken, err := generateState()
@@ -45,6 +54,9 @@ func (uc *CommandService) BeginOAuth(ctx context.Context, req BeginOAuthRequest)
 		State:            stateToken,
 		WorkspaceID:      workspace.ID,
 		Provider:         req.Provider,
+		Flow:             domain.OAuthFlowConnect,
+		IsMarketplace:    false,
+		FeeBps:           0,
 		FinalRedirectURL: req.FinalRedirectURL,
 		ExpiresAt:        time.Now().Add(15 * time.Minute),
 	})
@@ -52,22 +64,6 @@ func (uc *CommandService) BeginOAuth(ctx context.Context, req BeginOAuthRequest)
 		return "", err
 	}
 
-	redirectURL := provider.BuildAuthURL(stateToken)
-	return redirectURL, nil
-}
-
-func generateState() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
-}
-
-func (uc *CommandService) getProvider(name string) (domain.OAuthProvider, error) {
-	p, ok := uc.providers[name]
-	if !ok {
-		return nil, errx.Invalid("provider").SetMessage(fmt.Sprintf("unsupported provider: %s", name))
-	}
-	return p, nil
+	provider, _ := uc.getProvider(req.Provider)
+	return provider.BuildAuthURL(stateToken), nil
 }

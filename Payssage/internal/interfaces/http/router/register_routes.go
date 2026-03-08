@@ -69,6 +69,7 @@ func registerIntentsRoutes(
 		r.Post("/intents", h.CreateIntent)
 		r.Get("/intents/{intent_id}", h.GetByID)
 		r.Post("/intents/{intent_id}/cancel", h.CancelIntent)
+		r.Post("/intents/{intent_id}/pay", h.PayIntent)
 	})
 }
 
@@ -95,9 +96,11 @@ func registerOAuthRoutes(
 	// callback from provider — no auth, browser redirect
 	r.Get("/oauth/{provider}/callback", h.CompleteOAuth)
 
-	// begin flow — requires user session
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
-		r.Post("/workspaces/{name}/oauth/{provider}/begin", h.BeginOAuth)
+		r.Post("/workspaces/{name}/providers/{provider}/setup", h.SetupProvider)
+		r.Post("/workspaces/{name}/providers/{provider}/connect", h.ConnectSeller)
+		r.Put("/workspaces/{name}/marketplace", h.SetMarketplaceConfig)
+		r.Delete("/workspaces/{name}/marketplace", h.DeleteMarketplaceConfig)
 	})
 }

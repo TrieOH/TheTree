@@ -2,10 +2,9 @@ package commands
 
 import (
 	"TriePayments/internal/core/domain"
+	"TriePayments/internal/shared/errx"
 	"context"
 	"fmt"
-
-	"TriePayments/internal/shared/errx"
 )
 
 func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToken, code string) (string, error) {
@@ -41,11 +40,38 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		return "", err
 	}
 
-	if err := uc.oauthStates.Delete(ctx, stateToken); err != nil {
-		// non-fatal, state will expire naturally
-		_ = err
+	// if setup flow + marketplace, auto-create marketplace config
+	if oauthState.Flow == domain.OAuthFlowSetup && oauthState.IsMarketplace {
+		existing, err := uc.marketplace.Get(ctx, oauthState.WorkspaceID)
+		if err != nil && !errx.IsKind(err, "not_found") {
+			return "", err
+		}
+		if existing != nil {
+			_, err = uc.marketplace.Update(ctx, domain.MarketplaceConfig{
+				WorkspaceID:  oauthState.WorkspaceID,
+				CredentialID: cred.ID,
+				FeeBps:       oauthState.FeeBps,
+			})
+		} else {
+			_, err = uc.marketplace.Create(ctx, domain.MarketplaceConfig{
+				WorkspaceID:  oauthState.WorkspaceID,
+				CredentialID: cred.ID,
+				FeeBps:       oauthState.FeeBps,
+			})
+		}
+		if err != nil {
+			return "", err
+		}
 	}
 
-	finalURL := fmt.Sprintf("%s?credential_id=%s", oauthState.FinalRedirectURL, cred.ID)
-	return finalURL, nil
+	_ = uc.oauthStates.Delete(ctx, stateToken)
+
+	switch oauthState.Flow {
+	case domain.OAuthFlowSetup:
+		return fmt.Sprintf("%s?provider=%s&status=success", oauthState.FinalRedirectURL, provider), nil
+	case domain.OAuthFlowConnect:
+		return fmt.Sprintf("%s?credential_id=%s", oauthState.FinalRedirectURL, cred.ID), nil
+	default:
+		return oauthState.FinalRedirectURL, nil
+	}
 }

@@ -42,3 +42,15 @@ SET
     updated_at = now()
 WHERE id = $1 AND status = 'pending'
 RETURNING *;
+
+-- name: PayIntent :one
+UPDATE intents
+SET
+    status = $2,
+    provider_payment_id = $3,
+    updated_at = now()
+WHERE id = $1 AND status = 'pending'
+    RETURNING *;
+
+-- name: GetIntentByProviderPaymentID :one
+SELECT * FROM intents WHERE provider_payment_id = $1;

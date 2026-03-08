@@ -38,16 +38,17 @@ func (repo *intentsRepo) queries(ctx context.Context) *sqlc.Queries {
 
 func mapIntentFromDB(src *sqlc.Intent) *domain.Intent {
 	return &domain.Intent{
-		ID:           src.ID,
-		WorkspaceID:  src.WorkspaceID,
-		Amount:       src.Amount,
-		Currency:     src.Currency,
-		Status:       domain.IntentStatus(src.Status),
-		ClientSecret: src.ClientSecret,
-		Provider:     src.Provider,
-		Metadata:     src.Metadata,
-		CreatedAt:    src.CreatedAt,
-		UpdatedAt:    src.UpdatedAt,
+		ID:                src.ID,
+		WorkspaceID:       src.WorkspaceID,
+		Amount:            src.Amount,
+		Currency:          src.Currency,
+		Status:            domain.IntentStatus(src.Status),
+		ClientSecret:      src.ClientSecret,
+		Provider:          src.Provider,
+		ProviderPaymentID: src.ProviderPaymentID,
+		Metadata:          src.Metadata,
+		CreatedAt:         src.CreatedAt,
+		UpdatedAt:         src.UpdatedAt,
 	}
 }
 
@@ -145,6 +146,34 @@ func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*domain.Intent
 	defer span.End()
 
 	sqlcIntent, err := repo.queries(ctx).FailIntent(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "intent")
+	}
+
+	return mapIntentFromDB(&sqlcIntent), nil
+}
+
+func (repo *intentsRepo) Pay(ctx context.Context, id uuid.UUID, providerPaymentID string, status domain.IntentStatus) (*domain.Intent, error) {
+	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Pay")
+	defer span.End()
+
+	sqlcIntent, err := repo.queries(ctx).PayIntent(ctx, sqlc.PayIntentParams{
+		ID:                id,
+		Status:            sqlc.IntentStatus(status),
+		ProviderPaymentID: &providerPaymentID,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "intent")
+	}
+
+	return mapIntentFromDB(&sqlcIntent), nil
+}
+
+func (repo *intentsRepo) GetByProviderPaymentID(ctx context.Context, providerPaymentID string) (*domain.Intent, error) {
+	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Pay")
+	defer span.End()
+
+	sqlcIntent, err := repo.queries(ctx).GetIntentByProviderPaymentID(ctx, &providerPaymentID)
 	if err != nil {
 		return nil, errx.FromDB(err, "intent")
 	}

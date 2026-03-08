@@ -1,11 +1,14 @@
 -- +goose Up
 CREATE TABLE oauth_states (
-    state       TEXT PRIMARY KEY,
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    provider    TEXT NOT NULL,
+    state             TEXT PRIMARY KEY,
+    workspace_id      UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    provider          TEXT NOT NULL,
+    flow              TEXT NOT NULL, -- 'setup' or 'connect'
+    is_marketplace    BOOL NOT NULL DEFAULT false,
+    fee_bps           INT NOT NULL DEFAULT 0,
     final_redirect_url TEXT NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at  TIMESTAMPTZ NOT NULL
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at        TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE provider_credentials (

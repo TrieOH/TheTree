@@ -9,6 +9,7 @@ CREATE TYPE intent_status AS ENUM (
 CREATE TABLE intents (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     workspace_id UUID NOT NULL,
+    provider_payment_id TEXT,
     amount BIGINT NOT NULL CHECK (amount > 0),
     currency CHAR(3) NOT NULL,
     status intent_status NOT NULL DEFAULT 'pending',

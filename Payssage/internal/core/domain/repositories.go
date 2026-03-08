@@ -14,6 +14,8 @@ type IntentRepository interface {
 	Cancel(ctx context.Context, id uuid.UUID) (*Intent, error)
 	Confirm(ctx context.Context, id uuid.UUID) (*Intent, error)
 	Fail(ctx context.Context, id uuid.UUID) (*Intent, error)
+	Pay(ctx context.Context, id uuid.UUID, providerPaymentID string, status IntentStatus) (*Intent, error)
+	GetByProviderPaymentID(ctx context.Context, providerPaymentID string) (*Intent, error)
 }
 
 type WorkspaceRepo interface {
@@ -57,4 +59,12 @@ type ProviderCredentialRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*ProviderCredential, error)
 	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ProviderCredential, error)
 	Revoke(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*ProviderCredential, error)
+	GetByWorkspaceAndProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*ProviderCredential, error)
+}
+
+type MarketplaceConfigRepo interface {
+	Create(ctx context.Context, config MarketplaceConfig) (*MarketplaceConfig, error)
+	Get(ctx context.Context, workspaceID uuid.UUID) (*MarketplaceConfig, error)
+	Update(ctx context.Context, config MarketplaceConfig) (*MarketplaceConfig, error)
+	Delete(ctx context.Context, workspaceID uuid.UUID) error
 }
