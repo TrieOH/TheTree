@@ -65,6 +65,16 @@ export async function get(client, path) {
     }
 }
 
+export async function put(client, url, body) {
+    try {
+        const res = await client.put(url, body ?? {})
+        return res.data.data
+    } catch (e) {
+        console.error(`PUT ${url} failed:`, e.response?.status, JSON.stringify(e.response?.data, null, 2))
+        throw e
+    }
+}
+
 export async function deleteReq(client, path) {
     try {
         const res = await client.delete(path)

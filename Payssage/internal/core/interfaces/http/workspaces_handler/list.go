@@ -30,4 +30,5 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for _, ws := range workspaces {
 		out = append(out, dto.MapWorkspaceResponse(&ws))
 	}
+	resp.OK().WithData(out).Send(w)
 }

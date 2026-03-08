@@ -16,30 +16,32 @@ type CreateIntentRequest struct {
 }
 
 type IntentResponse struct {
-	ID           uuid.UUID       `json:"id"`
-	WorkspaceID  uuid.UUID       `json:"workspace_id"`
-	Amount       int64           `json:"amount"`
-	Currency     string          `json:"currency"`
-	Status       string          `json:"status"`
-	ClientSecret string          `json:"client_secret"`
-	Provider     string          `json:"provider"`
-	Metadata     json.RawMessage `json:"metadata"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
+	ID                uuid.UUID       `json:"id"`
+	WorkspaceID       uuid.UUID       `json:"workspace_id"`
+	Amount            int64           `json:"amount"`
+	Currency          string          `json:"currency"`
+	Status            string          `json:"status"`
+	ClientSecret      string          `json:"client_secret"`
+	Provider          string          `json:"provider"`
+	ProviderPaymentID *string         `json:"provider_payment_id"`
+	Metadata          json.RawMessage `json:"metadata"`
+	CreatedAt         time.Time       `json:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at"`
 }
 
 func MapIntentResponse(i *domain.Intent) IntentResponse {
 	return IntentResponse{
-		ID:           i.ID,
-		WorkspaceID:  i.WorkspaceID,
-		Amount:       i.Amount,
-		Currency:     i.Currency,
-		Status:       string(i.Status),
-		ClientSecret: i.ClientSecret,
-		Provider:     i.Provider,
-		Metadata:     i.Metadata,
-		CreatedAt:    i.CreatedAt,
-		UpdatedAt:    i.UpdatedAt,
+		ID:                i.ID,
+		WorkspaceID:       i.WorkspaceID,
+		Amount:            i.Amount,
+		Currency:          i.Currency,
+		Status:            string(i.Status),
+		ClientSecret:      i.ClientSecret,
+		Provider:          i.Provider,
+		ProviderPaymentID: i.ProviderPaymentID,
+		Metadata:          i.Metadata,
+		CreatedAt:         i.CreatedAt,
+		UpdatedAt:         i.UpdatedAt,
 	}
 }
 

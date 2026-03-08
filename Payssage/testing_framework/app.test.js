@@ -3,11 +3,11 @@ import { loginAs, post, get, deleteReq, validate, createAPIKeyClient } from "./h
 import { createWorkspace } from "./fixtures/workspaces/create.js"
 import { createAPIKey } from "./fixtures/api_keys/create.js"
 import { createIntent, createIntentNoMetadata } from "./fixtures/intents/create.js"
+import { createMarketplaceConfig } from "./fixtures/marketplace/create.js"
 import { WorkspaceSchema } from "./schemas/workspace.js"
 import { APIKeySchema, CreateAPIKeySchema } from "./schemas/api_key.js"
 import { IntentSchema } from "./schemas/intent.js"
 import { WebhookEndpointSchema } from "./schemas/webhook_endpoint.js"
-
 
 let owner
 beforeAll(async () => {
@@ -16,9 +16,13 @@ beforeAll(async () => {
 
 let workspace
 describe("workspaces", () => {
-    test("create workspace", async () => {
-        workspace = await post(owner, "/workspaces", createWorkspace)
-        expect(validate(WorkspaceSchema, workspace)).toBe(true)
+    test("get or create workspace", async () => {
+        const workspaces = await get(owner, "/workspaces")
+        workspace = workspaces.find(w => w.name === createWorkspace.name)
+        if (!workspace) {
+            throw new Error(`Workspace '${createWorkspace.name}' not found — run setup.test.js first`)
+        }
+        expect(workspace).toBeDefined()
         expect(workspace.name).toBe(createWorkspace.name)
     })
 
@@ -44,6 +48,7 @@ describe("api keys", () => {
         apiKey = res
         rawKey = res.key
         apiKeyClient = createAPIKeyClient(rawKey)
+        console.log("\n🔑 API Key:", rawKey)
     })
 
     test("list api keys", async () => {
@@ -61,6 +66,7 @@ describe("second api key for webhook tests", () => {
         expect(validate(CreateAPIKeySchema, res)).toBe(true)
         apiKey2 = res
         apiKeyClient2 = createAPIKeyClient(res.key)
+        console.log("🔑 API Key 2:", res.key)
     })
 })
 
@@ -107,7 +113,7 @@ describe("intents", () => {
     test("cancel already cancelled intent fails", async () => {
         try {
             await post(apiKeyClient, `/intents/${intent.id}/cancel`)
-            expect(true).toBe(false) // should not reach here
+            expect(true).toBe(false)
         } catch (e) {
             expect(e.response.status).toBe(404)
         }
@@ -138,49 +144,56 @@ describe("webhook endpoints", () => {
         expect(validate(WebhookEndpointSchema, webhookEndpoint)).toBe(true)
         expect(webhookEndpoint.workspace_id).toBe(workspace.id)
         expect(webhookEndpoint.url).toBe("http://localhost:9999/webhook-sink")
-        expect(webhookEndpoint.secret).toBeDefined() // only returned on creation
+        expect(webhookEndpoint.secret).toBeDefined()
     })
 
     test("list webhook endpoints", async () => {
         const endpoints = await get(owner, `/workspaces/${workspace.name}/webhooks`)
         expect(Array.isArray(endpoints)).toBe(true)
         expect(endpoints.some(e => e.id === webhookEndpoint.id)).toBe(true)
-        // secret must NOT be in list response
         expect(endpoints[0].secret).toBeUndefined()
     })
 })
 
 let succeededIntent
-describe("provider webhook", () => {
+describe("sandbox payment flow", () => {
     beforeAll(async () => {
-        // create a fresh intent to trigger payment.succeeded on
         succeededIntent = await post(apiKeyClient2, "/intents", createIntent)
         expect(validate(IntentSchema, succeededIntent)).toBe(true)
     })
 
-    test("mock provider triggers payment.succeeded", async () => {
-        const res = await post(null, "/webhooks/mock", {
-            intent_id: succeededIntent.id,
-            event: "payment.succeeded"
+    test("sandbox pay triggers payment.succeeded", async () => {
+        const paid = await post(apiKeyClient2, `/intents/${succeededIntent.id}/pay`, {
+            card_token: "sandbox",
+            payment_method_id: "sandbox",
+            installments: 1,
+            payer_email: process.env.OWNER_EMAIL,
         })
+        expect(validate(IntentSchema, paid)).toBe(true)
+        expect(paid.status).toBe("succeeded")
+        console.log("✅ Sandbox payment succeeded, provider_payment_id:", paid.provider_payment_id)
     })
 
-    test("intent status is succeeded after webhook", async () => {
-        // wait for asynq delivery task
+    test("intent status is succeeded after sandbox pay", async () => {
         await new Promise(resolve => setTimeout(resolve, 2000))
         const fetched = await get(apiKeyClient2, `/intents/${succeededIntent.id}`)
         expect(fetched.status).toBe("succeeded")
     })
 
-    test("mock provider triggers payment.failed", async () => {
-        const failedIntent = await post(apiKeyClient2, "/intents", createIntent)
-        await post(null, "/webhooks/mock", {
-            intent_id: failedIntent.id,
-            event: "payment.failed"
-        })
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        const fetched = await get(apiKeyClient2, `/intents/${failedIntent.id}`)
-        expect(fetched.status).toBe("failed")
+    test("sandbox pay on cancelled intent fails", async () => {
+        const cancelledIntent = await post(apiKeyClient2, "/intents", createIntent)
+        await post(apiKeyClient2, `/intents/${cancelledIntent.id}/cancel`)
+        try {
+            await post(apiKeyClient2, `/intents/${cancelledIntent.id}/pay`, {
+                card_token: "sandbox",
+                payment_method_id: "sandbox",
+                installments: 1,
+                payer_email: process.env.OWNER_EMAIL,
+            })
+            expect(true).toBe(false)
+        } catch (e) {
+            expect(e.response.status).toBe(400)
+        }
     })
 })
 
