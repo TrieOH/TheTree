@@ -35,3 +35,27 @@ export const allEditionsQueryOptions = (eventId: string) => {
     queryFn: () => getAllEditionsFn(eventId),
   })
 }
+
+
+/**
+ * Fetches all admin event editions from the server.
+ * @returns A promise that resolves to an array of Edition objects.
+ */
+export const getAllAdminEditionsFn = createClientOnlyFn(async (eventId: string) => {
+  try {
+    return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions/admin`);
+  } catch {
+    return [];
+  }
+});
+
+/**
+ * Query options for fetching all admin event editions, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching all admin event editions.
+ */
+export const allAdminEditionsQueryOptions = (eventId: string) => {
+  return queryOptions({
+    queryKey: ['allAdminEditions', eventId],
+    queryFn: () => getAllAdminEditionsFn(eventId),
+  })
+};

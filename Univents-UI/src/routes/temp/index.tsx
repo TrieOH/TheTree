@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import type { EventCreateI, EventI } from '@/features/events/model'
 import type { EditionCreateI, EditionI } from '@/features/editions/model'
 import { createEventFn, getOwnEventsFn } from '@/features/events/api'
-import { createEditionFn, getAllEditionsFn } from '@/features/editions/api'
+import { createEditionFn, getAllAdminEditionsFn } from '@/features/editions/api'
 import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
 import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
 import {
@@ -114,7 +114,7 @@ function RouteComponent() {
   React.useEffect(() => {
     const fetchEditions = async () => {
       if (selectedEventId) {
-        const eds = await getAllEditionsFn(selectedEventId);
+        const eds = await getAllAdminEditionsFn(selectedEventId);
         setEditions(eds);
         setEditionCreated(false); // Reset after fetching
       } else {
