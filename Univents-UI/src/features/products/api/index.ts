@@ -1,7 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import type { ProductCreateI, ProductI } from "../model";
+import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
  * Creates a new Product on the server.
