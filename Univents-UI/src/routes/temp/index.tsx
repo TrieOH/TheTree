@@ -7,6 +7,12 @@ import { createEventFn, getOwnEventsFn } from '@/features/events/api'
 import { createEditionFn, getAllAdminEditionsFn } from '@/features/editions/api'
 import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
 import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
+import type { TicketCreateI, TicketI } from '@/features/tickets/model'
+import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
+import type { ProductCreateI, ProductI } from '@/features/products/model'
+import { createProductFn, getAllAdminProductsFn } from '@/features/products/api'
+import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
+import { createCheckpointFn, getAllCheckpointsFn } from '@/features/checkpoints/api'
 import {
   formatDateForDatetimeLocal,
   parseDatetimeLocal,
@@ -97,6 +103,83 @@ function RouteComponent() {
   const [activities, setActivities] = useState<ActivityI[]>([])
   const [activityError, setActivityError] = useState<string | null>(null)
   const [activityCreated, setActivityCreated] = useState<boolean>(false);
+
+  // tickets-related state
+  const [ticketForm, setTicketForm] = useState<TicketCreateI>({
+    name: '',
+    description: undefined,
+  })
+  const [tickets, setTickets] = useState<TicketI[]>([])
+  const [ticketError, setTicketError] = useState<string | null>(null)
+  const [ticketCreated, setTicketCreated] = useState<boolean>(false);
+
+  // products-related state
+  const [productForm, setProductForm] = useState<ProductCreateI>({
+    edition_scope_id: '', // Will be set from selectedEditionId
+    name: '',
+    description: undefined,
+    type: 'merchandise',
+    ticket_id: undefined, // Will be set from selectedTicketId if applicable
+    price_cents: 0,
+    available_from: undefined,
+    available_until: undefined,
+    has_inventory: false,
+    inventory_quantity: 0,
+  })
+  const [products, setProducts] = useState<ProductI[]>([])
+  const [productError, setProductError] = useState<string | null>(null)
+  const [productCreated, setProductCreated] = useState<boolean>(false);
+
+  // checkpoints-related state
+  const [checkpointForm, setCheckpointForm] = useState<CheckpointCreateI>({
+    name: '',
+    access_mode: 'open',
+    type: 'entry',
+    starts_at: undefined,
+    ends_at: undefined,
+  })
+  const [checkpoints, setCheckpoints] = useState<CheckpointI[]>([])
+  const [checkpointError, setCheckpointError] = useState<string | null>(null)
+  const [checkpointCreated, setCheckpointCreated] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const fetchCheckpoints = async () => {
+      if (selectedEventId && selectedEditionId) {
+        const checkpts = await getAllCheckpointsFn(selectedEventId, selectedEditionId);
+        setCheckpoints(checkpts);
+        setCheckpointCreated(false); // Reset after fetching
+      } else {
+        setCheckpoints([]);
+      }
+    };
+    fetchCheckpoints();
+  }, [selectedEventId, selectedEditionId, checkpointCreated]);
+
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      if (selectedEventId && selectedEditionId) {
+        const prods = await getAllAdminProductsFn(selectedEventId, selectedEditionId);
+        setProducts(prods);
+        setProductCreated(false); // Reset after fetching
+      } else {
+        setProducts([]);
+      }
+    };
+    fetchProducts();
+  }, [selectedEventId, selectedEditionId, productCreated]);
+
+  React.useEffect(() => {
+    const fetchTickets = async () => {
+      if (selectedEventId && selectedEditionId) {
+        const tix = await getAllTicketsFn(selectedEventId, selectedEditionId);
+        setTickets(tix);
+        setTicketCreated(false); // Reset after fetching
+      } else {
+        setTickets([]);
+      }
+    };
+    fetchTickets();
+  }, [selectedEventId, selectedEditionId, ticketCreated]);
 
   React.useEffect(() => {
     const fetchActivities = async () => {
@@ -263,6 +346,152 @@ function RouteComponent() {
         errorMessage = (err as { message: string }).message;
       }
       setActivityError(errorMessage);
+    }
+  }
+
+  const handleChangeTicket = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const target = e.target as HTMLInputElement
+    const { name, value } = target
+
+    setTicketForm((f) => ({
+      ...f,
+      [name]: value,
+    }))
+  }
+
+  const handleTicketSubmit = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault()
+    setTicketError(null)
+    if (!selectedEventId) {
+      setTicketError('pick an event first')
+      return
+    }
+    if (!selectedEditionId) {
+      setTicketError('pick an edition first')
+      return
+    }
+
+    try {
+      const res = await createTicketFn(ticketForm, selectedEventId, selectedEditionId)
+      if (res.success) {
+        setTicketCreated(true); // Trigger re-fetch via useEffect
+      } else {
+        throw new Error(res.message)
+      }
+    } catch (err: unknown) {
+      let errorMessage = 'request failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        errorMessage = (err as { message: string }).message;
+      }
+      setTicketError(errorMessage);
+    }
+  }
+
+  const handleChangeProduct = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement
+    const { name, value, type } = target
+    const checked = type === 'checkbox' ? (target as HTMLInputElement).checked : undefined
+
+    setProductForm((f) => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value,
+    } as unknown as ProductCreateI))
+  }
+
+  const handleProductSubmit = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault()
+    setProductError(null)
+    if (!selectedEventId) {
+      setProductError('pick an event first')
+      return
+    }
+    if (!selectedEditionId) {
+      setProductError('pick an edition first')
+      return
+    }
+
+    try {
+      const data = {
+        ...productForm,
+        edition_scope_id: selectedEditionId,
+        price_cents: Number(productForm.price_cents),
+        inventory_quantity: Number(productForm.inventory_quantity),
+        available_from: productForm.available_from ? parseDatetimeLocal(productForm.available_from).toISOString() : undefined,
+        available_until: productForm.available_until ? parseDatetimeLocal(productForm.available_until).toISOString() : undefined,
+      }
+      const res = await createProductFn(data, selectedEventId, selectedEditionId)
+      if (res.success) {
+        setProductCreated(true); // Trigger re-fetch via useEffect
+      } else {
+        throw new Error(res.message)
+      }
+    } catch (err: unknown) {
+      let errorMessage = 'request failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        errorMessage = (err as { message: string }).message;
+      }
+      setProductError(errorMessage);
+    }
+  }
+
+  const handleChangeCheckpoint = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement
+    const { name, value } = target
+
+    setCheckpointForm((f) => ({
+      ...f,
+      [name]: value,
+    } as unknown as CheckpointCreateI))
+  }
+
+  const handleCheckpointSubmit = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault()
+    setCheckpointError(null)
+    if (!selectedEventId) {
+      setCheckpointError('pick an event first')
+      return
+    }
+    if (!selectedEditionId) {
+      setCheckpointError('pick an edition first')
+      return
+    }
+
+    try {
+      const data = {
+        ...checkpointForm,
+        starts_at: checkpointForm.starts_at ? parseDatetimeLocal(checkpointForm.starts_at).toISOString() : undefined,
+        ends_at: checkpointForm.ends_at ? parseDatetimeLocal(checkpointForm.ends_at).toISOString() : undefined,
+      }
+      const res = await createCheckpointFn(data, selectedEventId, selectedEditionId)
+      if (res.success) {
+        setCheckpointCreated(true); // Trigger re-fetch via useEffect
+      } else {
+        throw new Error(res.message)
+      }
+    } catch (err: unknown) {
+      let errorMessage = 'request failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        errorMessage = (err as { message: string }).message;
+      }
+      setCheckpointError(errorMessage);
     }
   }
 
@@ -736,6 +965,306 @@ function RouteComponent() {
                   <strong>Created At:</strong> {new Date(act.created_at).toLocaleDateString()} {new Date(act.created_at).toLocaleTimeString()}<br />
                   <strong>Updated At:</strong> {new Date(act.updated_at).toLocaleDateString()} {new Date(act.updated_at).toLocaleTimeString()}<br />
                   <strong>Deleted At:</strong> {act.deleted_at ? `${new Date(act.deleted_at).toLocaleDateString()} ${new Date(act.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* ticket creation/listing */}
+      <div className="w-full max-w-md mt-8">
+        <h4 className="text-lg font-semibold mb-2">
+          Create a ticket {selectedEvent && selectedEditionId ? `for ${selectedEvent.name} edition ${selectedEditionId}` : ''}
+        </h4>
+        {selectedEventId && selectedEditionId ? (
+          <form onSubmit={handleTicketSubmit} className="flex flex-col gap-4">
+            <label>
+              Name*
+              <input
+                type="text"
+                name="name"
+                value={ticketForm.name}
+                onChange={handleChangeTicket}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                name="description"
+                value={ticketForm.description ?? ''}
+                onChange={handleChangeTicket}
+                className="border p-1"
+              />
+            </label>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white py-1 px-3 rounded"
+            >
+              Create Ticket
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-gray-600">Select an event and an edition above to create tickets</p>
+        )}
+        {ticketError && <div className="text-red-600 mt-2">{ticketError}</div>}
+
+        {selectedEventId && selectedEditionId && (
+          <div className="mt-4">
+            <h5 className="font-semibold">Tickets for selected edition</h5>
+            <ul className="list-disc pl-5">
+              {tickets.map((tix) => (
+                <li key={tix.id} className="mb-2 p-2 border rounded-md">
+                  <strong>ID:</strong> {tix.id}<br />
+                  <strong>Name:</strong> {tix.name}<br />
+                  <strong>Description:</strong> {tix.description || 'N/A'}<br />
+                  <strong>Created By:</strong> {tix.created_by}<br />
+                  <strong>Created At:</strong> {new Date(tix.created_at).toLocaleDateString()} {new Date(tix.created_at).toLocaleTimeString()}<br />
+                  <strong>Updated At:</strong> {new Date(tix.updated_at).toLocaleDateString()} {new Date(tix.updated_at).toLocaleTimeString()}<br />
+                  <strong>Deleted At:</strong> {tix.deleted_at ? `${new Date(tix.deleted_at).toLocaleDateString()} ${new Date(tix.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* product creation/listing */}
+      <div className="w-full max-w-md mt-8">
+        <h4 className="text-lg font-semibold mb-2">
+          Create a product {selectedEvent && selectedEditionId ? `for ${selectedEvent.name} edition ${selectedEditionId}` : ''}
+        </h4>
+        {selectedEventId && selectedEditionId ? (
+          <form onSubmit={handleProductSubmit} className="flex flex-col gap-4">
+            <label>
+              Name*
+              <input
+                type="text"
+                name="name"
+                value={productForm.name}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                name="description"
+                value={productForm.description ?? ''}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Type*
+              <select
+                name="type"
+                value={productForm.type}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              >
+                <option value="merchandise">Merchandise</option>
+                <option value="ticket">Ticket</option>
+                <option value="token">Token</option>
+                <option value="bundle">Bundle</option>
+              </select>
+            </label>
+            <label>
+              Ticket ID (Optional - if product is a ticket)
+              <input
+                type="text"
+                name="ticket_id"
+                value={productForm.ticket_id ?? ''}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Price (cents)*
+              <input
+                type="number"
+                name="price_cents"
+                value={productForm.price_cents}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Available From
+              <input
+                type="datetime-local"
+                name="available_from"
+                value={productForm.available_from ?? ''}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Available Until
+              <input
+                type="datetime-local"
+                name="available_until"
+                value={productForm.available_until ?? ''}
+                onChange={handleChangeProduct}
+                className="border p-1"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="has_inventory"
+                checked={productForm.has_inventory}
+                onChange={handleChangeProduct}
+              />
+              Has Inventory?
+            </label>
+            {productForm.has_inventory && (
+              <label>
+                Inventory Quantity*
+                <input
+                  type="number"
+                  name="inventory_quantity"
+                  value={productForm.inventory_quantity}
+                  onChange={handleChangeProduct}
+                  className="border p-1"
+                />
+              </label>
+            )}
+            <button
+              type="submit"
+              className="bg-orange-600 text-white py-1 px-3 rounded"
+            >
+              Create Product
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-gray-600">Select an event and an edition above to create products</p>
+        )}
+        {productError && <div className="text-red-600 mt-2">{productError}</div>}
+
+        {selectedEventId && selectedEditionId && (
+          <div className="mt-4">
+            <h5 className="font-semibold">Products for selected edition</h5>
+            <ul className="list-disc pl-5">
+              {products.map((prod) => (
+                <li key={prod.id} className="mb-2 p-2 border rounded-md">
+                  <strong>ID:</strong> {prod.id}<br />
+                  <strong>Name:</strong> {prod.name}<br />
+                  <strong>Description:</strong> {prod.description || 'N/A'}<br />
+                  <strong>Type:</strong> {prod.type}<br />
+                  <strong>Ticket ID:</strong> {prod.ticket_id || 'N/A'}<br />
+                  <strong>Price (cents):</strong> {prod.price_cents}<br />
+                  <strong>Status:</strong> {prod.status}<br />
+                  <strong>Available From:</strong> {prod.available_from ? `${new Date(prod.available_from).toLocaleDateString()} ${new Date(prod.available_from).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Available Until:</strong> {prod.available_until ? `${new Date(prod.available_until).toLocaleDateString()} ${new Date(prod.available_until).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Has Inventory:</strong> {prod.has_inventory ? 'Yes' : 'No'}<br />
+                  <strong>Inventory Quantity:</strong> {prod.inventory_quantity}<br />
+                  <strong>Inventory Remaining:</strong> {prod.inventory_remaining}<br />
+                  <strong>Created By:</strong> {prod.created_by}<br />
+                  <strong>Created At:</strong> {new Date(prod.created_at).toLocaleDateString()} {new Date(prod.created_at).toLocaleTimeString()}<br />
+                  <strong>Updated At:</strong> {new Date(prod.updated_at).toLocaleDateString()} {new Date(prod.updated_at).toLocaleTimeString()}<br />
+                  <strong>Deleted At:</strong> {prod.deleted_at ? `${new Date(prod.deleted_at).toLocaleDateString()} ${new Date(prod.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* checkpoint creation/listing */}
+      <div className="w-full max-w-md mt-8">
+        <h4 className="text-lg font-semibold mb-2">
+          Create a checkpoint {selectedEvent && selectedEditionId ? `for ${selectedEvent.name} edition ${selectedEditionId}` : ''}
+        </h4>
+        {selectedEventId && selectedEditionId ? (
+          <form onSubmit={handleCheckpointSubmit} className="flex flex-col gap-4">
+            <label>
+              Name*
+              <input
+                type="text"
+                name="name"
+                value={checkpointForm.name}
+                onChange={handleChangeCheckpoint}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Access Mode*
+              <select
+                name="access_mode"
+                value={checkpointForm.access_mode}
+                onChange={handleChangeCheckpoint}
+                className="border p-1"
+              >
+                <option value="open">Open</option>
+                <option value="ticket">Ticket</option>
+                <option value="staff_only">Staff Only</option>
+              </select>
+            </label>
+            <label>
+              Type*
+              <select
+                name="type"
+                value={checkpointForm.type}
+                onChange={handleChangeCheckpoint}
+                className="border p-1"
+              >
+                <option value="entry">Entry</option>
+                <option value="zone">Zone</option>
+                <option value="amenity">Amenity</option>
+                <option value="session">Session</option>
+                <option value="exit">Exit</option>
+              </select>
+            </label>
+            <label>
+              Starts At
+              <input
+                type="datetime-local"
+                name="starts_at"
+                value={checkpointForm.starts_at ?? ''}
+                onChange={handleChangeCheckpoint}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Ends At
+              <input
+                type="datetime-local"
+                name="ends_at"
+                value={checkpointForm.ends_at ?? ''}
+                onChange={handleChangeCheckpoint}
+                className="border p-1"
+              />
+            </label>
+            <button
+              type="submit"
+              className="bg-red-600 text-white py-1 px-3 rounded"
+            >
+              Create Checkpoint
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-gray-600">Select an event and an edition above to create checkpoints</p>
+        )}
+        {checkpointError && <div className="text-red-600 mt-2">{checkpointError}</div>}
+
+        {selectedEventId && selectedEditionId && (
+          <div className="mt-4">
+            <h5 className="font-semibold">Checkpoints for selected edition</h5>
+            <ul className="list-disc pl-5">
+              {checkpoints.map((chkpt) => (
+                <li key={chkpt.id} className="mb-2 p-2 border rounded-md">
+                  <strong>ID:</strong> {chkpt.id}<br />
+                  <strong>Name:</strong> {chkpt.name}<br />
+                  <strong>Access Mode:</strong> {chkpt.access_mode}<br />
+                  <strong>Type:</strong> {chkpt.type}<br />
+                  <strong>Starts:</strong> {chkpt.starts_at ? `${new Date(chkpt.starts_at).toLocaleDateString()} ${new Date(chkpt.starts_at).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Ends:</strong> {chkpt.ends_at ? `${new Date(chkpt.ends_at).toLocaleDateString()} ${new Date(chkpt.ends_at).toLocaleTimeString()}` : 'N/A'}<br />
+                  <strong>Created By:</strong> {chkpt.created_by}<br />
+                  <strong>Created At:</strong> {new Date(chkpt.created_at).toLocaleDateString()} {new Date(chkpt.created_at).toLocaleTimeString()}<br />
+                  <strong>Updated At:</strong> {new Date(chkpt.updated_at).toLocaleDateString()} {new Date(chkpt.updated_at).toLocaleTimeString()}<br />
+                  <strong>Deleted At:</strong> {chkpt.deleted_at ? `${new Date(chkpt.deleted_at).toLocaleDateString()} ${new Date(chkpt.deleted_at).toLocaleTimeString()}` : 'N/A'}
                 </li>
               ))}
             </ul>
