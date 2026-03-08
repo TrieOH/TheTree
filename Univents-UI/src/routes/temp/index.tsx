@@ -5,6 +5,8 @@ import type { EventCreateI, EventI } from '@/features/events/model'
 import type { EditionCreateI, EditionI } from '@/features/editions/model'
 import { createEventFn, getOwnEventsFn } from '@/features/events/api'
 import { createEditionFn, getAllEditionsFn } from '@/features/editions/api'
+import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
+import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
 import {
   formatDateForDatetimeLocal,
   parseDatetimeLocal,
@@ -75,6 +77,39 @@ function RouteComponent() {
   const [editions, setEditions] = useState<EditionI[]>([])
   const [editionError, setEditionError] = useState<string | null>(null)
   const [editionCreated, setEditionCreated] = useState<boolean>(false);
+  const [selectedEditionId, setSelectedEditionId] = useState<string | null>(null);
+
+  // activities-related state
+  const [activityForm, setActivityForm] = useState<ActivityCreateI>({
+    title: '',
+    description: undefined,
+    location: '',
+    starts_at: formatDateForDatetimeLocal(new Date()),
+    ends_at: formatDateForDatetimeLocal(
+      new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour after start
+    ),
+    presenter_name: undefined,
+    token_cost: 0,
+    has_capacity: false,
+    capacity: 0,
+    difficulty: 'no_prerequisites',
+  })
+  const [activities, setActivities] = useState<ActivityI[]>([])
+  const [activityError, setActivityError] = useState<string | null>(null)
+  const [activityCreated, setActivityCreated] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const fetchActivities = async () => {
+      if (selectedEventId && selectedEditionId) {
+        const acts = await getAllAdminActivitiesFn(selectedEventId, selectedEditionId);
+        setActivities(acts);
+        setActivityCreated(false); // Reset after fetching
+      } else {
+        setActivities([]);
+      }
+    };
+    fetchActivities();
+  }, [selectedEventId, selectedEditionId, activityCreated]);
 
   React.useEffect(() => {
     const fetchEditions = async () => {
@@ -176,6 +211,58 @@ function RouteComponent() {
         errorMessage = (err as { message: string }).message;
       }
       setEditionError(errorMessage);
+    }
+  }
+
+  const handleChangeActivity = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement
+    const { name, value, type } = target
+    const checked = type === 'checkbox' ? (target as HTMLInputElement).checked : undefined
+
+    setActivityForm((f) => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value,
+    } as unknown as ActivityCreateI))
+  }
+
+  const handleActivitySubmit = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault()
+    setActivityError(null)
+    if (!selectedEventId) {
+      setActivityError('pick an event first')
+      return
+    }
+    if (!selectedEditionId) {
+      setActivityError('pick an edition first')
+      return
+    }
+
+    try {
+      const data = {
+        ...activityForm,
+        starts_at: parseDatetimeLocal(activityForm.starts_at).toISOString(),
+        ends_at: parseDatetimeLocal(activityForm.ends_at).toISOString(),
+        token_cost: Number(activityForm.token_cost),
+        capacity: Number(activityForm.capacity),
+      }
+      const res = await createActivityFn(data, selectedEventId, selectedEditionId)
+      if (res.success) {
+        setActivityCreated(true); // Trigger re-fetch via useEffect
+      } else {
+        throw new Error(res.message)
+      }
+    } catch (err: unknown) {
+      let errorMessage = 'request failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        errorMessage = (err as { message: string }).message;
+      }
+      setActivityError(errorMessage);
     }
   }
 
@@ -468,26 +555,187 @@ function RouteComponent() {
             <ul className="list-disc pl-5">
               {editions.map((ed) => (
                 <li key={ed.id} className="mb-2 p-2 border rounded-md">
-                  <strong>ID:</strong> {ed.id}<br />
-                  <strong>Edition Name:</strong> {ed.edition_name} ({ed.type})<br />
-                  <strong>Tagline:</strong> {ed.tagline || 'N/A'}<br />
-                  <strong>Description:</strong> {ed.description || 'N/A'}<br />
-                  <strong>Status:</strong> {ed.status}<br />
-                  <strong>Monetary Type:</strong> {ed.monetary_type}<br />
-                  <strong>Registration Opens:</strong> {ed.registration_opens_at ? `${new Date(ed.registration_opens_at).toLocaleDateString()} ${new Date(ed.registration_opens_at).toLocaleTimeString()}` : 'N/A'}<br />
-                  <strong>Registration Closes:</strong> {ed.registration_closes_at ? `${new Date(ed.registration_closes_at).toLocaleDateString()} ${new Date(ed.registration_closes_at).toLocaleTimeString()}` : 'N/A'}<br />
-                  <strong>Starts:</strong> {new Date(ed.starts_at).toLocaleDateString()} {new Date(ed.starts_at).toLocaleTimeString()}<br />
-                  <strong>Ends:</strong> {new Date(ed.ends_at).toLocaleDateString()} {new Date(ed.ends_at).toLocaleTimeString()}<br />
-                  <strong>Timezone:</strong> {ed.timezone}<br />
-                  <strong>Location Name:</strong> {ed.location_name}<br />
-                  <strong>Location Address:</strong> {ed.location_address}<br />
-                  <strong>Contact Email:</strong> {ed.contact_email || 'N/A'}<br />
-                  <strong>Contact Phone:</strong> {ed.contact_phone || 'N/A'}<br />
-                  <strong>Organizer Name:</strong> {ed.organizer_name || 'N/A'}<br />
-                  <strong>Created By:</strong> {ed.created_by}<br />
-                  <strong>Created At:</strong> {new Date(ed.created_at).toLocaleDateString()} {new Date(ed.created_at).toLocaleTimeString()}<br />
-                  <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br />
-                  <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                  <button
+                    className="text-blue-600 underline text-left"
+                    onClick={() => {
+                      setSelectedEditionId(ed.id)
+                    }}
+                  >
+                    <strong>ID:</strong> {ed.id}<br />
+                    <strong>Edition Name:</strong> {ed.edition_name} ({ed.type})<br />
+                    <strong>Tagline:</strong> {ed.tagline || 'N/A'}<br />
+                    <strong>Description:</strong> {ed.description || 'N/A'}<br />
+                    <strong>Status:</strong> {ed.status}<br />
+                    <strong>Monetary Type:</strong> {ed.monetary_type}<br />
+                    <strong>Registration Opens:</strong> {ed.registration_opens_at ? `${new Date(ed.registration_opens_at).toLocaleDateString()} ${new Date(ed.registration_opens_at).toLocaleTimeString()}` : 'N/A'}<br />
+                    <strong>Registration Closes:</strong> {ed.registration_closes_at ? `${new Date(ed.registration_closes_at).toLocaleDateString()} ${new Date(ed.registration_closes_at).toLocaleTimeString()}` : 'N/A'}<br />
+                    <strong>Starts:</strong> {new Date(ed.starts_at).toLocaleDateString()} {new Date(ed.starts_at).toLocaleTimeString()}<br />
+                    <strong>Ends:</strong> {new Date(ed.ends_at).toLocaleDateString()} {new Date(ed.ends_at).toLocaleTimeString()}<br />
+                    <strong>Timezone:</strong> {ed.timezone}<br />
+                    <strong>Location Name:</strong> {ed.location_name}<br />
+                    <strong>Location Address:</strong> {ed.location_address}<br />
+                    <strong>Contact Email:</strong> {ed.contact_email || 'N/A'}<br />
+                    <strong>Contact Phone:</strong> {ed.contact_phone || 'N/A'}<br />
+                    <strong>Organizer Name:</strong> {ed.organizer_name || 'N/A'}<br />
+                    <strong>Created By:</strong> {ed.created_by}<br />
+                    <strong>Created At:</strong> {new Date(ed.created_at).toLocaleDateString()} {new Date(ed.created_at).toLocaleTimeString()}<br />
+                    <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br />
+                    <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* activity creation/listing */}
+      <div className="w-full max-w-md mt-8">
+        <h4 className="text-lg font-semibold mb-2">
+          Create an activity {selectedEvent && selectedEditionId ? `for ${selectedEvent.name} edition ${selectedEditionId}` : ''}
+        </h4>
+        {selectedEventId && selectedEditionId ? (
+          <form onSubmit={handleActivitySubmit} className="flex flex-col gap-4">
+            <label>
+              Title*
+              <input
+                type="text"
+                name="title"
+                value={activityForm.title}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                name="description"
+                value={activityForm.description ?? ''}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Location*
+              <input
+                type="text"
+                name="location"
+                value={activityForm.location}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Starts At*
+              <input
+                type="datetime-local"
+                name="starts_at"
+                value={activityForm.starts_at}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Ends At*
+              <input
+                type="datetime-local"
+                name="ends_at"
+                value={activityForm.ends_at}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Presenter Name
+              <input
+                type="text"
+                name="presenter_name"
+                value={activityForm.presenter_name ?? ''}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label>
+              Token Cost*
+              <input
+                type="number"
+                name="token_cost"
+                value={activityForm.token_cost}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              />
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="has_capacity"
+                checked={activityForm.has_capacity}
+                onChange={handleChangeActivity}
+              />
+              Has Capacity?
+            </label>
+            {activityForm.has_capacity && (
+              <label>
+                Capacity*
+                <input
+                  type="number"
+                  name="capacity"
+                  value={activityForm.capacity}
+                  onChange={handleChangeActivity}
+                  className="border p-1"
+                />
+              </label>
+            )}
+            <label>
+              Difficulty*
+              <select
+                name="difficulty"
+                value={activityForm.difficulty}
+                onChange={handleChangeActivity}
+                className="border p-1"
+              >
+                <option value="no_prerequisites">No Prerequisites</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="bg-purple-600 text-white py-1 px-3 rounded"
+            >
+              Create Activity
+            </button>
+          </form>
+        ) : (
+          <p className="text-sm text-gray-600">Select an event and an edition above to create activities</p>
+        )}
+        {activityError && <div className="text-red-600 mt-2">{activityError}</div>}
+
+        {selectedEventId && selectedEditionId && (
+          <div className="mt-4">
+            <h5 className="font-semibold">Activities for selected edition</h5>
+            <ul className="list-disc pl-5">
+              {activities.map((act) => (
+                <li key={act.id} className="mb-2 p-2 border rounded-md">
+                  <strong>ID:</strong> {act.id}<br />
+                  <strong>Title:</strong> {act.title}<br />
+                  <strong>Description:</strong> {act.description || 'N/A'}<br />
+                  <strong>Location:</strong> {act.location}<br />
+                  <strong>Starts:</strong> {new Date(act.starts_at).toLocaleDateString()} {new Date(act.starts_at).toLocaleTimeString()}<br />
+                  <strong>Ends:</strong> {new Date(act.ends_at).toLocaleDateString()} {new Date(act.ends_at).toLocaleTimeString()}<br />
+                  <strong>Presenter:</strong> {act.presenter_name || 'N/A'}<br />
+                  <strong>Token Cost:</strong> {act.token_cost}<br />
+                  <strong>Has Capacity:</strong> {act.has_capacity ? 'Yes' : 'No'}<br />
+                  <strong>Capacity:</strong> {act.capacity}<br />
+                  <strong>Remaining Capacity:</strong> {act.remaining_capacity}<br />
+                  <strong>Difficulty:</strong> {act.difficulty}<br />
+                  <strong>Status:</strong> {act.status}<br />
+                  <strong>Created By:</strong> {act.created_by}<br />
+                  <strong>Created At:</strong> {new Date(act.created_at).toLocaleDateString()} {new Date(act.created_at).toLocaleTimeString()}<br />
+                  <strong>Updated At:</strong> {new Date(act.updated_at).toLocaleDateString()} {new Date(act.updated_at).toLocaleTimeString()}<br />
+                  <strong>Deleted At:</strong> {act.deleted_at ? `${new Date(act.deleted_at).toLocaleDateString()} ${new Date(act.deleted_at).toLocaleTimeString()}` : 'N/A'}
                 </li>
               ))}
             </ul>
