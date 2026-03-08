@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/hibiken/asynq"
+	"github.com/spf13/viper"
 )
 
 var ErrReservationFailed = errors.New("reservation_failed")
@@ -114,7 +115,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		intent, err = uc.payments.CreateIntent(ctx, paymentsSDK.CreateIntentRequest{
 			Amount:   int64(subtotal),
 			Currency: "brl",
-			Provider: "mock",
+			Provider: viper.GetString("TRIEPAYMENTS_PROVIDER"),
 			Metadata: json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
 		})
 		if err != nil {
@@ -202,9 +203,44 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		Payload: dtos.ReservationConfirmedPayload{
 			SessionID: sessionID,
 			ExpiresAt: expiresAt,
-			IntentID:  paymentIntentID,
 		},
 	})
+
+	// Wait for card details from the frontend
+	var payMsg sockets.WSMessage
+	if err = conn.ReadJSON(&payMsg); err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment"})
+		return nil
+	}
+
+	if payMsg.Type != "submit_payment" {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
+		return nil
+	}
+
+	payloadBytes, err := json.Marshal(payMsg.Payload)
+	if err != nil {
+		return err
+	}
+
+	var payReq dtos.SubmitPaymentPayload
+	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
+		return nil
+	}
+
+	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing", Payload: nil})
+
+	_, err = uc.payments.PayIntent(ctx, paymentIntentID, paymentsSDK.PayIntentRequest{
+		CardToken:       payReq.CardToken,
+		PaymentMethodID: payReq.PaymentMethodID,
+		Installments:    payReq.Installments,
+		PayerEmail:      sub.Email,
+	})
+	if err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": err.Error()}})
+		return nil
+	}
 
 	return nil
 }

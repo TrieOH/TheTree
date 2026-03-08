@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 	"univents/internal/commerce/application/product/commands"
 	"univents/internal/commerce/application/product/queries"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
+	"univents/internal/shared/authz"
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
@@ -15,6 +17,7 @@ import (
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Handler struct {
@@ -281,7 +284,20 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
+	// Extract the otel span from the request context and attach to a fresh background context
+	spanCtx := trace.SpanFromContext(r.Context()).SpanContext()
+	baseCtx := trace.ContextWithSpanContext(context.Background(), spanCtx)
+
+	// Carry subject over
+	subject, err := authz.RequireSubject(r.Context())
+	if err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "unauthorized"})
+		return
+	}
+	baseCtx = authz.WithSubject(baseCtx, subject)
+
+	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+time.Second*1)
+	defer cancel()
 	if err := handler.commands.Purchase(ctx, conn, req, editionID); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: err.Error()})
 		return

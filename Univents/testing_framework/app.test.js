@@ -291,7 +291,7 @@ describe('purchase', () => {
         )
 
         await new Promise((resolve, reject) => {
-            let intentID = null
+            let reserved = false
 
             ws.on("open", () => {
                 ws.send(JSON.stringify({
@@ -312,11 +312,15 @@ describe('purchase', () => {
                 if (msg.type === "error") return reject(new Error(msg.payload))
 
                 if (msg.type === "reservation_confirmed") {
-                    intentID = msg.payload.intent_id
-                    await post(null, "/webhooks/mock", {
-                        intent_id: intentID,
-                        event: "payment.succeeded"
-                    }, process.env.TRIEPAYMENTS_URL)
+                    reserved = true
+                    ws.send(JSON.stringify({
+                        type: "submit_payment",
+                        payload: {
+                            card_token: "sandbox",
+                            payment_method_id: "sandbox",
+                            installments: 1
+                        }
+                    }))
                 }
 
                 if (msg.type === "order_confirmed") {
@@ -326,7 +330,7 @@ describe('purchase', () => {
 
             ws.on("error", reject)
             ws.on("close", () => {
-                if (!intentID) reject(new Error("ws closed before reservation_confirmed"))
+                if (!reserved) reject(new Error("ws closed before reservation_confirmed"))
             })
         })
 

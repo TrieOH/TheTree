@@ -27,10 +27,15 @@ type BuyRequest struct {
 type ReservationConfirmedPayload struct {
 	SessionID uuid.UUID `json:"session_id"`
 	ExpiresAt time.Time `json:"expires_at"`
-	IntentID  string    `json:"intent_id"`
 }
 
 type ConfirmPaymentRequest struct {
 	SessionID       uuid.UUID `json:"session_id"`
 	PaymentIntentID string    `json:"payment_intent_id"`
+}
+
+type SubmitPaymentPayload struct {
+	CardToken       string `json:"card_token"`
+	PaymentMethodID string `json:"payment_method_id"`
+	Installments    int    `json:"installments"`
 }
