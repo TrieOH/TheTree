@@ -1,19 +1,33 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react'
 import { useState } from 'react';
 import { motion } from "motion/react";
 import { toast } from 'sonner';
+import { requireGuest } from '#/features/auths/lib/route-guard';
+import z from 'zod';
 
-export const Route = createFileRoute('/')({ component: App })
+const authSearchSchema = z.object({
+  redirect: z.string().optional().catch(''),
+})
+
+export const Route = createFileRoute('/')({
+  validateSearch: (search) => authSearchSchema.parse(search),
+  beforeLoad: (ctx) => {
+    requireGuest(ctx)
+  },
+  component: App,
+})
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const search = useSearch({ from: '/' }); // Not needed just for example
 
   const handleLoginSuccess = async () => {
     toast.success("Login successful!")
-    // await navigate({ to: "" })
+    const destination = search.redirect || '/admin'
+    await navigate({ to: destination, replace: true })
   }
 
   const handleSignUpSuccess = async () => {
