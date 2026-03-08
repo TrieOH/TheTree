@@ -113,6 +113,34 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	resp.Created().WithData(out).Send(w)
 }
 
+// ListAdmin godoc
+// @Summary List editions for an event including draft ones
+// @Description Retrieves a list of editions for a specific event and its draft editions if you have editions:read.
+// @Tags editions
+// @Accept json
+// @Produce json
+// @Param event_id path string true "Event ID"
+// @Success 200 {object} object "Editions retrieved successfully"
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/admin [get]
+func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
+	eventID, rs := validation.GetUUID(r, "event_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	out, err := handler.queries.ListEditionsAdmin(ctx, eventID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.Created().WithData(out).Send(w)
+}
+
 // Announce godoc
 // @Summary Announce an edition
 // @Description Announces an edition making it publicly available.

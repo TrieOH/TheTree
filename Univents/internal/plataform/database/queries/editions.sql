@@ -79,6 +79,11 @@ SELECT *
 FROM editions
 WHERE event_id = $1 AND status != 'draft';
 
+-- name: ListEditionsAdmin :many
+SELECT *
+FROM editions
+WHERE event_id = $1;
+
 -- name: GetEditionByID :one
 SELECT *
 FROM editions

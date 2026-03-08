@@ -20,6 +20,7 @@ type EditionsRepository interface {
 	Create(ctx context.Context, toCreate *Edition) (*Edition, error)
 	GetByID(ctx context.Context, editionID uuid.UUID) (*Edition, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Edition, error)
+	ListAdmin(ctx context.Context, editionID uuid.UUID) ([]Edition, error)
 	Announce(ctx context.Context, editionID uuid.UUID) error
 	Open(ctx context.Context, editionID uuid.UUID) error
 	Start(ctx context.Context, editionID uuid.UUID) error

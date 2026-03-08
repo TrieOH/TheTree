@@ -58,6 +58,7 @@ func registerEditionsRoutes(
 	r.Get("/events/{event_id}/editions", h.List)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
+		r.Get("/events/{event_id}/editions/admin", h.ListAdmin)
 		r.Post("/events/{event_id}/editions", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/announce", h.Announce)
 	})

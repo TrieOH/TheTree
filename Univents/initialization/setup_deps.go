@@ -128,6 +128,7 @@ func SetupGoAuth(app *UniventsApp) {
 				AttendanceMark,
 				EventsPublish,
 				EditionsCreate,
+				EditionsRead,
 				EditionsAnnounce,
 				ActivitiesCreate,
 				ActivitiesPublish,
@@ -189,6 +190,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#10b981",
 			"icon":  "Mail",
+		},
+	}
+	EditionsRead = goauth.PermissionDefinition{
+		Object: "editions",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
 		},
 	}
 	ActivitiesCreate = goauth.PermissionDefinition{

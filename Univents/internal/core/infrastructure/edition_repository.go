@@ -136,6 +136,22 @@ func (repo *editionsRepo) List(ctx context.Context, eventID uuid.UUID) ([]domain
 	return outEditions, nil
 }
 
+func (repo *editionsRepo) ListAdmin(ctx context.Context, eventID uuid.UUID) ([]domain.Edition, error) {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.ListAdmin")
+	defer span.End()
+
+	sqlcEditions, err := repo.queries(ctx).ListEditionsAdmin(ctx, eventID)
+	if err != nil {
+		return nil, errx.FromDB(err, "edition")
+	}
+
+	outEditions := make([]domain.Edition, 0, len(sqlcEditions))
+	for _, sqlcEdition := range sqlcEditions {
+		outEditions = append(outEditions, *mapEditionFromDB(&sqlcEdition))
+	}
+	return outEditions, nil
+}
+
 func (repo *editionsRepo) Announce(ctx context.Context, editionID uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Announce")
 	defer span.End()
