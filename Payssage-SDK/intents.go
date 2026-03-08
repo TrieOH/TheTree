@@ -44,3 +44,18 @@ func (c *Client) CancelIntent(ctx context.Context, intentID string) (*Intent, er
 	}
 	return &out, nil
 }
+
+type PayIntentRequest struct {
+	CardToken       string `json:"card_token"`
+	PaymentMethodID string `json:"payment_method_id"`
+	Installments    int    `json:"installments"`
+	PayerEmail      string `json:"payer_email"`
+}
+
+func (c *Client) PayIntent(ctx context.Context, intentID string, req PayIntentRequest) (*Intent, error) {
+	var out Intent
+	if err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/pay", intentID), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

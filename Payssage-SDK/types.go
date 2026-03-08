@@ -47,16 +47,17 @@ const (
 )
 
 type Intent struct {
-	ID           string          `json:"id"`
-	WorkspaceID  string          `json:"workspace_id"`
-	Amount       int64           `json:"amount"`
-	Currency     string          `json:"currency"`
-	Status       IntentStatus    `json:"status"`
-	ClientSecret string          `json:"client_secret"`
-	Provider     string          `json:"provider"`
-	Metadata     json.RawMessage `json:"metadata"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
+	ID                string          `json:"id"`
+	WorkspaceID       string          `json:"workspace_id"`
+	Amount            int64           `json:"amount"`
+	Currency          string          `json:"currency"`
+	Status            IntentStatus    `json:"status"`
+	ClientSecret      string          `json:"client_secret"`
+	Provider          string          `json:"provider"`
+	ProviderPaymentID *string         `json:"provider_payment_id"`
+	Metadata          json.RawMessage `json:"metadata"`
+	CreatedAt         time.Time       `json:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at"`
 }
 
 type WebhookEndpoint struct {
@@ -89,3 +90,17 @@ const (
 	EventPaymentFailed    = "payment.failed"
 	EventPaymentCancelled = "payment.cancelled"
 )
+
+type MarketplaceConfig struct {
+	ID           string    `json:"id"`
+	WorkspaceID  string    `json:"workspace_id"`
+	CredentialID string    `json:"credential_id"`
+	FeeBps       int       `json:"fee_bps"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type SetMarketplaceConfigRequest struct {
+	CredentialID string `json:"credential_id"`
+	FeeBps       int    `json:"fee_bps"`
+}
