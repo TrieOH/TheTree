@@ -22,6 +22,7 @@ export interface PropsI<T> {
   defaultValues?: DefaultValues<T>;
   fields: FieldDefinition<T>[];
   schema: ZodType<T>;
+  disabled?: boolean;
 }
 
 export default function FormModal<T extends FieldValues>({
@@ -34,7 +35,8 @@ export default function FormModal<T extends FieldValues>({
   fields,
   schema,
   defaultValues,
-  buttonTitle
+  buttonTitle,
+  disabled = false
 }: PropsI<T>) {
 
   const { register, reset, handleSubmit, formState: { errors } } = useForm<T>({
@@ -59,7 +61,7 @@ export default function FormModal<T extends FieldValues>({
           const fieldName = field.name as Path<T>;
           const error = errors[fieldName];
           return (
-            <div className="space-y-2">
+            <div className="space-y-2" key={"t_" + field.name.toString()}>
               <Label
                 htmlFor={fieldName}
                 className="text-[10px] font-black uppercase tracking-[0.2em]"
@@ -81,10 +83,10 @@ export default function FormModal<T extends FieldValues>({
               {error && (
                 <span className={cn(
                   "text-[10px] font-bold text-destructive uppercase",
-                  "tracking-widest flex items-center gap-1"
+                  "tracking-widest flex items-start gap-1"
                 )}>
                   <AlertCircle className="w-3 h-3" />
-                  {error.message?.toString()}
+                  <span className="-mt-px">{error.message?.toString()}</span>
                 </span>
               )}
             </div>
@@ -93,6 +95,7 @@ export default function FormModal<T extends FieldValues>({
         <div className="flex justify-end pt-2">
           <Button
             type="submit"
+            disabled={disabled}
             className="w-full rounded-none font-black uppercase tracking-widest transition-all h-12"
           >
             {buttonTitle}

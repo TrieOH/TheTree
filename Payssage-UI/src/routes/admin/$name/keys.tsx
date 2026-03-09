@@ -5,11 +5,11 @@ import { Card, CardContent } from '#/shared/ui/shadcn/card'
 import { Badge } from '#/shared/ui/shadcn/badge'
 import { ConfirmModal } from '#/widgets/modal/modal'
 import { apiKeyCreateSchema } from '#/features/keys/model'
-import * as React from 'react'
 import { toast } from 'sonner'
 import { cn } from '#/shared/lib/utils'
 import FormModal from '#/widgets/modal/form-modal'
 import type { ApiKeyCreateI, ApiKeyI } from '#/features/keys/model'
+import { useState } from 'react'
 
 export const Route = createFileRoute('/admin/$name/keys')({
   component: RouteComponent,
@@ -33,11 +33,11 @@ const MOCK_KEYS: ApiKeyI[] = [
 ]
 
 function RouteComponent() {
-  const [keys, setKeys] = React.useState(MOCK_KEYS)
-  const [copiedId, setCopiedId] = React.useState<string | null>(null)
-  const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [deleteKeyId, setDeleteKeyId] = React.useState<string | null>(null)
-  const [revokeKeyId, setRevokeKeyId] = React.useState<string | null>(null)
+  const [keys, setKeys] = useState(MOCK_KEYS)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null)
+  const [revokeKeyId, setRevokeKeyId] = useState<string | null>(null)
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
