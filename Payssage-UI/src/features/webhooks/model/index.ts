@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const webhookCreateSchema = z.object({
-  url: z.url()
+  url: z.url({ error: "Invalid URL format" })
 });
 
 export type WebhookCreateI = z.infer<typeof webhookCreateSchema>;
