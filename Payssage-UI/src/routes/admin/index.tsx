@@ -1,13 +1,8 @@
-import { requireAuth } from '#/features/auths/lib/route-guard'
 import { createFileRoute } from '@tanstack/react-router'
-import { AdminLayout } from '#/features/admin/ui/admin-layout'
 import { WorkspaceList } from '#/features/workspaces/ui/workspace-list'
 import type { WorkspaceI } from '#/features/workspaces/model'
 
 export const Route = createFileRoute('/admin/')({
-  beforeLoad: (ctx) => {
-    requireAuth(ctx);
-  },
   component: RouteComponent,
 })
 
@@ -34,10 +29,8 @@ const MOCK_WORKSPACES: WorkspaceI[] = [
 
 function RouteComponent() {
   return (
-    <AdminLayout>
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <WorkspaceList workspaces={MOCK_WORKSPACES} />
-      </div>
-    </AdminLayout>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <WorkspaceList workspaces={MOCK_WORKSPACES} />
+    </div>
   )
 }
