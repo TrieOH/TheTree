@@ -14,6 +14,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TestAdminRouteImport } from './routes/test/admin'
+import { Route as AdminWebhooksRouteImport } from './routes/admin/webhooks'
+import { Route as AdminKeysRouteImport } from './routes/admin/keys'
 
 const TestRoute = TestRouteImport.update({
   id: '/test',
@@ -40,16 +42,30 @@ const TestAdminRoute = TestAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => TestRoute,
 } as any)
+const AdminWebhooksRoute = AdminWebhooksRouteImport.update({
+  id: '/admin/webhooks',
+  path: '/admin/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminKeysRoute = AdminKeysRouteImport.update({
+  id: '/admin/keys',
+  path: '/admin/keys',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/test': typeof TestRouteWithChildren
+  '/admin/keys': typeof AdminKeysRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/test/admin': typeof TestAdminRoute
   '/admin/': typeof AdminIndexRoute
   '/test/': typeof TestIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/keys': typeof AdminKeysRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/test/admin': typeof TestAdminRoute
   '/admin': typeof AdminIndexRoute
   '/test': typeof TestIndexRoute
@@ -58,21 +74,46 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/test': typeof TestRouteWithChildren
+  '/admin/keys': typeof AdminKeysRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/test/admin': typeof TestAdminRoute
   '/admin/': typeof AdminIndexRoute
   '/test/': typeof TestIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/test' | '/test/admin' | '/admin/' | '/test/'
+  fullPaths:
+    | '/'
+    | '/test'
+    | '/admin/keys'
+    | '/admin/webhooks'
+    | '/test/admin'
+    | '/admin/'
+    | '/test/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/test/admin' | '/admin' | '/test'
-  id: '__root__' | '/' | '/test' | '/test/admin' | '/admin/' | '/test/'
+  to:
+    | '/'
+    | '/admin/keys'
+    | '/admin/webhooks'
+    | '/test/admin'
+    | '/admin'
+    | '/test'
+  id:
+    | '__root__'
+    | '/'
+    | '/test'
+    | '/admin/keys'
+    | '/admin/webhooks'
+    | '/test/admin'
+    | '/admin/'
+    | '/test/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TestRoute: typeof TestRouteWithChildren
+  AdminKeysRoute: typeof AdminKeysRoute
+  AdminWebhooksRoute: typeof AdminWebhooksRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -113,6 +154,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestAdminRouteImport
       parentRoute: typeof TestRoute
     }
+    '/admin/webhooks': {
+      id: '/admin/webhooks'
+      path: '/admin/webhooks'
+      fullPath: '/admin/webhooks'
+      preLoaderRoute: typeof AdminWebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/keys': {
+      id: '/admin/keys'
+      path: '/admin/keys'
+      fullPath: '/admin/keys'
+      preLoaderRoute: typeof AdminKeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +186,8 @@ const TestRouteWithChildren = TestRoute._addFileChildren(TestRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TestRoute: TestRouteWithChildren,
+  AdminKeysRoute: AdminKeysRoute,
+  AdminWebhooksRoute: AdminWebhooksRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
