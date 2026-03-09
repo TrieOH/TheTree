@@ -47,14 +47,14 @@ export const allWorkspaceApiKeysQueryOptions = (workspaceName: string) => {
 
 
 /**
- * Delete an API key for the specified workspace on the server.
+ * Revoke an API key for the specified workspace on the server.
+ * @param apiKeyId - The ID of the API key to revoke.
  * @param workspaceName - The workspace name
- * @param apiKeyId - The API key ID
  * @returns A promise that resolves to the API response(void).
  */
-export const deleteApiKeyOnWorkspaceFn = createClientOnlyFn((
-  workspaceName: string,
-  apiKeyId: string
+export const revokeApiKeyOnWorkspaceFn = createClientOnlyFn((
+  apiKeyId: string,
+  workspaceName: string
 ) => {
   return authFetcher.delete<void>(
     `/workspaces/${workspaceName}/keys/${apiKeyId}`
