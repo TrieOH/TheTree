@@ -1,16 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Key, Plus, Copy, Trash2, Check, AlertCircle, ShieldOff } from 'lucide-react'
+import { Key, Plus, Copy, Trash2, Check, ShieldOff } from 'lucide-react'
 import { Button } from '#/shared/ui/shadcn/button'
 import { Card, CardContent } from '#/shared/ui/shadcn/card'
 import { Badge } from '#/shared/ui/shadcn/badge'
-import { Input } from '#/shared/ui/shadcn/input'
-import { Label } from '#/shared/ui/shadcn/label'
-import { Modal, ConfirmModal } from '#/widgets/modal/modal'
-import type { ApiKeyI } from '#/features/keys/model'
+import { ConfirmModal } from '#/widgets/modal/modal'
+import { apiKeyCreateSchema } from '#/features/keys/model'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { useForm } from 'react-hook-form'
 import { cn } from '#/shared/lib/utils'
+import FormModal from '#/widgets/modal/form-modal'
+import type { ApiKeyCreateI, ApiKeyI } from '#/features/keys/model'
 
 export const Route = createFileRoute('/admin/$name/keys')({
   component: RouteComponent,
@@ -33,18 +32,12 @@ const MOCK_KEYS: ApiKeyI[] = [
   }
 ]
 
-interface CreateKeyFormData {
-  name: string
-}
-
 function RouteComponent() {
   const [keys, setKeys] = React.useState(MOCK_KEYS)
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [deleteKeyId, setDeleteKeyId] = React.useState<string | null>(null)
   const [revokeKeyId, setRevokeKeyId] = React.useState<string | null>(null)
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateKeyFormData>()
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
@@ -53,7 +46,7 @@ function RouteComponent() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
-  const onCreateSubmit = (data: CreateKeyFormData) => {
+  const onCreateSubmit = (data: ApiKeyCreateI) => {
     const newKey: ApiKeyI = {
       id: `key_${Math.random().toString(36).substr(2, 7)}`,
       name: data.name,
@@ -64,7 +57,6 @@ function RouteComponent() {
 
     setKeys([newKey, ...keys])
     setIsCreateOpen(false)
-    reset()
     toast.success('API Key created successfully')
   }
 
@@ -185,41 +177,23 @@ function RouteComponent() {
       </div>
 
       {/* Create Modal */}
-      <Modal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+      <FormModal<ApiKeyCreateI>
         title="Create API Key"
         description="Give your key a name to identify it later."
-      >
-        <form id="create-key-form" onSubmit={handleSubmit(onCreateSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-[0.2em]">Key Name</Label>
-            <Input
-              id="name"
-              placeholder="e.g. Production Mobile App"
-              className={cn(
-                "rounded-none border-border focus-visible:ring-0 focus-visible:border-primary transition-colors font-bold",
-                errors.name && "border-destructive"
-              )}
-              {...register('name', { required: 'Name is required', minLength: { value: 3, message: 'Too short' } })}
-            />
-            {errors.name && (
-              <span className="text-[10px] font-bold text-destructive uppercase tracking-widest flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {errors.name.message}
-              </span>
-            )}
-          </div>
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              className="w-full rounded-none font-black uppercase tracking-widest transition-all h-12"
-            >
-              Generate Key
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        buttonTitle="Generate Key"
+        schema={apiKeyCreateSchema}
+        formId="create-key-form"
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSubmit={onCreateSubmit}
+        fields={[
+          {
+            name: "name",
+            label: "e.g. Production Mobile App",
+            type: "text",
+          }
+        ]}
+      />
 
       {/* Revoke Confirmation Modal */}
       <ConfirmModal
@@ -232,7 +206,7 @@ function RouteComponent() {
         variant="destructive"
       />
 
-      {/* Delete Confirmation Modal (Kept but unreachable as button is disabled) */}
+      {/* Delete Confirmation Modal (Kept but unreachable as button and functionally now is disabled/unimplemented) */}
       <ConfirmModal
         isOpen={!!deleteKeyId}
         onClose={() => setDeleteKeyId(null)}
