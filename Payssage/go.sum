@@ -3,8 +3,8 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
-github.com/MintzyG/FastUtilitiesNet v0.5.4 h1:7BXvnEYFtF16wr5zFli6WEE8ahmDseWMxCY1MbuPVUY=
-github.com/MintzyG/FastUtilitiesNet v0.5.4/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
+github.com/MintzyG/FastUtilitiesNet v0.5.5 h1:yRFpHs15r01z1DMVZRcdvu8NFDysV6SP/0wwWi2KAoo=
+github.com/MintzyG/FastUtilitiesNet v0.5.5/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/MintzyG/fail/v3 v3.2.0 h1:tAyTfiCl2ufcSvi3w8WHHf/iKX16mcfRqdXULHDfD5s=
 github.com/MintzyG/fail/v3 v3.2.0/go.mod h1:Nr7t8S5qnwL9np0+gCl3s6BgfcXW5nDOwomu/VVgjrw=
 github.com/TrieOH/goauth-sdk-go v0.4.13 h1:SI3Hd/26zYECI4QoNy5PMVpvWFJWPAGKdD0cDHZjwuQ=
