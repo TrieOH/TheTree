@@ -5,11 +5,11 @@ import {
   LogOut,
 } from 'lucide-react'
 import { Button } from '#/shared/ui/shadcn/button'
-import { useAuth } from '@trieoh/node-auth-sdk/react'
+import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
 import { cn } from '#/shared/lib/utils'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { auth } = useAuth()
+  const { handleLogout } = useAuthActions()
 
   return (
     <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
@@ -36,7 +36,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 "hover:text-destructive hover:bg-destructive/5 font-bold uppercase tracking-wider",
                 "rounded-sm cursor-pointer py-4"
               )}
-              onClick={() => auth.logout()}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -47,7 +47,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="icon"
               className="sm:hidden text-muted-foreground"
-              onClick={() => auth.logout()}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4" />
             </Button>

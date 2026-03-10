@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { createFileRoute, useSearch } from '@tanstack/react-router'
 import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react'
 import { useState } from 'react';
 import { motion } from "motion/react";
 import { toast } from 'sonner';
 import { requireGuest } from '#/features/auths/lib/route-guard';
 import z from 'zod';
+import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
@@ -21,13 +22,11 @@ export const Route = createFileRoute('/')({
 function App() {
   const [isLogin, setIsLogin] = useState(true);
 
-  const navigate = useNavigate();
-  const search = useSearch({ from: '/' }); // Not needed just for example
+  const search = useSearch({ from: '/' });
+  const { handleLoginSuccess } = useAuthActions();
 
-  const handleLoginSuccess = async () => {
-    toast.success("Login successful!")
-    const destination = search.redirect || '/admin'
-    await navigate({ to: destination, replace: true })
+  const onLoginSuccess = async () => {
+    await handleLoginSuccess(search.redirect)
   }
 
   const handleSignUpSuccess = async () => {
@@ -51,7 +50,7 @@ function App() {
       {isLogin ? (
         <SignIn
           signUpRedirect={() => setIsLogin(false)}
-          onSuccess={handleLoginSuccess}
+          onSuccess={onLoginSuccess}
           onFailed={handleFailure}
         />
       ) : (
