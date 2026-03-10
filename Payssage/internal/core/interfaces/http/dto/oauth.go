@@ -35,10 +35,6 @@ type ConnectSellerRequest struct {
 	FinalRedirectURL string `json:"final_redirect_url" validate:"required,url"`
 }
 
-type CompleteOAuthRequest struct {
-	FinalRedirectURL string `json:"final_redirect_url" validate:"required,url"`
-}
-
 type ProviderCredentialResponse struct {
 	ID          uuid.UUID  `json:"id"`
 	WorkspaceID uuid.UUID  `json:"workspace_id"`

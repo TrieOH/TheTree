@@ -1,8 +1,6 @@
 package oauth_handler
 
 import (
-	"TriePayments/internal/core/interfaces/http/dto"
-	"TriePayments/internal/shared/validation"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -16,7 +14,7 @@ import (
 // @Param provider path string true "Provider name (e.g. mercadopago)"
 // @Param code query string true "Authorization code from provider"
 // @Param state query string true "State token"
-// @Success 200 {object} dto.CompleteOAuthRequest
+// @Param redirect_uri query string true "Redirect URI"
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /oauth/{provider}/callback [get]
@@ -24,19 +22,14 @@ func (h *Handler) CompleteOAuth(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
-
-	var req dto.CompleteOAuthRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
+	redirectURI := r.URL.Query().Get("redirect_uri")
 
 	if code == "" || state == "" {
 		resp.BadRequest("code and state are required").Send(w)
 		return
 	}
 
-	finalURL, err := h.commands.CompleteOAuth(r.Context(), provider, state, code, req.FinalRedirectURL)
+	finalURL, err := h.commands.CompleteOAuth(r.Context(), provider, state, code, redirectURI)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
