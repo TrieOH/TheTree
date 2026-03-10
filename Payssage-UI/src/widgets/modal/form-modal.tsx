@@ -66,7 +66,7 @@ export default function FormModal<T extends FieldValues>({
                 htmlFor={fieldName}
                 className="text-[10px] font-black uppercase tracking-[0.2em]"
               >
-                {fieldName}
+                {field.label}
               </Label>
               {/* Now only Basic Input (Text and Number) */}
               <Input
