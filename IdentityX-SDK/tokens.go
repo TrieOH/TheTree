@@ -32,6 +32,7 @@ type TokenService struct {
 	lastUpdated time.Time
 }
 
+// FIXME use something like sqlite to save the token this way if go auth is unavailable momentarily we can still return the token
 func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, error) {
 	s.mu.RLock()
 	if !forceRefresh && s.jwks != nil {
