@@ -4,6 +4,7 @@ import {
   Key,
   Webhook,
   LayoutDashboard,
+  ArrowRightFromLine,
 } from 'lucide-react'
 import { cn } from '#/shared/lib/utils'
 
@@ -33,6 +34,12 @@ export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       params: { name },
       icon: Webhook,
       label: 'Webhooks'
+    },
+    {
+      to: '/admin/$name/providers',
+      params: { name },
+      icon: ArrowRightFromLine,
+      label: 'Providers'
     },
   ]
 
