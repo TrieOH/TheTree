@@ -36,8 +36,8 @@ func NewMercadoPagoProvider(clientID, accessToken, redirectURI string) (*Mercado
 	}, nil
 }
 
-func (p *MercadoPagoProvider) BuildAuthURL(state string) string {
-	return p.oauthClient.GetAuthorizationURL(p.clientID, p.redirectURI, state)
+func (p *MercadoPagoProvider) BuildAuthURL(state, redirectURI string) string {
+	return p.oauthClient.GetAuthorizationURL(p.clientID, redirectURI, state)
 }
 
 func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code string) (domain.ProviderCredentialData, error) {
