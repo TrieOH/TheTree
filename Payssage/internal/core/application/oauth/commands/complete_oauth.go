@@ -2,12 +2,15 @@ package commands
 
 import (
 	"TriePayments/internal/core/domain"
+	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/errx"
 	"context"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
-func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToken, code string) (string, error) {
+func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToken, code, redirectURI string) (string, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.CompleteOAuth")
 	defer span.End()
 
@@ -25,8 +28,9 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		return "", err
 	}
 
-	credData, err := p.ExchangeCode(ctx, code)
+	credData, err := p.ExchangeCode(ctx, code, redirectURI)
 	if err != nil {
+		telemetry.Log().Info("Error exchanging codes", zap.Error(err))
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
 

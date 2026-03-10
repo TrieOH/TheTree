@@ -4,5 +4,5 @@ import "context"
 
 type OAuthProvider interface {
 	BuildAuthURL(state, redirectURI string) string
-	ExchangeCode(ctx context.Context, code string) (ProviderCredentialData, error)
+	ExchangeCode(ctx context.Context, code, redirectURI string) (ProviderCredentialData, error)
 }

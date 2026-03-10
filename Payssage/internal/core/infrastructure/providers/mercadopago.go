@@ -40,8 +40,8 @@ func (p *MercadoPagoProvider) BuildAuthURL(state, redirectURI string) string {
 	return p.oauthClient.GetAuthorizationURL(p.clientID, redirectURI, state)
 }
 
-func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code string) (domain.ProviderCredentialData, error) {
-	resource, err := p.oauthClient.Create(ctx, code, p.redirectURI)
+func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectURI string) (domain.ProviderCredentialData, error) {
+	resource, err := p.oauthClient.Create(ctx, code, redirectURI)
 	if err != nil {
 		return domain.ProviderCredentialData{}, err
 	}
