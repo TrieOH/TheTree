@@ -54,5 +54,5 @@ func (uc *CommandService) SetupProvider(ctx context.Context, req SetupProviderRe
 	}
 
 	provider, _ := uc.getProvider(req.Provider)
-	return provider.BuildAuthURL(stateToken), nil
+	return provider.BuildAuthURL(stateToken, req.FinalRedirectURL), nil
 }
