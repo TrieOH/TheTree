@@ -5,6 +5,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 // DeleteMarketplaceConfig godoc
@@ -18,11 +19,18 @@ import (
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /workspaces/{name}/marketplace [delete]
+// @Router /workspaces/{name}/marketplace/{credential_id} [delete]
 func (h *Handler) DeleteMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
+	credentialIDStr := chi.URLParam(r, "credential_id")
 
-	if err := h.commands.DeleteMarketplaceConfig(r.Context(), workspaceName); err != nil {
+	credentialID, err := uuid.Parse(credentialIDStr)
+	if err != nil {
+		resp.BadRequest("invalid credential_id").Send(w)
+		return
+	}
+
+	if err := h.commands.DeleteMarketplaceConfig(r.Context(), workspaceName, credentialID); err != nil {
 		resp.FromError(err).Send(w)
 		return
 	}

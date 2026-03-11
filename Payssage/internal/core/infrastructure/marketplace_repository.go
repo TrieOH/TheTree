@@ -59,11 +59,30 @@ func (repo *marketplaceConfigRepo) Create(ctx context.Context, config domain.Mar
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
-func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID uuid.UUID) (*domain.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) List(ctx context.Context, workspaceID uuid.UUID) ([]domain.MarketplaceConfig, error) {
+	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.List")
+	defer span.End()
+
+	rows, err := repo.queries(ctx).ListMarketplaceConfigs(ctx, workspaceID)
+	if err != nil {
+		return nil, errx.FromDB(err, "marketplace_config")
+	}
+
+	configs := make([]domain.MarketplaceConfig, len(rows))
+	for i := range rows {
+		configs[i] = *mapMarketplaceConfigFromDB(&rows[i])
+	}
+	return configs, nil
+}
+
+func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID, credentialID uuid.UUID) (*domain.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Get")
 	defer span.End()
 
-	row, err := repo.queries(ctx).GetMarketplaceConfig(ctx, workspaceID)
+	row, err := repo.queries(ctx).GetMarketplaceConfig(ctx, sqlc.GetMarketplaceConfigParams{
+		WorkspaceID:  workspaceID,
+		CredentialID: credentialID,
+	})
 	if err != nil {
 		return nil, errx.FromDB(err, "marketplace_config")
 	}
@@ -87,11 +106,25 @@ func (repo *marketplaceConfigRepo) Update(ctx context.Context, config domain.Mar
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
-func (repo *marketplaceConfigRepo) Delete(ctx context.Context, workspaceID uuid.UUID) error {
+func (repo *marketplaceConfigRepo) Delete(ctx context.Context, workspaceID, credentialID uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Delete")
 	defer span.End()
 
-	if err := repo.queries(ctx).DeleteMarketplaceConfig(ctx, workspaceID); err != nil {
+	if err := repo.queries(ctx).DeleteMarketplaceConfig(ctx, sqlc.DeleteMarketplaceConfigParams{
+		WorkspaceID:  workspaceID,
+		CredentialID: credentialID,
+	}); err != nil {
+		return errx.FromDB(err, "marketplace_config")
+	}
+
+	return nil
+}
+
+func (repo *marketplaceConfigRepo) DeleteAll(ctx context.Context, workspaceID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.DeleteAll")
+	defer span.End()
+
+	if err := repo.queries(ctx).DeleteAllMarketplaceConfigs(ctx, workspaceID); err != nil {
 		return errx.FromDB(err, "marketplace_config")
 	}
 

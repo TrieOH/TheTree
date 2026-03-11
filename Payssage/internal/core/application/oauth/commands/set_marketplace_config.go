@@ -38,8 +38,7 @@ func (uc *CommandService) SetMarketplaceConfig(ctx context.Context, req SetMarke
 		return nil, errx.Forbidden("credential").SetMessage("credential does not belong to this workspace")
 	}
 
-	// upsert — try update first, create if not found
-	existing, err := uc.marketplace.Get(ctx, workspace.ID)
+	existing, err := uc.marketplace.Get(ctx, workspace.ID, req.CredentialID)
 	if err != nil && !errx.IsKind(err, "not_found") {
 		return nil, err
 	}

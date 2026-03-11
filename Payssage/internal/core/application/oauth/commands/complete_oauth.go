@@ -46,7 +46,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 
 	// if setup flow + marketplace, auto-create marketplace config
 	if oauthState.Flow == domain.OAuthFlowSetup && oauthState.IsMarketplace {
-		existing, err := uc.marketplace.Get(ctx, oauthState.WorkspaceID)
+		existing, err := uc.marketplace.Get(ctx, oauthState.WorkspaceID, cred.ID)
 		if err != nil && !errx.IsKind(err, "not_found") {
 			return "", err
 		}
