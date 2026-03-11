@@ -59,6 +59,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		} else {
 			_, err = uc.marketplace.Create(ctx, domain.MarketplaceConfig{
 				WorkspaceID:  oauthState.WorkspaceID,
+				Provider:     provider,
 				CredentialID: cred.ID,
 				FeeBps:       oauthState.FeeBps,
 			})
