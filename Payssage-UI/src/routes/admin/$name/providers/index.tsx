@@ -6,11 +6,13 @@ import { createFileRoute, useParams } from '@tanstack/react-router'
 import { ArrowRightFromLine, CreditCard, CheckCircle2, Zap, Trash2, RefreshCw, Copy, Eye, EyeOff } from 'lucide-react'
 import z from 'zod'
 import FormModal from '#/widgets/modal/form-modal'
-import { oauthSetupSchema, type OauthSetupI, type OauthWorkspaceMarketplaceConfigI } from '#/features/oauth/model'
+import { oauthSetupSchema } from '#/features/oauth/model'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { bpsToPercentage } from '#/shared/lib/utils'
+import type { OauthSetupI, OauthWorkspaceMarketplaceConfigI } from '#/features/oauth/model'
+
 
 const queryParams = z.object({
   status: z.string().optional().nullable(),
@@ -126,7 +128,7 @@ function RouteComponent() {
               <CardDescription className="text-xs font-mono uppercase tracking-widest max-w-lg">
                 The leading payment solution in Latin America. Connect your account to accept Pix, credit cards, and more.
               </CardDescription>
-              {isConnected && mpConfig && (
+              {isConnected && (
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Credential ID:</span>
                   <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 border border-border/50">
@@ -156,7 +158,7 @@ function RouteComponent() {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              {isConnected && mpConfig ? (
+              {isConnected ? (
                 <div className="flex gap-2">
                   <Button
                     onClick={() => setUpdatingConfig(mpConfig)}
