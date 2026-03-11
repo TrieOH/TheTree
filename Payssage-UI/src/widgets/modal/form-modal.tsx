@@ -39,14 +39,13 @@ export default function FormModal<T extends FieldValues>({
   disabled = false
 }: PropsI<T>) {
 
-  const { register, reset, handleSubmit, watch, setValue, formState: { errors } } = useForm<T>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<T>({
     resolver: standardSchemaResolver(schema),
     defaultValues: defaultValues,
   });
 
   const handleFormSubmit = (data: T) => {
     onSubmit(data);
-    reset();
   };
 
   const renderField = (field: FieldDefinition<T>) => {
