@@ -66,6 +66,7 @@ func registerIntentsRoutes(
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.With(authMW.AnyAuth()).Get("/intents", h.List)
+	r.With(authMW.AnyAuth()).Get("/workspaces/{name}/intents", h.ListByWorkspace)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.APIKey())
 		r.Post("/intents", h.CreateIntent)

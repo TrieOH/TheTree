@@ -6,6 +6,7 @@ import (
 	intentCommands "TriePayments/internal/core/application/intents/commands"
 	intentQueries "TriePayments/internal/core/application/intents/queries"
 	oauthCommands "TriePayments/internal/core/application/oauth/commands"
+	oauthQueries "TriePayments/internal/core/application/oauth/queries"
 	async "TriePayments/internal/core/application/webhooks/asynq"
 	webhooksCommands "TriePayments/internal/core/application/webhooks/commands"
 	webhooksQueries "TriePayments/internal/core/application/webhooks/queries"
@@ -159,6 +160,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	apiKeyC := apiKeyCommands.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	oauthC := oauthCommands.New(intentRepo, workspaceRepo, oauthStatesRepo, providerCredentialsRepo, marketplaceRepo, oauthProviderMap, app.GaClient, txRunner, tracer)
+	oauthQ := oauthQueries.New(workspaceRepo, marketplaceRepo, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler()
@@ -166,7 +168,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	workspaceHandler := workspaces.NewWorkspacesHandler(workspaceC, workspaceQ)
 	apiKeyHandler := apiKeysHandler.NewApiKeysHandler(apiKeyC, apiKeyQ)
 	webhooksHandler := webhooks.NewWebhooksHandler(webhooksC, webhooksQ)
-	oauthHandler := oauth_handler.NewOAuthHandler(oauthC)
+	oauthHandler := oauth_handler.NewOAuthHandler(oauthC, oauthQ)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",

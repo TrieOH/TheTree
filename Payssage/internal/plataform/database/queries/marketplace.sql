@@ -27,3 +27,8 @@ WHERE workspace_id = $1 AND credential_id = $2;
 -- name: DeleteAllMarketplaceConfigs :exec
 DELETE FROM marketplace_configs
 WHERE workspace_id = $1;
+
+-- name: GetMarketplaceConfigByProvider :one
+SELECT mc.* FROM marketplace_configs mc
+JOIN provider_credentials pc ON pc.id = mc.credential_id
+WHERE mc.workspace_id = $1 AND pc.provider = $2;

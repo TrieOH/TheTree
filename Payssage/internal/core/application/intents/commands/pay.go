@@ -68,7 +68,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		return nil, err
 	}
 
-	marketplaceConfig, err := uc.marketplace.Get(ctx, workspace.ID)
+	marketplaceConfig, err := uc.marketplace.GetByProvider(ctx, workspace.ID, intent.Provider)
 	if err != nil {
 		return nil, err
 	}

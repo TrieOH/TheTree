@@ -72,6 +72,7 @@ type MarketplaceConfigRepo interface {
 	Create(ctx context.Context, config MarketplaceConfig) (*MarketplaceConfig, error)
 	List(ctx context.Context, workspaceID uuid.UUID) ([]MarketplaceConfig, error)
 	Get(ctx context.Context, workspaceID, credentialID uuid.UUID) (*MarketplaceConfig, error)
+	GetByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*MarketplaceConfig, error)
 	Update(ctx context.Context, config MarketplaceConfig) (*MarketplaceConfig, error)
 	Delete(ctx context.Context, workspaceID, credentialID uuid.UUID) error
 	DeleteAll(ctx context.Context, workspaceID uuid.UUID) error

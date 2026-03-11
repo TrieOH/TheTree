@@ -90,6 +90,21 @@ func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID, credent
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
+func (repo *marketplaceConfigRepo) GetByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*domain.MarketplaceConfig, error) {
+	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.GetByProvider")
+	defer span.End()
+
+	row, err := repo.queries(ctx).GetMarketplaceConfigByProvider(ctx, sqlc.GetMarketplaceConfigByProviderParams{
+		WorkspaceID: workspaceID,
+		Provider:    provider,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "marketplace_config")
+	}
+
+	return mapMarketplaceConfigFromDB(&row), nil
+}
+
 func (repo *marketplaceConfigRepo) Update(ctx context.Context, config domain.MarketplaceConfig) (*domain.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Update")
 	defer span.End()

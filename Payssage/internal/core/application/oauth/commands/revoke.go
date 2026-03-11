@@ -27,11 +27,8 @@ func (uc *CommandService) RevokeCredential(ctx context.Context, workspaceName st
 		return nil, err
 	}
 
-	// if this credential was backing the marketplace config, remove it
-	config, err := uc.marketplace.Get(ctx, workspace.ID)
-	if err == nil && config.CredentialID == credentialID {
-		_ = uc.marketplace.Delete(ctx, workspace.ID)
-	}
+	// if this credential was backing a marketplace config, remove it
+	_ = uc.marketplace.Delete(ctx, workspace.ID, credentialID)
 
 	return cred, nil
 }
