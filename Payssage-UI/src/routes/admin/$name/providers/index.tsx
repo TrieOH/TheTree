@@ -3,11 +3,21 @@ import { Button } from '#/shared/ui/shadcn/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/shared/ui/shadcn/card'
 import { Badge } from '#/shared/ui/shadcn/badge'
 import { createFileRoute, useParams } from '@tanstack/react-router'
-import { ArrowRightFromLine, CreditCard, CheckCircle2, Zap, Trash2, RefreshCw, Copy, Eye, EyeOff } from 'lucide-react'
+import {
+  ArrowRightFromLine,
+  CreditCard,
+  CheckCircle2,
+  Zap,
+  Trash2,
+  RefreshCw,
+  Copy,
+  Eye,
+  EyeOff
+} from 'lucide-react'
 import z from 'zod'
 import FormModal from '#/widgets/modal/form-modal'
 import { oauthSetupSchema } from '#/features/oauth/model'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { bpsToPercentage } from '#/shared/lib/utils'
@@ -24,12 +34,42 @@ export const Route = createFileRoute('/admin/$name/providers/')({
   validateSearch: (search) => queryParams.parse(search)
 })
 
+const SUPPORTED_PROVIDERS_RAW = "mercadopago"
+
+const getProviderInfo = (provider: string) => {
+  const p = provider.toLowerCase()
+  if (p.includes('mercadopago')) {
+    return {
+      id: provider,
+      name: 'Mercado Pago',
+      logo: '/external-logos/MP_RGB_HANDSHAKE_color_vertical.svg',
+      description: 'The leading payment solution in Latin America. Connect your account to accept Pix, credit cards, and more.',
+      features: [
+        { icon: <CreditCard className="w-3.5 h-3.5" />, label: 'Credit Cards' },
+        { icon: <Zap className="w-3.5 h-3.5" />, label: 'Pix Support' }
+      ]
+    }
+  }
+
+  return {
+    id: provider,
+    name: provider.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+    logo: '',
+    description: `Connect your ${provider} account to start processing transactions.`,
+    features: []
+  }
+}
+
 function RouteComponent() {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const [updatingConfig, setUpdatingConfig] = useState<OauthWorkspaceMarketplaceConfigI | null>(null)
   const [showCredential, setShowCredential] = useState<Record<string, boolean>>({})
   const { name } = useParams({ from: '/admin/$name/providers/' })
   const queryClient = useQueryClient()
+
+  const supportedProviders = useMemo(() => {
+    return SUPPORTED_PROVIDERS_RAW.split(',').map(p => p.trim()).filter(Boolean)
+  }, [])
 
   const { data: configs, isLoading: isLoadingConfigs } = useQuery(allWorkspaceMarketplaceConfigsQueryOptions(name))
 
@@ -80,9 +120,6 @@ function RouteComponent() {
     }
   })
 
-  const mpConfig = configs?.find(c => c.provider === "mercadopago")
-  const isConnected = !!mpConfig
-
   const toggleCredential = (id: string) => {
     setShowCredential(prev => ({ ...prev, [id]: !prev[id] }))
   }
@@ -102,109 +139,121 @@ function RouteComponent() {
       </div>
 
       <div className="grid gap-6">
-        <Card className="rounded-none border-border group transition-all duration-300 hover:border-primary/50 relative overflow-hidden">
-          {isConnected && (
-            <div className="absolute top-0 right-0 p-2">
-              <Badge variant="outline" className="rounded-none text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1">
-                <CheckCircle2 className="w-2.5 h-2.5" />
-                Connected
-              </Badge>
-            </div>
-          )}
+        {supportedProviders.map((providerId) => {
+          const config = configs?.find(c => c.provider === providerId)
+          const isConnected = !!config
+          const info = getProviderInfo(providerId)
 
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-6 pb-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-background border border-border group-hover:border-primary/30 transition-colors shrink-0 p-2">
-              <img
-                src="/external-logos/MP_RGB_HANDSHAKE_color_vertical.svg"
-                alt="Mercado Pago"
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            <div className="space-y-1.5 flex-1">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-xl font-black uppercase tracking-tight">Mercado Pago</CardTitle>
-              </div>
-              <CardDescription className="text-xs font-mono uppercase tracking-widest max-w-lg">
-                The leading payment solution in Latin America. Connect your account to accept Pix, credit cards, and more.
-              </CardDescription>
+          return (
+            <Card key={providerId} className="rounded-none border-border group transition-all duration-300 hover:border-primary/50 relative overflow-hidden">
               {isConnected && (
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Credential ID:</span>
-                  <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 border border-border/50">
-                    <span className="text-[10px] font-mono text-muted-foreground">
-                      {showCredential[mpConfig.id] ? mpConfig.credential_id : "••••••••••••••••"}
-                    </span>
-                    <button
-                      onClick={() => toggleCredential(mpConfig.id)}
-                      className="p-1 hover:text-primary transition-colors"
-                      title={showCredential[mpConfig.id] ? "Hide" : "Show"}
-                    >
-                      {showCredential[mpConfig.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    </button>
-                    <button
-                      onClick={() => copyToClipboard(mpConfig.credential_id)}
-                      className="p-1 hover:text-primary transition-colors"
-                      title="Copy"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <Badge variant="secondary" className="rounded-none text-[9px] font-mono uppercase">
-                    Fee: {bpsToPercentage(mpConfig.fee_bps)}%
+                <div className="absolute top-0 right-0 p-2">
+                  <Badge variant="outline" className="rounded-none text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1">
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                    Connected
                   </Badge>
                 </div>
               )}
-            </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              {isConnected ? (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setUpdatingConfig(mpConfig)}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-none gap-2 h-9 font-black uppercase tracking-widest transition-all"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Update
-                  </Button>
-                  <Button
-                    onClick={() => removeMarketplaceConfig(mpConfig.credential_id)}
-                    variant="outline"
-                    size="sm"
-                    disabled={isPendingRemove}
-                    className="rounded-none gap-2 h-9 font-black uppercase tracking-widest transition-all border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Disconnect
-                  </Button>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-6 pb-6">
+                <div className="flex items-center justify-center w-16 h-16 bg-background border border-border group-hover:border-primary/30 transition-colors shrink-0 p-2">
+                  {info.logo ? (
+                    <img
+                      src={info.logo}
+                      alt={info.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                      <CreditCard className="w-8 h-8 text-muted-foreground/40" />
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <Button
-                  onClick={() => setSelectedProvider("mercadopago")}
-                  variant="default"
-                  className="rounded-none gap-2 h-10 font-black uppercase tracking-widest transition-all px-8"
-                  disabled={isLoadingConfigs || isPendingSetup}
-                >
-                  <ArrowRightFromLine className="w-4 h-4" />
-                  Connect
-                </Button>
-              )}
-            </div>
-          </CardHeader>
 
-          <CardContent className="border-t border-border/40 bg-muted/5 flex flex-wrap gap-4 py-3 px-6">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <CreditCard className="w-3.5 h-3.5" />
-              Credit Cards
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <Zap className="w-3.5 h-3.5" />
-              Pix Support
-            </div>
-          </CardContent>
-        </Card>
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl font-black uppercase tracking-tight">{info.name}</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs font-mono uppercase tracking-widest max-w-lg">
+                    {info.description}
+                  </CardDescription>
+                  {isConnected && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Credential ID:</span>
+                      <div className="flex items-center gap-1 bg-muted/50 px-2 py-0.5 border border-border/50">
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {showCredential[config.id] ? config.credential_id : "••••••••••••••••"}
+                        </span>
+                        <button
+                          onClick={() => toggleCredential(config.id)}
+                          className="p-1 hover:text-primary transition-colors"
+                          title={showCredential[config.id] ? "Hide" : "Show"}
+                        >
+                          {showCredential[config.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(config.credential_id)}
+                          className="p-1 hover:text-primary transition-colors"
+                          title="Copy"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <Badge variant="secondary" className="rounded-none text-[9px] font-mono uppercase">
+                        Fee: {bpsToPercentage(config.fee_bps)}%
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {isConnected ? (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setUpdatingConfig(config)}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-none gap-2 h-9 font-black uppercase tracking-widest transition-all"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Update
+                      </Button>
+                      <Button
+                        onClick={() => removeMarketplaceConfig(config.credential_id)}
+                        variant="outline"
+                        size="sm"
+                        disabled={isPendingRemove}
+                        className="rounded-none gap-2 h-9 font-black uppercase tracking-widest transition-all border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Disconnect
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setSelectedProvider(providerId)}
+                      variant="default"
+                      className="rounded-none gap-2 h-10 font-black uppercase tracking-widest transition-all px-8"
+                      disabled={isLoadingConfigs || isPendingSetup}
+                    >
+                      <ArrowRightFromLine className="w-4 h-4" />
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent className="border-t border-border/40 bg-muted/5 flex flex-wrap gap-4 py-3 px-6">
+                {info.features.map((feature, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {feature.icon}
+                    {feature.label}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {selectedProvider && <FormModal<OauthSetupI>
@@ -252,3 +301,4 @@ function RouteComponent() {
     </div>
   )
 }
+
