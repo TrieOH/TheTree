@@ -110,20 +110,26 @@ export function WorkspaceList({
                       <DropdownMenuContent
                         align="end"
                         className="rounded-none min-w-48"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          if (workspace.sandbox) handleDisableSandbox(workspace.name)
-                          else handleEnableSandbox(workspace.name)
-                        }}
                       >
-                        <DropdownMenuItem className="gap-2 text-xs font-bold uppercase tracking-widest rounded-none py-2 px-3">
+                        <DropdownMenuItem
+                          className="gap-2 text-xs font-bold uppercase tracking-widest rounded-none py-2 px-3"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            if (workspace.sandbox) handleDisableSandbox(workspace.name)
+                            else handleEnableSandbox(workspace.name)
+                          }}
+                        >
                           <Settings className="w-3.5 h-3.5" />
                           {workspace.sandbox ? 'Disable Sandbox' : 'Enable Sandbox'}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="gap-2 text-xs font-bold uppercase tracking-widest rounded-none py-2 px-3"
-                          onClick={() => copyToClipboard(workspace.id)}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            copyToClipboard(workspace.id)
+                          }}
                         >
                           {copiedId === workspace.id ? (
                             <Check className="w-3.5 h-3.5 text-emerald-500" />
