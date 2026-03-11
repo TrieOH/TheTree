@@ -37,6 +37,7 @@ func mapMarketplaceConfigFromDB(src *sqlc.MarketplaceConfig) *domain.Marketplace
 		ID:           src.ID,
 		WorkspaceID:  src.WorkspaceID,
 		CredentialID: src.CredentialID,
+		Provider:     src.Provider,
 		FeeBps:       src.FeeBps,
 		CreatedAt:    src.CreatedAt,
 		UpdatedAt:    src.UpdatedAt,
@@ -50,6 +51,7 @@ func (repo *marketplaceConfigRepo) Create(ctx context.Context, config domain.Mar
 	row, err := repo.queries(ctx).CreateMarketplaceConfig(ctx, sqlc.CreateMarketplaceConfigParams{
 		WorkspaceID:  config.WorkspaceID,
 		CredentialID: config.CredentialID,
+		Provider:     config.Provider,
 		FeeBps:       config.FeeBps,
 	})
 	if err != nil {

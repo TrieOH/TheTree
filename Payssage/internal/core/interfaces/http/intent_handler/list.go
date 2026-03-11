@@ -50,7 +50,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} dto.IntentResponse "Intents retrieved successfully"
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /worksapces/{name}/intents [get]
+// @Router /workspaces/{name}/intents [get]
 func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
 

@@ -36,6 +36,7 @@ func (h *Handler) ListMarketplaceConfigs(w http.ResponseWriter, r *http.Request)
 			ID:           config.ID,
 			WorkspaceID:  config.WorkspaceID,
 			CredentialID: config.CredentialID,
+			Provider:     config.Provider,
 			FeeBps:       config.FeeBps,
 			CreatedAt:    config.CreatedAt,
 			UpdatedAt:    config.UpdatedAt,

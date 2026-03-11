@@ -1,6 +1,6 @@
 -- name: CreateMarketplaceConfig :one
-INSERT INTO marketplace_configs (workspace_id, credential_id, fee_bps)
-VALUES ($1, $2, $3)
+INSERT INTO marketplace_configs (workspace_id, credential_id, fee_bps, provider)
+VALUES ($1, $2, $3, $4)
     RETURNING *;
 
 -- name: ListMarketplaceConfigs :many

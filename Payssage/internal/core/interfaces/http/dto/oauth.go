@@ -19,6 +19,7 @@ type SetMarketplaceConfigRequest struct {
 type MarketplaceConfigResponse struct {
 	ID           uuid.UUID `json:"id"`
 	WorkspaceID  uuid.UUID `json:"workspace_id"`
+	Provider     string    `json:"provider"`
 	CredentialID uuid.UUID `json:"credential_id"`
 	FeeBps       int       `json:"fee_bps"`
 	CreatedAt    time.Time `json:"created_at"`
