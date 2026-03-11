@@ -31,5 +31,11 @@ func (uc *CommandService) DeleteMarketplaceConfig(ctx context.Context, workspace
 		return errx.Forbidden("credential").SetMessage("credential does not belong to this workspace")
 	}
 
+	// If this config was backing a marketplace revoke it
+	_, err = uc.credentials.Revoke(ctx, credentialID, workspace.ID)
+	if err != nil {
+		return err
+	}
+
 	return uc.marketplace.Delete(ctx, workspace.ID, credentialID)
 }
