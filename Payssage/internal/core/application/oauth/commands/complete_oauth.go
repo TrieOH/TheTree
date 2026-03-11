@@ -51,6 +51,9 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 			return "", err
 		}
 		if existing != nil {
+			if provider != existing.Provider {
+				return "", errx.Invalid("marketplace_config").SetMessage("cannot change provider of a config through OAuth")
+			}
 			_, err = uc.marketplace.Update(ctx, domain.MarketplaceConfig{
 				WorkspaceID:  oauthState.WorkspaceID,
 				CredentialID: cred.ID,
