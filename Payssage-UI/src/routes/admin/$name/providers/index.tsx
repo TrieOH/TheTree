@@ -5,6 +5,10 @@ import { Badge } from '#/shared/ui/shadcn/badge'
 import { createFileRoute, useParams } from '@tanstack/react-router'
 import { ArrowRightFromLine, CreditCard, CheckCircle2, Zap } from 'lucide-react'
 import z from 'zod'
+import FormModal from '#/widgets/modal/form-modal'
+import { oauthSetupSchema, type OauthSetupI } from '#/features/oauth/model'
+import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 
 const queryParams = z.object({
   status: z.string().optional().nullable(),
@@ -17,14 +21,20 @@ export const Route = createFileRoute('/admin/$name/providers/')({
 })
 
 function RouteComponent() {
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const { name } = useParams({ from: '/admin/$name/providers/' })
   const { status } = Route.useSearch()
 
-  const performSetupOauth = async () => {
-    const res = await setupOauthOnWorkspaceFn({ fee_bps: 200 }, name, "mercadopago")
-    if (res.success) window.location.href = res.data.redirect_url
-  }
-
+  const { mutate: setupOauthOnWorkspace, isPending: isPendingSetup } = useMutation({
+    mutationFn: (res: { data: OauthSetupI, provider: string }) =>
+      setupOauthOnWorkspaceFn(res.data, name, res.provider),
+    onSuccess: (response) => {
+      if (response.success) {
+        setSelectedProvider(null)
+        window.location.href = response.data.redirect_url
+      }
+    },
+  })
   const isConnected = status === "success"
 
   return (
@@ -67,7 +77,8 @@ function RouteComponent() {
 
             <div className="flex items-center gap-3 shrink-0">
               <Button
-                onClick={performSetupOauth}
+                // onClick={performSetupOauth}
+                onClick={() => setSelectedProvider("mercadopago")}
                 variant={isConnected ? "outline" : "default"}
                 className="rounded-none gap-2 h-10 font-black uppercase tracking-widest transition-all px-8"
                 disabled={isConnected}
@@ -90,6 +101,25 @@ function RouteComponent() {
           </CardContent>
         </Card>
       </div>
+      {selectedProvider && <FormModal<OauthSetupI>
+        title="Configure OAuth Fee"
+        description="Set the fee percentage that will be applied to transactions processed through this provider."
+        buttonTitle="Perform OAuth Setup"
+        schema={oauthSetupSchema}
+        formId="setup-oauth-form"
+        isOpen={!!selectedProvider}
+        onClose={() => setSelectedProvider(null)}
+        onSubmit={(data) => setupOauthOnWorkspace({ data, provider: selectedProvider })}
+        fields={[
+          {
+            name: "fee_percent",
+            label: "Fee (%)",
+            type: "percentage",
+            placeholder: "Ex: 1.5"
+          }
+        ]}
+        disabled={isPendingSetup}
+      />}
     </div>
   )
 }

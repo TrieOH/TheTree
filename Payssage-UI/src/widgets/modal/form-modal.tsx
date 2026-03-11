@@ -1,14 +1,14 @@
 import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { Modal } from "./modal";
-import { cn } from "#/shared/lib/utils";
+import { cn, percentageToBps, clamp } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
 import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Percent, Info } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
 import type { ZodType } from "zod";
-import type { DefaultValues, FieldValues, Path } from "react-hook-form";
+import type { DefaultValues, FieldValues, Path, PathValue } from "react-hook-form";
 
 
 export interface PropsI<T> {
@@ -39,7 +39,7 @@ export default function FormModal<T extends FieldValues>({
   disabled = false
 }: PropsI<T>) {
 
-  const { register, reset, handleSubmit, formState: { errors } } = useForm<T>({
+  const { register, reset, handleSubmit, watch, setValue, formState: { errors } } = useForm<T>({
     resolver: standardSchemaResolver(schema),
     defaultValues: defaultValues,
   });
@@ -47,6 +47,70 @@ export default function FormModal<T extends FieldValues>({
   const handleFormSubmit = (data: T) => {
     onSubmit(data);
     reset();
+  };
+
+  const renderField = (field: FieldDefinition<T>) => {
+    const fieldName = field.name as Path<T>;
+    const error = errors[fieldName];
+    const value = watch(fieldName);
+
+    if (field.type === 'percentage') {
+      return (
+        <div className="space-y-2">
+          <div className="relative">
+            <Input
+              id={fieldName}
+              type="number"
+              step="0.01"
+              placeholder={field.placeholder}
+              className={cn(
+                "rounded-none border-border focus-visible:ring-0 font-bold pr-10",
+                "focus-visible:border-primary transition-colors",
+                error && "border-destructive"
+              )}
+              {...register(fieldName, {
+                valueAsNumber: true,
+                onChange: (e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val)) {
+                    const constrained = clamp(val, 0, 100);
+                    if (constrained !== val) {
+                      setValue(fieldName, constrained.toString() as PathValue<T, Path<T>>);
+                    }
+                  }
+                }
+              })}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+              <Percent className="h-4 w-4" />
+            </div>
+          </div>
+
+          {value !== undefined && value !== null && !isNaN(Number(value)) && (
+            <div className="flex items-center gap-1.5 px-1 py-0.5 bg-primary/5 border border-primary/10 animate-in fade-in duration-300">
+              <Info className="w-3 h-3 text-primary/60" />
+              <span className="text-[9px] mt-0.5 font-black uppercase tracking-wider text-primary/70">
+                Equivalent to {percentageToBps(Number(value))} Basis Points (BPS)
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Input
+        id={fieldName}
+        type={field.type}
+        placeholder={field.placeholder}
+        className={cn(
+          "rounded-none border-border focus-visible:ring-0 font-bold",
+          "focus-visible:border-primary transition-colors",
+          error && "border-destructive"
+        )}
+        {...register(fieldName)}
+      />
+    );
   };
 
   return (
@@ -68,18 +132,7 @@ export default function FormModal<T extends FieldValues>({
               >
                 {field.label}
               </Label>
-              {/* Now only Basic Input (Text and Number) */}
-              <Input
-                id={fieldName}
-                type={field.type}
-                placeholder={field.placeholder}
-                className={cn(
-                  "rounded-none border-border focus-visible:ring-0 font-bold",
-                  "focus-visible:border-primary transition-colors",
-                  errors.name && "border-destructive"
-                )}
-                {...register(fieldName)}
-              />
+              {renderField(field)}
               {error && (
                 <span className={cn(
                   "text-[10px] font-bold text-destructive uppercase",

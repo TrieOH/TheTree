@@ -2,6 +2,7 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import type { OauthCallbackResponseI, OauthSetupI, OauthSetupResponseI } from "../model";
 import { authFetcher } from "#/shared/lib/api/fetch";
 import { env } from "#/env";
+import { percentageToBps } from "#/shared/lib/utils";
 
 
 /**
@@ -15,10 +16,12 @@ export const setupOauthOnWorkspaceFn = createClientOnlyFn((
   workspaceName: string,
   provider: string
 ) => {
+  const { fee_percent, ...rest } = oauthData;
   return authFetcher.post<OauthSetupResponseI>(
     `/workspaces/${workspaceName}/providers/${provider}/setup`,
     {
-      ...oauthData,
+      ...rest,
+      fee_bps: percentageToBps(fee_percent),
       is_marketplace: true,
       final_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL
     }
