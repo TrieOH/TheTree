@@ -17,3 +17,13 @@ export interface OauthSetupResponseI {
 export interface OauthCallbackResponseI {
   url: string;
 }
+
+export interface OauthWorkspaceMarketplaceConfigI {
+  id: string;
+  provider: string;
+  fee_bps: number;
+  credential_id: string;
+  workspace_id: string;
+  created_at: string;
+  updated_at: string;
+}
