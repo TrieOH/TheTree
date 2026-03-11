@@ -8,7 +8,8 @@ import (
 )
 
 type BeginOAuthResponse struct {
-	RedirectURL string `json:"redirect_url"`
+	RedirectURL      string `json:"redirect_url"`
+	FinalRedirectURL string `json:"final_redirect_url"`
 }
 
 type SetMarketplaceConfigRequest struct {
@@ -33,7 +34,8 @@ type SetupProviderRequest struct {
 }
 
 type ConnectSellerRequest struct {
-	FinalRedirectURL string `json:"final_redirect_url" validate:"required,url"`
+	ProviderRedirectURL string `json:"provider_redirect_url" validate:"required,url"`
+	FinalRedirectURL    string `json:"final_redirect_url" validate:"required,url"`
 }
 
 type ProviderCredentialResponse struct {

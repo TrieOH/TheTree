@@ -10,29 +10,30 @@ import (
 )
 
 type ConnectSellerRequest struct {
-	WorkspaceName    string
-	Provider         string
-	FinalRedirectURL string
+	WorkspaceName       string
+	Provider            string
+	ProviderRedirectURL string
+	FinalRedirectURL    string
 }
 
-func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRequest) (string, error) {
+func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRequest) (string, string, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.ConnectSeller")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	workspace, err := uc.workspaces.GetByName(ctx, req.WorkspaceName, sub.ID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	// verify workspace has this provider set up
 	creds, err := uc.credentials.ListByWorkspace(ctx, workspace.ID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	hasProvider := false
 	for _, c := range creds {
@@ -42,12 +43,12 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRe
 		}
 	}
 	if !hasProvider {
-		return "", errx.Invalid("provider").SetMessage(fmt.Sprintf("workspace has not set up provider: %s", req.Provider))
+		return "", "", errx.Invalid("provider").SetMessage(fmt.Sprintf("workspace has not set up provider: %s", req.Provider))
 	}
 
 	stateToken, err := generateState()
 	if err != nil {
-		return "", errx.Internal("oauth_state").SetCause(err)
+		return "", "", errx.Internal("oauth_state").SetCause(err)
 	}
 
 	_, err = uc.oauthStates.Create(ctx, domain.OAuthState{
@@ -57,13 +58,13 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRe
 		Flow:             domain.OAuthFlowConnect,
 		IsMarketplace:    false,
 		FeeBps:           0,
-		FinalRedirectURL: req.FinalRedirectURL,
+		FinalRedirectURL: req.ProviderRedirectURL,
 		ExpiresAt:        time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	provider, _ := uc.getProvider(req.Provider)
-	return provider.BuildAuthURL(stateToken, req.FinalRedirectURL), nil
+	return provider.BuildAuthURL(stateToken, req.ProviderRedirectURL), req.FinalRedirectURL, nil
 }
