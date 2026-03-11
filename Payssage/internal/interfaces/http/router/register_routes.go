@@ -105,7 +105,7 @@ func registerOAuthRoutes(
 		r.Post("/workspaces/{name}/providers/{provider}/connect", h.ConnectSeller)
 		r.Get("/workspaces/{name}/marketplaces", h.ListMarketplaceConfigs)
 		r.Put("/workspaces/{name}/marketplaces", h.SetMarketplaceConfig)
-		r.Delete("/workspaces/{name}/marketplaces", h.DeleteMarketplaceConfig)
+		r.Delete("/workspaces/{name}/marketplaces/{credential_id}", h.DeleteMarketplaceConfig)
 		r.Delete("/workspaces/{name}/providers/{credential_id}", h.RevokeProvider)
 	})
 

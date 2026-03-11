@@ -1,7 +1,7 @@
 package oauth_handler
 
 import (
-	commands2 "TriePayments/internal/core/application/oauth/commands"
+	"TriePayments/internal/core/application/oauth/commands"
 	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/validation"
 	"net/http"
@@ -36,7 +36,7 @@ func (h *Handler) SetMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config, err := h.commands.SetMarketplaceConfig(r.Context(), commands2.SetMarketplaceConfigRequest{
+	config, err := h.commands.SetMarketplaceConfig(r.Context(), commands.SetMarketplaceConfigRequest{
 		WorkspaceName: workspaceName,
 		CredentialID:  req.CredentialID,
 		FeeBps:        req.FeeBps,
