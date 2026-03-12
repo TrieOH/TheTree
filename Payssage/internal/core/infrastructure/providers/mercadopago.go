@@ -72,6 +72,7 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectUR
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 		UserID       int    `json:"user_id"`
+		Nickname     string `json:"nickname"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return domain.ProviderCredentialData{}, err
@@ -81,6 +82,7 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectUR
 		AccessToken:    result.AccessToken,
 		RefreshToken:   result.RefreshToken,
 		ProviderUserID: result.UserID,
+		Nickname:       result.Nickname,
 	}, nil
 }
 
