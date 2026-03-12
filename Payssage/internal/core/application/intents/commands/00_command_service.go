@@ -14,6 +14,7 @@ type CommandService struct {
 	credentials      domain.ProviderCredentialRepo
 	marketplace      domain.MarketplaceConfigRepo
 	webhooks         domain.WebhookDispatcher
+	oauthProvider    map[string]domain.OAuthProvider
 	paymentProviders map[string]domain.PaymentProvider
 	gaClient         *goauth.Client
 	tx               database.TxRunner
@@ -26,6 +27,7 @@ func New(
 	credentials domain.ProviderCredentialRepo,
 	marketplace domain.MarketplaceConfigRepo,
 	webhooks domain.WebhookDispatcher,
+	oauthProvider map[string]domain.OAuthProvider,
 	paymentProviders map[string]domain.PaymentProvider,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
@@ -37,6 +39,7 @@ func New(
 		credentials:      credentials,
 		marketplace:      marketplace,
 		webhooks:         webhooks,
+		oauthProvider:    oauthProvider,
 		paymentProviders: paymentProviders,
 		gaClient:         gaClient,
 		tx:               tx,

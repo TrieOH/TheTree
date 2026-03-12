@@ -75,6 +75,16 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 
 	applicationFee := float64(intent.Amount) * float64(marketplaceConfig.FeeBps) / 10000 / 100.0
 
+	marketplaceCredentials, err := uc.credentials.GetByID(ctx, marketplaceConfig.CredentialID)
+	if err != nil {
+		return nil, err
+	}
+
+	sponsorID, err := uc.oauthProvider[intent.Provider].Me(ctx, marketplaceCredentials.Credentials.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := provider.Charge(ctx, domain.ChargeRequest{
 		Intent:          *intent,
 		CardToken:       input.CardToken,
@@ -83,6 +93,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		PayerEmail:      input.PayerEmail,
 		ApplicationFee:  applicationFee,
 		SellerToken:     credential.Credentials.AccessToken,
+		SponsorID:       sponsorID,
 	})
 	if err != nil {
 		// Mark intent as failed so it can't be retried with a stale token

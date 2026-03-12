@@ -13,6 +13,8 @@ import (
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"github.com/mercadopago/sdk-go/pkg/payment"
+	"github.com/mercadopago/sdk-go/pkg/user"
+	"github.com/spf13/viper"
 )
 
 const mpAuthURL = "https://auth.mercadopago.com/authorization"
@@ -72,6 +74,7 @@ func (p *MercadoPagoProvider) Charge(ctx context.Context, req domain.ChargeReque
 			Email: req.PayerEmail,
 		},
 		ApplicationFee: req.ApplicationFee,
+		SponsorID:      viper.GetInt("MP_CLIENT_ID"),
 	})
 	if err != nil {
 		return nil, err
@@ -92,6 +95,20 @@ func mapMPStatus(status string) domain.IntentStatus {
 	default:
 		return domain.IntentStatusPending
 	}
+}
+
+func (p *MercadoPagoProvider) Me(ctx context.Context, accessToken string) (int, error) {
+	cfg, err := config.New(accessToken)
+	if err != nil {
+		return 0, err
+	}
+
+	userClient := user.NewClient(cfg)
+	me, err := userClient.Get(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get MP platform user ID: %w", err)
+	}
+	return me.ID, nil
 }
 
 func VerifyMercadoPagoSignature(r *http.Request, secret string) bool {

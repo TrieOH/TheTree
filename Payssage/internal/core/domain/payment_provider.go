@@ -10,6 +10,7 @@ type ChargeRequest struct {
 	PayerEmail      string
 	ApplicationFee  float64
 	SellerToken     string
+	SponsorID       int
 }
 
 type ChargeResult struct {
