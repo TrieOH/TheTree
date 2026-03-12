@@ -34,10 +34,15 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
 
+	name, err := p.MeName(ctx, credData.AccessToken)
+	if err != nil {
+		return "", err
+	}
+
 	cred, err := uc.credentials.Create(ctx, domain.ProviderCredential{
 		WorkspaceID: oauthState.WorkspaceID,
 		Provider:    provider,
-		DisplayName: credData.ProviderUserID,
+		DisplayName: name,
 		Credentials: credData,
 	})
 	if err != nil {

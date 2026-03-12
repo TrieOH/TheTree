@@ -48,10 +48,15 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectUR
 		return domain.ProviderCredentialData{}, err
 	}
 
+	id, err := p.MeID(ctx, resource.AccessToken)
+	if err != nil {
+		return domain.ProviderCredentialData{}, err
+	}
+
 	return domain.ProviderCredentialData{
 		AccessToken:    resource.AccessToken,
 		RefreshToken:   resource.RefreshToken,
-		ProviderUserID: resource.PublicKey,
+		ProviderUserID: id,
 	}, nil
 }
 
@@ -97,7 +102,7 @@ func mapMPStatus(status string) domain.IntentStatus {
 	}
 }
 
-func (p *MercadoPagoProvider) Me(ctx context.Context, accessToken string) (int, error) {
+func (p *MercadoPagoProvider) MeID(ctx context.Context, accessToken string) (int, error) {
 	cfg, err := config.New(accessToken)
 	if err != nil {
 		return 0, err
@@ -109,6 +114,20 @@ func (p *MercadoPagoProvider) Me(ctx context.Context, accessToken string) (int, 
 		return 0, fmt.Errorf("failed to get MP platform user ID: %w", err)
 	}
 	return me.ID, nil
+}
+
+func (p *MercadoPagoProvider) MeName(ctx context.Context, accessToken string) (string, error) {
+	cfg, err := config.New(accessToken)
+	if err != nil {
+		return "", err
+	}
+
+	userClient := user.NewClient(cfg)
+	me, err := userClient.Get(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get MP platform user ID: %w", err)
+	}
+	return me.Nickname, nil
 }
 
 func VerifyMercadoPagoSignature(r *http.Request, secret string) bool {

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"TriePayments/internal/core/domain"
+	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/authz"
 	"TriePayments/internal/shared/errx"
 	"context"
@@ -9,6 +10,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type PayIntentInput struct {
@@ -80,7 +82,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		return nil, err
 	}
 
-	sponsorID, err := uc.oauthProvider[intent.Provider].Me(ctx, marketplaceCredentials.Credentials.AccessToken)
+	sponsorID, err := uc.oauthProvider[intent.Provider].MeID(ctx, marketplaceCredentials.Credentials.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +99,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 	})
 	if err != nil {
 		// Mark intent as failed so it can't be retried with a stale token
+		telemetry.Log().Info("Charge Failed", zap.Error(err))
 		_, _ = uc.intents.Fail(ctx, intentID)
 		return nil, errx.Internal("payment").SetMessage("charge failed").SetCause(err)
 	}
