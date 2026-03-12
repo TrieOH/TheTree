@@ -33,6 +33,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		telemetry.Log().Info("Error exchanging codes", zap.Error(err))
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
+
 	telemetry.Log().Info("Exchange result",
 		zap.String("access_token_prefix", credData.AccessToken[:20]),
 		zap.Int("user_id", credData.ProviderUserID),

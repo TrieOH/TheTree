@@ -2,20 +2,23 @@ package providers
 
 import (
 	"TriePayments/internal/core/domain"
+	"TriePayments/internal/plataform/telemetry"
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"github.com/mercadopago/sdk-go/pkg/payment"
 	"github.com/mercadopago/sdk-go/pkg/user"
+	"go.uber.org/zap"
 )
 
 const mpAuthURL = "https://auth.mercadopago.com/authorization"
@@ -46,21 +49,25 @@ func (p *MercadoPagoProvider) BuildAuthURL(state, redirectURI string) string {
 }
 
 func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectURI string) (domain.ProviderCredentialData, error) {
-	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("client_id", p.clientID)
-	data.Set("client_secret", p.accessToken)
-	data.Set("code", code)
-	data.Set("redirect_uri", redirectURI)
+	body, err := json.Marshal(map[string]any{
+		"grant_type":    "authorization_code",
+		"client_id":     p.clientID,
+		"client_secret": p.accessToken,
+		"code":          code,
+		"redirect_uri":  redirectURI,
+	})
+	if err != nil {
+		return domain.ProviderCredentialData{}, err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		"https://api.mercadopago.com/oauth/token",
-		strings.NewReader(data.Encode()),
+		bytes.NewReader(body),
 	)
 	if err != nil {
 		return domain.ProviderCredentialData{}, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -68,14 +75,28 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectUR
 	}
 	defer resp.Body.Close()
 
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return domain.ProviderCredentialData{}, err
+	}
+
+	telemetry.Log().Info("MP exchange response",
+		zap.Int("status", resp.StatusCode),
+		zap.String("body", string(rawBody)),
+	)
+
 	var result struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 		UserID       int    `json:"user_id"`
 		Nickname     string `json:"nickname"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(rawBody, &result); err != nil {
 		return domain.ProviderCredentialData{}, err
+	}
+
+	if result.AccessToken == "" {
+		return domain.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
 	}
 
 	return domain.ProviderCredentialData{
