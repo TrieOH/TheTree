@@ -14,7 +14,6 @@ import (
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"github.com/mercadopago/sdk-go/pkg/payment"
 	"github.com/mercadopago/sdk-go/pkg/user"
-	"github.com/spf13/viper"
 )
 
 const mpAuthURL = "https://auth.mercadopago.com/authorization"
@@ -79,7 +78,6 @@ func (p *MercadoPagoProvider) Charge(ctx context.Context, req domain.ChargeReque
 			Email: req.PayerEmail,
 		},
 		ApplicationFee: req.ApplicationFee,
-		SponsorID:      viper.GetInt("MP_CLIENT_ID"),
 	})
 	if err != nil {
 		return nil, err
