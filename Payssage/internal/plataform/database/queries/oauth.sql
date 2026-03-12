@@ -37,3 +37,14 @@ WHERE workspace_id = $1
   AND revoked_at IS NULL
 ORDER BY created_at DESC
     LIMIT 1;
+
+-- FIXME Make this query take in credential ID for the seller
+-- name: GetSellerCredentialByProvider :one
+SELECT pc.* FROM provider_credentials pc
+ LEFT JOIN marketplace_configs mc ON mc.credential_id = pc.id
+WHERE pc.workspace_id = $1
+  AND pc.provider = $2
+  AND pc.revoked_at IS NULL
+  AND mc.id IS NULL
+ORDER BY pc.created_at DESC
+    LIMIT 1;

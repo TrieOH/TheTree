@@ -65,7 +65,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		)
 	}
 
-	credential, err := uc.credentials.GetByWorkspaceAndProvider(ctx, workspace.ID, intent.Provider)
+	credential, err := uc.credentials.GetSellerCredentialByProvider(ctx, workspace.ID, intent.Provider)
 	if err != nil {
 		return nil, err
 	}

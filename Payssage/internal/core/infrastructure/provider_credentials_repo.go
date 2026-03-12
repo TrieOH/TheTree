@@ -133,3 +133,17 @@ func (repo *providerCredentialsRepo) GetByWorkspaceAndProvider(ctx context.Conte
 
 	return mapProviderCredentialFromDB(&row)
 }
+
+func (repo *providerCredentialsRepo) GetSellerCredentialByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*domain.ProviderCredential, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.GetSellerCredentialByProvider")
+	defer span.End()
+
+	row, err := repo.queries(ctx).GetSellerCredentialByProvider(ctx, sqlc.GetSellerCredentialByProviderParams{
+		WorkspaceID: workspaceID,
+		Provider:    provider,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "provider_credential")
+	}
+	return mapProviderCredentialFromDB(&row)
+}

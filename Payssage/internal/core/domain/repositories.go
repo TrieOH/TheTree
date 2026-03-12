@@ -66,6 +66,7 @@ type ProviderCredentialRepo interface {
 	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]ProviderCredential, error)
 	Revoke(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*ProviderCredential, error)
 	GetByWorkspaceAndProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*ProviderCredential, error)
+	GetSellerCredentialByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*ProviderCredential, error)
 }
 
 type MarketplaceConfigRepo interface {
