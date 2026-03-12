@@ -22,6 +22,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { bpsToPercentage } from '#/shared/lib/utils'
 import type { OauthSetupI, OauthWorkspaceMarketplaceConfigI } from '#/features/oauth/model'
+import { env } from '#/env'
 
 
 const queryParams = z.object({
@@ -33,8 +34,6 @@ export const Route = createFileRoute('/admin/$name/providers/')({
   component: RouteComponent,
   validateSearch: (search) => queryParams.parse(search)
 })
-
-const SUPPORTED_PROVIDERS_RAW = "mercadopago"
 
 const getProviderInfo = (provider: string) => {
   const p = provider.toLowerCase()
@@ -68,7 +67,7 @@ function RouteComponent() {
   const queryClient = useQueryClient()
 
   const supportedProviders = useMemo(() => {
-    return SUPPORTED_PROVIDERS_RAW.split(',').map(p => p.trim()).filter(Boolean)
+    return env.VITE_SUPPORTED_PROVIDERS
   }, [])
 
   const { data: configs, isLoading: isLoadingConfigs } = useQuery(allWorkspaceMarketplaceConfigsQueryOptions(name))
