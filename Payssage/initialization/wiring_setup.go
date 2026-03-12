@@ -102,6 +102,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	mpProvider, err := providers.NewMercadoPagoProvider(
 		viper.GetString("MP_CLIENT_ID"),
 		viper.GetString("MP_ACCESS_TOKEN"),
+		viper.GetString("MP_CLIENT_SECRET"),
 		viper.GetString("MP_REDIRECT_URI"), // https://triepayments.com/oauth/mercadopago/callback
 	)
 	if err != nil {

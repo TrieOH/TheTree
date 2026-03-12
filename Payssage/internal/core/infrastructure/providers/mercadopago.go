@@ -24,23 +24,25 @@ import (
 const mpAuthURL = "https://auth.mercadopago.com/authorization"
 
 type MercadoPagoProvider struct {
-	clientID    string
-	accessToken string // add this
-	redirectURI string
-	oauthClient oauth.Client
+	clientID     string
+	accessToken  string
+	clientSecret string
+	redirectURI  string
+	oauthClient  oauth.Client
 }
 
-func NewMercadoPagoProvider(clientID, accessToken, redirectURI string) (*MercadoPagoProvider, error) {
+func NewMercadoPagoProvider(clientID, accessToken, clientSecret, redirectURI string) (*MercadoPagoProvider, error) {
 	cfg, err := config.New(accessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MercadoPagoProvider{
-		clientID:    clientID,
-		accessToken: accessToken, // add this
-		redirectURI: redirectURI,
-		oauthClient: oauth.NewClient(cfg),
+		clientID:     clientID,
+		accessToken:  accessToken,
+		clientSecret: clientSecret,
+		redirectURI:  redirectURI,
+		oauthClient:  oauth.NewClient(cfg),
 	}, nil
 }
 
@@ -52,7 +54,7 @@ func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectUR
 	body, err := json.Marshal(map[string]any{
 		"grant_type":    "authorization_code",
 		"client_id":     p.clientID,
-		"client_secret": p.accessToken,
+		"client_secret": p.clientSecret,
 		"code":          code,
 		"redirect_uri":  redirectURI,
 	})
