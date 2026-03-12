@@ -6,8 +6,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/mercadopago/sdk-go/pkg/config"
@@ -20,6 +22,7 @@ const mpAuthURL = "https://auth.mercadopago.com/authorization"
 
 type MercadoPagoProvider struct {
 	clientID    string
+	accessToken string // add this
 	redirectURI string
 	oauthClient oauth.Client
 }
@@ -32,6 +35,7 @@ func NewMercadoPagoProvider(clientID, accessToken, redirectURI string) (*Mercado
 
 	return &MercadoPagoProvider{
 		clientID:    clientID,
+		accessToken: accessToken, // add this
 		redirectURI: redirectURI,
 		oauthClient: oauth.NewClient(cfg),
 	}, nil
@@ -42,20 +46,41 @@ func (p *MercadoPagoProvider) BuildAuthURL(state, redirectURI string) string {
 }
 
 func (p *MercadoPagoProvider) ExchangeCode(ctx context.Context, code, redirectURI string) (domain.ProviderCredentialData, error) {
-	resource, err := p.oauthClient.Create(ctx, code, redirectURI)
+	data := url.Values{}
+	data.Set("grant_type", "authorization_code")
+	data.Set("client_id", p.clientID)
+	data.Set("client_secret", p.accessToken)
+	data.Set("code", code)
+	data.Set("redirect_uri", redirectURI)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		"https://api.mercadopago.com/oauth/token",
+		strings.NewReader(data.Encode()),
+	)
 	if err != nil {
 		return domain.ProviderCredentialData{}, err
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	id, err := p.MeID(ctx, resource.AccessToken)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		return domain.ProviderCredentialData{}, err
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		UserID       int    `json:"user_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return domain.ProviderCredentialData{}, err
 	}
 
 	return domain.ProviderCredentialData{
-		AccessToken:    resource.AccessToken,
-		RefreshToken:   resource.RefreshToken,
-		ProviderUserID: id,
+		AccessToken:    result.AccessToken,
+		RefreshToken:   result.RefreshToken,
+		ProviderUserID: result.UserID,
 	}, nil
 }
 
