@@ -25,6 +25,22 @@ func LoadEnv(app *TriePayments) {
 		log.Fatal("GO_AUTH_PROJECT_ID must be set")
 	}
 
+	if viper.GetString("MP_CLIENT_ID") == "" {
+		log.Fatal("MP_CLIENT_ID must be set")
+	}
+	if viper.GetString("MP_CLIENT_SECRET") == "" {
+		log.Fatal("MP_CLIENT_SECRET must be set")
+	}
+	if viper.GetString("MP_ACCESS_TOKEN") == "" {
+		log.Fatal("MP_ACCESS_TOKEN must be set")
+	}
+	if viper.GetString("MP_REDIRECT_URI") == "" {
+		log.Fatal("MP_REDIRECT_URI must be set")
+	}
+	if viper.GetString("MP_WEBHOOK_SECRET") == "" {
+		log.Fatal("MP_WEBHOOK_SECRET must be set")
+	}
+
 	Port := viper.GetString("PORT")
 	if Port == "" {
 		Port = "8080"
