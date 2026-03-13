@@ -31,6 +31,15 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 		log.Printf("Warning: failed to rotate expired project keys: %v", err)
 	}
 
+	// Also run the full key rotation logic to create new keys for projects without active keys
+	if err := tryRotateGoAuthKeys(ctx, queries); err != nil {
+		log.Printf("Warning: failed to rotate goauth keys: %v", err)
+	}
+
+	if err := tryRotateProjectKeys(ctx, queries); err != nil {
+		log.Printf("Warning: failed to rotate project keys: %v", err)
+	}
+
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
 		if fail.Is(fail.From(err), errx.SQLNotFound) {
@@ -158,7 +167,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 }
 
 func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
-	projects, err := q.ListProjectsWithActiveSigningKeys(ctx)
+	projects, err := q.ListProjectsWithSigningKeys(ctx)
 	fe := fail.From(err)
 	if fe != nil {
 		return fe
@@ -216,6 +225,10 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		ExpiresAt:       expiresAt,
 		VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
 	})
+
+	if err == nil {
+		return nil
+	}
 
 	// Rely on DB uniqueness for safety in concurrent rotations
 	if errx.IsUniqueViolation(fail.From(err)) {

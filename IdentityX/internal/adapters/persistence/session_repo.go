@@ -382,7 +382,7 @@ func (repo *sessionRepo) GetIdentityByEntityIDAndType(ctx context.Context, entit
 		EntityID: entityID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, fail.From(err).WithArgs("identity").RecordCtx(ctx)
 	}
 
 	span.SetAttributes(attribute.String("identity_id", sqlcIdentity.ID.String()))

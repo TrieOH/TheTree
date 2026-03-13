@@ -180,3 +180,10 @@ WHERE
   AND status = 'active'
   AND project_id IS NOT NULL;
 
+-- name: ListProjectsWithSigningKeys :many
+SELECT DISTINCT project_id
+FROM key_pair
+WHERE
+    key_type = 'project'
+  AND project_id IS NOT NULL;
+
