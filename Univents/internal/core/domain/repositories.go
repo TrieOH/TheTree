@@ -43,6 +43,7 @@ type ActivitiesRepository interface {
 	GetActiveUserActivityAttendanceRecords(ctx context.Context, userID, activityID uuid.UUID) (*AttendanceRecord, error)
 	GetUserActivityAttendanceRecords(ctx context.Context, userID, activityID uuid.UUID) ([]AttendanceRecord, error)
 	IsRegistered(ctx context.Context, userID, activityID uuid.UUID) (bool, error)
+	AttendanceExport(ctx context.Context, editionID uuid.UUID, filters ExportFilters) ([]AttendanceExportRow, error)
 }
 
 type CheckpointsRepository interface {

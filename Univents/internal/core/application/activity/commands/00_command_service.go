@@ -3,6 +3,7 @@ package commands
 import (
 	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
+	"univents/internal/shared/csvwriter"
 
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
@@ -14,6 +15,7 @@ type CommandService struct {
 	editions   domain.EditionsRepository
 	asynq      *asynq.Client
 	gaClient   *goauth.Client
+	csvWriter  *csvwriter.Writer[exportRow]
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
@@ -31,6 +33,7 @@ func New(
 		editions:   editions,
 		asynq:      asynq,
 		gaClient:   gaClient,
+		csvWriter:  csvwriter.New[exportRow](),
 		tracer:     tracer,
 		tx:         tx,
 	}

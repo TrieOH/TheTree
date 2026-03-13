@@ -84,6 +84,35 @@ SET
     scanned_by = $2
 WHERE id = $3;
 
+-- name: AttendanceExport :many
+SELECT
+    ar.id              AS attendance_id,
+    ar.user_id,
+    ar.status          AS attendance_status,
+    ar.checked_in_at,
+    ar.cancelled_at,
+    ar.scanned_by,
+    ar.created_at,
+    a.id               AS activity_id,
+    a.title            AS activity_title,
+    a.location         AS activity_location,
+    a.status           AS activity_status,
+    a.starts_at        AS activity_starts_at,
+    a.ends_at          AS activity_ends_at,
+    a.difficulty
+FROM attendance_records ar
+JOIN activities a ON a.id = ar.activity_id
+WHERE a.edition_id = @edition_id
+  AND ar.deleted_at IS NULL
+  AND a.deleted_at  IS NULL
+  AND (sqlc.narg(activity_ids)::uuid[]                     IS NULL OR a.id           = ANY(sqlc.narg(activity_ids)::uuid[]))
+  AND (sqlc.narg(attendance_statuses)::attendance_status[] IS NULL OR ar.status      = ANY(sqlc.narg(attendance_statuses)::attendance_status[]))
+  AND (sqlc.narg(activity_statuses)::activity_status[]     IS NULL OR a.status       = ANY(sqlc.narg(activity_statuses)::activity_status[]))
+  AND (sqlc.narg(difficulties)::difficulty_level[]         IS NULL OR a.difficulty   = ANY(sqlc.narg(difficulties)::difficulty_level[]))
+  AND (sqlc.narg(date_from)::timestamptz                   IS NULL OR ar.created_at >= sqlc.narg(date_from))
+  AND (sqlc.narg(date_to)::timestamptz                     IS NULL OR ar.created_at <= sqlc.narg(date_to))
+ORDER BY a.starts_at ASC, ar.created_at ASC;
+
 -- name: WaitlistAppend :one
 --INSERT INTO waitlist_entries (activity_id, user_id, position)
 --SELECT $1, $2, COALESCE(MAX(position) + 1, 0)

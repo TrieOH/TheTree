@@ -5,6 +5,7 @@ import (
 	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
+	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
@@ -304,4 +305,78 @@ func (repo *activitiesRepo) IsRegistered(ctx context.Context, userID, activityID
 	}
 
 	return isRegistered, nil
+}
+
+func mapExportRowFromDB(src sqlc.AttendanceExportRow) domain.AttendanceExportRow {
+	row := domain.AttendanceExportRow{
+		AttendanceID:     src.AttendanceID,
+		UserID:           src.UserID,
+		AttendanceStatus: domain.AttendanceStatus(src.AttendanceStatus),
+		CheckedInAt:      src.CheckedInAt,
+		CancelledAt:      src.CancelledAt,
+		ScannedBy:        src.ScannedBy,
+		RegisteredAt:     src.CreatedAt,
+		ActivityID:       src.ActivityID,
+		ActivityTitle:    src.ActivityTitle,
+		ActivityLocation: src.ActivityLocation,
+		ActivityStatus:   domain.ActivityStatus(src.ActivityStatus),
+		ActivityStartsAt: src.ActivityStartsAt,
+		ActivityEndsAt:   src.ActivityEndsAt,
+	}
+
+	if src.Difficulty != nil {
+		d := *src.Difficulty
+		row.Difficulty = &d
+	}
+
+	return row
+}
+func filtersToParams(editionID uuid.UUID, f domain.ExportFilters) sqlc.AttendanceExportParams {
+	return sqlc.AttendanceExportParams{
+		EditionID:          editionID,
+		ActivityIds:        toUUIDSlice(f.ActivityIDs),
+		AttendanceStatuses: toSlice(f.AttendanceStatuses, func(s domain.AttendanceStatus) sqlc.AttendanceStatus { return sqlc.AttendanceStatus(s) }),
+		ActivityStatuses:   toSlice(f.ActivityStatuses, func(s domain.ActivityStatus) sqlc.ActivityStatus { return sqlc.ActivityStatus(s) }),
+		Difficulties:       f.Difficulties,
+		DateFrom:           f.DateFrom,
+		DateTo:             f.DateTo,
+	}
+}
+
+func (repo *activitiesRepo) AttendanceExport(ctx context.Context, editionID uuid.UUID, filters domain.ExportFilters) ([]domain.AttendanceExportRow, error) {
+	ctx, span := repo.tracer.Start(ctx, "AttendanceExportRepo.AttendanceExport")
+	defer span.End()
+
+	sqlcRows, err := repo.queries(ctx).AttendanceExport(ctx, filtersToParams(editionID, filters))
+	if err != nil {
+		telemetry.Log().Error("raw db error", zap.Error(err))
+		return nil, errx.FromDB(err, "attendance_export")
+	}
+
+	rows := make([]domain.AttendanceExportRow, len(sqlcRows))
+	for i, r := range sqlcRows {
+		rows[i] = mapExportRowFromDB(r)
+	}
+
+	return rows, nil
+}
+
+// toUUIDSlice returns nil when empty so the SQL NULL check skips the filter.
+func toUUIDSlice(ids []uuid.UUID) []uuid.UUID {
+	if len(ids) == 0 {
+		return nil
+	}
+	return ids
+}
+
+// toSlice maps a typed slice to another type, returning nil when empty.
+func toSlice[In any, Out any](slice []In, fn func(In) Out) []Out {
+	if len(slice) == 0 {
+		return nil
+	}
+	out := make([]Out, len(slice))
+	for i, v := range slice {
+		out[i] = fn(v)
+	}
+	return out
 }

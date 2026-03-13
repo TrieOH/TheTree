@@ -1,6 +1,7 @@
 package editions
 
 import (
+	"fmt"
 	"net/http"
 	"univents/internal/core/application/activity/commands"
 	"univents/internal/core/application/activity/queries"
@@ -320,4 +321,46 @@ func (handler *Handler) ListRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK().WithData(records).Send(w)
+}
+
+// ExportAttendanceCSV godoc
+// @Summary Export attendance records as CSV
+// @Description Exports attendance records for an edition as a CSV file based on selected columns and filters
+// @Tags activities
+// @Accept json
+// @Produce text/csv
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param request body domain.ExportRequest true "Export configuration"
+// @Success 200 {file} binary "CSV file download"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/attendance/export [post]
+func (handler *Handler) ExportAttendanceCSV(w http.ResponseWriter, r *http.Request) {
+	editionID, rs := validation.GetUUID(r, "edition_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req domain.ExportRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="attendance_%s.csv"`, editionID))
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	ctx := r.Context()
+	if err := handler.commands.ExportAttendance(ctx, editionID, req, w); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
 }
