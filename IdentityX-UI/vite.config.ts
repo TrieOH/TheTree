@@ -18,7 +18,7 @@ const config = defineConfig({
     tailwindcss(),
     tanstackStart({
       prerender: {
-        enabled: true,
+        enabled: false,
       },
     }),
     viteReact(),
