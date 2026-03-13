@@ -254,7 +254,7 @@ func (repo *keyRepo) GetActiveGoAuthSigningKID(ctx context.Context) (string, err
 
 	kid, err := repo.queries(ctx).GetActiveGoAuthSigningKID(ctx)
 	if err != nil {
-		return "", fail.From(err).RecordCtx(ctx)
+		return "", fail.From(err).WithArgs("signing kid").RecordCtx(ctx)
 	}
 
 	return kid, nil
@@ -270,7 +270,7 @@ func (repo *keyRepo) GetActiveProjectSigningKID(ctx context.Context, projectID u
 
 	kid, err := repo.queries(ctx).GetActiveProjectSigningKID(ctx, &projectID)
 	if err != nil {
-		return "", fail.From(err).RecordCtx(ctx)
+		return "", fail.From(err).WithArgs("signing kid").RecordCtx(ctx)
 	}
 
 	return kid, nil
