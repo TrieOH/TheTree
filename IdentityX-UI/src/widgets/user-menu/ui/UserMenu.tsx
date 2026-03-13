@@ -3,7 +3,7 @@ import { Settings, Settings2 } from 'lucide-react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 
-import { BasicLogoutButton } from '@trieoh/node-auth-sdk/react'
+import { BasicLogoutButton } from '@soramux/node-auth-sdk/react'
 import { cn } from '@/shared/lib/utils'
 import { toast } from 'sonner'
 

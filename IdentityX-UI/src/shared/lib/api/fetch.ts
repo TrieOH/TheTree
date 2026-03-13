@@ -1,5 +1,5 @@
 import { env } from "@/env";
-import { createAuthenticatedFetch } from "@trieoh/node-auth-sdk";
+import { createAuthenticatedFetch } from "@soramux/node-auth-sdk";
 import { toast } from "sonner";
 
 interface RawCommonResponse {
