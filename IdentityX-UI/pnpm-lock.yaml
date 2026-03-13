@@ -20,6 +20,9 @@ importers:
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
+      '@soramux/node-auth-sdk':
+        specifier: 0.8.0
+        version: 0.8.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.10(typescript@5.9.3)(zod@4.2.1)
@@ -59,9 +62,6 @@ importers:
       '@tanstack/router-plugin':
         specifier: ^1.132.0
         version: 1.141.7(@tanstack/react-router@1.141.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(vite@7.3.0(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      '@trieoh/node-auth-sdk':
-        specifier: 0.7.0
-        version: 0.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1791,6 +1791,12 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
+  '@soramux/node-auth-sdk@0.8.0':
+    resolution: {integrity: sha512-quMChR0u+gLsMhQhWgSCuLcapkVFXDgNYPiuDAqegwpo9W36OQ4OKcrAu8PIAGNlzuRp3Xed7+CAq+hgUuAdHw==}
+    peerDependencies:
+      react: ^19.2.0
+      react-dom: ^19.2.0
+
   '@t3-oss/env-core@0.13.10':
     resolution: {integrity: sha512-NNFfdlJ+HmPHkLi2HKy7nwuat9SIYOxei9K10lO2YlcSObDILY7mHZNSHsieIM3A0/5OOzw/P/b+yLvPdaG52g==}
     peerDependencies:
@@ -2159,12 +2165,6 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
-
-  '@trieoh/node-auth-sdk@0.7.0':
-    resolution: {integrity: sha512-5N/H9uc34056p1JXCfD68I/CVF9irH2NCOvEAIk3jxXdCxmV0d1K+QT8NjVXllazWg7MOFbQUIieJoitExAwqA==, tarball: https://npm.pkg.github.com/download/@trieoh/node-auth-sdk/0.7.0/09d01d597a516d23bf7e03708d4cb29ed8eba35e}
-    peerDependencies:
-      react: ^19.2.0
-      react-dom: ^19.2.0
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -5002,6 +5002,13 @@ snapshots:
     dependencies:
       solid-js: 1.9.10
 
+  '@soramux/node-auth-sdk@0.8.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+      react-icons: 5.5.0(react@19.2.3)
+      ua-parser-js: 2.0.9
+
   '@t3-oss/env-core@0.13.10(typescript@5.9.3)(zod@4.2.1)':
     optionalDependencies:
       typescript: 5.9.3
@@ -5463,13 +5470,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.7
       '@types/react-dom': 19.2.3(@types/react@19.2.7)
-
-  '@trieoh/node-auth-sdk@0.7.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      react-icons: 5.5.0(react@19.2.3)
-      ua-parser-js: 2.0.9
 
   '@tybys/wasm-util@0.10.1':
     dependencies:

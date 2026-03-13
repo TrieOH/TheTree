@@ -1,5 +1,5 @@
 import { useFieldContext } from "@/shared/lib/forms";
-import { BasicSelectField } from "@trieoh/node-auth-sdk/react";
+import { BasicSelectField } from "@soramux/node-auth-sdk/react";
 
 
 interface Option {

@@ -4,7 +4,7 @@ import {
   HeadContent,
   Scripts,
 } from '@tanstack/react-router'
-import { AuthProvider, type useAuth } from '@trieoh/node-auth-sdk/react'
+import { AuthProvider, type useAuth } from '@soramux/node-auth-sdk/react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
@@ -38,7 +38,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className='min-w-xs' suppressHydrationWarning>
-        <AuthProvider baseURL="http://localhost:8080">
+        <AuthProvider baseURL="http://localhost:8080" isClient={false}>
           <AuthSynchronizer>
             {/* <PHProvider> */}
               <Header />

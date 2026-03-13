@@ -26,7 +26,7 @@ import { areFieldsEqual } from '../lib/field-utils';
 import PublishSchemaVersionButton from './PublishSchemaVersionButton';
 import { optionsDiff } from '../lib/field-options-diff-utils';
 import { rulesDiff } from '../lib/field-rules-diff-utils';
-import { EditorForm } from '@trieoh/node-auth-sdk/react';
+import { EditorForm } from '@soramux/node-auth-sdk/react';
 import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
 
 const EMPTY_FIELDS: FieldDefinitionResultI[] = [];
