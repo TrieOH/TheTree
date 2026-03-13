@@ -10,6 +10,7 @@ import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/rou
 import appCss from '../styles.css?url'
 import Header from '@/widgets/header/ui/Header'
 import { Toaster } from 'sonner'
+import { env } from '@/env'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -38,7 +39,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className='min-w-xs' suppressHydrationWarning>
-        <AuthProvider baseURL="http://localhost:8080" isClient={false}>
+        <AuthProvider baseURL={env.VITE_API_URL} isClient={false}>
           <AuthSynchronizer>
             {/* <PHProvider> */}
               <Header />
