@@ -5,7 +5,6 @@ import (
 	"TriePayments/internal/shared/authz"
 	"TriePayments/internal/shared/errx"
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -30,20 +29,9 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRe
 		return "", "", err
 	}
 
-	// verify workspace has this provider set up
-	creds, err := uc.credentials.ListByWorkspace(ctx, workspace.ID)
+	_, err = uc.marketplace.GetByProvider(ctx, workspace.ID, req.Provider)
 	if err != nil {
 		return "", "", err
-	}
-	hasProvider := false
-	for _, c := range creds {
-		if c.Provider == req.Provider && c.RevokedAt == nil {
-			hasProvider = true
-			break
-		}
-	}
-	if !hasProvider {
-		return "", "", errx.Invalid("provider").SetMessage(fmt.Sprintf("workspace has not set up provider: %s", req.Provider))
 	}
 
 	stateToken, err := generateState()
