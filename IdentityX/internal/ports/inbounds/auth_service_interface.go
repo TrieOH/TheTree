@@ -1,13 +1,14 @@
 package inbounds
 
 import (
+	"GoAuth/internal/domain/authz"
 	"context"
 )
 
 type AuthService interface {
 	Register(ctx context.Context, in RegisterUserInput) error
 	Login(ctx context.Context, in LoginUserInput) (*UserTokensOutput, error)
-	Logout(ctx context.Context, accessToken string) error
+	Logout(ctx context.Context, snapshot authz.ServiceSnapshot) error
 	Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error)
 	RegisterProjectUser(ctx context.Context, in ProjectRegisterInput) error
 	LoginProjectUser(ctx context.Context, in ProjectLoginInput) (*UserTokensOutput, error)

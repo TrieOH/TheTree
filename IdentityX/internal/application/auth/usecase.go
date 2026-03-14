@@ -330,7 +330,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 
 // Logout handles the business logic for logging out a user.
 // It retrieves the principal from the context, deletes the session, and revokes the refresh token.
-func (uc *UseCase) Logout(ctx context.Context, accessToken string) error {
+func (uc *UseCase) Logout(ctx context.Context, snapshot authz.ServiceSnapshot) error {
 	ctx, span := usecaseTracer.Start(ctx, "AuthService.Logout")
 	defer span.End()
 
@@ -341,13 +341,7 @@ func (uc *UseCase) Logout(ctx context.Context, accessToken string) error {
 		}
 	}()
 
-	claims, err := uc.tokenVerifier.VerifyAccessToken(ctx, accessToken)
-	if err != nil {
-		return err
-	}
-
-	sessID := claims.Sub.SessionID
-
+	sessID := snapshot.AccessData.Sub.SessionID
 	sessions := uc.deps.Sessions
 
 	var principal *authz.Principal
