@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"GoAuth/internal/application"
+	"GoAuth/internal/ports/outbounds"
 )
 
 type HandlerBundle struct {
@@ -19,11 +20,11 @@ type HandlerBundle struct {
 	SystemHandler        *SystemHandler
 }
 
-func New(app *application.Application) *HandlerBundle {
+func New(app *application.Application, rdc outbounds.RedisCacheService) *HandlerBundle {
 	return &HandlerBundle{
 		AuthHandler:          NewAuthHandler(app.Auth, app.Schema),
 		ProjectHandler:       NewProjectHandler(app.Project),
-		SessionHandler:       NewSessionHandler(app.Session),
+		SessionHandler:       NewSessionHandler(app.Session, rdc),
 		SchemaHandler:        NewSchemaHandler(app.Schema),
 		SchemaVersionHandler: NewSchemaVersionHandler(app.SchemaVersions),
 		SchemaFieldsHandler:  NewSchemaFieldsHandler(app.SchemaFields),

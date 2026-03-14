@@ -110,7 +110,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 					}
 
 					// TTL safety guard (important)
-					if time.Now().After(snapshot.ExpiresAt) {
+					if time.Now().After(snapshot.AccessData.ExpiresAt.Time) {
 						err = mw.cache.Delete(ctx, "svc_session:"+svcCookie.Value)
 						if err != nil {
 							logs.L().Error("Error deleting service session", zap.Error(err))
@@ -124,6 +124,9 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return
 				}
+				logs.L().Info("Auth cache entry not found")
+			} else {
+				logs.L().Info("Error getting cookie", zap.Error(err))
 			}
 
 			// ⭐ Authorization header (PRIMARY auth)

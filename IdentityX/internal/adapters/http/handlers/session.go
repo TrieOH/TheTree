@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"GoAuth/internal/adapters/http/dto"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
+	"GoAuth/internal/ports/outbounds"
+	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -12,10 +15,11 @@ import (
 
 type SessionHandler struct {
 	sessions inbounds.SessionService
+	redis    outbounds.RedisCacheService
 }
 
-func NewSessionHandler(uc inbounds.SessionService) *SessionHandler {
-	return &SessionHandler{sessions: uc}
+func NewSessionHandler(uc inbounds.SessionService, redis outbounds.RedisCacheService) *SessionHandler {
+	return &SessionHandler{sessions: uc, redis: redis}
 }
 
 // ListUserSessions godoc
@@ -56,19 +60,41 @@ func (handler *SessionHandler) ListUserSessions(w http.ResponseWriter, r *http.R
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
 func (handler *SessionHandler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	sessionID, rs := getUUID(r, "session_id")
 	if rs != nil {
 		rs.Send(w)
 		return
 	}
 
-	accessToken, err := r.Cookie("access_token")
-	if err != nil {
-		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+	svcCookie, err := r.Cookie("svc_session")
+	if err != nil || svcCookie.Value == "" {
+		resp.Unauthorized().WithMsg("missing svc_session cookie").Send(w)
 		return
 	}
 
-	err = handler.sessions.RevokeByID(r.Context(), sessionID, accessToken.Value)
+	key := "svc_session:" + svcCookie.Value
+	data, found, err := handler.redis.GetAny(ctx, key)
+	if err != nil || !found {
+		resp.Unauthorized().WithMsg("invalid service session").Send(w)
+		return
+	}
+
+	bytesData, ok := data.([]byte)
+	if !ok {
+		resp.Unauthorized().WithMsg("invalid session type").Send(w)
+		return
+	}
+
+	// Inline unmarshal
+	var snapshot dto.MeResponse
+	if err := json.Unmarshal(bytesData, &snapshot); err != nil {
+		_ = handler.redis.Delete(ctx, key)
+		resp.Unauthorized().WithMsg("failed to unmarshal session").Send(w)
+		return
+	}
+
+	err = handler.sessions.RevokeByID(ctx, sessionID, snapshot.AccessClaims.Sub.SessionID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -137,23 +163,33 @@ func (handler *SessionHandler) RevokeAllSessions(w http.ResponseWriter, r *http.
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /sessions/me [get]
 func (handler *SessionHandler) Me(w http.ResponseWriter, r *http.Request) {
-	accessToken, err := r.Cookie("access_token")
-	if err != nil {
-		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+	ctx := r.Context()
+
+	svcCookie, err := r.Cookie("svc_session")
+	if err != nil || svcCookie.Value == "" {
+		resp.Unauthorized().WithMsg("missing svc_session cookie").Send(w)
 		return
 	}
 
-	refreshToken, err := r.Cookie("refresh_token")
-	if err != nil {
-		resp.FromError(fail.New(errx.AuthMissingRefreshCookie).Trace(err.Error())).Send(w)
+	key := "svc_session:" + svcCookie.Value
+	data, found, err := handler.redis.GetAny(ctx, key)
+	if err != nil || !found {
+		resp.Unauthorized().WithMsg("invalid service session").Send(w)
 		return
 	}
 
-	me, err := handler.sessions.Me(r.Context(), accessToken.Value, refreshToken.Value)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	bytesData, ok := data.([]byte)
+	if !ok {
+		resp.Unauthorized().WithMsg("invalid session type").Send(w)
 		return
 	}
 
-	resp.OK().WithData(dto.MeOutputToMeResponse(*me)).Send(w)
+	var snapshot authz.ServiceSnapshot
+	if err := json.Unmarshal(bytesData, &snapshot); err != nil {
+		_ = handler.redis.Delete(ctx, key)
+		resp.Unauthorized().WithMsg("failed to unmarshal session").Send(w)
+		return
+	}
+
+	resp.OK().WithData(snapshot).Send(w)
 }
