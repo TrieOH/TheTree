@@ -4,13 +4,13 @@ import { env } from "#/env";
 export const authFetcher = createFetcher(
   {
     baseURL: env.VITE_API_URL,
-    authBaseURL: "http://localhost:8080",
+    authBaseURL: env.VITE_AUTH_API_URL,
   }
 );
 
 export const tanstackQueryFetcher = createQueryFetcher(
   {
     baseURL: env.VITE_API_URL,
-    authBaseURL: "http://localhost:8080",
+    authBaseURL: env.VITE_AUTH_API_URL,
   }
 );
