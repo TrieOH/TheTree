@@ -100,7 +100,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	fe := fail.From(err)
 
 	if fe != nil {
-		if errx.IsUniqueViolation(fe) {
+		if fail.Is(fe, errx.SCOPEOneGlobal) || errx.IsUniqueViolation(fe) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
 			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
