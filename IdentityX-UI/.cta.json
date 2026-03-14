@@ -10,7 +10,7 @@
   "framework": "react-cra",
   "chosenAddOns": [
     "biome",
-    "nitro",
+    "cloudflare",
     "start",
     "shadcn",
     "tanstack-query"
