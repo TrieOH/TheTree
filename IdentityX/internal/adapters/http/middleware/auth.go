@@ -6,6 +6,7 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -26,11 +27,13 @@ type AuthMiddleware struct {
 func NewAuthMiddleware(
 	authenticator inbounds.RequestAuthenticator,
 	tracer trace.Tracer,
+	cache outbounds.RedisCacheService,
 	issuer string,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
 		authenticator: authenticator,
 		tracer:        tracer,
+		cache:         cache,
 		issuer:        issuer,
 	}
 }
@@ -85,17 +88,24 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 
 				var snapshotAny any
 				var found bool
-				snapshotAny, found, err = mw.cache.Get(ctx, "svc_session:"+svcCookie.Value)
+				snapshotAny, found, err = mw.cache.GetAny(ctx, "svc_session:"+svcCookie.Value)
 				if err != nil {
 					// IMPORTANT:
 					// Cache failure must NOT hard fail auth.
 					// We fall back to Bearer / other auth sources.
 				} else if found {
-					snapshot, ok := snapshotAny.(authz.ServiceSnapshot)
+					data, ok := snapshotAny.([]byte)
 					if !ok {
-						logs.L().Error("invalid svc session type")
+						logs.L().Error("unexpected cache type", zap.Any("snapshotAny", snapshotAny))
+						resp.Unauthorized().WithMsg("invalid session").Send(w)
+						return
+					}
+
+					var snapshot authz.ServiceSnapshot
+					if err := json.Unmarshal(data, &snapshot); err != nil {
+						logs.L().Error("failed to unmarshal session", zap.Error(err))
 						_ = mw.cache.Delete(ctx, key)
-						resp.Unauthorized().WithMsg("invalid session").WithModule("AuthMW").Send(w)
+						resp.Unauthorized().WithMsg("invalid session").Send(w)
 						return
 					}
 
@@ -110,7 +120,6 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 					}
 
 					principal := snapshot.ToPrincipal()
-
 					ctx = authz.WithPrincipal(ctx, principal)
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return

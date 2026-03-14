@@ -41,6 +41,19 @@ func (r *RedisCache) Get(ctx context.Context, key string) (any, bool, error) {
 	return result, true, nil
 }
 
+// New GetAny: returns raw value as []byte (no unmarshal) for compatibility with middleware
+func (r *RedisCache) GetAny(ctx context.Context, key string) (any, bool, error) {
+	val, err := r.client.Get(ctx, key).Result()
+	if errors.Is(err, redis.Nil) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+
+	return []byte(val), true, nil
+}
+
 func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	var data []byte
 	var err error

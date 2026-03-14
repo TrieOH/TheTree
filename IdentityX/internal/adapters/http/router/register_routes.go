@@ -3,6 +3,7 @@ package router
 import (
 	"GoAuth/internal/adapters/http/handlers"
 	"GoAuth/internal/adapters/http/middleware"
+	redis2 "GoAuth/internal/adapters/memory/redis"
 	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
@@ -29,7 +30,7 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 
 	handlerBundle := handlers.New(app)
 
-	authMW := middleware.NewAuthMiddleware(app.Authenticator, tracer, viper.GetString("ISSUER"))
+	authMW := middleware.NewAuthMiddleware(app.Authenticator, tracer, redis2.NewRedisCache(rdb), viper.GetString("ISSUER"))
 
 	registerAuthRoutes(r, handlerBundle.AuthHandler, authMW)
 	registerSessionRoutes(r, handlerBundle.SessionHandler, authMW)
