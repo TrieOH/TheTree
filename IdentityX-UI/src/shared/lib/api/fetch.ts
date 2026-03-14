@@ -23,8 +23,6 @@ interface RawErrorResponse extends RawCommonResponse {
   trace?: string[];
 }
 
-type RawApiResponse<T> = RawSuccessResponse<T> | RawErrorResponse;
-
 // --- Standardized Client-Facing API Response Types ---
 export type ApiSuccessResponse<T> = RawSuccessResponse<T> & { success: true };
 export type ApiErrorResponse = RawErrorResponse & { success: false; details?: unknown; };
@@ -66,11 +64,14 @@ export async function authFetcher<TData>(
     if (!baseUrlString.startsWith('http://') && !baseUrlString.startsWith('https://')) {
       baseUrlString = `http://${baseUrlString}`; // Default to http if missing
     }
+
+    if (!baseUrlString.endsWith('/')) baseUrlString += '/';
+
     const baseUrl = new URL(baseUrlString);
     const fullUrl = new URL(path, baseUrl).toString();
 
     const response = await authenticatedFetch(fullUrl, init);
-    const rawResponse: RawApiResponse<TData> = await response.json().catch(() => ({
+    const rawResponse = await response.json().catch(() => ({
         module: "Client",
         message: response.statusText || "Unknown error",
         timestamp: new Date().toISOString(),
