@@ -8,6 +8,7 @@ import (
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/key"
+	project2 "GoAuth/internal/domain/project"
 	"GoAuth/internal/domain/project_users"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
@@ -319,6 +320,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		Domain:             "https://dev.trieauth.trieoh.com",
 		IsUpToDate:         true,
 	}, nil
 }
@@ -563,6 +565,7 @@ func (uc *UseCase) finishClientRefresh(
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		Domain:             "https://dev.trieauth.trieoh.com",
 		IsUpToDate:         true,
 	}, nil
 }
@@ -660,11 +663,18 @@ func (uc *UseCase) finishProjectUserRefresh(
 		isUpToDate = false
 	}
 
+	var project *project2.Project
+	project, err = uc.deps.Projects.GetByIDInternal(ctx, *sess.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		Domain:             project.Domain,
 		IsUpToDate:         isUpToDate,
 	}, nil
 }
@@ -947,11 +957,18 @@ func (uc *UseCase) LoginProjectUser(
 		isUpToDate = false
 	}
 
+	var project *project2.Project
+	project, err = uc.deps.Projects.GetByIDInternal(ctx, in.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &inbounds.UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
 		RefreshTokenString: refreshTokenStr,
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
+		Domain:             project.Domain,
 		IsUpToDate:         isUpToDate,
 	}, nil
 }

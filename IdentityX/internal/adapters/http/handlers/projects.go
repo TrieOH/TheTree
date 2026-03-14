@@ -50,6 +50,7 @@ func (handler *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Requ
 	in := inbounds.ProjectServiceInput{
 		ProjectName: req.ProjectName,
 		Metadata:    req.Metadata,
+		Domain:      req.Domain,
 	}
 
 	ctx := r.Context()
@@ -272,6 +273,7 @@ func (handler *ProjectHandler) UpdateProjectByID(w http.ResponseWriter, r *http.
 	in := inbounds.ProjectServiceInput{
 		ProjectID:   projectID,
 		ProjectName: req.ProjectName,
+		Domain:      req.Domain,
 		Metadata:    req.Metadata,
 	}
 

@@ -85,6 +85,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 
 	createdProject, err := uc.projects.Create(ctx, project.Project{
 		ProjectName: in.ProjectName,
+		Domain:      in.Domain,
 		OwnerID:     principal.UserID,
 		Metadata:    in.Metadata,
 		IsActive:    true,
@@ -267,9 +268,14 @@ func (uc *UseCase) Update(ctx context.Context, in inbounds.ProjectServiceInput) 
 	}
 	newProject.Metadata = in.Metadata
 
+	if in.Domain != "" {
+		newProject.Domain = in.Domain
+	}
+
 	updatedProject, err := uc.projects.Update(ctx, project.Project{
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
+		Domain:      newProject.Domain,
 		Metadata:    newProject.Metadata,
 	},
 		principal.UserID,

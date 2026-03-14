@@ -90,8 +90,8 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.RefreshExpiresAt)
+	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
+	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
 
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
@@ -175,8 +175,8 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.RefreshExpiresAt)
+	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
+	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
 
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)
@@ -313,8 +313,8 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.RefreshExpiresAt)
+	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
+	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
 
 	http.SetCookie(w, accessCookie)
 	http.SetCookie(w, refreshCookie)

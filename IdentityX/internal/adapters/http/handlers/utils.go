@@ -190,15 +190,16 @@ func parseXForwardedFor(xff string, trusted []netip.Prefix) (netip.Addr, bool) {
 	return netip.Addr{}, false
 }
 
-func CreateCookie(name, value string, age time.Time) *http.Cookie {
+func CreateCookie(name, value, domain string, age time.Time) *http.Cookie {
 	return &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     "/",
+		Domain:   domain,
 		MaxAge:   int(time.Until(age).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }
 
@@ -210,6 +211,6 @@ func DeleteCookie(name string) *http.Cookie {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }

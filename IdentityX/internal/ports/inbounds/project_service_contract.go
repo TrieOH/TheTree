@@ -12,6 +12,7 @@ import (
 type ProjectServiceInput struct {
 	ProjectID   uuid.UUID
 	ProjectName string
+	Domain      string
 	Metadata    json.RawMessage
 }
 

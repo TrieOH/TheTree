@@ -42,6 +42,7 @@ func (repo *projectRepo) queries(ctx context.Context) *sqlc.Queries {
 func mapProjectFromDB(dst *project.Project, src *sqlc.Project) {
 	dst.ID = src.ID
 	dst.ProjectName = src.ProjectName
+	dst.Domain = src.Domain
 	dst.OwnerID = src.OwnerID
 	dst.Metadata = src.Metadata
 	dst.IsActive = src.IsActive
@@ -60,6 +61,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate project.Project) (
 
 	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
 		ProjectName: toCreate.ProjectName,
+		Domain:      toCreate.Domain,
 		OwnerID:     toCreate.OwnerID,
 		Metadata:    toCreate.Metadata,
 		IsActive:    toCreate.IsActive,
@@ -176,6 +178,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate project.Project, o
 		ID:          toUpdate.ID,
 		OwnerID:     ownerID,
 		ProjectName: toUpdate.ProjectName,
+		Domain:      toUpdate.Domain,
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
