@@ -10,6 +10,7 @@ import (
 type Project struct {
 	ID          uuid.UUID
 	ProjectName string
+	Domain      string
 	OwnerID     uuid.UUID
 	Metadata    json.RawMessage
 	IsActive    bool

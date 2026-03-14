@@ -4,6 +4,7 @@
 CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     project_name VARCHAR(255) NOT NULL DEFAULT 'Unnamed Project',
+    domain VARCHAR(1024) NOT NULL,
     owner_id UUID NOT NULL REFERENCES users(id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,

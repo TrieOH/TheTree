@@ -1,6 +1,6 @@
 -- name: CreateProject :one
-INSERT INTO projects (project_name, owner_id, metadata, is_active)
-VALUES ($1, $2, $3, $4)
+INSERT INTO projects (project_name, owner_id, metadata, is_active, domain)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetProjectByIDExternal :one
@@ -22,7 +22,9 @@ ORDER BY created_at DESC;
 -- name: UpdateProject :one
 UPDATE projects
 SET 
-  project_name = $3, metadata = $4,
+  project_name = $3,
+  metadata = $4,
+  domain = $5,
   updated_at = NOW()
 WHERE id = $1 and owner_id = $2
 RETURNING *;

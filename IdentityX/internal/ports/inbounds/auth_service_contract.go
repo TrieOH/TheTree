@@ -28,6 +28,7 @@ type UserTokensOutput struct {
 	AccessExpiresAt  time.Time
 	RefreshExpiresAt time.Time
 
+	Domain     string
 	IsUpToDate bool
 }
 
