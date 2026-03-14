@@ -7,6 +7,7 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
@@ -475,4 +476,43 @@ func (handler *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	resp.OK("password reset successfully").Send(w)
+}
+
+// Exchange godoc
+// @Summary Exchange global access token
+// @Description Exchanges a global access token for a project-scoped session snapshot and tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer Global Access Token"
+// @Param Refresh header string true "Bearer Global Refresh Token"
+// @Success 200 {object} inbounds.ExchangeOutput "Token exchanged successfully"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 400 {object} ErrorResponse "Bad request"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /auth/exchange [post]
+func (h *AuthHandler) Exchange(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		resp.Unauthorized().WithMsg("missing bearer token").Send(w)
+		return
+	}
+
+	refreshHeader := strings.TrimSpace(r.Header.Get("Refresh"))
+	if !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		resp.Unauthorized().WithMsg("missing bearer token").Send(w)
+		return
+	}
+
+	globalAccess := strings.TrimSpace(authHeader[7:])
+	globalRefresh := strings.TrimSpace(refreshHeader[7:])
+
+	out, err := h.auth.Exchange(ctx, globalAccess, globalRefresh)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("exchanged").WithData(out).Send(w)
 }

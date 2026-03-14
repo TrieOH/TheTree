@@ -4,6 +4,7 @@ import (
 	"GoAuth/internal/ports/outbounds"
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -13,7 +14,7 @@ type RedisCache struct {
 	client *redis.Client
 }
 
-var _ outbounds.CacheService = (*RedisCache)(nil)
+var _ outbounds.RedisCacheService = (*RedisCache)(nil)
 
 func NewRedisCache(rdb *redis.Client) *RedisCache {
 	return &RedisCache{
@@ -21,24 +22,26 @@ func NewRedisCache(rdb *redis.Client) *RedisCache {
 	}
 }
 
-func (r *RedisCache) Get(ctx context.Context, key string) (any, bool) {
+func (r *RedisCache) Get(ctx context.Context, key string) (any, bool, error) {
 	val, err := r.client.Get(ctx, key).Result()
-	if err == redis.Nil {
-		return nil, false
-	} else if err != nil {
-		return nil, false
+
+	if errors.Is(err, redis.Nil) {
+		return nil, false, nil
+	}
+
+	if err != nil {
+		return nil, false, err
 	}
 
 	var result any
-	err = json.Unmarshal([]byte(val), &result)
-	if err != nil {
-		return val, true // Return as string if not JSON
+	if err := json.Unmarshal([]byte(val), &result); err != nil {
+		return val, true, nil
 	}
 
-	return result, true
+	return result, true, nil
 }
 
-func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Duration) {
+func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	var data []byte
 	var err error
 
@@ -47,24 +50,35 @@ func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Du
 	} else {
 		data, err = json.Marshal(value)
 		if err != nil {
-			return
+			return err
 		}
 	}
 
-	r.client.Set(ctx, key, data, ttl)
+	cmd := r.client.Set(ctx, key, data, ttl)
+	return cmd.Err()
 }
 
-func (r *RedisCache) Delete(ctx context.Context, key string) {
-	r.client.Del(ctx, key)
+func (r *RedisCache) Delete(ctx context.Context, key string) error {
+	return r.client.Del(ctx, key).Err()
 }
 
-func (r *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) {
+func (r *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) error {
+
 	iter := r.client.Scan(ctx, 0, prefix+"*", 0).Iterator()
+
 	for iter.Next(ctx) {
-		r.client.Del(ctx, iter.Val())
+		if err := r.client.Del(ctx, iter.Val()).Err(); err != nil {
+			return err
+		}
 	}
+
+	if err := iter.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (r *RedisCache) Clear(ctx context.Context) {
-	r.client.FlushDB(ctx)
+func (r *RedisCache) Clear(ctx context.Context) error {
+	return r.client.FlushDB(ctx).Err()
 }

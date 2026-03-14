@@ -6,8 +6,5 @@ import (
 )
 
 type RequestAuthenticator interface {
-	AuthenticateRequest(
-		ctx context.Context,
-		in AuthenticateRequestInput,
-	) (*authz.Principal, error)
+	AuthenticateRequest(ctx context.Context, in AuthenticateRequestInput) (*authz.Principal, error)
 }

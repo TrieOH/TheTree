@@ -82,3 +82,8 @@ type ResetPasswordInput struct {
 	NewPassword string
 	Token       string
 }
+
+type ExchangeOutput struct {
+	ServiceSessionID string    `json:"service_session_id"`
+	ExpiresAt        time.Time `json:"expires_at"`
+}

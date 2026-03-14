@@ -96,7 +96,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		err = suite.App.Keys.RevokeKey(ctx, preRotationKID)
 		require.NoError(t, err, "Failed to manually revoke old key")
 
-		// 10. Verify old token now fails (Cache should be cleared)
+		// 10. Verify old token now fails (Redis should be cleared)
 		client.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
 			HasErrID(errx.TokenUntrusted).
@@ -202,7 +202,7 @@ func testKeyRotation(t *testing.T, suite *TestSuite) {
 		err = suite.App.Keys.RevokeKey(ctx, preRotationKID)
 		require.NoError(t, err, "Failed to manually revoke old key")
 
-		// 11. Verify old token now fails (Cache should be cleared)
+		// 11. Verify old token now fails (Redis should be cleared)
 		projectUserClient.WithAuth(loggedIsolatedUser.auth).GET("/sessions/me").
 			Expect(http.StatusUnauthorized).
 			HasErrID(errx.TokenUntrusted).

@@ -1,6 +1,7 @@
 package schema_version
 
 import (
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/version"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var (
@@ -29,7 +31,7 @@ type Deps struct {
 	Versions outbounds.SchemaVersionRepository
 	Fields   outbounds.SchemaFieldsRepository
 	Projects outbounds.ProjectRepository
-	Cache    outbounds.CacheService
+	Redis    outbounds.RedisCacheService
 }
 
 var _ inbounds.SchemaVersionService = (*UseCase)(nil)
@@ -239,7 +241,10 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 		}
 
 		// Invalidate compatibility cache for this project and version
-		uc.deps.Cache.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.ID.String()+":")
+		err = uc.deps.Redis.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.ID.String()+":")
+		if err != nil {
+			logs.L().Error("Error deleting version cache", zap.Error(err))
+		}
 
 		return nil
 	}
@@ -272,7 +277,10 @@ func (uc *UseCase) Publish(ctx context.Context, in inbounds.SchemaVersionService
 
 	// Invalidate compatibility cache for the OLD version if it exists
 	if latest.BasedOnVersionID != nil {
-		uc.deps.Cache.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.BasedOnVersionID.String()+":")
+		err = uc.deps.Redis.DeleteByPrefix(ctx, "compat:"+in.ProjectID.String()+":"+latest.BasedOnVersionID.String()+":")
+		if err != nil {
+			logs.L().Error("Error deleting version cache", zap.Error(err))
+		}
 	}
 
 	return nil

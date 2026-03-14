@@ -29,6 +29,7 @@ func (uc *UseCase) NewAccessToken(in inbounds.NewAccessTokenInput) ([]byte, erro
 			UserAgent:  in.Agent,
 			UserIP:     in.IP,
 			IsVerified: in.User.IsVerified,
+			FamilyID:   in.FamilyID,
 			VerifiedAt: in.User.VerifiedAt,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -87,6 +88,7 @@ func (uc *UseCase) NewProjectAccessToken(in inbounds.NewProjectAccessTokenInput)
 			UserAgent:  in.Agent,
 			UserIP:     in.IP,
 			IsVerified: in.User.IsVerified,
+			FamilyID:   in.FamilyID,
 			VerifiedAt: in.User.VerifiedAt,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{

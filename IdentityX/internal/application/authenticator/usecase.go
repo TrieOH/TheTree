@@ -1,7 +1,6 @@
 package authenticator
 
 import (
-	"GoAuth/internal/application/validation"
 	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/errx"
@@ -58,9 +57,6 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	if in.AccessToken == "" {
 		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
 	}
-	if in.RefreshToken == "" {
-		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("refresh_token").RecordCtx(ctx)
-	}
 
 	accessToken, err := tokenVerifier.VerifyAccessToken(ctx, in.AccessToken)
 	if err != nil {
@@ -71,30 +67,11 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
 	}
 
-	refreshToken, err := tokenVerifier.VerifyRefreshToken(ctx, in.RefreshToken)
-	if err != nil {
+	if err = validateIssuers(ctx, in, accessToken); err != nil {
 		return nil, err
 	}
 
-	if err = validateIssuers(ctx, in, accessToken, refreshToken); err != nil {
-		return nil, err
-	}
-
-	refreshTokenJTI, err := validation.RequireRefreshJTI(&refreshToken.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	accessTokenJTI, err := validation.RequireAccessJTI(&accessToken.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	if accessTokenJTI != refreshToken.Sub.AccessJTI {
-		return nil, fail.New(errx.TokenMismatchDuringAuth).RecordCtx(ctx)
-	}
-
-	sess, err := sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
+	sess, err := sessions.GetByFamilyID(ctx, accessToken.Sub.FamilyID)
 	if err != nil {
 		if fail.Is(err, errx.SQLNotFound) {
 			return nil, fail.New(errx.SessionUnauthorized).RecordCtx(ctx)
@@ -104,12 +81,6 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 
 	if sess.SessionID != accessToken.Sub.SessionID {
 		return nil, fail.New(errx.TokenSessionMismatch).RecordCtx(ctx)
-	}
-
-	// FIXME add occurrence to the audit when its implemented
-	if sess.TokenID != refreshTokenJTI {
-		_ = sessions.MarkRevokedByFamilyID(ctx, refreshToken.Sub.FamilyID)
-		return nil, fail.New(errx.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	if sess.RevokedAt != nil {
@@ -125,7 +96,7 @@ func (uc *UseCase) AuthenticateRequest(ctx context.Context, in inbounds.Authenti
 	)
 
 	var principal *authz.Principal
-	principal, err = authz.NewPrincipal(ctx, accessToken, refreshToken)
+	principal, err = authz.NewPrincipal(ctx, accessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +107,6 @@ func validateIssuers(
 	ctx context.Context,
 	in inbounds.AuthenticateRequestInput,
 	access *auth.AccessClaims,
-	refresh *auth.RefreshClaims,
 ) error {
 	if access.Sub.ProjectID != nil {
 		if access.Issuer != access.Sub.ProjectID.String() {
@@ -144,10 +114,6 @@ func validateIssuers(
 		}
 	} else if access.Issuer != in.Issuer {
 		return fail.New(errx.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
-	}
-
-	if refresh.Issuer != in.Issuer {
-		return fail.New(errx.TokenInvalidIssuer).WithArgs("refresh").RecordCtx(ctx)
 	}
 
 	return nil

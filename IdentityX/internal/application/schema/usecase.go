@@ -35,7 +35,7 @@ type Deps struct {
 	Fields       outbounds.SchemaFieldsRepository
 	Projects     outbounds.ProjectRepository
 	ProjectUsers outbounds.ProjectUserRepository
-	Cache        outbounds.CacheService
+	Redis        outbounds.RedisCacheService
 }
 
 var _ inbounds.SchemaService = (*UseCase)(nil)
@@ -816,9 +816,15 @@ func (uc *UseCase) CheckSchemaCompatibility(ctx context.Context, userID, project
 			continue
 		}
 
-		// Cache check
+		// Redis check
 		cacheKey := "compat:" + projectID.String() + ":" + s.CurrentVersionID.String() + ":" + userID.String()
-		if val, ok := uc.deps.Cache.Get(ctx, cacheKey); ok {
+		var val any
+		var ok bool
+		if val, ok, err = uc.deps.Redis.Get(ctx, cacheKey); ok {
+			if err != nil {
+				isUpToDate = false
+				continue
+			}
 			if compat, ok := val.(bool); ok {
 				if !compat {
 					isUpToDate = false
@@ -834,7 +840,7 @@ func (uc *UseCase) CheckSchemaCompatibility(ctx context.Context, userID, project
 		}
 
 		// Store in cache (1 hour TTL)
-		uc.deps.Cache.Set(ctx, cacheKey, compat, time.Hour)
+		uc.deps.Redis.Set(ctx, cacheKey, compat, time.Hour)
 
 		if !compat {
 			isUpToDate = false

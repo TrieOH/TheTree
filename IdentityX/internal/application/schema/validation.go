@@ -261,8 +261,8 @@ func (uc *UseCase) UpdateMetadata(ctx context.Context, customFields *json.RawMes
 
 		// Clear cache
 		cacheKey := "compat:" + projectID.String() + ":" + s.CurrentVersionID.String() + ":" + userID.String()
-		uc.deps.Cache.Delete(ctx, cacheKey)
-		uc.deps.Cache.Set(ctx, cacheKey, true, time.Hour)
+		uc.deps.Redis.Delete(ctx, cacheKey)
+		uc.deps.Redis.Set(ctx, cacheKey, true, time.Hour)
 	}
 
 	marshalled, err := json.Marshal(newMetadataMap)
