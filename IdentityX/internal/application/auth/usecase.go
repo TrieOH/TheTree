@@ -1322,7 +1322,7 @@ func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 	}, nil
 }
 
-func (uc *UseCase) Exchange(ctx context.Context, globalAccess, globalRefresh string) (*inbounds.ExchangeOutput, error) {
+func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds.ExchangeOutput, error) {
 
 	// Verify global JWT locally
 	access, err := uc.tokenVerifier.VerifyAccessToken(ctx, globalAccess)
@@ -1331,8 +1331,9 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess, globalRefresh str
 	}
 
 	// Trust boundary — issuer scoped
-	if viper.GetString("ISSUER") == access.Issuer {
-		return nil, fail.New(errx.TokenInvalidIssuer)
+	if viper.GetString("ISSUER") != access.Issuer {
+		logs.L().Info("Issuers", zap.String("server", viper.GetString("ISSUER")), zap.String("client", access.Issuer))
+		return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
 	}
 
 	// FIXME(auth-arch):
@@ -1356,7 +1357,7 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess, globalRefresh str
 	// Compute TTL clamp
 	ttl := time.Until(access.ExpiresAt.Time)
 	if ttl <= 0 {
-		return nil, fail.New(errx.TokenExpired)
+		return nil, fail.New(errx.TokenExpired).WithArgs("access")
 	}
 
 	// Build service authorization snapshot

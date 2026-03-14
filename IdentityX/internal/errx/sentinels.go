@@ -146,7 +146,7 @@ var (
 			AddLocalizations(map[string]string{
 			"pt-BR": "token %s inválido",
 		})
-	ErrTokenExpired = fail.Form(TokenInvalid, "%s token expired", false, map[string]any{"code": 401}).
+	ErrTokenExpired = fail.Form(TokenExpired, "%s token expired", false, map[string]any{"code": 401}).
 			AddLocalizations(map[string]string{
 			"pt-BR": "o Token %s está expirado",
 		})
@@ -178,7 +178,7 @@ var (
 					AddLocalizations(map[string]string{
 			"pt-BR": "o Token %s foi usado antes de ser emitido",
 		})
-	ErrTokenInvalidIssuer = fail.Form(TokenInvalidIssuer, "%s token has invalid issuer", false, map[string]any{"code": 401}).
+	ErrTokenInvalidIssuer = fail.Form(TokenInvalidIssuer, "%s token has invalid issuer", false, map[string]any{"code": 401}, "ISSUER NOT SET").
 				AddLocalizations(map[string]string{
 			"pt-BR": "o Token %s possui um emissor inválido",
 		})

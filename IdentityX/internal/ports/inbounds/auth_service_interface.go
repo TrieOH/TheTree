@@ -16,5 +16,5 @@ type AuthService interface {
 	ForgotPassword(ctx context.Context, in ForgotPasswordInput) error
 	ResetPassword(ctx context.Context, in ResetPasswordInput) error
 	GetJWKS(ctx context.Context) (map[string]any, error)
-	Exchange(ctx context.Context, globalAccess, globalRefresh string) (*ExchangeOutput, error)
+	Exchange(ctx context.Context, globalAccess string) (*ExchangeOutput, error)
 }
