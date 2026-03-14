@@ -3,8 +3,10 @@ package handlers
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
+	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
+	"GoAuth/internal/ports/outbounds"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -16,12 +18,14 @@ import (
 type AuthHandler struct {
 	auth   inbounds.AuthService
 	schema inbounds.SchemaService
+	redis  outbounds.RedisCacheService
 }
 
-func NewAuthHandler(uc inbounds.AuthService, schema inbounds.SchemaService) *AuthHandler {
+func NewAuthHandler(uc inbounds.AuthService, schema inbounds.SchemaService, redis outbounds.RedisCacheService) *AuthHandler {
 	return &AuthHandler{
 		auth:   uc,
 		schema: schema,
+		redis:  redis,
 	}
 }
 
@@ -112,13 +116,35 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} ErrorResponse "Internal Server Error"
 // @Router /auth/logout [post]
 func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	accessToken, err := r.Cookie("access_token")
-	if err != nil {
-		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
+	ctx := r.Context()
+
+	svcCookie, err := r.Cookie("svc_session")
+	if err != nil || svcCookie.Value == "" {
+		resp.Unauthorized().WithMsg("missing svc_session cookie").Send(w)
 		return
 	}
 
-	err = handler.auth.Logout(r.Context(), accessToken.Value)
+	key := "svc_session:" + svcCookie.Value
+	data, found, err := handler.redis.GetAny(ctx, key)
+	if err != nil || !found {
+		resp.Unauthorized().WithMsg("invalid service session").Send(w)
+		return
+	}
+
+	bytesData, ok := data.([]byte)
+	if !ok {
+		resp.Unauthorized().WithMsg("invalid session type").Send(w)
+		return
+	}
+
+	var snapshot authz.ServiceSnapshot
+	if err := json.Unmarshal(bytesData, &snapshot); err != nil {
+		_ = handler.redis.Delete(ctx, key)
+		resp.Unauthorized().WithMsg("failed to unmarshal session").Send(w)
+		return
+	}
+
+	err = handler.auth.Logout(ctx, snapshot)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

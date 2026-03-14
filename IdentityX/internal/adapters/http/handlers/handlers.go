@@ -22,7 +22,7 @@ type HandlerBundle struct {
 
 func New(app *application.Application, rdc outbounds.RedisCacheService) *HandlerBundle {
 	return &HandlerBundle{
-		AuthHandler:          NewAuthHandler(app.Auth, app.Schema),
+		AuthHandler:          NewAuthHandler(app.Auth, app.Schema, rdc),
 		ProjectHandler:       NewProjectHandler(app.Project),
 		SessionHandler:       NewSessionHandler(app.Session, rdc),
 		SchemaHandler:        NewSchemaHandler(app.Schema),
