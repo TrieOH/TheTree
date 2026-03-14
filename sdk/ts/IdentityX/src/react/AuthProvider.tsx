@@ -1,9 +1,18 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
 import { getTokenClaims, isUpToDate } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
+import { authStore } from "../store/auth-store";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -26,21 +35,23 @@ export function AuthProvider({
   isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [upToDate, setUpToDate] = useState(false);
+  const { isAuthenticated, isUpToDate: upToDate } = useSyncExternalStore(
+    authStore.subscribe,
+    authStore.getSnapshot,
+    authStore.getServerSnapshot,
+  );
 
-  // Apply manual configuration if provided
-  useMemo(() => {
-    if (projectId || baseURL) {
-      configure({
-        ...(projectId ? { PROJECT_ID: projectId } : {}),
-        ...(baseURL ? { BASE_URL: baseURL } : {}),
-      });
-    }
-  }, [projectId, baseURL]);
+  const prevConfig = useRef({ projectId, baseURL });
+  if (prevConfig.current.projectId !== projectId || prevConfig.current.baseURL !== baseURL) {
+    configure({
+      ...(projectId ? { PROJECT_ID: projectId } : {}),
+      ...(baseURL ? { BASE_URL: baseURL } : {}),
+    });
+    prevConfig.current = { projectId, baseURL };
+  }
 
   const apiInstance = useMemo(() => new Api(baseURL, undefined, (claims) => {
-    setUpToDate(claims.is_up_to_date || false);
+    authStore.set({ isUpToDate: claims.is_up_to_date || false });
   }), [baseURL]);
 
   const rawAuth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
@@ -49,26 +60,17 @@ export function AuthProvider({
     ...rawAuth,
     login: async (...args: Parameters<typeof rawAuth.login>) => {
       const res = await rawAuth.login(...args);
-      if (res.success) {
-        setIsAuthenticated(true);
-        setUpToDate(isUpToDate());
-      }
+      if (res.success) authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
       return res;
     },
     logout: async (...args: Parameters<typeof rawAuth.logout>) => {
       const res = await rawAuth.logout(...args);
-      if (res.success) {
-        setIsAuthenticated(false);
-        setUpToDate(false);
-      }
+      if (res.success) authStore.reset();
       return res;
     },
     refresh: async (...args: Parameters<typeof rawAuth.refresh>) => {
       const res = await rawAuth.refresh(...args);
-      if (res.success) {
-        setIsAuthenticated(true);
-        setUpToDate(isUpToDate());
-      }
+      if (res.success) authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
       return res;
     },
   }), [rawAuth]);
@@ -79,33 +81,34 @@ export function AuthProvider({
     const loadAuthStatus = async () => {
       const claims = getTokenClaims();
       if (claims) {
-        setIsAuthenticated(true);
-        setUpToDate(isUpToDate());
+        authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
         setReady(true);
         return;
       }
+
       console.log("[TRIEOH SDK] Attempting to refresh session...");
       try {
         const res = await auth.refreshProfileInfo();
         if (res.success) {
-          setIsAuthenticated(true);
-          setUpToDate(isUpToDate());
+          authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
           console.log("[TRIEOH SDK] Session restored successfully.");
         } else {
-          setIsAuthenticated(false);
-          setUpToDate(false);
+          authStore.reset();
           console.warn("[TRIEOH SDK] Session restoration failed/no session.");
         }
-      } catch (error) {
+      } catch {
         console.warn("[TRIEOH SDK] Unable to verify session (offline?)");
-        setIsAuthenticated(false);
-        setUpToDate(false);
-      } finally { setReady(true); }
-    }
+        authStore.reset();
+      } finally {
+        setReady(true);
+      }
+    };
+
     loadAuthStatus();
-  }, [auth, isClient]);
+  }, []);
 
   if (!ready) return null;
+
   return (
     <AuthContext.Provider value={{ auth, isAuthenticated, isUpToDate: upToDate, isClient }}>
       {children}

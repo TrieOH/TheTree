@@ -1,4 +1,5 @@
 import type { Api } from "../core/api";
+import { authStore } from "../store/auth-store";
 
 export interface TokenClaims {
   sub: {
@@ -128,6 +129,8 @@ export function clearAuthTokens(): void {
 
   removeCookie("svc_session");
   removeCookie("refresh_token");
+
+  authStore.reset();
 
   console.log("[TRIEOH SDK] Auth tokens and claims cleared");
 }
