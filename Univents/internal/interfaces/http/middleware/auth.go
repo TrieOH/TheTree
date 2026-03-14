@@ -3,8 +3,8 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
@@ -27,9 +27,8 @@ func NewAuthMiddleware(
 	}
 }
 
-// Auth is a middleware function that checks for valid access and refresh tokens.
-// It validates the tokens, checks if the refresh token is revoked, and creates a principal from the tokens.
-// The principal is then added to the request context.
+// Auth is a middleware that validates the Authorization header Bearer token.
+// It injects the subject into the request context if valid.
 func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,37 +36,45 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
-			var rs = resp.BadRequest().WithCode(400).WithModule("AuthMW")
 			var err error
 			defer func() {
 				span.SetAttributes(attribute.Bool("success", err == nil))
 			}()
 
-			var accessTokenCookie *http.Cookie
-			accessTokenCookie, err = r.Cookie("access_token")
+			// Get the service session cookie set by the frontend
+			cookie, err := r.Cookie("svc_session")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					rs.WithCode(401).WithMsg(errx.NotFound("access_token cookie").Error()).Send(w)
+					resp.Unauthorized().WithMsg("missing service session cookie").WithModule("AuthMW").Send(w)
 					return
 				}
-				rs.WithCode(401).WithMsg(errx.Invalid("access_token").Error()).Send(w)
+				resp.Unauthorized().WithMsg("invalid service session cookie").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			accessToken := accessTokenCookie.Value
-			token, err := mw.gaClient.Tokens.ValidateToken(ctx, accessToken)
+			sessionID := cookie.Value
+
+			// Lookup session in cache
+			sessionData, err := mw.gaClient.Sessions.Get(ctx, sessionID)
 			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
+				resp.Unauthorized("service session not found").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			subject, err := authz.GetSubjectFromToken(token)
+			// Unmarshal payload
+			snapshot, err := domain.UnmarshalSnapshot(sessionData)
 			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
+				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			ctx = authz.WithSubject(ctx, subject)
+			// Inject subject into context
+			subject := authz.UserSubject{
+				ID:    snapshot.UserID,
+				Email: snapshot.Email,
+			}
+			ctx = authz.WithSubject(ctx, &subject)
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

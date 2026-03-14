@@ -65,6 +65,7 @@ func UniventsSetup() *UniventsApp {
 	var app UniventsApp
 
 	LoadEnv(&app)
+	app.Redis = SetupRedis(15 * time.Second)
 	SetupGoAuth(&app)
 	SetupFUN()
 	SetupPayments(&app)
@@ -74,7 +75,6 @@ func UniventsSetup() *UniventsApp {
 		log.Println("WE'RE TESTING")
 		SetupDB(&app, "../internal/plataform/database/migrations")
 	}
-	app.Redis = SetupRedis(15 * time.Second)
 	SetupCron(app.DB, &app)
 
 	return &app
@@ -166,7 +166,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	ticketHandler := tickethttp.NewTicketsHandler(ticketsC, ticketsQ)
 	productHandler := productshttp.NewProductsHandler(productsC, productsQ, ws)
 
-	systemHandler := system.NewUniventsHandler()
+	systemHandler := system.NewUniventsHandler(app.GaClient)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",

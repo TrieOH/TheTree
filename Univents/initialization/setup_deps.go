@@ -2,6 +2,7 @@ package initialization
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 	"univents/internal/plataform/database"
@@ -92,10 +93,11 @@ func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
 func SetupGoAuth(app *UniventsApp) {
 	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
 	client, err := goauth.NewClient(goauth.Config{
-		BaseURL:   viper.GetString("GOAUTH_URL"),
-		APIKey:    viper.GetString("GOAUTH_API_KEY"),
-		ProjectID: projectID,
-		Debug:     false,
+		BaseURL:      viper.GetString("GOAUTH_URL"),
+		APIKey:       viper.GetString("GOAUTH_API_KEY"),
+		ProjectID:    projectID,
+		Debug:        false,
+		SessionCache: NewRedisSessionCache(app.Redis),
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())
@@ -329,3 +331,31 @@ var (
 		},
 	}
 )
+
+type RedisSessionCache struct {
+	client *redis.Client
+}
+
+func NewRedisSessionCache(rdb *redis.Client) *RedisSessionCache {
+	return &RedisSessionCache{
+		client: rdb,
+	}
+}
+
+func (r *RedisSessionCache) GetSession(ctx context.Context, id string) ([]byte, error) {
+	val, err := r.client.Get(ctx, id).Result()
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return []byte(val), nil
+}
+
+func (r *RedisSessionCache) SetSession(ctx context.Context, id string, data []byte, ttl time.Duration) error {
+	return r.client.Set(ctx, id, data, ttl).Err()
+}
+
+func (r *RedisSessionCache) DeleteSession(ctx context.Context, id string) error {
+	return r.client.Del(ctx, id).Err()
+}
