@@ -1323,7 +1323,6 @@ func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 }
 
 func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds.ExchangeOutput, error) {
-
 	// Verify global JWT locally
 	access, err := uc.tokenVerifier.VerifyAccessToken(ctx, globalAccess)
 	if err != nil {
@@ -1354,14 +1353,23 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 	// Deterministic service session id
 	serviceSessionID := access.ID
 
+	logs.L().Info(
+		"Exchange called",
+		zap.String("client_issuer", access.Issuer),
+		zap.String("server_issuer", viper.GetString("ISSUER")),
+		zap.String("service_session_id", serviceSessionID),
+		zap.Time("expires_at", access.ExpiresAt.Time),
+	)
+
 	// Compute TTL clamp
 	ttl := time.Until(access.ExpiresAt.Time)
 	if ttl <= 0 {
+		logs.L().Warn("access token expired", zap.Time("expires_at", access.ExpiresAt.Time))
 		return nil, fail.New(errx.TokenExpired).WithArgs("access")
 	}
 
 	// Build service authorization snapshot
-	snapshot := authz.ServiceSnapshot{
+	snapshot := &authz.ServiceSnapshot{
 		UserID:    access.Sub.ID,
 		ProjectID: access.Sub.ProjectID,
 		UserType:  access.Sub.UserType,
