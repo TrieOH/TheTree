@@ -67,16 +67,9 @@ func (uc *UseCase) List(ctx context.Context) ([]inbounds.OutputSession, error) {
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID, accessToken string) error {
+func (uc *UseCase) RevokeByID(ctx context.Context, sessionID uuid.UUID, currentSessionID uuid.UUID) error {
 	ctx, span := usecaseTracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
-
-	claims, err := uc.verifier.VerifyAccessToken(ctx, accessToken)
-	if err != nil {
-		return err
-	}
-
-	currentSessionID := claims.Sub.SessionID
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
@@ -178,25 +171,4 @@ func (uc *UseCase) RevokeAll(ctx context.Context) error {
 	span.SetAttributes(attribute.Int("sessions.revoked.count", revokedCount))
 
 	return nil
-}
-
-// Me returns the claims of the provided tokens.
-func (uc *UseCase) Me(ctx context.Context, accessToken, refreshToken string) (*inbounds.MeOutput, error) {
-	ctx, span := usecaseTracer.Start(ctx, "SessionService.Me")
-	defer span.End()
-
-	accessClaims, err := uc.verifier.VerifyAccessToken(ctx, accessToken)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshClaims, err := uc.verifier.VerifyRefreshToken(ctx, refreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	return &inbounds.MeOutput{
-		AccessClaims:      accessClaims,
-		RefreshExpireDate: refreshClaims.ExpiresAt.Time,
-	}, nil
 }

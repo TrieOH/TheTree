@@ -25,19 +25,14 @@ type Principal struct {
 }
 
 type ServiceSnapshot struct {
-	UserID    uuid.UUID
-	ProjectID *uuid.UUID
-	UserType  string
-	GlobalSID uuid.UUID
-	AccessJTI string
-	Issuer    string
-	ExpiresAt time.Time
+	AccessData        auth.AccessClaims `json:"access_data"`
+	RefreshExpiryDate time.Time         `json:"refresh_expiry_date"`
 }
 
 func (ss ServiceSnapshot) ToPrincipal() *Principal {
 	return &Principal{
-		UserID:    ss.UserID,
-		ProjectID: ss.ProjectID,
+		UserID:    ss.AccessData.Sub.ID,
+		ProjectID: ss.AccessData.Sub.ProjectID,
 		Method:    AuthMethodServiceSession,
 	}
 }

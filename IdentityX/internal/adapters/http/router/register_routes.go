@@ -28,7 +28,7 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 
 	app := application.NewApplication(infra)
 
-	handlerBundle := handlers.New(app)
+	handlerBundle := handlers.New(app, redis2.NewRedisCache(rdb))
 
 	authMW := middleware.NewAuthMiddleware(app.Authenticator, tracer, redis2.NewRedisCache(rdb), viper.GetString("ISSUER"))
 

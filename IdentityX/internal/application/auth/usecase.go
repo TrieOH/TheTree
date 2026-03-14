@@ -1335,6 +1335,12 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 		return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
 	}
 
+	var sess *session.Session
+	sess, err = uc.deps.Sessions.GetByID(ctx, access.Sub.SessionID)
+	if err != nil {
+		return nil, err
+	}
+
 	// FIXME(auth-arch):
 	// Audience validation not yet enforced.
 	// Needed when multiple relying party boundaries exist.
@@ -1370,13 +1376,8 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 
 	// Build service authorization snapshot
 	snapshot := &authz.ServiceSnapshot{
-		UserID:    access.Sub.ID,
-		ProjectID: access.Sub.ProjectID,
-		UserType:  access.Sub.UserType,
-		GlobalSID: access.Sub.SessionID,
-		AccessJTI: access.ID,
-		Issuer:    access.Issuer,
-		ExpiresAt: access.ExpiresAt.Time,
+		AccessData:        *access,
+		RefreshExpiryDate: sess.ExpiresAt,
 	}
 
 	// Store in service cache
