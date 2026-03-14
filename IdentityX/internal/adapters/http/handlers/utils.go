@@ -199,7 +199,7 @@ func CreateCookie(name, value, domain string, age time.Time) *http.Cookie {
 		MaxAge:   int(time.Until(age).Seconds()),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }
 
@@ -211,6 +211,6 @@ func DeleteCookie(name string) *http.Cookie {
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }
