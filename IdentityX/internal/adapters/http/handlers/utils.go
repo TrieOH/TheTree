@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"GoAuth/internal/adapters/http/validation"
+	"GoAuth/internal/adapters/observability/logs"
 	"GoAuth/internal/errx"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // FIXME make these errors go into either logs or spans
@@ -191,6 +193,7 @@ func parseXForwardedFor(xff string, trusted []netip.Prefix) (netip.Addr, bool) {
 }
 
 func CreateCookie(name, value, domain string, age time.Time) *http.Cookie {
+	logs.L().Info("cookie domain", zap.String("domain", domain))
 	return &http.Cookie{
 		Name:     name,
 		Value:    value,
