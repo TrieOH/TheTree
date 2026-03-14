@@ -1,13 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims } from "../utils/token-utils";
+import { getTokenClaims, isUpToDate } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
+  isUpToDate: boolean;
   isClient?: boolean;
 };
 
@@ -26,6 +27,7 @@ export function AuthProvider({
 }) {
   const [ready, setReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [upToDate, setUpToDate] = useState(false);
 
   // Apply manual configuration if provided
   useMemo(() => {
@@ -37,15 +39,48 @@ export function AuthProvider({
     }
   }, [projectId, baseURL]);
 
-  const apiInstance = useMemo(() => new Api(baseURL), [baseURL]);
-  const auth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
+  const apiInstance = useMemo(() => new Api(baseURL, undefined, (claims) => {
+    setUpToDate(claims.is_up_to_date || false);
+  }), [baseURL]);
+
+  const rawAuth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
+
+  const auth = useMemo(() => ({
+    ...rawAuth,
+    login: async (...args: Parameters<typeof rawAuth.login>) => {
+      const res = await rawAuth.login(...args);
+      if (res.success) {
+        setIsAuthenticated(true);
+        setUpToDate(isUpToDate());
+      }
+      return res;
+    },
+    logout: async (...args: Parameters<typeof rawAuth.logout>) => {
+      const res = await rawAuth.logout(...args);
+      if (res.success) {
+        setIsAuthenticated(false);
+        setUpToDate(false);
+      }
+      return res;
+    },
+    refresh: async (...args: Parameters<typeof rawAuth.refresh>) => {
+      const res = await rawAuth.refresh(...args);
+      if (res.success) {
+        setIsAuthenticated(true);
+        setUpToDate(isUpToDate());
+      }
+      return res;
+    },
+  }), [rawAuth]);
 
   useEffect(() => {
     if (isClient) validateProjectKey();
 
     const loadAuthStatus = async () => {
-      if(getTokenClaims()) {
+      const claims = getTokenClaims();
+      if (claims) {
         setIsAuthenticated(true);
+        setUpToDate(isUpToDate());
         setReady(true);
         return;
       }
@@ -54,14 +89,17 @@ export function AuthProvider({
         const res = await auth.refreshProfileInfo();
         if (res.success) {
           setIsAuthenticated(true);
+          setUpToDate(isUpToDate());
           console.log("[TRIEOH SDK] Session restored successfully.");
         } else {
           setIsAuthenticated(false);
+          setUpToDate(false);
           console.warn("[TRIEOH SDK] Session restoration failed/no session.");
         }
-      } catch(error) {
+      } catch (error) {
         console.warn("[TRIEOH SDK] Unable to verify session (offline?)");
         setIsAuthenticated(false);
+        setUpToDate(false);
       } finally { setReady(true); }
     }
     loadAuthStatus();
@@ -69,7 +107,7 @@ export function AuthProvider({
 
   if (!ready) return null;
   return (
-    <AuthContext.Provider value={{ auth, isAuthenticated, isClient }}>
+    <AuthContext.Provider value={{ auth, isAuthenticated, isUpToDate: upToDate, isClient }}>
       {children}
     </AuthContext.Provider>
   );

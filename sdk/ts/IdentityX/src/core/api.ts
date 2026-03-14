@@ -1,5 +1,6 @@
 import { env } from "./env";
 import { AuthInterceptor, type RequestOptions } from "./interceptor";
+import type { AuthTokenClaims } from "../utils/token-utils";
 
 /**
  * Base structure shared by all API responses.
@@ -54,11 +55,12 @@ export class Api {
   private baseURL: string;
   private authInterceptor: AuthInterceptor;
 
-  constructor(baseURL?: string, authBaseURL?: string) {
+  constructor(baseURL?: string, authBaseURL?: string, onTokenRefreshed?: (claims: AuthTokenClaims) => void) {
     this.baseURL = baseURL || env.BASE_URL;
     this.authInterceptor = new AuthInterceptor({ 
       baseURL: this.baseURL,
-      authBaseURL: authBaseURL
+      authBaseURL: authBaseURL,
+      onTokenRefreshed
     });
   }
 

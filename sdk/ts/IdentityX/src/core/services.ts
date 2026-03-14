@@ -1,31 +1,63 @@
 import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
 import type { SessionI } from "../types/sessions-types";
-import { clearAuthTokens, fetchAndSaveClaims, getUserInfo } from "../utils/token-utils";
+import {
+  clearAuthTokens,
+  exchangeAndSaveClaims,
+  fetchAndSaveClaims,
+  getUserInfo,
+  isUpToDate
+} from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
-import type { Api } from "./api";
+import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  is_up_to_date: boolean;
+}
 
 export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
     const options = { requiresAuth: false };
+    let res: ApiResponse<AuthTokens>;
+
     if (env.PROJECT_ID) {
       validateProjectKey();
       const url = `/projects/${env.PROJECT_ID}/login`;
-      const res = await apiInstance.post<{is_up_to_date: boolean}>(
+      res = await apiInstance.post<AuthTokens>(
         url,
         { email, password },
         options
       );
-      if(res.success) await fetchAndSaveClaims(apiInstance);
-      return res;
+    } else {
+      res = await apiInstance.post<AuthTokens>(
+        "/auth/login",
+        { email, password },
+        options
+      );
     }
 
-    const res = await apiInstance.post<{is_up_to_date: boolean}>(
-      "/auth/login", 
-      { email, password }, 
-      options
-    );
-    if(res.success) await fetchAndSaveClaims(apiInstance);
+    if (res.success) {
+      try {
+        const claims = await exchangeAndSaveClaims(
+          apiInstance,
+          res.data.access_token,
+          res.data.refresh_token,
+          res.data.is_up_to_date
+        );
+        return res;
+      } catch (error) {
+        console.error("[TRIEOH SDK] Exchange failed during login:", error);
+        clearAuthTokens();
+        return {
+          success: false,
+          code: 500,
+          message: error instanceof Error ? error.message : "Authentication failed during exchange"
+        } as ApiResponse<AuthTokens>;
+      }
+    }
+
     return res;
   },
 
@@ -33,35 +65,74 @@ export const createAuthService = (apiInstance: Api) => ({
     const options = { requiresAuth: false };
     if (env.PROJECT_ID) {
       validateProjectKey();
-      
-      const params = new URLSearchParams();      
-      if(flow_id) {
+
+      const params = new URLSearchParams();
+      if (flow_id) {
         params.append("flow_id", flow_id);
         params.append("schema_type", "context");
         params.append("version", "1");
       }
-      const bodyData = {...{email, password}, ...flow_id && { custom_fields: custom } };
+      const bodyData = { ...{ email, password }, ...flow_id && { custom_fields: custom } };
       const paramsUrl = params.toString() ? `?${params.toString()}` : "";
       const url = `/projects/${env.PROJECT_ID}/register${paramsUrl}`;
       return apiInstance.post<string>(url, bodyData, options);
     }
 
     return apiInstance.post<string>("/auth/register", { email, password }, options);
-  },  
-  
+  },
+
   logout: async () => {
     const res = await apiInstance.post<string>("/auth/logout");
-    if(res.success) clearAuthTokens();
+    if (res.success) clearAuthTokens();
     return res;
   },
 
   refresh: async () => {
-    const res = await apiInstance.post<{is_up_to_date: boolean}>(
+    const res = await apiInstance.post<AuthTokens>(
       "/auth/refresh",
       undefined,
       { skipRefresh: true }
     );
-    if(res.success) await fetchAndSaveClaims(apiInstance);
+
+    if (res.success) {
+      try {
+        await exchangeAndSaveClaims(
+          apiInstance,
+          res.data.access_token,
+          res.data.refresh_token,
+          res.data.is_up_to_date
+        );
+        return res;
+      } catch (error) {
+        console.error("[TRIEOH SDK] Exchange failed during refresh:", error);
+        clearAuthTokens();
+        return {
+          success: false,
+          code: 500,
+          message: error instanceof Error ? error.message : "Refresh failed during exchange"
+        } as ApiResponse<AuthTokens>;
+      }
+    }
+
+    return res;
+  },
+
+  exchange: async (access_token: string) => {
+    const res = await apiInstance.post<{ service_session_id: string, expires_at: string }>(
+      "/auth/exchange",
+      undefined,
+      {
+        requiresAuth: false,
+        headers: {
+          "Authorization": `Bearer ${access_token}`,
+        }
+      }
+    );
+    if (res.success && typeof window !== "undefined") {
+      const expiresDate = new Date(res.data.expires_at).toUTCString();
+      document.cookie = `svc_session=${res.data.service_session_id}; path=/; expires=${expiresDate}; secure; samesite=lax`;
+      await fetchAndSaveClaims(apiInstance, undefined, true);
+    }
     return res;
   },
 
@@ -82,6 +153,8 @@ export const createAuthService = (apiInstance: Api) => ({
 
   profile: () => getUserInfo(),
 
+  isUpToDate: () => isUpToDate(),
+
   getProfileUpgradeForms: async () => {
     validateProjectKey();
     const url = `/projects/${env.PROJECT_ID}/upgrade-form`;
@@ -100,17 +173,17 @@ export const createAuthService = (apiInstance: Api) => ({
       validateProjectKey();
       return apiInstance.post<string>(
         "/auth/forgot-password",
-        {email, project_id: env.PROJECT_ID}, 
+        { email, project_id: env.PROJECT_ID },
         options
       );
     }
-    return apiInstance.post<string>("/auth/forgot-password", {email}, options);
+    return apiInstance.post<string>("/auth/forgot-password", { email }, options);
   },
 
   resetPassword: async (token: string, new_password: string) => {
     return apiInstance.post<string>(
       `/auth/reset-password?token=${token}`,
-      {new_password}, 
+      { new_password },
       { requiresAuth: false }
     );
   },
@@ -141,6 +214,7 @@ export const createAuthService = (apiInstance: Api) => ({
       { keys, user_id }
     );
   },
+
 
 });
 
