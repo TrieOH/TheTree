@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SignIn, SignUp, useAuth } from '@trieoh/node-auth-sdk/react'
+import { SignIn, SignUp, useAuth } from '@soramux/node-auth-sdk/react'
 import React, { useState } from 'react'
 import type { EventCreateI, EventI } from '@/features/events/model'
 import type { EditionCreateI, EditionI } from '@/features/editions/model'

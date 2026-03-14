@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { AuthProvider  } from '@trieoh/node-auth-sdk/react'
+import { AuthProvider } from '@soramux/node-auth-sdk/react'
 
 import StoreDevtools from '../lib/demo-store-devtools'
 
@@ -16,9 +16,10 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
-import type { useAuth } from '@trieoh/node-auth-sdk/react';
+import type { useAuth } from '@soramux/node-auth-sdk/react';
 
 import type { QueryClient } from '@tanstack/react-query'
+import { env } from '@/env'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -59,7 +60,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AuthProvider baseURL="http://localhost:8080">
+        <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
           <PostHogProvider>
             <TanStackQueryProvider>
               {/* <Header /> */}
