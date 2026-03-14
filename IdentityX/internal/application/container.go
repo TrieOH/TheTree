@@ -67,7 +67,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Fields:       repos.SchemaFields,
 		Projects:     repos.Projects,
 		ProjectUsers: repos.ProjectUsers,
-		Cache:        sharedCache,
+		Redis:        sharedCache,
 	}, infra.Tx)
 
 	authService := auth.New(auth.Deps{
@@ -80,7 +80,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		ProjectUsers:   repos.ProjectUsers,
 		Keys:           repos.Keys,
 		TokenReuseList: repos.TokenReuseList,
-		Cache:          sharedCache,
+		Redis:          sharedCache,
 	}, infra, keyService, schemaService, tokensBundle, mailBundle)
 
 	apiKeyService := apikey.New(apikey.Deps{
@@ -104,7 +104,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			Versions: repos.SchemaVersions,
 			Fields:   repos.SchemaFields,
 			Projects: repos.Projects,
-			Cache:    sharedCache,
+			Redis:    sharedCache,
 		}, infra.Tx),
 		SchemaFields: schema_fields.New(schema_fields.Deps{
 			Schemas:  repos.Schemas,

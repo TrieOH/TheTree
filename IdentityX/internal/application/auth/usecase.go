@@ -25,6 +25,7 @@ import (
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -58,6 +59,7 @@ type Deps struct {
 	Keys           outbounds.KeysRepository
 	TokenReuseList outbounds.TokenReuseListRepository
 	Cache          outbounds.CacheService
+	Redis          outbounds.RedisCacheService
 }
 
 var _ inbounds.AuthService = (*UseCase)(nil)
@@ -281,6 +283,7 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		Agent:     in.Agent,
 		AccessJTI: accessJTI.String(),
 		SessionID: sess.SessionID,
+		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
@@ -520,6 +523,7 @@ func (uc *UseCase) finishClientRefresh(
 		Agent:     in.Agent,
 		AccessJTI: newAccessJTI.String(),
 		SessionID: sess.SessionID,
+		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
@@ -623,6 +627,7 @@ func (uc *UseCase) finishProjectUserRefresh(
 		Agent:     in.Agent,
 		AccessJTI: newAccessJTI.String(),
 		SessionID: sess.SessionID,
+		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
@@ -917,6 +922,7 @@ func (uc *UseCase) LoginProjectUser(
 		Agent:     in.Agent,
 		AccessJTI: accessJTI.String(),
 		SessionID: sess.SessionID,
+		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
 	})
 	if err != nil {
@@ -1313,5 +1319,66 @@ func (uc *UseCase) GetJWKS(ctx context.Context) (map[string]any, error) {
 
 	return map[string]any{
 		"keys": jwkKeys,
+	}, nil
+}
+
+func (uc *UseCase) Exchange(ctx context.Context, globalAccess, globalRefresh string) (*inbounds.ExchangeOutput, error) {
+
+	// Verify global JWT locally
+	access, err := uc.tokenVerifier.VerifyAccessToken(ctx, globalAccess)
+	if err != nil {
+		return nil, err
+	}
+
+	// Trust boundary — issuer scoped
+	if viper.GetString("ISSUER") == access.Issuer {
+		return nil, fail.New(errx.TokenInvalidIssuer)
+	}
+
+	// FIXME(auth-arch):
+	// Audience validation not yet enforced.
+	// Needed when multiple relying party boundaries exist.
+
+	// Optional token binding
+	/*
+		if access.IP != ip {
+			return nil, fail.New(errx.TokenIPMismatch)
+		}
+
+		if access.Agent != agent {
+			return nil, fail.New(errx.TokenAgentMismatch)
+		}
+	*/
+
+	// Deterministic service session id
+	serviceSessionID := access.ID
+
+	// Compute TTL clamp
+	ttl := time.Until(access.ExpiresAt.Time)
+	if ttl <= 0 {
+		return nil, fail.New(errx.TokenExpired)
+	}
+
+	// Build service authorization snapshot
+	snapshot := authz.ServiceSnapshot{
+		UserID:    access.Sub.ID,
+		ProjectID: access.Sub.ProjectID,
+		UserType:  access.Sub.UserType,
+		GlobalSID: access.Sub.SessionID,
+		AccessJTI: access.ID,
+		Issuer:    access.Issuer,
+		ExpiresAt: access.ExpiresAt.Time,
+	}
+
+	// Store in service cache
+	err = uc.deps.Redis.Set(ctx, "svc_session:"+serviceSessionID, snapshot, ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return session handle
+	return &inbounds.ExchangeOutput{
+		ServiceSessionID: serviceSessionID,
+		ExpiresAt:        access.ExpiresAt.Time,
 	}, nil
 }

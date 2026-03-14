@@ -18,6 +18,7 @@ type AccessSub struct {
 	UserAgent  string           `json:"user_agent"`
 	UserIP     string           `json:"user_ip"`
 	IsVerified bool             `json:"is_verified"`
+	FamilyID   uuid.UUID        `json:"family_id"`
 	VerifiedAt *time.Time       `json:"verified_at"`
 }
 

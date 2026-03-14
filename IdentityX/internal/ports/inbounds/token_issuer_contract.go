@@ -13,6 +13,7 @@ type NewAccessTokenInput struct {
 	User                 user.User
 	IP, Agent, AccessJTI string
 	SessionID            uuid.UUID
+	FamilyID             uuid.UUID
 	ExpiresAt            time.Time
 }
 
@@ -28,6 +29,7 @@ type NewProjectAccessTokenInput struct {
 	User                 project_users.ProjectUser
 	IP, Agent, AccessJTI string
 	SessionID            uuid.UUID
+	FamilyID             uuid.UUID
 	ExpiresAt            time.Time
 }
 

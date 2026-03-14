@@ -87,6 +87,7 @@ func registerAuthRoutes(
 			r.Post("/auth/login", h.Login)
 		}
 
+		r.Post("/auth/exchange", h.Exchange)
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			Post("/auth/logout", h.Logout)
