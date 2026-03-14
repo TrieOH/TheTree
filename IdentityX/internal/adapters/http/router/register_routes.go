@@ -42,8 +42,21 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
 	registerApiKeyRoutes(r, handlerBundle.ApiKeyHandler, authMW)
 	registerSubContextRoutes(r, handlerBundle.SubContextHandler, authMW)
+	registerSystemRoutes(r, handlerBundle.SystemHandler, authMW)
 
 	return r, app
+}
+
+func registerSystemRoutes(
+	r *chi.Mux,
+	h *handlers.SystemHandler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.Get("/health", h.Health)
+		r.With(authMW.Auth()).
+			Get("/protected/health", h.ProtectedHealth)
+	})
 }
 
 func registerApiKeyRoutes(
