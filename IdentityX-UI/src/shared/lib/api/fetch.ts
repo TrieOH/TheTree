@@ -23,8 +23,6 @@ interface RawErrorResponse extends RawCommonResponse {
   trace?: string[];
 }
 
-type RawApiResponse<T> = RawSuccessResponse<T> | RawErrorResponse;
-
 // --- Standardized Client-Facing API Response Types ---
 export type ApiSuccessResponse<T> = RawSuccessResponse<T> & { success: true };
 export type ApiErrorResponse = RawErrorResponse & { success: false; details?: unknown; };
@@ -64,13 +62,16 @@ export async function authFetcher<TData>(
   try {
     let baseUrlString = env.VITE_API_URL;
     if (!baseUrlString.startsWith('http://') && !baseUrlString.startsWith('https://')) {
-      baseUrlString = `http://${baseUrlString}`; // Default to http if missing
+      baseUrlString = `http://${baseUrlString}`;
     }
-    const baseUrl = new URL(baseUrlString);
-    const fullUrl = new URL(path, baseUrl).toString();
+    if (!baseUrlString.endsWith('/')) baseUrlString += '/';
 
+    const baseUrl = new URL(baseUrlString);
+    const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+    const fullUrl = new URL(normalizedPath, baseUrl).toString();
+  
     const response = await authenticatedFetch(fullUrl, init);
-    const rawResponse: RawApiResponse<TData> = await response.json().catch(() => ({
+    const rawResponse = await response.json().catch(() => ({
         module: "Client",
         message: response.statusText || "Unknown error",
         timestamp: new Date().toISOString(),
