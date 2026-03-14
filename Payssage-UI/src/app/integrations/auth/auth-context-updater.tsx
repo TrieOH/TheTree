@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router"
-import { useAuth } from "@trieoh/node-auth-sdk/react"
+import { useAuth } from "@soramux/node-auth-sdk/react"
 import { useEffect, useRef, useState } from "react"
 import type { ReactNode } from "react"
 

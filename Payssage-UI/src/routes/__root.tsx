@@ -16,8 +16,8 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
-import { AuthProvider } from '@trieoh/node-auth-sdk/react';
-import type { useAuth } from "@trieoh/node-auth-sdk/react";
+import { AuthProvider } from '@soramux/node-auth-sdk/react';
+import type { useAuth } from "@soramux/node-auth-sdk/react";
 import { Toaster } from '#/shared/ui/shadcn/sonner'
 import { AuthContextUpdater } from '#/app/integrations/auth/auth-context-updater'
 import { env } from '#/env'

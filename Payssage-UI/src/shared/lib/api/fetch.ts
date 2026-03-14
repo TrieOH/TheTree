@@ -1,4 +1,4 @@
-import { createFetcher, createQueryFetcher } from "@trieoh/node-auth-sdk";
+import { createFetcher, createQueryFetcher } from "@soramux/node-auth-sdk";
 import { env } from "#/env";
 
 export const authFetcher = createFetcher(

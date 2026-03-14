@@ -1,5 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { useAuth } from '@trieoh/node-auth-sdk/react'
+import { useAuth } from '@soramux/node-auth-sdk/react'
 import { toast } from 'sonner'
 
 export function useAuthActions() {

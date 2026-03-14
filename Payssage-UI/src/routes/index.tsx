@@ -1,5 +1,5 @@
 import { createFileRoute, useSearch } from '@tanstack/react-router'
-import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react'
+import { SignIn, SignUp } from '@soramux/node-auth-sdk/react'
 import { useState } from 'react';
 import { motion } from "motion/react";
 import { toast } from 'sonner';

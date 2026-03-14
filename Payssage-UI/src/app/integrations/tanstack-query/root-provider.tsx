@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@trieoh/node-auth-sdk';
+import { ApiError } from '@soramux/node-auth-sdk';
 import type { ReactNode } from 'react';
 
 let context: { queryClient: QueryClient } | undefined
