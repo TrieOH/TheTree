@@ -48,6 +48,7 @@ func Logs(next http.Handler) http.Handler {
 			zap.Int("status", ww.status),
 			zap.Duration("duration", duration),
 			zap.String("remote_addr", r.RemoteAddr),
+			zap.String("requested_path", r.URL.Path),
 		)
 	})
 }
