@@ -76,10 +76,17 @@ export function ProjectDialog() {
       placeholder: "My Awesome Project", 
       autoComplete: "project_name",
       errors: getFieldError(projectCRUDSchema.shape.project_name)
+    },
+    {
+      name: "domain", 
+      label: "Domain", 
+      placeholder: "myawesome.website.com", 
+      autoComplete: "domain",
+      errors: getFieldError(projectCRUDSchema.shape.domain)
     }
   ]
   const projectOpts = formOptions({
-    defaultValues: (mode === 'create' ? { id: "", project_name: "" } : formData) as ProjectCRUD,
+    defaultValues: (mode === 'create' ? { id: "", project_name: "", domain: "" } : formData) as ProjectCRUD,
     validators: {
       onChange: projectCRUDSchema,
       onMount: projectCRUDSchema,
