@@ -123,12 +123,6 @@ func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessCookie := DeleteCookie("access_token")
-	refreshCookie := DeleteCookie("refresh_token")
-
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
-
 	resp.OK("Logged out").Send(w)
 }
 
