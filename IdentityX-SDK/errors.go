@@ -29,6 +29,8 @@ var (
 	SDKUnsupportedCurve            = fail.ID(0, "SDK", 18, false, "SDKUnsupportedCurve")
 	SDKKeyDecodeFailed             = fail.ID(0, "SDK", 19, false, "SDKKeyDecodeFailed")
 	SDKInvalidKeySize              = fail.ID(0, "SDK", 20, false, "SDKInvalidKeySize")
+	SDKSessionsNotConfiguredID     = fail.ID(0, "SDK", 21, false, "SDKSessionsNotConfiguredID")
+	SDKSnapshotBuildFailedID       = fail.ID(0, "SDK", 22, false, "SDKSnapshotBuildFailedID")
 
 	ErrSDKUnknownError              = fail.Form(SDKUnknownErrorID, "unknown sdk error: %s", false, map[string]any{"code": 500}, "UNSET")
 	ErrSDKNetworkError              = fail.Form(SDKNetworkErrorID, "network error: %s", false, map[string]any{"code": 500}, "UNSET")
@@ -51,6 +53,8 @@ var (
 	ErrUnsupportedCurve             = fail.Form(SDKUnsupportedCurve, "unsupported key type or curve: %s/%s", false, map[string]any{"code": 400}, "UNSET", "UNSET")
 	ErrKeyDecodeFailed              = fail.Form(SDKKeyDecodeFailed, "failed to decode public key: %s", false, map[string]any{"code": 400}, "UNSET")
 	ErrInvalidKeySize               = fail.Form(SDKInvalidKeySize, "invalid public key size: %d", false, map[string]any{"code": 400}, -1)
+	ErrSDKSessionsNotConfiguredID   = fail.Form(SDKSessionsNotConfiguredID, "sessions not configured", false, map[string]any{"code": 400})
+	ErrSDKSnapshotBuildFailedID     = fail.Form(SDKSnapshotBuildFailedID, "build snapshot failed", false, map[string]any{"code": 500})
 )
 
 type httpStatusError struct {

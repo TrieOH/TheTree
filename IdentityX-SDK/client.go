@@ -21,6 +21,8 @@ type Config struct {
 	ProjectID  uuid.UUID
 	HTTPClient *http.Client
 	Debug      bool
+
+	SessionCache SessionCache
 }
 
 type Client struct {
@@ -35,6 +37,7 @@ type Client struct {
 	Authz       *AuthzService
 	Users       *UserService
 	Tokens      *TokenService
+	Sessions    *SessionRuntime
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -47,6 +50,7 @@ func NewClient(config Config) (*Client, error) {
 	if config.ProjectID == uuid.Nil {
 		return nil, fail.New(SDKUnknownErrorID).WithArgs("ProjectID is required")
 	}
+
 	config.BaseURL = strings.TrimSuffix(config.BaseURL, "/")
 
 	if config.HTTPClient == nil {
@@ -67,9 +71,22 @@ func NewClient(config Config) (*Client, error) {
 	c.Permissions = &PermissionService{client: c}
 	c.Authz = &AuthzService{client: c}
 	c.Users = &UserService{client: c}
-	c.Tokens = &TokenService{client: c}
+	c.Tokens = &TokenService{client: c, cacheTTL: time.Hour}
+
+	if config.SessionCache != nil {
+		c.Sessions = &SessionRuntime{
+			cache: config.SessionCache,
+		}
+	}
 
 	return c, nil
+}
+
+func (c *Client) RequireSessions() *SessionRuntime {
+	if c.Sessions == nil {
+		panic("goauth: SessionCache not configured")
+	}
+	return c.Sessions
 }
 
 func (c *Client) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
