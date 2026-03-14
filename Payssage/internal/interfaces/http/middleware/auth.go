@@ -3,7 +3,6 @@ package middleware
 import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/shared/authz"
-	"TriePayments/internal/shared/errx"
 	"errors"
 	"net/http"
 
@@ -45,37 +44,38 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
-			var rs = resp.BadRequest().WithCode(400).WithModule("AuthMW")
 			var err error
 			defer func() {
 				span.SetAttributes(attribute.Bool("success", err == nil))
 			}()
 
-			var accessTokenCookie *http.Cookie
-			accessTokenCookie, err = r.Cookie("access_token")
+			cookie, err := r.Cookie("svc_session")
 			if err != nil {
 				if errors.Is(err, http.ErrNoCookie) {
-					rs.WithCode(401).WithMsg(errx.NotFound("access_token cookie").Error()).Send(w)
+					resp.Unauthorized("missing svc_session cookie").WithModule("AuthMW").Send(w)
 					return
 				}
-				rs.WithCode(401).WithMsg(errx.Invalid("access_token").Error()).Send(w)
+				resp.Unauthorized("invalid svc_session cookie").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			accessToken := accessTokenCookie.Value
-			token, err := mw.gaClient.Tokens.ValidateToken(ctx, accessToken)
+			sessionData, err := mw.gaClient.Sessions.Get(ctx, cookie.Value)
+			if err != nil || sessionData == nil {
+				resp.Unauthorized("service session not found").WithModule("AuthMW").Send(w)
+				return
+			}
+
+			snapshot, err := domain.UnmarshalSnapshot(sessionData)
 			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
+				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			subject, err := authz.GetSubjectFromToken(token)
-			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
-				return
+			subject := authz.UserSubject{
+				ID:    snapshot.UserID,
+				Email: snapshot.Email,
 			}
-
-			ctx = authz.WithSubject(ctx, subject)
+			ctx = authz.WithSubject(ctx, &subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -143,49 +143,66 @@ func (mw *AuthMiddleware) AnyAuth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.AnyAuth")
 			defer span.End()
 
-			// try API key first
 			rawKey := r.Header.Get("X-API-Key")
 			if rawKey != "" {
-				if len(rawKey) >= 11 {
-					prefix := rawKey[:11]
-					candidates, err := mw.apiKeys.GetByPrefix(ctx, prefix)
-					if err == nil && len(candidates) > 0 {
-						for _, candidate := range candidates {
-							if err := bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)); err == nil {
-								workspace, err := mw.workspaces.GetByID(ctx, candidate.WorkspaceID)
-								if err == nil {
-									ctx = authz.WithWorkspace(ctx, workspace)
-									next.ServeHTTP(w, r.WithContext(ctx))
-									return
-								}
-							}
-						}
+				if len(rawKey) < 11 {
+					resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+					return
+				}
+
+				candidates, err := mw.apiKeys.GetByPrefix(ctx, rawKey[:11])
+				if err != nil || len(candidates) == 0 {
+					resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+					return
+				}
+
+				var matched *domain.APIKey
+				for _, candidate := range candidates {
+					if err := bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)); err == nil {
+						matched = &candidate
+						break
 					}
 				}
-				resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+				if matched == nil {
+					resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+					return
+				}
+
+				workspace, err := mw.workspaces.GetByID(ctx, matched.WorkspaceID)
+				if err != nil {
+					resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+					return
+				}
+
+				ctx = authz.WithWorkspace(ctx, workspace)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			// fall back to cookie auth
-			accessTokenCookie, err := r.Cookie("access_token")
+			// fallback: svc_session
+			cookie, err := r.Cookie("svc_session")
 			if err != nil {
 				resp.Unauthorized("missing credentials").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			token, err := mw.gaClient.Tokens.ValidateToken(ctx, accessTokenCookie.Value)
-			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
+			sessionData, err := mw.gaClient.Sessions.Get(ctx, cookie.Value)
+			if err != nil || sessionData == nil {
+				resp.Unauthorized("service session not found").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			subject, err := authz.GetSubjectFromToken(token)
+			snapshot, err := domain.UnmarshalSnapshot(sessionData)
 			if err != nil {
-				resp.Unauthorized(err.Error()).WithModule("AuthMW").Send(w)
+				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			ctx = authz.WithSubject(ctx, subject)
+			subject := authz.UserSubject{
+				ID:    snapshot.UserID,
+				Email: snapshot.Email,
+			}
+			ctx = authz.WithSubject(ctx, &subject)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

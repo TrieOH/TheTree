@@ -7,8 +7,8 @@ github.com/MintzyG/FastUtilitiesNet v0.5.5 h1:yRFpHs15r01z1DMVZRcdvu8NFDysV6SP/0
 github.com/MintzyG/FastUtilitiesNet v0.5.5/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/MintzyG/fail/v3 v3.2.0 h1:tAyTfiCl2ufcSvi3w8WHHf/iKX16mcfRqdXULHDfD5s=
 github.com/MintzyG/fail/v3 v3.2.0/go.mod h1:Nr7t8S5qnwL9np0+gCl3s6BgfcXW5nDOwomu/VVgjrw=
-github.com/TrieOH/goauth-sdk-go v0.4.13 h1:SI3Hd/26zYECI4QoNy5PMVpvWFJWPAGKdD0cDHZjwuQ=
-github.com/TrieOH/goauth-sdk-go v0.4.13/go.mod h1:yJUYZq8cf9hL0e9XAHX+DvRgttqL6tJ6042/X9diSiQ=
+github.com/TrieOH/goauth-sdk-go v0.5.1 h1:8iYjRGBsZjCpce1d2FAV1Bxzvr9ouYcHeQ2tqVxisZY=
+github.com/TrieOH/goauth-sdk-go v0.5.1/go.mod h1:yJUYZq8cf9hL0e9XAHX+DvRgttqL6tJ6042/X9diSiQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=

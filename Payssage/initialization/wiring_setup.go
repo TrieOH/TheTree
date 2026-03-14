@@ -164,7 +164,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	oauthQ := oauthQueries.New(workspaceRepo, marketplaceRepo, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
-	systemHandler := system.NewSystemHandler()
+	systemHandler := system.NewSystemHandler(app.GaClient)
 	intentHandler := intents.NewIntentsHandler(intentC, intentQ)
 	workspaceHandler := workspaces.NewWorkspacesHandler(workspaceC, workspaceQ)
 	apiKeyHandler := apiKeysHandler.NewApiKeysHandler(apiKeyC, apiKeyQ)
