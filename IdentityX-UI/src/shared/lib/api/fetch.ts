@@ -62,14 +62,14 @@ export async function authFetcher<TData>(
   try {
     let baseUrlString = env.VITE_API_URL;
     if (!baseUrlString.startsWith('http://') && !baseUrlString.startsWith('https://')) {
-      baseUrlString = `http://${baseUrlString}`; // Default to http if missing
+      baseUrlString = `http://${baseUrlString}`;
     }
-
     if (!baseUrlString.endsWith('/')) baseUrlString += '/';
 
     const baseUrl = new URL(baseUrlString);
-    const fullUrl = new URL(path, baseUrl).toString();
-
+    const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+    const fullUrl = new URL(normalizedPath, baseUrl).toString();
+  
     const response = await authenticatedFetch(fullUrl, init);
     const rawResponse = await response.json().catch(() => ({
         module: "Client",
