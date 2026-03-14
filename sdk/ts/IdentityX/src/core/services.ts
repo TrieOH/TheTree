@@ -5,7 +5,8 @@ import {
   exchangeAndSaveClaims,
   fetchAndSaveClaims,
   getUserInfo,
-  isUpToDate
+  isUpToDate,
+  setCookie
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
@@ -128,9 +129,9 @@ export const createAuthService = (apiInstance: Api) => ({
         }
       }
     );
-    if (res.success && typeof window !== "undefined") {
+    if (res.success) {
       const expiresDate = new Date(res.data.expires_at).toUTCString();
-      document.cookie = `svc_session=${res.data.service_session_id}; path=/; expires=${expiresDate}; secure; samesite=lax`;
+      setCookie("svc_session", res.data.service_session_id, expiresDate);
       await fetchAndSaveClaims(apiInstance, undefined, true);
     }
     return res;

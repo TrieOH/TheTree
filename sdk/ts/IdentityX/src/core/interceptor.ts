@@ -4,6 +4,7 @@ import {
   isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveTokenClaims,
+  setCookie,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
@@ -73,17 +74,13 @@ export class AuthInterceptor {
       throw new Error(res.message || "Failed to exchange tokens for session");
     }
 
-    if (typeof window !== "undefined") {
-      const expiresDate = new Date(res.data.expires_at).toUTCString();
-      document.cookie = `svc_session=${res.data.service_session_id}; path=/; expires=${expiresDate}; secure; samesite=lax`;
-    }
+    const expiresDate = new Date(res.data.expires_at).toUTCString();
+    setCookie("svc_session", res.data.service_session_id, expiresDate);
 
     const claims = await this.fetchClaimsAndSave(is_up_to_date);
 
-    if (typeof window !== "undefined") {
-      const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-      document.cookie = `refresh_token=${refresh_token}; path=/; expires=${refreshExpiry}; secure; samesite=lax`;
-    }
+    const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
+    setCookie("refresh_token", refresh_token, refreshExpiry);
 
     return claims;
   }

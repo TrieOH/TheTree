@@ -29,6 +29,19 @@ const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
 const IS_UP_TO_DATE_KEY = "trieoh_is_up_to_date";
 
+// Cookie configuration constants
+const COOKIE_OPTIONS = "path=/; secure; samesite=none";
+
+export function setCookie(name: string, value: string, expires?: string): void {
+  if (typeof window === "undefined") return;
+  const expiry = expires ? `; expires=${expires}` : "";
+  document.cookie = `${name}=${value}; ${COOKIE_OPTIONS}${expiry}`;
+}
+
+export function removeCookie(name: string): void {
+  setCookie(name, "", "Thu, 01 Jan 1970 00:00:00 GMT");
+}
+
 // Stored only in memory
 let memoryClaims: AuthTokenClaims | null = null;
 
@@ -113,11 +126,8 @@ export function clearAuthTokens(): void {
   localStorage.removeItem(REFRESH_EXPIRY_KEY);
   localStorage.removeItem(IS_UP_TO_DATE_KEY);
 
-  if (typeof window !== "undefined") {
-    const expired = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = `svc_session=; path=/; ${expired}; secure; samesite=lax`;
-    document.cookie = `refresh_token=; path=/; ${expired}; secure; samesite=lax`;
-  }
+  removeCookie("svc_session");
+  removeCookie("refresh_token");
 
   console.log("[TRIEOH SDK] Auth tokens and claims cleared");
 }
@@ -169,17 +179,13 @@ export const exchangeAndSaveClaims = async (
   );
 
   if (res.success) {
-    if (typeof window !== "undefined") {
-      const expiresDate = new Date(res.data.expires_at).toUTCString();
-      document.cookie = `svc_session=${res.data.service_session_id}; path=/; expires=${expiresDate}; secure; samesite=lax`;
-    }
+    const expiresDate = new Date(res.data.expires_at).toUTCString();
+    setCookie("svc_session", res.data.service_session_id, expiresDate);
 
     const claimsRes = await fetchAndSaveClaims(apiInstance, is_up_to_date, true);
 
-    if (typeof window !== "undefined") {
-      const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();
-      document.cookie = `refresh_token=${refresh_token}; path=/; expires=${refreshExpiry}; secure; samesite=lax`;
-    }
+    const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();
+    setCookie("refresh_token", refresh_token, refreshExpiry);
 
     return claimsRes;
   }
