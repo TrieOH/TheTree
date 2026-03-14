@@ -115,6 +115,9 @@ func IsNotFound(err error) bool {
 }
 
 func IsUniqueViolation(err error) bool {
+	if err != nil {
+		return false
+	}
 	var fe *fail.Error
 	if errors.As(err, &fe) {
 		if fe.Meta != nil {
@@ -132,6 +135,9 @@ func IsUniqueViolation(err error) bool {
 }
 
 func IsCheckViolation(err error) bool {
+	if err != nil {
+		return false
+	}
 	var fe *fail.Error
 	if errors.As(err, &fe) {
 		if fe.Meta != nil {
