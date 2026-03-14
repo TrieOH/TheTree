@@ -90,14 +90,10 @@ func (handler *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
-
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
-
 	resp.OK("Logged in").WithData(map[string]any{
 		"is_up_to_date": tokens.IsUpToDate,
+		"access_token":  tokens.AccessTokenString,
+		"refresh_token": tokens.RefreshTokenString,
 	}).Send(w)
 }
 
@@ -126,12 +122,6 @@ func (handler *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		resp.FromError(err).Send(w)
 		return
 	}
-
-	accessCookie := DeleteCookie("access_token")
-	refreshCookie := DeleteCookie("refresh_token")
-
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
 
 	resp.OK("Logged out").Send(w)
 }
@@ -175,14 +165,10 @@ func (handler *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
-
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
-
 	resp.OK("Refreshed tokens").WithData(map[string]any{
 		"is_up_to_date": tokens.IsUpToDate,
+		"access_token":  tokens.AccessTokenString,
+		"refresh_token": tokens.RefreshTokenString,
 	}).Send(w)
 }
 
@@ -313,14 +299,10 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	accessCookie := CreateCookie("access_token", tokens.AccessTokenString, tokens.Domain, tokens.AccessExpiresAt)
-	refreshCookie := CreateCookie("refresh_token", tokens.RefreshTokenString, tokens.Domain, tokens.RefreshExpiresAt)
-
-	http.SetCookie(w, accessCookie)
-	http.SetCookie(w, refreshCookie)
-
 	resp.OK("Logged in").WithData(map[string]any{
 		"is_up_to_date": tokens.IsUpToDate,
+		"access_token":  tokens.AccessTokenString,
+		"refresh_token": tokens.RefreshTokenString,
 	}).Send(w)
 }
 
