@@ -245,7 +245,7 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 	// ----------------------------
 	if claims.Sub.ProjectID != nil {
 
-		expected := "project:" + claims.Sub.ProjectID.String()
+		expected := claims.Sub.ProjectID.String()
 
 		if claims.Issuer != expected {
 			return nil, fail.New(SDKUnauthorizedID).
