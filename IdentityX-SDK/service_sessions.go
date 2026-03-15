@@ -44,7 +44,7 @@ type SnapshotBuilder func(claims *AccessClaims) ([]byte, error)
 
 type SessionResult struct {
 	SessionID string        `json:"session_id"`
-	TTL       time.Duration `json:"ttl"`
+	TTL       time.Time     `json:"ttl"`
 	Claims    *AccessClaims `json:"claims"`
 }
 
@@ -82,7 +82,7 @@ func (c *Client) ExchangeAndCreateSession(
 
 	return &SessionResult{
 		SessionID: claims.Sub.SessionID.String(),
-		TTL:       ttl,
+		TTL:       claims.ExpiresAt.Time,
 		Claims:    claims,
 	}, nil
 }
