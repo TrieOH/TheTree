@@ -3,15 +3,15 @@ import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
 import CardAvatar from "../Form/CardAvatar";
-import { 
-  evaluateRules, 
+import {
+  evaluateRules,
   type Rule,
 } from "../../../utils/field-validator";
 
 export interface SignInProps {
-  onSuccess?: (is_up_to_date: boolean) => Promise<void>;
+  onSuccess?: () => Promise<void>;
   onFailed?: (message: string) => Promise<void>;
-  signUpRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  signUpRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   forgotPasswordRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
 }
@@ -60,16 +60,17 @@ export function SignIn({
     setLoadingSubmit(true);
 
     const res = await auth.login(email, password);
-    if(res.success && onSuccess) await onSuccess(res.data.is_up_to_date || true);
-    else if(onFailed) await onFailed(res.message);
+    if (res.success && onSuccess) await onSuccess();
+    else if (onFailed) await onFailed(res.message);
+
     setLoadingSubmit(false);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
       <CardAvatar mainText="Faça login na sua conta" subText="Insira seus dados para fazer login" />
       <div className="trieoh-card__fields">
-        <BasicInputField 
-          label="Email" 
+        <BasicInputField
+          label="Email"
           name="email"
           placeholder="teste@gmail.com"
           autoComplete="email"
@@ -80,8 +81,8 @@ export function SignIn({
           rulesStatus={emailValidation}
           submitted={submitted}
         />
-        <BasicInputField 
-          label="Senha" 
+        <BasicInputField
+          label="Senha"
           name="password"
           placeholder="**********"
           autoComplete="current-password"
@@ -93,7 +94,7 @@ export function SignIn({
           submitted={submitted}
         />
       </div>
-      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit} loading={loadingSubmit}/>
+      <BasicSubmitButton label="Entrar" onSubmit={handleSubmit} loading={loadingSubmit} />
       {forgotPasswordRedirect && (
         <span className="trieoh-card__other" style={{ textAlign: "center", cursor: "pointer" }}>
           <span onClick={forgotPasswordRedirect}>

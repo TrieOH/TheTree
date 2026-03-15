@@ -4,6 +4,7 @@ import {
   isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveTokenClaims,
+  setCookie,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
@@ -37,7 +38,7 @@ export class AuthInterceptor {
     this.onRefreshFailed = config?.onRefreshFailed;
   }
 
-  private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
+  private async fetchClaimsAndSave(is_up_to_date?: boolean): Promise<AuthTokenClaims> {
     const response = await fetch(joinUrl(this.authBaseURL, "/sessions/me"), {
       method: "GET",
       headers: { "Content-Type": "application/json" },
@@ -50,18 +51,45 @@ export class AuthInterceptor {
       clearAuthTokens();
       throw new Error(resJson.message || "Failed to fetch session claims after refresh");
     }
-    
-    const claims = resJson.data as AuthTokenClaims;
+
+    const claims = { ...resJson.data, is_up_to_date } as AuthTokenClaims;
     saveTokenClaims(claims);
+    return claims;
+  }
+
+  private async exchange(access_token: string, refresh_token: string, is_up_to_date: boolean): Promise<AuthTokenClaims> {
+    const response = await fetch(joinUrl(this.authBaseURL, "/auth/exchange"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${access_token}`,
+      },
+      credentials: "include",
+    });
+
+    const res = await response.json();
+
+    if (res.code !== 200) {
+      clearAuthTokens();
+      throw new Error(res.message || "Failed to exchange tokens for session");
+    }
+
+    const expiresDate = new Date(res.data.expires_at).toUTCString();
+    setCookie("svc_session", res.data.service_session_id, expiresDate);
+
+    const claims = await this.fetchClaimsAndSave(is_up_to_date);
+
+    const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
+    setCookie("refresh_token", refresh_token, refreshExpiry);
+
     return claims;
   }
 
   private async refreshToken(): Promise<void> {
     if (this.isRefreshing && this.refreshPromise) return this.refreshPromise;
-    
+
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
-      let claims: AuthTokenClaims;
       try {
         const response = await fetch(joinUrl(this.authBaseURL, "/auth/refresh"), {
           method: "POST",
@@ -76,7 +104,10 @@ export class AuthInterceptor {
           throw new Error(data.message || "Failed to refresh token");
         }
 
-        claims = await this.fetchClaimsAndSave();
+        const { access_token, refresh_token, is_up_to_date } = data.data;
+
+        const claims = await this.exchange(access_token, refresh_token, is_up_to_date);
+
         this.onTokenRefreshed?.(claims);
         console.log("[TRIEOH SDK] Token refreshed successfully");
       } catch (error) {
@@ -94,11 +125,11 @@ export class AuthInterceptor {
   }
 
   async beforeRequest(): Promise<void> {
-    if(isRefreshSessionExpired()) {
+    if (isRefreshSessionExpired()) {
       clearAuthTokens();
       return;
     }
-    
+
     if (isTokenExpiringSoon(30)) {
       console.log("[TRIEOH SDK] Token expiring soon, refreshing...");
       try {
@@ -134,7 +165,7 @@ export const createAuthInterceptor = (config?: InterceptorConfig) => {
 
 export const createAuthenticatedFetch = (config?: InterceptorConfig) => {
   const interceptor = new AuthInterceptor(config);
-  
+
   return async (url: string, options?: RequestOptions): Promise<Response> => {
     return interceptor.fetch(url, options);
   };
