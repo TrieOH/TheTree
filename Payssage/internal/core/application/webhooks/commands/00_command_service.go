@@ -12,6 +12,7 @@ import (
 type CommandService struct {
 	endpoints  domain.WebhookEndpointRepo
 	deliveries domain.WebhookDeliveryRepo
+	events     domain.WebhookEventRepo
 	workspaces domain.WorkspaceRepo
 	intents    domain.IntentRepository
 	asynq      *asynq.Client
@@ -23,6 +24,7 @@ type CommandService struct {
 func New(
 	endpoints domain.WebhookEndpointRepo,
 	deliveries domain.WebhookDeliveryRepo,
+	events domain.WebhookEventRepo,
 	workspaces domain.WorkspaceRepo,
 	intents domain.IntentRepository,
 	asynq *asynq.Client,
@@ -33,6 +35,7 @@ func New(
 	return &CommandService{
 		endpoints:  endpoints,
 		deliveries: deliveries,
+		events:     events,
 		workspaces: workspaces,
 		intents:    intents,
 		asynq:      asynq,

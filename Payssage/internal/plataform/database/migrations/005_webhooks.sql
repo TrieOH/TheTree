@@ -29,6 +29,17 @@ CREATE TABLE webhook_deliveries (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE webhook_events (
+    id           UUID PRIMARY KEY DEFAULT uuidv7(),
+    workspace_id UUID NULL REFERENCES workspaces(id) ON DELETE SET NULL,
+    intent_id    UUID NULL REFERENCES intents(id) ON DELETE SET NULL,
+    provider     TEXT NOT NULL,
+    external_id  TEXT NULL,
+    event_type   TEXT NOT NULL,
+    payload      JSONB NOT NULL,
+    received_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX idx_webhook_deliveries_endpoint_id ON webhook_deliveries (endpoint_id);
 CREATE INDEX idx_webhook_deliveries_intent_id ON webhook_deliveries (intent_id);
 CREATE INDEX idx_webhook_deliveries_status ON webhook_deliveries (status);

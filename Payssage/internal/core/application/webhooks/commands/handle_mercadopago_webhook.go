@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/payment"
 	"github.com/spf13/viper"
 )
 
-func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymentID string) error {
+func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymentID string, eventID uuid.UUID) error {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.HandleMercadoPagoWebhook")
 	defer span.End()
 
@@ -49,7 +50,7 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymen
 	}
 
 	log.Printf("[mp-webhook] dispatching event=%s for intent=%s", event, intent.ID)
-	return uc.HandleProviderWebhook(ctx, "mercadopago", intent.ID.String(), event)
+	return uc.HandleProviderWebhook(ctx, eventID, "mercadopago", intent.ID.String(), event)
 }
 
 func mapMPStatusToEvent(status string) string {

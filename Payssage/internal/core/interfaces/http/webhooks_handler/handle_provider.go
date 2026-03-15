@@ -4,13 +4,13 @@ import (
 	"TriePayments/internal/core/infrastructure/providers"
 	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/validation"
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -28,6 +28,8 @@ import (
 // @Router /webhooks/{provider} [post]
 func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
+	ctx := r.Context()
+	var err error
 
 	switch provider {
 	case "mercadopago":
@@ -38,7 +40,7 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 		}
 
 		var req dto.MercadoPagoWebhookRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp.BadRequest("invalid payload").Send(w)
 			return
 		}
@@ -53,25 +55,47 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 
 		resp.OK("received").Send(w)
 
-		go func() {
-			if err := h.commands.HandleMercadoPagoWebhook(context.Background(), req.Data.ID); err != nil {
-				log.Printf("[webhook] mercadopago err=%v", err)
-			}
-		}()
+		var rawPayload []byte
+		rawPayload, err = json.Marshal(req)
+		if err != nil {
+			log.Printf("[webhook] mercadopago failed to marshal payload err=%v", err)
+			rawPayload = []byte("{}")
+		}
+
+		var eventID uuid.UUID
+		eventID, err = h.commands.CreateWebhookEvent(ctx, provider, req.Action, rawPayload)
+		if err != nil {
+			log.Printf("[webhook] failed to save event provider=%s err=%v", provider, err)
+		}
+
+		if err = h.commands.HandleMercadoPagoWebhook(ctx, req.Data.ID, eventID); err != nil {
+			log.Printf("[webhook] mercadopago err=%v", err)
+		}
 
 	default:
 		var req dto.ProviderWebhookRequest
-		if err := validation.ValidateInto(r, &req); err != nil {
+		if err = validation.ValidateInto(r, &req); err != nil {
 			resp.FromError(err).Send(w)
 			return
 		}
 
 		resp.OK("received").Send(w)
 
-		go func() {
-			if err := h.commands.HandleProviderWebhook(context.Background(), provider, req.IntentID, req.Event); err != nil {
-				log.Printf("[webhook] provider=%s err=%v", provider, err)
-			}
-		}()
+		var rawPayload []byte
+		rawPayload, err = json.Marshal(req)
+		if err != nil {
+			log.Printf("[webhook] mercadopago failed to marshal payload err=%v", err)
+			rawPayload = []byte("{}")
+		}
+
+		var eventID uuid.UUID
+		eventID, err = h.commands.CreateWebhookEvent(ctx, provider, req.Event, rawPayload)
+		if err != nil {
+			log.Printf("[webhook] failed to save event provider=%s err=%v", provider, err)
+		}
+
+		if err = h.commands.HandleProviderWebhook(ctx, eventID, provider, req.IntentID, req.Event); err != nil {
+			log.Printf("[webhook] provider=%s err=%v", provider, err)
+		}
 	}
 }

@@ -8,53 +8,60 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 )
 
-func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, intentID string, event string) error {
+func (uc *CommandService) HandleProviderWebhook(ctx context.Context, eventID uuid.UUID, provider, intentID string, event string) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.HandleProviderWebhook")
 	defer span.End()
 
-	id, err := uuid.Parse(intentID)
+	var id uuid.UUID
+	id, err = uuid.Parse(intentID)
 	if err != nil {
 		return errx.Invalid("intent").SetMessage("invalid intent_id")
 	}
 
-	intent, err := uc.intents.GetByID(ctx, id)
+	var intent *domain.Intent
+	intent, err = uc.intents.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	switch event {
 	case domain.EventPaymentSucceeded:
-		log.Printf("[webhook] confirming intent=%s", id)
-		intent, err = uc.intents.Confirm(ctx, id)
+		if !alreadyInTargetState(event, intent.Status) {
+			log.Printf("[webhook] confirming intent=%s", id)
+			intent, err = uc.intents.Confirm(ctx, id)
+		} else {
+			log.Printf("[webhook] intent=%s already in target state, skipping mutation", id)
+		}
 	case domain.EventPaymentFailed:
-		log.Printf("[webhook] failing intent=%s", id)
-		intent, err = uc.intents.Fail(ctx, id)
+		if !alreadyInTargetState(event, intent.Status) {
+			log.Printf("[webhook] failing intent=%s", id)
+			intent, err = uc.intents.Fail(ctx, id)
+		} else {
+			log.Printf("[webhook] intent=%s already in target state, skipping mutation", id)
+		}
 	case domain.EventPaymentCancelled:
-		log.Printf("[webhook] cancelling intent=%s", id)
-		intent, err = uc.intents.Cancel(ctx, id)
+		if !alreadyInTargetState(event, intent.Status) {
+			log.Printf("[webhook] cancelling intent=%s", id)
+			intent, err = uc.intents.Cancel(ctx, id)
+		} else {
+			log.Printf("[webhook] intent=%s already in target state, skipping mutation", id)
+		}
 	default:
 		return errx.Invalid("event").SetMessage("unknown event type: " + event)
 	}
 	if err != nil {
-		if errx.IsKind(err, "not_found") {
-			// intent already updated by PayIntent, fetch current state and continue
-			log.Printf("[webhook] intent=%s already updated, fetching current state", id)
-			intent, err = uc.intents.GetByID(ctx, id)
-			if err != nil {
-				return err
-			}
-		} else {
-			log.Printf("[webhook] failed to update intent=%s event=%s err=%v", id, event, err)
-			return err
-		}
+		log.Printf("[webhook] failed to update intent=%s event=%s err=%v", id, event, err)
+		return err
 	}
 
-	log.Printf("[webhook] intent=%s updated to status=%s", intent.ID, intent.Status)
+	log.Printf("[webhook] intent=%s status=%s", intent.ID, intent.Status)
 
 	// build normalized payload
-	payloadBytes, err := json.Marshal(domain.WebhookPayload{
+	var payloadBytes []byte
+	payloadBytes, err = json.Marshal(domain.WebhookPayload{
 		Event:       event,
 		IntentID:    intent.ID,
 		WorkspaceID: intent.WorkspaceID,
@@ -67,7 +74,8 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 	}
 
 	// fetch all registered endpoints for this workspace
-	endpoints, err := uc.endpoints.ListByWorkspace(ctx, intent.WorkspaceID)
+	var endpoints []domain.WebhookEndpoint
+	endpoints, err = uc.endpoints.ListByWorkspace(ctx, intent.WorkspaceID)
 	if err != nil {
 		return err
 	}
@@ -76,18 +84,21 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 
 	// enqueue delivery task per endpoint
 	for _, endpoint := range endpoints {
-		delivery, err := domain.NewWebhookDelivery(endpoint.ID, intent.ID, event, payloadBytes)
+		var delivery *domain.WebhookDelivery
+		delivery, err = domain.NewWebhookDelivery(endpoint.ID, intent.ID, event, payloadBytes)
 		if err != nil {
 			log.Printf("[webhook] failed to create delivery object for endpoint %s: %v", endpoint.ID, err)
 			continue
 		}
-		created, err := uc.deliveries.Create(ctx, *delivery)
+		var created *domain.WebhookDelivery
+		created, err = uc.deliveries.Create(ctx, *delivery)
 		if err != nil {
 			log.Printf("[webhook] failed to create delivery record for endpoint %s: %v", endpoint.ID, err)
 			continue
 		}
 
-		task, err := domain.NewDeliverWebhookTask(created.ID, endpoint.ID, endpoint.URL, endpoint.Secret, payloadBytes)
+		var task *asynq.Task
+		task, err = domain.NewDeliverWebhookTask(created.ID, endpoint.ID, endpoint.URL, endpoint.Secret, payloadBytes)
 		if err != nil {
 			log.Printf("[webhook] failed to create delivery task for endpoint %s: %v", endpoint.ID, err)
 			continue
@@ -100,5 +111,21 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, provider, i
 		}
 	}
 
+	if eventID != uuid.Nil {
+		uc.EnrichWebhookEvent(ctx, eventID, intent.WorkspaceID, intent.ID, intentID)
+	}
+
 	return nil
+}
+
+func alreadyInTargetState(event string, status domain.IntentStatus) bool {
+	switch event {
+	case domain.EventPaymentSucceeded:
+		return status == domain.IntentStatusSucceeded
+	case domain.EventPaymentFailed:
+		return status == domain.IntentStatusFailed
+	case domain.EventPaymentCancelled:
+		return status == domain.IntentStatusCancelled
+	}
+	return false
 }

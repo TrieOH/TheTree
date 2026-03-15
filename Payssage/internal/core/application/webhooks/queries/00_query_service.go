@@ -10,6 +10,8 @@ import (
 
 type QueryService struct {
 	endpoints  domain.WebhookEndpointRepo
+	deliveries domain.WebhookDeliveryRepo
+	events     domain.WebhookEventRepo
 	workspaces domain.WorkspaceRepo
 	gaClient   *goauth.Client
 	tx         database.TxRunner
@@ -18,6 +20,8 @@ type QueryService struct {
 
 func New(
 	endpoints domain.WebhookEndpointRepo,
+	deliveries domain.WebhookDeliveryRepo,
+	events domain.WebhookEventRepo,
 	workspaces domain.WorkspaceRepo,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
@@ -25,6 +29,8 @@ func New(
 ) *QueryService {
 	return &QueryService{
 		endpoints:  endpoints,
+		deliveries: deliveries,
+		events:     events,
 		workspaces: workspaces,
 		gaClient:   gaClient,
 		tx:         tx,

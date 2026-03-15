@@ -107,6 +107,7 @@ func SetupGoAuth(app *TriePayments) {
 				WorkspacesCreate,
 				WebhooksCreate,
 				WebhooksDelete,
+				WebhooksRead,
 			},
 			Meta: map[string]interface{}{
 				"color": "#10b981",
@@ -163,6 +164,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#ef4444",
 			"icon":  "Trash2",
+		},
+	}
+	WebhooksRead = goauth.PermissionDefinition{
+		Object: "webhooks",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
 		},
 	}
 )

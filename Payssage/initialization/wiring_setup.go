@@ -129,6 +129,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	apiKeysRepo := infrastructure.NewApiKeyRepo(q, logs, tracer)
 	endpointsRepo := infrastructure.NewWebhookEndpointRepo(q, logs, tracer)
 	deliveriesRepo := infrastructure.NewWebhookDeliveryRepo(q, logs, tracer)
+	eventsRepo := infrastructure.NewWebhookEventRepo(q, logs, tracer)
 	oauthStatesRepo := infrastructure.NewOAuthStatesRepo(q, logs, tracer)
 	providerCredentialsRepo := infrastructure.NewProviderCredentialsRepo(q, logs, tracer)
 	marketplaceRepo := infrastructure.NewMarketplaceConfigRepo(q, logs, tracer)
@@ -152,8 +153,8 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	}()
 
 	// Init Commands and Queries
-	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, workspaceRepo, intentRepo, asynqClient, app.GaClient, txRunner, tracer)
-	webhooksQ := webhooksQueries.New(endpointsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, intentRepo, asynqClient, app.GaClient, txRunner, tracer)
+	webhooksQ := webhooksQueries.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	intentC := intentCommands.New(intentRepo, workspaceRepo, providerCredentialsRepo, marketplaceRepo, webhooksC, oauthProviderMap, paymentProviderMap, app.GaClient, txRunner, tracer)
 	intentQ := intentQueries.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	workspaceC := workspaceCommands.New(workspaceRepo, app.GaClient, txRunner, tracer)

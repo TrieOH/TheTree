@@ -7,7 +7,7 @@ import (
 )
 
 type WebhookDispatcher interface {
-	Dispatch(ctx context.Context, provider, intentID, event string) error
+	Dispatch(ctx context.Context, provider, intentID, event string, eventID uuid.UUID) error
 }
 
 type IntentRepository interface {
@@ -77,4 +77,12 @@ type MarketplaceConfigRepo interface {
 	Update(ctx context.Context, config MarketplaceConfig) (*MarketplaceConfig, error)
 	Delete(ctx context.Context, workspaceID, credentialID uuid.UUID) error
 	DeleteAll(ctx context.Context, workspaceID uuid.UUID) error
+}
+
+type WebhookEventRepo interface {
+	Create(ctx context.Context, toCreate WebhookEvent) (*WebhookEvent, error)
+	Enrich(ctx context.Context, id, workspaceID, intentID uuid.UUID, externalID string) (*WebhookEvent, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*WebhookEvent, error)
+	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]WebhookEvent, error)
+	ListByProvider(ctx context.Context, provider string) ([]WebhookEvent, error)
 }

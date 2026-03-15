@@ -88,7 +88,9 @@ func registerWebhookRoutes(
 		r.Use(authMW.Auth())
 		r.Post("/workspaces/{name}/webhooks", h.RegisterWebhookEndpoint)
 		r.Get("/workspaces/{name}/webhooks", h.ListWebhookEndpoints)
+		r.Get("/workspaces/{name}/webhook-events", h.ListWebhookEvents)
 		r.Delete("/workspaces/{name}/webhooks/{endpoint_id}", h.DeleteWebhookEndpoint)
+		r.Get("/workspaces/{name}/webhooks/{endpoint_id}/deliveries", h.ListWebhookDeliveries)
 	})
 }
 

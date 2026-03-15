@@ -50,7 +50,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		}
 		go func() {
 			if err := uc.webhooks.Dispatch(
-				context.Background(), "sandbox", updated.ID.String(), domain.EventPaymentSucceeded,
+				context.Background(), "sandbox", updated.ID.String(), domain.EventPaymentSucceeded, uuid.Nil,
 			); err != nil {
 				log.Printf("[sandbox] webhook fan-out failed for intent=%s: %v", updated.ID, err)
 			}

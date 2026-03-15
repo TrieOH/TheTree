@@ -36,3 +36,24 @@ type MercadoPagoWebhookRequest struct {
 		ID string `json:"id"`
 	} `json:"data"`
 }
+
+type WebhookDeliveryResponse struct {
+	ID              uuid.UUID  `json:"id"`
+	EndpointID      uuid.UUID  `json:"endpoint_id"`
+	IntentID        uuid.UUID  `json:"intent_id"`
+	Event           string     `json:"event"`
+	Status          string     `json:"status"`
+	Attempts        int        `json:"attempts"`
+	LastAttemptedAt *time.Time `json:"last_attempted_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+}
+
+type WebhookEventResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	Provider    string     `json:"provider"`
+	EventType   string     `json:"event_type"`
+	ExternalID  *string    `json:"external_id,omitempty"`
+	WorkspaceID *uuid.UUID `json:"workspace_id,omitempty"`
+	IntentID    *uuid.UUID `json:"intent_id,omitempty"`
+	ReceivedAt  time.Time  `json:"received_at"`
+}

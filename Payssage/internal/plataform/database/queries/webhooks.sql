@@ -58,3 +58,31 @@ SET
     last_attempted_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: CreateWebhookEvent :one
+INSERT INTO webhook_events (id, provider, event_type, payload)
+VALUES ($1, $2, $3, $4)
+    RETURNING *;
+
+-- name: EnrichWebhookEvent :one
+UPDATE webhook_events
+SET
+    workspace_id = $2,
+    intent_id    = $3,
+    external_id  = $4
+WHERE id = $1
+    RETURNING *;
+
+-- name: GetWebhookEventByID :one
+SELECT * FROM webhook_events
+WHERE id = $1;
+
+-- name: ListWebhookEventsByWorkspace :many
+SELECT * FROM webhook_events
+WHERE workspace_id = $1
+ORDER BY received_at DESC;
+
+-- name: ListWebhookEventsByProvider :many
+SELECT * FROM webhook_events
+WHERE provider = $1
+ORDER BY received_at DESC;
