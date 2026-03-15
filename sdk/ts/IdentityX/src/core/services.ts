@@ -2,14 +2,14 @@ import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-
 import type { SessionI } from "../types/sessions-types";
 import {
   clearAuthTokens,
-  exchangeAndSaveClaims,
   fetchAndSaveClaims,
   getUserInfo,
   isUpToDate,
-  TokenClaims
+  TokenClaims,
+  withExchange
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
-import type { Api, ApiResponse } from "./api";
+import type { Api } from "./api";
 import { env } from "./env";
 
 export interface AuthTokens {
@@ -20,47 +20,15 @@ export interface AuthTokens {
 
 export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
   login: async (email: string, password: string) => {
-    const options = { requiresAuth: false };
-    let res: ApiResponse<AuthTokens>;
+    if (env.PROJECT_ID) validateProjectKey();
+    const url = env.PROJECT_ID ? `/projects/${env.PROJECT_ID}/login` : "/auth/login";
+    const res = await apiInstance.post<AuthTokens>(
+      url,
+      { email, password },
+      { requiresAuth: false }
+    );
 
-    if (env.PROJECT_ID) {
-      validateProjectKey();
-      const url = `/projects/${env.PROJECT_ID}/login`;
-      res = await apiInstance.post<AuthTokens>(
-        url,
-        { email, password },
-        options
-      );
-    } else {
-      res = await apiInstance.post<AuthTokens>(
-        "/auth/login",
-        { email, password },
-        options
-      );
-    }
-
-    if (res.success) {
-      try {
-        await exchangeAndSaveClaims(
-          apiInstance,
-          res.data.access_token,
-          res.data.refresh_token,
-          res.data.is_up_to_date,
-          exchangeURL
-        );
-        return res;
-      } catch (error) {
-        console.error("[TRIEOH SDK] Exchange failed during login:", error);
-        clearAuthTokens();
-        return {
-          success: false,
-          code: 500,
-          message: error instanceof Error ? error.message : "Authentication failed during exchange"
-        } as ApiResponse<AuthTokens>;
-      }
-    }
-
-    return res;
+    return withExchange(apiInstance, res, "login", exchangeURL);
   },
 
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
@@ -96,28 +64,7 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
       { skipRefresh: true }
     );
 
-    if (res.success) {
-      try {
-        await exchangeAndSaveClaims(
-          apiInstance,
-          res.data.access_token,
-          res.data.refresh_token,
-          res.data.is_up_to_date,
-          exchangeURL
-        );
-        return res;
-      } catch (error) {
-        console.error("[TRIEOH SDK] Exchange failed during refresh:", error);
-        clearAuthTokens();
-        return {
-          success: false,
-          code: 500,
-          message: error instanceof Error ? error.message : "Refresh failed during exchange"
-        } as ApiResponse<AuthTokens>;
-      }
-    }
-
-    return res;
+    return withExchange(apiInstance, res, "refresh", exchangeURL);
   },
 
   sessions: async () => {

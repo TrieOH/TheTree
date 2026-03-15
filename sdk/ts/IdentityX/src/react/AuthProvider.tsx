@@ -13,6 +13,7 @@ import { getTokenClaims, isUpToDate } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
+import { logger } from "../utils/logger";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -82,19 +83,19 @@ export function AuthProvider({
         return;
       }
 
-      console.log("[TRIEOH SDK] No cached claims, attempting silent refresh...");
+      logger.log("No cached claims, attempting silent refresh...");
       try {
         const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
         if (res.success) {
           authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
-          console.log("[TRIEOH SDK] Session restored.");
+          logger.log("Session restored.");
         } else {
           authStore.reset();
-          console.warn("[TRIEOH SDK] No active session.");
+          logger.warn("No active session.");
         }
       } catch {
         authStore.reset();
-        console.warn("[TRIEOH SDK] Could not restore session (offline?).");
+        logger.warn("Could not restore session (offline?).");
       } finally {
         setReady(true);
       }

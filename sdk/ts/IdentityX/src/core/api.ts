@@ -71,6 +71,18 @@ export class Api {
     return { "Content-Type": "application/json" };
   }
 
+  private parseErrorResponse<T>(raw: RawApiResponse<T>, status: number): ApiResponse<T> {
+    return {
+      success: false,
+      module: raw.module || "Unknown",
+      message: raw.message || "An unknown error occurred",
+      timestamp: raw.timestamp || new Date().toISOString(),
+      code: raw.code || status,
+      error_id: raw.error_id || "UNKNOWN_ERROR",
+      trace: raw.trace,
+    };
+  }
+
   async request<T = unknown>(path: string, options?: RequestOptions): Promise<ApiResponse<T>> {
     try {
       const response = await this.authInterceptor.fetch(path, {
@@ -87,16 +99,26 @@ export class Api {
         trace: ["Failed to parse API response as JSON"],
       }));
 
+      if (!raw) {
+        return this.parseErrorResponse({
+          module: "Client",
+          message: response.statusText || "Unknown error",
+          timestamp: new Date().toISOString(),
+          code: response.status,
+          error_id: "CLIENT_PARSE_ERROR",
+          trace: ["Failed to parse API response as JSON"],
+        }, response.status);
+      }
+
       if (!response.ok) {
-        return {
-          success: false,
+        return this.parseErrorResponse({
           module: raw.module || "Unknown",
           message: raw.message || response.statusText || "An unknown error occurred",
           timestamp: raw.timestamp || new Date().toISOString(),
           code: raw.code || response.status,
           error_id: raw.error_id || "UNKNOWN_ERROR",
           trace: raw.trace,
-        };
+        }, response.status);
       }
 
       return {

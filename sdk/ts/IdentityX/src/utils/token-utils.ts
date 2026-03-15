@@ -1,5 +1,7 @@
-import type { Api } from "../core/api";
+import type { Api, ApiResponse } from "../core/api";
+import { AuthTokens } from "../core/services";
 import { authStore } from "../store/auth-store";
+import { logger } from "./logger";
 
 export interface TokenClaims {
   sub: {
@@ -26,6 +28,8 @@ export interface AuthTokenClaims {
   is_up_to_date?: boolean;
 }
 
+// Stored only in memory
+let memoryClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
 const IS_UP_TO_DATE_KEY = "trieoh_is_up_to_date";
@@ -66,8 +70,45 @@ export function removeCookie(name: string): void {
   setCookie(name, "", "Thu, 01 Jan 1970 00:00:00 GMT");
 }
 
-// Stored only in memory
-let memoryClaims: AuthTokenClaims | null = null;
+export function saveSession(
+  claims: AuthTokenClaims,
+  session_id: string,
+  session_ttl: string,
+  refresh_token: string,
+): void {
+  const sessionExpiry = new Date(session_ttl).getTime().toString();
+  setCookie("svc_session", session_id, sessionExpiry);
+  saveTokenClaims(claims);
+  const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
+  setCookie("refresh_token", refresh_token, refreshExpiry);
+}
+
+export const withExchange = async (
+  apiInstance: Api,
+  res: ApiResponse<AuthTokens>,
+  context: "login" | "refresh",
+  exchangeURL?: string,
+): Promise<ApiResponse<AuthTokens>> => {
+  if (!res.success) return res;
+  try {
+    await exchangeAndSaveClaims(
+      apiInstance,
+      res.data.access_token,
+      res.data.refresh_token,
+      res.data.is_up_to_date,
+      exchangeURL,
+    );
+    return res;
+  } catch (error) {
+    logger.error(`Exchange failed during ${context}:`, error);
+    clearAuthTokens();
+    return {
+      success: false,
+      code: 500,
+      message: error instanceof Error ? error.message : "Authentication failed during exchange",
+    } as ApiResponse<AuthTokens>;
+  }
+};
 
 export function saveTokenClaims(claims: AuthTokenClaims): void {
   memoryClaims = claims;
@@ -76,18 +117,18 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
   const accessExpiry = claims.access_data.exp * 1000;
 
   if (isNaN(refreshExpiry)) {
-    console.error("[TRIEOH SDK] Invalid refresh_expiry_date received:", claims.refresh_expiry_date);
+    logger.error("Invalid refresh_expiry_date received:", claims.refresh_expiry_date);
   } else localStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
 
   if (isNaN(accessExpiry)) {
-    console.error("[TRIEOH SDK] Invalid access expiry received:", claims.access_data.exp);
+    logger.error("Invalid access expiry received:", claims.access_data.exp);
   } else localStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
 
   if (claims.is_up_to_date !== undefined) {
     localStorage.setItem(IS_UP_TO_DATE_KEY, String(claims.is_up_to_date));
   }
 
-  console.log("[TRIEOH SDK] Token claims saved");
+  logger.log("Token claims saved");
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
@@ -101,41 +142,21 @@ export function isUpToDate(): boolean {
   return stored === "true";
 }
 
-export function isTokenExpiringSoon(thresholdSeconds: number = 30): boolean {
+function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
   try {
-    const expiryStr = localStorage.getItem(ACCESS_EXPIRY_KEY);
+    const expiryStr = localStorage.getItem(key);
     if (!expiryStr) return true;
-
-    const accessExpiryTimestamp = parseInt(expiryStr, 10);
-    if (isNaN(accessExpiryTimestamp)) return true;
-
-    const now = Date.now();
-    const thresholdMs = thresholdSeconds * 1000;
-
-    return (accessExpiryTimestamp - now) <= thresholdMs;
+    const expiry = parseInt(expiryStr, 10);
+    if (isNaN(expiry)) return true;
+    return (expiry - Date.now()) <= thresholdSeconds * 1000;
   } catch (e) {
-    console.warn("[TRIEOH SDK] Error reading access expiry date:", e);
+    logger.warn("Error reading expiry:", e);
     return true;
   }
 }
 
-export function isRefreshSessionExpired(thresholdSeconds: number = 10): boolean {
-  try {
-    const expiryStr = localStorage.getItem(REFRESH_EXPIRY_KEY);
-    if (!expiryStr) return true;
-
-    const refreshExpiryTimestamp = parseInt(expiryStr, 10);
-    if (isNaN(refreshExpiryTimestamp)) return true;
-
-    const now = Date.now();
-    const thresholdMs = thresholdSeconds * 1000;
-
-    return (refreshExpiryTimestamp - now) <= thresholdMs;
-  } catch (e) {
-    console.warn("[TRIEOH SDK] Error reading refresh expiry date:", e);
-    return true;
-  }
-}
+export const isTokenExpiringSoon = (t = 30) => isExpiringSoon(ACCESS_EXPIRY_KEY, t);
+export const isRefreshSessionExpired = (t = 10) => isExpiringSoon(REFRESH_EXPIRY_KEY, t);
 
 export function isAuthenticated(): boolean {
   const expiryStr = localStorage.getItem(ACCESS_EXPIRY_KEY);
@@ -155,7 +176,7 @@ export function clearAuthTokens(): void {
 
   authStore.reset();
 
-  console.log("[TRIEOH SDK] Auth tokens and claims cleared");
+  logger.log("Auth tokens and claims cleared");
 }
 
 export function getUserInfo() {
@@ -181,7 +202,7 @@ export const fetchAndSaveClaims = async (
     }
     throw new Error(res.message || "Failed to fetch session claims");
   } catch (error) {
-    console.warn("[TRIEOH SDK] fetch claims failed (network/server)", error);
+    logger.warn("fetch claims failed (network/server)", error);
     throw error;
   }
 };
