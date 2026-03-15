@@ -1323,10 +1323,21 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 		return nil, err
 	}
 
-	// Trust boundary — issuer scoped
-	if viper.GetString("ISSUER") != access.Issuer {
-		logs.L().Info("Issuers", zap.String("server", viper.GetString("ISSUER")), zap.String("client", access.Issuer))
-		return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
+	if access.Sub.UserType != "project" {
+		if viper.GetString("ISSUER") != access.Issuer {
+			logs.L().Info("Issuers", zap.String("server", viper.GetString("ISSUER")), zap.String("client", access.Issuer))
+			return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
+		}
+	} else {
+		var proj *project2.Project
+		proj, err = uc.deps.Projects.GetByIDInternal(ctx, *access.Sub.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		if proj.ID.String() != access.Issuer {
+			logs.L().Info("Issuers", zap.String("server", proj.ID.String()), zap.String("client", access.Issuer))
+			return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
+		}
 	}
 
 	var sess *session.Session
