@@ -57,6 +57,7 @@ func TriePaymentsSetup() *TriePayments {
 	var app TriePayments
 
 	LoadEnv(&app)
+	app.Redis = SetupRedis(15 * time.Second)
 	SetupGoAuth(&app)
 	SetupFUN()
 	if viper.GetString("ENV") != "test" {
@@ -65,7 +66,6 @@ func TriePaymentsSetup() *TriePayments {
 		log.Println("WE'RE TESTING")
 		SetupDB(&app, "../internal/plataform/database/migrations")
 	}
-	app.Redis = SetupRedis(15 * time.Second)
 	SetupCron(app.DB, &app)
 
 	return &app
