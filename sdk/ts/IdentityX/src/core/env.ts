@@ -13,7 +13,7 @@ export function resolveEnv(): TrieOHEnv {
       : {}
   ) as Partial<ImportMetaEnv>;
 
-  const safeProcessEnv: NodeJS.ProcessEnv = 
+  const safeProcessEnv: NodeJS.ProcessEnv =
     typeof process !== "undefined" ? process.env : {};
 
   const resolvedProjectId =
@@ -29,7 +29,7 @@ export function resolveEnv(): TrieOHEnv {
   return {
     PROJECT_ID: resolvedProjectId,
     API_KEY: resolvedApiKey,
-    BASE_URL: "https://api.default.com",
+    BASE_URL: "https://api.trieauth.trieoh.com",
   };
 }
 let memoizedEnv: TrieOHEnv | null = null;

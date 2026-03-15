@@ -44,23 +44,22 @@ function getCookieDomain(hostname: string) {
 
 export function setCookie(name: string, value: string, expires?: string) {
   if (typeof window === "undefined") return;
-  const expiry = expires ? `expires=${expires}` : "";
+
   const hostname = window.location.hostname;
-  const domain = getCookieDomain(hostname);
   const isSecure = window.location.protocol === 'https:';
+  const domain = hostname !== 'localhost' ? getCookieDomain(hostname) : null;
 
-  const cookieString = [
+  const cookieParts = [
     `${name}=${value}`,
-    `Domain=${domain}`,
+    domain ? `Domain=${domain}` : '',
     `Path=/`,
-    `SameSite=None`,
+    isSecure ? 'SameSite=None' : 'SameSite=Lax',
     isSecure ? 'Secure' : '',
-    expiry,
-  ].filter(Boolean).join('; ');
+    expires ? `expires=${expires}` : '',
+  ];
 
+  const cookieString = cookieParts.filter(Boolean).join('; ');
   document.cookie = cookieString;
-
-  const set = document.cookie.split('; ').some(c => c.startsWith(`${name}=`));
 }
 
 export function removeCookie(name: string): void {
@@ -193,7 +192,7 @@ export const exchangeAndSaveClaims = async (
   refresh_token: string,
   is_up_to_date: boolean
 ) => {
-  const res = await apiInstance.post<{ service_session_id: string, expires_at: string }>(
+  const res = await apiInstance.post<{ session_id: string, ttl: string }>(
     "/auth/exchange",
     undefined,
     {
@@ -205,9 +204,11 @@ export const exchangeAndSaveClaims = async (
   );
 
   if (res.success) {
-    const expiresDate = new Date(res.data.expires_at).toUTCString();
-    setCookie("svc_session", res.data.service_session_id, expiresDate);
+    const expiresDate = new Date(res.data.ttl).getTime().toString();
+    console.log("[TRIEOH SDK] Exchanging tokens, session expires at:", expiresDate);
+    setCookie("svc_session", res.data.session_id, expiresDate);
 
+    // FIXME: Apenas o usuário do GoAUTH usa sessions/me
     const claimsRes = await fetchAndSaveClaims(apiInstance, is_up_to_date, true);
 
     const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();

@@ -16,21 +16,21 @@ export interface BaseResponse {
  * Standardized API Response. 
  * Use 'success' to narrow down to the data or error details.
  */
-export type ApiResponse<T> = 
+export type ApiResponse<T> =
   | (BaseResponse & { success: true; data: T })
-  | (BaseResponse & { 
-      success: false; 
-      error_id: string; 
-      trace?: string[]; 
-    });
+  | (BaseResponse & {
+    success: false;
+    error_id: string;
+    trace?: string[];
+  });
 
 /**
  * Internal type for parsing the raw response from the server.
  */
-type RawApiResponse<T> = BaseResponse & { 
-  data?: T; 
-  error_id?: string; 
-  trace?: string[] 
+type RawApiResponse<T> = BaseResponse & {
+  data?: T;
+  error_id?: string;
+  trace?: string[]
 };
 
 /**
@@ -52,13 +52,11 @@ export class ApiError extends Error {
 }
 
 export class Api {
-  private baseURL: string;
   private authInterceptor: AuthInterceptor;
 
   constructor(baseURL?: string, authBaseURL?: string, onTokenRefreshed?: (claims: AuthTokenClaims) => void) {
-    this.baseURL = baseURL || env.BASE_URL;
-    this.authInterceptor = new AuthInterceptor({ 
-      baseURL: this.baseURL,
+    this.authInterceptor = new AuthInterceptor({
+      baseURL: baseURL,
       authBaseURL: authBaseURL,
       onTokenRefreshed
     });
@@ -147,10 +145,10 @@ export class Api {
   }
 
   delete<T = unknown>(path: string, body?: unknown, options?: RequestOptions) {
-    return this.request<T>(path, { 
-      ...options, 
-      method: "DELETE", 
-      body: body ? JSON.stringify(body) : undefined 
+    return this.request<T>(path, {
+      ...options,
+      method: "DELETE",
+      body: body ? JSON.stringify(body) : undefined
     });
   }
 }

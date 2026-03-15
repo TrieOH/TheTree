@@ -31,8 +31,8 @@ export class AuthInterceptor {
   private onRefreshFailed?: (error: Error) => void;
 
   constructor(config?: InterceptorConfig) {
-    this.authBaseURL = config?.authBaseURL || env.BASE_URL;
-    this.baseURL = config?.baseURL || this.authBaseURL;
+    this.baseURL = config?.baseURL || env.BASE_URL;
+    this.authBaseURL = config?.authBaseURL || this.baseURL;
 
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
