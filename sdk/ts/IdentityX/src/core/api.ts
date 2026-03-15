@@ -1,4 +1,3 @@
-import { env } from "./env";
 import { AuthInterceptor, type RequestOptions } from "./interceptor";
 import type { AuthTokenClaims } from "../utils/token-utils";
 
@@ -54,11 +53,17 @@ export class ApiError extends Error {
 export class Api {
   private authInterceptor: AuthInterceptor;
 
-  constructor(baseURL?: string, authBaseURL?: string, onTokenRefreshed?: (claims: AuthTokenClaims) => void) {
+  constructor(
+    baseURL?: string,
+    authBaseURL?: string,
+    onTokenRefreshed?: (claims: AuthTokenClaims) => void,
+    exchangeURL?: string
+  ) {
     this.authInterceptor = new AuthInterceptor({
       baseURL: baseURL,
       authBaseURL: authBaseURL,
-      onTokenRefreshed
+      onTokenRefreshed,
+      exchangeURL
     });
   }
 
@@ -159,8 +164,10 @@ export class Api {
  * @param config - Optional configuration for the fetcher (baseURL, authBaseURL, etc.)
  * @returns An object with get, post, put, patch, delete, and request methods.
  */
-export const createFetcher = (config?: { baseURL?: string; authBaseURL?: string }) => {
-  const api = new Api(config?.baseURL, config?.authBaseURL);
+export const createFetcher = (
+  config?: { baseURL?: string; authBaseURL?: string, exchangeURL?: string }
+) => {
+  const api = new Api(config?.baseURL, config?.authBaseURL, undefined, config?.exchangeURL);
 
   return {
     request: api.request.bind(api),
@@ -179,8 +186,10 @@ export const createFetcher = (config?: { baseURL?: string; authBaseURL?: string 
  * @param config - Optional configuration for the fetcher (baseURL, authBaseURL, etc.)
  * @returns A single fetcher function that returns a Promise of TData.
  */
-export const createQueryFetcher = (config?: { baseURL?: string; authBaseURL?: string }) => {
-  const api = new Api(config?.baseURL, config?.authBaseURL);
+export const createQueryFetcher = (
+  config?: { baseURL?: string; authBaseURL?: string, exchangeURL?: string }
+) => {
+  const api = new Api(config?.baseURL, config?.authBaseURL, undefined, config?.exchangeURL);
 
   return async <TData>(path: string, init?: RequestOptions): Promise<TData> => {
     const response = await api.request<TData>(path, init);

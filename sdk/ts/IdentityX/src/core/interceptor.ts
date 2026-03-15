@@ -1,13 +1,16 @@
 import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
+  decodeJwtExp,
   isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveTokenClaims,
   setCookie,
+  TokenClaims,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
+import { ApiResponse } from "./api";
 
 
 export interface RequestOptions extends RequestInit {
@@ -18,6 +21,7 @@ export interface RequestOptions extends RequestInit {
 interface InterceptorConfig {
   baseURL?: string;
   authBaseURL?: string;
+  exchangeURL?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
 }
@@ -25,6 +29,7 @@ interface InterceptorConfig {
 export class AuthInterceptor {
   private baseURL: string;
   private authBaseURL: string;
+  private exchangeURL?: string;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
@@ -33,7 +38,7 @@ export class AuthInterceptor {
   constructor(config?: InterceptorConfig) {
     this.baseURL = config?.baseURL || env.BASE_URL;
     this.authBaseURL = config?.authBaseURL || this.baseURL;
-
+    this.exchangeURL = config?.exchangeURL;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
   }
@@ -57,7 +62,48 @@ export class AuthInterceptor {
     return claims;
   }
 
-  private async exchange(access_token: string, refresh_token: string, is_up_to_date: boolean): Promise<AuthTokenClaims> {
+  private async exchange(
+    access_token: string,
+    refresh_token: string,
+    is_up_to_date: boolean
+  ): Promise<AuthTokenClaims> {
+    // Project: Custom URL
+    if (this.exchangeURL) {
+      const response = await fetch(this.exchangeURL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${access_token}`,
+        },
+        credentials: "include",
+      });
+
+      const res = await response.json() as ApiResponse<{ session_id: string, ttl: string, claims: TokenClaims }>;
+
+      if (!res.success) {
+        clearAuthTokens();
+        throw new Error(res.message || "Failed to exchange tokens (project)");
+      }
+
+      const refreshExp = decodeJwtExp(refresh_token);
+      const claims: AuthTokenClaims = {
+        access_data: res.data.claims,
+        is_up_to_date,
+        refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
+      };
+
+      const expiresDate = new Date(res.data.ttl).getTime().toString();
+      setCookie("svc_session", res.data.session_id, expiresDate);
+
+      saveTokenClaims(claims);
+
+      const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
+      setCookie("refresh_token", refresh_token, refreshExpiry);
+
+      return claims;
+    }
+
+    // Default: /auth/exchange + sessions/me
     const response = await fetch(joinUrl(this.authBaseURL, "/auth/exchange"), {
       method: "POST",
       headers: {
@@ -71,7 +117,7 @@ export class AuthInterceptor {
 
     if (res.code !== 200) {
       clearAuthTokens();
-      throw new Error(res.message || "Failed to exchange tokens for session");
+      throw new Error(res.message || "Failed to exchange tokens");
     }
 
     const expiresDate = new Date(res.data.expires_at).toUTCString();

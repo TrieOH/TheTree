@@ -186,29 +186,70 @@ export const fetchAndSaveClaims = async (
   }
 };
 
+export function decodeJwtExp(token: string): number | null {
+  try {
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded.exp ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const exchangeAndSaveClaims = async (
   apiInstance: Api,
   access_token: string,
   refresh_token: string,
-  is_up_to_date: boolean
+  is_up_to_date: boolean,
+  exchangeURL?: string
 ) => {
+  // Project: Custom URL
+  if (exchangeURL) {
+    const res = await apiInstance.post<{ session_id: string, ttl: string, claims: TokenClaims }>(
+      exchangeURL,
+      undefined,
+      {
+        requiresAuth: false,
+        headers: { "Authorization": `Bearer ${access_token}` },
+      }
+    );
+
+    if (res.success) {
+      const refreshExp = decodeJwtExp(refresh_token);
+      const claims: AuthTokenClaims = {
+        access_data: res.data.claims,
+        is_up_to_date,
+        refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
+      };
+
+      const expiresDate = new Date(res.data.ttl).getTime().toString();
+      setCookie("svc_session", res.data.session_id, expiresDate);
+
+      saveTokenClaims(claims);
+
+      const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
+      setCookie("refresh_token", refresh_token, refreshExpiry);
+
+      return { ...res, data: claims };
+    }
+
+    throw new Error(res.message || "Failed to exchange tokens (project)");
+  }
+
+  // Default: /auth/exchange + sessions/me
   const res = await apiInstance.post<{ session_id: string, ttl: string }>(
     "/auth/exchange",
     undefined,
     {
       requiresAuth: false,
-      headers: {
-        "Authorization": `Bearer ${access_token}`,
-      },
+      headers: { "Authorization": `Bearer ${access_token}` },
     }
   );
 
   if (res.success) {
     const expiresDate = new Date(res.data.ttl).getTime().toString();
-    console.log("[TRIEOH SDK] Exchanging tokens, session expires at:", expiresDate);
     setCookie("svc_session", res.data.session_id, expiresDate);
 
-    // FIXME: Apenas o usuário do GoAUTH usa sessions/me
     const claimsRes = await fetchAndSaveClaims(apiInstance, is_up_to_date, true);
 
     const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();

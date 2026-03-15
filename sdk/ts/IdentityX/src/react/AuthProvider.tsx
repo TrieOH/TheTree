@@ -27,11 +27,13 @@ export function AuthProvider({
   children,
   baseURL,
   projectId,
+  exchangeURL,
   isClient = true,
 }: {
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
+  exchangeURL?: string;
   isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
@@ -50,11 +52,14 @@ export function AuthProvider({
     prevConfig.current = { projectId, baseURL };
   }
 
-  const apiInstance = useMemo(() => new Api(baseURL, undefined, (claims) => {
-    authStore.set({ isUpToDate: claims.is_up_to_date || false });
-  }), [baseURL]);
+  const apiInstance = useMemo(() => new Api(
+    baseURL,
+    undefined,
+    (claims) => { authStore.set({ isUpToDate: claims.is_up_to_date || false }); },
+    exchangeURL
+  ), [baseURL, exchangeURL]);
 
-  const rawAuth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
+  const rawAuth = useMemo(() => createAuthService(apiInstance, exchangeURL), [apiInstance, exchangeURL]);
 
   const auth = useMemo(() => ({
     ...rawAuth,

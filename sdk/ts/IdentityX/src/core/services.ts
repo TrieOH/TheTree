@@ -6,7 +6,7 @@ import {
   fetchAndSaveClaims,
   getUserInfo,
   isUpToDate,
-  setCookie
+  TokenClaims
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
@@ -18,7 +18,7 @@ export interface AuthTokens {
   is_up_to_date: boolean;
 }
 
-export const createAuthService = (apiInstance: Api) => ({
+export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
   login: async (email: string, password: string) => {
     const options = { requiresAuth: false };
     let res: ApiResponse<AuthTokens>;
@@ -41,11 +41,12 @@ export const createAuthService = (apiInstance: Api) => ({
 
     if (res.success) {
       try {
-        const claims = await exchangeAndSaveClaims(
+        await exchangeAndSaveClaims(
           apiInstance,
           res.data.access_token,
           res.data.refresh_token,
-          res.data.is_up_to_date
+          res.data.is_up_to_date,
+          exchangeURL
         );
         return res;
       } catch (error) {
@@ -101,7 +102,8 @@ export const createAuthService = (apiInstance: Api) => ({
           apiInstance,
           res.data.access_token,
           res.data.refresh_token,
-          res.data.is_up_to_date
+          res.data.is_up_to_date,
+          exchangeURL
         );
         return res;
       } catch (error) {
@@ -118,25 +120,6 @@ export const createAuthService = (apiInstance: Api) => ({
     return res;
   },
 
-  exchange: async (access_token: string) => {
-    const res = await apiInstance.post<{ service_session_id: string, expires_at: string }>(
-      "/auth/exchange",
-      undefined,
-      {
-        requiresAuth: false,
-        headers: {
-          "Authorization": `Bearer ${access_token}`,
-        }
-      }
-    );
-    if (res.success) {
-      const expiresDate = new Date(res.data.expires_at).toUTCString();
-      setCookie("svc_session", res.data.service_session_id, expiresDate);
-      await fetchAndSaveClaims(apiInstance, undefined, true);
-    }
-    return res;
-  },
-
   sessions: async () => {
     return apiInstance.get<SessionI[]>("/sessions");
   },
@@ -150,7 +133,28 @@ export const createAuthService = (apiInstance: Api) => ({
     return apiInstance.delete<string>(path);
   },
 
-  refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
+  refreshProfileInfo: async () => {
+    if (exchangeURL) {
+      return apiInstance.post<AuthTokens>(
+        "/auth/refresh",
+        undefined,
+        { skipRefresh: true }
+      ).then(async res => {
+        if (res.success) {
+          await exchangeAndSaveClaims(
+            apiInstance,
+            res.data.access_token,
+            res.data.refresh_token,
+            res.data.is_up_to_date,
+            exchangeURL
+          );
+        }
+        return res;
+      });
+    }
+    return fetchAndSaveClaims(apiInstance);
+  },
+  // refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
 
