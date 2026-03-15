@@ -1393,7 +1393,7 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 
 	// Return session handle
 	return &inbounds.ExchangeOutput{
-		ServiceSessionID: serviceSessionID,
-		ExpiresAt:        access.ExpiresAt.Time,
+		SessionID: serviceSessionID,
+		TTL:       access.ExpiresAt.Time,
 	}, nil
 }
