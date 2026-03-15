@@ -4,7 +4,8 @@ go 1.25.6
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.5
-	github.com/TrieOH/goauth-sdk-go v0.5.1
+	github.com/MintzyG/fail/v3 v3.2.0
+	github.com/TrieOH/goauth-sdk-go v0.5.2
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
@@ -35,7 +36,6 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/MintzyG/fail/v3 v3.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
