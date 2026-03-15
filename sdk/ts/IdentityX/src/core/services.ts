@@ -133,28 +133,11 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
     return apiInstance.delete<string>(path);
   },
 
-  refreshProfileInfo: async () => {
-    if (exchangeURL) {
-      return apiInstance.post<AuthTokens>(
-        "/auth/refresh",
-        undefined,
-        { skipRefresh: true }
-      ).then(async res => {
-        if (res.success) {
-          await exchangeAndSaveClaims(
-            apiInstance,
-            res.data.access_token,
-            res.data.refresh_token,
-            res.data.is_up_to_date,
-            exchangeURL
-          );
-        }
-        return res;
-      });
-    }
-    return fetchAndSaveClaims(apiInstance);
-  },
-  // refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
+  /**
+   * Only for non Project
+   * @returns APIResponse Claim
+   */
+  refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
 
