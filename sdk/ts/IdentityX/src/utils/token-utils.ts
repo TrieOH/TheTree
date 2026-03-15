@@ -30,13 +30,37 @@ const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
 const IS_UP_TO_DATE_KEY = "trieoh_is_up_to_date";
 
-// Cookie configuration constants
-const COOKIE_OPTIONS = "path=/; secure; samesite=none";
+function getCookieDomain(hostname: string) {
+  if (hostname.endsWith('univents.com.br')) return 'univents.com.br';
 
-export function setCookie(name: string, value: string, expires?: string): void {
+  const parts = hostname.split('.');
+  if (hostname.endsWith('trieoh.com') && parts.length >= 3) {
+    const appName = parts[parts.length - 3];
+    return `${appName}.trieoh.com`;
+  }
+
+  return hostname;
+}
+
+export function setCookie(name: string, value: string, expires?: string) {
   if (typeof window === "undefined") return;
-  const expiry = expires ? `; expires=${expires}` : "";
-  document.cookie = `${name}=${value}; ${COOKIE_OPTIONS}${expiry}`;
+  const expiry = expires ? `expires=${expires}` : "";
+  const hostname = window.location.hostname;
+  const domain = getCookieDomain(hostname);
+  const isSecure = window.location.protocol === 'https:';
+
+  const cookieString = [
+    `${name}=${value}`,
+    `Domain=${domain}`,
+    `Path=/`,
+    `SameSite=None`,
+    isSecure ? 'Secure' : '',
+    expiry,
+  ].filter(Boolean).join('; ');
+
+  document.cookie = cookieString;
+
+  const set = document.cookie.split('; ').some(c => c.startsWith(`${name}=`));
 }
 
 export function removeCookie(name: string): void {
@@ -151,7 +175,6 @@ export const fetchAndSaveClaims = async (
     const res = await apiInstance.get<AuthTokenClaims>("/sessions/me",
       { requiresAuth: true, skipRefresh }
     );
-
     if (res.success) {
       const claims = { ...res.data, is_up_to_date: is_up_to_date ?? isUpToDate() };
       saveTokenClaims(claims);
