@@ -101,7 +101,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	case domain.OAuthFlowSetup:
 		return fmt.Sprintf("%s&provider=%s&status=success", FinalRedirectURL, provider), nil
 	case domain.OAuthFlowConnect:
-		return fmt.Sprintf("%s&credential_id=%s", FinalRedirectURL, cred.ID), nil
+		return fmt.Sprintf("%s&credential_id=%s&provider=%s", FinalRedirectURL, cred.ID, provider), nil
 	default:
 		return FinalRedirectURL, nil
 	}
