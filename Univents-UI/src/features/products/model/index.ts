@@ -6,7 +6,7 @@ const productTypeSchema = z
     { error: "Invalid product type" }
   ).default("merchandise");
 
-type ProductType = z.infer<typeof productTypeSchema>
+export type ProductType = z.infer<typeof productTypeSchema>
 
 export const productCreateSchema = z.object({
   edition_scope_id: z.uuid(),
