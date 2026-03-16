@@ -46,7 +46,7 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRe
 		Flow:             domain.OAuthFlowConnect,
 		IsMarketplace:    false,
 		FeeBps:           0,
-		FinalRedirectURL: req.ProviderRedirectURL,
+		FinalRedirectURL: req.FinalRedirectURL,
 		ExpiresAt:        time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {

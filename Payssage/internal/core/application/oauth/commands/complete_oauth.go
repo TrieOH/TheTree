@@ -6,6 +6,7 @@ import (
 	"TriePayments/internal/shared/errx"
 	"context"
 	"fmt"
+	"net/url"
 
 	"go.uber.org/zap"
 )
@@ -43,6 +44,17 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	if err != nil {
 		return "", err
 	}
+
+	u, err := url.Parse(redirectURI)
+	if err != nil {
+		return "", err
+	}
+
+	q := u.Query()
+	q.Set("redirect_url", oauthState.FinalRedirectURL)
+	u.RawQuery = q.Encode()
+
+	FinalRedirectURL := u.String()
 
 	telemetry.Log().Info("Exchange result",
 		zap.String("access_token_prefix", credData.AccessToken[:20]),
@@ -87,10 +99,10 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 
 	switch oauthState.Flow {
 	case domain.OAuthFlowSetup:
-		return fmt.Sprintf("%s?provider=%s&status=success", redirectURI, provider), nil
+		return fmt.Sprintf("%s&provider=%s&status=success", FinalRedirectURL, provider), nil
 	case domain.OAuthFlowConnect:
-		return fmt.Sprintf("%s?credential_id=%s", redirectURI, cred.ID), nil
+		return fmt.Sprintf("%s&credential_id=%s", FinalRedirectURL, cred.ID), nil
 	default:
-		return redirectURI, nil
+		return FinalRedirectURL, nil
 	}
 }
