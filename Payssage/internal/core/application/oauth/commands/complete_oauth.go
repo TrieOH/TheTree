@@ -34,11 +34,6 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
 
-	telemetry.Log().Info("Exchange result",
-		zap.String("access_token_prefix", credData.AccessToken[:20]),
-		zap.Int("user_id", credData.ProviderUserID),
-	)
-
 	cred, err := uc.credentials.Create(ctx, domain.ProviderCredential{
 		WorkspaceID: oauthState.WorkspaceID,
 		Provider:    provider,
@@ -48,6 +43,15 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	if err != nil {
 		return "", err
 	}
+
+	telemetry.Log().Info("Exchange result",
+		zap.String("access_token_prefix", credData.AccessToken[:20]),
+		zap.Int("user_id", credData.ProviderUserID),
+		zap.String("provider", provider),
+		zap.String("flow", oauthState.Flow),
+		zap.String("credential_id", cred.ID.String()),
+		zap.String("url", oauthState.FinalRedirectURL),
+	)
 
 	// if setup flow + marketplace, auto-create marketplace config
 	if oauthState.Flow == domain.OAuthFlowSetup && oauthState.IsMarketplace {
