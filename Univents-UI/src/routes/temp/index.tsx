@@ -17,6 +17,9 @@ import {
   formatDateForDatetimeLocal,
   parseDatetimeLocal,
 } from '@/shared/lib/date'
+import { connectEditionSellerToWorkspaceFn } from '@/features/payments/api'
+import { useServerFn } from '@tanstack/react-start'
+import { env } from '@/env'
 
 export const Route = createFileRoute('/temp/')({
   component: RouteComponent,
@@ -252,6 +255,22 @@ function RouteComponent() {
       setError(errorMessage);
     }
 
+  }
+
+  const handleConnectFn = useServerFn(connectEditionSellerToWorkspaceFn)
+
+  const handleConnect = async () => {
+    const res = await handleConnectFn({
+      data: {
+        provider: "mercadopago",
+        workspace_name: "Univents",
+        final_redirect_url: window.location.origin + "/temp",
+        provider_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL
+      }
+    })
+    if (res.success) {
+      window.location.href = res.data.redirect_url
+    } else console.error("DEU RUIM: ", res.message)
   }
 
   const selectedEvent = events.find((ev) => ev.id === selectedEventId) ?? null
@@ -811,6 +830,7 @@ function RouteComponent() {
                     <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br />
                     <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
                   </button>
+                  <button onClick={() => handleConnect()}>Conectar</button>
                 </li>
               ))}
             </ul>
