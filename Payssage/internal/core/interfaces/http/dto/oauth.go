@@ -28,9 +28,10 @@ type MarketplaceConfigResponse struct {
 }
 
 type SetupProviderRequest struct {
-	IsMarketplace    bool   `json:"is_marketplace"`
-	FeeBps           int    `json:"fee_bps" validate:"min=0,max=10000"`
-	FinalRedirectURL string `json:"final_redirect_url" validate:"required,url"`
+	IsMarketplace       bool   `json:"is_marketplace"`
+	FeeBps              int    `json:"fee_bps" validate:"min=0,max=10000"`
+	ProviderRedirectURL string `json:"provider_redirect_url" validate:"required,url"`
+	FinalRedirectURL    string `json:"final_redirect_url" validate:"required,url"`
 }
 
 type ConnectSellerRequest struct {

@@ -37,12 +37,13 @@ func (h *Handler) SetupProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, err := h.commands.SetupProvider(r.Context(), commands.SetupProviderRequest{
-		WorkspaceName:    workspaceName,
-		Provider:         provider,
-		IsMarketplace:    req.IsMarketplace,
-		FeeBps:           req.FeeBps,
-		FinalRedirectURL: req.FinalRedirectURL,
+	redirectURL, finalRedirectURL, err := h.commands.SetupProvider(r.Context(), commands.SetupProviderRequest{
+		WorkspaceName:       workspaceName,
+		Provider:            provider,
+		IsMarketplace:       req.IsMarketplace,
+		FeeBps:              req.FeeBps,
+		ProviderRedirectURL: req.ProviderRedirectURL,
+		FinalRedirectURL:    req.FinalRedirectURL,
 	})
 	if err != nil {
 		resp.FromError(err).Send(w)
@@ -50,6 +51,7 @@ func (h *Handler) SetupProvider(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK().WithData(dto.BeginOAuthResponse{
-		RedirectURL: redirectURL,
+		RedirectURL:      redirectURL,
+		FinalRedirectURL: finalRedirectURL,
 	}).Send(w)
 }

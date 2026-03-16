@@ -9,34 +9,35 @@ import (
 )
 
 type SetupProviderRequest struct {
-	WorkspaceName    string
-	Provider         string
-	IsMarketplace    bool
-	FeeBps           int
-	FinalRedirectURL string
+	WorkspaceName       string
+	Provider            string
+	IsMarketplace       bool
+	FeeBps              int
+	ProviderRedirectURL string
+	FinalRedirectURL    string
 }
 
-func (uc *CommandService) SetupProvider(ctx context.Context, req SetupProviderRequest) (string, error) {
+func (uc *CommandService) SetupProvider(ctx context.Context, req SetupProviderRequest) (string, string, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.SetupProvider")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	workspace, err := uc.workspaces.GetByName(ctx, req.WorkspaceName, sub.ID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if _, err := uc.getProvider(req.Provider); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	stateToken, err := generateState()
 	if err != nil {
-		return "", errx.Internal("oauth_state").SetCause(err)
+		return "", "", errx.Internal("oauth_state").SetCause(err)
 	}
 
 	_, err = uc.oauthStates.Create(ctx, domain.OAuthState{
@@ -50,9 +51,9 @@ func (uc *CommandService) SetupProvider(ctx context.Context, req SetupProviderRe
 		ExpiresAt:        time.Now().Add(15 * time.Minute),
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	provider, _ := uc.getProvider(req.Provider)
-	return provider.BuildAuthURL(stateToken, req.FinalRedirectURL), nil
+	return provider.BuildAuthURL(stateToken, req.ProviderRedirectURL), req.FinalRedirectURL, nil
 }
