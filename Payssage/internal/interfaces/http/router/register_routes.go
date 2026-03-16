@@ -101,11 +101,12 @@ func registerOAuthRoutes(
 ) {
 	// callback from provider — no auth, browser redirect
 	r.Get("/oauth/{provider}/callback", h.CompleteOAuth)
+	r.With(authMW.APIKey()).
+		Post("/workspaces/{name}/providers/{provider}/connect", h.ConnectSeller)
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/workspaces/{name}/providers/{provider}/setup", h.SetupProvider)
-		r.Post("/workspaces/{name}/providers/{provider}/connect", h.ConnectSeller)
 		r.Get("/workspaces/{name}/marketplaces", h.ListMarketplaceConfigs)
 		r.Put("/workspaces/{name}/marketplaces", h.SetMarketplaceConfig)
 		r.Delete("/workspaces/{name}/marketplaces/{credential_id}", h.DeleteMarketplaceConfig)

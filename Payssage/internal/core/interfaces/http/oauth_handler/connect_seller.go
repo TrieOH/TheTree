@@ -16,7 +16,7 @@ import (
 // @Tags oauth
 // @Accept json
 // @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Param provider path string true "Provider name (e.g. mercadopago)"

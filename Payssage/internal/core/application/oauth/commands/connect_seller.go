@@ -19,12 +19,12 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerRe
 	ctx, span := uc.tracer.Start(ctx, "CommandService.ConnectSeller")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ws, err := authz.RequireWorkspace(ctx)
 	if err != nil {
 		return "", "", err
 	}
 
-	workspace, err := uc.workspaces.GetByName(ctx, req.WorkspaceName, sub.ID)
+	workspace, err := uc.workspaces.GetByID(ctx, ws.ID)
 	if err != nil {
 		return "", "", err
 	}
