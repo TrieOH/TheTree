@@ -79,16 +79,18 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		if err != nil {
 			return "", err
 		}
+	} else {
+
 	}
 
 	_ = uc.oauthStates.Delete(ctx, stateToken)
 
 	switch oauthState.Flow {
 	case domain.OAuthFlowSetup:
-		return fmt.Sprintf("%s?provider=%s&status=success", oauthState.FinalRedirectURL, provider), nil
+		return fmt.Sprintf("%s?provider=%s&status=success", redirectURI, provider), nil
 	case domain.OAuthFlowConnect:
-		return fmt.Sprintf("%s?credential_id=%s", oauthState.FinalRedirectURL, cred.ID), nil
+		return fmt.Sprintf("%s?credential_id=%s", redirectURI, cred.ID), nil
 	default:
-		return oauthState.FinalRedirectURL, nil
+		return redirectURI, nil
 	}
 }
