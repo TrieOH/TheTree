@@ -64,7 +64,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
+            <AuthProvider baseURL={env.VITE_AUTH_API_URL} exchangeURL={env.VITE_EXCHANGE_API_URL}>
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools

@@ -16,11 +16,11 @@ import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TestAdminRouteImport } from './routes/test/admin'
 import { Route as AdminNameRouteImport } from './routes/admin/$name'
+import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminNameIndexRouteImport } from './routes/admin/$name/index'
 import { Route as AdminNameWebhooksRouteImport } from './routes/admin/$name/webhooks'
 import { Route as AdminNameKeysRouteImport } from './routes/admin/$name/keys'
 import { Route as AdminNameProvidersIndexRouteImport } from './routes/admin/$name/providers/index'
-import { Route as AdminNameProvidersProviderIndexRouteImport } from './routes/admin/$name/providers/$provider/index'
 
 const TestRoute = TestRouteImport.update({
   id: '/test',
@@ -57,6 +57,11 @@ const AdminNameRoute = AdminNameRouteImport.update({
   path: '/$name',
   getParentRoute: () => AdminRoute,
 } as any)
+const CallbackProviderIndexRoute = CallbackProviderIndexRouteImport.update({
+  id: '/callback/$provider/',
+  path: '/callback/$provider/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminNameIndexRoute = AdminNameIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -77,12 +82,6 @@ const AdminNameProvidersIndexRoute = AdminNameProvidersIndexRouteImport.update({
   path: '/providers/',
   getParentRoute: () => AdminNameRoute,
 } as any)
-const AdminNameProvidersProviderIndexRoute =
-  AdminNameProvidersProviderIndexRouteImport.update({
-    id: '/providers/$provider/',
-    path: '/providers/$provider/',
-    getParentRoute: () => AdminNameRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -95,8 +94,8 @@ export interface FileRoutesByFullPath {
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name/': typeof AdminNameIndexRoute
+  '/callback/$provider/': typeof CallbackProviderIndexRoute
   '/admin/$name/providers/': typeof AdminNameProvidersIndexRoute
-  '/admin/$name/providers/$provider/': typeof AdminNameProvidersProviderIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -106,8 +105,8 @@ export interface FileRoutesByTo {
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name': typeof AdminNameIndexRoute
+  '/callback/$provider': typeof CallbackProviderIndexRoute
   '/admin/$name/providers': typeof AdminNameProvidersIndexRoute
-  '/admin/$name/providers/$provider': typeof AdminNameProvidersProviderIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -121,8 +120,8 @@ export interface FileRoutesById {
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name/': typeof AdminNameIndexRoute
+  '/callback/$provider/': typeof CallbackProviderIndexRoute
   '/admin/$name/providers/': typeof AdminNameProvidersIndexRoute
-  '/admin/$name/providers/$provider/': typeof AdminNameProvidersProviderIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,8 +136,8 @@ export interface FileRouteTypes {
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name/'
+    | '/callback/$provider/'
     | '/admin/$name/providers/'
-    | '/admin/$name/providers/$provider/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -148,8 +147,8 @@ export interface FileRouteTypes {
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name'
+    | '/callback/$provider'
     | '/admin/$name/providers'
-    | '/admin/$name/providers/$provider'
   id:
     | '__root__'
     | '/'
@@ -162,14 +161,15 @@ export interface FileRouteTypes {
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name/'
+    | '/callback/$provider/'
     | '/admin/$name/providers/'
-    | '/admin/$name/providers/$provider/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   TestRoute: typeof TestRouteWithChildren
+  CallbackProviderIndexRoute: typeof CallbackProviderIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -223,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNameRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/callback/$provider/': {
+      id: '/callback/$provider/'
+      path: '/callback/$provider'
+      fullPath: '/callback/$provider/'
+      preLoaderRoute: typeof CallbackProviderIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/$name/': {
       id: '/admin/$name/'
       path: '/'
@@ -251,13 +258,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNameProvidersIndexRouteImport
       parentRoute: typeof AdminNameRoute
     }
-    '/admin/$name/providers/$provider/': {
-      id: '/admin/$name/providers/$provider/'
-      path: '/providers/$provider'
-      fullPath: '/admin/$name/providers/$provider/'
-      preLoaderRoute: typeof AdminNameProvidersProviderIndexRouteImport
-      parentRoute: typeof AdminNameRoute
-    }
   }
 }
 
@@ -266,7 +266,6 @@ interface AdminNameRouteChildren {
   AdminNameWebhooksRoute: typeof AdminNameWebhooksRoute
   AdminNameIndexRoute: typeof AdminNameIndexRoute
   AdminNameProvidersIndexRoute: typeof AdminNameProvidersIndexRoute
-  AdminNameProvidersProviderIndexRoute: typeof AdminNameProvidersProviderIndexRoute
 }
 
 const AdminNameRouteChildren: AdminNameRouteChildren = {
@@ -274,7 +273,6 @@ const AdminNameRouteChildren: AdminNameRouteChildren = {
   AdminNameWebhooksRoute: AdminNameWebhooksRoute,
   AdminNameIndexRoute: AdminNameIndexRoute,
   AdminNameProvidersIndexRoute: AdminNameProvidersIndexRoute,
-  AdminNameProvidersProviderIndexRoute: AdminNameProvidersProviderIndexRoute,
 }
 
 const AdminNameRouteWithChildren = AdminNameRoute._addFileChildren(
@@ -309,6 +307,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   TestRoute: TestRouteWithChildren,
+  CallbackProviderIndexRoute: CallbackProviderIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

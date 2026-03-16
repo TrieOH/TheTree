@@ -15,7 +15,8 @@ import { queryOptions } from "@tanstack/react-query";
 export const setupOauthOnWorkspaceFn = createClientOnlyFn((
   oauthData: OauthSetupI,
   workspaceName: string,
-  provider: string
+  provider: string,
+  final_url: string,
 ) => {
   const { fee_percent, ...rest } = oauthData;
   return authFetcher.post<OauthSetupResponseI>(
@@ -24,7 +25,8 @@ export const setupOauthOnWorkspaceFn = createClientOnlyFn((
       ...rest,
       fee_bps: percentageToBps(fee_percent),
       is_marketplace: true,
-      final_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL
+      provider_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL,
+      final_redirect_url: final_url
     }
   );
 });
@@ -41,6 +43,7 @@ export const getProviderCallbackFn = createClientOnlyFn((
   state: string,
   provider: string
 ) => {
+  // FIXME: VITE_MERCADO_PAGO_CALLBACK_URL make generic
   return authFetcher.get<OauthCallbackResponseI>(
     `/oauth/${provider}/callback?code=${code}&state=${state}&redirect_uri=${env.VITE_MERCADO_PAGO_CALLBACK_URL}`
   );

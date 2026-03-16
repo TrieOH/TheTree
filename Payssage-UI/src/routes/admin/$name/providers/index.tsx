@@ -74,7 +74,12 @@ function RouteComponent() {
 
   const { mutate: setupOauthOnWorkspace, isPending: isPendingSetup } = useMutation({
     mutationFn: (res: { data: OauthSetupI, provider: string }) =>
-      setupOauthOnWorkspaceFn(res.data, name, res.provider),
+      setupOauthOnWorkspaceFn(
+        res.data,
+        name,
+        res.provider,
+        window.location.origin + `/admin/${name}/providers`
+      ),
     onSuccess: (response) => {
       if (response.success) {
         setSelectedProvider(null)
