@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ShoppingCart, X, Trash2, Plus, Minus, CreditCard } from "lucide-react";
 import { useCart } from "../hooks/use-cart";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -6,12 +7,12 @@ import { cn } from "@/shared/lib/utils";
 
 interface CartProps {
   isOpen: boolean;
+  eventId: string;
   editionId: string;
   onClose: () => void;
-  onCheckout: () => void;
 }
 
-export function Cart({ isOpen, editionId, onClose, onCheckout }: CartProps) {
+export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
   const { items, totalCents, removeItem, updateQuantity, clearCart } = useCart(editionId);
 
   const priceFormatted = (cents: number) =>
@@ -114,7 +115,7 @@ export function Cart({ isOpen, editionId, onClose, onCheckout }: CartProps) {
         </CardContent>
 
         {items.length > 0 && (
-          <div className="border-t p-6 space-y-4 bg-muted/20 backdrop-blur-md">
+          <div className="border-t p-6 space-y-4 bg-muted/30">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Subtotal</span>
@@ -127,13 +128,21 @@ export function Cart({ isOpen, editionId, onClose, onCheckout }: CartProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-3">
-              <Button
-                className="w-full h-12 rounded-xl font-bold"
-                onClick={onCheckout}
+              <Link
+                to="/events/$eventId/editions/$editionId/checkout"
+                params={{
+                  eventId,
+                  editionId,
+                }}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center justify-center font-bold rounded-sm bg-primary",
+                  "text-primary-foreground! py-2"
+                )}
               >
                 <CreditCard className="mr-2 h-5 w-5" />
-                Finalizar Compra
-              </Button>
+                Ir para o Pagamento
+              </Link>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="ghost" className="text-sm" onClick={onClose}>
                   Continuar

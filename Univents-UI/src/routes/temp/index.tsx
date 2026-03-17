@@ -1,24 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { SignIn, SignUp, useAuth } from '@soramux/node-auth-sdk/react'
 import React, { useState } from 'react'
+import { useServerFn } from '@tanstack/react-start'
 import type { EventCreateI, EventI } from '@/features/events/model'
 import type { EditionCreateI, EditionI } from '@/features/editions/model'
+import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
+import type { TicketCreateI, TicketI } from '@/features/tickets/model'
+import type { ProductCreateI, ProductI } from '@/features/products/model'
+import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
 import { createEventFn, getOwnEventsFn } from '@/features/events/api'
 import { createEditionFn, getAllAdminEditionsFn } from '@/features/editions/api'
-import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
 import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
-import type { TicketCreateI, TicketI } from '@/features/tickets/model'
 import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
-import type { ProductCreateI, ProductI } from '@/features/products/model'
 import { createProductFn, getAllAdminProductsFn } from '@/features/products/api'
-import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
 import { createCheckpointFn, getAllCheckpointsFn } from '@/features/checkpoints/api'
 import {
   formatDateForDatetimeLocal,
   parseDatetimeLocal,
 } from '@/shared/lib/date'
 import { connectEditionSellerToWorkspaceFn } from '@/features/payments/api'
-import { useServerFn } from '@tanstack/react-start'
 import { env } from '@/env'
 
 export const Route = createFileRoute('/temp/')({
@@ -321,7 +321,7 @@ function RouteComponent() {
   ) => {
     const target = e.target as HTMLInputElement | HTMLSelectElement
     const { name, value, type } = target
-    const checked = type === 'checkbox' ? (target as HTMLInputElement).checked : undefined
+    const checked = type === 'checkbox' ? (target).checked : undefined
 
     setActivityForm((f) => ({
       ...f,
@@ -417,7 +417,7 @@ function RouteComponent() {
   ) => {
     const target = e.target as HTMLInputElement | HTMLSelectElement
     const { name, value, type } = target
-    const checked = type === 'checkbox' ? (target as HTMLInputElement).checked : undefined
+    const checked = type === 'checkbox' ? (target).checked : undefined
 
     setProductForm((f) => ({
       ...f,

@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TempIndexRouteImport } from './routes/temp/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events.$eventId.editions.$editionId.products'
+import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events.$eventId.editions.$editionId.checkout'
 
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
   id: '/rss.xml',
@@ -46,6 +48,18 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdEditionsEditionIdProductsRoute =
+  EventsEventIdEditionsEditionIdProductsRouteImport.update({
+    id: '/events/$eventId/editions/$editionId/products',
+    path: '/events/$eventId/editions/$editionId/products',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const EventsEventIdEditionsEditionIdCheckoutRoute =
+  EventsEventIdEditionsEditionIdCheckoutRouteImport.update({
+    id: '/events/$eventId/editions/$editionId/checkout',
+    path: '/events/$eventId/editions/$editionId/checkout',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/temp/': typeof TempIndexRoute
+  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +78,8 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/temp': typeof TempIndexRoute
+  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +89,30 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/temp/': typeof TempIndexRoute
+  '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/rss.xml' | '/blog/$slug' | '/blog/' | '/temp/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/rss.xml'
+    | '/blog/$slug'
+    | '/blog/'
+    | '/temp/'
+    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$eventId/editions/$editionId/products'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/rss.xml' | '/blog/$slug' | '/blog' | '/temp'
+  to:
+    | '/'
+    | '/about'
+    | '/rss.xml'
+    | '/blog/$slug'
+    | '/blog'
+    | '/temp'
+    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$eventId/editions/$editionId/products'
   id:
     | '__root__'
     | '/'
@@ -85,6 +121,8 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/temp/'
+    | '/events/$eventId/editions/$editionId/checkout'
+    | '/events/$eventId/editions/$editionId/products'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +132,8 @@ export interface RootRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   TempIndexRoute: typeof TempIndexRoute
+  EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
+  EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +180,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId/editions/$editionId/products': {
+      id: '/events/$eventId/editions/$editionId/products'
+      path: '/events/$eventId/editions/$editionId/products'
+      fullPath: '/events/$eventId/editions/$editionId/products'
+      preLoaderRoute: typeof EventsEventIdEditionsEditionIdProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId/editions/$editionId/checkout': {
+      id: '/events/$eventId/editions/$editionId/checkout'
+      path: '/events/$eventId/editions/$editionId/checkout'
+      fullPath: '/events/$eventId/editions/$editionId/checkout'
+      preLoaderRoute: typeof EventsEventIdEditionsEditionIdCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +204,10 @@ const rootRouteChildren: RootRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   TempIndexRoute: TempIndexRoute,
+  EventsEventIdEditionsEditionIdCheckoutRoute:
+    EventsEventIdEditionsEditionIdCheckoutRoute,
+  EventsEventIdEditionsEditionIdProductsRoute:
+    EventsEventIdEditionsEditionIdProductsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

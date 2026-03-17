@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { paymentConnectSchema, type PaymentConnectResponseI } from "../model";
+import { paymentConnectSchema } from "../model";
+import type { PaymentConnectResponseI } from "../model";
 // import { paymentsAuthFetcher } from "@/shared/lib/api/fetch";
-import { env } from "@/env";
 import type { ApiResponse } from "@soramux/node-auth-sdk";
+import { env } from "@/env";
 
 
 /**
