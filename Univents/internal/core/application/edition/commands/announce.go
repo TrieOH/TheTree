@@ -28,8 +28,8 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 		return err
 	}
 
-	var event *domain.Event
-	event, err = uc.events.GetEventByID(ctx, eventID)
+	var edition *domain.Edition
+	edition, err = uc.editions.GetByID(ctx, editionID)
 	if err != nil {
 		return err
 	}
@@ -38,18 +38,13 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 	allowed, err = ga.Authz.Check().User(sub.ID).
 		Object("editions").
 		Action("announce").
-		Scope(event.GoauthScopeID).
+		Scope(edition.GoauthScopeID).
 		Allowed(ctx)
 	if err != nil {
 		return err
 	}
 	if !allowed {
 		return errx.Forbidden("edition").SetMessage("insufficient permissions")
-	}
-
-	edition, err := uc.editions.GetByID(ctx, editionID)
-	if err != nil {
-		return err
 	}
 
 	if edition.Status != domain.EditionStatusDraft {

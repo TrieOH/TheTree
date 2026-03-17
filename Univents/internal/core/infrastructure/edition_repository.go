@@ -38,31 +38,33 @@ func (repo *editionsRepo) queries(ctx context.Context) *sqlc.Queries {
 
 func mapEditionFromDB(src *sqlc.Edition) *domain.Edition {
 	return &domain.Edition{
-		ID:                   src.ID,
-		GoauthScopeID:        src.GoauthScopeID,
-		EventID:              src.EventID,
-		Type:                 domain.EditionType(src.Type),
-		EditionName:          src.EditionName,
-		Tagline:              src.Tagline,
-		Description:          src.Description,
-		Status:               domain.EditionStatus(src.Status),
-		MonetaryType:         domain.EditionMonetaryType(src.MonetaryType),
-		RegistrationOpensAt:  src.RegistrationOpensAt,
-		RegistrationClosesAt: src.RegistrationClosesAt,
-		StartsAt:             src.StartsAt,
-		EndsAt:               src.EndsAt,
-		Timezone:             src.Timezone,
-		LocationName:         src.LocationName,
-		LocationAddress:      src.LocationAddress,
-		LogoUrl:              src.LogoUrl,
-		BannerUrl:            src.BannerUrl,
-		ContactEmail:         src.ContactEmail,
-		ContactPhone:         src.ContactPhone,
-		OrganizerName:        src.OrganizerName,
-		CreatedBy:            src.CreatedBy,
-		CreatedAt:            src.CreatedAt,
-		UpdatedAt:            src.UpdatedAt,
-		DeletedAt:            src.DeletedAt,
+		ID:                       src.ID,
+		GoauthScopeID:            src.GoauthScopeID,
+		EventID:                  src.EventID,
+		Type:                     domain.EditionType(src.Type),
+		EditionName:              src.EditionName,
+		Tagline:                  src.Tagline,
+		Description:              src.Description,
+		Status:                   domain.EditionStatus(src.Status),
+		MonetaryType:             domain.EditionMonetaryType(src.MonetaryType),
+		RegistrationOpensAt:      src.RegistrationOpensAt,
+		RegistrationClosesAt:     src.RegistrationClosesAt,
+		StartsAt:                 src.StartsAt,
+		EndsAt:                   src.EndsAt,
+		Timezone:                 src.Timezone,
+		LocationName:             src.LocationName,
+		LocationAddress:          src.LocationAddress,
+		LogoUrl:                  src.LogoUrl,
+		BannerUrl:                src.BannerUrl,
+		ContactEmail:             src.ContactEmail,
+		ContactPhone:             src.ContactPhone,
+		OrganizerName:            src.OrganizerName,
+		TriePaymentsCredentialID: src.TriePaymentsCredentialID,
+		TriePaymentsProvider:     src.TriePaymentsProvider,
+		CreatedBy:                src.CreatedBy,
+		CreatedAt:                src.CreatedAt,
+		UpdatedAt:                src.UpdatedAt,
+		DeletedAt:                src.DeletedAt,
 	}
 }
 
@@ -193,6 +195,34 @@ func (repo *editionsRepo) Finish(ctx context.Context, editionID uuid.UUID) error
 	defer span.End()
 
 	err := repo.queries(ctx).FinishEdition(ctx, editionID)
+	if err != nil {
+		return errx.FromDB(err, "edition")
+	}
+
+	return nil
+}
+
+func (repo *editionsRepo) ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider string) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.ConnectPaymentsAccount")
+	defer span.End()
+
+	err := repo.queries(ctx).ConnectEditionPaymentAccount(ctx, sqlc.ConnectEditionPaymentAccountParams{
+		TriePaymentsCredentialID: &triePaymentsCredentialID,
+		TriePaymentsProvider:     &triePaymentsProvider,
+		ID:                       editionID,
+	})
+	if err != nil {
+		return errx.FromDB(err, "edition")
+	}
+
+	return nil
+}
+
+func (repo *editionsRepo) DisconnectPaymentsAccount(ctx context.Context, editionID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.DisconnectPaymentsAccount")
+	defer span.End()
+
+	err := repo.queries(ctx).DisconnectEditionPaymentAccount(ctx, editionID)
 	if err != nil {
 		return errx.FromDB(err, "edition")
 	}

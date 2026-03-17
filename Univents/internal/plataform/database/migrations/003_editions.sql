@@ -31,6 +31,8 @@ CREATE TABLE editions (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     goauth_scope_id UUID NOT NULL,
+    trie_payments_credential_id UUID NULL,
+    trie_payments_provider VARCHAR(32) NULL,
 
     -- naming
     type edition_type NOT NULL,

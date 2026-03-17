@@ -62,6 +62,8 @@ func registerEditionsRoutes(
 		r.Get("/events/{event_id}/editions/admin", h.ListAdmin)
 		r.Post("/events/{event_id}/editions", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/announce", h.Announce)
+		r.Post("/events/{event_id}/editions/{edition_id}/payments/connect", h.ConnectPaymentAccount)
+		r.Post("/events/{event_id}/editions/{edition_id}/payments/disconnect", h.DisconnectPaymentAccount)
 	})
 }
 

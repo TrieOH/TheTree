@@ -108,3 +108,17 @@ WHERE id = $1 AND status = 'open';
 UPDATE editions
 SET status = 'finished'
 WHERE id = $1 AND status = 'ongoing';
+
+-- name: ConnectEditionPaymentAccount :exec
+UPDATE editions
+SET
+    trie_payments_credential_id = $1,
+    trie_payments_provider = $2
+WHERE id = $3;
+
+-- name: DisconnectEditionPaymentAccount :exec
+UPDATE editions
+SET
+    trie_payments_credential_id = NULL,
+    trie_payments_provider = NULL
+WHERE id = $1;
