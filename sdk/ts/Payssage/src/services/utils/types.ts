@@ -8,7 +8,7 @@ export interface IntentResponseI {
   workspace_id: string;
   amount: number;
   currency: string;
-  status: string;
+  status: "pending" | "succeeded" | "cancelled" | "failed";
   client_secret: string;
   provider: string;
   provider_payment_id: string | null;
