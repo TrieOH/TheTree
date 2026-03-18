@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ShoppingCart, X, Trash2, Plus, Minus, CreditCard } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "../hooks/use-cart";
-import type { CartItem } from "../model/cart";
+import type { CartItem as CartItemType } from "../model/cart";
 import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
 
@@ -14,25 +14,24 @@ interface CartProps {
 }
 
 interface CartItemProps {
-  item: CartItem;
+  item: CartItemType;
   onRemove: (id: string) => void;
   onUpdateQuantity: (id: string, quantity: number) => void;
   priceFormatted: (cents: number) => string;
 }
 
-function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted }: CartItemProps) {
-  const maxReached = item.has_inventory && typeof item.inventory_remaining === 'number' && item.quantity >= item.inventory_remaining;
+function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuantity }: CartItemProps & { getMaxQuantity: (p: Pick<CartItemType, "has_inventory" | "inventory_remaining">) => number }) {
+  const max = getMaxQuantity(item);
+  const maxReached = item.quantity >= max;
   const itemTotal = item.price_cents * item.quantity;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-
-    if (!isNaN(value) && value >= 1) {
-      const inventory = item.inventory_remaining;
-      if (!maxReached || (inventory !== undefined && value <= inventory)) {
-        onUpdateQuantity(item.id, value);
-      }
+    let value = parseInt(e.target.value, 10);
+    if (!isNaN(value)) {
+      if (value < 1) value = 1;
+      if (value > max) value = max;
+      onUpdateQuantity(item.id, value);
     }
   };
 
@@ -40,6 +39,8 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted }: CartItem
     const value = parseInt(e.target.value, 10);
     if (isNaN(value) || value < 1) {
       onUpdateQuantity(item.id, 1);
+    } else if (value > max) {
+      onUpdateQuantity(item.id, max);
     }
   };
 
@@ -76,7 +77,7 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted }: CartItem
             ref={inputRef}
             type="number"
             min="1"
-            max={item.inventory_remaining}
+            max={max}
             value={item.quantity}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
@@ -135,7 +136,7 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  const { items, totalCents, removeItem, updateQuantity, clearCart } = useCart(editionId);
+  const { items, totalCents, removeItem, updateQuantity, clearCart, getMaxQuantity } = useCart(editionId);
 
   useEffect(() => {
     if (isOpen) {
@@ -233,6 +234,7 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                   onRemove={removeItem}
                   onUpdateQuantity={updateQuantity}
                   priceFormatted={priceFormatted}
+                  getMaxQuantity={getMaxQuantity}
                 />
               ))}
             </div>

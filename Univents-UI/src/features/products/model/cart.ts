@@ -1,13 +1,28 @@
 import { Store } from "@tanstack/react-store";
 
+export const GLOBAL_MAX_QUANTITY = 999;
+
 export interface CartItem {
   id: string;
   name: string;
   price_cents: number;
   quantity: number;
-  inventory_remaining?: number;
-  has_inventory?: boolean;
+  inventory_remaining: number;
+  has_inventory: boolean;
 }
+
+export const getProductMaxQuantity = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">) => {
+  return product.has_inventory ? product.inventory_remaining : GLOBAL_MAX_QUANTITY;
+};
+
+export const getValidQuantity = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">, quantity: number) => {
+  const max = getProductMaxQuantity(product);
+  return Math.max(0, Math.min(quantity, max));
+};
+
+export const isLimitReached = (product: Pick<CartItem, "has_inventory" | "inventory_remaining">, currentQuantity: number) => {
+  return currentQuantity >= getProductMaxQuantity(product);
+};
 
 export interface CartState {
   carts: Record<string, CartItem[]>;
@@ -44,21 +59,13 @@ export const cartActions = {
 
       let newItems;
       if (existing) {
-        let newQuantity = existing.quantity + quantity;
-
-        // Limit by inventory if applicable
-        if (product.has_inventory && typeof product.inventory_remaining === 'number') {
-          newQuantity = Math.min(newQuantity, product.inventory_remaining);
-        }
+        const newQuantity = getValidQuantity(product, existing.quantity + quantity);
 
         newItems = currentItems.map((i) =>
           i.id === product.id ? { ...i, quantity: newQuantity } : i
         );
       } else {
-        let finalQuantity = quantity;
-        if (product.has_inventory && typeof product.inventory_remaining === 'number') {
-          finalQuantity = Math.min(quantity, product.inventory_remaining);
-        }
+        const finalQuantity = getValidQuantity(product, quantity);
         newItems = [...currentItems, { ...product, quantity: finalQuantity }];
       }
 
@@ -91,11 +98,7 @@ export const cartActions = {
         ...prev.carts,
         [editionId]: (prev.carts[editionId] ?? []).map((i) => {
           if (i.id === id) {
-            let newQuantity = quantity;
-            if (i.has_inventory && typeof i.inventory_remaining === 'number') {
-              newQuantity = Math.min(quantity, i.inventory_remaining);
-            }
-            return { ...i, quantity: newQuantity };
+            return { ...i, quantity: getValidQuantity(i, quantity) };
           }
           return i;
         }),

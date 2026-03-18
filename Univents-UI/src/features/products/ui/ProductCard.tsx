@@ -14,7 +14,6 @@ interface ProductCardProps {
   product: ProductI;
 }
 
-// Tipo para as animações ativas
 interface ClickAnimation {
   id: number;
   x: number;
@@ -23,15 +22,15 @@ interface ClickAnimation {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { items, addItem } = useCart(product.edition_id);
+  const { items, addItem, isLimitReached: checkLimitReached } = useCart(product.edition_id);
   const [animations, setAnimations] = useState<ClickAnimation[]>([]);
   const idCounter = useRef(0);
 
   const cartItem = items.find(i => i.id === product.id);
   const cartQuantity = cartItem?.quantity ?? 0;
 
-  const canAdd = product.status === "available" &&
-    (!product.has_inventory || product.inventory_remaining > cartQuantity);
+  const isLimitReached = checkLimitReached(product, cartQuantity);
+  const canAdd = product.status === "available" && !isLimitReached;
 
   const priceFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -78,7 +77,6 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const isAvailable = product.status === "available";
   const isOutOfStock = product.has_inventory && product.inventory_remaining <= 0;
-  const isLimitReached = product.has_inventory && cartQuantity >= product.inventory_remaining;
   const isLowStock = product.has_inventory && product.inventory_remaining <= 5 && product.inventory_remaining > 0;
 
   return (

@@ -1,5 +1,6 @@
 import { useStore } from "@tanstack/react-store";
-import { cartStore, cartActions } from "../model/cart";
+import { cartStore, cartActions, isLimitReached, getProductMaxQuantity } from "../model/cart";
+import type { CartItem } from "../model/cart";
 
 export function useCart(editionId: string) {
   const items = useStore(cartStore, (state) => state.carts[editionId] ?? []);
@@ -15,13 +16,7 @@ export function useCart(editionId: string) {
     items,
     totalCents,
     itemCount,
-    addItem: (product: {
-      id: string;
-      name: string;
-      price_cents: number;
-      inventory_remaining?: number;
-      has_inventory?: boolean;
-    }, quantity: number) => {
+    addItem: (product: Omit<CartItem, "quantity">, quantity: number) => {
       cartActions.addItem(editionId, product, quantity);
     },
     removeItem: (id: string) => {
@@ -32,6 +27,12 @@ export function useCart(editionId: string) {
     },
     clearCart: () => {
       cartActions.clearCart(editionId);
+    },
+    isLimitReached: (product: Pick<CartItem, "has_inventory" | "inventory_remaining">, currentQuantity: number) => {
+      return isLimitReached(product, currentQuantity);
+    },
+    getMaxQuantity: (product: Pick<CartItem, "has_inventory" | "inventory_remaining">) => {
+      return getProductMaxQuantity(product);
     },
   };
 }
