@@ -3,6 +3,20 @@ export interface ConnectRequestI {
   provider_redirect_url: string;
 }
 
+export interface ConnectResponseI {
+  final_redirect_url: string;
+  redirect_url: string;
+}
+
+export interface ProviderCredentialResponseI {
+  id: string;
+  workspace_id: string;
+  provider: string;
+  display_name: string;
+  created_at: string;
+  revoked_at: string | null;
+}
+
 export interface IntentResponseI {
   id: string;
   workspace_id: string;
