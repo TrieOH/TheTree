@@ -1,5 +1,6 @@
 services:
   trie-payments:
+    container_name: trie-payments
     build:
       context: .
       dockerfile: Dockerfile
@@ -40,6 +41,7 @@ services:
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
 
   payments-database:
+    container_name: trie-payments-database
     image: postgres:18
     restart: unless-stopped
     environment:
@@ -54,6 +56,7 @@ services:
       - internal
 
   payments-redis:
+    container_name: trie-payments-redis
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfsync everysec
