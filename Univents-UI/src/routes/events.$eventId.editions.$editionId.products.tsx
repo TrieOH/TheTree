@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShoppingBag } from "lucide-react";
 import { useState } from "react";
-import type { ProductI } from "@/features/products/model";
+import { useQuery } from "@tanstack/react-query";
 import { ProductList } from "@/features/products/ui/ProductList";
 import { Cart } from "@/features/products/ui/Cart";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
+import { allProductsQueryOptions } from "@/features/products/api";
 
 export const Route = createFileRoute("/events/$eventId/editions/$editionId/products")({
   component: ProductsPage,
@@ -22,89 +23,9 @@ function ProductsPage() {
     currency: "BRL",
   }).format(totalCents / 100);
 
-  // Mock data as requested
-  const mockProducts: ProductI[] = [
-    {
-      id: "1",
-      scope_id: "scope-1",
-      edition_id: editionId,
-      name: "Ingresso VIP - Lote Antecipado",
-      description: "Acesso exclusivo à área VIP, lounge com buffet e vista privilegiada do palco principal.",
-      type: "ticket",
-      ticket_id: "t1",
-      price_cents: 45000,
-      status: "available",
-      available_from: new Date().toISOString(),
-      available_until: new Date(Date.now() + 86400000 * 7).toISOString(),
-      has_inventory: true,
-      inventory_quantity: 100,
-      inventory_remaining: 4,
-      created_by: "admin",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      deleted_at: null,
-    },
-    {
-      id: "2",
-      scope_id: "scope-1",
-      edition_id: editionId,
-      name: "Combo Camiseta + Boné Oficial",
-      description: "Kit exclusivo da edição comemorativa. Tecido 100% algodão e boné snapback bordado.",
-      type: "bundle",
-      ticket_id: null,
-      price_cents: 12990,
-      status: "available",
-      available_from: new Date().toISOString(),
-      available_until: null,
-      has_inventory: true,
-      inventory_quantity: 200,
-      inventory_remaining: 156,
-      created_by: "admin",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      deleted_at: null,
-    },
-    {
-      id: "3",
-      scope_id: "scope-1",
-      edition_id: editionId,
-      name: "Token de Consumo - R$ 100",
-      description: "Crédito antecipado para consumo de bebidas e alimentos durante o evento. Evite filas!",
-      type: "token",
-      ticket_id: null,
-      price_cents: 10000,
-      status: "available",
-      available_from: new Date().toISOString(),
-      available_until: null,
-      has_inventory: false,
-      inventory_quantity: 0,
-      inventory_remaining: 0,
-      created_by: "admin",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      deleted_at: null,
-    },
-    {
-      id: "4",
-      scope_id: "scope-1",
-      edition_id: editionId,
-      name: "Ingresso Pista - Inteira",
-      description: "Acesso geral ao evento e todas as áreas comuns de entretenimento.",
-      type: "ticket",
-      ticket_id: "t2",
-      price_cents: 15000,
-      status: "sold_out",
-      available_from: new Date().toISOString(),
-      available_until: null,
-      has_inventory: true,
-      inventory_quantity: 1000,
-      inventory_remaining: 0,
-      created_by: "admin",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      deleted_at: null,
-    },
-  ];
+  const { data: products = [], isLoading } = useQuery(
+    allProductsQueryOptions(eventId, editionId)
+  );
 
   return (
     <div className="min-h-screen pb-20">
@@ -127,7 +48,7 @@ function ProductsPage() {
         </Button>
       </div>
 
-      <ProductList products={mockProducts} />
+      <ProductList products={products} isLoading={isLoading} />
 
       {/* Cart Drawer */}
       <Cart
