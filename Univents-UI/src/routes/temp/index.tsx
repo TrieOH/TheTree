@@ -18,7 +18,7 @@ import {
   formatDateForDatetimeLocal,
   parseDatetimeLocal,
 } from '@/shared/lib/date'
-import { connectEditionSellerToWorkspaceFn } from '@/features/payments/api'
+import { connectEditionSellerToWorkspaceFn, disconnectEditionSellerToWorkspaceFn } from '@/features/payments/api'
 import { env } from '@/env'
 
 export const Route = createFileRoute('/temp/')({
@@ -273,7 +273,22 @@ function RouteComponent() {
     } else console.error("DEU RUIM: ", res.message)
   }
 
-  const handleDisconnect = async (eventId: string, editionId: string) => {
+  const handleDisconnect = async (
+    eventId: string,
+    editionId: string,
+    credential_id: string | null
+  ) => {
+    if (!credential_id) return;
+    const workspaceRes = await disconnectEditionSellerToWorkspaceFn({
+      data: {
+        workspace_name: "Univents",
+        credential_id
+      }
+    });
+    if (!workspaceRes.success) {
+      console.error("Erro ao desconectar do workspace:", workspaceRes.message);
+      return;
+    }
     const res = await disconnectPaymentAccountToEditionFn(eventId, editionId);
     if (res.success) {
       setEditionCreated(true);
@@ -851,7 +866,15 @@ function RouteComponent() {
                     <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
                   </button>
                   {ed.trie_payments_credential_id ? (
-                    <button onClick={() => handleDisconnect(ed.event_id, ed.id)}>Desconectar</button>
+                    <button
+                      onClick={() => handleDisconnect(
+                        ed.event_id,
+                        ed.id,
+                        ed.trie_payments_credential_id
+                      )}
+                    >
+                      Desconectar
+                    </button>
                   ) : (
                     <button onClick={() => handleConnect(ed.event_id, ed.id)}>Conectar</button>
                   )}

@@ -4,7 +4,8 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
-    PAY_SECRET_KEY: z.string()
+    TRIEOH_PAY_SECRET_KEY: z.string(),
+    TRIEOH_PAY_BASE_URL: z.url().optional()
   },
 
   /**
@@ -19,7 +20,6 @@ export const env = createEnv({
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
     VITE_EXCHANGE_API_URL: z.url(),
-    VITE_PAY_API_URL: z.url(),
 
     VITE_POSTHOG_KEY: z.string(),
     VITE_POSTHOG_HOST: z.url().optional(),
@@ -35,7 +35,8 @@ export const env = createEnv({
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
-    PAY_SECRET_KEY: process.env.PAY_SECRET_KEY
+    TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
+    TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL
   },
 
   /**
