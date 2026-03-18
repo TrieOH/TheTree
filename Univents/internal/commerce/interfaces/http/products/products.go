@@ -253,7 +253,21 @@ var upgrader = websocket.Upgrader{}
 
 // Purchase godoc
 // @Summary Start a purchase process
-// @Description Opens a WebSocket connection to reserve products and initiate payment. Sends reservation_confirmed with client_secret on success, reservation_failed if items are unavailable.
+// @Description Opens a WebSocket connection to reserve products and initiate payment.
+// @Description
+// @Description Flow:
+// @Description 1. Client sends buy_request {items: [{product_id, quantity}]}
+// @Description 2. Server reserves what it can and responds with one of:
+// @Description    - reservation_failed: nothing could be reserved (all out of stock)
+// @Description    - partial_reservation: some items unavailable, client must respond with confirm_partial or cancel within 60s
+// @Description    - reservation_confirmed: all items reserved, proceed to payment
+// @Description 3. Client sends submit_payment {card_token, payment_method_id, installments}
+// @Description 4. Server responds with one of:
+// @Description    - payment_processing: payment submitted, waiting for webhook
+// @Description    - payment_failed: payment was rejected
+// @Description    - payment_pending: webhook taking too long, poll GET /purchases instead
+// @Description    - order_confirmed: payment succeeded (pushed via webhook)
+// @Description    - order_failed: payment succeeded but order could not be fulfilled (pushed via webhook)
 // @Tags products
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
@@ -284,11 +298,9 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract the otel span from the request context and attach to a fresh background context
 	spanCtx := trace.SpanFromContext(r.Context()).SpanContext()
 	baseCtx := trace.ContextWithSpanContext(context.Background(), spanCtx)
 
-	// Carry subject over
 	subject, err := authz.RequireSubject(r.Context())
 	if err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "unauthorized"})
@@ -296,31 +308,30 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 	}
 	baseCtx = authz.WithSubject(baseCtx, subject)
 
-	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+time.Second*1)
+	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+91*time.Second)
 	defer cancel()
+
 	if err := handler.commands.Purchase(ctx, conn, req, editionID); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: err.Error()})
 		return
 	}
-
-	// Block until conn closes (resolved by webhook or asynq task)
-	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
-			log.Printf("[buy] ws closed: %v", err)
-			return
-		}
-	}
 }
 
 // WebhookHandler godoc
-// @Summary TrieMint webhook receiver
-// @Description Receives normalized payment events from TrieMint
+// @Summary Payment webhook receiver
+// @Description Receives normalized payment events from TriePayments. Verifies webhook signature before processing.
+// @Description
+// @Description Handled events:
+// @Description - payment.succeeded: confirms purchase, releases reservation, grants ticket permissions
+// @Description - payment.failed: cancels purchase, notifies open WebSocket session if present
+// @Description - payment.cancelled: same as payment.failed
+// @Description
+// @Description Always ACKs with 200 immediately — processing happens asynchronously.
 // @Tags products
 // @Accept json
 // @Produce json
-// @Success 200 {object} object
-// @Failure 400 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Success 200 {object} object "ACK"
+// @Failure 400 {object} swag.ErrorResponse "Invalid webhook signature"
 // @Router /webhooks/payments [post]
 func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := paymentsSDK.VerifyWebhookSignature(r, viper.GetString("TRIEPAYMENTS_WEBHOOK_SECRET"))
@@ -331,32 +342,26 @@ func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[webhook] received event=%s intent=%s", payload.Event, payload.IntentID)
 
-	// ACK immediately
+	// ACK immediately — processing is async
 	resp.OK().Send(w)
 
 	go func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
 		switch payload.Event {
 		case paymentsSDK.EventPaymentSucceeded:
 			if err := handler.commands.ConfirmPayment(ctx, payload.IntentID); err != nil {
 				log.Printf("[webhook] failed to confirm payment for intent %s: %v", payload.IntentID, err)
 			}
+
 		case paymentsSDK.EventPaymentFailed, paymentsSDK.EventPaymentCancelled:
-			purchase, err := handler.queries.GetPurchaseByPaymentID(ctx, payload.IntentID)
-			if err != nil {
-				log.Printf("[webhook] failed to fetch purchase for intent %s: %v", payload.IntentID, err)
-				return
+			if err := handler.commands.CancelPayment(ctx, payload.IntentID); err != nil {
+				log.Printf("[webhook] failed to cancel payment for intent %s: %v", payload.IntentID, err)
 			}
-			if purchase.SessionID == nil {
-				return
-			}
-			if err := handler.Registry.Notify(purchase.SessionID.String(), sockets.WSMessage{
-				Type:    "payment_failed",
-				Payload: map[string]string{"payment_intent_id": payload.IntentID},
-			}); err != nil {
-				log.Printf("[webhook] ws already closed for session %s: %v", purchase.SessionID, err)
-			}
-			handler.Registry.Remove(purchase.SessionID.String())
+
+		default:
+			log.Printf("[webhook] unhandled event type %s for intent %s", payload.Event, payload.IntentID)
 		}
 	}()
 }

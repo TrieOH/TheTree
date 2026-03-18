@@ -15,12 +15,19 @@ type InvalidProduct struct {
 	ProductID uuid.UUID `json:"product_id"`
 	Name      string    `json:"name"`
 	Reason    string    `json:"reason"`
+	Requested int       `json:"requested"`
+	Reserved  int       `json:"reserved"`
 }
 
 type CartItem struct {
 	ProductID    uuid.UUID `json:"product_id"`
 	Quantity     int       `json:"quantity"`
 	HasInventory bool      `json:"-"`
+}
+
+type ReservationOutcome struct {
+	Reserved    []CartItem       `json:"reserved"`
+	Unavailable []InvalidProduct `json:"unavailable"`
 }
 
 type ProductType string

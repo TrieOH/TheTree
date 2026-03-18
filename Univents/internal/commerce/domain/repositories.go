@@ -23,7 +23,7 @@ type ProductsRepository interface {
 	GetByIDs(ctx context.Context, ids []uuid.UUID) ([]Product, error)
 	List(ctx context.Context, editionID uuid.UUID) ([]Product, error)
 	AdminList(ctx context.Context, editionID uuid.UUID) ([]Product, error)
-	ReserveItems(ctx context.Context, sessionID uuid.UUID, items []CartItem, expiresAt time.Time) error
+	ReserveItems(ctx context.Context, sessionID uuid.UUID, items []CartItem, expiresAt time.Time) (ReservationOutcome, error)
 	UnreserveItems(ctx context.Context, sessionID uuid.UUID) error
 	DeleteReservation(ctx context.Context, sessionID uuid.UUID) error
 }

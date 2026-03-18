@@ -2,14 +2,10 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"univents/internal/commerce/domain"
-	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/sockets"
-
-	"github.com/hibiken/asynq"
 )
 
 func (uc *CommandService) ConfirmPayment(ctx context.Context, paymentIntentID string) error {
@@ -22,60 +18,54 @@ func (uc *CommandService) ConfirmPayment(ctx context.Context, paymentIntentID st
 	case domain.PurchaseStatusCompleted:
 		log.Printf("[confirm] purchase already completed for intent %s", paymentIntentID)
 		return nil
-
 	case domain.PurchaseStatusCancelled:
 		log.Printf("[confirm] purchase cancelled, ignoring success webhook for %s", paymentIntentID)
 		return nil
 	}
 
-	msg := fmt.Sprintf("malformed sessionID for purchase %s", paymentIntentID)
-	if purchase.SessionID == nil {
-		telemetry.Log().Error(msg)
-		return errors.New(msg)
-	}
-	sessionID := *purchase.SessionID
-
-	// 1. mark items as sold in db
+	// 1. confirm purchase + clean reservation in one TX
 	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := uc.products.DeleteReservation(ctx, sessionID); err != nil {
-			return err
+		if purchase.SessionID != nil {
+			if err := uc.products.DeleteReservation(ctx, *purchase.SessionID); err != nil {
+				return err
+			}
 		}
 		if err := uc.purchases.ConfirmPurchase(ctx, paymentIntentID); err != nil {
 			return err
 		}
 		return nil
 	}); err != nil {
+		return fmt.Errorf("failed to confirm purchase tx for intent %s: %w", paymentIntentID, err)
+	}
+
+	// 2. cancel expiry task — best effort, CancelPurchase is guarded with status = pending
+	if purchase.SessionID != nil {
+		taskID := fmt.Sprintf("%s:%s:%s", *purchase.SessionID, paymentIntentID, domain.TypeReservationExpired)
+		if err := uc.inspector.DeleteTask("default", taskID); err != nil {
+			log.Printf("[confirm] could not delete asynq task %s: %v", taskID, err)
+		}
+	}
+
+	// 3. notify WS if still alive
+	if purchase.SessionID != nil {
+		sessionID := *purchase.SessionID
 		if err := uc.ws.Notify(sessionID.String(), sockets.WSMessage{
-			Type:    "order_failed",
-			Payload: map[string]string{"payment_intent_id": paymentIntentID},
+			Type:    "order_confirmed",
+			Payload: map[string]string{"purchase_id": purchase.ID.String()},
 		}); err != nil {
 			log.Printf("[confirm] ws already closed for session %s: %v", sessionID, err)
 		}
 		uc.ws.Remove(sessionID.String())
-		return nil
 	}
 
-	// 2. cancel the asynq expiry task so it doesn't fire after successful payment
-	taskID := fmt.Sprintf("%s:%s:%s", sessionID, paymentIntentID, domain.TypeReservationExpired)
-	if err := uc.inspector.DeleteTask("default", taskID); err != nil {
-		// task may have already fired or doesn't exist — log but don't fail
-		log.Printf("[confirm] could not delete asynq task %s: %v", taskID, err)
-	}
-
-	// 3. notify the open purchase socket
-	if err := uc.ws.Notify(sessionID.String(), sockets.WSMessage{
-		Type:    "order_confirmed",
-		Payload: map[string]string{"purchase_id": purchase.ID.String()},
-	}); err != nil {
-		log.Printf("[confirm] ws already closed for session %s: %v", sessionID, err)
-	}
-
-	uc.ws.Remove(sessionID.String())
-
+	// 4. grant ticket permissions
 	items, err := uc.purchases.GetTicketIDsByPaymentIntent(ctx, paymentIntentID)
 	if err != nil {
 		log.Printf("[confirm] failed to fetch ticket ids for %s: %v", paymentIntentID, err)
-	} else if len(items) > 0 {
+		return nil
+	}
+
+	if len(items) > 0 {
 		grants := make([]domain.TicketGrant, 0, len(items))
 		for _, item := range items {
 			grants = append(grants, domain.TicketGrant{
@@ -84,11 +74,13 @@ func (uc *CommandService) ConfirmPayment(ctx context.Context, paymentIntentID st
 			})
 		}
 
-		var task *asynq.Task
-		task, err = domain.NewGrantTicketPermissionsTask(grants, paymentIntentID)
+		task, err := domain.NewGrantTicketPermissionsTask(grants, paymentIntentID)
 		if err != nil {
 			log.Printf("[confirm] failed to create grant permissions task: %v", err)
-		} else if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+			return nil
+		}
+
+		if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
 			log.Printf("[confirm] failed to enqueue grant permissions task: %v", err)
 		}
 	}

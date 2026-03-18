@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/plataform/database"
@@ -159,22 +160,14 @@ func (repo *productsRepo) AdminList(ctx context.Context, editionID uuid.UUID) ([
 	return out, nil
 }
 
-func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID, items []domain.CartItem, expiresAt time.Time) error {
+func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID, items []domain.CartItem, expiresAt time.Time) (domain.ReservationOutcome, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ReserveItems")
 	defer span.End()
 
+	var outcome domain.ReservationOutcome
+
 	for _, item := range items {
-		if item.HasInventory {
-			_, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
-				SessionID: sessionID,
-				ProductID: item.ProductID,
-				Quantity:  item.Quantity,
-				ExpiresAt: expiresAt,
-			})
-			if err != nil {
-				return errx.FromDB(err, "product")
-			}
-		} else {
+		if !item.HasInventory {
 			err := repo.queries(ctx).ReserveProductNoInventory(ctx, sqlc.ReserveProductNoInventoryParams{
 				SessionID: sessionID,
 				ProductID: item.ProductID,
@@ -182,12 +175,53 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 				ExpiresAt: expiresAt,
 			})
 			if err != nil {
-				return errx.FromDB(err, "product")
+				_ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
+				return domain.ReservationOutcome{}, errx.FromDB(err, "product")
 			}
+			outcome.Reserved = append(outcome.Reserved, item)
+			continue
 		}
+
+		reservedQty, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
+			SessionID: sessionID,
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			ExpiresAt: expiresAt,
+		})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				outcome.Unavailable = append(outcome.Unavailable, domain.InvalidProduct{
+					ProductID: item.ProductID,
+					Requested: item.Quantity,
+					Reserved:  0,
+					Reason:    "out_of_stock",
+				})
+				continue
+			}
+			// real infra error
+			_ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
+			return domain.ReservationOutcome{}, errx.FromDB(err, "product")
+		}
+
+		if reservedQty < item.Quantity {
+			outcome.Reserved = append(outcome.Reserved, domain.CartItem{
+				ProductID:    item.ProductID,
+				Quantity:     reservedQty,
+				HasInventory: item.HasInventory,
+			})
+			outcome.Unavailable = append(outcome.Unavailable, domain.InvalidProduct{
+				ProductID: item.ProductID,
+				Requested: item.Quantity,
+				Reserved:  reservedQty,
+				Reason:    "insufficient_inventory",
+			})
+			continue
+		}
+
+		outcome.Reserved = append(outcome.Reserved, item)
 	}
 
-	return nil
+	return outcome, nil
 }
 
 func (repo *productsRepo) UnreserveItems(ctx context.Context, sessionID uuid.UUID) error {

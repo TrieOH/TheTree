@@ -31,17 +31,30 @@ FROM products
 WHERE edition_id = $1;
 
 -- name: ReserveProduct :one
-WITH reservation AS (
+WITH available AS (
+    SELECT inventory_remaining
+    FROM products
+    WHERE id = sqlc.arg(product_id)
+      AND has_inventory = TRUE
+      AND inventory_remaining > 0
+    FOR UPDATE
+),
+updated AS (
+    UPDATE products
+    SET inventory_remaining = inventory_remaining - LEAST(sqlc.arg(quantity)::int, (SELECT inventory_remaining FROM available))
+    WHERE id = sqlc.arg(product_id)
+      AND EXISTS (SELECT 1 FROM available)
+    RETURNING id
+)
 INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
-VALUES (sqlc.arg(session_id), sqlc.arg(product_id), sqlc.arg(quantity), sqlc.arg(expires_at))
-    RETURNING *
-    )
-UPDATE products
-SET inventory_remaining = inventory_remaining - sqlc.arg(quantity)
-WHERE products.id = sqlc.arg(product_id)
-  AND products.has_inventory = TRUE
-  AND products.inventory_remaining >= sqlc.arg(quantity)
-    RETURNING products.*;
+SELECT
+    sqlc.arg(session_id),
+    sqlc.arg(product_id),
+    LEAST(sqlc.arg(quantity)::int, available.inventory_remaining),
+    sqlc.arg(expires_at)
+FROM available
+WHERE EXISTS (SELECT 1 FROM updated)
+    RETURNING quantity;
 
 -- name: ReserveProductNoInventory :exec
 INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
@@ -73,7 +86,7 @@ WHERE payment_id = $1;
 -- name: CancelPurchase :exec
 UPDATE purchases
 SET status = 'cancelled'
-WHERE payment_id = $1;
+WHERE payment_id = $1 AND status = 'pending';
 
 -- name: GetReservationItems :many
 SELECT
