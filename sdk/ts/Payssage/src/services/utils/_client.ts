@@ -8,7 +8,7 @@ export function createClient(baseURL = BASE_URL) {
   return createDefaultFetchClient({
     baseURL,
     headers: {
-      "X-API-Key": process.env.API_KEY ?? "",
+      "X-API-Key": process.env.TRIEOH_PAY_SECRET_KEY ?? "",
     },
   });
 }
