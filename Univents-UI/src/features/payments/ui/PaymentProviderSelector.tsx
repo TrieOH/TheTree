@@ -31,6 +31,15 @@ export function PaymentProviderSelector({
                 debitCard: "all",
                 bankTransfer: "all",
                 prepaidCard: "all",
+              },
+              visual: {
+                hideFormTitle: true,
+                style: {
+                  customVariables: {
+                    formBackgroundColor: "transparent",
+                    baseColor: "var(--primary)",
+                  }
+                }
               }
             }}
           />

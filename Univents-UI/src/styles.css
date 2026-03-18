@@ -272,13 +272,6 @@ pre code {
   border-color: color-mix(in oklab, var(--lagoon-deep) 35%, var(--line));
 }
 
-button,
-.island-shell,
-a {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
-    transform 180ms ease;
-}
-
 .island-kicker {
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -345,8 +338,15 @@ a {
     background-color: var(--background);
     color: var(--foreground);
   }
-    button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+form[data-testid="payment-form"] {
+  padding: 0 !important;
+}
+
+div[class*="mp-checkout-bricks__payment-options"] {
+  border: 0 !important;
 }
