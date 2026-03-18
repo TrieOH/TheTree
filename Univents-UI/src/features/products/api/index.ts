@@ -6,6 +6,8 @@ import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 /**
  * Creates a new Product on the server.
  * @param productData - The data for the new product.
+ * @param eventId - The event id
+ * @param editionId - The edition id
  * @returns A promise that resolves to the API response containing the newly created product.
  */
 export const createProductFn = createClientOnlyFn((
@@ -64,3 +66,19 @@ export const allAdminProductsQueryOptions = (eventId: string, editionId: string)
     queryFn: () => getAllAdminProductsFn(eventId, editionId),
   })
 };
+
+
+/**
+ * Publish a Product on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API null response.
+ */
+export const publishProductFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/publish`
+  );
+});

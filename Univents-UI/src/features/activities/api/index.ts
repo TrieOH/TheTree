@@ -64,3 +64,18 @@ export const allAdminActivitiesQueryOptions = (eventId: string, editionId: strin
     queryFn: () => getAllAdminActivitiesFn(eventId, editionId),
   })
 };
+
+/**
+ * Publish a Activity on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param activityId - The activity id
+ * @returns A promise that resolves to the API null response.
+ */
+export const publishActivityFn = createClientOnlyFn((
+  eventId: string, editionId: string, activityId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/activities/${activityId}/publish`
+  );
+});

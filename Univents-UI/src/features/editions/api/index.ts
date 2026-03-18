@@ -59,3 +59,18 @@ export const allAdminEditionsQueryOptions = (eventId: string) => {
     queryFn: () => getAllAdminEditionsFn(eventId),
   })
 };
+
+/**
+ * Publish a Edition on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @returns A promise that resolves to the API null response.
+ */
+export const publishEditionFn = createClientOnlyFn((
+  eventId: string, editionId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/announce`
+  );
+});
+

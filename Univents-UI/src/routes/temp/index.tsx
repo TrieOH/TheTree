@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { SignIn, SignUp, useAuth } from '@soramux/node-auth-sdk/react'
 import React, { useState } from 'react'
 import { useServerFn } from '@tanstack/react-start'
@@ -8,11 +8,11 @@ import type { ActivityCreateI, ActivityI } from '@/features/activities/model'
 import type { TicketCreateI, TicketI } from '@/features/tickets/model'
 import type { ProductCreateI, ProductI } from '@/features/products/model'
 import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
-import { createEventFn, getOwnEventsFn } from '@/features/events/api'
-import { createEditionFn, getAllAdminEditionsFn } from '@/features/editions/api'
+import { createEventFn, getOwnEventsFn, publishEventFn } from '@/features/events/api'
+import { createEditionFn, getAllAdminEditionsFn, publishEditionFn } from '@/features/editions/api'
 import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
 import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
-import { createProductFn, getAllAdminProductsFn } from '@/features/products/api'
+import { createProductFn, getAllAdminProductsFn, publishProductFn } from '@/features/products/api'
 import { createCheckpointFn, getAllCheckpointsFn } from '@/features/checkpoints/api'
 import {
   formatDateForDatetimeLocal,
@@ -546,6 +546,17 @@ function RouteComponent() {
                 <strong>Updated At:</strong> {new Date(ev.updated_at).toLocaleDateString()} {new Date(ev.updated_at).toLocaleTimeString()}<br />
                 <strong>Deleted At:</strong> {ev.deleted_at ? `${new Date(ev.deleted_at).toLocaleDateString()} ${new Date(ev.deleted_at).toLocaleTimeString()}` : 'N/A'}
               </button>
+              <button
+                className="mt-2 block bg-blue-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
+                disabled={ev.status !== 'draft'}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await publishEventFn(ev.id);
+                  setEventCreated(true);
+                }}
+              >
+                {ev.status === 'draft' ? 'Publish Event' : 'Published'}
+              </button>
             </li>
           ))}
         </ul>
@@ -653,7 +664,7 @@ function RouteComponent() {
           </label>
 
           <label>
-            Contact Email
+            Contact Email*
             <input
               type="email"
               name="contact_email"
@@ -831,6 +842,25 @@ function RouteComponent() {
                     <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
                   </button>
                   <button onClick={() => handleConnect()}>Conectar</button>
+                  <Link
+                    to="/events/$eventId/editions/$editionId/products"
+                    params={{ eventId: ed.event_id, editionId: ed.id }}
+                  >
+                    Ver Produtos
+                  </Link>
+                  <button
+                    className="mt-2 block bg-green-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
+                    disabled={ed.status !== 'draft'}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (selectedEventId) {
+                        await publishEditionFn(selectedEventId, ed.id);
+                        setEditionCreated(true);
+                      }
+                    }}
+                  >
+                    {ed.status === 'draft' ? 'Publish Edition' : 'Published'}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -1185,8 +1215,20 @@ function RouteComponent() {
                   <strong>Created At:</strong> {new Date(prod.created_at).toLocaleDateString()} {new Date(prod.created_at).toLocaleTimeString()}<br />
                   <strong>Updated At:</strong> {new Date(prod.updated_at).toLocaleDateString()} {new Date(prod.updated_at).toLocaleTimeString()}<br />
                   <strong>Deleted At:</strong> {prod.deleted_at ? `${new Date(prod.deleted_at).toLocaleDateString()} ${new Date(prod.deleted_at).toLocaleTimeString()}` : 'N/A'}
-                </li>
-              ))}
+                  <button
+                    className="mt-2 block bg-orange-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
+                    disabled={prod.status !== 'draft'}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (selectedEventId && selectedEditionId) {
+                        await publishProductFn(selectedEventId, selectedEditionId, prod.id);
+                        setProductCreated(true);
+                      }
+                    }}
+                  >
+                    {prod.status === 'draft' ? 'Publish Product' : 'Published'}
+                  </button>
+                  </li>              ))}
             </ul>
           </div>
         )}

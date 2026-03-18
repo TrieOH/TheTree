@@ -35,3 +35,17 @@ export const ownEventsQueryOptions = () => {
     queryFn: getOwnEventsFn,
   })
 }
+
+/**
+ * Publish a Event on the server.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API null response.
+ */
+export const publishEventFn = createClientOnlyFn((
+  eventId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/publish`
+  );
+});
+
