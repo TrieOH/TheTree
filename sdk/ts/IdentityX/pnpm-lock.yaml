@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@soramux/node-fetch-sdk':
-        specifier: link:../NodeFetch
-        version: link:../NodeFetch
+        specifier: ^0.1.0
+        version: 0.1.0
       react:
         specifier: ^19.2.0
         version: 19.2.4
@@ -458,6 +458,9 @@ packages:
     resolution: {integrity: sha512-2HRCml6OztYXyJXAvdDXPKcawukWY2GpR5/nxKp4iBgiO3wcoEGkAaqctIbZcNB6KlUQBIqt8VYkNSj2397EfA==}
     cpu: [x64]
     os: [win32]
+
+  '@soramux/node-fetch-sdk@0.1.0':
+    resolution: {integrity: sha512-vK+FmBd61POksUDUO/+mPEkWblGEOp68Qbvg93i9S5ShmObtfgQQcSQSxQCZfW9cQxacW7elsVTIsYwX+XeZjw==}
 
   '@storybook/addon-docs@10.2.16':
     resolution: {integrity: sha512-tdndvqYqUybCFb3co+IfpInfD37mMWtsC9OBBRLEHhHODH/6c16n6iSdzEEOIJhc4rfjxvwNYsTq7jddplAT4g==}
@@ -1523,6 +1526,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.59.0':
     optional: true
+
+  '@soramux/node-fetch-sdk@0.1.0': {}
 
   '@storybook/addon-docs@10.2.16(@types/react@19.2.14)(esbuild@0.27.4)(rollup@4.59.0)(storybook@10.2.16(@testing-library/dom@10.4.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.12.0))':
     dependencies:
