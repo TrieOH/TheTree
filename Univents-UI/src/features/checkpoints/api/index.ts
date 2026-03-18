@@ -17,7 +17,6 @@ export const createCheckpointFn = createClientOnlyFn((
   );
 });
 
-
 /**
  * Fetches all checkpoints for a specific edition from the server.
  * @returns A promise that resolves to an array of Checkpoint objects.
@@ -36,7 +35,7 @@ export const getAllCheckpointsFn = createClientOnlyFn(async (eventId: string, ed
  */
 export const allCheckpointsQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allCheckpoints', eventId, editionId],
+    queryKey: ['checkpoints', 'public', eventId, editionId],
     queryFn: () => getAllCheckpointsFn(eventId, editionId),
   })
 }

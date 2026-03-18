@@ -12,7 +12,6 @@ export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
   return authFetcher.post<EventI>("/events", eventData);
 });
 
-
 /**
  * Fetches all own events from the server.
  * @returns A promise that resolves to an array of Event objects.
@@ -31,7 +30,30 @@ export const getOwnEventsFn = createClientOnlyFn(async () => {
  */
 export const ownEventsQueryOptions = () => {
   return queryOptions({
-    queryKey: ['ownEvents'],
+    queryKey: ['events', 'own'],
+    queryFn: getOwnEventsFn,
+  })
+}
+
+/**
+ * Fetches all events from the server.
+ * @returns A promise that resolves to an array of Event objects.
+ */
+export const getEventsFn = createClientOnlyFn(async () => {
+  try {
+    return await tanstackQueryFetcher<EventI[]>("/events");
+  } catch {
+    return [];
+  }
+});
+
+/**
+ * Query options for fetching events, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching events.
+ */
+export const eventsQueryOptions = () => {
+  return queryOptions({
+    queryKey: ['events', 'public'],
     queryFn: getOwnEventsFn,
   })
 }

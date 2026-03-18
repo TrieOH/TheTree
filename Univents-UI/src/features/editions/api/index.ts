@@ -12,7 +12,6 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
   return authFetcher.post<EditionI>(`/events/${eventId}/editions`, editionData);
 });
 
-
 /**
  * Fetches all event editions from the server.
  * @returns A promise that resolves to an array of Edition objects.
@@ -31,7 +30,7 @@ export const getAllEditionsFn = createClientOnlyFn(async (eventId: string) => {
  */
 export const allEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
-    queryKey: ['allEditions', eventId],
+    queryKey: ['editions', 'public', eventId],
     queryFn: () => getAllEditionsFn(eventId),
   })
 }
@@ -55,7 +54,7 @@ export const getAllAdminEditionsFn = createClientOnlyFn(async (eventId: string) 
  */
 export const allAdminEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
-    queryKey: ['allAdminEditions', eventId],
+    queryKey: ['editions', 'admin', eventId],
     queryFn: () => getAllAdminEditionsFn(eventId),
   })
 };

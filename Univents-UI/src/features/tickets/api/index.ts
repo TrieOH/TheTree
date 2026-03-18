@@ -17,7 +17,6 @@ export const createTicketFn = createClientOnlyFn((
   );
 });
 
-
 /**
  * Fetches all tickets for a specific edition from the server.
  * @returns A promise that resolves to an array of Ticket objects.
@@ -36,7 +35,7 @@ export const getAllTicketsFn = createClientOnlyFn(async (eventId: string, editio
  */
 export const allTicketsQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allTickets', eventId, editionId],
+    queryKey: ['tickets', 'public', eventId, editionId],
     queryFn: () => getAllTicketsFn(eventId, editionId),
   })
 }

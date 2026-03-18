@@ -19,7 +19,6 @@ export const createProductFn = createClientOnlyFn((
   );
 });
 
-
 /**
  * Fetches all products for a specific edition from the server.
  * @returns A promise that resolves to an array of Product objects.
@@ -38,11 +37,10 @@ export const getAllProductsFn = createClientOnlyFn(async (eventId: string, editi
  */
 export const allProductsQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allProducts', eventId, editionId],
+    queryKey: ['products', 'public', eventId, editionId],
     queryFn: () => getAllProductsFn(eventId, editionId),
   })
 }
-
 
 /**
  * Fetches all admin products for a specific edition from the server.
@@ -62,11 +60,10 @@ export const getAllAdminProductsFn = createClientOnlyFn(async (eventId: string, 
  */
 export const allAdminProductsQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allAdminProducts', eventId, editionId],
+    queryKey: ['products', 'admin', eventId, editionId],
     queryFn: () => getAllAdminProductsFn(eventId, editionId),
   })
 };
-
 
 /**
  * Publish a Product on the server.

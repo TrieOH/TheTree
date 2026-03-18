@@ -17,7 +17,6 @@ export const createActivityFn = createClientOnlyFn((
   );
 });
 
-
 /**
  * Fetches all activities for a specific edition from the server.
  * @returns A promise that resolves to an array of Activity objects.
@@ -36,7 +35,7 @@ export const getAllActivitiesFn = createClientOnlyFn(async (eventId: string, edi
  */
 export const allActivitiesQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allActivities', eventId, editionId],
+    queryKey: ['activities', 'public', eventId, editionId],
     queryFn: () => getAllActivitiesFn(eventId, editionId),
   })
 }
@@ -60,7 +59,7 @@ export const getAllAdminActivitiesFn = createClientOnlyFn(async (eventId: string
  */
 export const allAdminActivitiesQueryOptions = (eventId: string, editionId: string) => {
   return queryOptions({
-    queryKey: ['allAdminActivities', eventId, editionId],
+    queryKey: ['activities', 'admin', eventId, editionId],
     queryFn: () => getAllAdminActivitiesFn(eventId, editionId),
   })
 };
