@@ -13,7 +13,7 @@ import { getTokenClaims, isUpToDate } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
-import { logger } from "../utils/logger";
+import { logger } from "@soramux/node-fetch-sdk";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;

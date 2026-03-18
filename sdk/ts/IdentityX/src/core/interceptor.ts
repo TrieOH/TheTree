@@ -11,8 +11,8 @@ import {
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
-import { logger } from "../utils/logger";
-import { simpleFetch } from "../utils/fetch-utils";
+import { logger } from "@soramux/node-fetch-sdk";
+import { simpleFetch } from "@soramux/node-fetch-sdk";
 
 
 export interface RequestOptions extends RequestInit {

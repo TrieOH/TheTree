@@ -1,7 +1,7 @@
 import type { Api, ApiResponse } from "../core/api";
 import { AuthTokens } from "../core/services";
 import { authStore } from "../store/auth-store";
-import { logger } from "./logger";
+import { logger } from "@soramux/node-fetch-sdk";
 
 export interface TokenClaims {
   sub: {
