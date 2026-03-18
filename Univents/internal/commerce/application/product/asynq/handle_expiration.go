@@ -30,9 +30,13 @@ func (uc *AsynqHandlers) HandleProductReservationExpiration(ctx context.Context,
 	}
 
 	// 2. DB cleanup
+	var updates []domain.InventoryUpdate
+
 	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := uc.products.UnreserveItems(ctx, p.SessionID); err != nil {
-			return fmt.Errorf("failed to unreserve items: %w", err)
+		var uErr error
+		updates, uErr = uc.products.UnreserveItems(ctx, p.SessionID)
+		if uErr != nil {
+			return fmt.Errorf("failed to unreserve items: %w", uErr)
 		}
 		if err := uc.purchases.CancelPurchase(ctx, p.PaymentIntentID); err != nil {
 			return fmt.Errorf("failed to cancel purchase: %w", err)
@@ -40,6 +44,11 @@ func (uc *AsynqHandlers) HandleProductReservationExpiration(ctx context.Context,
 		return nil
 	}); err != nil {
 		return err
+	}
+
+	// publish after TX commits
+	if len(updates) > 0 {
+		_ = uc.inventory.Publish(ctx, p.EditionID, updates)
 	}
 
 	// 3. Notify WS if still alive

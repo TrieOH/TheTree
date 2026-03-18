@@ -24,7 +24,7 @@ type ProductsRepository interface {
 	List(ctx context.Context, editionID uuid.UUID) ([]Product, error)
 	AdminList(ctx context.Context, editionID uuid.UUID) ([]Product, error)
 	ReserveItems(ctx context.Context, sessionID uuid.UUID, items []CartItem, expiresAt time.Time) (ReservationOutcome, error)
-	UnreserveItems(ctx context.Context, sessionID uuid.UUID) error
+	UnreserveItems(ctx context.Context, sessionID uuid.UUID) ([]InventoryUpdate, error)
 	DeleteReservation(ctx context.Context, sessionID uuid.UUID) error
 }
 
@@ -37,4 +37,12 @@ type PurchaseRepository interface {
 	GetTicketIDsByPaymentIntent(ctx context.Context, paymentID string) ([]TicketGrant, error)
 	ListUserPurchases(ctx context.Context, userID uuid.UUID) ([]Purchase, error)
 	ListPurchaseItems(ctx context.Context, purchaseID, userID uuid.UUID) ([]LineItem, error)
+}
+
+type InventoryPublisher interface {
+	Publish(ctx context.Context, editionID uuid.UUID, updates []InventoryUpdate) error
+}
+
+type InventorySubscriber interface {
+	Subscribe(ctx context.Context, editionID uuid.UUID) (<-chan []InventoryUpdate, error)
 }

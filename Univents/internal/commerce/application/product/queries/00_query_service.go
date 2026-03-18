@@ -13,6 +13,7 @@ type QueryService struct {
 	products  domain.ProductsRepository
 	purchases domain.PurchaseRepository
 	editions  domain2.EditionsRepository
+	inventory domain.InventorySubscriber
 	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	tx        database.TxRunner
@@ -22,6 +23,7 @@ func New(
 	products domain.ProductsRepository,
 	purchases domain.PurchaseRepository,
 	editions domain2.EditionsRepository,
+	inventory domain.InventorySubscriber,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
@@ -30,6 +32,7 @@ func New(
 		products:  products,
 		purchases: purchases,
 		editions:  editions,
+		inventory: inventory,
 		gaClient:  gaClient,
 		tracer:    tracer,
 		tx:        tx,

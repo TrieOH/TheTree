@@ -18,6 +18,7 @@ type CommandService struct {
 	purchases domain.PurchaseRepository
 	payments  *paymentsSDK.Client
 	ws        *sockets.Registry
+	inventory domain.InventoryPublisher
 	asynq     *asynq.Client
 	inspector *asynq.Inspector
 	gaClient  *goauth.Client
@@ -31,6 +32,7 @@ func New(
 	purchases domain.PurchaseRepository,
 	payments *paymentsSDK.Client,
 	ws *sockets.Registry,
+	inventory domain.InventoryPublisher,
 	asynq *asynq.Client,
 	inspector *asynq.Inspector,
 	gaClient *goauth.Client,
@@ -43,6 +45,7 @@ func New(
 		purchases: purchases,
 		payments:  payments,
 		ws:        ws,
+		inventory: inventory,
 		asynq:     asynq,
 		inspector: inspector,
 		gaClient:  gaClient,

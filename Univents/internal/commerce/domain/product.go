@@ -25,9 +25,15 @@ type CartItem struct {
 	HasInventory bool      `json:"-"`
 }
 
+type InventoryUpdate struct {
+	ProductID          uuid.UUID `json:"product_id"`
+	InventoryRemaining int       `json:"inventory_remaining"`
+}
+
 type ReservationOutcome struct {
-	Reserved    []CartItem       `json:"reserved"`
-	Unavailable []InvalidProduct `json:"unavailable"`
+	Reserved         []CartItem        `json:"reserved"`
+	Unavailable      []InvalidProduct  `json:"unavailable"`
+	InventoryUpdates []InventoryUpdate `json:"inventory_updates"`
 }
 
 type ProductType string
@@ -155,12 +161,14 @@ const (
 type ReservationExpiredPayload struct {
 	SessionID       uuid.UUID `json:"session_id"`
 	PaymentIntentID string    `json:"payment_intent_id"`
+	EditionID       uuid.UUID `json:"edition_id"`
 }
 
-func NewReservationExpiredTask(sessionID uuid.UUID, paymentIntentID string, expiresAt time.Time) (*asynq.Task, error) {
+func NewReservationExpiredTask(sessionID uuid.UUID, paymentIntentID string, expiresAt time.Time, editionID uuid.UUID) (*asynq.Task, error) {
 	payload, err := json.Marshal(ReservationExpiredPayload{
 		SessionID:       sessionID,
 		PaymentIntentID: paymentIntentID,
+		EditionID:       editionID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal reservation expired payload: %w", err)

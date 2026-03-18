@@ -6,6 +6,7 @@ import (
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
+	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/sockets"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func mapPaymentError() string {
@@ -94,8 +96,18 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	// ── Phase 2: reserve ──────────────────────────────────────────────────────
 	outcome, err := uc.products.ReserveItems(ctx, sessionID, req.Items, expiresAt)
 	if err != nil {
-		_ = uc.products.UnreserveItems(ctx, sessionID)
+		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, editionID, updates)
+		}
 		return err
+	}
+
+	if len(outcome.InventoryUpdates) > 0 {
+		_ = uc.inventory.Publish(ctx, editionID, outcome.InventoryUpdates)
 	}
 
 	for i, inv := range outcome.Unavailable {
@@ -140,18 +152,36 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		})
 
 		if err = conn.SetReadDeadline(confirmDeadline); err != nil {
-			_ = uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			if uErr != nil {
+				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			}
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, editionID, updates)
+			}
 			return err
 		}
 
 		var confirmMsg sockets.WSMessage
 		if err = conn.ReadJSON(&confirmMsg); err != nil {
-			_ = uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			if uErr != nil {
+				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			}
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, editionID, updates)
+			}
 			return nil
 		}
 
 		if err = conn.SetReadDeadline(time.Time{}); err != nil {
-			_ = uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			if uErr != nil {
+				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			}
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, editionID, updates)
+			}
 			return err
 		}
 
@@ -159,11 +189,23 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		case "confirm_partial":
 			// proceed with outcome.Reserved only
 		case "cancel":
-			_ = uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			if uErr != nil {
+				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			}
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, editionID, updates)
+			}
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "reservation_cancelled"})
 			return nil
 		default:
-			_ = uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			if uErr != nil {
+				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			}
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, editionID, updates)
+			}
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected confirm_partial or cancel"})
 			return nil
 		}
@@ -177,7 +219,13 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		Metadata: json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
 	})
 	if err != nil {
-		_ = uc.products.UnreserveItems(ctx, sessionID)
+		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, editionID, updates)
+		}
 		return err
 	}
 	paymentIntentID := intent.ID
@@ -228,7 +276,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 			}
 		}
 
-		task, err := domain.NewReservationExpiredTask(sessionID, paymentIntentID, expiresAt)
+		task, err := domain.NewReservationExpiredTask(sessionID, paymentIntentID, expiresAt, editionID)
 		if err != nil {
 			return err
 		}
@@ -240,7 +288,13 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		return nil
 	}); err != nil {
 		// FIXME: Call FailIntent when implemented
-		_ = uc.products.UnreserveItems(ctx, sessionID)
+		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, editionID, updates)
+		}
 		return err
 	}
 

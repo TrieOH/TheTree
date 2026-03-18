@@ -175,14 +175,14 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 				ExpiresAt: expiresAt,
 			})
 			if err != nil {
-				_ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
+				_, _ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
 				return domain.ReservationOutcome{}, errx.FromDB(err, "product")
 			}
 			outcome.Reserved = append(outcome.Reserved, item)
 			continue
 		}
 
-		reservedQty, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
+		row, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
 			SessionID: sessionID,
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
@@ -198,21 +198,25 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 				})
 				continue
 			}
-			// real infra error
-			_ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
+			_, _ = repo.queries(ctx).UnreserveProducts(ctx, sessionID)
 			return domain.ReservationOutcome{}, errx.FromDB(err, "product")
 		}
 
-		if reservedQty < item.Quantity {
+		outcome.InventoryUpdates = append(outcome.InventoryUpdates, domain.InventoryUpdate{
+			ProductID:          item.ProductID,
+			InventoryRemaining: int(row.InventoryRemaining),
+		})
+
+		if row.ReservedQuantity < item.Quantity {
 			outcome.Reserved = append(outcome.Reserved, domain.CartItem{
 				ProductID:    item.ProductID,
-				Quantity:     reservedQty,
+				Quantity:     int(row.ReservedQuantity),
 				HasInventory: item.HasInventory,
 			})
 			outcome.Unavailable = append(outcome.Unavailable, domain.InvalidProduct{
 				ProductID: item.ProductID,
 				Requested: item.Quantity,
-				Reserved:  reservedQty,
+				Reserved:  int(row.ReservedQuantity),
 				Reason:    "insufficient_inventory",
 			})
 			continue
@@ -224,15 +228,24 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 	return outcome, nil
 }
 
-func (repo *productsRepo) UnreserveItems(ctx context.Context, sessionID uuid.UUID) error {
+func (repo *productsRepo) UnreserveItems(ctx context.Context, sessionID uuid.UUID) ([]domain.InventoryUpdate, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.UnreserveItems")
 	defer span.End()
 
-	if err := repo.queries(ctx).UnreserveProducts(ctx, sessionID); err != nil {
-		return errx.FromDB(err, "product")
+	rows, err := repo.queries(ctx).UnreserveProducts(ctx, sessionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
 	}
 
-	return nil
+	updates := make([]domain.InventoryUpdate, 0, len(rows))
+	for _, row := range rows {
+		updates = append(updates, domain.InventoryUpdate{
+			ProductID:          row.ID,
+			InventoryRemaining: row.InventoryRemaining,
+		})
+	}
+
+	return updates, nil
 }
 
 func (repo *productsRepo) DeleteReservation(ctx context.Context, sessionID uuid.UUID) error {

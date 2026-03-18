@@ -127,5 +127,6 @@ func registerProductsRoutes(
 		r.Get("/events/{event_id}/editions/{edition_id}/products/purchase", h.Purchase) // WS upgrade
 		r.Get("/purchases", h.ListUserPurchases)
 		r.Get("/purchases/{purchase_id}/items", h.ListPurchaseItems)
+		r.Get("/events/{event_id}/editions/{edition_id}/products/inventory/stream", h.StreamInventory) // SSE upgrade
 	})
 }

@@ -30,6 +30,10 @@ SELECT *
 FROM products
 WHERE edition_id = $1;
 
+-- name: ReserveProductNoInventory :exec
+INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
+VALUES (sqlc.arg(session_id), sqlc.arg(product_id), sqlc.arg(quantity), sqlc.arg(expires_at));
+
 -- name: ReserveProduct :one
 WITH available AS (
     SELECT inventory_remaining
@@ -38,13 +42,13 @@ WITH available AS (
       AND has_inventory = TRUE
       AND inventory_remaining > 0
     FOR UPDATE
-),
+    ),
 updated AS (
     UPDATE products
     SET inventory_remaining = inventory_remaining - LEAST(sqlc.arg(quantity)::int, (SELECT inventory_remaining FROM available))
     WHERE id = sqlc.arg(product_id)
       AND EXISTS (SELECT 1 FROM available)
-    RETURNING id
+    RETURNING id, inventory_remaining
 )
 INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
 SELECT
@@ -54,13 +58,11 @@ SELECT
     sqlc.arg(expires_at)
 FROM available
 WHERE EXISTS (SELECT 1 FROM updated)
-    RETURNING quantity;
+    RETURNING
+    (SELECT inventory_remaining FROM updated) AS inventory_remaining,
+    quantity AS reserved_quantity;
 
--- name: ReserveProductNoInventory :exec
-INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
-VALUES (sqlc.arg(session_id), sqlc.arg(product_id), sqlc.arg(quantity), sqlc.arg(expires_at));
-
--- name: UnreserveProducts :exec
+-- name: UnreserveProducts :many
 WITH deleted AS (
 DELETE FROM product_reservations
 WHERE product_reservations.session_id = sqlc.arg(session_id)
@@ -70,7 +72,8 @@ UPDATE products
 SET inventory_remaining = inventory_remaining + deleted.quantity
     FROM deleted
 WHERE products.id = deleted.product_id
-  AND products.has_inventory = TRUE;
+  AND products.has_inventory = TRUE
+    RETURNING products.id, products.inventory_remaining;
 
 -- name: DeleteReservation :exec
 DELETE FROM product_reservations

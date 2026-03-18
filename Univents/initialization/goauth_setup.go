@@ -113,6 +113,8 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	tracer := otel.Tracer(string(telemetry.UniventsTracer))
 	logs := telemetry.Log()
 	ws := sockets.New()
+	inventoryPublisher := commerceInfra.NewRedisInventoryPublisher(app.Redis)
+	inventorySubscriber := commerceInfra.NewRedisInventorySubscriber(app.Redis)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
 
@@ -126,7 +128,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
-	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, ws, app.Payments, app.GaClient, tracer, txRunner)
+	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, ws, app.Payments, inventoryPublisher, app.GaClient, tracer, txRunner)
 	ticketsAsyncHandlers := ticketsAsync.New(ticketRepo, productRepo, activityRepo, checkpointRepo, app.GaClient, tracer, txRunner)
 	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{
 		Handlers:         workerHandlers,
@@ -156,8 +158,8 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, ws, asynqClient, inspector, app.GaClient, tracer, txRunner)
-	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, ws, inventoryPublisher, asynqClient, inspector, app.GaClient, tracer, txRunner)
+	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, inventorySubscriber, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)
