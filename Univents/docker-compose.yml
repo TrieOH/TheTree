@@ -1,5 +1,6 @@
 services:
   univents:
+    container_name: univents
     build:
       context: .
       dockerfile: Dockerfile
@@ -39,6 +40,7 @@ services:
       TRIEPAYMENTS_WEBHOOK_SECRET: ${TRIEPAYMENTS_WEBHOOK_SECRET}
 
   univents-database:
+    container_name: univents-database
     image: postgres:18
     restart: unless-stopped
     environment:
@@ -53,6 +55,7 @@ services:
       - internal
 
   univents-redis:
+    container_name: univents-redis
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfsync everysec
