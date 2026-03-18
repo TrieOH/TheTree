@@ -2,13 +2,16 @@ import { createDefaultFetchClient, type DefaultFetchResult } from "@soramux/node
 
 export type ApiResponse<T> = DefaultFetchResult<T>;
 
-const BASE_URL = "https://api.triepayments.trieoh.com";
+const DEFAULT_BASE_URL = "https://api.triepayments.trieoh.com";
 
-export function createClient(baseURL = BASE_URL) {
+export function createClient(
+  baseURL = process.env.TRIEOH_PAY_BASE_URL ?? DEFAULT_BASE_URL,
+  apiKey = process.env.TRIEOH_PAY_SECRET_KEY ?? ""
+) {
   return createDefaultFetchClient({
     baseURL,
     headers: {
-      "X-API-Key": process.env.TRIEOH_PAY_SECRET_KEY ?? "",
+      "X-API-Key": apiKey,
     },
   });
 }
