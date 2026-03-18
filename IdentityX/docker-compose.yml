@@ -1,5 +1,6 @@
 services:
   go-auth:
+    container_name: trieauth
     build:
       context: .
       dockerfile: Dockerfile
@@ -41,6 +42,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   go-auth-database:
+    container_name: trieauth-database
     image: postgres:18
     restart: unless-stopped
     environment:
@@ -55,6 +57,7 @@ services:
       - internal
 
   go-auth-redis:
+    container_name: trieauth-redis
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --save "" --appendonly no
