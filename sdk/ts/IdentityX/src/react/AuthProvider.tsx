@@ -13,6 +13,7 @@ import { getTokenClaims, isUpToDate } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
+import { logger } from "@soramux/node-fetch-sdk";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -27,14 +28,17 @@ export function AuthProvider({
   children,
   baseURL,
   projectId,
+  exchangeURL,
   isClient = true,
 }: {
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
+  exchangeURL?: string;
   isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
+
   const { isAuthenticated, isUpToDate: upToDate } = useSyncExternalStore(
     authStore.subscribe,
     authStore.getSnapshot,
@@ -42,69 +46,63 @@ export function AuthProvider({
   );
 
   const prevConfig = useRef({ projectId, baseURL });
-  if (prevConfig.current.projectId !== projectId || prevConfig.current.baseURL !== baseURL) {
+  useEffect(() => {
+    const prev = prevConfig.current;
+    if (prev.projectId === projectId && prev.baseURL === baseURL) return;
+
     configure({
       ...(projectId ? { PROJECT_ID: projectId } : {}),
       ...(baseURL ? { BASE_URL: baseURL } : {}),
     });
+
     prevConfig.current = { projectId, baseURL };
-  }
+  }, [projectId, baseURL]);
 
-  const apiInstance = useMemo(() => new Api(baseURL, undefined, (claims) => {
-    authStore.set({ isUpToDate: claims.is_up_to_date || false });
-  }), [baseURL]);
+  const apiInstance = useMemo(() => new Api(
+    baseURL,
+    undefined,
+    (claims) => authStore.set({
+      isAuthenticated: !!claims.access_data,
+      isUpToDate: claims.is_up_to_date ?? false,
+    }),
+    exchangeURL,
+  ), [baseURL, exchangeURL]);
 
-  const rawAuth = useMemo(() => createAuthService(apiInstance), [apiInstance]);
-
-  const auth = useMemo(() => ({
-    ...rawAuth,
-    login: async (...args: Parameters<typeof rawAuth.login>) => {
-      const res = await rawAuth.login(...args);
-      if (res.success) authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
-      return res;
-    },
-    logout: async (...args: Parameters<typeof rawAuth.logout>) => {
-      const res = await rawAuth.logout(...args);
-      if (res.success) authStore.reset();
-      return res;
-    },
-    refresh: async (...args: Parameters<typeof rawAuth.refresh>) => {
-      const res = await rawAuth.refresh(...args);
-      if (res.success) authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
-      return res;
-    },
-  }), [rawAuth]);
+  const auth = useMemo(
+    () => createAuthService(apiInstance, exchangeURL),
+    [apiInstance, exchangeURL],
+  );
 
   useEffect(() => {
     if (isClient) validateProjectKey();
 
-    const loadAuthStatus = async () => {
-      const claims = getTokenClaims();
-      if (claims) {
+    const restoreSession = async () => {
+      if (getTokenClaims()) {
         authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
         setReady(true);
         return;
       }
 
-      console.log("[TRIEOH SDK] Attempting to refresh session...");
+      logger.log("No cached claims, attempting silent refresh...");
       try {
-        const res = await auth.refreshProfileInfo();
+        const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
         if (res.success) {
           authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
-          console.log("[TRIEOH SDK] Session restored successfully.");
+          logger.log("Session restored.");
         } else {
           authStore.reset();
-          console.warn("[TRIEOH SDK] Session restoration failed/no session.");
+          logger.warn("No active session.");
         }
       } catch {
-        console.warn("[TRIEOH SDK] Unable to verify session (offline?)");
         authStore.reset();
+        logger.warn("Could not restore session (offline?).");
       } finally {
         setReady(true);
       }
     };
 
-    loadAuthStatus();
+    restoreSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!ready) return null;

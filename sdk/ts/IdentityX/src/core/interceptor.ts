@@ -1,13 +1,18 @@
 import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
+  decodeJwtExp,
   isRefreshSessionExpired,
   isTokenExpiringSoon,
+  saveSession,
   saveTokenClaims,
   setCookie,
+  TokenClaims,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
+import { logger } from "@soramux/node-fetch-sdk";
+import { simpleFetch } from "@soramux/node-fetch-sdk";
 
 
 export interface RequestOptions extends RequestInit {
@@ -18,6 +23,7 @@ export interface RequestOptions extends RequestInit {
 interface InterceptorConfig {
   baseURL?: string;
   authBaseURL?: string;
+  exchangeURL?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
 }
@@ -25,60 +31,82 @@ interface InterceptorConfig {
 export class AuthInterceptor {
   private baseURL: string;
   private authBaseURL: string;
+  private exchangeURL?: string;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   private onRefreshFailed?: (error: Error) => void;
 
   constructor(config?: InterceptorConfig) {
-    this.authBaseURL = config?.authBaseURL || env.BASE_URL;
-    this.baseURL = config?.baseURL || this.authBaseURL;
-
+    this.baseURL = config?.baseURL || env.BASE_URL;
+    this.authBaseURL = config?.authBaseURL || this.baseURL;
+    this.exchangeURL = config?.exchangeURL;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
   }
 
   private async fetchClaimsAndSave(is_up_to_date?: boolean): Promise<AuthTokenClaims> {
-    const response = await fetch(joinUrl(this.authBaseURL, "/sessions/me"), {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
+    const res = await simpleFetch<{ data?: AuthTokenClaims, code: number }>(
+      joinUrl(this.authBaseURL, "/sessions/me")
+    );
 
-    const resJson = await response.json();
-
-    if (resJson.code !== 200 || !resJson.data) {
+    if (res.code !== 200 || !res.data) {
       clearAuthTokens();
-      throw new Error(resJson.message || "Failed to fetch session claims after refresh");
+      throw new Error("Failed to fetch session claims after refresh");
     }
 
-    const claims = { ...resJson.data, is_up_to_date } as AuthTokenClaims;
+    const claims = { ...res.data, is_up_to_date };
     saveTokenClaims(claims);
     return claims;
   }
 
-  private async exchange(access_token: string, refresh_token: string, is_up_to_date: boolean): Promise<AuthTokenClaims> {
-    const response = await fetch(joinUrl(this.authBaseURL, "/auth/exchange"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${access_token}`,
-      },
-      credentials: "include",
-    });
+  private async exchange(
+    access_token: string,
+    refresh_token: string,
+    is_up_to_date: boolean
+  ): Promise<AuthTokenClaims> {
+    // Project: Custom URL
+    if (this.exchangeURL) {
+      const res = await simpleFetch<{
+        data?: { session_id: string; ttl: string; claims: TokenClaims },
+        code: number,
+        message?: string
+      }>(
+        this.exchangeURL,
+        { method: "POST", headers: { "Authorization": `Bearer ${access_token}` } }
+      );
 
-    const res = await response.json();
+      if (res.code !== 200 || !res.data) {
+        clearAuthTokens();
+        throw new Error(res.message || "Failed to exchange tokens (project)");
+      }
 
-    if (res.code !== 200) {
-      clearAuthTokens();
-      throw new Error(res.message || "Failed to exchange tokens for session");
+      const refreshExp = decodeJwtExp(refresh_token);
+      const claims: AuthTokenClaims = {
+        access_data: res.data.claims,
+        is_up_to_date,
+        refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
+      };
+
+      saveSession(claims, res.data.session_id, res.data.ttl, refresh_token);
+      return claims;
     }
 
-    const expiresDate = new Date(res.data.expires_at).toUTCString();
-    setCookie("svc_session", res.data.service_session_id, expiresDate);
+    // Default: /auth/exchange + sessions/me
+    const res = await simpleFetch<{ code: number; message?: string; data?: { session_id: string; expires_at: string } }>(
+      joinUrl(this.authBaseURL, "/auth/exchange"),
+      { method: "POST", headers: { "Authorization": `Bearer ${access_token}` } }
+    );
+
+    if (res.code !== 200 || !res.data) {
+      clearAuthTokens();
+      throw new Error(res.message || "Failed to exchange tokens");
+    }
+
+    const expiresDate = new Date(res.data.expires_at).getTime().toString();
+    setCookie("svc_session", res.data.session_id, expiresDate);
 
     const claims = await this.fetchClaimsAndSave(is_up_to_date);
-
     const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
     setCookie("refresh_token", refresh_token, refreshExpiry);
 
@@ -109,9 +137,9 @@ export class AuthInterceptor {
         const claims = await this.exchange(access_token, refresh_token, is_up_to_date);
 
         this.onTokenRefreshed?.(claims);
-        console.log("[TRIEOH SDK] Token refreshed successfully");
+        logger.log("Token refreshed successfully");
       } catch (error) {
-        console.warn("[TRIEOH SDK] Failed to refresh token:", error);
+        logger.warn("Failed to refresh token:", error);
         clearAuthTokens();
         this.onRefreshFailed?.(error as Error);
         throw error;
@@ -131,11 +159,11 @@ export class AuthInterceptor {
     }
 
     if (isTokenExpiringSoon(30)) {
-      console.log("[TRIEOH SDK] Token expiring soon, refreshing...");
+      logger.log("Token expiring soon, refreshing...");
       try {
         await this.refreshToken();
       } catch (error) {
-        console.warn("[TRIEOH SDK] Refresh interceptor failed:", error);
+        logger.warn("Refresh interceptor failed:", error);
       }
     }
   }
