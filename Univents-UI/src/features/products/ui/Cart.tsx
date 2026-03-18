@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ShoppingCart, X, Trash2, Plus, Minus, CreditCard } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "../hooks/use-cart";
+import type { CartItem } from "../model/cart";
 import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
-import { useState, useEffect, useRef } from "react";
-import type { CartItem } from "../model/cart";
 
 interface CartProps {
   isOpen: boolean;
@@ -27,8 +27,10 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted }: CartItem
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
+
     if (!isNaN(value) && value >= 1) {
-      if (!maxReached || value <= item.inventory_remaining!) {
+      const inventory = item.inventory_remaining;
+      if (!maxReached || (inventory !== undefined && value <= inventory)) {
         onUpdateQuantity(item.id, value);
       }
     }
@@ -117,7 +119,7 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted }: CartItem
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => onRemove(item.id)}
+          onClick={() => { onRemove(item.id); }}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -146,7 +148,7 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
       const timer = setTimeout(() => {
         setIsVisible(false);
       }, 300);
-      return () => clearTimeout(timer);
+      return () => { clearTimeout(timer); };
     }
   }, [isOpen]);
 

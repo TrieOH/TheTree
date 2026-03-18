@@ -14,7 +14,9 @@ export function PaymentProviderSelector({
   provider = "mercadopago",
   amount
 }: PaymentProviderSelectorProps) {
-  const onSubmit = async (_: IPaymentFormData, _a: IAdditionalCardFormData | null | undefined) => {
+  const onSubmit = async (data: IPaymentFormData, addData: IAdditionalCardFormData | null | undefined) => {
+    console.log("Data: ", data)
+    console.log("Aditional Data: ", addData)
   };
   const renderProvider = () => {
     switch (provider) {
