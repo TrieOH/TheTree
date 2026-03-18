@@ -17,7 +17,6 @@ export const Route = createFileRoute('/blog/$slug')({
           .map((entry) => [entry.slug, entry]),
       ).values(),
     ).find((entry) => entry.slug === params.slug)
-    // eslint-disable-next-line @typescript-eslint/only-throw-error
     if (!post) throw notFound()
     return post
   },

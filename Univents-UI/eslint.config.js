@@ -47,4 +47,10 @@ export default [
   {
     ignores: ['eslint.config.js', 'prettier.config.js', '.content-collections/'],
   },
+  {
+    files: ['src/routes/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/only-throw-error': 'off',
+    },
+  }
 ]

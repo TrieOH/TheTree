@@ -49,6 +49,8 @@ export interface EditionI {
   contact_email: string | null;
   contact_phone: string | null;
   organizer_name: string | null;
+  trie_payments_credential_id: string | null;
+  trie_payments_provider: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

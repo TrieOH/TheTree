@@ -73,3 +73,32 @@ export const publishEditionFn = createClientOnlyFn((
   );
 });
 
+/**
+ * Connect Payment Account a Edition on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param credentialId - The Credential id
+ * @param provider - Payment Provider
+ * @returns A promise that resolves to the API null response.
+ */
+export const connectPaymentAccountToEditionFn = createClientOnlyFn((
+  eventId: string, editionId: string, credentialId: string, provider: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/payments/connect?credential_id=${credentialId}&provider=${provider}`
+  );
+});
+
+/**
+ * Connect Payment Account a Edition on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @returns A promise that resolves to the API null response.
+ */
+export const disconnectPaymentAccountToEditionFn = createClientOnlyFn((
+  eventId: string, editionId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/payments/disconnect`
+  );
+});

@@ -9,7 +9,7 @@ import type { TicketCreateI, TicketI } from '@/features/tickets/model'
 import type { ProductCreateI, ProductI } from '@/features/products/model'
 import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
 import { createEventFn, getOwnEventsFn, publishEventFn } from '@/features/events/api'
-import { createEditionFn, getAllAdminEditionsFn, publishEditionFn } from '@/features/editions/api'
+import { createEditionFn, getAllAdminEditionsFn, publishEditionFn, disconnectPaymentAccountToEditionFn } from '@/features/editions/api'
 import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
 import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
 import { createProductFn, getAllAdminProductsFn, publishProductFn } from '@/features/products/api'
@@ -259,18 +259,27 @@ function RouteComponent() {
 
   const handleConnectFn = useServerFn(connectEditionSellerToWorkspaceFn)
 
-  const handleConnect = async () => {
+  const handleConnect = async (eventId: string, editionId: string) => {
     const res = await handleConnectFn({
       data: {
         provider: "mercadopago",
         workspace_name: "Univents",
-        final_redirect_url: window.location.origin + "/temp",
+        final_redirect_url: window.location.origin + `/admin/events/${eventId}/editions/${editionId}/callback/payment`,
         provider_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL
       }
     })
     if (res.success) {
       window.location.href = res.data.redirect_url
     } else console.error("DEU RUIM: ", res.message)
+  }
+
+  const handleDisconnect = async (eventId: string, editionId: string) => {
+    const res = await disconnectPaymentAccountToEditionFn(eventId, editionId);
+    if (res.success) {
+      setEditionCreated(true);
+    } else {
+      console.error("Erro ao desconectar:", res.message);
+    }
   }
 
   const selectedEvent = events.find((ev) => ev.id === selectedEventId) ?? null
@@ -841,7 +850,11 @@ function RouteComponent() {
                     <strong>Updated At:</strong> {new Date(ed.updated_at).toLocaleDateString()} {new Date(ed.updated_at).toLocaleTimeString()}<br />
                     <strong>Deleted At:</strong> {ed.deleted_at ? `${new Date(ed.deleted_at).toLocaleDateString()} ${new Date(ed.deleted_at).toLocaleTimeString()}` : 'N/A'}
                   </button>
-                  <button onClick={() => handleConnect()}>Conectar</button>
+                  {ed.trie_payments_credential_id ? (
+                    <button onClick={() => handleDisconnect(ed.event_id, ed.id)}>Desconectar</button>
+                  ) : (
+                    <button onClick={() => handleConnect(ed.event_id, ed.id)}>Conectar</button>
+                  )}
                   <Link
                     to="/events/$eventId/editions/$editionId/products"
                     params={{ eventId: ed.event_id, editionId: ed.id }}
@@ -1228,7 +1241,7 @@ function RouteComponent() {
                   >
                     {prod.status === 'draft' ? 'Publish Product' : 'Published'}
                   </button>
-                  </li>              ))}
+                </li>))}
             </ul>
           </div>
         )}
