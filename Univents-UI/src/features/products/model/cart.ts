@@ -37,13 +37,7 @@ cartStore.subscribe(() => {
 });
 
 export const cartActions = {
-  addItem: (editionId: string, product: {
-    id: string;
-    name: string;
-    price_cents: number;
-    inventory_remaining?: number;
-    has_inventory?: boolean;
-  }, quantity: number) => {
+  addItem: (editionId: string, product: Omit<CartItem, "quantity">, quantity: number) => {
     cartStore.setState((prev) => {
       const currentItems = prev.carts[editionId] ?? [];
       const existing = currentItems.find((i) => i.id === product.id);

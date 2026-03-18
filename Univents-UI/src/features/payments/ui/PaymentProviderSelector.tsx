@@ -28,7 +28,6 @@ export function PaymentProviderSelector({
                 creditCard: "all",
                 mercadoPago: "all",
                 atm: "all",
-                ticket: "all",
                 debitCard: "all",
                 bankTransfer: "all",
                 prepaidCard: "all",
