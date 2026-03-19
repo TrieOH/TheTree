@@ -12,7 +12,6 @@ import (
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
 	"univents/internal/plataform/telemetry"
-	"univents/internal/shared/authz"
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
@@ -273,8 +272,6 @@ var upgrader = websocket.Upgrader{}
 // @Description    - order_confirmed: payment succeeded (pushed via webhook)
 // @Description    - order_failed: payment succeeded but order could not be fulfilled (pushed via webhook)
 // @Tags products
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
 // @Param event_id path string true "Event ID"
 // @Param edition_id path string true "Edition ID"
 // @Success 101 {object} object "WebSocket upgrade"
@@ -309,13 +306,6 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 
 	spanCtx := trace.SpanFromContext(r.Context()).SpanContext()
 	baseCtx := trace.ContextWithSpanContext(context.Background(), spanCtx)
-
-	subject, err := authz.RequireSubject(r.Context())
-	if err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "unauthorized"})
-		return
-	}
-	baseCtx = authz.WithSubject(baseCtx, subject)
 
 	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+91*time.Second)
 	defer cancel()

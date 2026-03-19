@@ -3,11 +3,11 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
 	"univents/internal/plataform/telemetry"
-	"univents/internal/shared/authz"
 	"univents/internal/shared/sockets"
 
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
@@ -22,9 +22,9 @@ func mapPaymentError() string {
 }
 
 func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, req dtos.BuyRequest, editionID uuid.UUID) error {
-	sub, err := authz.RequireSubject(ctx)
+	user, err := uc.gaClient.Users.Get(ctx, req.UserID)
 	if err != nil {
-		return err
+		return errors.New("unauthorized")
 	}
 
 	sessionID, err := uuid.NewV7()
@@ -235,7 +235,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
 			EditionID:       editionID,
 			SessionID:       &sessionID,
-			UserID:          sub.ID,
+			UserID:          user.ID,
 			SubtotalCents:   int(intent.Amount),
 			PaymentProvider: &intent.Provider,
 			PaymentID:       &intent.ID,
@@ -339,7 +339,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		CardToken:       payReq.CardToken,
 		PaymentMethodID: payReq.PaymentMethodID,
 		Installments:    payReq.Installments,
-		PayerEmail:      sub.Email,
+		PayerEmail:      user.Email,
 	}); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": mapPaymentError()}})
 		return nil
