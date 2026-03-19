@@ -21,8 +21,8 @@ importers:
         specifier: ^5.2.8
         version: 5.2.8
       '@soramux/node-auth-sdk':
-        specifier: 0.8.0
-        version: 0.8.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        specifier: 0.8.5
+        version: 0.8.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.10(typescript@5.9.3)(zod@4.2.1)
@@ -1973,11 +1973,14 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/node-auth-sdk@0.8.0':
-    resolution: {integrity: sha512-quMChR0u+gLsMhQhWgSCuLcapkVFXDgNYPiuDAqegwpo9W36OQ4OKcrAu8PIAGNlzuRp3Xed7+CAq+hgUuAdHw==}
+  '@soramux/node-auth-sdk@0.8.5':
+    resolution: {integrity: sha512-7I3dlAsnk9f/lBlXep8NBPkSe8g4PiwqHwjGf+J5+sTeD/Z+fot/que7YEIjYN+xiwlZ+hBge70zSLVD6lNOJA==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
+
+  '@soramux/node-fetch-sdk@0.1.0':
+    resolution: {integrity: sha512-vK+FmBd61POksUDUO/+mPEkWblGEOp68Qbvg93i9S5ShmObtfgQQcSQSxQCZfW9cQxacW7elsVTIsYwX+XeZjw==}
 
   '@speed-highlight/core@1.2.14':
     resolution: {integrity: sha512-G4ewlBNhUtlLvrJTb88d2mdy2KRijzs4UhnlrOSRT4bmjh/IqNElZa3zkrZ+TC47TwtlDWzVLFADljF1Ijp5hA==}
@@ -3095,8 +3098,8 @@ packages:
     peerDependencies:
       react: ^19.2.3
 
-  react-icons@5.5.0:
-    resolution: {integrity: sha512-MEFcXdkP3dLo8uumGI5xN3lDFNsRtrjbOEKDLD7yv76v4wpnEq2Lt2qeHaQOr34I/wPN3s3+N08WkQ+CW37Xiw==}
+  react-icons@5.6.0:
+    resolution: {integrity: sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==}
     peerDependencies:
       react: '*'
 
@@ -5236,12 +5239,15 @@ snapshots:
     dependencies:
       solid-js: 1.9.10
 
-  '@soramux/node-auth-sdk@0.8.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@soramux/node-auth-sdk@0.8.5(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
+      '@soramux/node-fetch-sdk': 0.1.0
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      react-icons: 5.5.0(react@19.2.3)
+      react-icons: 5.6.0(react@19.2.3)
       ua-parser-js: 2.0.9
+
+  '@soramux/node-fetch-sdk@0.1.0': {}
 
   '@speed-highlight/core@1.2.14': {}
 
@@ -6538,7 +6544,7 @@ snapshots:
       react: 19.2.3
       scheduler: 0.27.0
 
-  react-icons@5.5.0(react@19.2.3):
+  react-icons@5.6.0(react@19.2.3):
     dependencies:
       react: 19.2.3
 
