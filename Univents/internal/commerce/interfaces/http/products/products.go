@@ -17,6 +17,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
@@ -286,6 +287,32 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tokenStr := r.URL.Query().Get("token")
+	if tokenStr == "" {
+		resp.Unauthorized("missing token").Send(w)
+		return
+	}
+
+	secret := viper.GetString("WS_JWT_SECRET")
+
+	token, err := jwt.ParseWithClaims(tokenStr, &domain.WSClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+
+	if err != nil || !token.Valid {
+		resp.Unauthorized("invalid token").Send(w)
+		return
+	}
+
+	claims, ok := token.Claims.(*domain.WSClaims)
+	if !ok {
+		resp.Unauthorized("invalid token claims").Send(w)
+		return
+	}
+
+	userID := claims.UserID
+	userEmail := claims.Email
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("ws upgrade failed: %v", err)
@@ -310,7 +337,7 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+91*time.Second)
 	defer cancel()
 
-	if err := handler.commands.Purchase(ctx, conn, req, editionID); err != nil {
+	if err := handler.commands.Purchase(ctx, conn, req, editionID, userID, userEmail); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: err.Error()})
 		return
 	}

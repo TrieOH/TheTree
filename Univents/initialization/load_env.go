@@ -25,6 +25,10 @@ func LoadEnv(app *UniventsApp) {
 		log.Fatal("GO_AUTH_PROJECT_ID must be set")
 	}
 
+	if viper.GetString("WS_JWT_SECRET") == "" {
+		log.Fatal("WS_JWT_SECRET must be set")
+	}
+
 	Port := viper.GetString("PORT")
 	if Port == "" {
 		Port = "8080"

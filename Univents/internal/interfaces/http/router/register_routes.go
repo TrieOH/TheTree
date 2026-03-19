@@ -33,6 +33,8 @@ func registerSystemRoutes(
 		r.Get("/health", h.Health)
 		r.With(authMW.Auth()).
 			Get("/protected/health", h.ProtectedHealth)
+		r.With(authMW.Auth()).
+			Get("/ws/token", h.WSAuth)
 	})
 }
 

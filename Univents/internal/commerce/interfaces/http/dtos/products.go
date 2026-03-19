@@ -21,8 +21,7 @@ type CreateProductRequest struct {
 }
 
 type BuyRequest struct {
-	Items  []domain.CartItem `json:"items"`
-	UserID uuid.UUID         `json:"user_id"`
+	Items []domain.CartItem `json:"items"`
 }
 
 type ReservationConfirmedPayload struct {

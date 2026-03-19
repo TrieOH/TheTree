@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
@@ -21,12 +20,7 @@ func mapPaymentError() string {
 	return "payment could not be processed, please try again"
 }
 
-func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, req dtos.BuyRequest, editionID uuid.UUID) error {
-	user, err := uc.gaClient.Users.Get(ctx, req.UserID)
-	if err != nil {
-		return errors.New("unauthorized")
-	}
-
+func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, req dtos.BuyRequest, editionID, userID uuid.UUID, userEmail string) error {
 	sessionID, err := uuid.NewV7()
 	if err != nil {
 		return err
@@ -235,7 +229,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
 			EditionID:       editionID,
 			SessionID:       &sessionID,
-			UserID:          user.ID,
+			UserID:          userID,
 			SubtotalCents:   int(intent.Amount),
 			PaymentProvider: &intent.Provider,
 			PaymentID:       &intent.ID,
@@ -339,7 +333,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		CardToken:       payReq.CardToken,
 		PaymentMethodID: payReq.PaymentMethodID,
 		Installments:    payReq.Installments,
-		PayerEmail:      user.Email,
+		PayerEmail:      userEmail,
 	}); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": mapPaymentError()}})
 		return nil

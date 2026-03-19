@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -79,4 +80,11 @@ func NewPurchase(spec CreatePurchaseSpec) *Purchase {
 		PaymentProvider: spec.PaymentProvider,
 		PaymentID:       spec.PaymentID,
 	}
+}
+
+// WSClaims represents the JWT payload
+type WSClaims struct {
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+	jwt.RegisteredClaims
 }

@@ -3,12 +3,16 @@ package system
 import (
 	"net/http"
 	"strings"
+	"time"
+	domain2 "univents/internal/commerce/domain"
 	"univents/internal/core/domain"
 	"univents/internal/interfaces/http/system/dto"
 	"univents/internal/shared/authz"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/spf13/viper"
 )
 
 type UniventsHandler struct {
@@ -98,4 +102,50 @@ func (handler *UniventsHandler) Exchange(w http.ResponseWriter, r *http.Request)
 	}
 
 	resp.OK("service session created").WithData(sessionRes).Send(w)
+}
+
+// WSAuth godoc
+// @Summary Get WebSocket auth token
+// @Description Returns a short-lived JWT (30s) to authenticate a WebSocket connection
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Success 200 {object} object "Token generated"
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /ws/token [post]
+func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sub, err := authz.RequireSubject(ctx)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	now := time.Now()
+	claims := domain2.WSClaims{
+		UserID: sub.ID,
+		Email:  sub.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   sub.ID.String(),
+			ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Second)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+		},
+	}
+
+	secret := viper.GetString("WS_JWT_SECRET")
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(secret))
+	if err != nil {
+		resp.InternalServerError("failed to sign token").Send(w)
+		return
+	}
+
+	resp.OK("Token generated").WithData(map[string]string{
+		"token": signed,
+	}).Send(w)
 }
