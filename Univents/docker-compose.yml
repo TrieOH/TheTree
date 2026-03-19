@@ -24,6 +24,8 @@ services:
       CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
       ENV: ${ENV:-development}
 
+      WS_JWT_SECRET: ${WS_JWT_SECRET}
+
       DISABLE_RATE_LIMIT: false
 
       REDIS_ADDR: ${REDIS_ADDR:-univents-redis:6379}
