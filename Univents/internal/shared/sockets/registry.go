@@ -2,9 +2,13 @@ package sockets
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/spf13/viper"
 )
 
 type WSMessage struct {
@@ -41,4 +45,50 @@ func (r *Registry) Remove(sessionID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.conns, sessionID)
+}
+
+func MakeUpgrader() websocket.Upgrader {
+	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
+	if allowedOrigins == nil {
+		log.Fatal("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
+	}
+
+	allowed := make(map[string]struct{}, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		allowed[o] = struct{}{}
+	}
+
+	return websocket.Upgrader{
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return false
+			}
+			_, ok := allowed[origin]
+			return ok
+		},
+	}
+}
+
+func splitAndCleanCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+
+	return out
 }

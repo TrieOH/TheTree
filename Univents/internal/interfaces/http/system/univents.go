@@ -115,7 +115,7 @@ func (handler *UniventsHandler) Exchange(w http.ResponseWriter, r *http.Request)
 // @Success 200 {object} object "Token generated"
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /ws/token [post]
+// @Router /ws/token [get]
 func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

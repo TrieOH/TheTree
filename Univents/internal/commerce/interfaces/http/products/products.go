@@ -253,8 +253,6 @@ func (handler *Handler) ListPurchaseItems(w http.ResponseWriter, r *http.Request
 	resp.OK().WithData(out).Send(w)
 }
 
-var upgrader = websocket.Upgrader{}
-
 // Purchase godoc
 // @Summary Start a purchase process
 // @Description Opens a WebSocket connection to reserve products and initiate payment.
@@ -312,6 +310,8 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 
 	userID := claims.UserID
 	userEmail := claims.Email
+
+	upgrader := sockets.MakeUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
