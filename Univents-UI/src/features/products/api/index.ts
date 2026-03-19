@@ -79,3 +79,12 @@ export const publishProductFn = createClientOnlyFn((
     `/events/${eventId}/editions/${editionId}/products/${productId}/publish`
   );
 });
+
+
+/**
+ * Get websocket token.
+ * @returns A promise that resolves to the API null response.
+ */
+export const getWebsocketAuthToken = createClientOnlyFn(() => {
+  return authFetcher.get<{ token: string }>("/ws/token");
+});

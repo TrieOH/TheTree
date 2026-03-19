@@ -28,15 +28,22 @@ export const env = createEnv({
     VITE_MERCADO_PAGO_PUBLIC_KEY: z.string()
   },
 
-  /**
-   * What object holds the environment variables at runtime. This is usually
-   * `process.env` or `import.meta.env`.
-   */
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
     TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
     TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL
+  },
+  onValidationError: (issues) => {
+    console.error("Invalid or missing environment variables:")
+    issues.forEach((issue) => {
+      console.error(`  → ${issue.path?.join(".")}: ${issue.message}`)
+    })
+    process.exit(1)
+  },
+  onInvalidAccess: (key) => {
+    console.error(`Attempted to access a server variable on the client: ${key}`)
+    throw new Error(`Invalid Access: ${key}`)
   },
 
   /**

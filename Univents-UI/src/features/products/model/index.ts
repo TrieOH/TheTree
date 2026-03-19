@@ -23,12 +23,12 @@ export const productCreateSchema = z.object({
 
 export type ProductCreateI = z.infer<typeof productCreateSchema>
 
-export const cartItemCreateSchema = z.object({
+export const buyRequestItemSchema = z.object({
   product_id: z.uuid(),
   quantity: z.int().nonnegative().default(1)
 })
 
-export type CartItemCreteI = z.infer<typeof cartItemCreateSchema>
+export type BuyRequestItemI = z.infer<typeof buyRequestItemSchema>
 
 
 export interface ProductI {

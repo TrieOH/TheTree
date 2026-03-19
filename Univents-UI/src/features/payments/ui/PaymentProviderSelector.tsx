@@ -1,22 +1,30 @@
+import type { PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
 import { Payment } from "@mercadopago/sdk-react"
 
-import type { IAdditionalCardFormData, IPaymentFormData } from "@mercadopago/sdk-react/esm/bricks/payment/type";
+import type { IPaymentFormData } from "@mercadopago/sdk-react/esm/bricks/payment/type";
 
 export type PaymentProviderType = "mercadopago";
 
 interface PaymentProviderSelectorProps {
   provider?: PaymentProviderType;
   amount: number;
+  handleSubmit: (data: PaymentPayload) => void
 }
 
 
 export function PaymentProviderSelector({
   provider = "mercadopago",
-  amount
+  amount,
+  handleSubmit
 }: PaymentProviderSelectorProps) {
-  const onSubmit = async (data: IPaymentFormData, addData: IAdditionalCardFormData | null | undefined) => {
-    console.log("Data: ", data)
-    console.log("Aditional Data: ", addData)
+
+
+  const onSubmit = async (data: IPaymentFormData) => {
+    handleSubmit({
+      card_token: data.formData.token,
+      payment_method_id: data.formData.payment_method_id,
+      installments: data.formData.installments
+    })
   };
   const renderProvider = () => {
     switch (provider) {
