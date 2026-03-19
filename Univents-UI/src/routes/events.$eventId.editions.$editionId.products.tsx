@@ -8,6 +8,7 @@ import { useCart } from "@/features/products/hooks/use-cart";
 import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
 import { allProductsQueryOptions } from "@/features/products/api";
+import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
 
 export const Route = createFileRoute("/events/$eventId/editions/$editionId/products")({
   component: ProductsPage,
@@ -18,14 +19,16 @@ function ProductsPage() {
   const { totalCents } = useCart(editionId);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  const { data: products = [], isLoading } = useQuery(
+    allProductsQueryOptions(eventId, editionId)
+  );
+
+  const { inventory } = useInventoryStream(eventId, editionId);
+
   const totalFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(totalCents / 100);
-
-  const { data: products = [], isLoading } = useQuery(
-    allProductsQueryOptions(eventId, editionId)
-  );
 
   return (
     <div className="min-h-screen pb-20">
@@ -48,7 +51,7 @@ function ProductsPage() {
         </Button>
       </div>
 
-      <ProductList products={products} isLoading={isLoading} />
+      <ProductList products={products} inventory={inventory} isLoading={isLoading} />
 
       {/* Cart Drawer */}
       <Cart

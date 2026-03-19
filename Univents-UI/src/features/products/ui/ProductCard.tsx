@@ -12,6 +12,7 @@ import { cn } from "@/shared/lib/utils";
 
 interface ProductCardProps {
   product: ProductI;
+  inventoryRemaining: number;
 }
 
 interface ClickAnimation {
@@ -21,7 +22,7 @@ interface ClickAnimation {
   value: string;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, inventoryRemaining }: ProductCardProps) {
   const { items, addItem, isLimitReached: checkLimitReached } = useCart(product.edition_id);
   const [animations, setAnimations] = useState<ClickAnimation[]>([]);
   const idCounter = useRef(0);
@@ -68,7 +69,7 @@ export function ProductCard({ product }: ProductCardProps) {
         id: product.id,
         name: product.name,
         price_cents: product.price_cents,
-        inventory_remaining: product.inventory_remaining,
+        inventory_remaining: inventoryRemaining,
         has_inventory: product.has_inventory,
       },
       1
@@ -76,8 +77,10 @@ export function ProductCard({ product }: ProductCardProps) {
   }, [canAdd, addItem, product]);
 
   const isAvailable = product.status === "available";
-  const isOutOfStock = product.has_inventory && product.inventory_remaining <= 0;
-  const isLowStock = product.has_inventory && product.inventory_remaining <= 5 && product.inventory_remaining > 0;
+  const isOutOfStock = product.has_inventory && inventoryRemaining <= 0;
+  const isLowStock = product.has_inventory && inventoryRemaining <= 5 && inventoryRemaining > 0;
+  // const isOutOfStock = product.has_inventory && product.inventory_remaining <= 0;
+  // const isLowStock = product.has_inventory && product.inventory_remaining <= 5 && product.inventory_remaining > 0;
 
   return (
     <>
@@ -148,7 +151,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="absolute bottom-0 left-0 right-0 bg-accent px-2 py-0.5 flex items-center justify-center gap-1">
               <AlertCircle className="w-3 h-3 text-accent-foreground" />
               <p className="text-accent-foreground text-[10px] font-semibold">
-                Apenas {product.inventory_remaining} restantes!
+                Apenas {inventoryRemaining} restantes!
               </p>
             </div>
           )}
@@ -171,7 +174,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
             {(product.has_inventory || !isAvailable) && isAvailable && (
               <span className={`text-[10px] whitespace-nowrap ml-2 mt-0.5 ${isLowStock ? 'text-amber-600 font-semibold' : 'text-muted-foreground'}`}>
-                {product.inventory_remaining} un.
+                {inventoryRemaining} un.
               </span>
             )}
           </div>

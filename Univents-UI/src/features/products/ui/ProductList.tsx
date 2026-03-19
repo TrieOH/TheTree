@@ -20,6 +20,7 @@ interface ProductListProps {
   products: ProductI[];
   isLoading?: boolean;
   itemsPerPage?: number;
+  inventory: Record<string, number>;
 }
 
 const typeConfig: Record<ProductType | "all", { label: string; icon: React.ElementType; color: string }> = {
@@ -33,7 +34,8 @@ const typeConfig: Record<ProductType | "all", { label: string; icon: React.Eleme
 export function ProductList({
   products,
   isLoading = false,
-  itemsPerPage = 12
+  itemsPerPage = 12,
+  inventory
 }: ProductListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ProductType | "all">("all");
@@ -159,7 +161,11 @@ export function ProductList({
 
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {paginatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    inventoryRemaining={inventory[product.id] ?? product.inventory_remaining}
+                  />
                 ))}
               </div>
 
