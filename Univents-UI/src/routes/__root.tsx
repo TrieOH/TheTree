@@ -22,6 +22,7 @@ import type { useAuth } from '@soramux/node-auth-sdk/react';
 
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
+import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -66,26 +67,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           baseURL={env.VITE_AUTH_API_URL}
           exchangeURL={env.VITE_EXCHANGE_API_URL}
         >
-          <PostHogProvider>
-            <TanStackQueryProvider>
-              {/* <Header /> */}
-              {children}
-              {/* <Footer /> */}
-              <TanStackDevtools
-                config={{
-                  position: 'bottom-right',
-                }}
-                plugins={[
-                  {
-                    name: 'Tanstack Router',
-                    render: <TanStackRouterDevtoolsPanel />,
-                  },
-                  StoreDevtools,
-                  TanStackQueryDevtools,
-                ]}
-              />
-            </TanStackQueryProvider>
-          </PostHogProvider>
+          <AuthContextUpdater>
+            <PostHogProvider>
+              <TanStackQueryProvider>
+                {/* <Header /> */}
+                {children}
+                {/* <Footer /> */}
+                <TanStackDevtools
+                  config={{
+                    position: 'bottom-right',
+                  }}
+                  plugins={[
+                    {
+                      name: 'Tanstack Router',
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                    StoreDevtools,
+                    TanStackQueryDevtools,
+                  ]}
+                />
+              </TanStackQueryProvider>
+            </PostHogProvider>
+          </AuthContextUpdater>
         </AuthProvider>
         <Scripts />
       </body>

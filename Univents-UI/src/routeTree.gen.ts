@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TempIndexRouteImport } from './routes/temp/index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
+import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events.$eventId.editions.$editionId.products'
 import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events.$eventId.editions.$editionId.checkout'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/index'
@@ -50,6 +52,17 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
+  id: '/admin/events/',
+  path: '/admin/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEventsEventIdEditionsIndexRoute =
+  AdminEventsEventIdEditionsIndexRouteImport.update({
+    id: '/admin/events/$eventId/editions/',
+    path: '/admin/events/$eventId/editions/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const EventsEventIdEditionsEditionIdProductsRoute =
   EventsEventIdEditionsEditionIdProductsRouteImport.update({
     id: '/events/$eventId/editions/$editionId/products',
@@ -82,8 +95,10 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/temp/': typeof TempIndexRoute
+  '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -94,8 +109,10 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/temp': typeof TempIndexRoute
+  '/admin/events': typeof AdminEventsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -107,8 +124,10 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/temp/': typeof TempIndexRoute
+  '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
+  '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -121,8 +140,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/temp/'
+    | '/admin/events/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
+    | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   fileRoutesByTo: FileRoutesByTo
@@ -133,8 +154,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog'
     | '/temp'
+    | '/admin/events'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
+    | '/admin/events/$eventId/editions'
     | '/admin/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   id:
@@ -145,8 +168,10 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/blog/'
     | '/temp/'
+    | '/admin/events/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
+    | '/admin/events/$eventId/editions/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   fileRoutesById: FileRoutesById
@@ -158,8 +183,10 @@ export interface RootRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   TempIndexRoute: typeof TempIndexRoute
+  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
   EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
+  AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -208,6 +235,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/events/': {
+      id: '/admin/events/'
+      path: '/admin/events'
+      fullPath: '/admin/events/'
+      preLoaderRoute: typeof AdminEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/events/$eventId/editions/': {
+      id: '/admin/events/$eventId/editions/'
+      path: '/admin/events/$eventId/editions'
+      fullPath: '/admin/events/$eventId/editions/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/events/$eventId/editions/$editionId/products': {
       id: '/events/$eventId/editions/$editionId/products'
       path: '/events/$eventId/editions/$editionId/products'
@@ -246,10 +287,12 @@ const rootRouteChildren: RootRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   TempIndexRoute: TempIndexRoute,
+  AdminEventsIndexRoute: AdminEventsIndexRoute,
   EventsEventIdEditionsEditionIdCheckoutRoute:
     EventsEventIdEditionsEditionIdCheckoutRoute,
   EventsEventIdEditionsEditionIdProductsRoute:
     EventsEventIdEditionsEditionIdProductsRoute,
+  AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,
   AdminEventsEventIdEditionsEditionIdIndexRoute:
     AdminEventsEventIdEditionsEditionIdIndexRoute,
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
