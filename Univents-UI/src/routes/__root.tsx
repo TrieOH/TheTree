@@ -23,6 +23,9 @@ import type { useAuth } from '@soramux/node-auth-sdk/react';
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
 import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
+import { SidebarInset, SidebarProvider } from '@/shared/ui/shadcn/sidebar'
+import { AppSidebar } from '@/widgets/ui/sidebar'
+import { AppTopbar } from '@/widgets/ui/topbar'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -68,26 +71,31 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           exchangeURL={env.VITE_EXCHANGE_API_URL}
         >
           <AuthContextUpdater>
-            <PostHogProvider>
-              <TanStackQueryProvider>
-                {/* <Header /> */}
-                {children}
-                {/* <Footer /> */}
-                <TanStackDevtools
-                  config={{
-                    position: 'bottom-right',
-                  }}
-                  plugins={[
-                    {
-                      name: 'Tanstack Router',
-                      render: <TanStackRouterDevtoolsPanel />,
-                    },
-                    StoreDevtools,
-                    TanStackQueryDevtools,
-                  ]}
-                />
-              </TanStackQueryProvider>
-            </PostHogProvider>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset className='m-0! rounded-none!'>
+                <AppTopbar />
+
+                <PostHogProvider>
+                  <TanStackQueryProvider>
+                    {children}
+                    <TanStackDevtools
+                      config={{
+                        position: 'bottom-right',
+                      }}
+                      plugins={[
+                        {
+                          name: 'Tanstack Router',
+                          render: <TanStackRouterDevtoolsPanel />,
+                        },
+                        StoreDevtools,
+                        TanStackQueryDevtools,
+                      ]}
+                    />
+                  </TanStackQueryProvider>
+                </PostHogProvider>
+              </SidebarInset>
+            </SidebarProvider>
           </AuthContextUpdater>
         </AuthProvider>
         <Scripts />

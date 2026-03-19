@@ -1,65 +1,54 @@
-import { createFileRoute, useSearch } from '@tanstack/react-router'
-import { SignIn, SignUp } from '@soramux/node-auth-sdk/react'
-import { useState } from 'react';
-import { motion } from "motion/react";
-import { toast } from 'sonner';
-import { requireGuest } from '@/features/auths/lib/route-guard';
-import z from 'zod';
-import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
-
-const authSearchSchema = z.object({
-  redirect: z.string().optional().catch(''),
+import { createFileRoute, useSearch, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
+import { motion, AnimatePresence } from 'motion/react'
+import { ModeSelector } from '@/widgets/landing/ui/ModeSelector'
+import { ParticipantView } from '@/widgets/landing/ui/ParticipantView'
+import { OrganizerView } from '@/widgets/landing/ui/OrganizerView'
+import { Footer } from '@/widgets/landing/ui/Footer'
+const searchSchema = z.object({
+  as: z.enum(['guest', 'host']).optional().default("guest"),
 })
 
 export const Route = createFileRoute('/')({
-  validateSearch: (search) => authSearchSchema.parse(search),
-  beforeLoad: (ctx) => {
-    requireGuest(ctx)
-  },
-  component: App,
+  component: Index,
+  validateSearch: searchSchema,
 })
 
-function App() {
-  const [isLogin, setIsLogin] = useState(true);
+export type Mode = 'guest' | 'host'
 
-  const search = useSearch({ from: '/' });
-  const { handleLoginSuccess } = useAuthActions();
+function Index() {
+  const { as } = useSearch({ from: '/' })
+  const navigate = useNavigate({ from: '/' })
 
-  const onLoginSuccess = async () => {
-    await handleLoginSuccess(search.redirect)
-  }
-
-  const handleSignUpSuccess = async () => {
-    setIsLogin(true);
-    toast.success("Account successfully created!")
-  }
-
-  const handleFailure = async (message: string, trace?: string[]) => {
-    const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
-    toast.warning(`Auth Failed: ${message}`, { description: traceMsg })
+  const setMode = (mode: Mode) => {
+    navigate({ search: (prev) => ({ ...prev, as: mode }), replace: true })
   }
 
   return (
-    <motion.main
-      key={isLogin ? 'signin' : 'signup'}
-      initial={{ opacity: 0, scale: 0.8, y: 5 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className='flex justify-center items-center py-2 h-screen'
-    >
-      {isLogin ? (
-        <SignIn
-          signUpRedirect={() => setIsLogin(false)}
-          onSuccess={onLoginSuccess}
-          onFailed={handleFailure}
-        />
-      ) : (
-        <SignUp
-          loginRedirect={() => setIsLogin(true)}
-          onSuccess={handleSignUpSuccess}
-          onFailed={handleFailure}
-        />
-      )}
-    </motion.main>
+    <div className="min-h-screen bg-background text-foreground antialiased selection:bg-neutral-100">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="pt-4 pb-12 md:pt-12 md:pb-16">
+          <div className="max-w-5xl mx-auto">
+            <ModeSelector current={as} onChange={setMode} />
+          </div>
+        </div>
+
+        <main className="pb-24 md:pb-32">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={as}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              {as === 'guest' ? <ParticipantView /> : <OrganizerView />}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+
+      <Footer />
+    </div>
   )
 }

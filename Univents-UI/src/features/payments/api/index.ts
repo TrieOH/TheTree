@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import { paymentConnectSchema, paymentDisconnectSchema } from "../model";
 import { workspaceService } from "@soramux/node-payments-sdk"
+import { paymentConnectSchema, paymentDisconnectSchema } from "../model";
 
 /**
  * Connect seller to Workspace on the server.

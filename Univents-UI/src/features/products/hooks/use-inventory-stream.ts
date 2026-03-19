@@ -1,5 +1,5 @@
-import { env } from "@/env";
 import { useEffect, useRef, useState } from "react";
+import { env } from "@/env";
 
 interface InventoryUpdate {
   product_id: string;
@@ -18,7 +18,7 @@ export function useInventoryStream(eventId: string, editionId: string) {
     const source = new EventSource(url);
     sourceRef.current = source;
 
-    source.onopen = () => setStatus("open");
+    source.onopen = () => { setStatus("open"); };
 
     source.addEventListener("inventory_update", (e: MessageEvent) => {
       const updates: InventoryUpdate[] = JSON.parse(e.data);

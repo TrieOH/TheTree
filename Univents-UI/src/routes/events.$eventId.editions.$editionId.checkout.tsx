@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle, Clock, Lock, Shield, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@soramux/node-auth-sdk/react";
+import type {BuyRequestItem, PaymentPayload} from "@/features/products/hooks/use-checkout-socket";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
-import { useCheckoutSocket, type BuyRequestItem, type PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
+import { useCheckoutSocket   } from "@/features/products/hooks/use-checkout-socket";
 import { env } from "@/env";
-import { useAuth } from "@soramux/node-auth-sdk/react";
 
 export const Route = createFileRoute(
   "/events/$eventId/editions/$editionId/checkout",
@@ -20,12 +21,12 @@ function useCountdown(expiresAt: string | null) {
 
   useEffect(() => {
     if (!expiresAt) return;
-    const tick = () => setSecondsLeft(
+    const tick = () => { setSecondsLeft(
       Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
-    );
+    ); };
     tick();
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    return () => { clearInterval(id); };
   }, [expiresAt]);
 
   const formatted = useMemo(() => {
@@ -117,7 +118,7 @@ function CheckoutPage() {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
   const handleSubmitPayment = useCallback(
-    (payload: PaymentPayload) => submitPayment(payload),
+    (payload: PaymentPayload) => { submitPayment(payload); },
     [submitPayment],
   );
 

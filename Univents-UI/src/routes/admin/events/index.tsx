@@ -65,7 +65,7 @@ function RouteComponent() {
         title="Eventos"
         subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''}`}
         action={
-          <button className={btnPrimary} onClick={() => setShowForm(s => !s)}>
+          <button className={btnPrimary} onClick={() => { setShowForm(s => !s); }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -128,7 +128,7 @@ function RouteComponent() {
               <button type="submit" className={btnPrimary} disabled={loading}>
                 {loading ? 'Criando...' : 'Criar evento'}
               </button>
-              <button type="button" className={btnSecondary} onClick={() => setShowForm(false)}>
+              <button type="button" className={btnSecondary} onClick={() => { setShowForm(false); }}>
                 Cancelar
               </button>
             </div>

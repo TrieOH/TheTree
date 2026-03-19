@@ -1,5 +1,5 @@
-import type { PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
 import { Payment } from "@mercadopago/sdk-react"
+import type { PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
 
 import type { IPaymentFormData } from "@mercadopago/sdk-react/esm/bricks/payment/type";
 
