@@ -205,6 +205,16 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		}
 	}
 
+	_ = conn.WriteJSON(sockets.WSMessage{
+		Type: "reservation_confirmed",
+		Payload: dtos.ReservationConfirmedPayload{
+			SessionID: sessionID,
+			ExpiresAt: expiresAt,
+			Items:     reservedDetails,
+			Total:     total,
+		},
+	})
+
 	var payMsg sockets.WSMessage
 	if err = conn.ReadJSON(&payMsg); err != nil {
 		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
@@ -328,16 +338,6 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 
 	// ── Phase 6: wait for payment ─────────────────────────────────────────────
 	uc.ws.Register(sessionID.String(), conn)
-
-	_ = conn.WriteJSON(sockets.WSMessage{
-		Type: "reservation_confirmed",
-		Payload: dtos.ReservationConfirmedPayload{
-			SessionID: sessionID,
-			ExpiresAt: expiresAt,
-			Items:     reservedDetails,
-			Total:     total,
-		},
-	})
 
 	var chargeMsg sockets.WSMessage
 	if err = conn.ReadJSON(&chargeMsg); err != nil {
