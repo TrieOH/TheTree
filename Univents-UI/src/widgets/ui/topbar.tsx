@@ -16,7 +16,6 @@ const LABELS: Record<string, string> = {
   events: "Eventos",
   editions: "Edições",
   activities: "Atividades",
-  tickets: "Ingressos",
   products: "Produtos",
   checkpoints: "Checkpoints",
   participants: "Participantes",
@@ -27,11 +26,17 @@ const LABELS: Record<string, string> = {
 function useCrumbs() {
   const { location } = useRouterState()
   const segments = location.pathname.split("/").filter(Boolean)
-  return segments.map((seg, i) => ({
-    label: LABELS[seg] ?? (seg.length > 20 ? `#${seg.slice(0, 6)}…` : seg),
-    href: "/" + segments.slice(0, i + 1).join("/"),
-    isLast: i === segments.length - 1,
-  }))
+
+  return segments.map((seg, i) => {
+    const isId = seg.length > 20 || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg)
+
+    return {
+      label: LABELS[seg] ?? (isId ? `#${seg.slice(0, 6)}…` : seg),
+      href: "/" + segments.slice(0, i + 1).join("/"),
+      isLast: i === segments.length - 1,
+      isClickable: !isId && i !== segments.length - 1
+    }
+  })
 }
 
 export function AppTopbar() {
@@ -47,7 +52,7 @@ export function AppTopbar() {
             <Fragment key={crumb.href}>
               {i > 0 && <BreadcrumbSeparator />}
               <BreadcrumbItem>
-                {crumb.isLast ? (
+                {!crumb.isClickable ? (
                   <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink render={<Link to={crumb.href} />}>
