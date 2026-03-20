@@ -54,7 +54,7 @@ export const getEventsFn = createClientOnlyFn(async () => {
 export const eventsQueryOptions = () => {
   return queryOptions({
     queryKey: ['events', 'public'],
-    queryFn: getOwnEventsFn,
+    queryFn: getEventsFn,
   })
 }
 
