@@ -15,11 +15,12 @@ type ChargeRequest struct {
 	ApplicationFee  float64
 	SellerToken     string
 	IntentID        uuid.UUID
+	OrderID         string
 }
 
 type ChargeResult struct {
-	ProviderPaymentID string
-	Status            IntentStatus
+	OrderID string
+	Status  IntentStatus
 }
 
 type PaymentProvider interface {

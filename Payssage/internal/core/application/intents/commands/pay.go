@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -66,9 +67,17 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		)
 	}
 
-	credential, err := uc.credentials.GetByID(ctx, input.SellerCredentialID)
-	if err != nil {
-		return nil, err
+	var token string
+	var credential *domain.ProviderCredential
+	if viper.GetBool("TEST_MODE") {
+		token = viper.GetString("MP_TEST_ACCESS_TOKEN")
+	} else {
+		credential, err = uc.credentials.GetByID(ctx, input.SellerCredentialID)
+		if err != nil {
+			return nil, err
+		}
+
+		token = credential.Credentials.AccessToken
 	}
 
 	marketplaceConfig, err := uc.marketplace.GetByProvider(ctx, workspace.ID, intent.Provider)
@@ -80,7 +89,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 	amountInUnits := float64(intent.Amount) / 100.0
 
 	result, err := provider.Charge(ctx, domain.ChargeRequest{
-		SellerToken:     credential.Credentials.AccessToken,
+		SellerToken:     token,
 		Installments:    input.Installments,
 		CardToken:       input.CardToken,
 		PayerEmail:      input.PayerEmail,
@@ -96,7 +105,7 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 		return nil, errx.Internal("payment").SetMessage("charge failed").SetCause(err)
 	}
 
-	updated, err := uc.intents.Pay(ctx, intentID, result.ProviderPaymentID, result.Status)
+	updated, err := uc.intents.Pay(ctx, intentID, result.OrderID, result.Status)
 	if err != nil {
 		return nil, err
 	}

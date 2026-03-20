@@ -16,7 +16,7 @@ import (
 
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
-	"github.com/mercadopago/sdk-go/pkg/payment"
+	"github.com/mercadopago/sdk-go/pkg/order"
 	"github.com/mercadopago/sdk-go/pkg/user"
 	"go.uber.org/zap"
 )
@@ -115,34 +115,28 @@ func (p *MercadoPagoProvider) Charge(ctx context.Context, req domain.ChargeReque
 		return nil, err
 	}
 
-	client := payment.NewClient(cfg)
-	resource, err := client.Create(ctx, payment.Request{
-		ExternalReference: "tp_" + req.IntentID.String(),
-		ApplicationFee:    req.ApplicationFee,
-		Installments:      req.Installments,
-		TransactionAmount: req.Amount,
-		Token:             req.CardToken,
-		PaymentMethodID:   req.PaymentMethodID,
-		Payer: &payment.PayerRequest{
-			Email: req.PayerEmail,
-		},
-	})
+	client := order.NewClient(cfg)
+	processedOrder, err := client.Process(ctx, req.OrderID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &domain.ChargeResult{
-		ProviderPaymentID: fmt.Sprintf("%d", resource.ID),
-		Status:            mapMPStatus(resource.Status),
+		OrderID: processedOrder.ID,
+		Status:  mapMPStatus(processedOrder.StatusDetail),
 	}, nil
 }
 
 func mapMPStatus(status string) domain.IntentStatus {
 	switch status {
-	case "approved":
+	case "accredited":
 		return domain.IntentStatusSucceeded
-	case "rejected":
-		return domain.IntentStatusFailed
+	case "waiting_capture":
+		return domain.IntentStatusPending
+	case "pending_review_manual":
+		return domain.IntentStatusPending
+	case "in_process":
+		return domain.IntentStatusPending
 	default:
 		return domain.IntentStatusPending
 	}
