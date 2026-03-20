@@ -43,7 +43,7 @@ export function AppTopbar() {
   const crumbs = useCrumbs()
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-sidebar-border bg-background px-4">
+    <header className="sticky top-0 z-50 flex h-12 shrink-0 items-center gap-3 border-b border-sidebar-border bg-background/95 backdrop-blur-sm px-4">
       <SidebarTrigger />
       <Separator orientation="vertical" className="h-4" />
       <Breadcrumb>

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, Link } from '@tanstack/react-router'
 import { useAuth } from '@soramux/node-auth-sdk/react'
 import { useQuery } from '@tanstack/react-query'
 import { FAQSection } from './FAQSection'
@@ -119,13 +119,15 @@ export function ParticipantView() {
         </div>
       </section>
 
-      {/* Grid de Eventos */}
       <section id="trending" className="space-y-6 md:space-y-8 scroll-mt-20">
         <div className="flex justify-between items-end border-b border-border pb-3 md:pb-4">
           <h2 className="text-lg md:text-2xl font-medium text-foreground">Em Alta</h2>
-          <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/events"
+            className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
             Ver Todos
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -167,7 +169,6 @@ export function ParticipantView() {
         </div>
       </section>
 
-      {/* Como Funciona */}
       <section className="space-y-8 md:space-y-12">
         <div className="text-center">
           <h2 className="text-2xl md:text-4xl font-semibold text-foreground mb-2">Como funciona</h2>
@@ -192,7 +193,7 @@ export function ParticipantView() {
         </div>
       </section>
 
-      {/* FAQ com Collapsible */}
+      {/* FAQ */}
       <section className="max-w-2xl mx-auto space-y-6 md:space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-2xl md:text-3xl font-semibold text-foreground">Perguntas frequentes</h2>
@@ -202,7 +203,6 @@ export function ParticipantView() {
         <FAQSection items={faqs} />
       </section>
 
-      {/* CTA Final */}
       <section className="bg-muted rounded-2xl md:rounded-3xl p-6 md:p-12 lg:p-16 text-center space-y-4 md:space-y-6">
         <h2 className="text-xl md:text-3xl font-semibold text-foreground">
           Seu próximo evento te espera
