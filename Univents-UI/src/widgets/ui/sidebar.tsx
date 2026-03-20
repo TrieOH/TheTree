@@ -98,8 +98,6 @@ function PublicNavItem({ item }: { item: (typeof publicNav)[number] }) {
   )
 }
 
-
-// ✅ Componente separado para cada child do adminNav — hooks no topo do componente
 function NavSubItem({
   child,
   eventId,
@@ -203,7 +201,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader className="h-12 justify-center items-center border-b border-sidebar-border">
+      <SidebarHeader
+        className={cn(
+          "h-12 justify-center items-center border-b",
+          "border-sidebar-border"
+        )}
+      >
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
