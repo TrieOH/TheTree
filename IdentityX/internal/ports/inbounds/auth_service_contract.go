@@ -49,6 +49,11 @@ type ProjectLoginInput struct {
 	Agent     string
 }
 
+type ProjectLogoutInput struct {
+	ProjectID          uuid.UUID
+	RefreshTokenCookie *http.Cookie
+}
+
 type RefreshInput struct {
 	RefreshCookie *http.Cookie
 	Agent         string

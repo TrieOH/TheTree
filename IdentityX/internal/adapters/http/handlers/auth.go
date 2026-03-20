@@ -333,6 +333,46 @@ func (handler *AuthHandler) ProjectLogin(w http.ResponseWriter, r *http.Request)
 	}).Send(w)
 }
 
+// ProjectLogout godoc
+// @Summary Logs out a project user
+// @Description Logs out an authenticated project user by revoking their GoAuth session.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: refresh_token=yyy"
+// @Success 200 {object} object "Successfully logged out"
+// @Failure 401 {object} ErrorResponse "Unauthorized: User not authenticated"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /projects/{project_id}/logout [post]
+func (handler *AuthHandler) ProjectLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	projectID, rs := getUUID(r, "project_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	refreshTokenCookie, err := r.Cookie("refresh_token")
+	if err != nil || refreshTokenCookie.Value == "" {
+		resp.Unauthorized().WithMsg("missing refresh_token cookie").Send(w)
+		return
+	}
+
+	in := inbounds.ProjectLogoutInput{
+		ProjectID:          projectID,
+		RefreshTokenCookie: refreshTokenCookie,
+	}
+
+	err = handler.auth.LogoutProjectUser(ctx, in)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Logged out").Send(w)
+}
+
 // Verify godoc
 // @Summary Verify user email
 // @Description Verifies a user's email address using a verification token.

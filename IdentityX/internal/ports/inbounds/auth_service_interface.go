@@ -12,6 +12,7 @@ type AuthService interface {
 	Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error)
 	RegisterProjectUser(ctx context.Context, in ProjectRegisterInput) error
 	LoginProjectUser(ctx context.Context, in ProjectLoginInput) (*UserTokensOutput, error)
+	LogoutProjectUser(ctx context.Context, in ProjectLogoutInput) error
 	Verify(ctx context.Context, token string) error
 	ResendVerificationEmail(ctx context.Context) error
 	ForgotPassword(ctx context.Context, in ForgotPasswordInput) error
