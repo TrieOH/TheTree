@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/only-throw-error */
 import { redirect } from '@tanstack/react-router'
 import type { AnySchema, ParsedLocation } from '@tanstack/react-router'
 import type { useAuth } from '@soramux/node-auth-sdk/react';
@@ -10,17 +11,14 @@ interface BeforeLoadArgs {
 export const requireAuth = ({ context, location }: BeforeLoadArgs) => {
   if (context.auth?.isAuthenticated === false) {
     throw redirect({
-      to: '/',
+      to: '/auth',
       search: { redirect: location.pathname, }
     })
   }
 }
 
-export const requireGuest = ({ context, location }: BeforeLoadArgs) => {
+export const requireGuest = ({ context }: BeforeLoadArgs) => {
   if (context.auth?.isAuthenticated === true) {
-    throw redirect({
-      to: '/admin/events',
-      search: { redirect: location.pathname, }
-    })
+    throw redirect({ to: '/' })
   }
 }

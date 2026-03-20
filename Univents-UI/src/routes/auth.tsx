@@ -29,7 +29,7 @@ function App() {
     await handleLoginSuccess(search.redirect)
   }
 
-  const handleSignUpSuccess = async () => {
+  const handleSignUpSuccess = () => {
     setIsLogin(true);
     toast.success("Account successfully created!")
   }
@@ -56,7 +56,7 @@ function App() {
       ) : (
         <SignUp
           loginRedirect={() => { setIsLogin(true); }}
-          onSuccess={handleSignUpSuccess}
+          onSuccess={async () => { handleSignUpSuccess() }}
           onFailed={handleFailure}
         />
       )}

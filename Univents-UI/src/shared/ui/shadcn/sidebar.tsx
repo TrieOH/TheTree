@@ -1,9 +1,9 @@
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { cva  } from "class-variance-authority"
+import { cva } from "class-variance-authority"
 import { PanelLeftIcon } from "lucide-react"
-import type {VariantProps} from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
 
 import { useIsMobile } from "@/shared/hooks/use-mobile"
 import { cn } from "@/shared/lib/utils"
@@ -89,7 +89,7 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+    isMobile ? setOpenMobile((mOpen) => !mOpen) : setOpen((altOpen) => !altOpen);
   }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.
