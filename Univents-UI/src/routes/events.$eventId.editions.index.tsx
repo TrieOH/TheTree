@@ -8,10 +8,10 @@ import {
   X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { cn } from '@/shared/lib/utils'
 import { EditionCard } from '@/features/editions/ui/EditionCard'
 import { allEditionsQueryOptions } from '@/features/editions/api'
-import { useSuspenseQuery } from '@tanstack/react-query'
 
 const statusFilters = [
   { value: 'all', label: 'Todos' },
@@ -32,8 +32,10 @@ const typeFilters = [
 
 export const Route = createFileRoute('/events/$eventId/editions/')({
   component: EventEditionsPage,
-  loader: ({ context: ctx, params }) => {
-    ctx.queryClient.ensureQueryData(allEditionsQueryOptions(params.eventId))
+  loader: async ({ context: ctx, params }) => {
+    await ctx.queryClient.ensureQueryData(
+      allEditionsQueryOptions(params.eventId)
+    )
   },
 })
 

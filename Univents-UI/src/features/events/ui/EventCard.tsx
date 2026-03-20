@@ -1,8 +1,8 @@
 import { motion } from 'motion/react'
-import type { EventI } from '../model'
 import { useNavigate } from '@tanstack/react-router'
-import { cn } from '@/shared/lib/utils'
 import { ArrowUpRight } from 'lucide-react'
+import type { EventI } from '../model'
+import { cn } from '@/shared/lib/utils'
 
 interface EventCardProps {
   event: EventI
@@ -14,13 +14,13 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
   const navigate = useNavigate()
 
   const handleClick = () => {
-    navigate({
+    void navigate({
       to: '/events/$eventId/editions',
       params: { eventId: event.id }
     })
   }
 
-  const hasVisual = event.banner_url || event.logo_url
+  const hasVisual = Boolean(event.banner_url ?? event.logo_url)
 
   const createdDate = new Date(event.created_at).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -45,12 +45,16 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
       )}
       role="link"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          handleClick();
+        }
+      }}
     >
       <div className="aspect-4/3 rounded-t-lg overflow-hidden relative bg-muted">
         {hasVisual ? (
           <img
-            src={event.banner_url || event.logo_url!}
+            src={event.banner_url ?? event.logo_url ?? ""}
             alt=""
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             loading={index < 4 ? "eager" : "lazy"}
@@ -59,7 +63,7 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-muted to-muted/50">
             <div className="w-20 h-20 rounded-full border-2 border-dashed border-border/50 flex items-center justify-center">
               <span className="text-2xl font-semibold text-muted-foreground/30">
-                {event.acronym || event.name.charAt(0)}
+                {event.acronym ?? event.name.charAt(0)}
               </span>
             </div>
           </div>

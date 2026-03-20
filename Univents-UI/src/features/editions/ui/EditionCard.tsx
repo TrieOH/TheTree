@@ -10,8 +10,8 @@ import {
   CalendarDays,
   HashIcon,
 } from 'lucide-react'
-import { cn } from '@/shared/lib/utils'
 import type { EditionI } from '../model'
+import { cn } from '@/shared/lib/utils'
 
 const typeIcons = {
   year: CalendarDays,
@@ -41,7 +41,7 @@ interface EditionCardProps {
 
 export function EditionCard({ edition, eventId, index = 0, className }: EditionCardProps) {
   const status = statusConfig[edition.status]
-  const TypeIcon = typeIcons[edition.type] || Sparkles
+  const TypeIcon = typeIcons[edition.type]
 
   const formatDate = () => {
     return new Date(edition.starts_at).toLocaleDateString('pt-BR', {
@@ -51,7 +51,7 @@ export function EditionCard({ edition, eventId, index = 0, className }: EditionC
     })
   }
 
-  const hasVisual = edition.banner_url || edition.logo_url
+  const hasVisual = Boolean(edition.banner_url ?? edition.logo_url)
 
   return (
     <TanstackLink
@@ -75,7 +75,7 @@ export function EditionCard({ edition, eventId, index = 0, className }: EditionC
         <div className="aspect-4/3 bg-muted relative overflow-hidden">
           {hasVisual ? (
             <img
-              src={edition.banner_url || edition.logo_url!}
+              src={edition.banner_url ?? edition.logo_url ?? ""}
               alt=""
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading={index < 2 ? "eager" : "lazy"}
