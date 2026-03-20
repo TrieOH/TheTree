@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useAuth } from "@soramux/node-auth-sdk/react"
 import {
+  BarChart3,
   BookOpen,
   Calendar,
   ChevronRight,
@@ -71,6 +72,7 @@ const publicNav: NavItemConfig[] = [
     ],
   },
   { label: "Blog", icon: BookOpen, to: "/blog", exact: false },
+  { label: "Comparativo", icon: BarChart3, to: "/comparative", exact: true },
   { label: "Sobre", icon: Info, to: "/about", exact: true },
 ]
 
