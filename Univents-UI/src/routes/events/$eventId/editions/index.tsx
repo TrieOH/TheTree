@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   CalendarX,
@@ -61,13 +61,13 @@ function EventEditionsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 h-14">
             <div className="flex items-center gap-3">
-              <a
-                href="/events"
+              <Link
+                to="/events"
                 className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-colors"
                 aria-label="Voltar para eventos"
               >
                 <ArrowLeft className="w-5 h-5 text-muted-foreground" />
-              </a>
+              </Link>
               <h1 className="text-lg md:text-xl font-semibold text-foreground">
                 Edições
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -204,7 +204,6 @@ function EventEditionsPage() {
         )}
       </AnimatePresence>
 
-      {/* Conteúdo */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {filteredEditions.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
