@@ -37,6 +37,15 @@ type ConfirmPaymentRequest struct {
 }
 
 type SubmitPaymentPayload struct {
+	CardToken          string `json:"card_token"`
+	PaymentMethodID    string `json:"payment_method_id"`
+	PaymentMethodType  string `json:"payment_method_type"`
+	Installments       int    `json:"installments"`
+	SellerCredentialID string
+	PayerEmail         string
+}
+
+type OrderPayload struct {
 	CardToken       string `json:"card_token"`
 	PaymentMethodID string `json:"payment_method_id"`
 	Installments    int    `json:"installments"`

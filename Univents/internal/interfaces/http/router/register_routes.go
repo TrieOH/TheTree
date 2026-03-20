@@ -74,9 +74,9 @@ func registerTicketsRoutes(
 	h *tickets.TicketsHandler,
 	authMW *middleware.AuthMiddleware,
 ) {
+	r.Get("/events/{event_id}/editions/{edition_id}/tickets", h.List)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
-		r.Get("/events/{event_id}/editions/{edition_id}/tickets", h.List)
 		r.Post("/events/{event_id}/editions/{edition_id}/tickets", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions", h.AddPermission)
 		r.Delete("/events/{event_id}/editions/{edition_id}/tickets/{ticket_id}/permissions/{permission_id}", h.RemovePermission)
@@ -88,10 +88,10 @@ func registerActivitiesRoutes(
 	h *activityhttp.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
+	r.Get("/events/{event_id}/editions/{edition_id}/activities", h.List)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/activities", h.Create)
-		r.Get("/events/{event_id}/editions/{edition_id}/activities", h.List)
 		r.Get("/events/{event_id}/editions/{edition_id}/activities/admin", h.ListAdmin)
 		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish", h.Publish)
 		r.Post("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/register", h.Register)
@@ -121,11 +121,11 @@ func registerProductsRoutes(
 ) {
 	r.Post("/webhooks/payments", h.WebhookHandler)
 	r.Get("/events/{event_id}/editions/{edition_id}/products/purchase", h.Purchase) // WS upgrade
+	r.Get("/events/{event_id}/editions/{edition_id}/products", h.List)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Post("/events/{event_id}/editions/{edition_id}/products", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/products/{product_id}/publish", h.Publish)
-		r.Get("/events/{event_id}/editions/{edition_id}/products", h.List)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/admin", h.ListAdmin)
 		r.Get("/purchases", h.ListUserPurchases)
 		r.Get("/purchases/{purchase_id}/items", h.ListPurchaseItems)

@@ -205,12 +205,46 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		}
 	}
 
+	var payMsg sockets.WSMessage
+	if err = conn.ReadJSON(&payMsg); err != nil {
+		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, editionID, updates)
+		}
+		return nil
+	}
+
+	if payMsg.Type != "submit_payment" {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
+		return nil
+	}
+
+	payloadBytes, err := json.Marshal(payMsg.Payload)
+	if err != nil {
+		return err
+	}
+
+	var payReq dtos.SubmitPaymentPayload
+	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
+		return nil
+	}
+
 	// ── Phase 4: payment intent (no locks held) ───────────────────────────────
 	intent, err := uc.payments.CreateIntent(ctx, paymentsSDK.CreateIntentRequest{
-		Amount:   int64(total),
-		Currency: "brl",
-		Provider: viper.GetString("TRIEPAYMENTS_PROVIDER"),
-		Metadata: json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
+		Amount:             int64(total),
+		Currency:           "brl",
+		Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
+		Metadata:           json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
+		PaymentMethodID:    payReq.PaymentMethodID,
+		Installments:       payReq.Installments,
+		CardToken:          payReq.CardToken,
+		PaymentMethodType:  payReq.PaymentMethodType,
+		SellerCredentialID: payReq.SellerCredentialID,
+		PayerEmail:         payReq.PayerEmail,
 	})
 	if err != nil {
 		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
@@ -305,23 +339,23 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		},
 	})
 
-	var payMsg sockets.WSMessage
-	if err = conn.ReadJSON(&payMsg); err != nil {
+	var chargeMsg sockets.WSMessage
+	if err = conn.ReadJSON(&chargeMsg); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment"})
 		return nil
 	}
 
-	if payMsg.Type != "submit_payment" {
+	if chargeMsg.Type != "submit_payment" {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
 		return nil
 	}
 
-	payloadBytes, err := json.Marshal(payMsg.Payload)
+	payloadBytes, err = json.Marshal(chargeMsg.Payload)
 	if err != nil {
 		return err
 	}
 
-	var payReq dtos.SubmitPaymentPayload
+	var chargeReq dtos.SubmitPaymentPayload
 	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
 		return nil
@@ -330,9 +364,9 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
 
 	if _, err = uc.payments.PayIntent(ctx, paymentIntentID, paymentsSDK.PayIntentRequest{
-		CardToken:       payReq.CardToken,
-		PaymentMethodID: payReq.PaymentMethodID,
-		Installments:    payReq.Installments,
+		CardToken:       chargeReq.CardToken,
+		PaymentMethodID: chargeReq.PaymentMethodID,
+		Installments:    chargeReq.Installments,
 		PayerEmail:      userEmail,
 	}); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": mapPaymentError()}})
