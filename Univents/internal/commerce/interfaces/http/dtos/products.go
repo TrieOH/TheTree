@@ -41,8 +41,8 @@ type SubmitPaymentPayload struct {
 	PaymentMethodID    string `json:"payment_method_id"`
 	PaymentMethodType  string `json:"payment_method_type"`
 	Installments       int    `json:"installments"`
-	SellerCredentialID string
-	PayerEmail         string
+	SellerCredentialID string `json:"seller_credential_id"`
+	PayerEmail         string `json:"payer_email"`
 }
 
 type OrderPayload struct {
