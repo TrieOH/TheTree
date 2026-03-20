@@ -73,7 +73,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <AuthContextUpdater>
             <SidebarProvider>
               <AppSidebar />
-              <SidebarInset className='m-0! rounded-none!'>
+              <SidebarInset className='m-0! rounded-none! min-w-[320px]'>
                 <AppTopbar />
 
                 <PostHogProvider>
