@@ -1,82 +1,11 @@
 import { motion } from 'motion/react'
+import { useNavigate } from '@tanstack/react-router'
+import { useAuth } from '@soramux/node-auth-sdk/react'
+import { useQuery } from '@tanstack/react-query'
 import { FAQSection } from './FAQSection'
-import type { EventI } from '@/features/events/model'
 import { EventCard } from '@/features/events/ui/EventCard'
-
-const mockEvents: EventI[] = [
-  {
-    id: '1',
-    owner_id: 'user-1',
-    organization_id: null,
-    goauth_scope_id: 'scope-1',
-    name: 'Show ao Vivo',
-    acronym: null,
-    slug: 'show-ao-vivo',
-    tagline: 'Uma noite inesquecível',
-    description: 'O melhor show do ano com artistas consagrados',
-    is_series: false,
-    editions_count: 1,
-    logo_url: null,
-    banner_url: null,
-    has_gallery: false,
-    gallery_urls: [],
-    contact_email: 'contato@show.com',
-    social_links: null,
-    status: 'active',
-    created_by: 'user-1',
-    created_at: '2026-03-15T10:00:00Z',
-    updated_at: '2026-03-15T10:00:00Z',
-    deleted_at: null,
-  },
-  {
-    id: '2',
-    owner_id: 'user-2',
-    organization_id: 'org-1',
-    goauth_scope_id: 'scope-2',
-    name: 'Festival de Jazz',
-    acronym: 'FJ2026',
-    slug: 'festival-jazz-2026',
-    tagline: 'Música boa em todo lugar',
-    description: 'O maior festival de jazz da região',
-    is_series: true,
-    editions_count: 5,
-    logo_url: null,
-    banner_url: null,
-    has_gallery: true,
-    gallery_urls: [],
-    contact_email: 'jazz@festival.com',
-    social_links: { instagram: '@jazzfest' },
-    status: 'active',
-    created_by: 'user-2',
-    created_at: '2026-03-22T14:00:00Z',
-    updated_at: '2026-03-22T14:00:00Z',
-    deleted_at: null,
-  },
-  {
-    id: '3',
-    owner_id: 'user-3',
-    organization_id: null,
-    goauth_scope_id: 'scope-3',
-    name: 'Tech Conference',
-    acronym: 'TC26',
-    slug: 'tech-conference-2026',
-    tagline: 'O futuro da tecnologia',
-    description: 'Conferência sobre inovação e tecnologia',
-    is_series: false,
-    editions_count: 1,
-    logo_url: null,
-    banner_url: null,
-    has_gallery: false,
-    gallery_urls: [],
-    contact_email: 'tech@conf.com',
-    social_links: null,
-    status: 'active',
-    created_by: 'user-3',
-    created_at: '2026-04-05T09:00:00Z',
-    updated_at: '2026-04-05T09:00:00Z',
-    deleted_at: null,
-  },
-]
+import { eventsQueryOptions } from '@/features/events/api'
+import { Skeleton } from '@/shared/ui/shadcn/skeleton'
 
 const features = [
   {
@@ -138,7 +67,34 @@ const faqs = [
   },
 ]
 
+function EventCardSkeleton() {
+  return (
+    <div className="space-y-3 md:space-y-4">
+      <Skeleton className="aspect-4/3 rounded-xl md:rounded-2xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 md:h-5 w-3/4" />
+        <Skeleton className="h-3 md:h-4 w-1/2" />
+        <Skeleton className="h-3 w-1/3" />
+      </div>
+    </div>
+  )
+}
+
 export function ParticipantView() {
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+
+  const { data: events = [], isLoading } = useQuery(eventsQueryOptions());
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) void navigate({ to: '/' })
+    else void navigate({ to: '/auth' })
+  }
+
+  const handleExplore = () => {
+    document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-20 md:space-y-32">
       {/* Hero */}
@@ -148,17 +104,23 @@ export function ParticipantView() {
           e aproveite cada momento sem complicação.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center pt-2 md:pt-4">
-          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
+          <button
+            onClick={handleGetStarted}
+            className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
             Criar conta grátis
           </button>
-          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors">
+          <button
+            onClick={handleExplore}
+            className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors"
+          >
             Explorar eventos
           </button>
         </div>
       </section>
 
       {/* Grid de Eventos */}
-      <section className="space-y-6 md:space-y-8">
+      <section id="trending" className="space-y-6 md:space-y-8 scroll-mt-20">
         <div className="flex justify-between items-end border-b border-border pb-3 md:pb-4">
           <h2 className="text-lg md:text-2xl font-medium text-foreground">Em Alta</h2>
           <a href="#" className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -167,9 +129,15 @@ export function ParticipantView() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {mockEvents.map((event, idx) => (
-            <EventCard key={event.id} event={event} index={idx} />
-          ))}
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, idx) => (
+              <EventCardSkeleton key={idx} />
+            ))
+          ) : (
+            events.map((event, idx) => (
+              <EventCard key={event.id} event={event} index={idx} />
+            ))
+          )}
         </div>
       </section>
 
@@ -243,10 +211,16 @@ export function ParticipantView() {
           Crie sua conta gratuita e descubra eventos incríveis acontecendo perto de você.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
+          <button
+            onClick={handleGetStarted}
+            className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
             Criar conta grátis
           </button>
-          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors">
+          <button
+            onClick={handleExplore}
+            className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors"
+          >
             Explorar eventos
           </button>
         </div>

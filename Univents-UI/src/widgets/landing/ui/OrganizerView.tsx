@@ -38,7 +38,7 @@ const steps = [
 const faqs = [
   {
     question: "Como funciona a taxa sobre vendas?",
-    answer: "Cobramos apenas 10% sobre cada ingresso vendido. Não há taxas de setup, mensalidade mínima ou custos ocultos. Quanto mais você vende, melhores condições podemos oferecer."
+    answer: "Cobramos apenas 8% sobre cada ingresso vendido. Não há taxas de setup, mensalidade mínima ou custos ocultos. Quanto mais você vende, melhores condições podemos oferecer."
   },
   {
     question: "Preciso pagar alguma mensalidade?",
@@ -63,6 +63,24 @@ const faqs = [
 ]
 
 export function OrganizerView() {
+  const now = new Date()
+  const currentMonthDay = now.getDate()
+
+  // Calculate Monday of current week
+  const diff = now.getDay() === 0 ? -6 : 1 - now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diff)
+
+  const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((label, idx) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + idx)
+    return {
+      label,
+      date: d.getDate(),
+      isToday: d.getDate() === currentMonthDay && d.getMonth() === now.getMonth()
+    }
+  })
+
   return (
     <div className="max-w-5xl mx-auto space-y-20 md:space-y-32">
       {/* Hero */}
@@ -85,15 +103,15 @@ export function OrganizerView() {
       {/* Calendario Visual */}
       <section className="flex justify-center">
         <div className="flex gap-1 md:gap-2">
-          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, idx) => (
-            <div key={day} className="text-center">
+          {weekDays.map((day) => (
+            <div key={day.label} className="text-center">
               <div className={cn(
                 "w-10 h-10 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center text-xs md:text-sm font-medium mb-1 md:mb-2",
-                idx === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                day.isToday ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
               )}>
-                {idx + 10}
+                {day.date}
               </div>
-              <span className="text-[10px] md:text-xs text-muted-foreground">{day}</span>
+              <span className="text-[10px] md:text-xs text-muted-foreground">{day.label}</span>
             </div>
           ))}
         </div>
@@ -189,14 +207,14 @@ export function OrganizerView() {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Taxa da plataforma</span>
-              <span>- R$ 7,50</span>
+              <span>- R$ 12,00</span>
             </div>
             <div className="h-px bg-border my-2" />
             <div className="flex justify-between font-medium text-foreground">
               <span>Você recebe</span>
-              <span>R$ 142,50</span>
+              <span>R$ 138,00</span>
             </div>
-            <p className="text-xs text-muted-foreground/70 text-right">95% para você</p>
+            <p className="text-xs text-muted-foreground/70 text-right">92% para você</p>
           </div>
         </div>
       </section>
