@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { cn } from '@/shared/lib/utils'
 import { motion } from 'motion/react'
 import {
   Check,
@@ -14,6 +13,7 @@ import {
   ShoppingBag,
   ClipboardCheck
 } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
 
 export const Route = createFileRoute('/comparative')({
   component: ComparativoPage,

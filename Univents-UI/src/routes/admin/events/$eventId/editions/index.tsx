@@ -106,11 +106,11 @@ function RouteComponent() {
     if (res.success) setRefresh(r => r + 1)
   }
 
-  const links = (editionId: string) => [
+  const links = () => [
     // { label: 'Atividades', to: '/admin/events/$eventId/editions/$editionId/activities' as const },
     // { label: 'Ingressos', to: '/admin/events/$eventId/editions/$editionId/tickets' as const },
     { label: 'Produtos', to: '/events/$eventId/editions/$editionId/products' as const },
-    { label: 'Checkpoints', to: '/admin/events/$eventId/editions/$editionId/checkpoints/' as const },
+    { label: 'Checkpoints', to: '/admin/events/$eventId/editions/$editionId/checkpoints' as const },
   ]
 
   return (
@@ -246,7 +246,7 @@ function RouteComponent() {
 
               {/* Sub-nav links */}
               <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50 flex-wrap">
-                {links(ed.id).map(({ label, to }) => (
+                {links().map(({ label, to }) => (
                   <Link
                     key={label}
                     to={to}
