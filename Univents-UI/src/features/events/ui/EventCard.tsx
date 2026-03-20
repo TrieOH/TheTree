@@ -35,7 +35,7 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
       transition={{ delay: index * 0.06, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       onClick={handleClick}
       className={cn(
-        "group relative cursor-pointer min-w-75",
+        "group relative cursor-pointer min-w-72",
         "bg-card rounded-lg",
         "border border-transparent hover:border-border",
         "transition-all duration-300 ease-out",

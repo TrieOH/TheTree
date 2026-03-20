@@ -14,9 +14,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TempIndexRouteImport } from './routes/temp/index'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
+import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events.$eventId.editions.index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events.$eventId.editions.$editionId.products'
 import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events.$eventId.editions.$editionId.checkout'
@@ -48,6 +50,11 @@ const TempIndexRoute = TempIndexRouteImport.update({
   path: '/temp/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -63,6 +70,12 @@ const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
   path: '/admin/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdEditionsIndexRoute =
+  EventsEventIdEditionsIndexRouteImport.update({
+    id: '/events/$eventId/editions/',
+    path: '/events/$eventId/editions/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
     id: '/admin/events/$eventId/editions/',
@@ -101,8 +114,10 @@ export interface FileRoutesByFullPath {
   '/rss.xml': typeof RssDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
+  '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
@@ -116,8 +131,10 @@ export interface FileRoutesByTo {
   '/rss.xml': typeof RssDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
+  '/events': typeof EventsIndexRoute
   '/temp': typeof TempIndexRoute
   '/admin/events': typeof AdminEventsIndexRoute
+  '/events/$eventId/editions': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
@@ -132,8 +149,10 @@ export interface FileRoutesById {
   '/rss.xml': typeof RssDotxmlRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
+  '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
@@ -149,8 +168,10 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/blog/$slug'
     | '/blog/'
+    | '/events/'
     | '/temp/'
     | '/admin/events/'
+    | '/events/$eventId/editions/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/'
@@ -164,8 +185,10 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/blog/$slug'
     | '/blog'
+    | '/events'
     | '/temp'
     | '/admin/events'
+    | '/events/$eventId/editions'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions'
@@ -179,8 +202,10 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/blog/$slug'
     | '/blog/'
+    | '/events/'
     | '/temp/'
     | '/admin/events/'
+    | '/events/$eventId/editions/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/'
@@ -195,8 +220,10 @@ export interface RootRouteChildren {
   RssDotxmlRoute: typeof RssDotxmlRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   TempIndexRoute: typeof TempIndexRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+  EventsEventIdEditionsIndexRoute: typeof EventsEventIdEditionsIndexRoute
   EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
@@ -241,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TempIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -260,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/events'
       fullPath: '/admin/events/'
       preLoaderRoute: typeof AdminEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId/editions/': {
+      id: '/events/$eventId/editions/'
+      path: '/events/$eventId/editions'
+      fullPath: '/events/$eventId/editions/'
+      preLoaderRoute: typeof EventsEventIdEditionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/$eventId/editions/': {
@@ -307,8 +348,10 @@ const rootRouteChildren: RootRouteChildren = {
   RssDotxmlRoute: RssDotxmlRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
+  EventsIndexRoute: EventsIndexRoute,
   TempIndexRoute: TempIndexRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
+  EventsEventIdEditionsIndexRoute: EventsEventIdEditionsIndexRoute,
   EventsEventIdEditionsEditionIdCheckoutRoute:
     EventsEventIdEditionsEditionIdCheckoutRoute,
   EventsEventIdEditionsEditionIdProductsRoute:
