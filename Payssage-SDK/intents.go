@@ -7,10 +7,16 @@ import (
 )
 
 type CreateIntentRequest struct {
-	Amount   int64           `json:"amount"`
-	Currency string          `json:"currency"`
-	Provider string          `json:"provider"`
-	Metadata json.RawMessage `json:"metadata,omitempty"`
+	Amount             int64           `json:"amount"`
+	Currency           string          `json:"currency"`
+	Provider           string          `json:"provider"`
+	Metadata           json.RawMessage `json:"metadata,omitempty"`
+	PaymentMethodID    string          `json:"payment_method_id,omitempty"`
+	Installments       int             `json:"installments,omitempty"`
+	CardToken          string          `json:"card_token,omitempty"`
+	PaymentMethodType  string          `json:"payment_method_type,omitempty"`
+	SellerCredentialID string          `json:"seller_credential_id,omitempty"`
+	PayerEmail         string          `json:"payer_email,omitempty"`
 }
 
 func (c *Client) CreateIntent(ctx context.Context, req CreateIntentRequest) (*Intent, error) {
@@ -46,10 +52,10 @@ func (c *Client) CancelIntent(ctx context.Context, intentID string) (*Intent, er
 }
 
 type PayIntentRequest struct {
-	CardToken       string `json:"card_token"`
-	PaymentMethodID string `json:"payment_method_id"`
-	Installments    int    `json:"installments"`
-	PayerEmail      string `json:"payer_email"`
+	CardToken       string `json:"card_token,omitempty"`
+	PaymentMethodID string `json:"payment_method_id,omitempty"`
+	Installments    int    `json:"installments,omitempty"`
+	PayerEmail      string `json:"payer_email,omitempty"`
 }
 
 func (c *Client) PayIntent(ctx context.Context, intentID string, req PayIntentRequest) (*Intent, error) {

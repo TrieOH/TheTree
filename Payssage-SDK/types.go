@@ -56,6 +56,7 @@ type Intent struct {
 	Provider          string          `json:"provider"`
 	ProviderPaymentID *string         `json:"provider_payment_id"`
 	Metadata          json.RawMessage `json:"metadata"`
+	ExternalOrderID   string          `json:"external_order_id"`
 	CreatedAt         time.Time       `json:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at"`
 }
