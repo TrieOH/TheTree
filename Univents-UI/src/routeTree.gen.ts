@@ -25,6 +25,7 @@ import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/ad
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events/$eventId/editions/$editionId/products'
 import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events/$eventId/editions/$editionId/checkout'
 import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/index'
+import { Route as AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/checkpoints/index'
 import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId/editions/$editionId/callback.payment'
 
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
@@ -113,6 +114,12 @@ const AdminEventsEventIdEditionsEditionIdIndexRoute =
     path: '/admin/events/$eventId/editions/$editionId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute =
+  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport.update({
+    id: '/admin/events/$eventId/editions/$editionId/checkpoints/',
+    path: '/admin/events/$eventId/editions/$editionId/checkpoints/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute =
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport.update({
     id: '/admin/events/$eventId/editions/$editionId/callback/payment',
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  '/admin/events/$eventId/editions/$editionId/checkpoints/': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesByTo {
   '/events/$eventId/editions/$editionId': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  '/admin/events/$eventId/editions/$editionId/checkpoints': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -177,6 +186,7 @@ export interface FileRoutesById {
   '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  '/admin/events/$eventId/editions/$editionId/checkpoints/': typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
+    | '/admin/events/$eventId/editions/$editionId/checkpoints/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
+    | '/admin/events/$eventId/editions/$editionId/checkpoints'
   id:
     | '__root__'
     | '/'
@@ -236,6 +248,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
+    | '/admin/events/$eventId/editions/$editionId/checkpoints/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -256,6 +269,7 @@ export interface RootRouteChildren {
   EventsEventIdEditionsEditionIdIndexRoute: typeof EventsEventIdEditionsEditionIdIndexRoute
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
+  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute: typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -372,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/events/$eventId/editions/$editionId/checkpoints/': {
+      id: '/admin/events/$eventId/editions/$editionId/checkpoints/'
+      path: '/admin/events/$eventId/editions/$editionId/checkpoints'
+      fullPath: '/admin/events/$eventId/editions/$editionId/checkpoints/'
+      preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/events/$eventId/editions/$editionId/callback/payment': {
       id: '/admin/events/$eventId/editions/$editionId/callback/payment'
       path: '/admin/events/$eventId/editions/$editionId/callback/payment'
@@ -405,6 +426,8 @@ const rootRouteChildren: RootRouteChildren = {
     AdminEventsEventIdEditionsEditionIdIndexRoute,
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
     AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute,
+  AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute:
+    AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

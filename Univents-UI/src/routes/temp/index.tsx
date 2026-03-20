@@ -10,7 +10,7 @@ import type { ProductCreateI, ProductI } from '@/features/products/model'
 import type { CheckpointCreateI, CheckpointI } from '@/features/checkpoints/model'
 import { createEventFn, getOwnEventsFn, publishEventFn } from '@/features/events/api'
 import { createEditionFn, getAllAdminEditionsFn, publishEditionFn, disconnectPaymentAccountToEditionFn } from '@/features/editions/api'
-import { createActivityFn, getAllAdminActivitiesFn } from '@/features/activities/api'
+import { createActivityFn, getAllAdminActivitiesFn, publishActivityFn } from '@/features/activities/api'
 import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
 import { createProductFn, getAllAdminProductsFn, publishProductFn } from '@/features/products/api'
 import { createCheckpointFn, getAllCheckpointsFn } from '@/features/checkpoints/api'
@@ -1051,6 +1051,19 @@ function RouteComponent() {
                   <strong>Created At:</strong> {new Date(act.created_at).toLocaleDateString()} {new Date(act.created_at).toLocaleTimeString()}<br />
                   <strong>Updated At:</strong> {new Date(act.updated_at).toLocaleDateString()} {new Date(act.updated_at).toLocaleTimeString()}<br />
                   <strong>Deleted At:</strong> {act.deleted_at ? `${new Date(act.deleted_at).toLocaleDateString()} ${new Date(act.deleted_at).toLocaleTimeString()}` : 'N/A'}
+                  <button
+                    className="mt-2 block bg-purple-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
+                    disabled={act.status !== 'draft'}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (selectedEventId && selectedEditionId) {
+                        await publishActivityFn(selectedEventId, selectedEditionId, act.id);
+                        setActivityCreated(true);
+                      }
+                    }}
+                  >
+                    {act.status === 'draft' ? 'Publish Activity' : 'Published'}
+                  </button>
                 </li>
               ))}
             </ul>

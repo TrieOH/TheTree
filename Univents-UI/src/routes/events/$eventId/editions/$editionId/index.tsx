@@ -5,16 +5,14 @@ import { EditionHeader } from '@/features/editions/ui/EditionHeader'
 import { EditionTabs } from '@/features/editions/ui/EditionTab'
 import { OverviewTab } from '@/features/editions/ui/OverviewTab'
 import { ActivitiesTab } from '@/features/activities/ui/ActivitiesTab'
-import { CheckpointsTab } from '@/features/checkpoints/ui/CheckpointsTab'
 import { TicketsTab } from '@/features/tickets/ui/TicketsTab'
 import { editionQueryOptions } from '@/features/editions/api'
 import { allActivitiesQueryOptions } from '@/features/activities/api'
-import { allCheckpointsQueryOptions } from '@/features/checkpoints/api'
 import { allTicketsQueryOptions } from '@/features/tickets/api'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/shared/ui/shadcn/skeleton'
 
-type TabValue = 'overview' | 'activities' | 'checkpoints' | 'tickets'
+type TabValue = 'overview' | 'activities' | 'tickets'
 
 export const Route = createFileRoute('/events/$eventId/editions/$editionId/')({
   component: EditionDetailPage,
@@ -30,10 +28,6 @@ function EditionDetailPage() {
 
   const { data: activities = [] } = useQuery(
     allActivitiesQueryOptions(eventId, editionId)
-  );
-
-  const { data: checkpoints = [] } = useQuery(
-    allCheckpointsQueryOptions(eventId, editionId)
   );
 
   const { data: tickets = [] } = useQuery(
@@ -70,7 +64,6 @@ function EditionDetailPage() {
 
   const tabCounts = {
     activities: activities.filter(a => a.status === 'published').length,
-    checkpoints: checkpoints.length,
     tickets: tickets.length,
   }
 
@@ -98,9 +91,6 @@ function EditionDetailPage() {
             )}
             {activeTab === 'activities' && (
               <ActivitiesTab activities={activities} />
-            )}
-            {activeTab === 'checkpoints' && (
-              <CheckpointsTab checkpoints={checkpoints} />
             )}
             {activeTab === 'tickets' && (
               <TicketsTab tickets={tickets} eventId={eventId} editionId={editionId} />

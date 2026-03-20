@@ -110,7 +110,7 @@ function RouteComponent() {
     // { label: 'Atividades', to: '/admin/events/$eventId/editions/$editionId/activities' as const },
     // { label: 'Ingressos', to: '/admin/events/$eventId/editions/$editionId/tickets' as const },
     { label: 'Produtos', to: '/events/$eventId/editions/$editionId/products' as const },
-    // { label: 'Checkpoints', to: '/admin/events/$eventId/editions/$editionId/checkpoints' as const },
+    { label: 'Checkpoints', to: '/admin/events/$eventId/editions/$editionId/checkpoints/' as const },
   ]
 
   return (

@@ -1,13 +1,12 @@
 import { cn } from '@/shared/lib/utils'
 
-type TabValue = 'overview' | 'activities' | 'checkpoints' | 'tickets'
+type TabValue = 'overview' | 'activities' | 'tickets'
 
 interface EditionTabsProps {
   activeTab: TabValue
   onTabChange: (tab: TabValue) => void
   counts: {
     activities: number
-    checkpoints: number
     tickets: number
   }
 }
@@ -15,7 +14,6 @@ interface EditionTabsProps {
 const tabs = [
   { value: 'overview', label: 'Visão Geral' },
   { value: 'activities', label: 'Atividades', countKey: 'activities' as const },
-  { value: 'checkpoints', label: 'Checkpoints', countKey: 'checkpoints' as const },
   { value: 'tickets', label: 'Tickets', countKey: 'tickets' as const },
 ] as const
 
