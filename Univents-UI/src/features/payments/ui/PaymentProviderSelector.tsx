@@ -1,61 +1,20 @@
-import { Payment } from "@mercadopago/sdk-react"
-import type { PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
-
-import type { IPaymentFormData } from "@mercadopago/sdk-react/esm/bricks/payment/type";
-
-export type PaymentProviderType = "mercadopago";
+import { MercadoPagoForm } from "./MercadoPago";
+import type { PaymentProviderI, SubmitPaymentPayloadI } from "../model";
 
 interface PaymentProviderSelectorProps {
-  provider?: PaymentProviderType;
+  provider?: PaymentProviderI;
   amount: number;
-  handleSubmit: (data: PaymentPayload) => void
+  handleSubmit: (data: SubmitPaymentPayloadI) => void;
 }
-
 
 export function PaymentProviderSelector({
   provider = "mercadopago",
   amount,
-  handleSubmit
+  handleSubmit,
 }: PaymentProviderSelectorProps) {
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  const onSubmit = async (data: IPaymentFormData) => {
-    handleSubmit({
-      card_token: data.formData.token,
-      payment_method_id: data.formData.payment_method_id,
-      installments: data.formData.installments
-    })
-  };
-  const renderProvider = () => {
-    switch (provider) {
-      default:
-        return (
-          <Payment
-            initialization={{ amount: amount }}
-            onSubmit={onSubmit}
-            customization={{
-              paymentMethods: {
-                creditCard: "all",
-                mercadoPago: "all",
-                atm: "all",
-                debitCard: "all",
-                bankTransfer: "all",
-                prepaidCard: "all",
-              },
-              visual: {
-                hideFormTitle: true,
-                style: {
-                  customVariables: {
-                    formBackgroundColor: "transparent",
-                    baseColor: "var(--primary)",
-                  }
-                }
-              }
-            }}
-          />
-        );
-    }
-  };
-
-  return <div className="w-full">{renderProvider()}</div>;
+  switch (provider) {
+    default: <MercadoPagoForm amount={amount} handleSubmit={handleSubmit} />
+  }
+  return <MercadoPagoForm amount={amount} handleSubmit={handleSubmit} />
 }

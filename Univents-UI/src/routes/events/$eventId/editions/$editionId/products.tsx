@@ -9,6 +9,7 @@ import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
 import { allProductsQueryOptions } from "@/features/products/api";
 import { useInventoryStream } from "@/features/products/hooks/use-inventory-stream";
+import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 
 export const Route = createFileRoute("/events/$eventId/editions/$editionId/products")({
   component: ProductsPage,
@@ -52,6 +53,7 @@ function ProductsPage() {
       </div>
 
       <ProductList products={products} inventory={inventory} isLoading={isLoading} />
+      <PaymentProviderSelector amount={299} handleSubmit={() => { }} />
 
       {/* Cart Drawer */}
       <Cart

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import z from 'zod'
+import { toast } from 'sonner'
 import type { EditionI } from '@/features/editions/model'
 import {
   allAdminEditionsQueryOptions,
@@ -42,9 +43,8 @@ export const Route = createFileRoute(
               : ed
           )
       )
-      // toast.success('connected payment account to edition with success.')
-    }
-    // toast.error('Failed to connect payment account to edition.') // FIXME: This will run on else
+      toast.success('connected payment account to edition with success.')
+    } else toast.error('Failed to connect payment account to edition.')
     throw Route.redirect({
       to: '/admin/events/$eventId/editions/$editionId',
       params: { eventId, editionId }

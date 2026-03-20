@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle, Clock, Lock, Shield, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@soramux/node-auth-sdk/react";
-import type { BuyRequestItem, PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
+import type { BuyRequestItem } from "@/features/products/hooks/use-checkout-socket";
+import type { SubmitPaymentPayloadI } from "@/features/payments/model";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 import { useCheckoutSocket } from "@/features/products/hooks/use-checkout-socket";
@@ -13,8 +14,6 @@ export const Route = createFileRoute(
 )({
   component: CheckoutPage,
 });
-
-// ─── Timer ────────────────────────────────────────────────────────────────────
 
 function useCountdown(expiresAt: string | null) {
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -39,8 +38,6 @@ function useCountdown(expiresAt: string | null) {
 
   return { secondsLeft, formatted };
 }
-
-// ─── OrderSummary ─────────────────────────────────────────────────────────────
 
 function OrderSummary({ editionId, expiresAt }: { editionId: string; expiresAt: string | null }) {
   const { items, totalCents } = useCart(editionId);
@@ -88,8 +85,6 @@ function OrderSummary({ editionId, expiresAt }: { editionId: string; expiresAt: 
   );
 }
 
-// ─── CheckoutPage ─────────────────────────────────────────────────────────────
-
 function CheckoutPage() {
   const { eventId, editionId } = Route.useParams();
   const { totalCents, items } = useCart(editionId);
@@ -118,7 +113,7 @@ function CheckoutPage() {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
 
   const handleSubmitPayment = useCallback(
-    (payload: PaymentPayload) => { submitPayment(payload); },
+    (payload: SubmitPaymentPayloadI) => { submitPayment(payload); },
     [submitPayment],
   );
 

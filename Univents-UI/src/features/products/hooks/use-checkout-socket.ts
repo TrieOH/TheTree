@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getWebsocketAuthToken } from "../api";
+import type { SubmitPaymentPayloadI } from "@/features/payments/model";
 
 type ServerMessage =
   | { type: "reservation_failed"; payload: { unavailable: { product_id: string; name: string; reason: string }[] } }
@@ -72,12 +73,6 @@ const INITIAL: CheckoutState = {
 export interface BuyRequestItem {
   product_id: string;
   quantity: number;
-}
-
-export interface PaymentPayload {
-  card_token?: string;
-  payment_method_id: string;
-  installments?: number;
 }
 
 export function useCheckoutSocket(url: string) {
@@ -225,7 +220,7 @@ export function useCheckoutSocket(url: string) {
   }, [sendJSON]);
 
   const submitPayment = useCallback(
-    (payload: PaymentPayload) => {
+    (payload: SubmitPaymentPayloadI) => {
       if (wsRef.current?.readyState !== WebSocket.OPEN) {
         patch({ phase: "error", errorMessage: "Conexão perdida. Tente novamente." });
         return;
