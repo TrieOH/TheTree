@@ -49,6 +49,7 @@ func mapIntentFromDB(src *sqlc.Intent) *domain.Intent {
 		Metadata:          src.Metadata,
 		CreatedAt:         src.CreatedAt,
 		UpdatedAt:         src.UpdatedAt,
+		ExternalOrderID:   src.ExternalOrderID,
 	}
 }
 
@@ -57,14 +58,15 @@ func (repo *intentsRepo) Create(ctx context.Context, toCreate domain.Intent) (*d
 	defer span.End()
 
 	sqlcIntent, err := repo.queries(ctx).CreateIntent(ctx, sqlc.CreateIntentParams{
-		ID:           toCreate.ID,
-		WorkspaceID:  toCreate.WorkspaceID,
-		Amount:       toCreate.Amount,
-		Currency:     toCreate.Currency,
-		Status:       sqlc.IntentStatus(toCreate.Status),
-		ClientSecret: toCreate.ClientSecret,
-		Provider:     toCreate.Provider,
-		Metadata:     toCreate.Metadata,
+		ID:              toCreate.ID,
+		WorkspaceID:     toCreate.WorkspaceID,
+		Amount:          toCreate.Amount,
+		Currency:        toCreate.Currency,
+		Status:          sqlc.IntentStatus(toCreate.Status),
+		ClientSecret:    toCreate.ClientSecret,
+		Provider:        toCreate.Provider,
+		Metadata:        toCreate.Metadata,
+		ExternalOrderID: toCreate.ExternalOrderID,
 	})
 	if err != nil {
 		return nil, errx.FromDB(err, "intent")

@@ -10,6 +10,7 @@ export const IntentSchema = z.object({
     provider:            z.string(),
     provider_payment_id: z.string().nullable().optional(),
     metadata:            z.record(z.string(), z.any()).nullable(),
+    external_order_id:   z.string().uuid(),
     created_at:          z.string().datetime(),
     updated_at:          z.string().datetime(),
 })

@@ -25,6 +25,7 @@ services:
       ENV: ${ENV:-development}
 
       DISABLE_RATE_LIMIT: false
+      TEST_MODE: ${TEST_MODE:-false}
 
       REDIS_ADDR: ${REDIS_ADDR:-payments-redis:6379}
       REDIS_DB: ${REDIS_DB:-0}
@@ -39,6 +40,9 @@ services:
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
       MP_REDIRECT_URI: ${MP_REDIRECT_URI}
       MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
+
+      MP_TEST_ACCESS_TOKEN: ${MP_TEST_ACCESS_TOKEN}
+      MP_TEST_PUBLIC_KEY: ${MP_TEST_PUBLIC_KEY}
 
   payments-database:
     container_name: trie-payments-database

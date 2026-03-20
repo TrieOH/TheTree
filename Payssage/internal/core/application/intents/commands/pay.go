@@ -14,10 +14,11 @@ import (
 )
 
 type PayIntentInput struct {
-	CardToken       string
-	PaymentMethodID string
-	Installments    int
-	PayerEmail      string
+	CardToken          string
+	PaymentMethodID    string
+	Installments       int
+	PayerEmail         string
+	SellerCredentialID uuid.UUID
 }
 
 func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, input PayIntentInput) (*domain.Intent, error) {
@@ -60,12 +61,12 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 
 	provider, ok := uc.paymentProviders[intent.Provider]
 	if !ok {
-		return nil, errx.Invalid("provider").SetMessage(
-			fmt.Sprintf("payment provider '%s' is not supported", intent.Provider),
+		return nil, errx.Invalid("Provider").SetMessage(
+			fmt.Sprintf("payment Provider '%s' is not supported", intent.Provider),
 		)
 	}
 
-	credential, err := uc.credentials.GetSellerCredentialByProvider(ctx, workspace.ID, intent.Provider)
+	credential, err := uc.credentials.GetByID(ctx, input.SellerCredentialID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,15 +77,17 @@ func (uc *CommandService) PayIntent(ctx context.Context, intentID uuid.UUID, inp
 	}
 
 	applicationFee := float64(intent.Amount) * float64(marketplaceConfig.FeeBps) / 10000 / 100.0
+	amountInUnits := float64(intent.Amount) / 100.0
 
 	result, err := provider.Charge(ctx, domain.ChargeRequest{
-		Intent:          *intent,
-		CardToken:       input.CardToken,
-		PaymentMethodID: input.PaymentMethodID,
-		Installments:    input.Installments,
-		PayerEmail:      input.PayerEmail,
-		ApplicationFee:  applicationFee,
 		SellerToken:     credential.Credentials.AccessToken,
+		Installments:    input.Installments,
+		CardToken:       input.CardToken,
+		PayerEmail:      input.PayerEmail,
+		Amount:          amountInUnits,
+		PaymentMethodID: input.PaymentMethodID,
+		ApplicationFee:  applicationFee,
+		IntentID:        intent.ID,
 	})
 	if err != nil {
 		// Mark intent as failed so it can't be retried with a stale token

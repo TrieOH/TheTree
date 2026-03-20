@@ -1,6 +1,7 @@
 package workspaces_handler
 
 import (
+	"TriePayments/internal/core/application/intents/commands"
 	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/validation"
 	"net/http"
@@ -29,7 +30,20 @@ func (h *Handler) CreateIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	intent, err := h.commands.CreateIntent(r.Context(), req.Amount, req.Currency, req.Provider, req.Metadata)
+	in := commands.CreateIntentInput{
+		Amount:             req.Amount,
+		Currency:           req.Currency,
+		Provider:           req.Provider,
+		Metadata:           req.Metadata,
+		PaymentMethodID:    req.PaymentMethodID,
+		Installments:       req.Installments,
+		CardToken:          req.CardToken,
+		PaymentMethodType:  req.PaymentMethodType,
+		SellerCredentialID: req.SellerCredentialID,
+		PayerEmail:         req.PayerEmail,
+	}
+
+	intent, err := h.commands.CreateIntent(r.Context(), in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

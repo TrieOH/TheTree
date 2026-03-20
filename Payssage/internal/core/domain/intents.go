@@ -19,6 +19,7 @@ type Intent struct {
 	Provider          string          `json:"provider"`
 	ProviderPaymentID *string         `json:"provider_payment_id"`
 	Metadata          json.RawMessage `json:"metadata"`
+	ExternalOrderID   *string         `json:"external_order_id"`
 	CreatedAt         time.Time       `json:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at"`
 }
@@ -60,6 +61,10 @@ func NewIntent(workspaceID uuid.UUID, amount int64, currency, provider string, m
 	}
 
 	return i, nil
+}
+
+func (i *Intent) AddExtOrderID(id string) {
+	i.ExternalOrderID = &id
 }
 
 func (i *Intent) validate() error {

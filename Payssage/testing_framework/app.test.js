@@ -78,6 +78,7 @@ describe("intents", () => {
         expect(intent.status).toBe("pending")
         expect(intent.amount).toBe(createIntent.amount)
         expect(intent.currency).toBe(createIntent.currency)
+        console.log(intent.external_order_id)
     })
 
     test("create intent without metadata", async () => {

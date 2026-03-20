@@ -1,6 +1,6 @@
 -- name: CreateIntent :one
-INSERT INTO intents (id, workspace_id, amount, currency, status, client_secret, provider, metadata)
-VALUES ( $1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO intents (id, workspace_id, amount, currency, status, client_secret, provider, metadata, external_order_id)
+VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 -- name: GetIntentByID :one

@@ -116,18 +116,16 @@ func (p *MercadoPagoProvider) Charge(ctx context.Context, req domain.ChargeReque
 	}
 
 	client := payment.NewClient(cfg)
-
-	amountInUnits := float64(req.Intent.Amount) / 100.0
-
 	resource, err := client.Create(ctx, payment.Request{
-		TransactionAmount: amountInUnits,
+		ExternalReference: "tp_" + req.IntentID.String(),
+		ApplicationFee:    req.ApplicationFee,
+		Installments:      req.Installments,
+		TransactionAmount: req.Amount,
 		Token:             req.CardToken,
 		PaymentMethodID:   req.PaymentMethodID,
-		Installments:      req.Installments,
 		Payer: &payment.PayerRequest{
 			Email: req.PayerEmail,
 		},
-		ApplicationFee: req.ApplicationFee,
 	})
 	if err != nil {
 		return nil, err

@@ -40,6 +40,12 @@ func LoadEnv(app *TriePayments) {
 	if viper.GetString("MP_WEBHOOK_SECRET") == "" {
 		log.Fatal("MP_WEBHOOK_SECRET must be set")
 	}
+	if viper.GetString("MP_TEST_ACCESS_TOKEN") == "" {
+		log.Fatal("MP_TEST_ACCESS_TOKEN must be set")
+	}
+	if viper.GetString("MP_TEST_PUBLIC_KEY") == "" {
+		log.Fatal("MP_TEST_PUBLIC_KEY must be set")
+	}
 
 	Port := viper.GetString("PORT")
 	if Port == "" {

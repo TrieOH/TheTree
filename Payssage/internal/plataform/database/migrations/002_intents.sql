@@ -16,6 +16,7 @@ CREATE TABLE intents (
     client_secret TEXT NOT NULL,
     provider TEXT NOT NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+    external_order_id TEXT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

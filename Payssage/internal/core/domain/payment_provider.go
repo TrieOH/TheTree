@@ -1,15 +1,20 @@
 package domain
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type ChargeRequest struct {
-	Intent          Intent
+	Amount          float64
 	CardToken       string
 	PaymentMethodID string
 	Installments    int
 	PayerEmail      string
 	ApplicationFee  float64
 	SellerToken     string
+	IntentID        uuid.UUID
 }
 
 type ChargeResult struct {
