@@ -268,6 +268,8 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	}
 	paymentIntentID := intent.ID
 
+	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
+
 	// ── Phase 5: purchase record TX (pure DB) ─────────────────────────────────
 	if err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
@@ -325,49 +327,17 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 
 		return nil
 	}); err != nil {
-		// FIXME: Call FailIntent when implemented
-		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
-		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-		}
-		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, editionID, updates)
-		}
 		return err
 	}
 
 	// ── Phase 6: wait for payment ─────────────────────────────────────────────
 	uc.ws.Register(sessionID.String(), conn)
 
-	var chargeMsg sockets.WSMessage
-	if err = conn.ReadJSON(&chargeMsg); err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment"})
-		return nil
-	}
-
-	if chargeMsg.Type != "submit_payment" {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
-		return nil
-	}
-
-	payloadBytes, err = json.Marshal(chargeMsg.Payload)
-	if err != nil {
-		return err
-	}
-
-	var chargeReq dtos.SubmitPaymentPayload
-	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
-		return nil
-	}
-
-	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
-
 	if _, err = uc.payments.PayIntent(ctx, paymentIntentID, paymentsSDK.PayIntentRequest{
-		CardToken:       chargeReq.CardToken,
-		PaymentMethodID: chargeReq.PaymentMethodID,
-		Installments:    chargeReq.Installments,
-		PayerEmail:      userEmail,
+		CardToken:       payReq.CardToken,
+		PaymentMethodID: payReq.PaymentMethodID,
+		Installments:    payReq.Installments,
+		PayerEmail:      payReq.PayerEmail,
 	}); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": mapPaymentError()}})
 		return nil
