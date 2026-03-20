@@ -1409,10 +1409,16 @@ func (uc *UseCase) LogoutProjectUser(ctx context.Context, in inbounds.ProjectLog
 		}
 	}()
 
+	var refreshToken *auth.RefreshClaims
+	refreshToken, err = uc.tokenVerifier.VerifyRefreshToken(ctx, in.RefreshTokenCookie.Value)
+	if err != nil {
+		return err
+	}
+
 	sessions := uc.deps.Sessions
 
 	var sess *session.Session
-	sess, err = sessions.GetByFamilyID(ctx, in.RefreshToken.Sub.FamilyID)
+	sess, err = sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
 		return err
 	}

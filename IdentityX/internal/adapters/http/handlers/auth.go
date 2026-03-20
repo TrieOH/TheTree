@@ -3,7 +3,6 @@ package handlers
 import (
 	"GoAuth/internal/adapters/http/dto"
 	"GoAuth/internal/adapters/http/validation"
-	"GoAuth/internal/domain/auth"
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
@@ -17,18 +16,16 @@ import (
 )
 
 type AuthHandler struct {
-	auth          inbounds.AuthService
-	schema        inbounds.SchemaService
-	redis         outbounds.RedisCacheService
-	tokenVerifier inbounds.TokenVerifier
+	auth   inbounds.AuthService
+	schema inbounds.SchemaService
+	redis  outbounds.RedisCacheService
 }
 
-func NewAuthHandler(uc inbounds.AuthService, schema inbounds.SchemaService, redis outbounds.RedisCacheService, tokenVerifier inbounds.TokenVerifier) *AuthHandler {
+func NewAuthHandler(uc inbounds.AuthService, schema inbounds.SchemaService, redis outbounds.RedisCacheService) *AuthHandler {
 	return &AuthHandler{
-		auth:          uc,
-		schema:        schema,
-		redis:         redis,
-		tokenVerifier: tokenVerifier,
+		auth:   uc,
+		schema: schema,
+		redis:  redis,
 	}
 }
 
@@ -362,16 +359,9 @@ func (handler *AuthHandler) ProjectLogout(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var refreshToken *auth.RefreshClaims
-	refreshToken, err = handler.tokenVerifier.VerifyRefreshToken(ctx, refreshTokenCookie.Value)
-	if err != nil {
-		resp.Unauthorized().WithMsg("missing refresh_token cookie").Send(w)
-		return
-	}
-
 	in := inbounds.ProjectLogoutInput{
-		ProjectID:    projectID,
-		RefreshToken: refreshToken,
+		ProjectID:          projectID,
+		RefreshTokenCookie: refreshTokenCookie,
 	}
 
 	err = handler.auth.LogoutProjectUser(ctx, in)
