@@ -1,6 +1,7 @@
 package inbounds
 
 import (
+	"GoAuth/internal/domain/auth"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -47,6 +48,11 @@ type ProjectLoginInput struct {
 	ProjectID uuid.UUID
 	IP        string
 	Agent     string
+}
+
+type ProjectLogoutInput struct {
+	ProjectID    uuid.UUID
+	RefreshToken *auth.RefreshClaims
 }
 
 type RefreshInput struct {

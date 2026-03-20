@@ -115,6 +115,8 @@ func registerAuthRoutes(
 		/*r.With(middleware.DefaultQueryParam("version", "0")).
 		Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
 
+		r.Post("/projects/{project_id}/logout", h.ProjectLogout)
+
 		if !viper.GetBool("DISABLE_RATE_LIMIT") {
 			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
 				Post("/projects/{project_id}/login", h.ProjectLogin)

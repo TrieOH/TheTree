@@ -1397,3 +1397,35 @@ func (uc *UseCase) Exchange(ctx context.Context, globalAccess string) (*inbounds
 		TTL:       access.ExpiresAt.Time,
 	}, nil
 }
+
+func (uc *UseCase) LogoutProjectUser(ctx context.Context, in inbounds.ProjectLogoutInput) error {
+	ctx, span := usecaseTracer.Start(ctx, "AuthService.LogoutProjectUser")
+	defer span.End()
+
+	var err error
+	defer func() {
+		if span != nil {
+			span.SetAttributes(attribute.Bool("logout.success", err == nil))
+		}
+	}()
+
+	sessions := uc.deps.Sessions
+
+	var sess *session.Session
+	sess, err = sessions.GetByFamilyID(ctx, in.RefreshToken.Sub.FamilyID)
+	if err != nil {
+		return err
+	}
+
+	identity, err := sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	_, err = sessions.MarkRevokedByID(ctx, identity.EntityID, sess.SessionID, session.ProjectIdentity)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
