@@ -1,7 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EventCreateI, EventI } from "../model";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
  * Creates a new Event on the server.
@@ -39,13 +39,16 @@ export const ownEventsQueryOptions = () => {
  * Fetches all events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
-export const getEventsFn = createClientOnlyFn(async () => {
+export const getEventsFn = async () => {
   try {
-    return await tanstackQueryFetcher<EventI[]>("/events");
+    // FIXME: Use a alternative version like tanstackQuerySimpleFetcher
+    const res = await simpleFetcher.get<EventI[]>("/events");
+    if (res.success) return res.data
+    return []
   } catch {
     return [];
   }
-});
+};
 
 /**
  * Query options for fetching events, using TanStack Query.

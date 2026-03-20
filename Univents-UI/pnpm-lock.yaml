@@ -20,6 +20,9 @@ importers:
       '@soramux/node-auth-sdk':
         specifier: ^0.8.5
         version: 0.8.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@soramux/node-fetch-sdk':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@soramux/node-payments-sdk':
         specifier: ^0.1.0
         version: 0.1.0

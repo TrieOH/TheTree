@@ -1,7 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EditionCreateI, EditionI } from "../model";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
  * Creates a new Edition on the server.
@@ -16,13 +16,16 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
  * Fetches all event editions from the server.
  * @returns A promise that resolves to an array of Edition objects.
  */
-export const getAllEditionsFn = createClientOnlyFn(async (eventId: string) => {
+export const getAllEditionsFn = async (eventId: string) => {
   try {
-    return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions`);
+    // FIXME: Use a alternative version like tanstackQuerySimpleFetcher
+    const res = await simpleFetcher.get<EditionI[]>(`/events/${eventId}/editions`);
+    if (res.success) return res.data
+    return []
   } catch {
     return [];
   }
-});
+};
 
 /**
  * Query options for fetching all event editions, using TanStack Query.

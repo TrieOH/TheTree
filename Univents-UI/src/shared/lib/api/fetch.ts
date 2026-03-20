@@ -1,5 +1,10 @@
 import { createFetcher, createQueryFetcher } from "@soramux/node-auth-sdk";
+import { createDefaultFetchClient } from "@soramux/node-fetch-sdk";
 import { env } from "@/env";
+
+export const simpleFetcher = createDefaultFetchClient({
+  baseURL: env.VITE_API_URL
+})
 
 export const authFetcher = createFetcher(
   {

@@ -9,7 +9,9 @@ import { cn } from '@/shared/lib/utils'
 
 export const Route = createFileRoute('/events/')({
   component: EventsPage,
-  loader: ({ context }) => context.queryClient.ensureQueryData(eventsQueryOptions()),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(eventsQueryOptions())
+  },
 })
 
 const filterOptions = [
