@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { motion } from 'motion/react'
 import { cn } from '@/shared/lib/utils'
+import { motion } from 'motion/react'
 import {
   Check,
   X,

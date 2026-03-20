@@ -15,8 +15,6 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
-import '../integrations/mercadopago'
-
 import appCss from '../styles.css?url'
 import type { useAuth } from '@soramux/node-auth-sdk/react';
 
