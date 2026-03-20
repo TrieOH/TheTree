@@ -19,6 +19,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events.$eventId.editions.index'
+import { Route as EventsEventIdEditionsEditionIdIndexRouteImport } from './routes/events/$eventId/editions/$editionId/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdProductsRouteImport } from './routes/events.$eventId.editions.$editionId.products'
 import { Route as EventsEventIdEditionsEditionIdCheckoutRouteImport } from './routes/events.$eventId.editions.$editionId.checkout'
@@ -76,6 +77,12 @@ const EventsEventIdEditionsIndexRoute =
     path: '/events/$eventId/editions/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EventsEventIdEditionsEditionIdIndexRoute =
+  EventsEventIdEditionsEditionIdIndexRouteImport.update({
+    id: '/events/$eventId/editions/$editionId/',
+    path: '/events/$eventId/editions/$editionId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
     id: '/admin/events/$eventId/editions/',
@@ -121,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
+  '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions': typeof AdminEventsEventIdEditionsIndexRoute
+  '/events/$eventId/editions/$editionId': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -156,6 +165,7 @@ export interface FileRoutesById {
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/admin/events/$eventId/editions/': typeof AdminEventsEventIdEditionsIndexRoute
+  '/events/$eventId/editions/$editionId/': typeof EventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/': typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   '/admin/events/$eventId/editions/$editionId/callback/payment': typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/'
+    | '/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   fileRoutesByTo: FileRoutesByTo
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions'
+    | '/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   id:
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/admin/events/$eventId/editions/'
+    | '/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/'
     | '/admin/events/$eventId/editions/$editionId/callback/payment'
   fileRoutesById: FileRoutesById
@@ -227,6 +240,7 @@ export interface RootRouteChildren {
   EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
+  EventsEventIdEditionsEditionIdIndexRoute: typeof EventsEventIdEditionsEditionIdIndexRoute
   AdminEventsEventIdEditionsEditionIdIndexRoute: typeof AdminEventsEventIdEditionsEditionIdIndexRoute
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
 }
@@ -303,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdEditionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId/editions/$editionId/': {
+      id: '/events/$eventId/editions/$editionId/'
+      path: '/events/$eventId/editions/$editionId'
+      fullPath: '/events/$eventId/editions/$editionId/'
+      preLoaderRoute: typeof EventsEventIdEditionsEditionIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/events/$eventId/editions/': {
       id: '/admin/events/$eventId/editions/'
       path: '/admin/events/$eventId/editions'
@@ -357,6 +378,8 @@ const rootRouteChildren: RootRouteChildren = {
   EventsEventIdEditionsEditionIdProductsRoute:
     EventsEventIdEditionsEditionIdProductsRoute,
   AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,
+  EventsEventIdEditionsEditionIdIndexRoute:
+    EventsEventIdEditionsEditionIdIndexRoute,
   AdminEventsEventIdEditionsEditionIdIndexRoute:
     AdminEventsEventIdEditionsEditionIdIndexRoute,
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
