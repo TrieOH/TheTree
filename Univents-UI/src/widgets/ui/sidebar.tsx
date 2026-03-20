@@ -1,10 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useAuth } from "@soramux/node-auth-sdk/react"
 import {
+  BookOpen,
   Calendar,
   ChevronRight,
   Globe,
   Home,
+  Info,
   LogIn,
   LogOut,
   MapPin,
@@ -12,6 +14,8 @@ import {
   Ticket,
   Zap,
 } from "lucide-react"
+import type {
+  LucideIcon} from "lucide-react";
 
 import {
   Sidebar,
@@ -38,14 +42,42 @@ import { cn } from "@/shared/lib/utils"
 import { useAuthActions } from "@/features/auths/hooks/use-auth-actions"
 
 
-const publicNav = [
+interface NavChild {
+  label: string
+  icon: LucideIcon
+  toPattern: string
+}
+
+interface NavItemConfig {
+  label: string
+  icon: LucideIcon
+  to: string
+  exact: boolean
+  children?: NavChild[]
+}
+
+
+const publicNav: NavItemConfig[] = [
   { label: "Início", icon: Home, to: "/", exact: true },
+  {
+    label: "Eventos",
+    icon: Calendar,
+    to: "/events",
+    exact: false,
+    children: [
+      { label: "Edições", icon: Calendar, toPattern: "/events/$eventId/editions" },
+      { label: "Detalhes", icon: Info, toPattern: "/events/$eventId/editions/$editionId" },
+      { label: "Produtos", icon: Package, toPattern: "/events/$eventId/editions/$editionId/products" },
+    ],
+  },
+  { label: "Blog", icon: BookOpen, to: "/blog", exact: false },
+  { label: "Sobre", icon: Info, to: "/about", exact: true },
 ]
 
-const adminNav = [
+const adminNav: NavItemConfig[] = [
   {
     exact: false,
-    label: "Eventos",
+    label: "Eventos (Adm)",
     icon: Globe,
     to: "/admin/events",
     children: [
@@ -77,45 +109,51 @@ function useAdminEventsCtx() {
   }
 }
 
+function useParticipantEventsCtx(): NavContext {
+  const { location } = useRouterState()
+  if (location.pathname.startsWith("/admin")) {
+    return {
+      isInsideEvents: false,
+      isInsideEdition: false,
+      eventId: undefined,
+      editionId: undefined,
+    }
+  }
+  const m = /\/events\/([^/]+)(?:\/editions\/([^/]+))?/.exec(location.pathname)
+  return {
+    eventId: m?.[1],
+    editionId: m?.[2],
+    isInsideEvents: !!m,
+    isInsideEdition: !!m?.[2],
+  }
+}
+
 const activeBtn = "bg-primary! text-primary-foreground! [&_svg]:text-primary-foreground!"
 const activeSub = "text-accent! [&_svg]:text-accent!"
 
 
-function PublicNavItem({ item }: { item: (typeof publicNav)[number] }) {
-  const active = useIsActive(item.to)
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={active}
-        tooltip={item.label}
-        render={<Link to={item.to} />}
-        className={cn(active && activeBtn)}
-      >
-        <item.icon className="h-4 w-4 shrink-0" />
-        <span>{item.label}</span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  )
+interface NavContext {
+  eventId: string | undefined
+  editionId: string | undefined
+  isInsideEvents: boolean
+  isInsideEdition: boolean
 }
 
 function NavSubItem({
   child,
-  eventId,
-  editionId,
-  isInsideEdition,
+  ctx,
 }: {
-  child: (typeof adminNav)[number]["children"][number]
-  eventId: string | undefined
-  editionId: string | undefined
-  isInsideEdition: boolean
+  child: NavChild
+  ctx: NavContext
 }) {
   const resolved = child.toPattern
-    .replace("$eventId", eventId ?? "")
-    .replace("$editionId", editionId ?? "")
+    .replace("$eventId", ctx.eventId ?? "")
+    .replace("$editionId", ctx.editionId ?? "")
 
   const childActive = useIsActive(resolved)
 
-  if (child.toPattern.includes("$editionId") && !isInsideEdition) return null
+  if (child.toPattern.includes("$editionId") && !ctx.isInsideEdition) return null
+  if (child.toPattern.includes("$eventId") && !ctx.isInsideEvents) return null
 
   return (
     <SidebarMenuSubItem className="mt-1">
@@ -132,11 +170,16 @@ function NavSubItem({
 }
 
 
-function NavItem({ item }: { item: (typeof adminNav)[number] }) {
+function NavItem({
+  item,
+  ctx,
+}: {
+  item: NavItemConfig
+  ctx: NavContext
+}) {
   const isActive = useIsActive(item.to, item.exact)
-  const { isInsideEvents, eventId, editionId, isInsideEdition } = useAdminEventsCtx()
 
-  if (!item.children.length) {
+  if (!item.children?.length) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
@@ -175,16 +218,14 @@ function NavItem({ item }: { item: (typeof adminNav)[number] }) {
           <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-40 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
         </CollapsibleTrigger>
 
-        {isInsideEvents && (
+        {ctx.isInsideEvents && (
           <CollapsibleContent>
             <SidebarMenuSub>
               {item.children.map((child) => (
                 <NavSubItem
                   key={child.label}
                   child={child}
-                  eventId={eventId}
-                  editionId={editionId}
-                  isInsideEdition={isInsideEdition}
+                  ctx={ctx}
                 />
               ))}
             </SidebarMenuSub>
@@ -197,7 +238,9 @@ function NavItem({ item }: { item: (typeof adminNav)[number] }) {
 
 export function AppSidebar() {
   const { isAuthenticated } = useAuth()
-  const { handleLogout } = useAuthActions();
+  const { handleLogout } = useAuthActions()
+  const adminCtx = useAdminEventsCtx()
+  const participantCtx = useParticipantEventsCtx()
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -230,19 +273,29 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="overflow-hidden">
+        <SidebarGroup>
+          <SidebarGroupLabel>Explorar</SidebarGroupLabel>
+          <SidebarMenu>
+            {publicNav.map((item) => (
+              <NavItem key={item.label} item={item} ctx={participantCtx} />
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Gerenciamento</SidebarGroupLabel>
+          <SidebarMenu>
+            {adminNav.map((item) => (
+              <NavItem key={item.label} item={item} ctx={adminCtx} />
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+
         {!isAuthenticated && (
           <>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navegar</SidebarGroupLabel>
-              <SidebarMenu>
-                {publicNav.map((item) => (
-                  <PublicNavItem key={item.label} item={item} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-
             <SidebarSeparator />
-
             <SidebarGroup>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -259,17 +312,6 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroup>
           </>
-        )}
-
-        {isAuthenticated && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
-            <SidebarMenu>
-              {adminNav.map((item) => (
-                <NavItem key={item.label} item={item} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
         )}
       </SidebarContent>
 
