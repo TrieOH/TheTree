@@ -38,6 +38,22 @@ export const allEditionsQueryOptions = (eventId: string) => {
   })
 }
 
+/**
+ * Query options for fetching a specific event edition, using TanStack Query.
+ * If the list of all editions is already in cache, it uses that data.
+ * Otherwise, it fetches the list and filters for the specific ID.
+ * @returns An object containing the query key and query function for fetching a specific event edition.
+ */
+export const editionQueryOptions = (eventId: string, editionId: string) => {
+  return queryOptions({
+    queryKey: ['editions', 'public', eventId, editionId],
+    queryFn: async () => {
+      const editions = await getAllEditionsFn(eventId);
+      return editions.find(e => e.id === editionId) ?? null;
+    },
+  })
+}
+
 
 /**
  * Fetches all admin event editions from the server.
