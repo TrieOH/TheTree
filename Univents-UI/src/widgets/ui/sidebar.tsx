@@ -276,7 +276,7 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 tooltip="Sair"
-                onClick={() => { handleLogout() }}
+                onClick={() => { void handleLogout() }}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive [&_svg]:text-destructive"
               >
                 <LogOut className="h-4 w-4 shrink-0" />

@@ -37,7 +37,8 @@ export const env = createEnv({
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:")
     issues.forEach((issue) => {
-      console.error(`  → ${issue.path?.join(".")}: ${issue.message}`)
+      const path = issue.path?.map(String).join(".")
+      console.error(`  → ${path}: ${issue.message}`)
     })
     process.exit(1)
   },

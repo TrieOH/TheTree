@@ -38,7 +38,7 @@ export function AuthContextUpdater({ children }: { children: ReactNode }) {
       }
     }
 
-    sync()
+    void sync()
     return () => { mounted = false }
   }, [])
 

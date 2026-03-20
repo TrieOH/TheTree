@@ -100,7 +100,7 @@ export function useCheckoutSocket(url: string) {
     (raw: MessageEvent) => {
       let msg: ServerMessage;
       try {
-        msg = JSON.parse(raw.data as string);
+        msg = JSON.parse(raw.data as string) as unknown as ServerMessage;
       } catch {
         return;
       }

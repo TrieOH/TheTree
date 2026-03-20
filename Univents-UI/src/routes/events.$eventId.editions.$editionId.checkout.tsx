@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle, Clock, Lock, Shield, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@soramux/node-auth-sdk/react";
-import type {BuyRequestItem, PaymentPayload} from "@/features/products/hooks/use-checkout-socket";
+import type { BuyRequestItem, PaymentPayload } from "@/features/products/hooks/use-checkout-socket";
 import { useCart } from "@/features/products/hooks/use-cart";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
-import { useCheckoutSocket   } from "@/features/products/hooks/use-checkout-socket";
+import { useCheckoutSocket } from "@/features/products/hooks/use-checkout-socket";
 import { env } from "@/env";
 
 export const Route = createFileRoute(
@@ -21,9 +21,11 @@ function useCountdown(expiresAt: string | null) {
 
   useEffect(() => {
     if (!expiresAt) return;
-    const tick = () => { setSecondsLeft(
-      Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
-    ); };
+    const tick = () => {
+      setSecondsLeft(
+        Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
+      );
+    };
     tick();
     const id = setInterval(tick, 1000);
     return () => { clearInterval(id); };
@@ -109,9 +111,7 @@ function CheckoutPage() {
   );
 
   useEffect(() => {
-    if (items.length > 0 && phase === "idle") {
-      buyRequest(getCartItems());
-    }
+    if (items.length > 0 && phase === "idle") void buyRequest(getCartItems());
   }, [buyRequest, getCartItems]);
 
   const price = (cents: number) =>
@@ -167,7 +167,10 @@ function CheckoutPage() {
                   <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
                   <p className="text-sm">{errorMessage ?? "Itens esgotados."}</p>
                 </div>
-                <button onClick={() => buyRequest(getCartItems())} className="text-xs underline text-muted-foreground">
+                <button
+                  onClick={() => void buyRequest(getCartItems())}
+                  className="text-xs underline text-muted-foreground"
+                >
                   Tentar novamente
                 </button>
               </div>
@@ -254,7 +257,10 @@ function CheckoutPage() {
                   <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
                   <p className="text-sm">{errorMessage}</p>
                 </div>
-                <button onClick={() => buyRequest(getCartItems())} className="text-xs underline text-muted-foreground">
+                <button
+                  onClick={() => { void buyRequest(getCartItems()) }}
+                  className="text-xs underline text-muted-foreground"
+                >
                   Tentar novamente
                 </button>
               </div>

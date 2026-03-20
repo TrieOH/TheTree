@@ -18,7 +18,7 @@ export function PaymentProviderSelector({
   handleSubmit
 }: PaymentProviderSelectorProps) {
 
-
+  // eslint-disable-next-line @typescript-eslint/require-await
   const onSubmit = async (data: IPaymentFormData) => {
     handleSubmit({
       card_token: data.formData.token,

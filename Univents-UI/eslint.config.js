@@ -32,6 +32,7 @@ export default [
       '@typescript-eslint/consistent-type-exports': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
+      '@typescript-eslint/require-await': 'off'
     },
   },
   {

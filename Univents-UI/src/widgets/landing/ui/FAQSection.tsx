@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { motion } from 'motion/react'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger
 } from '@/shared/ui/shadcn/collapsible'
-import { motion } from 'motion/react'
 
 interface FAQItem {
   question: string

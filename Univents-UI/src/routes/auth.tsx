@@ -29,11 +29,12 @@ function App() {
     await handleLoginSuccess(search.redirect)
   }
 
-  const handleSignUpSuccess = () => {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  const handleSignUpSuccess = async () => {
     setIsLogin(true);
     toast.success("Account successfully created!")
   }
-
+  // eslint-disable-next-line @typescript-eslint/require-await
   const handleFailure = async (message: string, trace?: string[]) => {
     const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
     toast.warning(`Auth Failed: ${message}`, { description: traceMsg })
@@ -56,7 +57,7 @@ function App() {
       ) : (
         <SignUp
           loginRedirect={() => { setIsLogin(true); }}
-          onSuccess={async () => { handleSignUpSuccess() }}
+          onSuccess={handleSignUpSuccess}
           onFailed={handleFailure}
         />
       )}

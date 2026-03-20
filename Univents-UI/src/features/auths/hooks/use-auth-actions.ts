@@ -39,7 +39,7 @@ export function useAuthActions() {
   }
 
   const handleLoginSuccess = async (redirect?: string) => {
-    await handleAuthAction(true, redirect || '/admin', 'Login successful!')
+    await handleAuthAction(true, redirect ?? '/admin', 'Login successful!')
   }
 
   const handleLogout = async () => {
