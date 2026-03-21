@@ -243,10 +243,23 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		return nil
 	}
 
+	telemetry.Log().Info("Before Initiate",
+		zap.Int("total", total),
+		zap.String("currency", "BRL"),
+		zap.String("provider", viper.GetString("TRIEPAYMENTS_PROVIDER")),
+		zap.Any("metadata", json.RawMessage(`{"session_id": "`+sessionID.String()+`"}`)),
+		zap.String("payment_method_id", payReq.PaymentMethodID),
+		zap.Int("installments", payReq.Installments),
+		zap.String("card_token", payReq.CardToken),
+		zap.String("payment_method_type", payReq.PaymentMethodType),
+		zap.String("seller_credential_id", payReq.SellerCredentialID),
+		zap.String("payer_email", payReq.PayerEmail),
+	)
+
 	// ── Phase 4: payment intent (no locks held) ───────────────────────────────
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
 		Amount:             int64(total),
-		Currency:           "brl",
+		Currency:           "BRL",
 		Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
 		Metadata:           json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
 		PaymentMethodID:    payReq.PaymentMethodID,
