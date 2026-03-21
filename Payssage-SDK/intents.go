@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-type CreateIntentRequest struct {
+type InitiateCheckoutRequest struct {
 	Amount             int64           `json:"amount"`
 	Currency           string          `json:"currency"`
 	Provider           string          `json:"provider"`
@@ -19,7 +19,7 @@ type CreateIntentRequest struct {
 	PayerEmail         string          `json:"payer_email,omitempty"`
 }
 
-func (c *Client) CreateIntent(ctx context.Context, req CreateIntentRequest) (*Intent, error) {
+func (c *Client) InitiateCheckout(ctx context.Context, req InitiateCheckoutRequest) (*Intent, error) {
 	var out Intent
 	if err := c.do(ctx, "POST", "/intents", req, &out); err != nil {
 		return nil, err

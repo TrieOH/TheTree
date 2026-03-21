@@ -47,18 +47,27 @@ const (
 )
 
 type Intent struct {
-	ID                string          `json:"id"`
-	WorkspaceID       string          `json:"workspace_id"`
-	Amount            int64           `json:"amount"`
-	Currency          string          `json:"currency"`
-	Status            IntentStatus    `json:"status"`
-	ClientSecret      string          `json:"client_secret"`
-	Provider          string          `json:"provider"`
-	ProviderPaymentID *string         `json:"provider_payment_id"`
-	Metadata          json.RawMessage `json:"metadata"`
-	ExternalOrderID   string          `json:"external_order_id"`
-	CreatedAt         time.Time       `json:"created_at"`
-	UpdatedAt         time.Time       `json:"updated_at"`
+	ID          string          `json:"id"`
+	WorkspaceID string          `json:"workspace_id"`
+	Amount      int64           `json:"amount"`
+	Currency    string          `json:"currency"`
+	Status      IntentStatus    `json:"status"`
+	Provider    string          `json:"provider"`
+	Metadata    json.RawMessage `json:"metadata"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+
+	// Only one of these will be non-nil, determined by Provider.
+	MercadoPagoData *MercadoPagoIntentData `json:"mercadopago_data,omitempty"`
+}
+
+type MercadoPagoIntentData struct {
+	OrderID           string  `json:"order_id"`
+	OrderStatus       string  `json:"order_status"`
+	OrderStatusDetail string  `json:"order_status_detail"`
+	TransactionID     string  `json:"transaction_id"`
+	PixQRCode         *string `json:"pix_qr_code,omitempty"` //FIXME maybe dont send this or the one below
+	PixQRCodeB64      *string `json:"pix_qr_code_base64,omitempty"`
 }
 
 type WebhookEndpoint struct {
