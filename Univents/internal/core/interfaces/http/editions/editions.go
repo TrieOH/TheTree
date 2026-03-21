@@ -230,8 +230,14 @@ func (handler *Handler) ConnectPaymentAccount(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	publicKey := r.URL.Query().Get("public_key")
+	if publicKey == "" {
+		resp.BadRequest("missing public_key").Send(w)
+		return
+	}
+
 	ctx := r.Context()
-	err = handler.commands.ConnectPayments(ctx, credID, editionID, provider)
+	err = handler.commands.ConnectPayments(ctx, credID, editionID, provider, publicKey)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

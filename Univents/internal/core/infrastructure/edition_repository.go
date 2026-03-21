@@ -39,33 +39,34 @@ func (repo *editionsRepo) queries(ctx context.Context) *sqlc.Queries {
 
 func mapEditionFromDB(src *sqlc.Edition) *domain.Edition {
 	return &domain.Edition{
-		ID:                       src.ID,
-		GoauthScopeID:            src.GoauthScopeID,
-		EventID:                  src.EventID,
-		Type:                     domain.EditionType(src.Type),
-		EditionName:              src.EditionName,
-		Tagline:                  src.Tagline,
-		Description:              src.Description,
-		Status:                   domain.EditionStatus(src.Status),
-		MonetaryType:             domain.EditionMonetaryType(src.MonetaryType),
-		RegistrationOpensAt:      src.RegistrationOpensAt,
-		RegistrationClosesAt:     src.RegistrationClosesAt,
-		StartsAt:                 src.StartsAt,
-		EndsAt:                   src.EndsAt,
-		Timezone:                 src.Timezone,
-		LocationName:             src.LocationName,
-		LocationAddress:          src.LocationAddress,
-		LogoUrl:                  src.LogoUrl,
-		BannerUrl:                src.BannerUrl,
-		ContactEmail:             src.ContactEmail,
-		ContactPhone:             src.ContactPhone,
-		OrganizerName:            src.OrganizerName,
-		TriePaymentsCredentialID: src.TriePaymentsCredentialID,
-		TriePaymentsProvider:     src.TriePaymentsProvider,
-		CreatedBy:                src.CreatedBy,
-		CreatedAt:                src.CreatedAt,
-		UpdatedAt:                src.UpdatedAt,
-		DeletedAt:                src.DeletedAt,
+		ID:                            src.ID,
+		GoauthScopeID:                 src.GoauthScopeID,
+		EventID:                       src.EventID,
+		Type:                          domain.EditionType(src.Type),
+		EditionName:                   src.EditionName,
+		Tagline:                       src.Tagline,
+		Description:                   src.Description,
+		Status:                        domain.EditionStatus(src.Status),
+		MonetaryType:                  domain.EditionMonetaryType(src.MonetaryType),
+		RegistrationOpensAt:           src.RegistrationOpensAt,
+		RegistrationClosesAt:          src.RegistrationClosesAt,
+		StartsAt:                      src.StartsAt,
+		EndsAt:                        src.EndsAt,
+		Timezone:                      src.Timezone,
+		LocationName:                  src.LocationName,
+		LocationAddress:               src.LocationAddress,
+		LogoUrl:                       src.LogoUrl,
+		BannerUrl:                     src.BannerUrl,
+		ContactEmail:                  src.ContactEmail,
+		ContactPhone:                  src.ContactPhone,
+		OrganizerName:                 src.OrganizerName,
+		TriePaymentsCredentialID:      src.TriePaymentsCredentialID,
+		TriePaymentsProvider:          src.TriePaymentsProvider,
+		TriePaymentsProviderPublicKey: src.TriePaymentsProviderPublicKey,
+		CreatedBy:                     src.CreatedBy,
+		CreatedAt:                     src.CreatedAt,
+		UpdatedAt:                     src.UpdatedAt,
+		DeletedAt:                     src.DeletedAt,
 	}
 }
 
@@ -203,16 +204,17 @@ func (repo *editionsRepo) Finish(ctx context.Context, editionID uuid.UUID) error
 	return nil
 }
 
-func (repo *editionsRepo) ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider string) error {
+func (repo *editionsRepo) ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider, publicKey string) error {
 	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.ConnectPaymentsAccount")
 	defer span.End()
 
 	telemetry.Log().Info("ConnectPaymentsAccount DATA", zap.String("edition_id", editionID.String()), zap.String("trie_payments_credential_id", triePaymentsCredentialID.String()), zap.String("trie_payments_provider", triePaymentsProvider))
 
 	err := repo.queries(ctx).ConnectEditionPaymentAccount(ctx, sqlc.ConnectEditionPaymentAccountParams{
-		TriePaymentsCredentialID: &triePaymentsCredentialID,
-		TriePaymentsProvider:     &triePaymentsProvider,
-		ID:                       editionID,
+		TriePaymentsCredentialID:      &triePaymentsCredentialID,
+		TriePaymentsProvider:          &triePaymentsProvider,
+		TriePaymentsProviderPublicKey: &publicKey,
+		ID:                            editionID,
 	})
 	if err != nil {
 		return errx.FromDB(err, "edition")

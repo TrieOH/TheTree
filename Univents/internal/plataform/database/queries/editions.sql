@@ -113,12 +113,14 @@ WHERE id = $1 AND status = 'ongoing';
 UPDATE editions
 SET
     trie_payments_credential_id = $1,
-    trie_payments_provider = $2
-WHERE id = $3;
+    trie_payments_provider = $2,
+    trie_payments_provider_public_key = $3
+WHERE id = $4;
 
 -- name: DisconnectEditionPaymentAccount :exec
 UPDATE editions
 SET
     trie_payments_credential_id = NULL,
-    trie_payments_provider = NULL
+    trie_payments_provider = NULL,
+    trie_payments_provider_public_key = NULL
 WHERE id = $1;

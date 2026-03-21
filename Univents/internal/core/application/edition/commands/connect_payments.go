@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (uc *CommandService) ConnectPayments(ctx context.Context, triePaymentsCredentialID, editionID uuid.UUID, triePaymentsProvider string) (err error) {
+func (uc *CommandService) ConnectPayments(ctx context.Context, triePaymentsCredentialID, editionID uuid.UUID, triePaymentsProvider, publicKey string) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "EditionService.ConnectPayments")
 	defer span.End()
 
@@ -46,7 +46,7 @@ func (uc *CommandService) ConnectPayments(ctx context.Context, triePaymentsCrede
 		return errors.New("payment account already connected")
 	}
 
-	if err = uc.editions.ConnectPaymentsAccount(ctx, editionID, triePaymentsCredentialID, triePaymentsProvider); err != nil {
+	if err = uc.editions.ConnectPaymentsAccount(ctx, editionID, triePaymentsCredentialID, triePaymentsProvider, publicKey); err != nil {
 		return err
 	}
 

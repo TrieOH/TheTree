@@ -25,7 +25,7 @@ type EditionsRepository interface {
 	Open(ctx context.Context, editionID uuid.UUID) error
 	Start(ctx context.Context, editionID uuid.UUID) error
 	Finish(ctx context.Context, editionID uuid.UUID) error
-	ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider string) error
+	ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider, publicKey string) error
 	DisconnectPaymentsAccount(ctx context.Context, editionID uuid.UUID) error
 }
 
