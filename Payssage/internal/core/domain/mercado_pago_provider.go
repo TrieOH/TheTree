@@ -158,9 +158,9 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	}
 
 	body := map[string]any{
-		"transaction_amount": formatAmount(request.Amount),
+		"transaction_amount": json.Number(formatAmount(request.Amount)),
 		"external_reference": intent.ID.String(),
-		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"application_fee":    json.Number(formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS))),
 		"installments":       request.Installments,
 		"payment_method_id":  request.MPPaymentMethodID,
 		"token":              request.MPPayerToken,
