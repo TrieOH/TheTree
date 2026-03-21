@@ -215,7 +215,7 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mercadopago error %d: %s - %s", resp.StatusCode, mpResp.Status, mpResp.StatusDetail)
+		return nil, fmt.Errorf("mercadopago error %d: %s - %s", resp, mpResp.Status, mpResp.StatusDetail)
 	}
 
 	intent.MercadoPagoData = &MercadoPagoIntentData{
