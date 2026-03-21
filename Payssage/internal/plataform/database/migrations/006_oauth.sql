@@ -15,15 +15,14 @@ CREATE TABLE provider_credentials (
     id           UUID PRIMARY KEY DEFAULT uuidv7(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     provider     TEXT NOT NULL,
-    display_name TEXT NOT NULL,
     credentials  JSONB NOT NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     revoked_at   TIMESTAMPTZ NULL
 );
 
 CREATE UNIQUE INDEX idx_provider_credentials_active
-ON provider_credentials (workspace_id, provider, display_name)
-WHERE revoked_at IS NULL;
+    ON provider_credentials (workspace_id, (credentials->>'provider_user_id'))
+    WHERE revoked_at IS NULL;
 
 -- +goose Down
 DROP INDEX IF EXISTS idx_provider_credentials_active;

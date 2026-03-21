@@ -1,7 +1,6 @@
 package oauth_handler
 
 import (
-	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/errx"
 	"TriePayments/internal/shared/validation"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Param credential_id path string true "Credential ID"
-// @Success 200 {object} dto.ProviderCredentialResponse
+// @Success 200 {object} object "revoked successfully"
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
@@ -31,7 +30,7 @@ func (h *Handler) RevokeProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cred, err := h.commands.RevokeCredential(r.Context(), workspaceName, credentialID)
+	_, err := h.commands.RevokeCredential(r.Context(), workspaceName, credentialID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
 			resp.NotFound("credential not found").Send(w)
@@ -41,5 +40,5 @@ func (h *Handler) RevokeProvider(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK().WithData(dto.MapProviderCredentialResponse(cred)).Send(w)
+	resp.OK("revoked successfully").Send(w)
 }

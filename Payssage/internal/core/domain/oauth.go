@@ -27,7 +27,6 @@ type ProviderCredential struct {
 	ID          uuid.UUID
 	WorkspaceID uuid.UUID
 	Provider    string
-	DisplayName string
 	Credentials ProviderCredentialData
 	CreatedAt   time.Time
 	RevokedAt   *time.Time

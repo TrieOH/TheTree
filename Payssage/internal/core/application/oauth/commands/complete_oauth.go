@@ -38,7 +38,6 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	cred, err := uc.credentials.Create(ctx, domain.ProviderCredential{
 		WorkspaceID: oauthState.WorkspaceID,
 		Provider:    provider,
-		DisplayName: credData.Nickname,
 		Credentials: credData,
 	})
 	if err != nil {

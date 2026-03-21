@@ -11,8 +11,8 @@ WHERE state = $1 AND expires_at > now();
 DELETE FROM oauth_states WHERE state = $1;
 
 -- name: CreateProviderCredential :one
-INSERT INTO provider_credentials (workspace_id, provider, display_name, credentials)
-VALUES ($1, $2, $3, $4)
+INSERT INTO provider_credentials (workspace_id, provider, credentials)
+VALUES ($1, $2, $3)
     RETURNING *;
 
 -- name: GetProviderCredential :one

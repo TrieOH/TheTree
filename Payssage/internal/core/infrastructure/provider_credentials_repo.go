@@ -43,7 +43,6 @@ func mapProviderCredentialFromDB(src *sqlc.ProviderCredential) (*domain.Provider
 		ID:          src.ID,
 		WorkspaceID: src.WorkspaceID,
 		Provider:    src.Provider,
-		DisplayName: src.DisplayName,
 		Credentials: data,
 		CreatedAt:   src.CreatedAt,
 		RevokedAt:   src.RevokedAt,
@@ -62,7 +61,6 @@ func (repo *providerCredentialsRepo) Create(ctx context.Context, cred domain.Pro
 	row, err := repo.queries(ctx).CreateProviderCredential(ctx, sqlc.CreateProviderCredentialParams{
 		WorkspaceID: cred.WorkspaceID,
 		Provider:    cred.Provider,
-		DisplayName: cred.DisplayName,
 		Credentials: credJSON,
 	})
 	if err != nil {
