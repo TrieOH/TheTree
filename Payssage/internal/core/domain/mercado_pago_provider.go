@@ -104,6 +104,7 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 	var result struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
+		PublicKey    string `json:"public_key"`
 		UserID       int    `json:"user_id"`
 		Nickname     string `json:"nickname"`
 	}
@@ -119,6 +120,7 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		AccessToken:    result.AccessToken,
 		RefreshToken:   result.RefreshToken,
 		ProviderUserID: result.UserID,
+		PublicKey:      result.PublicKey,
 		Nickname:       result.Nickname,
 	}, nil
 }
