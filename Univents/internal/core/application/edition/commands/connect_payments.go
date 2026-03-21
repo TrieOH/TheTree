@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
@@ -25,7 +26,7 @@ func (uc *CommandService) ConnectPayments(ctx context.Context, triePaymentsCrede
 	var edition *domain.Edition
 	edition, err = uc.editions.GetByID(ctx, editionID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting edition: %w", err)
 	}
 
 	var allowed bool

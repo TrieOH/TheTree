@@ -231,7 +231,7 @@ func (handler *Handler) ConnectPaymentAccount(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
-	err = handler.commands.ConnectPayments(ctx, editionID, credID, provider)
+	err = handler.commands.ConnectPayments(ctx, credID, editionID, provider)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

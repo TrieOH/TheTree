@@ -1,6 +1,7 @@
 package errx
 
 import (
+	"database/sql"
 	"errors"
 	"strings"
 
@@ -161,9 +162,13 @@ func Internal(resource string) Error {
 */
 
 func FromDB(err error, resource string) Error {
+	if errors.Is(err, sql.ErrNoRows) {
+		return NotFound(resource).SetCause(err)
+	}
+
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
-		return Internal(resource).SetCause(err)
+		return Internal(resource).SetMessage(err.Error())
 	}
 
 	switch pgErr.Code {
@@ -172,22 +177,22 @@ func FromDB(err error, resource string) Error {
 	case "23505":
 		return Conflict(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	// foreign_key_violation
 	case "23503":
 		return Invalid(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	// check_violation
 	case "23514":
 		return Violation(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	default:
-		return Internal(resource).SetCause(err)
+		return Internal(resource).SetMessage(err.Error())
 	}
 }
 
@@ -199,25 +204,25 @@ You can use these if you already KNOW the context.
 func UniqueViolation(resource, constraint string, err error) Error {
 	return Conflict(resource).
 		SetConstraint(constraint).
-		SetCause(err)
+		SetMessage(err.Error())
 }
 
 func ForeignKeyViolation(resource, constraint string, err error) Error {
 	return Invalid(resource).
 		SetConstraint(constraint).
-		SetCause(err)
+		SetMessage(err.Error())
 }
 
 func ViolationError(resource, constraint string, err error) Error {
 	return Violation(resource).
 		SetConstraint(constraint).
-		SetCause(err)
+		SetMessage(err.Error())
 }
 
 func CheckViolation(resource, constraint string, err error) Error {
 	return Invalid(resource).
 		SetConstraint(constraint).
-		SetCause(err)
+		SetMessage(err.Error())
 }
 
 /*

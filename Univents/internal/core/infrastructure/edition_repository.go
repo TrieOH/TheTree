@@ -5,6 +5,7 @@ import (
 	"univents/internal/core/domain"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/database/sqlc"
+	"univents/internal/plataform/telemetry"
 	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
@@ -205,6 +206,8 @@ func (repo *editionsRepo) Finish(ctx context.Context, editionID uuid.UUID) error
 func (repo *editionsRepo) ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider string) error {
 	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.ConnectPaymentsAccount")
 	defer span.End()
+
+	telemetry.Log().Info("ConnectPaymentsAccount DATA", zap.String("edition_id", editionID.String()), zap.String("trie_payments_credential_id", triePaymentsCredentialID.String()), zap.String("trie_payments_provider", triePaymentsProvider))
 
 	err := repo.queries(ctx).ConnectEditionPaymentAccount(ctx, sqlc.ConnectEditionPaymentAccountParams{
 		TriePaymentsCredentialID: &triePaymentsCredentialID,
