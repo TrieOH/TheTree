@@ -144,6 +144,8 @@ func SetupGoAuth(app *UniventsApp) {
 				TicketsCreate,
 				TicketsEdit,
 				TicketsRead,
+				PaymentsConnect,
+				PaymentsDisconnect,
 			},
 			Meta: map[string]interface{}{
 				"color": "#ef4444",
@@ -328,6 +330,22 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#028cdb",
 			"icon":  "UserCheck",
+		},
+	}
+	PaymentsConnect = goauth.PermissionDefinition{
+		Object: "payments",
+		Action: "connect",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "PlugZap",
+		},
+	}
+	PaymentsDisconnect = goauth.PermissionDefinition{
+		Object: "payments",
+		Action: "disconnect",
+		Meta: map[string]interface{}{
+			"color": "#ed1a1a",
+			"icon":  "GlobeOff",
 		},
 	}
 )
