@@ -158,29 +158,27 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	}
 
 	body := map[string]any{
-		"order_object": map[string]any{
-			"type":               "online",
-			"total_amount":       formatAmount(request.Amount),
-			"external_reference": intent.ID.String(),
-			"processing_mode":    "automatic",
-			"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
-			"currency":           strings.ToUpper(request.Currency),
-			"transactions": map[string]any{
-				"payments": []map[string]any{
-					{
-						"amount": formatAmount(request.Amount),
-						"payment_method": map[string]any{
-							"id":           request.MPPaymentMethodID,
-							"type":         request.MPPaymentMethodType,
-							"token":        request.MPPayerToken,
-							"installments": request.Installments,
-						},
+		"type":               "online",
+		"total_amount":       formatAmount(request.Amount),
+		"external_reference": intent.ID.String(),
+		"processing_mode":    "automatic",
+		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"currency":           strings.ToUpper(request.Currency),
+		"transactions": map[string]any{
+			"payments": []map[string]any{
+				{
+					"amount": formatAmount(request.Amount),
+					"payment_method": map[string]any{
+						"id":           request.MPPaymentMethodID,
+						"type":         request.MPPaymentMethodType,
+						"token":        request.MPPayerToken,
+						"installments": request.Installments,
 					},
 				},
 			},
-			"payer": map[string]any{
-				"email": request.Payer.Email,
-			},
+		},
+		"payer": map[string]any{
+			"email": request.Payer.Email,
 		},
 	}
 
