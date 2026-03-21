@@ -165,7 +165,7 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 
 	client := order.NewClient(cfg)
 
-	mpOrder, err := client.Create(ctx, order.Request{
+	orderReq := order.Request{
 		Type:              "online",
 		TotalAmount:       formatAmount(request.Amount),
 		ExternalReference: "tp_" + intent.ID.String(),
@@ -192,7 +192,11 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		Payer: &order.PayerRequest{
 			Email: request.Payer.Email,
 		},
-	})
+	}
+
+	telemetry.Log().Info("MP Create Order Request", zap.Any("order_object", orderReq))
+
+	mpOrder, err := client.Create(ctx, orderReq)
 	if err != nil {
 		return nil, wrapMPError(err)
 	}
