@@ -97,6 +97,9 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 			MPPaymentMethodType: in.PaymentMethodType,
 			MPPayerToken:        in.CardToken,
 		})
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unknown provider type: %T", p)
 	}
