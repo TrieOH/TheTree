@@ -158,44 +158,25 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	}
 
 	body := map[string]any{
-		"type":               "online",
-		"total_amount":       formatAmount(request.Amount),
+		"transaction_amount": formatAmount(request.Amount),
 		"external_reference": intent.ID.String(),
-		"processing_mode":    "automatic",
-		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
-		"currency":           strings.ToUpper(request.Currency),
-		"transactions": map[string]any{
-			"payments": []map[string]any{
-				{
-					"amount": formatAmount(request.Amount),
-					"payment_method": map[string]any{
-						"id":           request.MPPaymentMethodID,
-						"type":         request.MPPaymentMethodType,
-						"token":        request.MPPayerToken,
-						"installments": request.Installments,
-					},
-				},
-			},
-		},
+		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"installments":       request.Installments,
+		"payment_method_id":  request.MPPaymentMethodID,
+		"token":              request.MPPayerToken,
 		"payer": map[string]any{
 			"email": request.Payer.Email,
 		},
 	}
 
-	telemetry.Log().Info("MP Create Order Request", zap.Any("order_object", body))
+	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	telemetry.Log().Info("MP Raw Request",
-		zap.String("body", string(bodyBytes)),
-		zap.String("token", request.MPSellerToken),
-		zap.String("idempotency_key", intent.ID.String()),
-	)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/payments", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -210,24 +191,24 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	}
 	defer resp.Body.Close()
 
+	rawBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago error %d: %s", resp.StatusCode, string(rawBody))
+	}
+
 	var mpResp struct {
-		ID           string `json:"id"`
+		ID           int64  `json:"id"`
 		Status       string `json:"status"`
 		StatusDetail string `json:"status_detail"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&mpResp); err != nil {
+	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode >= 400 {
-		rawBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("mercadopago error %d: %s", resp.StatusCode, string(rawBody))
-
-	}
-
 	intent.MercadoPagoData = &MercadoPagoIntentData{
-		OrderID:           mpResp.ID,
+		OrderID:           fmt.Sprintf("%d", mpResp.ID),
 		OrderStatus:       mpResp.Status,
 		OrderStatusDetail: mpResp.StatusDetail,
 	}
