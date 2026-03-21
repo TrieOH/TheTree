@@ -175,17 +175,13 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		Transactions: &order.TransactionRequest{
 			Payments: []order.PaymentRequest{
 				{
-					Amount:         formatAmount(request.Amount),
-					ExpirationTime: "",
+					Amount: formatAmount(request.Amount),
 					PaymentMethod: &order.PaymentMethodRequest{
 						ID:           request.MPPaymentMethodID,
 						Type:         request.MPPaymentMethodType,
 						Token:        request.MPPayerToken,
 						Installments: request.Installments,
 					},
-					AutomaticPayments: nil,
-					StoredCredential:  nil,
-					SubscriptionData:  nil,
 				},
 			},
 		},
