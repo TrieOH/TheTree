@@ -14,7 +14,7 @@ func (uc *CommandService) CreateWebhookEvent(ctx context.Context, provider, even
 		return uuid.Nil, err
 	}
 
-	event := domain.WebhookEvent{
+	event := domain.WebhookEventOriginal{
 		ID:        id,
 		Provider:  provider,
 		EventType: eventType,

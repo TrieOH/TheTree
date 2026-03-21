@@ -1,8 +1,9 @@
 package workspaces_handler
 
 import (
-	"TriePayments/internal/core/infrastructure/providers"
+	"TriePayments/internal/core/domain"
 	"TriePayments/internal/core/interfaces/http/dto"
+	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/validation"
 	"encoding/json"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // HandleProviderWebhook godoc
@@ -34,8 +36,17 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 	switch provider {
 	case "mercadopago":
 		secret := viper.GetString("MP_WEBHOOK_SECRET")
-		if secret != "" && !providers.VerifyMercadoPagoSignature(r, secret) {
+		xSignature := r.Header.Get("x-signature")
+		xRequestID := r.Header.Get("x-request-id")
+		dataID := r.URL.Query().Get("data.id")
+		if secret != "" && !domain.VerifyMercadoPagoSignature(xSignature, xRequestID, dataID, secret) {
 			resp.BadRequest("invalid signature").Send(w)
+			return
+		}
+
+		if r.URL.Query().Get("topic") != "orders_v2" {
+			telemetry.Log().Info("invalid topic", zap.String("topic", r.URL.Query().Get("topic")))
+			resp.BadRequest("unsupported topic, must be: orders_v2").Send(w)
 			return
 		}
 

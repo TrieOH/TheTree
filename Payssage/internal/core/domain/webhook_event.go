@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type WebhookEvent struct {
+type WebhookEventOriginal struct {
 	ID          uuid.UUID
 	WorkspaceID *uuid.UUID
 	IntentID    *uuid.UUID

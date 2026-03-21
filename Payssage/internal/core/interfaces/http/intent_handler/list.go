@@ -1,7 +1,7 @@
 package workspaces_handler
 
 import (
-	"TriePayments/internal/core/interfaces/http/dto"
+	"TriePayments/internal/core/domain"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -18,7 +18,7 @@ import (
 // @Param Cookie header string false "Cookie: access_token=xxx"
 // @Security APIKey
 // @Security Cookie
-// @Success 200 {array} dto.IntentResponse "Intents retrieved successfully"
+// @Success 200 {array} domain.Intent "Intents retrieved successfully"
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /intents [get]
@@ -29,9 +29,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := make([]dto.IntentResponse, 0, len(intents))
+	out := make([]domain.Intent, 0, len(intents))
 	for _, i := range intents {
-		out = append(out, dto.MapIntentResponse(&i))
+		out = append(out, i)
 	}
 
 	resp.OK().WithData(out).Send(w)
@@ -47,7 +47,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string false "Cookie: access_token=xxx"
 // @Security APIKey
 // @Security Cookie
-// @Success 200 {array} dto.IntentResponse "Intents retrieved successfully"
+// @Success 200 {array} domain.Intent "Intents retrieved successfully"
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /workspaces/{name}/intents [get]
@@ -60,9 +60,9 @@ func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := make([]dto.IntentResponse, 0, len(intents))
+	out := make([]domain.Intent, 0, len(intents))
 	for _, i := range intents {
-		out = append(out, dto.MapIntentResponse(&i))
+		out = append(out, i)
 	}
 
 	resp.OK().WithData(out).Send(w)

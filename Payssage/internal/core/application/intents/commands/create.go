@@ -6,12 +6,11 @@ import (
 	"TriePayments/internal/shared/errx"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
-	"github.com/mercadopago/sdk-go/pkg/config"
-	"github.com/mercadopago/sdk-go/pkg/order"
-	"github.com/spf13/viper"
 )
 
 type CreateIntentInput struct {
@@ -27,16 +26,11 @@ type CreateIntentInput struct {
 	PayerEmail         string
 }
 
-func (uc *CommandService) CreateIntent(ctx context.Context, in CreateIntentInput) (*domain.Intent, error) {
-	ctx, span := uc.tracer.Start(ctx, "CommandService.CreateIntent")
+func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentInput) (*domain.Intent, error) {
+	ctx, span := uc.tracer.Start(ctx, "CommandService.InitiateCheckout")
 	defer span.End()
 
 	workspace, err := authz.RequireWorkspace(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	intent, err := domain.NewIntent(workspace.ID, in.Amount, in.Currency, in.Provider, in.Metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -51,59 +45,61 @@ func (uc *CommandService) CreateIntent(ctx context.Context, in CreateIntentInput
 		return nil, err
 	}
 
-	applicationFee := float64(intent.Amount) * float64(marketplaceConfig.FeeBps) / 10000 / 100.0
-	amountInUnits := float64(intent.Amount) / 100.0
-
-	var cfg *config.Config
-	if viper.GetBool("TEST_MODE") {
-		cfg, err = config.New(viper.GetString("MP_TEST_ACCESS_TOKEN"))
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		credential, err := uc.credentials.GetByID(ctx, in.SellerCredentialID)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg, err = config.New(credential.Credentials.AccessToken)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	client := order.NewClient(cfg)
-	mpOrder, err := client.Create(ctx, order.Request{
-		Type:              "online",
-		TotalAmount:       fmt.Sprintf("%.2v", amountInUnits),
-		ExternalReference: "tp_" + intent.ID.String(),
-		ExpirationTime:    "",
-		Currency:          in.Currency,
-		MarketPlaceFee:    fmt.Sprintf("%.2v", applicationFee),
-		Transactions: &order.TransactionRequest{
-			Payments: []order.PaymentRequest{
-				{
-					Amount:         fmt.Sprintf("%.2v", amountInUnits),
-					ExpirationTime: "",
-					PaymentMethod: &order.PaymentMethodRequest{
-						ID:                  in.PaymentMethodID,
-						Type:                in.PaymentMethodType,
-						Token:               in.CardToken,
-						StatementDescriptor: "",
-						Installments:        in.Installments,
-					},
-				},
-			},
-		},
-		Payer: &order.PayerRequest{
-			Email: in.PayerEmail,
-		},
-	})
+	credential, err := uc.credentials.GetByID(ctx, in.SellerCredentialID)
 	if err != nil {
 		return nil, err
 	}
 
-	intent.AddExtOrderID(mpOrder.ID)
+	provider, ok := uc.paymentProviders[in.Provider]
+	if !ok {
+		return nil, errx.Invalid("No such payment provider")
+	}
+
+	var intent *domain.Intent
+
+	switch p := provider.(type) {
+	case domain.MercadoPagoProvider:
+		var validationErrors []string
+		if credential.Credentials.AccessToken == "" {
+			validationErrors = append(validationErrors, "missing access token")
+		}
+		if in.PayerEmail == "" {
+			validationErrors = append(validationErrors, "missing payment email")
+		}
+		if in.Installments == 0 {
+			validationErrors = append(validationErrors, "missing installments")
+		}
+		if in.PaymentMethodType == "" {
+			validationErrors = append(validationErrors, "missing payment method type")
+		}
+		if in.PaymentMethodID == "" {
+			validationErrors = append(validationErrors, "missing payment method id")
+		}
+		if in.Amount < 0 {
+			validationErrors = append(validationErrors, "invalid amount")
+		}
+		if len(validationErrors) > 0 {
+			return nil, errors.New("validation failed:\n" + strings.Join(validationErrors, "\n"))
+		}
+		intent, err = p.InitiateCheckout(ctx, &domain.InitiateCheckoutRequest{
+			WorkspaceID: workspace.ID,
+			Amount:      in.Amount,
+			Currency:    strings.ToUpper(in.Currency),
+			Provider:    in.Provider,
+			Metadata:    in.Metadata,
+			Payer: domain.Payer{
+				Email: in.PayerEmail,
+			},
+			Installments:        in.Installments,
+			MPSellerToken:       credential.Credentials.AccessToken,
+			MPMarketplaceFeeBPS: marketplaceConfig.FeeBps,
+			MPPaymentMethodID:   in.PaymentMethodID,
+			MPPaymentMethodType: in.PaymentMethodType,
+			MPPayerToken:        in.CardToken,
+		})
+	default:
+		return nil, fmt.Errorf("unknown provider type: %T", p)
+	}
 
 	created, err := uc.intents.Create(ctx, *intent)
 	if err != nil {

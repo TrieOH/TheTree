@@ -1,7 +1,7 @@
 -- name: CreateIntent :one
-INSERT INTO intents (id, workspace_id, amount, currency, status, client_secret, provider, metadata, external_order_id)
-VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING *;
+INSERT INTO intents (id, workspace_id, amount, currency, status, provider, provider_data, metadata)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING *;
 
 -- name: GetIntentByID :one
 SELECT *
@@ -38,19 +38,15 @@ RETURNING *;
 -- name: FailIntent :one
 UPDATE intents
 SET
-    status = 'failed', 
+    status = 'failed',
     updated_at = now()
 WHERE id = $1 AND status = 'pending'
 RETURNING *;
 
--- name: PayIntent :one
+-- name: UpdateIntentProviderData :one
 UPDATE intents
 SET
-    status = $2,
-    provider_payment_id = $3,
+    provider_data = provider_data || $2,
     updated_at = now()
-WHERE id = $1 AND status = 'pending'
-    RETURNING *;
-
--- name: GetIntentByProviderPaymentID :one
-SELECT * FROM intents WHERE provider_payment_id = $1;
+WHERE id = $1
+RETURNING *;

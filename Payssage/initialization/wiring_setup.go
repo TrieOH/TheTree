@@ -14,7 +14,6 @@ import (
 	workspaceQueries "TriePayments/internal/core/application/workspaces/queries"
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/core/infrastructure"
-	"TriePayments/internal/core/infrastructure/providers"
 	apiKeysHandler "TriePayments/internal/core/interfaces/http/api_keys_handler"
 	intents "TriePayments/internal/core/interfaces/http/intent_handler"
 	"TriePayments/internal/core/interfaces/http/oauth_handler"
@@ -99,11 +98,12 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		}
 	}()
 
-	mpProvider, err := providers.NewMercadoPagoProvider(
+	mpProvider, err := domain.NewMercadoPagoProvider(
 		viper.GetString("MP_CLIENT_ID"),
 		viper.GetString("MP_ACCESS_TOKEN"),
 		viper.GetString("MP_CLIENT_SECRET"),
 		viper.GetString("MP_REDIRECT_URI"), // https://triepayments.com/oauth/mercadopago/callback
+		viper.GetString("MP_WEBHOOK_SECRET"),
 	)
 	if err != nil {
 		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
@@ -113,7 +113,7 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 		"mercadopago": mpProvider,
 	}
 
-	paymentProviderMap := map[string]domain.PaymentProvider{
+	paymentProviderMap := map[string]domain.PaymentAbstractionLayer{
 		"mercadopago": mpProvider,
 	}
 

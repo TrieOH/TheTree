@@ -1,7 +1,6 @@
 package workspaces_handler
 
 import (
-	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/validation"
 	"net/http"
 
@@ -17,7 +16,7 @@ import (
 // @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
-// @Success 200 {object} dto.IntentResponse "Intent retrieved successfully"
+// @Success 200 {object} domain.Intent "Intent retrieved successfully"
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
@@ -36,5 +35,5 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK().WithData(dto.MapIntentResponse(intent)).Send(w)
+	resp.OK().WithData(intent).Send(w)
 }

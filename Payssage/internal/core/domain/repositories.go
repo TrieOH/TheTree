@@ -18,8 +18,7 @@ type IntentRepository interface {
 	Cancel(ctx context.Context, id uuid.UUID) (*Intent, error)
 	Confirm(ctx context.Context, id uuid.UUID) (*Intent, error)
 	Fail(ctx context.Context, id uuid.UUID) (*Intent, error)
-	Pay(ctx context.Context, id uuid.UUID, providerPaymentID string, status IntentStatus) (*Intent, error)
-	GetByProviderPaymentID(ctx context.Context, providerPaymentID string) (*Intent, error)
+	UpdateProviderData(ctx context.Context, intent Intent) (*Intent, error)
 }
 
 type WorkspaceRepo interface {
@@ -80,9 +79,9 @@ type MarketplaceConfigRepo interface {
 }
 
 type WebhookEventRepo interface {
-	Create(ctx context.Context, toCreate WebhookEvent) (*WebhookEvent, error)
-	Enrich(ctx context.Context, id, workspaceID, intentID uuid.UUID, externalID string) (*WebhookEvent, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*WebhookEvent, error)
-	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]WebhookEvent, error)
-	ListByProvider(ctx context.Context, provider string) ([]WebhookEvent, error)
+	Create(ctx context.Context, toCreate WebhookEventOriginal) (*WebhookEventOriginal, error)
+	Enrich(ctx context.Context, id, workspaceID, intentID uuid.UUID, externalID string) (*WebhookEventOriginal, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*WebhookEventOriginal, error)
+	ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]WebhookEventOriginal, error)
+	ListByProvider(ctx context.Context, provider string) ([]WebhookEventOriginal, error)
 }

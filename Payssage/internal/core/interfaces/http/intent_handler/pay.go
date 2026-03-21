@@ -20,7 +20,7 @@ import (
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
 // @Param request body dto.PayIntentRequest true "Payment details"
-// @Success 200 {object} dto.IntentResponse "Intent charged successfully"
+// @Success 200 {object} domain.Intent "Intent charged successfully"
 // @Failure 400 {object} swag.ErrorResponse
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
@@ -58,5 +58,5 @@ func (h *Handler) PayIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK().WithData(dto.MapIntentResponse(intent)).Send(w)
+	resp.OK().WithData(intent).Send(w)
 }

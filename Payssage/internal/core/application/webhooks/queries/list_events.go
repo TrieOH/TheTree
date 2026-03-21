@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-func (uc *QueryService) ListWebhookEvents(ctx context.Context, workspaceName string) ([]domain.WebhookEvent, error) {
+func (uc *QueryService) ListWebhookEvents(ctx context.Context, workspaceName string) ([]domain.WebhookEventOriginal, error) {
 	ctx, span := uc.tracer.Start(ctx, "QueryService.ListWebhookEvents")
 	defer span.End()
 

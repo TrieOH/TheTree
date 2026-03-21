@@ -32,8 +32,8 @@ func (repo *webhookEventRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapWebhookEventFromDB(src *sqlc.WebhookEvent) *domain.WebhookEvent {
-	return &domain.WebhookEvent{
+func mapWebhookEventFromDB(src *sqlc.WebhookEvent) *domain.WebhookEventOriginal {
+	return &domain.WebhookEventOriginal{
 		ID:          src.ID,
 		WorkspaceID: src.WorkspaceID,
 		IntentID:    src.IntentID,
@@ -45,7 +45,7 @@ func mapWebhookEventFromDB(src *sqlc.WebhookEvent) *domain.WebhookEvent {
 	}
 }
 
-func (repo *webhookEventRepo) Create(ctx context.Context, toCreate domain.WebhookEvent) (*domain.WebhookEvent, error) {
+func (repo *webhookEventRepo) Create(ctx context.Context, toCreate domain.WebhookEventOriginal) (*domain.WebhookEventOriginal, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEventRepo.Create")
 	defer span.End()
 
@@ -62,7 +62,7 @@ func (repo *webhookEventRepo) Create(ctx context.Context, toCreate domain.Webhoo
 	return mapWebhookEventFromDB(&row), nil
 }
 
-func (repo *webhookEventRepo) Enrich(ctx context.Context, id, workspaceID, intentID uuid.UUID, externalID string) (*domain.WebhookEvent, error) {
+func (repo *webhookEventRepo) Enrich(ctx context.Context, id, workspaceID, intentID uuid.UUID, externalID string) (*domain.WebhookEventOriginal, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEventRepo.Enrich")
 	defer span.End()
 
@@ -79,7 +79,7 @@ func (repo *webhookEventRepo) Enrich(ctx context.Context, id, workspaceID, inten
 	return mapWebhookEventFromDB(&row), nil
 }
 
-func (repo *webhookEventRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.WebhookEvent, error) {
+func (repo *webhookEventRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.WebhookEventOriginal, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEventRepo.GetByID")
 	defer span.End()
 
@@ -91,7 +91,7 @@ func (repo *webhookEventRepo) GetByID(ctx context.Context, id uuid.UUID) (*domai
 	return mapWebhookEventFromDB(&row), nil
 }
 
-func (repo *webhookEventRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]domain.WebhookEvent, error) {
+func (repo *webhookEventRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]domain.WebhookEventOriginal, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEventRepo.ListByWorkspace")
 	defer span.End()
 
@@ -100,14 +100,14 @@ func (repo *webhookEventRepo) ListByWorkspace(ctx context.Context, workspaceID u
 		return nil, errx.FromDB(err, "webhook_event")
 	}
 
-	out := make([]domain.WebhookEvent, 0, len(rows))
+	out := make([]domain.WebhookEventOriginal, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, *mapWebhookEventFromDB(&row))
 	}
 	return out, nil
 }
 
-func (repo *webhookEventRepo) ListByProvider(ctx context.Context, provider string) ([]domain.WebhookEvent, error) {
+func (repo *webhookEventRepo) ListByProvider(ctx context.Context, provider string) ([]domain.WebhookEventOriginal, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEventRepo.ListByProvider")
 	defer span.End()
 
@@ -116,7 +116,7 @@ func (repo *webhookEventRepo) ListByProvider(ctx context.Context, provider strin
 		return nil, errx.FromDB(err, "webhook_event")
 	}
 
-	out := make([]domain.WebhookEvent, 0, len(rows))
+	out := make([]domain.WebhookEventOriginal, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, *mapWebhookEventFromDB(&row))
 	}

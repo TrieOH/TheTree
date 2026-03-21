@@ -6,6 +6,7 @@ import (
 	"TriePayments/internal/plataform/database/sqlc"
 	"TriePayments/internal/shared/errx"
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -36,20 +37,46 @@ func (repo *intentsRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapIntentFromDB(src *sqlc.Intent) *domain.Intent {
-	return &domain.Intent{
-		ID:                src.ID,
-		WorkspaceID:       src.WorkspaceID,
-		Amount:            src.Amount,
-		Currency:          src.Currency,
-		Status:            domain.IntentStatus(src.Status),
-		ClientSecret:      src.ClientSecret,
-		Provider:          src.Provider,
-		ProviderPaymentID: src.ProviderPaymentID,
-		Metadata:          src.Metadata,
-		CreatedAt:         src.CreatedAt,
-		UpdatedAt:         src.UpdatedAt,
-		ExternalOrderID:   src.ExternalOrderID,
+func mapIntentFromDB(src *sqlc.Intent) (*domain.Intent, error) {
+	intent := &domain.Intent{
+		ID:          src.ID,
+		WorkspaceID: src.WorkspaceID,
+		Amount:      src.Amount,
+		Currency:    src.Currency,
+		Status:      domain.IntentStatus(src.Status),
+		Provider:    src.Provider,
+		Metadata:    src.Metadata,
+		CreatedAt:   src.CreatedAt,
+		UpdatedAt:   src.UpdatedAt,
+	}
+
+	switch src.Provider {
+	case "mercadopago":
+		if src.ProviderData != nil {
+			var mp domain.MercadoPagoIntentData
+			if err := json.Unmarshal(src.ProviderData, &mp); err != nil {
+				return nil, errx.Internal("intent").SetMessage("failed to unmarshal mercadopago provider data").SetCause(err)
+			}
+			intent.MercadoPagoData = &mp
+		}
+	}
+
+	return intent, nil
+}
+
+func marshalProviderData(intent domain.Intent) (json.RawMessage, error) {
+	switch intent.Provider {
+	case "mercadopago":
+		if intent.MercadoPagoData == nil {
+			return json.RawMessage("{}"), nil
+		}
+		b, err := json.Marshal(intent.MercadoPagoData)
+		if err != nil {
+			return nil, errx.Internal("intent").SetMessage("failed to marshal mercadopago provider data").SetCause(err)
+		}
+		return b, nil
+	default:
+		return json.RawMessage("{}"), nil
 	}
 }
 
@@ -57,22 +84,26 @@ func (repo *intentsRepo) Create(ctx context.Context, toCreate domain.Intent) (*d
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Create")
 	defer span.End()
 
+	providerData, err := marshalProviderData(toCreate)
+	if err != nil {
+		return nil, err
+	}
+
 	sqlcIntent, err := repo.queries(ctx).CreateIntent(ctx, sqlc.CreateIntentParams{
-		ID:              toCreate.ID,
-		WorkspaceID:     toCreate.WorkspaceID,
-		Amount:          toCreate.Amount,
-		Currency:        toCreate.Currency,
-		Status:          sqlc.IntentStatus(toCreate.Status),
-		ClientSecret:    toCreate.ClientSecret,
-		Provider:        toCreate.Provider,
-		Metadata:        toCreate.Metadata,
-		ExternalOrderID: toCreate.ExternalOrderID,
+		ID:           toCreate.ID,
+		WorkspaceID:  toCreate.WorkspaceID,
+		Amount:       toCreate.Amount,
+		Currency:     toCreate.Currency,
+		Status:       sqlc.IntentStatus(toCreate.Status),
+		Provider:     toCreate.Provider,
+		ProviderData: providerData,
+		Metadata:     toCreate.Metadata,
 	})
 	if err != nil {
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }
 
 func (repo *intentsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Intent, error) {
@@ -84,7 +115,7 @@ func (repo *intentsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Int
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }
 
 func (repo *intentsRepo) List(ctx context.Context) ([]domain.Intent, error) {
@@ -98,7 +129,11 @@ func (repo *intentsRepo) List(ctx context.Context) ([]domain.Intent, error) {
 
 	out := make([]domain.Intent, 0, len(sqlcIntents))
 	for _, intent := range sqlcIntents {
-		out = append(out, *mapIntentFromDB(&intent))
+		mapped, err := mapIntentFromDB(&intent)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *mapped)
 	}
 	return out, nil
 }
@@ -114,7 +149,11 @@ func (repo *intentsRepo) ListIntentsByWorkspace(ctx context.Context, workspaceID
 
 	out := make([]domain.Intent, 0, len(sqlcIntents))
 	for _, intent := range sqlcIntents {
-		out = append(out, *mapIntentFromDB(&intent))
+		mapped, err := mapIntentFromDB(&intent)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *mapped)
 	}
 	return out, nil
 }
@@ -128,7 +167,7 @@ func (repo *intentsRepo) Cancel(ctx context.Context, id uuid.UUID) (*domain.Inte
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }
 
 func (repo *intentsRepo) Confirm(ctx context.Context, id uuid.UUID) (*domain.Intent, error) {
@@ -140,7 +179,7 @@ func (repo *intentsRepo) Confirm(ctx context.Context, id uuid.UUID) (*domain.Int
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }
 
 func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*domain.Intent, error) {
@@ -152,33 +191,25 @@ func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*domain.Intent
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) Pay(ctx context.Context, id uuid.UUID, providerPaymentID string, status domain.IntentStatus) (*domain.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Pay")
+func (repo *intentsRepo) UpdateProviderData(ctx context.Context, intent domain.Intent) (*domain.Intent, error) {
+	ctx, span := repo.tracer.Start(ctx, "IntentRepo.UpdateProviderData")
 	defer span.End()
 
-	sqlcIntent, err := repo.queries(ctx).PayIntent(ctx, sqlc.PayIntentParams{
-		ID:                id,
-		Status:            sqlc.IntentStatus(status),
-		ProviderPaymentID: &providerPaymentID,
+	providerData, err := marshalProviderData(intent)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlcIntent, err := repo.queries(ctx).UpdateIntentProviderData(ctx, sqlc.UpdateIntentProviderDataParams{
+		ID:           intent.ID,
+		ProviderData: providerData,
 	})
 	if err != nil {
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	return mapIntentFromDB(&sqlcIntent), nil
-}
-
-func (repo *intentsRepo) GetByProviderPaymentID(ctx context.Context, providerPaymentID string) (*domain.Intent, error) {
-	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Pay")
-	defer span.End()
-
-	sqlcIntent, err := repo.queries(ctx).GetIntentByProviderPaymentID(ctx, &providerPaymentID)
-	if err != nil {
-		return nil, errx.FromDB(err, "intent")
-	}
-
-	return mapIntentFromDB(&sqlcIntent), nil
+	return mapIntentFromDB(&sqlcIntent)
 }

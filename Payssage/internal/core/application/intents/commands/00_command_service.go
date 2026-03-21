@@ -15,7 +15,7 @@ type CommandService struct {
 	marketplace      domain.MarketplaceConfigRepo
 	webhooks         domain.WebhookDispatcher
 	oauthProvider    map[string]domain.OAuthProvider
-	paymentProviders map[string]domain.PaymentProvider
+	paymentProviders map[string]domain.PaymentAbstractionLayer
 	gaClient         *goauth.Client
 	tx               database.TxRunner
 	tracer           trace.Tracer
@@ -28,7 +28,7 @@ func New(
 	marketplace domain.MarketplaceConfigRepo,
 	webhooks domain.WebhookDispatcher,
 	oauthProvider map[string]domain.OAuthProvider,
-	paymentProviders map[string]domain.PaymentProvider,
+	paymentProviders map[string]domain.PaymentAbstractionLayer,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,

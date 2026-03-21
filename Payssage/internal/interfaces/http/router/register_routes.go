@@ -70,7 +70,7 @@ func registerIntentsRoutes(
 	r.With(authMW.AnyAuth()).Get("/workspaces/{name}/intents", h.ListByWorkspace)
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.APIKey())
-		r.Post("/intents", h.CreateIntent)
+		r.Post("/intents", h.InitiateCheckout)
 		r.Get("/intents/{intent_id}", h.GetByID)
 		r.Post("/intents/{intent_id}/cancel", h.CancelIntent)
 		r.Post("/intents/{intent_id}/pay", h.PayIntent)
