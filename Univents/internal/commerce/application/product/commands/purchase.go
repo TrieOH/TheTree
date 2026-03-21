@@ -244,7 +244,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	}
 
 	// ── Phase 4: payment intent (no locks held) ───────────────────────────────
-	intent, err := uc.payments.CreateIntent(ctx, paymentsSDK.CreateIntentRequest{
+	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
 		Amount:             int64(total),
 		Currency:           "brl",
 		Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
