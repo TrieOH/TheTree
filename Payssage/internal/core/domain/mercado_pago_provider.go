@@ -189,6 +189,12 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		return nil, err
 	}
 
+	telemetry.Log().Info("MP Raw Request",
+		zap.String("body", string(bodyBytes)),
+		zap.String("token", request.MPSellerToken),
+		zap.String("idempotency_key", intent.ID.String()),
+	)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
