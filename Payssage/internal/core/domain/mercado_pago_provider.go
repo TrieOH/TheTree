@@ -18,7 +18,6 @@ import (
 
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
-	"github.com/mercadopago/sdk-go/pkg/order"
 	"go.uber.org/zap"
 )
 
@@ -158,49 +157,73 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		return nil, err
 	}
 
-	cfg, err := config.New(request.MPSellerToken)
-	if err != nil {
-		return nil, wrapMPError(err)
-	}
-
-	client := order.NewClient(cfg)
-
-	orderReq := order.Request{
-		Type:              "online",
-		TotalAmount:       formatAmount(request.Amount),
-		ExternalReference: "tp_" + intent.ID.String(),
-		ProcessingMode:    "automatic",
-		MarketPlaceFee:    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
-		Currency:          request.Currency,
-		Transactions: &order.TransactionRequest{
-			Payments: []order.PaymentRequest{
-				{
-					Amount: formatAmount(request.Amount),
-					PaymentMethod: &order.PaymentMethodRequest{
-						ID:           request.MPPaymentMethodID,
-						Type:         request.MPPaymentMethodType,
-						Token:        request.MPPayerToken,
-						Installments: request.Installments,
+	body := map[string]any{
+		"order_object": map[string]any{
+			"type":               "online",
+			"total_amount":       formatAmount(request.Amount),
+			"external_reference": intent.ID.String(),
+			"processing_mode":    "automatic",
+			"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+			"currency":           strings.ToUpper(request.Currency),
+			"transactions": map[string]any{
+				"payments": []map[string]any{
+					{
+						"amount": formatAmount(request.Amount),
+						"payment_method": map[string]any{
+							"id":           request.MPPaymentMethodID,
+							"type":         request.MPPaymentMethodType,
+							"token":        request.MPPayerToken,
+							"installments": request.Installments,
+						},
 					},
 				},
 			},
-		},
-		Payer: &order.PayerRequest{
-			Email: request.Payer.Email,
+			"payer": map[string]any{
+				"email": request.Payer.Email,
+			},
 		},
 	}
 
-	telemetry.Log().Info("MP Create Order Request", zap.Any("order_object", orderReq))
+	telemetry.Log().Info("MP Create Order Request", zap.Any("order_object", body))
 
-	mpOrder, err := client.Create(ctx, orderReq)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return nil, wrapMPError(err)
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	req.Header.Set("X-Idempotency-Key", intent.ID.String())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var mpResp struct {
+		ID           string `json:"id"`
+		Status       string `json:"status"`
+		StatusDetail string `json:"status_detail"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&mpResp); err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago error %d: %s - %s", resp.StatusCode, mpResp.Status, mpResp.StatusDetail)
 	}
 
 	intent.MercadoPagoData = &MercadoPagoIntentData{
-		OrderID:           mpOrder.ID,
-		OrderStatus:       mpOrder.Status,
-		OrderStatusDetail: mpOrder.StatusDetail,
+		OrderID:           mpResp.ID,
+		OrderStatus:       mpResp.Status,
+		OrderStatusDetail: mpResp.StatusDetail,
 	}
 
 	return intent, nil
