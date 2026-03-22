@@ -370,6 +370,19 @@ func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Con
 		return nil, errors.New("close socket")
 	}
 
+	if err := uc.sessions.Save(ctx, *session); err != nil {
+		return nil, err
+	}
+
+	return &payReq, nil
+}
+
+func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, error) {
+	edition, err := uc.editions.GetByID(ctx, session.EditionID)
+	if err != nil {
+		return nil, err
+	}
+
 	telemetry.Log().Info("Before Initiate",
 		zap.Int("total", session.TotalCents),
 		zap.String("currency", "BRL"),
@@ -379,18 +392,10 @@ func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Con
 		zap.Int("installments", payReq.Installments),
 		zap.String("card_token", payReq.CardToken),
 		zap.String("payment_method_type", payReq.PaymentMethodType),
-		zap.String("seller_credential_id", payReq.SellerCredentialID),
+		zap.String("seller_credential_id", edition.TriePaymentsCredentialID.String()),
 		zap.String("payer_email", payReq.PayerEmail),
 	)
 
-	if err := uc.sessions.Save(ctx, *session); err != nil {
-		return nil, err
-	}
-
-	return &payReq, nil
-}
-
-func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, error) {
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
 		Amount:             int64(session.TotalCents),
 		Currency:           "BRL",
@@ -400,8 +405,22 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		Installments:       payReq.Installments,
 		CardToken:          payReq.CardToken,
 		PaymentMethodType:  payReq.PaymentMethodType,
-		SellerCredentialID: payReq.SellerCredentialID,
+		SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 		PayerEmail:         payReq.PayerEmail,
+	})
+	if err != nil {
+		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
+		}
+		return nil, err
+	}
+
+	chargedIntent, err := uc.payments.Charge(ctx, intent.ID, paymentsSDK.ChargeRequest{
+		SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 	})
 	if err != nil {
 		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
@@ -419,7 +438,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	}
 
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
-	return intent, nil
+	return chargedIntent, nil
 }
 
 type recordPurchaseInput struct {
