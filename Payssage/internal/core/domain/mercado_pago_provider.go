@@ -171,10 +171,9 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
 		"items": []map[string]any{
 			{
-				"title":        "Payment",
-				"unit_price":   formatAmount(request.Amount),
-				"quantity":     1,
-				"unit_measure": "unit",
+				"title":      "Payment",
+				"unit_price": formatAmount(request.Amount),
+				"quantity":   1,
 			},
 		},
 		"payer": map[string]any{
@@ -314,10 +313,9 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
 		"items": []map[string]any{
 			{
-				"title":        "Payment",
-				"unit_price":   formatAmount(request.Amount),
-				"quantity":     1,
-				"unit_measure": "unit",
+				"title":      "Payment",
+				"unit_price": formatAmount(request.Amount),
+				"quantity":   1,
 			},
 		},
 		"payer": map[string]any{
