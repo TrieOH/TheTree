@@ -370,10 +370,6 @@ func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Con
 		return nil, errors.New("close socket")
 	}
 
-	if err := uc.sessions.Save(ctx, *session); err != nil {
-		return nil, err
-	}
-
 	return &payReq, nil
 }
 
