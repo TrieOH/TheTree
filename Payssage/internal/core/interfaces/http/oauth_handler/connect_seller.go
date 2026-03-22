@@ -3,11 +3,13 @@ package oauth_handler
 import (
 	"TriePayments/internal/core/application/oauth/commands"
 	"TriePayments/internal/core/interfaces/http/dto"
+	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/validation"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 // ConnectSeller godoc
@@ -44,6 +46,7 @@ func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 		FinalRedirectURL:    req.FinalRedirectURL,
 	})
 	if err != nil {
+		telemetry.Log().Info("Error connecting seller", zap.Error(err))
 		resp.FromError(err).Send(w)
 		return
 	}
