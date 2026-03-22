@@ -52,10 +52,7 @@ func (c *Client) CancelIntent(ctx context.Context, intentID string) (*Intent, er
 }
 
 type ChargeRequest struct {
-	CardToken       string `json:"card_token,omitempty"`
-	PaymentMethodID string `json:"payment_method_id,omitempty"`
-	Installments    int    `json:"installments,omitempty"`
-	PayerEmail      string `json:"payer_email,omitempty"`
+	SellerCredentialID string `json:"seller_credential_id"`
 }
 
 func (c *Client) Charge(ctx context.Context, intentID string, req ChargeRequest) (*Intent, error) {
