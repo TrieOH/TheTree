@@ -50,6 +50,10 @@ func mapIntentFromDB(src *sqlc.Intent) (*domain.Intent, error) {
 		UpdatedAt:   src.UpdatedAt,
 	}
 
+	if src.SellerCredentialID != nil {
+		intent.SellerCredentialID = src.SellerCredentialID
+	}
+
 	switch src.Provider {
 	case "mercadopago":
 		if src.ProviderData != nil {
@@ -90,14 +94,15 @@ func (repo *intentsRepo) Create(ctx context.Context, toCreate domain.Intent) (*d
 	}
 
 	sqlcIntent, err := repo.queries(ctx).CreateIntent(ctx, sqlc.CreateIntentParams{
-		ID:           toCreate.ID,
-		WorkspaceID:  toCreate.WorkspaceID,
-		Amount:       toCreate.Amount,
-		Currency:     toCreate.Currency,
-		Status:       sqlc.IntentStatus(toCreate.Status),
-		Provider:     toCreate.Provider,
-		ProviderData: providerData,
-		Metadata:     toCreate.Metadata,
+		ID:                 toCreate.ID,
+		WorkspaceID:        toCreate.WorkspaceID,
+		Amount:             toCreate.Amount,
+		Currency:           toCreate.Currency,
+		Status:             sqlc.IntentStatus(toCreate.Status),
+		Provider:           toCreate.Provider,
+		ProviderData:       providerData,
+		Metadata:           toCreate.Metadata,
+		SellerCredentialID: toCreate.SellerCredentialID,
 	})
 	if err != nil {
 		return nil, errx.FromDB(err, "intent")

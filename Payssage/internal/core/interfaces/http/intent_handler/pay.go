@@ -10,7 +10,7 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
-// PayIntent godoc
+// Charge godoc
 // @Summary Pay a payment intent
 // @Description Charges the payment provider for a pending intent using the provided card token
 // @Tags intents
@@ -25,8 +25,8 @@ import (
 // @Failure 401 {object} swag.ErrorResponse
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
-// @Router /intents/{intent_id}/pay [post]
-func (h *Handler) PayIntent(w http.ResponseWriter, r *http.Request) {
+// @Router /intents/{intent_id}/charge [post]
+func (h *Handler) Charge(w http.ResponseWriter, r *http.Request) {
 	intentID, rs := validation.GetUUID(r, "intent_id")
 	if rs != nil {
 		rs.Send(w)
@@ -39,7 +39,7 @@ func (h *Handler) PayIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	intent, err := h.commands.PayIntent(r.Context(), intentID, commands.PayIntentInput{
+	intent, err := h.commands.Charge(r.Context(), intentID, commands.PayIntentInput{
 		CardToken:       req.CardToken,
 		PaymentMethodID: req.PaymentMethodID,
 		Installments:    req.Installments,

@@ -82,11 +82,12 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 			return nil, errors.New("validation failed:\n" + strings.Join(validationErrors, "\n"))
 		}
 		intent, err = p.InitiateCheckout(ctx, &domain.InitiateCheckoutRequest{
-			WorkspaceID: workspace.ID,
-			Amount:      in.Amount,
-			Currency:    strings.ToUpper(in.Currency),
-			Provider:    in.Provider,
-			Metadata:    in.Metadata,
+			WorkspaceID:        workspace.ID,
+			SellerCredentialID: in.SellerCredentialID,
+			Amount:             in.Amount,
+			Currency:           strings.ToUpper(in.Currency),
+			Provider:           in.Provider,
+			Metadata:           in.Metadata,
 			Payer: domain.Payer{
 				Email: in.PayerEmail,
 			},

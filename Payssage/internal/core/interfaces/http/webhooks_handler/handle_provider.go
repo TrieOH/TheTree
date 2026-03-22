@@ -3,6 +3,7 @@ package workspaces_handler
 import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/core/interfaces/http/dto"
+	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/validation"
 	"encoding/json"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // HandleProviderWebhook godoc
@@ -42,12 +44,11 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 
-		/*
-			if r.URL.Query().Get("topic") != "orders_v2" {
-				telemetry.Log().Info("invalid topic", zap.String("topic", r.URL.Query().Get("topic")))
-				resp.BadRequest("unsupported topic, must be: orders_v2").Send(w)
-				return
-			}*/
+		if r.URL.Query().Get("type") != "order" {
+			telemetry.Log().Info("ignoring non-order webhook", zap.String("type", r.URL.Query().Get("type")))
+			resp.OK("ignored").Send(w)
+			return
+		}
 
 		var req dto.MercadoPagoWebhookRequest
 		if err = json.NewDecoder(r.Body).Decode(&req); err != nil {

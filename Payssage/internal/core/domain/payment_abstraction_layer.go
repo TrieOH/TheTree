@@ -53,14 +53,17 @@ type ChargeRequest struct {
 	// PaymentMethod hints — each provider maps these to its own enum.
 	// Leave nil to allow all methods.
 	AllowedMethods []PaymentMethod
+
+	MPSellerToken string
 }
 
 type InitiateCheckoutRequest struct {
-	WorkspaceID uuid.UUID
-	Amount      int64
-	Currency    string
-	Provider    string
-	Metadata    json.RawMessage
+	WorkspaceID        uuid.UUID
+	SellerCredentialID uuid.UUID
+	Amount             int64
+	Currency           string
+	Provider           string
+	Metadata           json.RawMessage
 
 	Payer Payer
 

@@ -4,25 +4,25 @@ import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/shared/errx"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/mercadopago/sdk-go/pkg/config"
-	"github.com/mercadopago/sdk-go/pkg/payment"
-	"github.com/spf13/viper"
 )
 
-func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymentID string, eventID uuid.UUID) error {
+func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpOrderID string, eventID uuid.UUID) error {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.HandleMercadoPagoWebhook")
 	defer span.End()
 
-	log.Printf("[mp-webhook] looking up intent for provider_payment_id=%s", mpPaymentID)
+	log.Printf("[mp-webhook] looking up intent for order_id=%s", mpOrderID)
 
-	intent, err := uc.intents.GetByMPOrderID(ctx, mpPaymentID)
+	intent, err := uc.intents.GetByMPOrderID(ctx, mpOrderID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			log.Printf("[mp-webhook] no intent found for mp payment %s", mpPaymentID)
+			log.Printf("[mp-webhook] no intent found for mp order %s", mpOrderID)
 			return nil
 		}
 		return err
@@ -30,22 +30,51 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymen
 
 	log.Printf("[mp-webhook] found intent=%s status=%s", intent.ID, intent.Status)
 
-	cfg, err := config.New(viper.GetString("MP_ACCESS_TOKEN"))
+	if intent.SellerCredentialID == nil {
+		return fmt.Errorf("intent %s has no seller credential", intent.ID)
+	}
+
+	cred, err := uc.credentials.GetByID(ctx, *intent.SellerCredentialID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch seller credential: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		"https://api.mercadopago.com/v1/orders/"+mpOrderID,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
-	client := payment.NewClient(cfg)
-	resource, err := client.Get(ctx, parseInt(mpPaymentID))
+	req.Header.Set("Authorization", "Bearer "+cred.Credentials.AccessToken)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("[mp-webhook] failed to fetch mp payment %s: %v", mpPaymentID, err)
+		log.Printf("[mp-webhook] failed to fetch mp order %s: %v", mpOrderID, err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	rawBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("mercadopago fetch order error %d: %s", resp.StatusCode, string(rawBody))
+	}
+
+	var mpOrder struct {
+		ID           string `json:"id"`
+		Status       string `json:"status"`
+		StatusDetail string `json:"status_detail"`
+	}
+	if err := json.Unmarshal(rawBody, &mpOrder); err != nil {
 		return err
 	}
 
-	log.Printf("[mp-webhook] mp payment %s status=%s", mpPaymentID, resource.Status)
+	log.Printf("[mp-webhook] mp order %s status=%s status_detail=%s", mpOrderID, mpOrder.Status, mpOrder.StatusDetail)
 
-	event := mapMPStatusToEvent(resource.Status)
+	event := mapMPOrderStatusToEvent(mpOrder.Status, mpOrder.StatusDetail)
 	if event == "" {
-		log.Printf("[mp-webhook] ignoring mp payment status=%s payment=%s", resource.Status, mpPaymentID)
+		log.Printf("[mp-webhook] ignoring mp order status=%s detail=%s order=%s", mpOrder.Status, mpOrder.StatusDetail, mpOrderID)
 		return nil
 	}
 
@@ -53,19 +82,16 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpPaymen
 	return uc.HandleProviderWebhook(ctx, eventID, "mercadopago", intent.ID.String(), event)
 }
 
-func mapMPStatusToEvent(status string) string {
+func mapMPOrderStatusToEvent(status, statusDetail string) string {
 	switch status {
-	case "approved":
+	case "processed":
 		return domain.EventPaymentSucceeded
-	case "rejected", "cancelled":
-		return domain.EventPaymentFailed
+	case "action_required", "processing":
+		return ""
 	default:
+		if statusDetail == "rejected" || statusDetail == "cancelled" {
+			return domain.EventPaymentFailed
+		}
 		return ""
 	}
-}
-
-func parseInt(s string) int {
-	var i int
-	fmt.Sscanf(s, "%d", &i)
-	return i
 }

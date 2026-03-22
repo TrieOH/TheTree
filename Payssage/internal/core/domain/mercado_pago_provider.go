@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
 	"github.com/spf13/viper"
@@ -159,67 +160,200 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		return nil, err
 	}
 
-	body := map[string]any{
-		"transaction_amount": json.Number(formatAmount(request.Amount)),
+	intent.SellerCredentialID = &request.SellerCredentialID
+
+	// ── Step 1: create order in manual mode ───────────────────────────────────
+	orderBody := map[string]any{
+		"type":               "online",
+		"processing_mode":    "manual",
 		"external_reference": intent.ID.String(),
-		"application_fee":    json.Number(formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS))),
-		"installments":       request.Installments,
-		"payment_method_id":  request.MPPaymentMethodID,
-		"token":              request.MPPayerToken,
+		"total_amount":       formatAmount(request.Amount),
+		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
 		"payer": map[string]any{
 			"email": request.Payer.Email,
 		},
 	}
 
-	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))
+	telemetry.Log().Info("MP Create Order Request", zap.Any("body", orderBody))
 
-	bodyBytes, err := json.Marshal(body)
+	orderBytes, err := json.Marshal(orderBody)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/payments", bytes.NewReader(bodyBytes))
+	orderReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(orderBytes))
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
-	req.Header.Set("X-Idempotency-Key", intent.ID.String())
+	orderReq.Header.Set("Content-Type", "application/json")
+	orderReq.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	orderReq.Header.Set("X-Idempotency-Key", intent.ID.String())
 
-	resp, err := http.DefaultClient.Do(req)
+	orderResp, err := http.DefaultClient.Do(orderReq)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer orderResp.Body.Close()
 
-	rawBody, _ := io.ReadAll(resp.Body)
+	orderRawBody, _ := io.ReadAll(orderResp.Body)
 
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mercadopago error %d: %s", resp.StatusCode, string(rawBody))
+	if orderResp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago create order error %d: %s", orderResp.StatusCode, string(orderRawBody))
 	}
 
-	var mpResp struct {
-		ID           int64  `json:"id"`
-		Status       string `json:"status"`
-		StatusDetail string `json:"status_detail"`
+	var mpOrder struct {
+		ID string `json:"id"`
 	}
-
-	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
+	if err := json.Unmarshal(orderRawBody, &mpOrder); err != nil {
 		return nil, err
+	}
+
+	// ── Step 2: attach transaction ────────────────────────────────────────────
+	txBody := map[string]any{
+		"payments": []map[string]any{
+			{
+				"amount": formatAmount(request.Amount),
+				"payment_method": map[string]any{
+					"id":                   request.MPPaymentMethodID,
+					"type":                 request.MPPaymentMethodType,
+					"token":                request.MPPayerToken,
+					"installments":         request.Installments,
+					"statement_descriptor": "Univents",
+				},
+			},
+		},
+	}
+
+	telemetry.Log().Info("MP Attach Transaction Request", zap.Any("body", txBody))
+
+	txBytes, err := json.Marshal(txBody)
+	if err != nil {
+		return nil, err
+	}
+
+	txIDKey, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+
+	txReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		"https://api.mercadopago.com/v1/orders/"+mpOrder.ID+"/transactions",
+		bytes.NewReader(txBytes),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	txReq.Header.Set("Content-Type", "application/json")
+	txReq.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	txReq.Header.Set("X-Idempotency-Key", txIDKey.String())
+
+	txResp, err := http.DefaultClient.Do(txReq)
+	if err != nil {
+		return nil, err
+	}
+	defer txResp.Body.Close()
+
+	txRawBody, _ := io.ReadAll(txResp.Body)
+
+	if txResp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago attach transaction error %d: %s", txResp.StatusCode, string(txRawBody))
+	}
+
+	var mpTx struct {
+		Payments []struct {
+			ID     string `json:"id"`
+			Status string `json:"status"`
+		} `json:"payments"`
+	}
+	if err := json.Unmarshal(txRawBody, &mpTx); err != nil {
+		return nil, err
+	}
+
+	txStatus := "pending"
+	txID := ""
+	if len(mpTx.Payments) > 0 {
+		txStatus = mpTx.Payments[0].Status
+		txID = mpTx.Payments[0].ID
 	}
 
 	intent.MercadoPagoData = &MercadoPagoIntentData{
-		OrderID:           fmt.Sprintf("%d", mpResp.ID),
-		OrderStatus:       mpResp.Status,
-		OrderStatusDetail: mpResp.StatusDetail,
+		OrderID:           mpOrder.ID,
+		TransactionID:     txID,
+		OrderStatus:       txStatus,
+		OrderStatusDetail: "created",
 	}
 
 	return intent, nil
 }
 
 func (p *MercadoPagoImpl) Charge(ctx context.Context, request *ChargeRequest) (*Intent, error) {
-	return nil, wrapMPError(errors.New("not implemented"))
+	chargeIDKey, err := uuid.NewV7()
+	if err != nil {
+		return nil, wrapMPError(err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		"https://api.mercadopago.com/v1/orders/"+request.Intent.MercadoPagoData.OrderID+"/process",
+		nil,
+	)
+	if err != nil {
+		return nil, wrapMPError(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	req.Header.Set("X-Idempotency-Key", chargeIDKey.String())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, wrapMPError(err)
+	}
+	defer resp.Body.Close()
+
+	rawBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 400 {
+		return nil, wrapMPError(fmt.Errorf("mercadopago process order error %d: %s", resp.StatusCode, string(rawBody)))
+	}
+
+	var mpResp struct {
+		ID           string `json:"id"`
+		Status       string `json:"status"`
+		StatusDetail string `json:"status_detail"`
+		Transactions struct {
+			Payments []struct {
+				ID           string `json:"id"`
+				Status       string `json:"status"`
+				StatusDetail string `json:"status_detail"`
+				PaidAmount   string `json:"paid_amount"`
+			} `json:"payments"`
+		} `json:"transactions"`
+	}
+
+	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
+		return nil, wrapMPError(err)
+	}
+
+	intent := request.Intent
+	intent.MercadoPagoData.OrderStatus = mpResp.Status
+	intent.MercadoPagoData.OrderStatusDetail = mpResp.StatusDetail
+
+	if len(mpResp.Transactions.Payments) > 0 {
+		tx := mpResp.Transactions.Payments[0]
+		intent.MercadoPagoData.TransactionID = tx.ID
+		intent.MercadoPagoData.TransactionStatus = tx.Status
+		intent.MercadoPagoData.TransactionStatusDetail = tx.StatusDetail
+	}
+
+	telemetry.Log().Info("MP Process Order Response",
+		zap.String("order_id", mpResp.ID),
+		zap.String("status", mpResp.Status),
+		zap.String("status_detail", mpResp.StatusDetail),
+	)
+
+	return &intent, nil
 }
 
 func (p *MercadoPagoImpl) Refund(ctx context.Context, request *RefundRequest) (*Intent, error) {
