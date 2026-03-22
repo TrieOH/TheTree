@@ -420,20 +420,12 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		return intent, true, nil
 	}
 
-	chargedIntent, err := uc.payments.Charge(ctx, intent.ID, paymentsSDK.ChargeRequest{
-		SellerCredentialID: edition.TriePaymentsCredentialID.String(),
-	})
-	if err != nil {
-		unreserveAndCleanup()
-		return nil, false, err
-	}
-
 	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
 		telemetry.Log().Debug("Failed to delete session after checkout", zap.Error(err))
 	}
 
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
-	return chargedIntent, false, nil
+	return intent, false, nil
 }
 
 type recordPurchaseInput struct {
