@@ -52,7 +52,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			},
 		})
 
-		payReq, err := uc.submitPayment(ctx, conn, session)
+		payReq, err := uc.submitPayment(ctx, conn)
 		if err != nil || payReq == nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			return err
 		}
 
-		payReq, err := uc.submitPayment(ctx, conn, session)
+		payReq, err := uc.submitPayment(ctx, conn)
 		if err != nil || payReq == nil {
 			return err
 		}
@@ -341,16 +341,9 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 	return &session, nil
 }
 
-func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession) (*dtos.SubmitPaymentPayload, error) {
+func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Conn) (*dtos.SubmitPaymentPayload, error) {
 	var payMsg sockets.WSMessage
 	if err := conn.ReadJSON(&payMsg); err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
-		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-		}
-		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
-		}
 		return nil, errors.New("close socket")
 	}
 
@@ -412,6 +405,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		if len(updates) > 0 {
 			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
 		}
+		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
 		return nil, err
 	}
 
@@ -426,6 +420,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		if len(updates) > 0 {
 			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
 		}
+		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
 		return nil, err
 	}
 
@@ -441,6 +436,8 @@ type recordPurchaseInput struct {
 	session *domain.PurchaseSession
 	intent  *paymentsSDK.Intent
 }
+
+// FIXME Use outbox pattern to avoid user losing purchase on TX failure
 
 func (uc *CommandService) recordPurchase(ctx context.Context, conn *websocket.Conn, in recordPurchaseInput) error {
 	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
