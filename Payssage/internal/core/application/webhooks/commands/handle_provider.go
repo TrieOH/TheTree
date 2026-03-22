@@ -62,12 +62,13 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, eventID uui
 	// build normalized payload
 	var payloadBytes []byte
 	payloadBytes, err = json.Marshal(domain.WebhookPayload{
-		Event:       event,
-		IntentID:    intent.ID,
-		WorkspaceID: intent.WorkspaceID,
-		Amount:      intent.Amount,
-		Currency:    intent.Currency,
-		Metadata:    intent.Metadata,
+		Event:           event,
+		IntentID:        intent.ID,
+		WorkspaceID:     intent.WorkspaceID,
+		Amount:          intent.Amount,
+		Currency:        intent.Currency,
+		Metadata:        intent.Metadata,
+		MercadoPagoData: intent.MercadoPagoData,
 	})
 	if err != nil {
 		return err
