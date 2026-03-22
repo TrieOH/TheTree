@@ -162,134 +162,68 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 
 	intent.SellerCredentialID = &request.SellerCredentialID
 
-	// ── Step 1: create order in manual mode ───────────────────────────────────
-	orderBody := map[string]any{
-		"type":               "online",
-		"processing_mode":    "manual",
-		"external_reference": intent.ID.String(),
-		"total_amount":       formatAmount(request.Amount),
-		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
-		"items": []map[string]any{
-			{
-				"title":      "Payment",
-				"unit_price": formatAmount(request.Amount),
-				"quantity":   1,
-			},
-		},
+	body := map[string]any{
+		"transaction_amount":   formatAmount(request.Amount),
+		"application_fee":      formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"installments":         request.Installments,
+		"token":                request.MPCardToken,
+		"payment_method_id":    request.MPPaymentMethodID,
+		"external_reference":   intent.ID.String(),
+		"statement_descriptor": "TriePayments Managed Purchase",
 		"payer": map[string]any{
 			"email": request.Payer.Email,
 		},
 	}
 
-	telemetry.Log().Info("MP Create Order Request", zap.Any("body", orderBody))
+	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))
 
-	orderBytes, err := json.Marshal(orderBody)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	orderReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(orderBytes))
+	idempotencyKey, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
 
-	orderReq.Header.Set("Content-Type", "application/json")
-	orderReq.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
-	orderReq.Header.Set("X-Idempotency-Key", intent.ID.String())
-
-	orderResp, err := http.DefaultClient.Do(orderReq)
-	if err != nil {
-		return nil, err
-	}
-	defer orderResp.Body.Close()
-
-	orderRawBody, _ := io.ReadAll(orderResp.Body)
-
-	if orderResp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mercadopago create order error %d: %s", orderResp.StatusCode, string(orderRawBody))
-	}
-
-	var mpOrder struct {
-		ID string `json:"id"`
-	}
-	if err := json.Unmarshal(orderRawBody, &mpOrder); err != nil {
-		return nil, err
-	}
-
-	// ── Step 2: attach transaction ────────────────────────────────────────────
-	txBody := map[string]any{
-		"payments": []map[string]any{
-			{
-				"amount": formatAmount(request.Amount),
-				"payment_method": map[string]any{
-					"id":                   request.MPPaymentMethodID,
-					"type":                 request.MPPaymentMethodType,
-					"token":                request.MPPayerToken,
-					"installments":         request.Installments,
-					"statement_descriptor": "Univents",
-				},
-			},
-		},
-	}
-
-	telemetry.Log().Info("MP Attach Transaction Request", zap.Any("body", txBody))
-
-	txBytes, err := json.Marshal(txBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/payments", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
 
-	txIDKey, err := uuid.NewV7()
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	req.Header.Set("X-Idempotency-Key", idempotencyKey.String())
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	txReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://api.mercadopago.com/v1/orders/"+mpOrder.ID+"/transactions",
-		bytes.NewReader(txBytes),
-	)
-	if err != nil {
+	rawBody, _ := io.ReadAll(resp.Body)
+
+	telemetry.Log().Info("MP Create Payment Request Raw Body", zap.Any("body", string(rawBody)))
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago create payment error %d: %s", resp.StatusCode, string(rawBody))
+	}
+
+	var mpResp struct {
+		ID           int    `json:"id"`
+		Status       string `json:"status"`
+		StatusDetail string `json:"status_detail"`
+	}
+	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
 		return nil, err
-	}
-
-	txReq.Header.Set("Content-Type", "application/json")
-	txReq.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
-	txReq.Header.Set("X-Idempotency-Key", txIDKey.String())
-
-	txResp, err := http.DefaultClient.Do(txReq)
-	if err != nil {
-		return nil, err
-	}
-	defer txResp.Body.Close()
-
-	txRawBody, _ := io.ReadAll(txResp.Body)
-
-	if txResp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mercadopago attach transaction error %d: %s", txResp.StatusCode, string(txRawBody))
-	}
-
-	var mpTx struct {
-		Payments []struct {
-			ID     string `json:"id"`
-			Status string `json:"status"`
-		} `json:"payments"`
-	}
-	if err := json.Unmarshal(txRawBody, &mpTx); err != nil {
-		return nil, err
-	}
-
-	txStatus := "pending"
-	txID := ""
-	if len(mpTx.Payments) > 0 {
-		txStatus = mpTx.Payments[0].Status
-		txID = mpTx.Payments[0].ID
 	}
 
 	intent.MercadoPagoData = &MercadoPagoIntentData{
-		OrderID:           mpOrder.ID,
-		TransactionID:     txID,
-		OrderStatus:       txStatus,
-		OrderStatusDetail: "created",
+		OrderID:           strconv.Itoa(mpResp.ID),
+		TransactionID:     strconv.Itoa(mpResp.ID),
+		OrderStatus:       mpResp.Status,
+		OrderStatusDetail: mpResp.StatusDetail,
 		PaymentMethodID:   request.MPPaymentMethodID,
 		PaymentMethodType: request.MPPaymentMethodType,
 	}

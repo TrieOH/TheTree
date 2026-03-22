@@ -76,7 +76,7 @@ type InitiateCheckoutRequest struct {
 	MPMarketplaceFeeBPS int
 	MPPaymentMethodID   string
 	MPPaymentMethodType string
-	MPPayerToken        string
+	MPCardToken         string
 }
 
 type RedirectURLs struct {

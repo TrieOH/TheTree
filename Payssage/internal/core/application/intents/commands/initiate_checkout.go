@@ -108,7 +108,7 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 			baseRequest.Installments = in.Installments
 			baseRequest.MPPaymentMethodID = in.PaymentMethodID
 			baseRequest.MPPaymentMethodType = in.PaymentMethodType
-			baseRequest.MPPayerToken = in.CardToken
+			baseRequest.MPCardToken = in.CardToken
 			intent, err = p.InitiateCheckout(ctx, baseRequest)
 		}
 
