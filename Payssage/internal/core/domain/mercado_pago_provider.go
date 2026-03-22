@@ -163,8 +163,8 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 	intent.SellerCredentialID = &request.SellerCredentialID
 
 	body := map[string]any{
-		"transaction_amount":   formatAmount(request.Amount),
-		"application_fee":      formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"transaction_amount":   json.Number(formatAmount(request.Amount)),
+		"application_fee":      json.Number(formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS))),
 		"installments":         request.Installments,
 		"token":                request.MPCardToken,
 		"payment_method_id":    request.MPPaymentMethodID,
