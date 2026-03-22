@@ -385,6 +385,17 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		zap.String("payer_email", payReq.PayerEmail),
 	)
 
+	unreserveAndCleanup := func() {
+		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
+		if uErr != nil {
+			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+		}
+		if len(updates) > 0 {
+			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
+		}
+		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
+	}
+
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
 		Amount:             int64(session.TotalCents),
 		Currency:           "BRL",
@@ -398,29 +409,29 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		PayerEmail:         payReq.PayerEmail,
 	})
 	if err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
-		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-		}
-		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
-		}
-		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
+		unreserveAndCleanup()
 		return nil, err
+	}
+
+	if intent.MercadoPagoData.PixQRCode != "" {
+		if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
+			telemetry.Log().Debug("Failed to delete session after pix checkout", zap.Error(err))
+		}
+		_ = conn.WriteJSON(sockets.WSMessage{
+			Type: "pix_created",
+			Payload: map[string]any{
+				"qr_code":        intent.MercadoPagoData.PixQRCode,
+				"qr_code_base64": intent.MercadoPagoData.PixQRCodeB64,
+			},
+		})
+		return intent, nil
 	}
 
 	chargedIntent, err := uc.payments.Charge(ctx, intent.ID, paymentsSDK.ChargeRequest{
 		SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 	})
 	if err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
-		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-		}
-		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
-		}
-		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
+		unreserveAndCleanup()
 		return nil, err
 	}
 
