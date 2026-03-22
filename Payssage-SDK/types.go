@@ -97,6 +97,9 @@ type WebhookPayload struct {
 	Amount      int64           `json:"amount"`
 	Currency    string          `json:"currency"`
 	Metadata    json.RawMessage `json:"metadata"`
+
+	// Provider Specific Data
+	MercadoPagoData *MercadoPagoIntentData `json:"mercado_pago_data"`
 }
 
 const (
