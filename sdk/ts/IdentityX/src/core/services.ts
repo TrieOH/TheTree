@@ -51,9 +51,10 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
     return apiInstance.post<string>("/auth/register", { email, password }, options);
   },
 
-  logout: async () => {
-    const res = await apiInstance.post<string>("/auth/logout");
-    if (res.success) clearAuthTokens();
+  logout: async (options?: { forceLogout?: boolean }) => {
+    const url = env.PROJECT_ID ? `/projects/${env.PROJECT_ID}/logout` : "/auth/logout";
+    const res = await apiInstance.post<null>(url);
+    if (res.success || options?.forceLogout) clearAuthTokens();
     return res;
   },
 
