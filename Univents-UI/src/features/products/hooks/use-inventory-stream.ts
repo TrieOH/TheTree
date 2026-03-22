@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchEventSource, EventStreamContentType } from "@microsoft/fetch-event-source";
 import { env } from "@/env";
 
 interface InventoryUpdate {
@@ -6,9 +7,16 @@ interface InventoryUpdate {
   inventory_remaining: number;
 }
 
+class RetriableError extends Error { }
+class FatalError extends Error { }
+
+const INITIAL_RETRY_MS = 1_000;
+const MAX_RETRY_MS = 30_000;
+
 export function useInventoryStream(eventId: string, editionId: string) {
   const [inventory, setInventory] = useState<Record<string, number>>({});
   const [status, setStatus] = useState<"connecting" | "open" | "error">("connecting");
+  const retryDelay = useRef(INITIAL_RETRY_MS);
 
   useEffect(() => {
     if (!editionId) return;
@@ -16,74 +24,51 @@ export function useInventoryStream(eventId: string, editionId: string) {
     const controller = new AbortController();
     const url = `${env.VITE_API_URL}events/${eventId}/editions/${editionId}/products/inventory/stream`;
 
-    void (async () => {
-      try {
-        const res = await fetch(url, {
-          credentials: "include",
-          signal: controller.signal,
-          headers: { Accept: "text/event-stream" },
-        });
+    void fetchEventSource(url, {
+      credentials: "include",
+      signal: controller.signal,
 
-        if (!res.ok || !res.body) {
+      onopen: async (res) => {
+        if (res.ok && res.headers.get("content-type") === EventStreamContentType) {
+          retryDelay.current = INITIAL_RETRY_MS;
+          setStatus("open");
+        } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+          throw new FatalError(`HTTP ${res.status}`);
+        } else throw new RetriableError();
+      },
+
+      onmessage: (ev) => {
+        if (ev.event !== "inventory_update") return;
+        try {
+          const updates = JSON.parse(ev.data) as InventoryUpdate[];
+          setInventory((prev) => {
+            const next = { ...prev };
+            for (const item of updates) {
+              next[item.product_id] = item.inventory_remaining;
+            }
+            return next;
+          });
+        } catch {
+          console.error("Failed to parse SSE data:", ev.data);
+        }
+      },
+
+      onclose: () => {
+        throw new RetriableError();
+      },
+
+      onerror: (err) => {
+        if (err instanceof FatalError) {
           setStatus("error");
-          return;
+          throw err;
         }
-        setStatus("open");
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        for (; ;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          const events = buffer.split("\n\n");
-
-          buffer = events.pop() ?? "";
-
-          for (const event of events) {
-            const lines = event.split("\n");
-
-            let eventType = "message";
-            let data = "";
-
-            for (const line of lines) {
-              if (line.startsWith("event:")) {
-                eventType = line.slice(6).trim();
-              } else if (line.startsWith("data:")) {
-                data = line.slice(5).trim();
-              }
-            }
-
-            if (!data) continue;
-            if (eventType !== "inventory_update") continue;
-
-            try {
-              const updates = JSON.parse(data) as InventoryUpdate[];
-              setInventory((prev) => {
-                const next = { ...prev };
-                for (const item of updates) {
-                  next[item.product_id] = item.inventory_remaining;
-                }
-                return next;
-              });
-            } catch {
-              console.error("Failed to parse SSE data:", data);
-            }
-          }
-        }
-      } catch (err) {
-        if ((err as Error).name === "AbortError") return;
         setStatus("error");
-      }
-    })();
+        retryDelay.current = Math.min(retryDelay.current * 2, MAX_RETRY_MS);
+        return retryDelay.current;
+      },
+    });
 
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [eventId, editionId]);
 
   return { inventory, status };

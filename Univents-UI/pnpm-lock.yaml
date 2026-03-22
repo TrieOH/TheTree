@@ -14,6 +14,9 @@ importers:
       '@mercadopago/sdk-js':
         specifier: ^0.0.3
         version: 0.0.3
+      '@microsoft/fetch-event-source':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@posthog/react':
         specifier: ^1.7.0
         version: 1.8.1(@types/react@19.2.14)(posthog-js@1.356.0)(react@19.2.4)
@@ -1155,6 +1158,9 @@ packages:
 
   '@mercadopago/sdk-js@0.0.3':
     resolution: {integrity: sha512-kO48DNLHdfFAp3on12nuKdqNlEmw1x3+nM6wLd04BdWOXoFcAhkNMQV3AyUIanXdO/bB/dENakdacLT29297EQ==}
+
+  '@microsoft/fetch-event-source@2.0.1':
+    resolution: {integrity: sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==}
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -4816,6 +4822,8 @@ snapshots:
       - supports-color
 
   '@mercadopago/sdk-js@0.0.3': {}
+
+  '@microsoft/fetch-event-source@2.0.1': {}
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
