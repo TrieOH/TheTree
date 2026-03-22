@@ -168,7 +168,7 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		"processing_mode":    "manual",
 		"external_reference": intent.ID.String(),
 		"total_amount":       formatAmount(request.Amount),
-		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
 		"items": []map[string]any{
 			{
 				"title":      "Payment",
@@ -310,7 +310,7 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 		"processing_mode":    "automatic",
 		"external_reference": intent.ID.String(),
 		"total_amount":       formatAmount(request.Amount),
-		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
 		"items": []map[string]any{
 			{
 				"title":      "Payment",

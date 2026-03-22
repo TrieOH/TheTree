@@ -1,7 +1,6 @@
 package workspaces_handler
 
 import (
-	"TriePayments/internal/core/domain"
 	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/plataform/telemetry"
 	"TriePayments/internal/shared/validation"
@@ -12,7 +11,6 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -35,15 +33,6 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 
 	switch provider {
 	case "mercadopago":
-		secret := viper.GetString("MP_WEBHOOK_SECRET")
-		xSignature := r.Header.Get("x-signature")
-		xRequestID := r.Header.Get("x-request-id")
-		dataID := r.URL.Query().Get("data.id")
-		if secret != "" && !domain.VerifyMercadoPagoSignature(xSignature, xRequestID, dataID, secret) {
-			resp.BadRequest("invalid signature").Send(w)
-			return
-		}
-
 		if r.URL.Query().Get("type") != "order" {
 			telemetry.Log().Info("ignoring non-order webhook", zap.String("type", r.URL.Query().Get("type")))
 			resp.OK("ignored").Send(w)
