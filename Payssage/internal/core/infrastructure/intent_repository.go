@@ -213,3 +213,15 @@ func (repo *intentsRepo) UpdateProviderData(ctx context.Context, intent domain.I
 
 	return mapIntentFromDB(&sqlcIntent)
 }
+
+func (repo *intentsRepo) GetByMPOrderID(ctx context.Context, orderID string) (*domain.Intent, error) {
+	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByMPOrderID")
+	defer span.End()
+
+	sqlcIntent, err := repo.queries(ctx).GetIntentByMPOrderID(ctx, orderID)
+	if err != nil {
+		return nil, errx.FromDB(err, "intent")
+	}
+
+	return mapIntentFromDB(&sqlcIntent)
+}

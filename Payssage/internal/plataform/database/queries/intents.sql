@@ -50,3 +50,9 @@ SET
     updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: GetIntentByMPOrderID :one
+SELECT *
+FROM intents
+WHERE provider_data->>'order_id' = $1::text
+  AND provider = 'mercadopago';
