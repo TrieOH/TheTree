@@ -131,7 +131,7 @@ func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
 		Email:  sub.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   sub.ID.String(),
-			ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 		},
