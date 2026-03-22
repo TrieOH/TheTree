@@ -1,7 +1,6 @@
 package workspaces_handler
 
 import (
-	"TriePayments/internal/core/application/intents/commands"
 	"TriePayments/internal/core/interfaces/http/dto"
 	"TriePayments/internal/shared/errx"
 	"TriePayments/internal/shared/validation"
@@ -39,12 +38,7 @@ func (h *Handler) Charge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	intent, err := h.commands.Charge(r.Context(), intentID, commands.PayIntentInput{
-		CardToken:       req.CardToken,
-		PaymentMethodID: req.PaymentMethodID,
-		Installments:    req.Installments,
-		PayerEmail:      req.PayerEmail,
-	})
+	intent, err := h.commands.Charge(r.Context(), intentID, req.SellerCredentialID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
 			resp.NotFound("intent not found").Send(w)

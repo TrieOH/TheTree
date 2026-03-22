@@ -12,15 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type PayIntentInput struct {
-	CardToken          string
-	PaymentMethodID    string
-	Installments       int
-	PayerEmail         string
-	SellerCredentialID uuid.UUID
-}
-
-func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, input PayIntentInput) (*domain.Intent, error) {
+func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, sellerCredentialID uuid.UUID) (*domain.Intent, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Charge")
 	defer span.End()
 
@@ -42,7 +34,7 @@ func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, input 
 		return nil, errx.Invalid("intent").SetMessage("intent is not in a payable state")
 	}
 
-	credential, err := uc.credentials.GetByID(ctx, input.SellerCredentialID)
+	credential, err := uc.credentials.GetByID(ctx, sellerCredentialID)
 	if err != nil {
 		return nil, err
 	}
