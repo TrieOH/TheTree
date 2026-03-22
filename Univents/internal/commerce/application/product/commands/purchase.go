@@ -346,16 +346,6 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	// ── Phase 6: wait for payment ─────────────────────────────────────────────
 	uc.ws.Register(sessionID.String(), conn)
 
-	if _, err = uc.payments.PayIntent(ctx, paymentIntentID, paymentsSDK.PayIntentRequest{
-		CardToken:       payReq.CardToken,
-		PaymentMethodID: payReq.PaymentMethodID,
-		Installments:    payReq.Installments,
-		PayerEmail:      payReq.PayerEmail,
-	}); err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_failed", Payload: map[string]string{"reason": mapPaymentError()}})
-		return nil
-	}
-
 	// block with timeout waiting for webhook to resolve via ws.Notify
 	paymentTimeout := time.After(30 * time.Second)
 	connClosed := make(chan struct{})
