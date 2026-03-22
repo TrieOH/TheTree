@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle, Clock, Lock, Shield, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@soramux/node-auth-sdk/react";
+import { useQuery } from "@tanstack/react-query";
 import type { BuyRequestItem } from "@/features/products/hooks/use-checkout-socket";
 import type { SubmitPaymentPayloadI } from "@/features/payments/model";
 import { useCart } from "@/features/products/hooks/use-cart";
@@ -9,7 +10,6 @@ import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderS
 import { useCheckoutSocket } from "@/features/products/hooks/use-checkout-socket";
 import { env } from "@/env";
 import { editionQueryOptions } from "@/features/editions/api";
-import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute(
   "/events/$eventId/editions/$editionId/checkout",

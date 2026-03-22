@@ -68,7 +68,7 @@ export function useInventoryStream(eventId: string, editionId: string) {
       },
     });
 
-    return () => controller.abort();
+    return () => { controller.abort(); };
   }, [eventId, editionId]);
 
   return { inventory, status };

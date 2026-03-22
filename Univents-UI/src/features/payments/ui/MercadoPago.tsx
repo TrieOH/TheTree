@@ -51,7 +51,7 @@ interface MercadoPagoInstance {
     callbacks: {
       onFormMounted?: (error: unknown) => void;
       onSubmit?: (event: Event) => void;
-      onFetching?: (resource: string) => (() => void) | void;
+      onFetching?: (resource: string) => (() => void) | undefined;
       onPaymentMethodReceived?: (
         error: unknown,
         data: { id: string; name: string } | null
@@ -364,8 +364,15 @@ interface PropsI {
 }
 
 export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, seller_public_key }: PropsI) {
-  const [method, setMethod] = useState<PaymentMethod>("credit_card");
+  const isTooLowForCreditCard = amount < 100;
+  const [method, setMethod] = useState<PaymentMethod>(isTooLowForCreditCard ? "pix" : "credit_card");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isTooLowForCreditCard && method === "credit_card") {
+      setMethod("pix");
+    }
+  }, [amount, isTooLowForCreditCard, method]);
 
   const handlePixSubmit = () => {
     setLoading(true);
@@ -400,24 +407,35 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, se
   return (
     <div className="w-full space-y-4">
       <div className="flex border-b border-border">
-        {(["credit_card", "pix"] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => { setMethod(m); }}
-            className={cn(
-              "flex items-center gap-1.5 px-0 py-2 mr-5 text-xs font-semibold uppercase tracking-wide",
-              "border-b-2 -mb-px transition-colors duration-150",
-              method === m
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {m === "credit_card" ? <CreditCard className="h-3.5 w-3.5" /> : <QrCode className="h-3.5 w-3.5" />}
-            {m === "credit_card" ? "Cartão" : "Pix"}
-          </button>
-        ))}
+        {(["credit_card", "pix"] as const).map((m) => {
+          const isDisabled = m === "credit_card" && isTooLowForCreditCard;
+          return (
+            <button
+              key={m}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => { setMethod(m); }}
+              className={cn(
+                "flex items-center gap-1.5 px-0 py-2 mr-5 text-xs font-semibold uppercase tracking-wide",
+                "border-b-2 -mb-px transition-colors duration-150",
+                method === m
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+                isDisabled && "opacity-40 cursor-not-allowed"
+              )}
+            >
+              {m === "credit_card" ? <CreditCard className="h-3.5 w-3.5" /> : <QrCode className="h-3.5 w-3.5" />}
+              {m === "credit_card" ? "Cartão" : "Pix"}
+            </button>
+          )
+        })}
       </div>
+
+      {isTooLowForCreditCard && (
+        <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1.5 rounded">
+          ⚠️ O valor mínimo para pagamento via cartão é de R$ 1,00. Use Pix para este valor.
+        </p>
+      )}
 
       <div className="pt-1">
         {method === "credit_card" ? (
