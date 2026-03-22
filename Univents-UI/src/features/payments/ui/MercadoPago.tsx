@@ -6,7 +6,6 @@ import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Label } from "@/shared/ui/shadcn/label";
 import { Input } from "@/shared/ui/shadcn/input";
-import { env } from "@/env";
 
 declare global {
   interface Window {
@@ -164,10 +163,12 @@ function CreditCardForm({
   amount,
   onSubmit,
   loading,
+  seller_public_key,
 }: {
   amount: number;
   onSubmit: (data: PaymentPayload) => void;
   loading: boolean;
+  seller_public_key: string;
 }) {
   const cardFormRef = useRef<MercadoPagoCardForm | null>(null);
   const [fetching, setFetching] = useState(false);
@@ -182,7 +183,7 @@ function CreditCardForm({
       if (cancelled) return;
 
       const mp = new window.MercadoPago(
-        env.VITE_MERCADO_PAGO_PUBLIC_KEY,
+        seller_public_key,
         { locale: "pt-BR" }
       );
 
@@ -358,9 +359,11 @@ function CreditCardForm({
 interface PropsI {
   amount: number;
   handleSubmit: (data: SubmitPaymentPayloadI) => void;
+  seller_credential_id: string;
+  seller_public_key: string;
 }
 
-export function MercadoPagoForm({ amount, handleSubmit }: PropsI) {
+export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, seller_public_key }: PropsI) {
   const [method, setMethod] = useState<PaymentMethod>("credit_card");
   const [loading, setLoading] = useState(false);
 
@@ -373,7 +376,7 @@ export function MercadoPagoForm({ amount, handleSubmit }: PropsI) {
         installments: 0,
         payer_email: "",
         payment_method_type: "",
-        seller_credential_id: "",
+        seller_credential_id,
       });
     } finally {
       setLoading(false);
@@ -386,7 +389,7 @@ export function MercadoPagoForm({ amount, handleSubmit }: PropsI) {
       handleSubmit({
         ...data,
         payer_email: data.payer.email,
-        seller_credential_id: "",
+        seller_credential_id,
         payment_method_type: "credit_card"
       });
     } finally {
@@ -418,7 +421,7 @@ export function MercadoPagoForm({ amount, handleSubmit }: PropsI) {
 
       <div className="pt-1">
         {method === "credit_card" ? (
-          <CreditCardForm amount={amount} onSubmit={handleCardSubmit} loading={loading} />
+          <CreditCardForm amount={amount} onSubmit={handleCardSubmit} loading={loading} seller_public_key={seller_public_key} />
         ) : (
           <PixForm amount={amount} onSubmit={handlePixSubmit} loading={loading} />
         )}

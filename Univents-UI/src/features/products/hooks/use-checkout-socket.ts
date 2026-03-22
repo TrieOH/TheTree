@@ -227,9 +227,14 @@ export function useCheckoutSocket(url: string) {
       }
       sendJSON({
         type: "submit_payment",
-        card_token: payload.card_token,
-        payment_method_id: payload.payment_method_id,
-        installments: payload.installments,
+        payload: {
+          card_token: payload.card_token,
+          payment_method_id: payload.payment_method_id,
+          payment_method_type: payload.payment_method_type,
+          seller_credential_id: payload.seller_credential_id,
+          payer_email: payload.payer_email,
+          installments: payload.installments,
+        }
       });
       patch({ phase: "awaiting_payment" });
     },

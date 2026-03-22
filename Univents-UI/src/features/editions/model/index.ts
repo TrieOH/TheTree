@@ -51,6 +51,7 @@ export interface EditionI {
   organizer_name: string | null;
   trie_payments_credential_id: string | null;
   trie_payments_provider: string | null;
+  trie_payments_provider_public_key: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

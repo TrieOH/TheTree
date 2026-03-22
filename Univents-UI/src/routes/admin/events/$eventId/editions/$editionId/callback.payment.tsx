@@ -12,6 +12,7 @@ import {
 const queryParams = z.object({
   credential_id: z.string().optional(),
   provider: z.string().optional(),
+  public_key: z.string().optional()
 })
 
 export const Route = createFileRoute(
@@ -19,15 +20,15 @@ export const Route = createFileRoute(
 )({
   validateSearch: (search) => queryParams.parse(search),
   beforeLoad: async ({ search, params, context }) => {
-    const { credential_id, provider } = search
+    const { credential_id, provider, public_key } = search
     const { eventId, editionId } = params
-    if (!credential_id || !provider)
+    if (!credential_id || !provider || !public_key)
       throw Route.redirect({
         to: '/admin/events/$eventId/editions/$editionId',
         params: { eventId, editionId }
       })
     const res = await connectPaymentAccountToEditionFn(
-      eventId, editionId, credential_id, provider
+      eventId, editionId, credential_id, provider, public_key
     );
     if (res.success) {
       context.queryClient.setQueryData(
@@ -39,6 +40,7 @@ export const Route = createFileRoute(
                 ...ed,
                 trie_payments_credential_id: credential_id,
                 trie_payments_provider: provider,
+                trie_payments_provider_public_key: public_key
               }
               : ed
           )

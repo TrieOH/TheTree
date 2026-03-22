@@ -101,10 +101,10 @@ export const publishEditionFn = createClientOnlyFn((
  * @returns A promise that resolves to the API null response.
  */
 export const connectPaymentAccountToEditionFn = createClientOnlyFn((
-  eventId: string, editionId: string, credentialId: string, provider: string
+  eventId: string, editionId: string, credentialId: string, provider: string, public_key: string
 ) => {
   return authFetcher.post<null>(
-    `/events/${eventId}/editions/${editionId}/payments/connect?credential_id=${credentialId}&provider=${provider}`
+    `/events/${eventId}/editions/${editionId}/payments/connect?credential_id=${credentialId}&provider=${provider}&public_key=${public_key}`
   );
 });
 

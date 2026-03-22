@@ -8,6 +8,8 @@ import { useCart } from "@/features/products/hooks/use-cart";
 import { PaymentProviderSelector } from "@/features/payments/ui/PaymentProviderSelector";
 import { useCheckoutSocket } from "@/features/products/hooks/use-checkout-socket";
 import { env } from "@/env";
+import { editionQueryOptions } from "@/features/editions/api";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute(
   "/events/$eventId/editions/$editionId/checkout",
@@ -91,6 +93,8 @@ function CheckoutPage() {
   const { auth } = useAuth();
   const userInfo = auth.profile();
 
+  const { data: edition } = useQuery(editionQueryOptions(eventId, editionId));
+
   if (!userInfo) throw Route.redirect({ to: "/events/$eventId/editions/$editionId/products" });
 
   const wsUrl = `${env.VITE_API_URL.replace("http", "ws")}events/${eventId}/editions/${editionId}/products/purchase`;
@@ -106,8 +110,12 @@ function CheckoutPage() {
   );
 
   useEffect(() => {
-    if (items.length > 0 && phase === "idle") void buyRequest(getCartItems());
-  }, [buyRequest, getCartItems]);
+    if (edition && (!edition.trie_payments_credential_id || !edition.trie_payments_provider_public_key))
+      return;
+    if (items.length > 0 && phase === "idle" && edition?.trie_payments_credential_id) {
+      void buyRequest(getCartItems());
+    }
+  }, [buyRequest, getCartItems, phase, items.length, edition]);
 
   const price = (cents: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
@@ -115,6 +123,10 @@ function CheckoutPage() {
   const handleSubmitPayment = useCallback(
     (payload: SubmitPaymentPayloadI) => { submitPayment(payload); },
     [submitPayment],
+  );
+
+  const paymentUnavailable = edition && (
+    !edition.trie_payments_credential_id || !edition.trie_payments_provider_public_key
   );
 
   return (
@@ -152,7 +164,20 @@ function CheckoutPage() {
               </h2>
             </div>
 
-            {(phase === "connecting" || phase === "awaiting_reservation") && (
+            {paymentUnavailable && (
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4" />
+                  <p className="text-sm font-bold uppercase tracking-wide">Pagamento indisponível</p>
+                </div>
+                <p className="text-xs leading-relaxed opacity-90">
+                  Esta edição ainda não configurou uma conta para receber pagamentos.
+                  Por favor, entre em contato com o organizador do evento.
+                </p>
+              </div>
+            )}
+
+            {!paymentUnavailable && (phase === "connecting" || phase === "awaiting_reservation") && (
               <p className="text-sm text-muted-foreground animate-pulse">Reservando itens…</p>
             )}
 
@@ -207,9 +232,12 @@ function CheckoutPage() {
                     <p className="text-sm">{errorMessage}</p>
                   </div>
                 )}
+
                 <PaymentProviderSelector
                   amount={totalCents}
                   handleSubmit={handleSubmitPayment}
+                  seller_credential_id={edition?.trie_payments_credential_id ?? ""}
+                  seller_public_key={edition?.trie_payments_provider_public_key ?? ""}
                 />
               </div>
             )}
