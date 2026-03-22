@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"univents/internal/commerce/domain"
+	"univents/internal/shared/errx"
 	"univents/internal/shared/sockets"
 
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/hibiken/asynq"
 )
 
@@ -20,38 +20,38 @@ func (uc *AsynqHandlers) HandleProductReservationExpiration(ctx context.Context,
 
 	log.Printf("[task] reservation expired for session %s", p.SessionID)
 
-	// 1. Cancel payment intent first — if this fails we retry before touching DB
-	if _, err := uc.payments.CancelIntent(ctx, p.PaymentIntentID); err != nil {
-		if paymentsSDK.IsNotFound(err) {
-			log.Printf("[task] intent %s already gone, skipping cancel", p.PaymentIntentID)
-		} else {
-			return fmt.Errorf("failed to cancel payment intent: %w", err)
-		}
+	// 1. Check if purchase already exists for this session — if payment succeeded
+	// before we got here, don't touch anything
+	purchase, err := uc.purchases.GetBySessionID(ctx, p.SessionID)
+	if err != nil && !errx.IsKind(err, "not_found") {
+		return fmt.Errorf("failed to check purchase: %w", err)
+	}
+	if purchase != nil {
+		log.Printf("[task] purchase already exists for session %s, skipping expiration", p.SessionID)
+		return nil
 	}
 
-	// 2. DB cleanup
+	// 2. Unreserve items — no-op if already unreserved
 	var updates []domain.InventoryUpdate
-
 	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var uErr error
 		updates, uErr = uc.products.UnreserveItems(ctx, p.SessionID)
 		if uErr != nil {
 			return fmt.Errorf("failed to unreserve items: %w", uErr)
 		}
-		if err := uc.purchases.CancelPurchase(ctx, p.PaymentIntentID); err != nil {
-			return fmt.Errorf("failed to cancel purchase: %w", err)
-		}
 		return nil
 	}); err != nil {
 		return err
 	}
 
-	// publish after TX commits
 	if len(updates) > 0 {
 		_ = uc.inventory.Publish(ctx, p.EditionID, updates)
 	}
 
-	// 3. Notify WS if still alive
+	// 3. Clean up Redis session if still there
+	_ = uc.sessions.Delete(ctx, p.UserID, p.SessionID)
+
+	// 4. Notify WS if still alive
 	if err := uc.ws.Notify(p.SessionID.String(), sockets.WSMessage{
 		Type:    "reservation_expired",
 		Payload: "your reservation timed out",

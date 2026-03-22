@@ -159,23 +159,23 @@ const (
 )
 
 type ReservationExpiredPayload struct {
-	SessionID       uuid.UUID `json:"session_id"`
-	PaymentIntentID string    `json:"payment_intent_id"`
-	EditionID       uuid.UUID `json:"edition_id"`
+	SessionID uuid.UUID `json:"session_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	EditionID uuid.UUID `json:"edition_id"`
 }
 
-func NewReservationExpiredTask(sessionID uuid.UUID, paymentIntentID string, expiresAt time.Time, editionID uuid.UUID) (*asynq.Task, error) {
+func NewReservationExpiredTask(sessionID, userID, editionID uuid.UUID, expiresAt time.Time) (*asynq.Task, error) {
 	payload, err := json.Marshal(ReservationExpiredPayload{
-		SessionID:       sessionID,
-		PaymentIntentID: paymentIntentID,
-		EditionID:       editionID,
+		SessionID: sessionID,
+		UserID:    userID,
+		EditionID: editionID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal reservation expired payload: %w", err)
 	}
 
 	return asynq.NewTask(TypeReservationExpired, payload,
-		asynq.TaskID(fmt.Sprintf("%s:%s:%s", sessionID, paymentIntentID, TypeReservationExpired)),
+		asynq.TaskID(fmt.Sprintf("%s:%s", sessionID, TypeReservationExpired)),
 		asynq.ProcessAt(expiresAt),
 		asynq.Unique(time.Hour),
 	), nil

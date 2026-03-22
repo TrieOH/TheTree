@@ -15,6 +15,7 @@ type AsynqHandlers struct {
 	purchases domain.PurchaseRepository
 	payments  *paymentsSDK.Client
 	inventory domain.InventoryPublisher
+	sessions  domain.PurchaseSessionStore
 	ws        *sockets.Registry
 	gaClient  *goauth.Client
 	tracer    trace.Tracer
@@ -24,9 +25,10 @@ type AsynqHandlers struct {
 func New(
 	products domain.ProductsRepository,
 	purchases domain.PurchaseRepository,
-	ws *sockets.Registry,
 	payments *paymentsSDK.Client,
 	inventory domain.InventoryPublisher,
+	sessions domain.PurchaseSessionStore,
+	ws *sockets.Registry,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
@@ -36,6 +38,7 @@ func New(
 		purchases: purchases,
 		payments:  payments,
 		inventory: inventory,
+		sessions:  sessions,
 		ws:        ws,
 		gaClient:  gaClient,
 		tracer:    tracer,

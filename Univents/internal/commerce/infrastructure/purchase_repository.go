@@ -109,6 +109,18 @@ func (repo *purchaseRepo) GetByPaymentID(ctx context.Context, paymentID string) 
 	return mapPurchaseFromDB(&sqlcPurchase), nil
 }
 
+func (repo *purchaseRepo) GetBySessionID(ctx context.Context, sessionID uuid.UUID) (*domain.Purchase, error) {
+	ctx, span := repo.tracer.Start(ctx, "PurchaseRepo.GetBySessionID")
+	defer span.End()
+
+	sqlcPurchase, err := repo.queries(ctx).GetPurchaseBySessionID(ctx, &sessionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "purchase")
+	}
+
+	return mapPurchaseFromDB(&sqlcPurchase), nil
+}
+
 func (repo *purchaseRepo) CreateLineItem(ctx context.Context, toCreate domain.LineItem) (*domain.LineItem, error) {
 	ctx, span := repo.tracer.Start(ctx, "PurchaseRepo.CreateLineItem")
 	defer span.End()

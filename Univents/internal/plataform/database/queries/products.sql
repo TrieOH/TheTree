@@ -118,6 +118,11 @@ SELECT * FROM purchases
 WHERE payment_id = $1
   AND deleted_at IS NULL;
 
+-- name: GetPurchaseBySessionID :one
+SELECT * FROM purchases
+WHERE session_id = $1
+  AND deleted_at IS NULL;
+
 -- name: ListUserPurchases :many
 SELECT * FROM purchases
 WHERE user_id = $1;

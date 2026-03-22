@@ -195,8 +195,7 @@ type reserveItemsInput struct {
 }
 
 func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket.Conn, in reserveItemsInput) (*domain.PurchaseSession, error) {
-	outcome, err := uc.products.ReserveItems(ctx, in.sessionID, in.items, in.expiresAt)
-	if err != nil {
+	unreserveAndCleanup := func() {
 		updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 		if uErr != nil {
 			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
@@ -204,6 +203,12 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 		if len(updates) > 0 {
 			_ = uc.inventory.Publish(ctx, in.editionID, updates)
 		}
+		_ = uc.sessions.Delete(ctx, in.userID, in.sessionID)
+	}
+
+	outcome, err := uc.products.ReserveItems(ctx, in.sessionID, in.items, in.expiresAt)
+	if err != nil {
+		unreserveAndCleanup()
 		return nil, err
 	}
 
@@ -218,6 +223,7 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 	}
 
 	if len(outcome.Reserved) == 0 {
+		unreserveAndCleanup()
 		_ = conn.WriteJSON(sockets.WSMessage{
 			Type:    "reservation_failed",
 			Payload: map[string]any{"unavailable": outcome.Unavailable},
@@ -263,36 +269,18 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 		})
 
 		if err = conn.SetReadDeadline(confirmDeadline); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
-			if uErr != nil {
-				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-			}
-			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, in.editionID, updates)
-			}
+			unreserveAndCleanup()
 			return nil, err
 		}
 
 		var confirmMsg sockets.WSMessage
 		if err = conn.ReadJSON(&confirmMsg); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
-			if uErr != nil {
-				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-			}
-			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, in.editionID, updates)
-			}
+			unreserveAndCleanup()
 			return nil, err
 		}
 
 		if err = conn.SetReadDeadline(time.Time{}); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
-			if uErr != nil {
-				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-			}
-			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, in.editionID, updates)
-			}
+			unreserveAndCleanup()
 			return nil, err
 		}
 
@@ -300,23 +288,11 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 		case "confirm_partial":
 			// proceed with outcome.Reserved only
 		case "cancel":
-			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
-			if uErr != nil {
-				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-			}
-			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, in.editionID, updates)
-			}
+			unreserveAndCleanup()
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "reservation_cancelled"})
 			return nil, errors.New("close socket")
 		default:
-			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
-			if uErr != nil {
-				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
-			}
-			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, in.editionID, updates)
-			}
+			unreserveAndCleanup()
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected confirm_partial or cancel"})
 			return nil, errors.New("close socket")
 		}
@@ -325,6 +301,16 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 	session.Stage = domain.StageAwaitingPayment
 
 	if err := uc.sessions.Save(ctx, session); err != nil {
+		return nil, err
+	}
+
+	task, err := domain.NewReservationExpiredTask(session.SessionID, session.UserID, session.EditionID, session.ExpiresAt)
+	if err != nil {
+		unreserveAndCleanup()
+		return nil, err
+	}
+	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+		unreserveAndCleanup()
 		return nil, err
 	}
 
@@ -492,15 +478,6 @@ func (uc *CommandService) recordPurchase(ctx context.Context, conn *websocket.Co
 					return err
 				}
 			}
-		}
-
-		task, err := domain.NewReservationExpiredTask(in.session.SessionID, in.intent.ID, in.session.ExpiresAt, in.session.EditionID)
-		if err != nil {
-			return err
-		}
-		if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-			_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_failed", Payload: "failed to initialize reservation timer"})
-			return err
 		}
 
 		return nil
