@@ -108,7 +108,6 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		RefreshToken string `json:"refresh_token"`
 		PublicKey    string `json:"public_key"`
 		UserID       int    `json:"user_id"`
-		Nickname     string `json:"nickname"`
 	}
 	if err := json.Unmarshal(rawBody, &result); err != nil {
 		return ProviderCredentialData{}, err
@@ -123,7 +122,6 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		RefreshToken:   result.RefreshToken,
 		ProviderUserID: result.UserID,
 		PublicKey:      result.PublicKey,
-		Nickname:       result.Nickname,
 	}, nil
 }
 

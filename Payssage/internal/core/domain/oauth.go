@@ -37,5 +37,4 @@ type ProviderCredentialData struct {
 	RefreshToken   string `json:"refresh_token,omitempty"`
 	ProviderUserID int    `json:"provider_user_id,omitempty"` // MP seller ID
 	PublicKey      string `json:"public_key,omitempty"`
-	Nickname       string `json:"nickname,omitempty"`
 }
