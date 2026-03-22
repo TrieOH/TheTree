@@ -24,12 +24,16 @@ export function useInventoryStream(eventId: string, editionId: string) {
     const controller = new AbortController();
     const url = `${env.VITE_API_URL}events/${eventId}/editions/${editionId}/products/inventory/stream`;
 
+    console.log(`[InventoryStream] Connecting to ${url}`);
+    setInventory({}); // Clear on new connection to avoid stale data
+
     void fetchEventSource(url, {
       credentials: "include",
       signal: controller.signal,
 
       onopen: async (res) => {
         if (res.ok && res.headers.get("content-type") === EventStreamContentType) {
+          console.log(`[InventoryStream] Connection established to ${url}`);
           retryDelay.current = INITIAL_RETRY_MS;
           setStatus("open");
         } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
@@ -40,13 +44,18 @@ export function useInventoryStream(eventId: string, editionId: string) {
       onmessage: (ev) => {
         if (ev.event !== "inventory_update") return;
         try {
+          console.log(`[InventoryStream] Message received:`, ev.data);
           const updates = JSON.parse(ev.data) as InventoryUpdate[];
           setInventory((prev) => {
+            let hasChanges = false;
             const next = { ...prev };
             for (const item of updates) {
-              next[item.product_id] = item.inventory_remaining;
+              if (next[item.product_id] !== item.inventory_remaining) {
+                next[item.product_id] = item.inventory_remaining;
+                hasChanges = true;
+              }
             }
-            return next;
+            return hasChanges ? next : prev;
           });
         } catch {
           console.error("Failed to parse SSE data:", ev.data);
@@ -54,10 +63,12 @@ export function useInventoryStream(eventId: string, editionId: string) {
       },
 
       onclose: () => {
+        console.warn(`[InventoryStream] Connection closed for ${url}`);
         throw new RetriableError();
       },
 
       onerror: (err) => {
+        console.error(`[InventoryStream] Connection error for ${url}:`, err);
         if (err instanceof FatalError) {
           setStatus("error");
           throw err;
@@ -68,7 +79,10 @@ export function useInventoryStream(eventId: string, editionId: string) {
       },
     });
 
-    return () => { controller.abort(); };
+    return () => { 
+      console.log(`[InventoryStream] Aborting connection to ${url}`);
+      controller.abort(); 
+    };
   }, [eventId, editionId]);
 
   return { inventory, status };

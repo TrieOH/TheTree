@@ -77,6 +77,7 @@ export interface BuyRequestItem {
 
 export function useCheckoutSocket(url: string) {
   const wsRef = useRef<WebSocket | null>(null);
+  const connectingRef = useRef(false);
   const intentionalClose = useRef(false);
   const hadServerError = useRef(false);
   const [state, setState] = useState<CheckoutState>(INITIAL);
@@ -167,42 +168,49 @@ export function useCheckoutSocket(url: string) {
 
   const buyRequest = useCallback(
     async (items: BuyRequestItem[]) => {
-      if (wsRef.current) {
+      if (connectingRef.current) return;
+      
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         intentionalClose.current = true;
         wsRef.current.close(1000, "restart");
         wsRef.current = null;
       }
 
+      connectingRef.current = true;
       intentionalClose.current = false;
       hadServerError.current = false;
       setState({ ...INITIAL, phase: "connecting" });
 
-      const res = await getWebsocketAuthToken();
-      if (!res.success) {
-        patch({ phase: "error", errorMessage: "Não foi possível autenticar. Tente novamente." });
-        return;
-      }
-
-      const ws = new WebSocket(`${url}?token=${res.data.token}`);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        patch({ phase: "awaiting_reservation" });
-        ws.send(JSON.stringify({ type: "buy_request", items }));
-      };
-
-      ws.onmessage = handleMessage;
-
-      ws.onerror = () => {
-        patch({ phase: "error", errorMessage: "Erro na conexão com o servidor." });
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-        if (!intentionalClose.current && !hadServerError.current) {
-          patch({ phase: "error", errorMessage: "Conexão encerrada inesperadamente." });
+      try {
+        const res = await getWebsocketAuthToken();
+        if (!res.success) {
+          patch({ phase: "error", errorMessage: "Não foi possível autenticar. Tente novamente." });
+          return;
         }
-      };
+
+        const ws = new WebSocket(`${url}?token=${res.data.token}`);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          patch({ phase: "awaiting_reservation" });
+          ws.send(JSON.stringify({ type: "buy_request", items }));
+        };
+
+        ws.onmessage = handleMessage;
+
+        ws.onerror = () => {
+          patch({ phase: "error", errorMessage: "Erro na conexão com o servidor." });
+        };
+
+        ws.onclose = () => {
+          wsRef.current = null;
+          if (!intentionalClose.current && !hadServerError.current) {
+            patch({ phase: "error", errorMessage: "Conexão encerrada inesperadamente." });
+          }
+        };
+      } finally {
+        connectingRef.current = false;
+      }
     },
     [url, handleMessage, patch],
   );

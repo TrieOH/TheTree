@@ -89,7 +89,7 @@ function OrderSummary({ editionId, expiresAt }: { editionId: string; expiresAt: 
 
 function CheckoutPage() {
   const { eventId, editionId } = Route.useParams();
-  const { totalCents, items } = useCart(editionId);
+  const { totalCents, items, clearCart } = useCart(editionId);
   const { auth } = useAuth();
   const userInfo = auth.profile();
 
@@ -103,6 +103,12 @@ function CheckoutPage() {
     useCheckoutSocket(wsUrl);
 
   const { phase, errorMessage, partialData, orderId, pendingMessage, reservationExpiresAt } = state;
+
+  useEffect(() => {
+    if (phase === "order_confirmed") {
+      clearCart();
+    }
+  }, [phase, clearCart]);
 
   const getCartItems = useCallback(
     (): BuyRequestItem[] => items.map((item) => ({ product_id: item.id, quantity: item.quantity })),

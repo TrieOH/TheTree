@@ -119,7 +119,7 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onClick={() => { onRemove(item.id); }}
         >
           <Trash2 className="h-4 w-4" />
