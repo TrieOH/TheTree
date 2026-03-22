@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
@@ -57,16 +58,18 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			return err
 		}
 
-		intent, err := uc.checkout(ctx, conn, session, payReq)
+		intent, isPix, err := uc.checkout(ctx, conn, session, payReq)
 		if err != nil {
 			return err
 		}
 
-		if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
-			return err
+		if !isPix {
+			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
+				return err
+			}
 		}
 
-		return uc.waitForPayment(conn, session)
+		return uc.waitForPayment(ctx, conn, session, intent, isPix)
 
 	case "buy_request":
 		payloadBytes, err := json.Marshal(firstMsg.Payload)
@@ -107,16 +110,18 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			return err
 		}
 
-		intent, err := uc.checkout(ctx, conn, session, payReq)
+		intent, isPix, err := uc.checkout(ctx, conn, session, payReq)
 		if err != nil {
 			return err
 		}
 
-		if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
-			return err
+		if !isPix {
+			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
+				return err
+			}
 		}
 
-		return uc.waitForPayment(conn, session)
+		return uc.waitForPayment(ctx, conn, session, intent, isPix)
 
 	default:
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected buy_request or resume_session"})
@@ -352,10 +357,12 @@ func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Con
 	return &payReq, nil
 }
 
-func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, error) {
+// FIXME: Add blocking behaviour on PIX to wait for the Webhook
+
+func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, bool, error) {
 	edition, err := uc.editions.GetByID(ctx, session.EditionID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	telemetry.Log().Info("Before Initiate",
@@ -396,7 +403,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	})
 	if err != nil {
 		unreserveAndCleanup()
-		return nil, err
+		return nil, false, err
 	}
 
 	if intent.MercadoPagoData.PixQRCode != "" {
@@ -410,7 +417,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 				"qr_code_base64": intent.MercadoPagoData.PixQRCodeB64,
 			},
 		})
-		return intent, nil
+		return intent, true, nil
 	}
 
 	chargedIntent, err := uc.payments.Charge(ctx, intent.ID, paymentsSDK.ChargeRequest{
@@ -418,7 +425,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	})
 	if err != nil {
 		unreserveAndCleanup()
-		return nil, err
+		return nil, false, err
 	}
 
 	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
@@ -426,7 +433,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	}
 
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
-	return chargedIntent, nil
+	return chargedIntent, false, nil
 }
 
 type recordPurchaseInput struct {
@@ -488,12 +495,22 @@ func (uc *CommandService) recordPurchase(ctx context.Context, conn *websocket.Co
 	return nil
 }
 
-func (uc *CommandService) waitForPayment(conn *websocket.Conn, session *domain.PurchaseSession) error {
+func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent, isPix bool) error {
 	uc.ws.Register(session.SessionID.String(), conn)
 
-	// block with timeout waiting for webhook to resolve via ws.Notify
-	paymentTimeout := time.After(30 * time.Second)
+	paymentTimeout := time.Until(session.ExpiresAt)
+	if !isPix {
+		paymentTimeout = 30 * time.Second
+	}
+
+	timer := time.After(paymentTimeout)
+
 	connClosed := make(chan struct{})
+	webhookMsg := make(chan sockets.WSMessage, 1)
+
+	uc.ws.RegisterCallback(session.SessionID.String(), func(msg sockets.WSMessage) {
+		webhookMsg <- msg
+	})
 
 	go func() {
 		for {
@@ -505,7 +522,22 @@ func (uc *CommandService) waitForPayment(conn *websocket.Conn, session *domain.P
 	}()
 
 	select {
-	case <-paymentTimeout:
+	case msg := <-webhookMsg:
+		if isPix && msg.Type == "order_confirmed" {
+			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{
+				session: session,
+				intent:  intent,
+			}); err != nil {
+				_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_failed", Payload: err.Error()})
+				return err
+			}
+			if err := uc.finalizeConfirmedPurchase(ctx, intent.ID); err != nil {
+				log.Printf("[waitForPayment] failed to finalize pix purchase: %v", err)
+			}
+		}
+		_ = conn.WriteJSON(msg)
+		return nil
+	case <-timer:
 		_ = conn.WriteJSON(sockets.WSMessage{
 			Type:    "payment_pending",
 			Payload: "payment is taking longer than expected, you can close this and check your purchases",

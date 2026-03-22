@@ -370,12 +370,12 @@ func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
 
 		switch payload.Event {
 		case paymentsSDK.EventPaymentSucceeded:
-			if err := handler.commands.ConfirmPayment(ctx, payload.IntentID); err != nil {
+			if err := handler.commands.ConfirmPayment(ctx, payload); err != nil {
 				log.Printf("[webhook] failed to confirm payment for intent %s: %v", payload.IntentID, err)
 			}
 
 		case paymentsSDK.EventPaymentFailed, paymentsSDK.EventPaymentCancelled:
-			if err := handler.commands.CancelPayment(ctx, payload.IntentID); err != nil {
+			if err := handler.commands.CancelPayment(ctx, payload); err != nil {
 				log.Printf("[webhook] failed to cancel payment for intent %s: %v", payload.IntentID, err)
 			}
 

@@ -17,12 +17,21 @@ type WSMessage struct {
 }
 
 type Registry struct {
-	mu    sync.RWMutex
-	conns map[string]*websocket.Conn // key: sessionID
+	mu        sync.RWMutex
+	conns     map[string]*websocket.Conn // key: sessionID
+	callbacks map[string]func(WSMessage) // key: sessionID
 }
 
 func New() *Registry {
-	return &Registry{conns: make(map[string]*websocket.Conn)}
+	return &Registry{
+		conns:     make(map[string]*websocket.Conn),
+		callbacks: make(map[string]func(WSMessage)),
+	}
+}
+func (r *Registry) RegisterCallback(sessionID string, fn func(WSMessage)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.callbacks[sessionID] = fn
 }
 
 func (r *Registry) Register(sessionID string, conn *websocket.Conn) {
@@ -38,6 +47,10 @@ func (r *Registry) Notify(sessionID string, msg WSMessage) error {
 	if !ok {
 		return fmt.Errorf("no active connection for session %s", sessionID)
 	}
+	if cb, ok := r.callbacks[sessionID]; ok {
+		cb(msg)
+		return nil
+	}
 	return conn.WriteJSON(msg)
 }
 
@@ -45,6 +58,7 @@ func (r *Registry) Remove(sessionID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.conns, sessionID)
+	delete(r.callbacks, sessionID)
 }
 
 func MakeUpgrader() websocket.Upgrader {

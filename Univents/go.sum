@@ -7,8 +7,8 @@ github.com/MintzyG/FastUtilitiesNet v0.5.5 h1:yRFpHs15r01z1DMVZRcdvu8NFDysV6SP/0
 github.com/MintzyG/FastUtilitiesNet v0.5.5/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/MintzyG/fail/v3 v3.2.0 h1:tAyTfiCl2ufcSvi3w8WHHf/iKX16mcfRqdXULHDfD5s=
 github.com/MintzyG/fail/v3 v3.2.0/go.mod h1:Nr7t8S5qnwL9np0+gCl3s6BgfcXW5nDOwomu/VVgjrw=
-github.com/TrieOH/TriePaymentsSDK v0.0.9 h1:fveCGMJ47QXaiUIUyBfoyHhja3oSPfJcwQJcjccMyQg=
-github.com/TrieOH/TriePaymentsSDK v0.0.9/go.mod h1:klySxuwnPqlZIN9jhHopfCPgLlmTa9rcrpTl8iha1QU=
+github.com/TrieOH/TriePaymentsSDK v0.0.10 h1:SQlGIuaAB69qTg0QzWVhtRy1QrdgbS+rtco1Iym58XY=
+github.com/TrieOH/TriePaymentsSDK v0.0.10/go.mod h1:klySxuwnPqlZIN9jhHopfCPgLlmTa9rcrpTl8iha1QU=
 github.com/TrieOH/goauth-sdk-go v0.5.2 h1:DHffFLC7CW2jam0cyZynXl2rZ51pdvc0IRzpfNw1pjs=
 github.com/TrieOH/goauth-sdk-go v0.5.2/go.mod h1:yJUYZq8cf9hL0e9XAHX+DvRgttqL6tJ6042/X9diSiQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
