@@ -176,10 +176,10 @@ type PaymentAbstractionLayer interface {
 type MercadoPagoProvider interface {
 	PaymentAbstractionLayer
 
-	// CreatePixOrder builds a Pix-specific order payload.
+	// InitiatePixCheckout builds a Pix-specific order payload.
 	// Different payment_method structure — no token, no installments.
 	// Populates PixQRCode and PixQRCodeB64 on the returned data.
-	CreatePixOrder(ctx context.Context, req ChargeRequest) (*MercadoPagoIntentData, error)
+	InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*Intent, error)
 
 	// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
 	NormalizeStatus(status string, statusDetail string) IntentStatus

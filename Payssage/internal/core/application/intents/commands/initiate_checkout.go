@@ -64,43 +64,57 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 			validationErrors = append(validationErrors, "missing access token")
 		}
 		if in.PayerEmail == "" {
-			validationErrors = append(validationErrors, "missing payment email")
+			validationErrors = append(validationErrors, "missing payer email")
 		}
-		if in.Installments == 0 {
-			validationErrors = append(validationErrors, "missing installments")
+		if in.Amount <= 0 {
+			validationErrors = append(validationErrors, "invalid amount")
 		}
 		if in.PaymentMethodType == "" {
 			validationErrors = append(validationErrors, "missing payment method type")
 		}
-		if in.PaymentMethodID == "" {
-			validationErrors = append(validationErrors, "missing payment method id")
+
+		if in.PaymentMethodType != "pix" {
+			if in.Installments == 0 {
+				validationErrors = append(validationErrors, "missing installments")
+			}
+			if in.PaymentMethodID == "" {
+				validationErrors = append(validationErrors, "missing payment method id")
+			}
+			if in.CardToken == "" {
+				validationErrors = append(validationErrors, "missing card token")
+			}
 		}
-		if in.Amount < 0 {
-			validationErrors = append(validationErrors, "invalid amount")
-		}
+
 		if len(validationErrors) > 0 {
 			return nil, errors.New("validation failed:\n" + strings.Join(validationErrors, "\n"))
 		}
-		intent, err = p.InitiateCheckout(ctx, &domain.InitiateCheckoutRequest{
-			WorkspaceID:        workspace.ID,
-			SellerCredentialID: in.SellerCredentialID,
-			Amount:             in.Amount,
-			Currency:           strings.ToUpper(in.Currency),
-			Provider:           in.Provider,
-			Metadata:           in.Metadata,
-			Payer: domain.Payer{
-				Email: in.PayerEmail,
-			},
-			Installments:        in.Installments,
+
+		baseRequest := &domain.InitiateCheckoutRequest{
+			WorkspaceID:         workspace.ID,
+			SellerCredentialID:  in.SellerCredentialID,
+			Amount:              in.Amount,
+			Currency:            strings.ToUpper(in.Currency),
+			Provider:            in.Provider,
+			Metadata:            in.Metadata,
+			Payer:               domain.Payer{Email: in.PayerEmail},
 			MPSellerToken:       credential.Credentials.AccessToken,
 			MPMarketplaceFeeBPS: marketplaceConfig.FeeBps,
-			MPPaymentMethodID:   in.PaymentMethodID,
-			MPPaymentMethodType: in.PaymentMethodType,
-			MPPayerToken:        in.CardToken,
-		})
+		}
+
+		if in.PaymentMethodType == "pix" {
+			intent, err = p.InitiatePixCheckout(ctx, baseRequest)
+		} else {
+			baseRequest.Installments = in.Installments
+			baseRequest.MPPaymentMethodID = in.PaymentMethodID
+			baseRequest.MPPaymentMethodType = in.PaymentMethodType
+			baseRequest.MPPayerToken = in.CardToken
+			intent, err = p.InitiateCheckout(ctx, baseRequest)
+		}
+
 		if err != nil {
 			return nil, err
 		}
+
 	default:
 		return nil, fmt.Errorf("unknown provider type: %T", p)
 	}

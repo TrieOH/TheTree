@@ -283,6 +283,112 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		TransactionID:     txID,
 		OrderStatus:       txStatus,
 		OrderStatusDetail: "created",
+		PaymentMethodID:   request.MPPaymentMethodID,
+		PaymentMethodType: request.MPPaymentMethodType,
+	}
+
+	return intent, nil
+}
+
+func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*Intent, error) {
+	intent, err := NewIntent(request.WorkspaceID, request.Amount, request.Currency, request.Provider, request.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	intent.SellerCredentialID = &request.SellerCredentialID
+
+	body := map[string]any{
+		"type":               "online",
+		"processing_mode":    "automatic",
+		"external_reference": intent.ID.String(),
+		"total_amount":       formatAmount(request.Amount),
+		"marketplace_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
+		"payer": map[string]any{
+			"email": request.Payer.Email,
+		},
+		"transactions": map[string]any{
+			"payments": []map[string]any{
+				{
+					"amount": formatAmount(request.Amount),
+					"payment_method": map[string]any{
+						"id":   "pix",
+						"type": "bank_transfer",
+					},
+					"expiration_time": "PT30M",
+				},
+			},
+		},
+	}
+
+	telemetry.Log().Info("MP Create Pix Order Request", zap.Any("body", body))
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+request.MPSellerToken)
+	req.Header.Set("X-Idempotency-Key", intent.ID.String())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	rawBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mercadopago create pix order error %d: %s", resp.StatusCode, string(rawBody))
+	}
+
+	var mpResp struct {
+		ID           string `json:"id"`
+		Status       string `json:"status"`
+		StatusDetail string `json:"status_detail"`
+		Transactions struct {
+			Payments []struct {
+				ID            string `json:"id"`
+				Status        string `json:"status"`
+				StatusDetail  string `json:"status_detail"`
+				PaymentMethod struct {
+					QRCode       string `json:"qr_code"`
+					QRCodeBase64 string `json:"qr_code_base64"`
+				} `json:"payment_method"`
+			} `json:"payments"`
+		} `json:"transactions"`
+	}
+
+	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
+		return nil, err
+	}
+
+	txID := ""
+	qrCode := ""
+	qrCodeBase64 := ""
+	if len(mpResp.Transactions.Payments) > 0 {
+		tx := mpResp.Transactions.Payments[0]
+		txID = tx.ID
+		qrCode = tx.PaymentMethod.QRCode
+		qrCodeBase64 = tx.PaymentMethod.QRCodeBase64
+	}
+
+	intent.MercadoPagoData = &MercadoPagoIntentData{
+		OrderID:           mpResp.ID,
+		TransactionID:     txID,
+		OrderStatus:       mpResp.Status,
+		OrderStatusDetail: mpResp.StatusDetail,
+		PaymentMethodID:   "pix",
+		PaymentMethodType: "bank_transfer",
+		PixQRCode:         qrCode,
+		PixQRCodeB64:      qrCodeBase64,
 	}
 
 	return intent, nil
