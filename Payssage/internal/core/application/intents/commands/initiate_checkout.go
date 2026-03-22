@@ -102,7 +102,7 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 			MPMarketplaceFeeBPS: marketplaceConfig.FeeBps,
 		}
 
-		if in.PaymentMethodType == "pix" {
+		if in.PaymentMethodID == "pix" {
 			intent, err = p.InitiatePixCheckout(ctx, baseRequest)
 		} else {
 			baseRequest.Installments = in.Installments
