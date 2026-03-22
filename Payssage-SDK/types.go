@@ -62,12 +62,16 @@ type Intent struct {
 }
 
 type MercadoPagoIntentData struct {
-	OrderID           string  `json:"order_id"`
-	OrderStatus       string  `json:"order_status"`
-	OrderStatusDetail string  `json:"order_status_detail"`
-	TransactionID     string  `json:"transaction_id"`
-	PixQRCode         *string `json:"pix_qr_code,omitempty"` //FIXME maybe dont send this or the one below
-	PixQRCodeB64      *string `json:"pix_qr_code_base64,omitempty"`
+	OrderID                 string `json:"order_id"`
+	OrderStatus             string `json:"order_status"`
+	OrderStatusDetail       string `json:"order_status_detail"`
+	TransactionID           string `json:"transaction_id"`
+	TransactionStatus       string `json:"transaction_status"`
+	TransactionStatusDetail string `json:"transaction_status_detail"`
+	PaymentMethodID         string `json:"payment_method_id"`
+	PaymentMethodType       string `json:"payment_method_type"`
+	PixQRCode               string `json:"pix_qr_code,omitempty"`
+	PixQRCodeB64            string `json:"pix_qr_code_base64,omitempty"`
 }
 
 type WebhookEndpoint struct {
