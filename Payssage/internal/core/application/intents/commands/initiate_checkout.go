@@ -69,17 +69,18 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 		if in.Amount <= 0 {
 			validationErrors = append(validationErrors, "invalid amount")
 		}
-		if in.PaymentMethodType == "" {
+		if in.PaymentMethodID == "" {
 			validationErrors = append(validationErrors, "missing payment method type")
 		}
+		if in.PaymentMethodType == "" {
+			validationErrors = append(validationErrors, "missing payment method id")
+		}
 
-		if in.PaymentMethodType != "pix" {
+		if in.PaymentMethodID != "pix" {
 			if in.Installments == 0 {
 				validationErrors = append(validationErrors, "missing installments")
 			}
-			if in.PaymentMethodID == "" {
-				validationErrors = append(validationErrors, "missing payment method id")
-			}
+
 			if in.CardToken == "" {
 				validationErrors = append(validationErrors, "missing card token")
 			}
