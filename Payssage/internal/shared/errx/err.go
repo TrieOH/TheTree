@@ -168,7 +168,7 @@ func FromDB(err error, resource string) Error {
 
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
-		return Internal(resource).SetCause(err)
+		return Internal(resource).SetMessage(err.Error())
 	}
 
 	switch pgErr.Code {
@@ -177,22 +177,22 @@ func FromDB(err error, resource string) Error {
 	case "23505":
 		return Conflict(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	// foreign_key_violation
 	case "23503":
 		return Invalid(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	// check_violation
 	case "23514":
 		return Violation(resource).
 			SetConstraint(pgErr.ConstraintName).
-			SetCause(err)
+			SetMessage(err.Error())
 
 	default:
-		return Internal(resource).SetCause(err)
+		return Internal(resource).SetMessage(err.Error())
 	}
 }
 
