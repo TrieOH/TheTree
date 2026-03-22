@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
@@ -16,18 +17,114 @@ import (
 	"go.uber.org/zap"
 )
 
-func mapPaymentError() string {
-	return "payment could not be processed, please try again"
+func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, editionID, userID uuid.UUID) error {
+	var firstMsg sockets.WSMessage
+	if err := conn.ReadJSON(&firstMsg); err != nil {
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid message"})
+		return nil
+	}
+
+	switch firstMsg.Type {
+	case "resume_session":
+		payloadBytes, err := json.Marshal(firstMsg.Payload)
+		if err != nil {
+			return err
+		}
+		var resumeReq dtos.ResumeSessionPayload
+		if err = json.Unmarshal(payloadBytes, &resumeReq); err != nil {
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid resume_session payload"})
+			return nil
+		}
+
+		session, err := uc.sessions.Load(ctx, userID, resumeReq.SessionID)
+		if err != nil || session == nil || time.Now().After(session.ExpiresAt) {
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "session_expired"})
+			return nil
+		}
+
+		_ = conn.WriteJSON(sockets.WSMessage{
+			Type: "reservation_confirmed",
+			Payload: dtos.ReservationConfirmedPayload{
+				SessionID:     session.SessionID,
+				ExpiresAt:     session.ExpiresAt,
+				ReservedItems: session.Reserved,
+				TotalCents:    session.TotalCents,
+			},
+		})
+
+		payReq, err := uc.submitPayment(ctx, conn, session)
+		if err != nil || payReq == nil {
+			return err
+		}
+
+		intent, err := uc.checkout(ctx, conn, session, payReq)
+		if err != nil {
+			return err
+		}
+
+		if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
+			return err
+		}
+
+		return uc.waitForPayment(conn, session)
+
+	case "buy_request":
+		payloadBytes, err := json.Marshal(firstMsg.Payload)
+		if err != nil {
+			return err
+		}
+		var req dtos.BuyRequest
+		if err = json.Unmarshal(payloadBytes, &req); err != nil {
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid buy_request payload"})
+			return nil
+		}
+
+		sessionID, err := uuid.NewV7()
+		if err != nil {
+			return err
+		}
+		expiresAt := time.Now().Add(domain.ReservationDuration)
+
+		productMap, err := uc.fetchAndValidateStage(ctx, conn, &req)
+		if err != nil {
+			return err
+		}
+
+		session, err := uc.reserveItemsStage(ctx, conn, reserveItemsInput{
+			userID:     userID,
+			sessionID:  sessionID,
+			editionID:  editionID,
+			items:      req.Items,
+			expiresAt:  expiresAt,
+			productMap: productMap,
+		})
+		if err != nil || session == nil {
+			return err
+		}
+
+		payReq, err := uc.submitPayment(ctx, conn, session)
+		if err != nil || payReq == nil {
+			return err
+		}
+
+		intent, err := uc.checkout(ctx, conn, session, payReq)
+		if err != nil {
+			return err
+		}
+
+		if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
+			return err
+		}
+
+		return uc.waitForPayment(conn, session)
+
+	default:
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected buy_request or resume_session"})
+		return nil
+	}
 }
 
-func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, req dtos.BuyRequest, editionID, userID uuid.UUID, userEmail string) error {
-	sessionID, err := uuid.NewV7()
-	if err != nil {
-		return err
-	}
-	expiresAt := time.Now().Add(domain.ReservationDuration)
-
-	// ── Phase 1: fetch + validate ─────────────────────────────────────────────
+func (uc *CommandService) fetchAndValidateStage(ctx context.Context, conn *websocket.Conn, req *dtos.BuyRequest) (map[uuid.UUID]domain.Product, error) {
 	ids := make([]uuid.UUID, len(req.Items))
 	for i, item := range req.Items {
 		ids[i] = item.ProductID
@@ -35,7 +132,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 
 	toBuy, err := uc.products.GetByIDs(ctx, ids)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(toBuy) != len(ids) {
@@ -46,7 +143,7 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 				"product_ids": ids,
 			},
 		})
-		return nil
+		return nil, errors.New("close socket")
 	}
 
 	productMap := make(map[uuid.UUID]domain.Product, len(toBuy))
@@ -56,17 +153,15 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 
 	invalid := make([]domain.InvalidProduct, 0)
 	for _, p := range toBuy {
-		if p.Status != domain.ProductStatusAvailable {
+		if p.Status != domain.ProductStatusAvailable && p.Status != domain.ProductStatusSoldOut {
 			var reason string
 			switch p.Status {
 			case domain.ProductStatusDraft:
 				reason = "product is not yet available"
-			case domain.ProductStatusSoldOut:
-				reason = "product is sold out"
 			case domain.ProductStatusUnavailable:
 				reason = "product is unavailable"
 			default:
-				reason = "product cannot be purchased"
+				reason = "product is in invalid state"
 			}
 			invalid = append(invalid, domain.InvalidProduct{
 				ProductID: p.ID,
@@ -77,8 +172,8 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 	}
 
 	if len(invalid) > 0 {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_failed", Payload: invalid})
-		return nil
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_failed", Payload: map[string]any{"invalid_products": invalid}})
+		return nil, errors.New("close socket")
 	}
 
 	for i, item := range req.Items {
@@ -87,25 +182,37 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		}
 	}
 
-	// ── Phase 2: reserve ──────────────────────────────────────────────────────
-	outcome, err := uc.products.ReserveItems(ctx, sessionID, req.Items, expiresAt)
+	return productMap, nil
+}
+
+type reserveItemsInput struct {
+	userID     uuid.UUID
+	sessionID  uuid.UUID
+	editionID  uuid.UUID
+	items      []domain.CartItem
+	expiresAt  time.Time
+	productMap map[uuid.UUID]domain.Product
+}
+
+func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket.Conn, in reserveItemsInput) (*domain.PurchaseSession, error) {
+	outcome, err := uc.products.ReserveItems(ctx, in.sessionID, in.items, in.expiresAt)
 	if err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 		if uErr != nil {
 			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 		}
 		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, editionID, updates)
+			_ = uc.inventory.Publish(ctx, in.editionID, updates)
 		}
-		return err
+		return nil, err
 	}
 
 	if len(outcome.InventoryUpdates) > 0 {
-		_ = uc.inventory.Publish(ctx, editionID, outcome.InventoryUpdates)
+		_ = uc.inventory.Publish(ctx, in.editionID, outcome.InventoryUpdates)
 	}
 
 	for i, inv := range outcome.Unavailable {
-		if p, ok := productMap[inv.ProductID]; ok {
+		if p, ok := in.productMap[inv.ProductID]; ok {
 			outcome.Unavailable[i].Name = p.Name
 		}
 	}
@@ -115,24 +222,34 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 			Type:    "reservation_failed",
 			Payload: map[string]any{"unavailable": outcome.Unavailable},
 		})
-		return nil
+		return nil, nil
 	}
 
 	// build reservedDetails + total once, reused in partial_reservation and reservation_confirmed
-	reservedDetails := make([]map[string]any, 0, len(outcome.Reserved))
+	reservedDetails := make([]domain.ReservedItem, 0, len(outcome.Reserved))
 	var total int
 	for _, item := range outcome.Reserved {
-		p := productMap[item.ProductID]
+		p := in.productMap[item.ProductID]
 		total += p.PriceCents * item.Quantity
-		reservedDetails = append(reservedDetails, map[string]any{
-			"product_id":  p.ID,
-			"name":        p.Name,
-			"quantity":    item.Quantity,
-			"price_cents": p.PriceCents,
+		reservedDetails = append(reservedDetails, domain.ReservedItem{
+			ProductID:   p.ID,
+			Name:        p.Name,
+			Quantity:    item.Quantity,
+			PriceCents:  p.PriceCents,
+			ProductType: p.Type,
+			TicketID:    p.TicketID,
 		})
 	}
 
-	// ── Phase 3: partial confirmation ─────────────────────────────────────────
+	session := domain.PurchaseSession{
+		SessionID:  in.sessionID,
+		UserID:     in.userID,
+		EditionID:  in.editionID,
+		ExpiresAt:  in.expiresAt,
+		Reserved:   reservedDetails,
+		TotalCents: total,
+	}
+
 	if len(outcome.Unavailable) > 0 {
 		confirmDeadline := time.Now().Add(60 * time.Second)
 
@@ -146,108 +263,118 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		})
 
 		if err = conn.SetReadDeadline(confirmDeadline); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 			if uErr != nil {
 				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 			}
 			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, editionID, updates)
+				_ = uc.inventory.Publish(ctx, in.editionID, updates)
 			}
-			return err
+			return nil, err
 		}
 
 		var confirmMsg sockets.WSMessage
 		if err = conn.ReadJSON(&confirmMsg); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 			if uErr != nil {
 				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 			}
 			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, editionID, updates)
+				_ = uc.inventory.Publish(ctx, in.editionID, updates)
 			}
-			return nil
+			return nil, err
 		}
 
 		if err = conn.SetReadDeadline(time.Time{}); err != nil {
-			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 			if uErr != nil {
 				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 			}
 			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, editionID, updates)
+				_ = uc.inventory.Publish(ctx, in.editionID, updates)
 			}
-			return err
+			return nil, err
 		}
 
 		switch confirmMsg.Type {
 		case "confirm_partial":
 			// proceed with outcome.Reserved only
 		case "cancel":
-			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 			if uErr != nil {
 				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 			}
 			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, editionID, updates)
+				_ = uc.inventory.Publish(ctx, in.editionID, updates)
 			}
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "reservation_cancelled"})
-			return nil
+			return nil, errors.New("close socket")
 		default:
-			updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+			updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 			if uErr != nil {
 				telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 			}
 			if len(updates) > 0 {
-				_ = uc.inventory.Publish(ctx, editionID, updates)
+				_ = uc.inventory.Publish(ctx, in.editionID, updates)
 			}
 			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected confirm_partial or cancel"})
-			return nil
+			return nil, errors.New("close socket")
 		}
+	}
+
+	session.Stage = domain.StageAwaitingPayment
+
+	if err := uc.sessions.Save(ctx, session); err != nil {
+		return nil, err
 	}
 
 	_ = conn.WriteJSON(sockets.WSMessage{
 		Type: "reservation_confirmed",
 		Payload: dtos.ReservationConfirmedPayload{
-			SessionID: sessionID,
-			ExpiresAt: expiresAt,
-			Items:     reservedDetails,
-			Total:     total,
+			SessionID:     session.SessionID,
+			ExpiresAt:     session.ExpiresAt,
+			ReservedItems: session.Reserved,
+			TotalCents:    session.TotalCents,
 		},
 	})
 
+	return &session, nil
+}
+
+func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession) (*dtos.SubmitPaymentPayload, error) {
 	var payMsg sockets.WSMessage
-	if err = conn.ReadJSON(&payMsg); err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+	if err := conn.ReadJSON(&payMsg); err != nil {
+		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
 		if uErr != nil {
 			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 		}
 		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, editionID, updates)
+			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
 		}
-		return nil
+		return nil, errors.New("close socket")
 	}
 
 	if payMsg.Type != "submit_payment" {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
-		return nil
+		return nil, errors.New("close socket")
 	}
 
 	payloadBytes, err := json.Marshal(payMsg.Payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var payReq dtos.SubmitPaymentPayload
 	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
-		return nil
+		return nil, errors.New("close socket")
 	}
 
 	telemetry.Log().Info("Before Initiate",
-		zap.Int("total", total),
+		zap.Int("total", session.TotalCents),
 		zap.String("currency", "BRL"),
 		zap.String("provider", viper.GetString("TRIEPAYMENTS_PROVIDER")),
-		zap.Any("metadata", json.RawMessage(`{"session_id": "`+sessionID.String()+`"}`)),
+		zap.Any("metadata", json.RawMessage(`{"session_id": "`+session.SessionID.String()+`"}`)),
 		zap.String("payment_method_id", payReq.PaymentMethodID),
 		zap.Int("installments", payReq.Installments),
 		zap.String("card_token", payReq.CardToken),
@@ -256,12 +383,19 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		zap.String("payer_email", payReq.PayerEmail),
 	)
 
-	// ── Phase 4: payment intent (no locks held) ───────────────────────────────
+	if err := uc.sessions.Save(ctx, *session); err != nil {
+		return nil, err
+	}
+
+	return &payReq, nil
+}
+
+func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, error) {
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
-		Amount:             int64(total),
+		Amount:             int64(session.TotalCents),
 		Currency:           "BRL",
 		Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
-		Metadata:           json.RawMessage(`{"session_id": "` + sessionID.String() + `"}`),
+		Metadata:           json.RawMessage(`{"session_id": "` + session.SessionID.String() + `"}`),
 		PaymentMethodID:    payReq.PaymentMethodID,
 		Installments:       payReq.Installments,
 		CardToken:          payReq.CardToken,
@@ -270,28 +404,38 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		PayerEmail:         payReq.PayerEmail,
 	})
 	if err != nil {
-		updates, uErr := uc.products.UnreserveItems(ctx, sessionID)
+		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
 		if uErr != nil {
 			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
 		}
 		if len(updates) > 0 {
-			_ = uc.inventory.Publish(ctx, editionID, updates)
+			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
 		}
-		return err
+		return nil, err
 	}
-	paymentIntentID := intent.ID
+
+	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
+		telemetry.Log().Debug("Failed to delete session after checkout", zap.Error(err))
+	}
 
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
+	return intent, nil
+}
 
-	// ── Phase 5: purchase record TX (pure DB) ─────────────────────────────────
-	if err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
+type recordPurchaseInput struct {
+	session *domain.PurchaseSession
+	intent  *paymentsSDK.Intent
+}
+
+func (uc *CommandService) recordPurchase(ctx context.Context, conn *websocket.Conn, in recordPurchaseInput) error {
+	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
-			EditionID:       editionID,
-			SessionID:       &sessionID,
-			UserID:          userID,
-			SubtotalCents:   int(intent.Amount),
-			PaymentProvider: &intent.Provider,
-			PaymentID:       &intent.ID,
+			EditionID:       in.session.EditionID,
+			SessionID:       &in.session.SessionID,
+			UserID:          in.session.UserID,
+			SubtotalCents:   int(in.intent.Amount),
+			PaymentProvider: &in.intent.Provider,
+			PaymentID:       &in.intent.ID,
 		})
 
 		purchase, err := uc.purchases.Create(ctx, *pendingPurchase)
@@ -299,18 +443,16 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 			return err
 		}
 
-		for _, item := range outcome.Reserved {
-			p := productMap[item.ProductID]
-
-			if p.Type == domain.ProductTypeTicket {
+		for _, item := range in.session.Reserved {
+			if item.ProductType == domain.ProductTypeTicket {
 				for range item.Quantity {
 					if _, err = uc.purchases.CreateLineItem(ctx, domain.LineItem{
 						PurchaseID:      purchase.ID,
 						ItemType:        "ticket",
-						ItemID:          *p.TicketID,
+						ItemID:          *item.TicketID,
 						Quantity:        1,
-						UnitPriceCents:  p.PriceCents,
-						TotalPriceCents: p.PriceCents,
+						UnitPriceCents:  item.PriceCents,
+						TotalPriceCents: item.PriceCents,
 					}); err != nil {
 						return err
 					}
@@ -319,17 +461,17 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 				if _, err = uc.purchases.CreateLineItem(ctx, domain.LineItem{
 					PurchaseID:      purchase.ID,
 					ItemType:        "product",
-					ItemID:          p.ID,
+					ItemID:          item.ProductID,
 					Quantity:        item.Quantity,
-					UnitPriceCents:  p.PriceCents,
-					TotalPriceCents: p.PriceCents * item.Quantity,
+					UnitPriceCents:  item.PriceCents,
+					TotalPriceCents: item.PriceCents * item.Quantity,
 				}); err != nil {
 					return err
 				}
 			}
 		}
 
-		task, err := domain.NewReservationExpiredTask(sessionID, paymentIntentID, expiresAt, editionID)
+		task, err := domain.NewReservationExpiredTask(in.session.SessionID, in.intent.ID, in.session.ExpiresAt, in.session.EditionID)
 		if err != nil {
 			return err
 		}
@@ -343,8 +485,11 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, re
 		return err
 	}
 
-	// ── Phase 6: wait for payment ─────────────────────────────────────────────
-	uc.ws.Register(sessionID.String(), conn)
+	return nil
+}
+
+func (uc *CommandService) waitForPayment(conn *websocket.Conn, session *domain.PurchaseSession) error {
+	uc.ws.Register(session.SessionID.String(), conn)
 
 	// block with timeout waiting for webhook to resolve via ws.Notify
 	paymentTimeout := time.After(30 * time.Second)

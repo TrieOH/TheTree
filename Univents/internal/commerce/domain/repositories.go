@@ -46,3 +46,9 @@ type InventoryPublisher interface {
 type InventorySubscriber interface {
 	Subscribe(ctx context.Context, editionID uuid.UUID) (<-chan []InventoryUpdate, error)
 }
+
+type PurchaseSessionStore interface {
+	Save(ctx context.Context, session PurchaseSession) error
+	Load(ctx context.Context, userID, sessionID uuid.UUID) (*PurchaseSession, error)
+	Delete(ctx context.Context, userID, sessionID uuid.UUID) error
+}

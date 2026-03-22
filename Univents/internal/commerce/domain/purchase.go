@@ -88,3 +88,34 @@ type WSClaims struct {
 	Email  string    `json:"email"`
 	jwt.RegisteredClaims
 }
+
+type PurchaseStage string
+
+const (
+	StageAwaitingPartialConfirm PurchaseStage = "awaiting_partial_confirm"
+	StageAwaitingPayment        PurchaseStage = "awaiting_payment"
+	StageAwaitingWebhook        PurchaseStage = "awaiting_webhook"
+)
+
+type ReservedItem struct {
+	ProductID   uuid.UUID   `json:"product_id"`
+	Name        string      `json:"name"`
+	Quantity    int         `json:"quantity"`
+	PriceCents  int         `json:"price_cents"`
+	ProductType ProductType `json:"product_type"`
+	TicketID    *uuid.UUID  `json:"ticket_id,omitempty"`
+}
+
+type PurchaseSession struct {
+	SessionID  uuid.UUID      `json:"session_id"`
+	UserID     uuid.UUID      `json:"user_id"`
+	EditionID  uuid.UUID      `json:"edition_id"`
+	Stage      PurchaseStage  `json:"stage"`
+	ExpiresAt  time.Time      `json:"expires_at"`
+	Reserved   []ReservedItem `json:"reserved"`
+	TotalCents int            `json:"total_cents"`
+}
+
+func PurchaseSessionKey(userID, sessionID uuid.UUID) string {
+	return "purchase_session:" + userID.String() + ":" + sessionID.String()
+}

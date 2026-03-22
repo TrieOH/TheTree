@@ -309,7 +309,6 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := claims.UserID
-	userEmail := claims.Email
 
 	upgrader := sockets.MakeUpgrader()
 
@@ -325,19 +324,13 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 		}
 	}(conn)
 
-	var req dtos.BuyRequest
-	if err := conn.ReadJSON(&req); err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid request payload"})
-		return
-	}
-
 	spanCtx := trace.SpanFromContext(r.Context()).SpanContext()
 	baseCtx := trace.ContextWithSpanContext(context.Background(), spanCtx)
 
 	ctx, cancel := context.WithTimeout(baseCtx, domain.ReservationDuration+91*time.Second)
 	defer cancel()
 
-	if err := handler.commands.Purchase(ctx, conn, req, editionID, userID, userEmail); err != nil {
+	if err := handler.commands.Purchase(ctx, conn, editionID, userID); err != nil {
 		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: err.Error()})
 		return
 	}

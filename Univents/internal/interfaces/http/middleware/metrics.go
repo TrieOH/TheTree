@@ -17,7 +17,7 @@ var (
 	HttpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
-			Help: "Total number of HTTP requests",
+			Help: "TotalCents number of HTTP requests",
 		},
 		[]string{"route", "method", "status"},
 	)

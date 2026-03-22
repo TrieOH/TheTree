@@ -36,7 +36,7 @@ func (uc *CommandService) CancelPayment(ctx context.Context, paymentIntentID str
 		Type:    "payment_failed",
 		Payload: map[string]string{"payment_intent_id": paymentIntentID},
 	}); err != nil {
-		log.Printf("[cancel] ws already closed for session %s: %v", sessionID, err)
+		log.Printf("[cancel] ws already closed for sessions %s: %v", sessionID, err)
 	}
 	uc.ws.Remove(sessionID.String())
 

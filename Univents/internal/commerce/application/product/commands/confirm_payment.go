@@ -53,7 +53,7 @@ func (uc *CommandService) ConfirmPayment(ctx context.Context, paymentIntentID st
 			Type:    "order_confirmed",
 			Payload: map[string]string{"purchase_id": purchase.ID.String()},
 		}); err != nil {
-			log.Printf("[confirm] ws already closed for session %s: %v", sessionID, err)
+			log.Printf("[confirm] ws already closed for sessions %s: %v", sessionID, err)
 		}
 		uc.ws.Remove(sessionID.String())
 	}

@@ -20,15 +20,19 @@ type CreateProductRequest struct {
 	InventoryQuantity int                `json:"inventory_quantity"`
 }
 
+type ResumeSessionPayload struct {
+	SessionID uuid.UUID `json:"session_id"`
+}
+
 type BuyRequest struct {
 	Items []domain.CartItem `json:"items"`
 }
 
 type ReservationConfirmedPayload struct {
-	SessionID uuid.UUID        `json:"session_id"`
-	ExpiresAt time.Time        `json:"expires_at"`
-	Items     []map[string]any `json:"items"`
-	Total     int              `json:"total"`
+	SessionID     uuid.UUID             `json:"session_id"`
+	ExpiresAt     time.Time             `json:"expires_at"`
+	ReservedItems []domain.ReservedItem `json:"reserved_items"`
+	TotalCents    int                   `json:"total_cents"`
 }
 
 type ConfirmPaymentRequest struct {
@@ -43,10 +47,4 @@ type SubmitPaymentPayload struct {
 	Installments       int    `json:"installments"`
 	SellerCredentialID string `json:"seller_credential_id"`
 	PayerEmail         string `json:"payer_email"`
-}
-
-type OrderPayload struct {
-	CardToken       string `json:"card_token"`
-	PaymentMethodID string `json:"payment_method_id"`
-	Installments    int    `json:"installments"`
 }

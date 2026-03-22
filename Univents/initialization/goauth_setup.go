@@ -115,6 +115,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	ws := sockets.New()
 	inventoryPublisher := commerceInfra.NewRedisInventoryPublisher(app.Redis)
 	inventorySubscriber := commerceInfra.NewRedisInventorySubscriber(app.Redis)
+	purchaseSessionStore := commerceInfra.NewSessionStore(app.Redis)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, tracer)
 
@@ -158,7 +159,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, ws, inventoryPublisher, asynqClient, inspector, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, purchaseSessionStore, ws, inventoryPublisher, asynqClient, inspector, app.GaClient, tracer, txRunner)
 	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, inventorySubscriber, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
