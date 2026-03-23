@@ -253,7 +253,8 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 
 	intent.SellerCredentialID = &request.SellerCredentialID
 
-	expirationTime := time.Now().Add(30 * time.Minute).Format(time.RFC3339)
+	loc, _ := time.LoadLocation("America/Sao_Paulo")
+	expirationTime := time.Now().In(loc).Add(30 * time.Minute).Format("2006-01-02T15:04:05.000-07:00")
 
 	body := map[string]any{
 		"transaction_amount":   json.Number(formatAmount(request.Amount)),
