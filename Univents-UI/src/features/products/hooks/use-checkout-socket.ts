@@ -1,30 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getWebsocketAuthToken } from "../api";
 import type { SubmitPaymentPayloadI } from "@/features/payments/model";
+import type { ProductType } from "../model";
 
 type ServerMessage =
-  | { type: "reservation_failed"; payload: { unavailable: { product_id: string; name: string; reason: string }[] } }
+  | { type: "reservation_failed"; payload: { unavailable: UnavailableItem[] } }
   | { type: "partial_reservation"; payload: { reserved: ReservedItem[]; unavailable: UnavailableItem[]; confirm_deadline: string } }
-  | { type: "reservation_confirmed"; payload: { session_id: string; expires_at: string; items: ReservedItem[]; total: number } }
+  | { type: "reservation_confirmed"; payload: { session_id: string; expires_at: string; reserved_items: ReservedItem[]; total_cents: number } }
   | { type: "payment_processing" }
+  | { type: "pix_created"; payload: { qr_code: string; qr_code_base64: string } }
   | { type: "payment_failed"; payload: { reason: string } }
   | { type: "payment_pending"; payload: string }
-  | { type: "order_confirmed"; payload: { order_id: string; receipt_url?: string } }
-  | { type: "order_failed"; payload: { reason: string; order_id?: string } }
+  | { type: "order_confirmed"; payload: { purchase_id: string } | { payment_intent_id: string } }
+  | { type: "order_failed"; payload: { reason: string } }
   | { type: "reservation_cancelled" }
+  | { type: "session_expired" }
   | { type: "error"; payload: string };
 
-interface ReservedItem {
+export interface ReservedItem {
   product_id: string;
   name: string;
   quantity: number;
   price_cents: number;
+  product_type: ProductType;
+  ticket_id?: string;
 }
 
-interface UnavailableItem {
+export interface UnavailableItem {
   product_id: string;
   name: string;
   reason: string;
+  requested: number;
+  reserved: number;
 }
 
 export type CheckoutPhase =
@@ -40,6 +47,7 @@ export type CheckoutPhase =
   | "payment_pending"
   | "order_confirmed"
   | "order_failed"
+  | "session_expired"
   | "error";
 
 interface CheckoutState {
@@ -53,8 +61,8 @@ interface CheckoutState {
     confirmDeadline: string;
   } | null;
   reservedItems: ReservedItem[];
-  total: number;
-  orderId: string | null;
+  pixData: { qrCode: string; qrCodeBase64: string } | null;
+  totalCents: number;
   pendingMessage: string | null;
 }
 
@@ -65,9 +73,9 @@ const INITIAL: CheckoutState = {
   reservationExpiresAt: null,
   partialData: null,
   reservedItems: [],
-  total: 0,
-  orderId: null,
+  totalCents: 0,
   pendingMessage: null,
+  pixData: null,
 };
 
 export interface BuyRequestItem {
@@ -75,11 +83,24 @@ export interface BuyRequestItem {
   quantity: number;
 }
 
-export function useCheckoutSocket(url: string) {
+function normalizeErrorMessage(raw: string): string {
+  if (raw.includes("i/o timeout")) return "Tempo esgotado para confirmar a reserva.";
+  if (raw.includes("connection reset")) return "Conexão encerrada inesperadamente.";
+  if (raw.includes("broken pipe")) return "Conexão encerrada inesperadamente.";
+  return "Ocorreu um erro inesperado.";
+}
+
+export function useCheckoutSocket(
+  url: string,
+  onPartialReservation?: (reserved: ReservedItem[]) => void,
+  onPixCreated?: () => void,
+) {
   const wsRef = useRef<WebSocket | null>(null);
   const connectingRef = useRef(false);
   const intentionalClose = useRef(false);
   const hadServerError = useRef(false);
+  const terminalPhaseRef = useRef(false);
+  const handleMessageRef = useRef<((raw: MessageEvent) => void) | null>(null);
   const [state, setState] = useState<CheckoutState>(INITIAL);
 
   const patch = useCallback((updates: Partial<CheckoutState>) => {
@@ -96,7 +117,7 @@ export function useCheckoutSocket(url: string) {
     (raw: MessageEvent) => {
       let msg: ServerMessage;
       try {
-        msg = JSON.parse(raw.data as string) as unknown as ServerMessage;
+        msg = JSON.parse(raw.data as string) as ServerMessage;
       } catch {
         return;
       }
@@ -107,20 +128,23 @@ export function useCheckoutSocket(url: string) {
             phase: "reservation_confirmed",
             sessionId: msg.payload.session_id,
             reservationExpiresAt: msg.payload.expires_at,
-            reservedItems: msg.payload.items,
-            total: msg.payload.total,
+            reservedItems: msg.payload.reserved_items,
+            totalCents: msg.payload.total_cents,
           });
           break;
 
         case "partial_reservation":
           patch({
             phase: "partial_reservation",
+            reservedItems: msg.payload.reserved,
+            totalCents: msg.payload.reserved.reduce((sum, i) => sum + i.price_cents * i.quantity, 0),
             partialData: {
               reserved: msg.payload.reserved,
               unavailable: msg.payload.unavailable,
               confirmDeadline: msg.payload.confirm_deadline,
             },
           });
+          onPartialReservation?.(msg.payload.reserved);
           break;
 
         case "reservation_failed":
@@ -135,6 +159,11 @@ export function useCheckoutSocket(url: string) {
           setState(INITIAL);
           break;
 
+        case "session_expired":
+          hadServerError.current = true;
+          patch({ phase: "session_expired" });
+          break;
+
         case "payment_processing":
           patch({ phase: "payment_processing" });
           break;
@@ -145,31 +174,50 @@ export function useCheckoutSocket(url: string) {
           break;
 
         case "payment_pending":
+          terminalPhaseRef.current = true;
           patch({ phase: "payment_pending", pendingMessage: msg.payload });
           break;
 
         case "order_confirmed":
-          patch({ phase: "order_confirmed", orderId: msg.payload.order_id });
+          terminalPhaseRef.current = true;
+          patch({ phase: "order_confirmed" });
+          break;
+
+        case "pix_created":
+          onPixCreated?.();
+          patch({
+            phase: "payment_pending",
+            pixData: {
+              qrCode: msg.payload.qr_code,
+              qrCodeBase64: msg.payload.qr_code_base64,
+            },
+          });
           break;
 
         case "order_failed":
+          // Terminal: backend fecha o socket após order_failed também.
+          terminalPhaseRef.current = true;
           hadServerError.current = true;
-          patch({ phase: "order_failed", errorMessage: msg.payload.reason, orderId: msg.payload.order_id ?? null });
+          patch({ phase: "order_failed", errorMessage: msg.payload.reason });
           break;
 
         case "error":
           hadServerError.current = true;
-          patch({ phase: "error", errorMessage: msg.payload });
+          patch({ phase: "error", errorMessage: normalizeErrorMessage(msg.payload) });
           break;
       }
     },
-    [patch],
+    [patch, onPartialReservation, onPixCreated],
   );
 
-  const buyRequest = useCallback(
-    async (items: BuyRequestItem[]) => {
+  useEffect(() => {
+    handleMessageRef.current = handleMessage;
+  }, [handleMessage]);
+
+  const openSocket = useCallback(
+    async (firstMessage: Record<string, unknown>) => {
       if (connectingRef.current) return;
-      
+
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         intentionalClose.current = true;
         wsRef.current.close(1000, "restart");
@@ -179,7 +227,7 @@ export function useCheckoutSocket(url: string) {
       connectingRef.current = true;
       intentionalClose.current = false;
       hadServerError.current = false;
-      setState({ ...INITIAL, phase: "connecting" });
+      terminalPhaseRef.current = false;
 
       try {
         const res = await getWebsocketAuthToken();
@@ -191,20 +239,12 @@ export function useCheckoutSocket(url: string) {
         const ws = new WebSocket(`${url}?token=${res.data.token}`);
         wsRef.current = ws;
 
-        ws.onopen = () => {
-          patch({ phase: "awaiting_reservation" });
-          ws.send(JSON.stringify({ type: "buy_request", items }));
-        };
-
-        ws.onmessage = handleMessage;
-
-        ws.onerror = () => {
-          patch({ phase: "error", errorMessage: "Erro na conexão com o servidor." });
-        };
-
+        ws.onopen = () => { ws.send(JSON.stringify(firstMessage)); };
+        ws.onmessage = (raw) => handleMessageRef.current?.(raw);
+        ws.onerror = () => { patch({ phase: "error", errorMessage: "Erro na conexão com o servidor." }); };
         ws.onclose = () => {
           wsRef.current = null;
-          if (!intentionalClose.current && !hadServerError.current) {
+          if (!intentionalClose.current && !hadServerError.current && !terminalPhaseRef.current) {
             patch({ phase: "error", errorMessage: "Conexão encerrada inesperadamente." });
           }
         };
@@ -212,16 +252,34 @@ export function useCheckoutSocket(url: string) {
         connectingRef.current = false;
       }
     },
-    [url, handleMessage, patch],
+    [url, patch],
+  );
+
+  const buyRequest = useCallback(
+    async (items: BuyRequestItem[]) => {
+      setState({ ...INITIAL, phase: "connecting" });
+      await openSocket({ type: "buy_request", payload: { items } });
+      patch({ phase: "awaiting_reservation" });
+    },
+    [openSocket, patch],
+  );
+
+  const resumeSession = useCallback(
+    async (sessionId: string) => {
+      setState({ ...INITIAL, phase: "connecting" });
+      await openSocket({ type: "resume_session", payload: { session_id: sessionId } });
+      patch({ phase: "awaiting_reservation" });
+    },
+    [openSocket, patch],
   );
 
   const confirmPartial = useCallback(() => {
-    sendJSON({ type: "confirm_partial" });
+    sendJSON({ type: "confirm_partial", payload: {} });
     patch({ phase: "awaiting_reservation" });
   }, [sendJSON, patch]);
 
   const cancelReservation = useCallback(() => {
-    sendJSON({ type: "cancel" });
+    sendJSON({ type: "cancel", payload: {} });
     intentionalClose.current = true;
     wsRef.current?.close(1000, "cancelled");
     setState(INITIAL);
@@ -239,10 +297,11 @@ export function useCheckoutSocket(url: string) {
           card_token: payload.card_token,
           payment_method_id: payload.payment_method_id,
           payment_method_type: payload.payment_method_type,
-          seller_credential_id: payload.seller_credential_id,
           payer_email: payload.payer_email,
           installments: payload.installments,
-        }
+          identification_type: payload.identification_type,
+          identification_number: payload.identification_number,
+        },
       });
       patch({ phase: "awaiting_payment" });
     },
@@ -263,5 +322,5 @@ export function useCheckoutSocket(url: string) {
     };
   }, []);
 
-  return { state, buyRequest, confirmPartial, cancelReservation, submitPayment, reset };
+  return { state, buyRequest, resumeSession, confirmPartial, cancelReservation, submitPayment, reset };
 }

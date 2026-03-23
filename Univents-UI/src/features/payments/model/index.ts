@@ -20,12 +20,13 @@ export const paymentDisconnectSchema = z.object({
 export type paymentDisconnectSchema = z.infer<typeof paymentConnectSchema>
 
 export const submitPaymentPayload = z.object({
-  card_token: z.string(),
+  card_token: z.string().optional(),
   payment_method_id: z.string(),
   payment_method_type: z.string(),
-  installments: z.int().nonnegative(),
-  seller_credential_id: z.string(),
+  installments: z.int().nonnegative().optional(),
   payer_email: z.email(),
+  identification_type: z.string(),
+  identification_number: z.string()
 })
 
 export type SubmitPaymentPayloadI = z.infer<typeof submitPaymentPayload>

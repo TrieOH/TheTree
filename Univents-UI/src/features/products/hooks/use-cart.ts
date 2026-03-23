@@ -25,6 +25,9 @@ export function useCart(editionId: string) {
     updateQuantity: (id: string, quantity: number) => {
       cartActions.updateQuantity(editionId, id, quantity);
     },
+    replaceCart: (newItems: CartItem[]) => {
+      cartActions.replaceCart(editionId, newItems);
+    },
     clearCart: () => {
       cartActions.clearCart(editionId);
     },

@@ -71,7 +71,6 @@ interface PaymentPayload {
   };
 }
 
-
 type PaymentMethod = "credit_card" | "pix";
 
 function formatBRL(cents: number) {
@@ -88,8 +87,6 @@ const inputLike = [
   "disabled:cursor-not-allowed disabled:opacity-50",
 ].join(" ");
 
-// ─── IframeField — <div> that MP replaces with a secure iframe ────────────────
-
 function IframeField({ id, label, className }: { id: string; label: string; className?: string }) {
   return (
     <div className={cn("space-y-1.5", className)}>
@@ -101,7 +98,6 @@ function IframeField({ id, label, className }: { id: string; label: string; clas
         className={cn(
           inputLike,
           "h-9",
-          // make the injected iframe fill the container
           "[&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-none [&>iframe]:bg-transparent"
         )}
       />
@@ -124,14 +120,23 @@ function SelectField({ id, label, className }: { id: string; label: string; clas
           "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8"
         )}
       >
-        {/* MP will remove this and inject its own options */}
         <option value="" disabled />
       </select>
     </div>
   );
 }
 
-function PixForm({ amount, onSubmit, loading }: { amount: number; onSubmit: () => void; loading: boolean }) {
+function PixForm({ amount, onSubmit, loading }: {
+  amount: number;
+  onSubmit: (email: string, identificationType: string, identificationNumber: string) => void;
+  loading: boolean;
+}) {
+  const [email, setEmail] = useState("");
+  const [identificationType, setIdentificationType] = useState("CPF");
+  const [identificationNumber, setIdentificationNumber] = useState("");
+
+  const canSubmit = !loading && !!email && !!identificationNumber;
+
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3 pb-4 border-b border-border/50">
@@ -146,18 +151,72 @@ function PixForm({ amount, onSubmit, loading }: { amount: number; onSubmit: () =
         </div>
       </div>
 
+      {/* E-mail */}
+      <div className="space-y-1.5">
+        <Label htmlFor="pix-email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          E-mail
+        </Label>
+        <Input
+          id="pix-email"
+          type="email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value) }}
+          placeholder="email@exemplo.com"
+        />
+      </div>
+
+      {/* Documento */}
+      <div className="grid grid-cols-5 gap-3">
+        <div className="space-y-1.5 col-span-2">
+          <Label htmlFor="pix-identification-type" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Tipo
+          </Label>
+          <select
+            id="pix-identification-type"
+            value={identificationType}
+            onChange={(e) => { setIdentificationType(e.target.value); }}
+            className={cn(
+              inputLike,
+              "h-9 cursor-pointer appearance-none",
+              "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8"
+            )}
+          >
+            <option value="CPF">CPF</option>
+            <option value="CNPJ">CNPJ</option>
+          </select>
+        </div>
+        <div className="space-y-1.5 col-span-3">
+          <Label htmlFor="pix-identification-number" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {identificationType === "CPF" ? "CPF" : "CNPJ"}
+          </Label>
+          <Input
+            id="pix-identification-number"
+            value={identificationNumber}
+            onChange={(e) => { setIdentificationNumber(e.target.value); }}
+            placeholder={identificationType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
+            inputMode="numeric"
+            className="text-sm font-mono"
+          />
+        </div>
+      </div>
+
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Total a pagar</span>
         <span className="font-bold text-foreground tabular-nums text-base">{formatBRL(amount)}</span>
       </div>
 
-      <Button className="w-full gap-2" onClick={onSubmit} disabled={loading}>
+      <Button
+        onClick={() => { onSubmit(email, identificationType, identificationNumber); }}
+        disabled={!canSubmit}
+      >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
         {loading ? "Gerando…" : "Gerar QR Code Pix"}
       </Button>
     </div>
   );
 }
+
+// ─── Cartão ───────────────────────────────────────────────────────────────────
 
 function CreditCardForm({
   amount,
@@ -182,25 +241,19 @@ function CreditCardForm({
       await loadMercadoPago();
       if (cancelled) return;
 
-      const mp = new window.MercadoPago(
-        seller_public_key,
-        { locale: "pt-BR" }
-      );
+      const mp = new window.MercadoPago(seller_public_key, { locale: "pt-BR" });
 
       const cardForm = mp.cardForm({
         amount: (amount / 100).toFixed(2),
         iframe: true,
         form: {
           id: "form-checkout",
-          // ── iframes (divs) ──
           cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
           expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
           securityCode: { id: "form-checkout__securityCode", placeholder: "•••" },
-          // ── inputs normais ──
           cardholderName: { id: "form-checkout__cardholderName", placeholder: "Como impresso no cartão" },
           identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "000.000.000-00" },
           cardholderEmail: { id: "form-checkout__cardholderEmail", placeholder: "email@exemplo.com" },
-          // ── selects nativos (MP popula as <option>) ──
           issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
           installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
           identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo de documento" },
@@ -258,8 +311,6 @@ function CreditCardForm({
 
   return (
     <form id="form-checkout" className="space-y-4">
-
-      {/* Número do cartão — iframe */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label htmlFor="form-checkout__cardNumber" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -281,7 +332,6 @@ function CreditCardForm({
         />
       </div>
 
-      {/* Nome — input normal */}
       <div className="space-y-1.5">
         <Label htmlFor="form-checkout__cardholderName" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Nome no cartão
@@ -296,21 +346,18 @@ function CreditCardForm({
         />
       </div>
 
-      {/* Validade + CVV — iframes */}
       <div className="grid grid-cols-2 gap-3">
         <IframeField id="form-checkout__expirationDate" label="Validade" />
         <IframeField id="form-checkout__securityCode" label="CVV" />
       </div>
 
-      {/* Parcelas — select nativo populado pelo MP */}
       <SelectField id="form-checkout__installments" label="Parcelas" />
 
-      {/* Banco emissor — select nativo, hidden visualmente mas presente no DOM */}
       <select id="form-checkout__issuer" className="hidden" defaultValue="">
         <option value="" disabled />
       </select>
 
-      {/* Documento */}
+      {/* Documento — capturado pelo cardForm e enviado no identification */}
       <div className="grid grid-cols-5 gap-3">
         <SelectField id="form-checkout__identificationType" label="Tipo" className="col-span-2" />
         <div className="space-y-1.5 col-span-3">
@@ -327,7 +374,6 @@ function CreditCardForm({
         </div>
       </div>
 
-      {/* E-mail */}
       <div className="space-y-1.5">
         <Label htmlFor="form-checkout__cardholderEmail" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           E-mail
@@ -342,7 +388,6 @@ function CreditCardForm({
         />
       </div>
 
-      {/* Submit */}
       <div className="pt-1 space-y-2.5">
         <Button type="submit" className="w-full gap-2" disabled={isLoading}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
@@ -356,14 +401,15 @@ function CreditCardForm({
   );
 }
 
+// ─── Export ───────────────────────────────────────────────────────────────────
+
 interface PropsI {
   amount: number;
   handleSubmit: (data: SubmitPaymentPayloadI) => void;
-  seller_credential_id: string;
   seller_public_key: string;
 }
 
-export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, seller_public_key }: PropsI) {
+export function MercadoPagoForm({ amount, handleSubmit, seller_public_key }: PropsI) {
   const isTooLowForCreditCard = amount < 100;
   const [method, setMethod] = useState<PaymentMethod>(isTooLowForCreditCard ? "pix" : "credit_card");
   const [loading, setLoading] = useState(false);
@@ -374,16 +420,19 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, se
     }
   }, [amount, isTooLowForCreditCard, method]);
 
-  const handlePixSubmit = () => {
+  const handlePixSubmit = (
+    email: string,
+    identificationType: string,
+    identificationNumber: string,
+  ) => {
     setLoading(true);
     try {
-      handleSubmit({ // FIXME: Only temporary
+      handleSubmit({
         payment_method_id: "pix",
-        card_token: "",
-        installments: 0,
-        payer_email: "",
-        payment_method_type: "",
-        seller_credential_id,
+        payer_email: email,
+        payment_method_type: "bank_transfer",
+        identification_type: identificationType,
+        identification_number: identificationNumber,
       });
     } finally {
       setLoading(false);
@@ -396,8 +445,9 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, se
       handleSubmit({
         ...data,
         payer_email: data.payer.email,
-        seller_credential_id,
-        payment_method_type: "credit_card"
+        payment_method_type: "credit_card",
+        identification_type: data.payer.identification.type,
+        identification_number: data.payer.identification.number,
       });
     } finally {
       setLoading(false);
@@ -427,7 +477,7 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, se
               {m === "credit_card" ? <CreditCard className="h-3.5 w-3.5" /> : <QrCode className="h-3.5 w-3.5" />}
               {m === "credit_card" ? "Cartão" : "Pix"}
             </button>
-          )
+          );
         })}
       </div>
 
@@ -445,5 +495,5 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_credential_id, se
         )}
       </div>
     </div>
-  )
+  );
 }

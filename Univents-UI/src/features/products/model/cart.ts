@@ -105,6 +105,15 @@ export const cartActions = {
       },
     }));
   },
+  replaceCart: (editionId: string, items: CartItem[]) => {
+    cartStore.setState((prev) => ({
+      ...prev,
+      carts: {
+        ...prev.carts,
+        [editionId]: items,
+      },
+    }));
+  },
   clearCart: (editionId: string) => {
     cartStore.setState((prev) => ({
       ...prev,
