@@ -131,7 +131,7 @@ function OrderSummary({
   expiresLabel = "Reserva expira em",
 }: {
   editionId: string;
-  expiresAt: string | null,
+  expiresAt: string | null;
   expiresLabel?: string;
 }) {
   const { items, totalCents } = useCart(editionId);
@@ -168,9 +168,7 @@ function OrderSummary({
           }`}>
           <div className="flex items-center gap-2 text-accent-foreground">
             <Clock className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">
-              {expiresLabel}
-            </span>
+            <span className="text-xs font-medium uppercase tracking-wide">{expiresLabel}</span>
           </div>
           <span className="font-mono text-sm font-bold text-accent-foreground tabular-nums">
             {formatted}
@@ -314,11 +312,15 @@ function CheckoutPage() {
   }, [sessionId, reservationExpiresAt, reservedItems, items, sessionKey]);
 
   useEffect(() => {
-    if (phase === "order_confirmed" || phase === "session_expired" || phase === "order_failed") {
+    if (phase === "order_confirmed" || phase === "session_expired") {
       sessionStorage.removeItem(sessionKey);
       setPendingSession(null);
     }
-    if (phase === "session_expired") void buyRequest(getCartItems());
+    // session_expired vindo do backend → nova reserva silenciosa em vez de
+    // mostrar tela de erro. Os itens já foram liberados no servidor.
+    if (phase === "session_expired") {
+      void buyRequest(getCartItems());
+    }
     if (phase === "order_confirmed") clearCart();
   }, [phase, sessionKey, clearCart]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -409,6 +411,16 @@ function CheckoutPage() {
 
   const displayTotal = socketTotal || totalCents;
 
+  // Timer do OrderSummary: durante partial_reservation usa o confirmDeadline
+  // (60s para o usuário decidir), nos demais casos usa o reservationExpiresAt.
+  const summaryExpiresAt = phase === "partial_reservation" && partialData
+    ? partialData.confirmDeadline
+    : reservationExpiresAt;
+
+  const summaryExpiresLabel = phase === "partial_reservation"
+    ? "Confirmar em"
+    : "Reserva expira em";
+
   return (
     <div className="min-h-screen bg-background py-4 px-4">
       <div className="max-w-4xl mx-auto">
@@ -435,14 +447,8 @@ function CheckoutPage() {
             </div>
             <OrderSummary
               editionId={editionId}
-              expiresAt={phase === "partial_reservation" && partialData
-                ? partialData.confirmDeadline
-                : reservationExpiresAt
-              }
-              expiresLabel={phase === "partial_reservation"
-                ? "Confirmar em"
-                : "Reserva expira em"
-              }
+              expiresAt={summaryExpiresAt}
+              expiresLabel={summaryExpiresLabel}
             />
           </div>
 
@@ -488,7 +494,7 @@ function CheckoutPage() {
               <div className="space-y-3">
                 <div className="flex items-start gap-2 text-destructive">
                   <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p className="text-sm">{errorMessage ?? "Itens esgotados."}</p>
+                  <p className="text-sm">{errorMessage}</p>
                 </div>
                 <button
                   onClick={() => void buyRequest(getCartItems())}
@@ -558,30 +564,33 @@ function CheckoutPage() {
               </p>
             )}
 
+            {!pendingSession && phase === "pix_pending" && state.pixData && (
+              <PixQRCode
+                qrCode={state.pixData.qrCode}
+                qrCodeBase64={state.pixData.qrCodeBase64}
+              />
+            )}
+
             {!pendingSession && phase === "payment_pending" && (
-              state.pixData ? (
-                <PixQRCode qrCode={state.pixData.qrCode} qrCodeBase64={state.pixData.qrCodeBase64} />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-2 text-foreground">
-                    <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Pagamento em processamento</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Seu pagamento está sendo processado em segundo plano.
-                        Você pode fechar esta página — avisaremos quando for confirmado.
-                      </p>
-                    </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-2 text-foreground">
+                  <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Pagamento em processamento</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Seu pagamento está sendo processado em segundo plano.
+                      Você pode fechar esta página — avisaremos quando for confirmado.
+                    </p>
                   </div>
-                  <button
-                    onClick={() => void navigate({ to: "/" })} // FIXME: Go to purchases
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    Ver meus pedidos
-                  </button>
                 </div>
-              )
+                <button
+                  onClick={() => void navigate({ to: "/" })} // FIXME: Go to purchases
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  Ver meus pedidos
+                </button>
+              </div>
             )}
 
             {!pendingSession && phase === "order_confirmed" && (
@@ -591,21 +600,7 @@ function CheckoutPage() {
               </div>
             )}
 
-            {!pendingSession && phase === "order_failed" && (
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 text-destructive">
-                  <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p className="text-sm">{errorMessage}</p>
-                </div>
-                <button onClick={handleReset} className="text-xs underline text-muted-foreground">
-                  Voltar
-                </button>
-              </div>
-            )}
-
             {!pendingSession && phase === "error" && (
-              // errorMessage já foi normalizado pelo hook (i/o timeout → mensagem legível).
-              // Dois caminhos: tentar novamente (nova reserva) ou desistir.
               <div className="space-y-3">
                 <div className="flex items-start gap-2 text-destructive">
                   <XCircle className="w-4 h-4 mt-0.5 shrink-0" />

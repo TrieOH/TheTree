@@ -9,10 +9,12 @@ type ServerMessage =
   | { type: "reservation_confirmed"; payload: { session_id: string; expires_at: string; reserved_items: ReservedItem[]; total_cents: number } }
   | { type: "payment_processing" }
   | { type: "pix_created"; payload: { qr_code: string; qr_code_base64: string } }
-  | { type: "payment_failed"; payload: { reason: string } }
+  | { type: "payment_failed"; payload: { payment_intent_id: string } }
+  | { type: "purchase_failed"; payload: { reason: string; product_ids: string[] } }
+  | { type: "purchase_failed"; payload: { invalid_products: UnavailableItem[] } }
+  | { type: "purchase_failed"; payload: string }
   | { type: "payment_pending"; payload: string }
   | { type: "order_confirmed"; payload: { purchase_id: string } | { payment_intent_id: string } }
-  | { type: "order_failed"; payload: { reason: string } }
   | { type: "reservation_cancelled" }
   | { type: "session_expired" }
   | { type: "error"; payload: string };
@@ -44,15 +46,16 @@ export type CheckoutPhase =
   | "awaiting_payment"
   | "payment_processing"
   | "payment_failed"
-  | "payment_pending"
+  | "payment_pending"   // cartão: processando em background, socket fechado
+  | "pix_pending"       // pix: aguardando scan do QR code
   | "order_confirmed"
-  | "order_failed"
   | "session_expired"
   | "error";
 
 interface CheckoutState {
   phase: CheckoutPhase;
   errorMessage: string | null;
+  payment_intent_id: string | null;
   sessionId: string | null;
   reservationExpiresAt: string | null;
   partialData: {
@@ -69,6 +72,7 @@ interface CheckoutState {
 const INITIAL: CheckoutState = {
   phase: "idle",
   errorMessage: null,
+  payment_intent_id: null,
   sessionId: null,
   reservationExpiresAt: null,
   partialData: null,
@@ -83,6 +87,7 @@ export interface BuyRequestItem {
   quantity: number;
 }
 
+// Normaliza mensagens de erro cruas do Go em strings legíveis para o usuário.
 function normalizeErrorMessage(raw: string): string {
   if (raw.includes("i/o timeout")) return "Tempo esgotado para confirmar a reserva.";
   if (raw.includes("connection reset")) return "Conexão encerrada inesperadamente.";
@@ -93,12 +98,16 @@ function normalizeErrorMessage(raw: string): string {
 export function useCheckoutSocket(
   url: string,
   onPartialReservation?: (reserved: ReservedItem[]) => void,
+  // Chamado quando pix_created chega: o backend já deletou a sessão nesse
+  // momento, então o CheckoutPage precisa limpar o sessionStorage.
   onPixCreated?: () => void,
 ) {
   const wsRef = useRef<WebSocket | null>(null);
   const connectingRef = useRef(false);
   const intentionalClose = useRef(false);
   const hadServerError = useRef(false);
+  // Fases terminais onde o backend fecha o socket após a última mensagem.
+  // Sem essa ref o onclose interpretaria o fechamento como inesperado.
   const terminalPhaseRef = useRef(false);
   const handleMessageRef = useRef<((raw: MessageEvent) => void) | null>(null);
   const [state, setState] = useState<CheckoutState>(INITIAL);
@@ -151,7 +160,7 @@ export function useCheckoutSocket(
           hadServerError.current = true;
           patch({
             phase: "reservation_failed",
-            errorMessage: msg.payload.unavailable.map((i) => i.reason).join(", "),
+            errorMessage: "Não foi possível reservar os itens selecionados.",
           });
           break;
 
@@ -161,49 +170,75 @@ export function useCheckoutSocket(
 
         case "session_expired":
           hadServerError.current = true;
-          patch({ phase: "session_expired" });
+          patch({
+            phase: "session_expired",
+            errorMessage: "Sua reserva expirou.",
+          });
           break;
 
         case "payment_processing":
-          patch({ phase: "payment_processing" });
+          patch({
+            phase: "payment_processing",
+            errorMessage: null,
+          });
           break;
 
         case "payment_failed":
           hadServerError.current = true;
-          patch({ phase: "payment_failed", errorMessage: msg.payload.reason });
+          patch({
+            phase: "payment_failed",
+            errorMessage: "Pagamento recusado. Tente novamente.",
+            payment_intent_id: msg.payload.payment_intent_id,
+          });
+          break;
+
+        case "purchase_failed":
+          hadServerError.current = true;
+          patch({
+            phase: "error",
+            errorMessage: "Não foi possível processar a compra. Tente novamente.",
+          });
           break;
 
         case "payment_pending":
+          // Terminal: socket fechado, pagamento em background via webhook.
           terminalPhaseRef.current = true;
-          patch({ phase: "payment_pending", pendingMessage: msg.payload });
-          break;
-
-        case "order_confirmed":
-          terminalPhaseRef.current = true;
-          patch({ phase: "order_confirmed" });
+          patch({
+            phase: "payment_pending",
+            pendingMessage: msg.payload,
+            errorMessage: null,
+          });
           break;
 
         case "pix_created":
+          // Terminal do lado da sessão: backend já deletou a sessão antes de
+          // emitir. onPixCreated limpa o sessionStorage no CheckoutPage.
           onPixCreated?.();
           patch({
-            phase: "payment_pending",
+            phase: "pix_pending",
             pixData: {
               qrCode: msg.payload.qr_code,
               qrCodeBase64: msg.payload.qr_code_base64,
             },
+            errorMessage: null,
           });
           break;
 
-        case "order_failed":
-          // Terminal: backend fecha o socket após order_failed também.
+        case "order_confirmed":
+          // Terminal: backend fecha o socket imediatamente após esta mensagem.
           terminalPhaseRef.current = true;
-          hadServerError.current = true;
-          patch({ phase: "order_failed", errorMessage: msg.payload.reason });
+          patch({
+            phase: "order_confirmed",
+            errorMessage: null,
+          });
           break;
 
         case "error":
           hadServerError.current = true;
-          patch({ phase: "error", errorMessage: normalizeErrorMessage(msg.payload) });
+          patch({
+            phase: "error",
+            errorMessage: normalizeErrorMessage(msg.payload),
+          });
           break;
       }
     },
