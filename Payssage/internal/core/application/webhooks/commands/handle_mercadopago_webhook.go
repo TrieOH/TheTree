@@ -62,7 +62,7 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpOrderI
 	}
 
 	var mpOrder struct {
-		ID           string `json:"id"`
+		ID           int64  `json:"id"`
 		Status       string `json:"status"`
 		StatusDetail string `json:"status_detail"`
 	}
@@ -84,14 +84,13 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpOrderI
 
 func mapMPOrderStatusToEvent(status, statusDetail string) string {
 	switch status {
-	case "processed":
+	case "approved":
 		return domain.EventPaymentSucceeded
-	case "action_required", "processing":
+	case "pending", "in_process", "authorized":
 		return ""
+	case "rejected", "cancelled", "refunded", "charged_back":
+		return domain.EventPaymentFailed
 	default:
-		if statusDetail == "rejected" || statusDetail == "cancelled" {
-			return domain.EventPaymentFailed
-		}
 		return ""
 	}
 }
