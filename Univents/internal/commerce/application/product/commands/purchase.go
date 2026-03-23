@@ -376,6 +376,8 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		zap.String("payment_method_type", payReq.PaymentMethodType),
 		zap.String("seller_credential_id", edition.TriePaymentsCredentialID.String()),
 		zap.String("payer_email", payReq.PayerEmail),
+		zap.String("identification_number", payReq.IdentificationNumber),
+		zap.String("identification_type", payReq.IdentificationType),
 	)
 
 	unreserveAndCleanup := func() {
@@ -390,16 +392,18 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	}
 
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
-		Amount:             int64(session.TotalCents),
-		Currency:           "BRL",
-		Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
-		Metadata:           json.RawMessage(`{"session_id": "` + session.SessionID.String() + `"}`),
-		PaymentMethodID:    payReq.PaymentMethodID,
-		Installments:       payReq.Installments,
-		CardToken:          payReq.CardToken,
-		PaymentMethodType:  payReq.PaymentMethodType,
-		SellerCredentialID: edition.TriePaymentsCredentialID.String(),
-		PayerEmail:         payReq.PayerEmail,
+		Amount:               int64(session.TotalCents),
+		Currency:             "BRL",
+		Provider:             viper.GetString("TRIEPAYMENTS_PROVIDER"),
+		Metadata:             json.RawMessage(`{"session_id": "` + session.SessionID.String() + `"}`),
+		PaymentMethodID:      payReq.PaymentMethodID,
+		Installments:         payReq.Installments,
+		CardToken:            payReq.CardToken,
+		PaymentMethodType:    payReq.PaymentMethodType,
+		SellerCredentialID:   edition.TriePaymentsCredentialID.String(),
+		PayerEmail:           payReq.PayerEmail,
+		IdentificationNumber: payReq.IdentificationNumber,
+		IdentificationType:   payReq.IdentificationType,
 	})
 	if err != nil {
 		unreserveAndCleanup()

@@ -41,9 +41,11 @@ type ConfirmPaymentRequest struct {
 }
 
 type SubmitPaymentPayload struct {
-	CardToken         string `json:"card_token"`
-	PaymentMethodID   string `json:"payment_method_id"`
-	PaymentMethodType string `json:"payment_method_type"`
-	Installments      int    `json:"installments"`
-	PayerEmail        string `json:"payer_email"`
+	CardToken            string `json:"card_token"`
+	PaymentMethodID      string `json:"payment_method_id"`
+	PaymentMethodType    string `json:"payment_method_type"`
+	Installments         int    `json:"installments"`
+	PayerEmail           string `json:"payer_email"`
+	IdentificationNumber string `json:"identification_number"`
+	IdentificationType   string `json:"identification_type"`
 }
