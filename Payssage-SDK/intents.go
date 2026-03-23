@@ -7,16 +7,18 @@ import (
 )
 
 type InitiateCheckoutRequest struct {
-	Amount             int64           `json:"amount"`
-	Currency           string          `json:"currency"`
-	Provider           string          `json:"provider"`
-	Metadata           json.RawMessage `json:"metadata,omitempty"`
-	PaymentMethodID    string          `json:"payment_method_id,omitempty"`
-	Installments       int             `json:"installments,omitempty"`
-	CardToken          string          `json:"card_token,omitempty"`
-	PaymentMethodType  string          `json:"payment_method_type,omitempty"`
-	SellerCredentialID string          `json:"seller_credential_id,omitempty"`
-	PayerEmail         string          `json:"payer_email,omitempty"`
+	Amount               int64           `json:"amount"`
+	Currency             string          `json:"currency"`
+	Provider             string          `json:"provider"`
+	Metadata             json.RawMessage `json:"metadata,omitempty"`
+	PaymentMethodID      string          `json:"payment_method_id,omitempty"`
+	Installments         int             `json:"installments,omitempty"`
+	CardToken            string          `json:"card_token,omitempty"`
+	PaymentMethodType    string          `json:"payment_method_type,omitempty"`
+	SellerCredentialID   string          `json:"seller_credential_id,omitempty"`
+	PayerEmail           string          `json:"payer_email,omitempty"`
+	IdentificationNumber string          `json:"identification_number,omitempty"`
+	IdentificationType   string          `json:"identification_type,omitempty"`
 }
 
 func (c *Client) InitiateCheckout(ctx context.Context, req InitiateCheckoutRequest) (*Intent, error) {
