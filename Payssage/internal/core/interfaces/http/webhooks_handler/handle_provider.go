@@ -33,8 +33,8 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 
 	switch provider {
 	case "mercadopago":
-		if r.URL.Query().Get("type") != "order" {
-			telemetry.Log().Info("ignoring non-order webhook", zap.String("type", r.URL.Query().Get("type")))
+		if r.URL.Query().Get("type") != "payment" {
+			telemetry.Log().Info("ignoring non-payment webhook", zap.String("type", r.URL.Query().Get("type")))
 			resp.OK("ignored").Send(w)
 			return
 		}
