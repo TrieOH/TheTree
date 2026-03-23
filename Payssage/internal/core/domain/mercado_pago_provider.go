@@ -253,7 +253,7 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 
 	intent.SellerCredentialID = &request.SellerCredentialID
 
-	loc, _ := time.LoadLocation("America/Sao_Paulo")
+	loc := time.FixedZone("BRT", -3*60*60)
 	expirationTime := time.Now().In(loc).Add(30 * time.Minute).Format("2006-01-02T15:04:05.000-07:00")
 
 	body := map[string]any{
