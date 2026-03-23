@@ -31,16 +31,18 @@ func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := commands.CreateIntentInput{
-		Amount:             req.Amount,
-		Currency:           req.Currency,
-		Provider:           req.Provider,
-		Metadata:           req.Metadata,
-		PaymentMethodID:    req.PaymentMethodID,
-		Installments:       req.Installments,
-		CardToken:          req.CardToken,
-		PaymentMethodType:  req.PaymentMethodType,
-		SellerCredentialID: req.SellerCredentialID,
-		PayerEmail:         req.PayerEmail,
+		Amount:               req.Amount,
+		Currency:             req.Currency,
+		Provider:             req.Provider,
+		Metadata:             req.Metadata,
+		PaymentMethodID:      req.PaymentMethodID,
+		Installments:         req.Installments,
+		CardToken:            req.CardToken,
+		PaymentMethodType:    req.PaymentMethodType,
+		SellerCredentialID:   req.SellerCredentialID,
+		PayerEmail:           req.PayerEmail,
+		IdentificationNumber: req.IdentificationNumber,
+		IdentificationType:   req.IdentificationType,
 	}
 
 	intent, err := h.commands.InitiateCheckout(r.Context(), in)

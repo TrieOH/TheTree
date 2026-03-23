@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
@@ -169,9 +170,22 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *Initiat
 		"token":                request.MPCardToken,
 		"payment_method_id":    request.MPPaymentMethodID,
 		"external_reference":   intent.ID.String(),
-		"statement_descriptor": "TriePayments Managed Purchase",
+		"statement_descriptor": "TriePayments",
 		"payer": map[string]any{
 			"email": request.Payer.Email,
+			"identification": map[string]any{
+				"type":   request.IdentificationType,
+				"number": request.IdentificationNumber,
+			},
+		},
+		"additional_info": map[string]any{
+			"items": []map[string]any{
+				{
+					"title":      "Online Purchase",
+					"quantity":   1,
+					"unit_price": json.Number(formatAmount(request.Amount)),
+				},
+			},
 		},
 	}
 
@@ -239,44 +253,41 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 
 	intent.SellerCredentialID = &request.SellerCredentialID
 
+	expirationTime := time.Now().Add(30 * time.Minute).Format(time.RFC3339)
+
 	body := map[string]any{
-		"type":               "online",
-		"processing_mode":    "automatic",
-		"external_reference": intent.ID.String(),
-		"total_amount":       formatAmount(request.Amount),
-		"application_fee":    formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS)),
-		"items": []map[string]any{
-			{
-				"title":      "Payment",
-				"unit_price": formatAmount(request.Amount),
-				"quantity":   1,
-			},
-		},
+		"transaction_amount":   json.Number(formatAmount(request.Amount)),
+		"application_fee":      json.Number(formatAmount(calcApplicationFee(request.Amount, request.MPMarketplaceFeeBPS))),
+		"payment_method_id":    "pix",
+		"external_reference":   intent.ID.String(),
+		"date_of_expiration":   expirationTime,
+		"statement_descriptor": "TriePayments",
 		"payer": map[string]any{
 			"email": request.Payer.Email,
+			"identification": map[string]any{
+				"type":   request.IdentificationType,
+				"number": request.IdentificationNumber,
+			},
 		},
-		"transactions": map[string]any{
-			"payments": []map[string]any{
+		"additional_info": map[string]any{
+			"items": []map[string]any{
 				{
-					"amount": formatAmount(request.Amount),
-					"payment_method": map[string]any{
-						"id":   "pix",
-						"type": "bank_transfer",
-					},
-					"expiration_time": "PT30M",
+					"title":      "Online Purchase",
+					"quantity":   1,
+					"unit_price": json.Number(formatAmount(request.Amount)),
 				},
 			},
 		},
 	}
 
-	telemetry.Log().Info("MP Create Pix Order Request", zap.Any("body", body))
+	telemetry.Log().Info("MP Create Pix Payment Request", zap.Any("body", body))
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/orders", bytes.NewReader(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.mercadopago.com/v1/payments", bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -293,50 +304,39 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 
 	rawBody, _ := io.ReadAll(resp.Body)
 
+	telemetry.Log().Info("MP Create Pix Payment Response", zap.String("body", string(rawBody)))
+
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("mercadopago create pix order error %d: %s", resp.StatusCode, string(rawBody))
+		return nil, fmt.Errorf("mercadopago create pix payment error %d: %s", resp.StatusCode, string(rawBody))
 	}
 
 	var mpResp struct {
-		ID           string `json:"id"`
-		Status       string `json:"status"`
-		StatusDetail string `json:"status_detail"`
-		Transactions struct {
-			Payments []struct {
-				ID            string `json:"id"`
-				Status        string `json:"status"`
-				StatusDetail  string `json:"status_detail"`
-				PaymentMethod struct {
-					QRCode       string `json:"qr_code"`
-					QRCodeBase64 string `json:"qr_code_base64"`
-				} `json:"payment_method"`
-			} `json:"payments"`
-		} `json:"transactions"`
+		ID                 int64  `json:"id"`
+		Status             string `json:"status"`
+		StatusDetail       string `json:"status_detail"`
+		PointOfInteraction struct {
+			TransactionData struct {
+				QRCode       string `json:"qr_code"`
+				QRCodeBase64 string `json:"qr_code_base64"`
+			} `json:"transaction_data"`
+		} `json:"point_of_interaction"`
 	}
 
 	if err := json.Unmarshal(rawBody, &mpResp); err != nil {
 		return nil, err
 	}
 
-	txID := ""
-	qrCode := ""
-	qrCodeBase64 := ""
-	if len(mpResp.Transactions.Payments) > 0 {
-		tx := mpResp.Transactions.Payments[0]
-		txID = tx.ID
-		qrCode = tx.PaymentMethod.QRCode
-		qrCodeBase64 = tx.PaymentMethod.QRCodeBase64
-	}
+	paymentID := fmt.Sprintf("%d", mpResp.ID)
 
 	intent.MercadoPagoData = &MercadoPagoIntentData{
-		OrderID:           mpResp.ID,
-		TransactionID:     txID,
+		OrderID:           paymentID,
+		TransactionID:     paymentID,
 		OrderStatus:       mpResp.Status,
 		OrderStatusDetail: mpResp.StatusDetail,
 		PaymentMethodID:   "pix",
 		PaymentMethodType: "bank_transfer",
-		PixQRCode:         qrCode,
-		PixQRCodeB64:      qrCodeBase64,
+		PixQRCode:         mpResp.PointOfInteraction.TransactionData.QRCode,
+		PixQRCodeB64:      mpResp.PointOfInteraction.TransactionData.QRCodeBase64,
 	}
 
 	return intent, nil

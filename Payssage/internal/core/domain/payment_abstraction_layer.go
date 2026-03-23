@@ -69,6 +69,9 @@ type InitiateCheckoutRequest struct {
 
 	Installments int
 
+	IdentificationNumber string
+	IdentificationType   string
+
 	// Provider Specifics //
 
 	// Mercado Pago //

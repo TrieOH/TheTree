@@ -14,16 +14,18 @@ import (
 )
 
 type CreateIntentInput struct {
-	Amount             int64
-	Currency           string
-	Provider           string
-	Metadata           json.RawMessage
-	PaymentMethodID    string
-	Installments       int
-	CardToken          string
-	PaymentMethodType  string
-	SellerCredentialID uuid.UUID
-	PayerEmail         string
+	Amount               int64
+	Currency             string
+	Provider             string
+	Metadata             json.RawMessage
+	PaymentMethodID      string
+	Installments         int
+	CardToken            string
+	PaymentMethodType    string
+	SellerCredentialID   uuid.UUID
+	PayerEmail           string
+	IdentificationNumber string
+	IdentificationType   string
 }
 
 func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentInput) (*domain.Intent, error) {
@@ -91,15 +93,17 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 		}
 
 		baseRequest := &domain.InitiateCheckoutRequest{
-			WorkspaceID:         workspace.ID,
-			SellerCredentialID:  in.SellerCredentialID,
-			Amount:              in.Amount,
-			Currency:            strings.ToUpper(in.Currency),
-			Provider:            in.Provider,
-			Metadata:            in.Metadata,
-			Payer:               domain.Payer{Email: in.PayerEmail},
-			MPSellerToken:       credential.Credentials.AccessToken,
-			MPMarketplaceFeeBPS: marketplaceConfig.FeeBps,
+			WorkspaceID:          workspace.ID,
+			SellerCredentialID:   in.SellerCredentialID,
+			Amount:               in.Amount,
+			Currency:             strings.ToUpper(in.Currency),
+			Provider:             in.Provider,
+			Metadata:             in.Metadata,
+			IdentificationType:   in.IdentificationType,
+			IdentificationNumber: in.IdentificationNumber,
+			Payer:                domain.Payer{Email: in.PayerEmail},
+			MPSellerToken:        credential.Credentials.AccessToken,
+			MPMarketplaceFeeBPS:  marketplaceConfig.FeeBps,
 		}
 
 		if in.PaymentMethodID == "pix" {

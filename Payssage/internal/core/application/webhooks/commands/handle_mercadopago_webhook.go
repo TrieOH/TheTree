@@ -40,7 +40,7 @@ func (uc *CommandService) HandleMercadoPagoWebhook(ctx context.Context, mpOrderI
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.mercadopago.com/v1/orders/"+mpOrderID,
+		"https://api.mercadopago.com/v1/payments/"+mpOrderID,
 		nil,
 	)
 	if err != nil {
