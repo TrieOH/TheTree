@@ -69,6 +69,8 @@ type Product struct {
 	HasInventory       bool          `json:"has_inventory"`
 	InventoryQuantity  int           `json:"inventory_quantity"`
 	InventoryRemaining int           `json:"inventory_remaining"`
+	ThumbnailURL       *string       `json:"thumbnail_url"`
+	GalleryURLs        []string      `json:"gallery_urls"`
 	CreatedBy          uuid.UUID     `json:"created_by"`
 	CreatedAt          time.Time     `json:"created_at"`
 	UpdatedAt          time.Time     `json:"updated_at"`

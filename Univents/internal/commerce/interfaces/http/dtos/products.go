@@ -49,3 +49,7 @@ type SubmitPaymentPayload struct {
 	IdentificationNumber string `json:"identification_number"`
 	IdentificationType   string `json:"identification_type"`
 }
+
+type ImageURLRequest struct {
+	URL string `json:"url" validate:"required,url"`
+}

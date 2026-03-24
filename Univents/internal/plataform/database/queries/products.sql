@@ -173,3 +173,41 @@ SET deleted_at = NULL
 WHERE id = $1
     AND deleted_at IS NOT NULL
     AND hard_deleted_at IS NULL;
+
+-- name: AddGalleryImage :one
+UPDATE products
+SET gallery_urls = array_append(COALESCE(gallery_urls, '{}'), @url::text)
+WHERE id = @id
+  AND hard_deleted_at IS NULL
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: RemoveGalleryImage :one
+UPDATE products
+SET gallery_urls = array_remove(gallery_urls, @url::text)
+WHERE id = @id
+  AND hard_deleted_at IS NULL
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: SetThumbnail :one
+UPDATE products
+SET
+    thumbnail_url = @url::text,
+    gallery_urls = CASE
+        WHEN NOT (@url::text = ANY(COALESCE(gallery_urls, '{}')))
+        THEN array_append(COALESCE(gallery_urls, '{}'), @url::text)
+        ELSE gallery_urls
+END
+WHERE id = @id
+  AND hard_deleted_at IS NULL
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: UnsetThumbnail :one
+UPDATE products
+SET thumbnail_url = NULL
+WHERE id = @id
+  AND hard_deleted_at IS NULL
+  AND deleted_at IS NULL
+    RETURNING *;

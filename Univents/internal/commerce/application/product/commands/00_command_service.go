@@ -9,6 +9,7 @@ import (
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
+	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -20,6 +21,7 @@ type CommandService struct {
 	sessions  domain.PurchaseSessionStore
 	ws        *sockets.Registry
 	inventory domain.InventoryPublisher
+	minio     *minio.Client
 	asynq     *asynq.Client
 	inspector *asynq.Inspector
 	gaClient  *goauth.Client
@@ -35,6 +37,7 @@ func New(
 	session domain.PurchaseSessionStore,
 	ws *sockets.Registry,
 	inventory domain.InventoryPublisher,
+	minio *minio.Client,
 	asynq *asynq.Client,
 	inspector *asynq.Inspector,
 	gaClient *goauth.Client,
@@ -49,6 +52,7 @@ func New(
 		sessions:  session,
 		ws:        ws,
 		inventory: inventory,
+		minio:     minio,
 		asynq:     asynq,
 		inspector: inspector,
 		gaClient:  gaClient,

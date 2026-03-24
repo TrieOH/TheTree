@@ -526,3 +526,163 @@ func (handler *Handler) Restore(w http.ResponseWriter, r *http.Request) {
 
 	resp.OK("Product restored successfully").Send(w)
 }
+
+// AddGalleryImage godoc
+// @Summary Add an image to the product gallery
+// @Description Adds a MinIO URL to the product's gallery_urls array.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Param request body dtos.ImageURLRequest true "Image URL"
+// @Success 200 {object} domain.Product "Image added to gallery"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/gallery [post]
+func (handler *Handler) AddGalleryImage(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dtos.ImageURLRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	product, err := handler.commands.AddGalleryImage(ctx, productID, req.URL)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Image added to gallery").WithData(product).Send(w)
+}
+
+// RemoveGalleryImage godoc
+// @Summary Remove an image from the product gallery
+// @Description Removes a URL from the product's gallery_urls array and deletes the object from MinIO.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Param request body dtos.ImageURLRequest true "Image URL"
+// @Success 200 {object} domain.Product "Image removed from gallery"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/gallery [delete]
+func (handler *Handler) RemoveGalleryImage(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dtos.ImageURLRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	product, err := handler.commands.RemoveGalleryImage(ctx, productID, req.URL)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Image removed from gallery").WithData(product).Send(w)
+}
+
+// SetThumbnail godoc
+// @Summary Set the product thumbnail
+// @Description Sets the product thumbnail URL. If the URL is not already in gallery_urls it is added automatically.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Param request body dtos.ImageURLRequest true "Image URL"
+// @Success 200 {object} domain.Product "Thumbnail set"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/thumbnail [put]
+func (handler *Handler) SetThumbnail(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	var req dtos.ImageURLRequest
+	if err := validation.ValidateInto(r, &req); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	product, err := handler.commands.SetThumbnail(ctx, productID, req.URL)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Thumbnail set").WithData(product).Send(w)
+}
+
+// UnsetThumbnail godoc
+// @Summary Unset the product thumbnail
+// @Description Clears the product thumbnail. The image remains in gallery_urls.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Success 200 {object} domain.Product "Thumbnail unset"
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/thumbnail [delete]
+func (handler *Handler) UnsetThumbnail(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	product, err := handler.commands.UnsetThumbnail(ctx, productID)
+	if err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Thumbnail unset").WithData(product).Send(w)
+}

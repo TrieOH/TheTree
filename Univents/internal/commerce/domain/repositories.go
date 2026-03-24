@@ -29,6 +29,10 @@ type ProductsRepository interface {
 	Delete(ctx context.Context, productID uuid.UUID) error
 	Restore(ctx context.Context, productID uuid.UUID) error
 	ItemHasCompletedPurchases(ctx context.Context, productID uuid.UUID) (bool, error)
+	AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*Product, error)
+	RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*Product, error)
+	SetThumbnail(ctx context.Context, id uuid.UUID, url string) (*Product, error)
+	UnsetThumbnail(ctx context.Context, id uuid.UUID) (*Product, error)
 }
 
 type PurchaseRepository interface {

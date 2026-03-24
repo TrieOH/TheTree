@@ -157,7 +157,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, purchaseSessionStore, ws, inventoryPublisher, asynqClient, inspector, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, purchaseSessionStore, ws, inventoryPublisher, app.Minio, asynqClient, inspector, app.GaClient, tracer, txRunner)
 	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, inventorySubscriber, app.GaClient, tracer, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)

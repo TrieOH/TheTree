@@ -54,6 +54,8 @@ func mapProductFromDB(src *sqlc.Product) *domain.Product {
 		HasInventory:       src.HasInventory,
 		InventoryQuantity:  src.InventoryQuantity,
 		InventoryRemaining: src.InventoryRemaining,
+		ThumbnailURL:       src.ThumbnailUrl,
+		GalleryURLs:        src.GalleryUrls,
 		CreatedBy:          src.CreatedBy,
 		CreatedAt:          src.CreatedAt,
 		UpdatedAt:          src.UpdatedAt,
@@ -291,4 +293,61 @@ func (repo *productsRepo) DeleteReservation(ctx context.Context, sessionID uuid.
 	}
 
 	return nil
+}
+
+func (repo *productsRepo) AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.AddGalleryImage")
+	defer span.End()
+
+	sqlcProduct, err := repo.queries(ctx).AddGalleryImage(ctx, sqlc.AddGalleryImageParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	return mapProductFromDB(&sqlcProduct), nil
+}
+
+func (repo *productsRepo) RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.RemoveGalleryImage")
+	defer span.End()
+
+	sqlcProduct, err := repo.queries(ctx).RemoveGalleryImage(ctx, sqlc.RemoveGalleryImageParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	return mapProductFromDB(&sqlcProduct), nil
+}
+
+func (repo *productsRepo) SetThumbnail(ctx context.Context, id uuid.UUID, url string) (*domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.SetThumbnail")
+	defer span.End()
+
+	sqlcProduct, err := repo.queries(ctx).SetThumbnail(ctx, sqlc.SetThumbnailParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	return mapProductFromDB(&sqlcProduct), nil
+}
+
+func (repo *productsRepo) UnsetThumbnail(ctx context.Context, id uuid.UUID) (*domain.Product, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.UnsetThumbnail")
+	defer span.End()
+
+	sqlcProduct, err := repo.queries(ctx).UnsetThumbnail(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "product")
+	}
+
+	return mapProductFromDB(&sqlcProduct), nil
 }
