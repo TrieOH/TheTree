@@ -17,6 +17,7 @@ import { useCheckoutSocket } from "@/features/products/hooks/use-checkout-socket
 import CheckoutPaymentForm from "@/features/payments/ui/checkout/CheckoutPaymentForm"
 import CheckoutCartChanged from "@/features/payments/ui/checkout/CheckoutCartChanged"
 import { editionQueryOptions } from "@/features/editions/api"
+import CheckoutPaymentFailed from "@/features/payments/ui/checkout/status/CheckoutPaymentFailed"
 
 export const Route = createFileRoute(
   "/events/$eventId/editions/$editionId/checkout",
@@ -63,6 +64,7 @@ function CheckoutPage() {
     cancelReservation,
     submitPayment,
     reset,
+    cancelPurchase
   } = useCheckoutSocket({
     url: wsUrl,
     onPartialReservation: (reserved) => {
@@ -139,7 +141,7 @@ function CheckoutPage() {
 
   // Clear session when order is confirmed.
   useEffect(() => {
-    if (state.phase === "order_confirmed") {
+    if (state.phase === "payment_confirmed") {
       sessionStorage.removeItem(sessionKey)
       clearCart()
     }
@@ -157,8 +159,13 @@ function CheckoutPage() {
     }
   }, [state.phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCancel = () => {
+  const handleCancelReservation = () => {
     cancelReservation()
+    router.history.back()
+  }
+
+  const handlePurchaseCancel = () => {
+    cancelPurchase()
     router.history.back()
   }
 
@@ -219,7 +226,7 @@ function CheckoutPage() {
     return (
       <CheckoutReservationFailed
         message={state.errorMessage}
-        onBack={handleCancel}
+        onBack={() => { router.history.back() }}
       />
     )
   }
@@ -233,7 +240,16 @@ function CheckoutPage() {
         confirmDeadline={state.partialData.confirmDeadline}
         totalCents={state.totalCents}
         onConfirm={confirmPartial}
-        onCancel={handleCancel}
+        onCancel={handleCancelReservation}
+      />
+    )
+  }
+
+  if (phase === "payment_failed") {
+    return (
+      <CheckoutPaymentFailed
+        message={state.errorMessage}
+        onBack={() => { router.history.back() }}
       />
     )
   }
@@ -250,7 +266,7 @@ function CheckoutPage() {
   }
 
   // ── Order confirmed ────────────────────────────────────────────────────────
-  if (phase === "order_confirmed") {
+  if (phase === "payment_confirmed") {
     return <CheckoutOrderConfirmed />
   }
 
@@ -261,6 +277,7 @@ function CheckoutPage() {
         qrCode={state.pixData.qrCode}
         qrCodeBase64={state.pixData.qrCodeBase64}
         totalCents={state.totalCents}
+        onCancel={handlePurchaseCancel}
       />
     )
   }
@@ -274,8 +291,7 @@ function CheckoutPage() {
   if (
     (phase === "reservation_confirmed" ||
       phase === "awaiting_payment" ||
-      phase === "payment_processing" ||
-      phase === "payment_failed") && edition?.trie_payments_provider_public_key
+      phase === "payment_processing") && edition?.trie_payments_provider_public_key
   ) {
     return (
       <CheckoutPaymentForm
@@ -283,11 +299,10 @@ function CheckoutPage() {
         reservedItems={state.reservedItems}
         totalCents={state.totalCents}
         reservationExpiresAt={state.reservationExpiresAt}
-        errorMessage={state.errorMessage}
         paymentIntentId={state.paymentIntentId}
         sellerPublicKey={edition.trie_payments_provider_public_key}
         onSubmit={handlePaymentSubmit}
-        onCancel={handleCancel}
+        onCancel={handlePurchaseCancel}
         onExpire={() => {/* session_expired comes from server */ }}
       />
     )

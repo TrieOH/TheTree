@@ -12,11 +12,12 @@ type ServerMessage =
   | { type: "reservation_cancelled" }
   | { type: "session_expired" }
   | { type: "payment_processing" }
-  | { type: "payment_failed"; payload: { payment_intent_id: string } }
+  | { type: "payment_failed" }
+  | { type: "purchase_cancelled" }
+  | { type: "payment_confirmed"; payload: { purchase_id: string } }
   | { type: "payment_pending"; payload: string }
   | { type: "pix_created"; payload: { qr_code: string; qr_code_base64: string } }
   | { type: "purchase_failed"; payload: { reason: string; product_ids: string[] } | { invalid_products: UnavailableItemI[] } | string }
-  | { type: "order_confirmed"; payload: { purchase_id: string } | { payment_intent_id: string } }
   | { type: "error"; payload: string };
 
 // ─── Checkout Phase ───────────────────────────────────────────────────────────
@@ -31,9 +32,10 @@ export type CheckoutPhase =
   | "awaiting_payment"
   | "payment_processing"
   | "payment_failed"
+  | "purchase_cancelled"
   | "payment_pending"
   | "pix_pending"
-  | "order_confirmed"
+  | "payment_confirmed"
   | "session_expired"
   | "error";
 
@@ -41,7 +43,9 @@ export type CheckoutPhase =
 // An onclose following one of these is expected — not a connection drop.
 const TERMINAL_PHASES = new Set<CheckoutPhase>([
   "idle",
-  "order_confirmed",
+  "payment_confirmed",
+  "payment_failed",
+  "purchase_cancelled",
   "payment_pending",    // card: backend closes after this, webhook handles the rest
   "pix_pending",        // pix: backend deletes session before emitting, then closes
   "reservation_failed", // backend closes after sending this
@@ -66,6 +70,7 @@ export interface CheckoutState {
   } | null;
   pixData: { qrCode: string; qrCodeBase64: string } | null;
   pendingMessage: string | null;
+  purchaseId: string | null;
 }
 
 const INITIAL_STATE: CheckoutState = {
@@ -79,6 +84,7 @@ const INITIAL_STATE: CheckoutState = {
   partialData: null,
   pixData: null,
   pendingMessage: null,
+  purchaseId: null,
 };
 
 // ─── Reducer Actions ──────────────────────────────────────────────────────────
@@ -86,6 +92,7 @@ const INITIAL_STATE: CheckoutState = {
 type Action =
   | { type: "RESET" }
   | { type: "CONNECTING" }
+  | { type: "CANCEL_PURCHASE" }
   | { type: "AWAITING_RESERVATION" }
   | { type: "AWAITING_PAYMENT" }
   | { type: "RESERVATION_CONFIRMED"; sessionId: string; expiresAt: string; items: ReservedItemI[]; totalCents: number }
@@ -93,10 +100,11 @@ type Action =
   | { type: "RESERVATION_FAILED" }
   | { type: "SESSION_EXPIRED" }
   | { type: "PAYMENT_PROCESSING" }
-  | { type: "PAYMENT_FAILED"; paymentIntentId: string }
+  | { type: "PAYMENT_FAILED" }
+  | { type: "PURCHASE_CANCELLED" }
+  | { type: "PAYMENT_CONFIRMED", purchase_id: string }
   | { type: "PAYMENT_PENDING"; message: string }
   | { type: "PIX_CREATED"; qrCode: string; qrCodeBase64: string }
-  | { type: "ORDER_CONFIRMED" }
   | { type: "ERROR"; message: string }
   | { type: "UNEXPECTED_CLOSE" };
 
@@ -165,9 +173,15 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
       return {
         ...state,
         phase: "payment_failed",
-        paymentIntentId: action.paymentIntentId,
-        errorMessage: "Pagamento recusado. Tente novamente.",
+        errorMessage: "Pagamento recusado. Verifique suas credenciais e tente novamente.",
       };
+
+    case "PURCHASE_CANCELLED":
+      return {
+        ...state,
+        phase: "purchase_cancelled",
+        errorMessage: "Compra Cancelada..."
+      }
 
     case "PAYMENT_PENDING":
       return {
@@ -185,8 +199,8 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
         errorMessage: null,
       };
 
-    case "ORDER_CONFIRMED":
-      return { ...state, phase: "order_confirmed", errorMessage: null };
+    case "PAYMENT_CONFIRMED":
+      return { ...state, phase: "payment_confirmed", errorMessage: null, purchaseId: action.purchase_id };
 
     case "ERROR":
       return { ...state, phase: "error", errorMessage: action.message };
@@ -252,7 +266,10 @@ function toAction(msg: ServerMessage): Action | null {
       return { type: "PAYMENT_PROCESSING" };
 
     case "payment_failed":
-      return { type: "PAYMENT_FAILED", paymentIntentId: msg.payload.payment_intent_id };
+      return { type: "PAYMENT_FAILED" };
+
+    case "purchase_cancelled":
+      return { type: "PURCHASE_CANCELLED" };
 
     case "payment_pending":
       return { type: "PAYMENT_PENDING", message: msg.payload };
@@ -267,8 +284,8 @@ function toAction(msg: ServerMessage): Action | null {
     case "purchase_failed":
       return { type: "ERROR", message: "Não foi possível processar a compra. Tente novamente." };
 
-    case "order_confirmed":
-      return { type: "ORDER_CONFIRMED" };
+    case "payment_confirmed":
+      return { type: "PAYMENT_CONFIRMED", purchase_id: msg.payload.purchase_id };
 
     case "error":
       return { type: "ERROR", message: parseErrorMessage(msg.payload) };
@@ -298,6 +315,8 @@ export interface UseCheckoutSocketReturn {
   state: CheckoutState;
   /** Start a new purchase flow for the given items. */
   buyRequest: (items: BuyRequestItemI[]) => Promise<void>;
+  /** Cancel purchase flow */
+  cancelPurchase: () => void;
   /** Resume an existing reservation session (e.g. after a page refresh). */
   resumeSession: (sessionId: string) => Promise<void>;
   /** Accept a partial reservation and proceed to payment. */
@@ -455,6 +474,11 @@ export function useCheckoutSocket({
     [openSocket],
   );
 
+  const cancelPurchase = useCallback(() => {
+    sendJSON({ type: "cancel_purchase" }, { silent: true });
+    dispatch({ type: "CANCEL_PURCHASE" });
+  }, [sendJSON]);
+
   const resumeSession = useCallback(
     async (sessionId: string) => {
       dispatch({ type: "CONNECTING" });
@@ -464,12 +488,12 @@ export function useCheckoutSocket({
   );
 
   const confirmPartial = useCallback(() => {
-    sendJSON({ type: "confirm_partial", payload: {} });
+    sendJSON({ type: "confirm_partial" });
     dispatch({ type: "AWAITING_RESERVATION" });
   }, [sendJSON]);
 
   const cancelReservation = useCallback(() => {
-    const sent = sendJSON({ type: "cancel", payload: {} }, { silent: true });
+    const sent = sendJSON({ type: "cancel" }, { silent: true });
     if (!sent) {
       dispatch({ type: "RESET" });
       return;
@@ -512,5 +536,6 @@ export function useCheckoutSocket({
     cancelReservation,
     submitPayment,
     reset,
+    cancelPurchase
   };
 }

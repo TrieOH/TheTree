@@ -1,7 +1,10 @@
+import { Button } from "@/shared/ui/shadcn/button"
+
 interface CheckoutPixPendingProps {
   qrCode: string
   qrCodeBase64: string
   totalCents: number
+  onCancel: () => void;
 }
 
 function formatCurrency(cents: number) {
@@ -14,7 +17,8 @@ function formatCurrency(cents: number) {
 export default function CheckoutPixPending({
   qrCode,
   qrCodeBase64,
-  totalCents
+  totalCents,
+  onCancel
 }: CheckoutPixPendingProps) {
 
   const handleCopy = () => navigator.clipboard.writeText(qrCode)
@@ -56,6 +60,15 @@ export default function CheckoutPixPending({
       <p className="text-xs text-muted-foreground">
         Após o pagamento, a confirmação pode levar alguns instantes.
       </p>
+
+      <Button
+        variant="ghost"
+        size="xl"
+        onClick={onCancel}
+        className="w-full text-muted-foreground hover:text-foreground"
+      >
+        Cancelar e voltar
+      </Button>
     </main>
   )
 }
