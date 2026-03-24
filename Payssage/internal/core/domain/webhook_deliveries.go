@@ -29,6 +29,7 @@ type WebhookPayload struct {
 	WorkspaceID uuid.UUID       `json:"workspace_id"`
 	Amount      int64           `json:"amount"`
 	Currency    string          `json:"currency"`
+	Provider    string          `json:"provider"`
 	Metadata    json.RawMessage `json:"metadata"`
 
 	// Provider Specific Data

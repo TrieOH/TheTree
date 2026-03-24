@@ -67,6 +67,7 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, eventID uui
 		WorkspaceID:     intent.WorkspaceID,
 		Amount:          intent.Amount,
 		Currency:        intent.Currency,
+		Provider:        intent.Provider,
 		Metadata:        intent.Metadata,
 		MercadoPagoData: intent.MercadoPagoData,
 	})
