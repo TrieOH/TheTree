@@ -167,5 +167,6 @@ func NewGrantTicketPermissionsTask(grants []TicketGrant, paymentID string) (*asy
 	return asynq.NewTask(TypeGrantTicketPermissions, payload,
 		asynq.TaskID(fmt.Sprintf("%s:%s", paymentID, TypeReservationExpired)),
 		asynq.MaxRetry(MaxGrantRetries),
+		asynq.Retention(24*time.Hour),
 	), nil
 }

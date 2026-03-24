@@ -178,5 +178,6 @@ func NewReservationExpiredTask(sessionID, userID, editionID uuid.UUID, expiresAt
 		asynq.TaskID(fmt.Sprintf("%s:%s", sessionID, TypeReservationExpired)),
 		asynq.ProcessAt(expiresAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }

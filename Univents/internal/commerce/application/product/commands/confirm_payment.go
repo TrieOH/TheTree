@@ -15,20 +15,28 @@ import (
 func (uc *CommandService) ConfirmPayment(ctx context.Context, payload *paymentsSDK.WebhookPayload) error {
 	paymentIntentID := payload.IntentID
 
-	if payload.MercadoPagoData.PaymentMethodID == "pix" && payload.MercadoPagoData.PaymentMethodType == "bank_transfer" {
-		var meta struct {
-			SessionID uuid.UUID `json:"session_id"`
-		}
-		if err := json.Unmarshal(payload.Metadata, &meta); err != nil || meta.SessionID == uuid.Nil {
-			return fmt.Errorf("missing session_id in metadata for pix intent %s", paymentIntentID)
-		}
-		if err := uc.ws.Notify(meta.SessionID.String(), sockets.WSMessage{
-			Type:    "order_confirmed",
-			Payload: map[string]string{"payment_intent_id": paymentIntentID},
-		}); err != nil {
-			log.Printf("[confirm] ws already closed for pix session %s: %v", meta.SessionID, err)
-		}
-		return nil
+	var meta struct {
+		SessionID uuid.UUID `json:"session_id"`
+		UserID    uuid.UUID `json:"user_id"`
+	}
+	if err := json.Unmarshal(payload.Metadata, &meta); err != nil || meta.SessionID == uuid.Nil || meta.UserID == uuid.Nil {
+		return fmt.Errorf("missing session_id or user_id in metadata for intent %s", paymentIntentID)
+	}
+
+	session, err := uc.sessions.Load(ctx, meta.UserID, meta.SessionID)
+	if err != nil || session == nil {
+		return fmt.Errorf("session not found for intent %s", paymentIntentID)
+	}
+
+	if err := uc.recordPurchase(ctx, recordPurchaseInput{
+		session: session,
+		intent:  &paymentsSDK.Intent{ID: paymentIntentID, Amount: int64(session.TotalCents), Provider: payload.Provider},
+	}); err != nil {
+		return fmt.Errorf("failed to record purchase for intent %s: %w", paymentIntentID, err)
+	}
+
+	if err := uc.sessions.Delete(ctx, meta.UserID, meta.SessionID); err != nil {
+		log.Printf("[confirm] failed to delete session %s: %v", meta.SessionID, err)
 	}
 
 	return uc.finalizeConfirmedPurchase(ctx, paymentIntentID)

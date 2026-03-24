@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"time"
 	"univents/internal/commerce/domain"
 	"univents/internal/commerce/interfaces/http/dtos"
@@ -63,12 +62,6 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			return err
 		}
 
-		if !isPix {
-			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
-				return err
-			}
-		}
-
 		return uc.waitForPayment(ctx, conn, session, intent, isPix)
 
 	case "buy_request":
@@ -113,12 +106,6 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 		intent, isPix, err := uc.checkout(ctx, conn, session, payReq)
 		if err != nil {
 			return err
-		}
-
-		if !isPix {
-			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{session: session, intent: intent}); err != nil {
-				return err
-			}
 		}
 
 		return uc.waitForPayment(ctx, conn, session, intent, isPix)
@@ -369,7 +356,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		zap.Int("total", session.TotalCents),
 		zap.String("currency", "BRL"),
 		zap.String("provider", viper.GetString("TRIEPAYMENTS_PROVIDER")),
-		zap.Any("metadata", json.RawMessage(`{"session_id": "`+session.SessionID.String()+`"}`)),
+		zap.Any("metadata", json.RawMessage(`{"session_id": "`+session.SessionID.String()+`", "user_id": "`+session.UserID.String()+`"}`)),
 		zap.String("payment_method_id", payReq.PaymentMethodID),
 		zap.Int("installments", payReq.Installments),
 		zap.String("card_token", payReq.CardToken),
@@ -395,7 +382,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		Amount:               int64(session.TotalCents),
 		Currency:             "BRL",
 		Provider:             viper.GetString("TRIEPAYMENTS_PROVIDER"),
-		Metadata:             json.RawMessage(`{"session_id": "` + session.SessionID.String() + `"}`),
+		Metadata:             json.RawMessage(`{"session_id": "` + session.SessionID.String() + `", "user_id": "` + session.UserID.String() + `"}`),
 		PaymentMethodID:      payReq.PaymentMethodID,
 		Installments:         payReq.Installments,
 		CardToken:            payReq.CardToken,
@@ -411,9 +398,6 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	}
 
 	if intent.MercadoPagoData.PixQRCode != "" {
-		if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
-			telemetry.Log().Debug("Failed to delete session after pix checkout", zap.Error(err))
-		}
 		_ = conn.WriteJSON(sockets.WSMessage{
 			Type: "pix_created",
 			Payload: map[string]any{
@@ -424,71 +408,8 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		return intent, true, nil
 	}
 
-	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
-		telemetry.Log().Debug("Failed to delete session after checkout", zap.Error(err))
-	}
-
 	_ = conn.WriteJSON(sockets.WSMessage{Type: "payment_processing"})
 	return intent, false, nil
-}
-
-type recordPurchaseInput struct {
-	session *domain.PurchaseSession
-	intent  *paymentsSDK.Intent
-}
-
-// FIXME Use outbox pattern to avoid user losing purchase on TX failure
-
-func (uc *CommandService) recordPurchase(ctx context.Context, conn *websocket.Conn, in recordPurchaseInput) error {
-	if err := uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		pendingPurchase := domain.NewPurchase(domain.CreatePurchaseSpec{
-			EditionID:       in.session.EditionID,
-			SessionID:       &in.session.SessionID,
-			UserID:          in.session.UserID,
-			SubtotalCents:   int(in.intent.Amount),
-			PaymentProvider: &in.intent.Provider,
-			PaymentID:       &in.intent.ID,
-		})
-
-		purchase, err := uc.purchases.Create(ctx, *pendingPurchase)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range in.session.Reserved {
-			if item.ProductType == domain.ProductTypeTicket {
-				for range item.Quantity {
-					if _, err = uc.purchases.CreateLineItem(ctx, domain.LineItem{
-						PurchaseID:      purchase.ID,
-						ItemType:        "ticket",
-						ItemID:          *item.TicketID,
-						Quantity:        1,
-						UnitPriceCents:  item.PriceCents,
-						TotalPriceCents: item.PriceCents,
-					}); err != nil {
-						return err
-					}
-				}
-			} else {
-				if _, err = uc.purchases.CreateLineItem(ctx, domain.LineItem{
-					PurchaseID:      purchase.ID,
-					ItemType:        "product",
-					ItemID:          item.ProductID,
-					Quantity:        item.Quantity,
-					UnitPriceCents:  item.PriceCents,
-					TotalPriceCents: item.PriceCents * item.Quantity,
-				}); err != nil {
-					return err
-				}
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent, isPix bool) error {
@@ -519,19 +440,10 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 
 	select {
 	case msg := <-webhookMsg:
-		if isPix && msg.Type == "order_confirmed" {
-			if err := uc.recordPurchase(ctx, conn, recordPurchaseInput{
-				session: session,
-				intent:  intent,
-			}); err != nil {
-				_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_failed", Payload: err.Error()})
-				return err
-			}
-			if err := uc.finalizeConfirmedPurchase(ctx, intent.ID); err != nil {
-				log.Printf("[waitForPayment] failed to finalize pix purchase: %v", err)
-			}
-		}
-		_ = conn.WriteJSON(msg)
+		_ = conn.WriteJSON(sockets.WSMessage{
+			Type:    "payment_response",
+			Payload: msg,
+		})
 		return nil
 	case <-timer:
 		_ = conn.WriteJSON(sockets.WSMessage{

@@ -252,6 +252,7 @@ func NewOpenEditionTask(editionID uuid.UUID, registrationOpensAt time.Time) (*as
 		asynq.TaskID(fmt.Sprintf("%s:%s", editionID, AsynqEditionOpen)),
 		asynq.ProcessAt(registrationOpensAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }
 
@@ -265,6 +266,7 @@ func NewStartEditionTask(editionID uuid.UUID, startsAt time.Time) (*asynq.Task, 
 		asynq.TaskID(fmt.Sprintf("%s:%s", editionID, AsynqEditionStart)),
 		asynq.ProcessAt(startsAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }
 
@@ -278,5 +280,6 @@ func NewFinishEditionTask(editionID uuid.UUID, endsAt time.Time) (*asynq.Task, e
 		asynq.TaskID(fmt.Sprintf("%s:%s", editionID, AsynqEditionFinish)),
 		asynq.ProcessAt(endsAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }

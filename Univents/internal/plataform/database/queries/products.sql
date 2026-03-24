@@ -106,6 +106,7 @@ WHERE product_reservations.session_id = sqlc.arg(session_id);
 -- name: CreatePurchase :one
 INSERT INTO purchases (edition_id, session_id, user_id, status, subtotal_cents, total_cents, payment_provider, payment_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (session_id) DO NOTHING
 RETURNING *;
 
 -- name: CreatePurchaseItem :one

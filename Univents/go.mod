@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.5.5
 	github.com/MintzyG/fail/v3 v3.2.0
-	github.com/TrieOH/TriePaymentsSDK v0.0.11
+	github.com/TrieOH/TriePaymentsSDK v0.0.12
 	github.com/TrieOH/goauth-sdk-go v0.5.2
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5

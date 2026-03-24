@@ -150,6 +150,7 @@ func NewStartActivityTask(activityID uuid.UUID, startAt time.Time) (*asynq.Task,
 		asynq.TaskID(fmt.Sprintf("%s:%s", activityID, AsynqActivityStart)),
 		asynq.ProcessAt(startAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }
 
@@ -163,6 +164,7 @@ func NewEndActivityTask(activityID uuid.UUID, endAt time.Time) (*asynq.Task, err
 		asynq.TaskID(fmt.Sprintf("%s:%s", activityID, AsynqActivityEnd)),
 		asynq.ProcessAt(endAt),
 		asynq.Unique(time.Hour),
+		asynq.Retention(7*24*time.Hour),
 	), nil
 }
 
