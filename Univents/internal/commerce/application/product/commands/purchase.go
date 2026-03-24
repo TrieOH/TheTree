@@ -210,7 +210,7 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 	unreserveAndCleanup := func() {
 		updates, uErr := uc.products.UnreserveItems(ctx, in.sessionID)
 		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			telemetry.Log().Info("Unreserve failed", zap.Error(uErr))
 		}
 		if len(updates) > 0 {
 			_ = uc.inventory.Publish(ctx, in.editionID, updates)
@@ -391,7 +391,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	unreserveAndCleanup := func() {
 		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
 		if uErr != nil {
-			telemetry.Log().Debug("Unreserve failed", zap.Error(uErr))
+			telemetry.Log().Info("Unreserve failed", zap.Error(uErr))
 		}
 		if len(updates) > 0 {
 			_ = uc.inventory.Publish(ctx, session.EditionID, updates)
@@ -436,26 +436,27 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent) error {
 	edition, err := uc.editions.GetByID(ctx, session.EditionID)
 	if err != nil {
-		telemetry.Log().Debug("Failed to fetch edition for pix cancel", zap.Error(err))
+		telemetry.Log().Info("Failed to fetch edition for pix cancel", zap.Error(err))
 	} else {
+		telemetry.Log().Info("Trying to cancel pix payment", zap.String("intent_id", intent.ID))
 		if _, err := uc.payments.CancelPixIntent(ctx, intent.ID, paymentsSDK.CancelPixRequest{
 			Provider:           intent.Provider,
 			SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 		}); err != nil {
-			telemetry.Log().Debug("Failed to cancel pix intent", zap.Error(err))
+			telemetry.Log().Info("Failed to cancel pix intent", zap.Error(err))
 		}
 	}
 
 	updates, err := uc.products.UnreserveItems(ctx, session.SessionID)
 	if err != nil {
-		telemetry.Log().Debug("Unreserve failed on pix cancel", zap.Error(err))
+		telemetry.Log().Info("Unreserve failed on pix cancel", zap.Error(err))
 	}
 	if len(updates) > 0 {
 		_ = uc.inventory.Publish(ctx, session.EditionID, updates)
 	}
 
 	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
-		telemetry.Log().Debug("Failed to delete session on pix cancel", zap.Error(err))
+		telemetry.Log().Info("Failed to delete session on pix cancel", zap.Error(err))
 	}
 
 	uc.ws.Remove(session.SessionID.String())
