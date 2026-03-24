@@ -12,7 +12,8 @@ WHERE id = $1 and status = 'draft';
 -- name: GetProductByID :one
 SELECT *
 FROM products
-WHERE id = $1;
+WHERE id = $1
+  AND hard_deleted_at IS NULL;
 
 -- name: GetProductsByIDs :many
 SELECT *
@@ -23,12 +24,15 @@ AND products.deleted_at IS NULL;
 -- name: ListEditionProducts :many
 SELECT *
 FROM products
-WHERE edition_id = $1 AND status != 'draft';
+WHERE edition_id = $1
+  AND status NOT IN ('draft', 'hidden')
+  AND deleted_at IS NULL;
 
 -- name: ListEditionProductsAdmin :many
 SELECT *
 FROM products
-WHERE edition_id = $1;
+WHERE edition_id = $1
+  AND hard_deleted_at IS NULL;
 
 -- name: ReserveProductNoInventory :exec
 INSERT INTO product_reservations (session_id, product_id, quantity, expires_at)
@@ -134,3 +138,38 @@ FROM purchase_items pi
 JOIN purchases p ON p.id = pi.purchase_id
 WHERE pi.purchase_id = $1
   AND p.user_id = $2;
+
+-- name: GetExpiredSoftDeletedProducts :many
+SELECT id, thumbnail_url, gallery_urls
+FROM products
+WHERE deleted_at < NOW() - INTERVAL '30 days'
+  AND hard_deleted_at IS NULL
+  AND (thumbnail_url IS NOT NULL OR gallery_urls IS NOT NULL)
+    LIMIT 500;
+
+-- name: MarkProductsHardDeleted :exec
+UPDATE products
+SET hard_deleted_at = NOW()
+WHERE id = ANY(@ids::uuid[]);
+
+-- name: SoftDeleteProduct :exec
+UPDATE products
+SET deleted_at = NOW()
+WHERE id = $1
+  AND deleted_at IS NULL;
+
+-- name: ItemHasCompletedPurchases :one
+SELECT EXISTS (
+    SELECT 1 FROM purchase_items pi
+    JOIN purchases p ON p.id = pi.purchase_id
+    WHERE pi.item_id = $1
+      AND pi.item_type = 'product'
+      AND p.status IN ('pending', 'completed', 'partial_refund')
+) AS has_purchases;
+
+-- name: RestoreProduct :exec
+UPDATE products
+SET deleted_at = NULL
+WHERE id = $1
+    AND deleted_at IS NOT NULL
+    AND hard_deleted_at IS NULL;

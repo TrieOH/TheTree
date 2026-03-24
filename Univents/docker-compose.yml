@@ -41,6 +41,11 @@ services:
       TRIEPAYMENTS_API_KEY: ${TRIEPAYMENTS_API_KEY}
       TRIEPAYMENTS_WEBHOOK_SECRET: ${TRIEPAYMENTS_WEBHOOK_SECRET}
 
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+
   univents-database:
     container_name: univents-database
     image: postgres:18

@@ -44,6 +44,7 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/minio/minio-go/v7"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -57,6 +58,7 @@ type UniventsApp struct {
 	Scheduler gocron.Scheduler
 	GaClient  *goauth.Client
 	Payments  *paymentsSDK.Client
+	Minio     *minio.Client
 
 	Deps *router.HTTPDeps
 }
@@ -69,12 +71,8 @@ func UniventsSetup() *UniventsApp {
 	SetupGoAuth(&app)
 	SetupFUN()
 	SetupPayments(&app)
-	if viper.GetString("ENV") != "test" {
-		SetupDB(&app, "./internal/plataform/database/migrations")
-	} else {
-		log.Println("WE'RE TESTING")
-		SetupDB(&app, "../internal/plataform/database/migrations")
-	}
+	SetupMinio(&app)
+	SetupDB(&app, "./internal/plataform/database/migrations")
 	SetupCron(app.DB, &app)
 
 	return &app

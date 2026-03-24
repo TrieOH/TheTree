@@ -69,12 +69,6 @@ CREATE TABLE products (
     -- CONSTRAINT chk_tokens_if_pack
     --    CHECK (type != 'token' OR tokens_included > 0),
 
-    -- media
-    -- has_thumbnail BOOLEAN NOT NULL DEFAULT FALSE,
-    -- thumbnail_url TEXT NULL,
-    -- has_gallery BOOLEAN NOT NULL DEFAULT FALSE,
-    -- gallery_image_urls TEXT[] NULL,
-
     -- fulfillment methods (at least one must be true)
     -- has_event_pickup BOOLEAN NOT NULL DEFAULT FALSE,      -- collect at venue
     -- has_physical_shipping BOOLEAN NOT NULL DEFAULT FALSE, -- mail delivery

@@ -160,6 +160,40 @@ func (repo *productsRepo) AdminList(ctx context.Context, editionID uuid.UUID) ([
 	return out, nil
 }
 
+func (repo *productsRepo) Delete(ctx context.Context, productID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.Delete")
+	defer span.End()
+
+	if err := repo.queries(ctx).SoftDeleteProduct(ctx, productID); err != nil {
+		return errx.FromDB(err, "product")
+	}
+
+	return nil
+}
+
+func (repo *productsRepo) Restore(ctx context.Context, productID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.Restore")
+	defer span.End()
+
+	if err := repo.queries(ctx).RestoreProduct(ctx, productID); err != nil {
+		return errx.FromDB(err, "product")
+	}
+
+	return nil
+}
+
+func (repo *productsRepo) ItemHasCompletedPurchases(ctx context.Context, productID uuid.UUID) (bool, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ItemHasCompletedPurchases")
+	defer span.End()
+
+	has, err := repo.queries(ctx).ItemHasCompletedPurchases(ctx, productID)
+	if err != nil {
+		return true, errx.FromDB(err, "product")
+	}
+
+	return has, nil
+}
+
 func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID, items []domain.CartItem, expiresAt time.Time) (domain.ReservationOutcome, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ReserveItems")
 	defer span.End()

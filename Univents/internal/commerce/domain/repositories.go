@@ -26,6 +26,9 @@ type ProductsRepository interface {
 	ReserveItems(ctx context.Context, sessionID uuid.UUID, items []CartItem, expiresAt time.Time) (ReservationOutcome, error)
 	UnreserveItems(ctx context.Context, sessionID uuid.UUID) ([]InventoryUpdate, error)
 	DeleteReservation(ctx context.Context, sessionID uuid.UUID) error
+	Delete(ctx context.Context, productID uuid.UUID) error
+	Restore(ctx context.Context, productID uuid.UUID) error
+	ItemHasCompletedPurchases(ctx context.Context, productID uuid.UUID) (bool, error)
 }
 
 type PurchaseRepository interface {

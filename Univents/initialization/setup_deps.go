@@ -13,6 +13,8 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
@@ -50,6 +52,34 @@ func SetupPayments(app *UniventsApp) {
 	app.Payments = client
 }
 
+func SetupMinio(app *UniventsApp) {
+	endpoint := viper.GetString("MINIO_ENDPOINT")
+	accessKey := viper.GetString("MINIO_ACCESS_KEY")
+	secretKey := viper.GetString("MINIO_SECRET_KEY")
+	useSSL := viper.GetBool("MINIO_USE_SSL")
+
+	if endpoint == "" {
+		log.Fatal("MINIO_ENDPOINT not set")
+	}
+	if accessKey == "" {
+		log.Fatal("MINIO_ACCESS_KEY not set")
+	}
+	if secretKey == "" {
+		log.Fatal("MINIO_SECRET_KEY not set")
+	}
+
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure: useSSL,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create MinIO client: %v", err)
+	}
+
+	app.Minio = client
+	log.Println("Connected to MinIO")
+}
+
 func SetupDB(app *UniventsApp, migrationPath string) {
 	var err error
 	db, err := database.WaitForDB(30 * time.Second)
@@ -74,7 +104,7 @@ func SetupRedis(timeout time.Duration) *redis.Client {
 }
 
 func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
-	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	scheduler, err := gocron.NewScheduler()
@@ -85,6 +115,7 @@ func SetupCron(db *pgxpool.Pool, app *UniventsApp) {
 	app.Scheduler = scheduler
 
 	_ = database.NewPGXTxRunner(db)
+	productHardDeleteJob(ctx, app)
 
 	go scheduler.Start()
 	log.Println("Started the cron Scheduler")
@@ -139,6 +170,8 @@ func SetupGoAuth(app *UniventsApp) {
 				ProductsCreate,
 				ProductsRead,
 				ProductsPublish,
+				ProductsDelete,
+				ProductsRestore,
 				CheckpointsCreate,
 				CheckpointsRead,
 				TicketsCreate,
@@ -274,6 +307,22 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#10b981",
 			"icon":  "Mail",
+		},
+	}
+	ProductsDelete = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "delete",
+		Meta: map[string]interface{}{
+			"color": "#ed1a1a",
+			"icon":  "Trash2",
+		},
+	}
+	ProductsRestore = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "restore",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "RotateCcw",
 		},
 	}
 	CheckpointsCreate = goauth.PermissionDefinition{

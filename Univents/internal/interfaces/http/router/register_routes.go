@@ -127,6 +127,8 @@ func registerProductsRoutes(
 		r.Post("/events/{event_id}/editions/{edition_id}/products", h.Create)
 		r.Post("/events/{event_id}/editions/{edition_id}/products/{product_id}/publish", h.Publish)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/admin", h.ListAdmin)
+		r.Delete("/events/{event_id}/editions/{edition_id}/{product_id}", h.Delete)
+		r.Post("/events/{event_id}/editions/{edition_id}/{product_id}/restore", h.Restore)
 		r.Get("/purchases", h.ListUserPurchases)
 		r.Get("/purchases/{purchase_id}/items", h.ListPurchaseItems)
 		r.Get("/events/{event_id}/editions/{edition_id}/products/inventory/stream", h.StreamInventory) // SSE upgrade

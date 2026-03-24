@@ -458,3 +458,71 @@ func (handler *Handler) StreamInventory(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 }
+
+// Delete godoc
+// @Summary Soft delete a product
+// @Description Soft deletes a product. Blocked if the product has pending or completed purchases.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Success 200 {object} object "Product deleted successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id} [delete]
+func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	if err := handler.commands.Delete(ctx, productID); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Product deleted successfully").Send(w)
+}
+
+// Restore godoc
+// @Summary Restore a soft deleted product
+// @Description Restores a soft deleted product. Only works if the product has not been hard deleted yet.
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param event_id path string true "Event ID"
+// @Param edition_id path string true "Edition ID"
+// @Param product_id path string true "Product ID"
+// @Success 200 {object} object "Product restored successfully"
+// @Failure 400 {object} swag.ErrorResponse
+// @Failure 401 {object} swag.ErrorResponse
+// @Failure 403 {object} swag.ErrorResponse
+// @Failure 404 {object} swag.ErrorResponse
+// @Failure 500 {object} swag.ErrorResponse
+// @Router /events/{event_id}/editions/{edition_id}/products/{product_id}/restore [post]
+func (handler *Handler) Restore(w http.ResponseWriter, r *http.Request) {
+	productID, rs := validation.GetUUID(r, "product_id")
+	if rs != nil {
+		rs.Send(w)
+		return
+	}
+
+	ctx := r.Context()
+	if err := handler.commands.Restore(ctx, productID); err != nil {
+		resp.FromError(err).Send(w)
+		return
+	}
+
+	resp.OK("Product restored successfully").Send(w)
+}
