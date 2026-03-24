@@ -439,7 +439,7 @@ func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.
 		telemetry.Log().Debug("Failed to fetch edition for pix cancel", zap.Error(err))
 	} else {
 		if _, err := uc.payments.CancelPixIntent(ctx, intent.ID, paymentsSDK.CancelPixRequest{
-			Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
+			Provider:           intent.Provider,
 			SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 		}); err != nil {
 			telemetry.Log().Debug("Failed to cancel pix intent", zap.Error(err))
