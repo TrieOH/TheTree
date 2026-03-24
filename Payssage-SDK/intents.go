@@ -53,6 +53,19 @@ func (c *Client) CancelIntent(ctx context.Context, intentID string) (*Intent, er
 	return &out, nil
 }
 
+type CancelPixRequest struct {
+	Provider           string `json:"provider"`
+	SellerCredentialID string `json:"seller_credential_id"`
+}
+
+func (c *Client) CancelPixIntent(ctx context.Context, intentID string, req CancelPixRequest) (*Intent, error) {
+	var out Intent
+	if err := c.do(ctx, "POST", fmt.Sprintf("/intents/%s/cancel-pix", intentID), req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 type ChargeRequest struct {
 	SellerCredentialID string `json:"seller_credential_id"`
 }
