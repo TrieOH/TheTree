@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { QrCode, Loader2, Lock, CreditCard } from "lucide-react";
+import { QrCode, Loader2, Lock, AlertCircle } from "lucide-react";
 import { loadMercadoPago } from "@mercadopago/sdk-js";
-import type { SubmitPaymentPayloadI } from "../model";
+import type { PaymentMethodI, SubmitPaymentPayloadI } from "../model";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Label } from "@/shared/ui/shadcn/label";
 import { Input } from "@/shared/ui/shadcn/input";
+import { formatCPF, formatCNPJ, validateCPF, validateCNPJ } from "@/shared/lib/masks";
 
 declare global {
   interface Window {
@@ -71,8 +72,6 @@ interface PaymentPayload {
   };
 }
 
-type PaymentMethod = "credit_card" | "pix";
-
 function formatBRL(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", {
     style: "currency",
@@ -135,22 +134,20 @@ function PixForm({ amount, onSubmit, loading }: {
   const [identificationType, setIdentificationType] = useState("CPF");
   const [identificationNumber, setIdentificationNumber] = useState("");
 
-  const canSubmit = !loading && !!email && !!identificationNumber;
+  const isEmailValid = email.includes("@") && email.includes(".");
+  const isDocValid = identificationType === "CPF"
+    ? validateCPF(identificationNumber)
+    : validateCNPJ(identificationNumber);
+
+  const canSubmit = !loading && isEmailValid && isDocValid;
+
+  const handleDocChange = (val: string) => {
+    const formatted = identificationType === "CPF" ? formatCPF(val) : formatCNPJ(val);
+    setIdentificationNumber(formatted);
+  };
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-3 pb-4 border-b border-border/50">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
-          <QrCode className="h-5 w-5 stroke-[1.5]" />
-        </div>
-        <div>
-          <p className="text-sm font-medium leading-tight">Pix</p>
-          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            QR Code gerado na próxima etapa. Aprovação em segundos por qualquer banco ou carteira digital.
-          </p>
-        </div>
-      </div>
-
       {/* E-mail */}
       <div className="space-y-1.5">
         <Label htmlFor="pix-email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -162,7 +159,13 @@ function PixForm({ amount, onSubmit, loading }: {
           value={email}
           onChange={(e) => { setEmail(e.target.value) }}
           placeholder="email@exemplo.com"
+          className={cn(!isEmailValid && email.length > 0 && "border-destructive focus-visible:ring-destructive")}
         />
+        {!isEmailValid && email.length > 0 && (
+          <p className="text-[10px] text-destructive flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" /> E-mail inválido
+          </p>
+        )}
       </div>
 
       {/* Documento */}
@@ -174,7 +177,10 @@ function PixForm({ amount, onSubmit, loading }: {
           <select
             id="pix-identification-type"
             value={identificationType}
-            onChange={(e) => { setIdentificationType(e.target.value); }}
+            onChange={(e) => {
+              setIdentificationType(e.target.value);
+              setIdentificationNumber("");
+            }}
             className={cn(
               inputLike,
               "h-9 cursor-pointer appearance-none",
@@ -192,11 +198,19 @@ function PixForm({ amount, onSubmit, loading }: {
           <Input
             id="pix-identification-number"
             value={identificationNumber}
-            onChange={(e) => { setIdentificationNumber(e.target.value); }}
+            onChange={(e) => { handleDocChange(e.target.value); }}
             placeholder={identificationType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
             inputMode="numeric"
-            className="text-sm font-mono"
+            className={cn(
+              "text-sm font-mono",
+              !isDocValid && identificationNumber.length > 0 && "border-destructive focus-visible:ring-destructive"
+            )}
           />
+          {!isDocValid && identificationNumber.length > 0 && (
+            <p className="text-[10px] text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {identificationType} inválido
+            </p>
+          )}
         </div>
       </div>
 
@@ -208,106 +222,165 @@ function PixForm({ amount, onSubmit, loading }: {
       <Button
         onClick={() => { onSubmit(email, identificationType, identificationNumber); }}
         disabled={!canSubmit}
+        className="w-full h-11"
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4 mr-2" />}
         {loading ? "Gerando…" : "Gerar QR Code Pix"}
       </Button>
     </div>
   );
 }
 
-// ─── Cartão ───────────────────────────────────────────────────────────────────
-
 function CreditCardForm({
   amount,
   onSubmit,
   loading,
-  seller_public_key,
+  sellerPublicKey,
 }: {
   amount: number;
   onSubmit: (data: PaymentPayload) => void;
   loading: boolean;
-  seller_public_key: string;
+  sellerPublicKey: string;
 }) {
   const cardFormRef = useRef<MercadoPagoCardForm | null>(null);
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+
   const [fetching, setFetching] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [brandName, setBrandName] = useState<string | null>(null);
+
+  // Form states for validation and masking
+  const [identificationType, setIdentificationType] = useState("CPF");
+  const [identificationNumber, setIdentificationNumber] = useState("");
+  const [cardholderEmail, setCardholderEmail] = useState("");
+
+  const isEmailValid = cardholderEmail.includes("@") && cardholderEmail.includes(".");
+  const isDocValid = identificationType === "CPF"
+    ? validateCPF(identificationNumber)
+    : validateCNPJ(identificationNumber);
+
+  const validationRef = useRef({ isEmailValid, isDocValid });
+  useEffect(() => {
+    validationRef.current = { isEmailValid, isDocValid };
+  }, [isEmailValid, isDocValid]);
 
   useEffect(() => {
     let cancelled = false;
 
     const init = async () => {
-      await loadMercadoPago();
-      if (cancelled) return;
+      try {
+        if (!sellerPublicKey) {
+          console.warn("MercadoPago: public key missing");
+          return;
+        }
 
-      const mp = new window.MercadoPago(seller_public_key, { locale: "pt-BR" });
+        await loadMercadoPago();
 
-      const cardForm = mp.cardForm({
-        amount: (amount / 100).toFixed(2),
-        iframe: true,
-        form: {
-          id: "form-checkout",
-          cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
-          expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
-          securityCode: { id: "form-checkout__securityCode", placeholder: "•••" },
-          cardholderName: { id: "form-checkout__cardholderName", placeholder: "Como impresso no cartão" },
-          identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "000.000.000-00" },
-          cardholderEmail: { id: "form-checkout__cardholderEmail", placeholder: "email@exemplo.com" },
-          issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
-          installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
-          identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo de documento" },
-        },
-        callbacks: {
-          onFormMounted: (error) => {
-            if (error) { console.warn("MP CardForm mount error:", error); return; }
-            setMounted(true);
-          },
-          onPaymentMethodReceived: (_err, data) => {
-            setBrandName(data?.name ?? null);
-          },
-          onFetching: (resource) => {
-            console.log("MP fetching:", resource);
-            setFetching(true);
-            return () => { setFetching(false); };
-          },
-          onSubmit: (event) => {
-            event.preventDefault();
-            const {
-              token,
-              issuerId,
-              paymentMethodId,
-              installments,
-              identificationType,
-              identificationNumber,
-              cardholderEmail,
-            } = cardForm.getCardFormData();
+        await new Promise<void>((resolve) => setTimeout(resolve, 300));
 
-            onSubmit({
-              card_token: token,
-              payment_method_id: paymentMethodId,
-              installments: Number(installments),
-              issuer_id: issuerId,
-              payer: {
-                email: cardholderEmail,
-                identification: { type: identificationType, number: identificationNumber },
-              },
-            });
-          },
-        },
-      });
+        const mp = new window.MercadoPago(sellerPublicKey, { locale: "pt-BR" });
 
-      cardFormRef.current = cardForm;
+        const formEl = document.getElementById("form-checkout");
+        if (!formEl) {
+          console.warn("MercadoPago: form-checkout element not found");
+          return;
+        }
+
+        const cardFormInstance = mp.cardForm({
+          amount: (amount / 100).toFixed(2),
+          iframe: true,
+          form: {
+            id: "form-checkout",
+            cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
+            expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
+            securityCode: { id: "form-checkout__securityCode", placeholder: "•••" },
+            cardholderName: { id: "form-checkout__cardholderName", placeholder: "Como impresso no cartão" },
+            identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "Número do documento" },
+            cardholderEmail: { id: "form-checkout__cardholderEmail", placeholder: "email@exemplo.com" },
+            issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
+            installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
+            identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo" },
+          },
+          callbacks: {
+            onFormMounted: (error) => {
+              if (cancelled) return;
+              if (error) {
+                console.warn("MercadoPago CardForm mount error:", error);
+                return;
+              }
+              setMounted(true);
+            },
+            onPaymentMethodReceived: (_err, data) => {
+              if (!cancelled) setBrandName(data?.name ?? null);
+            },
+            onFetching: (_) => {
+              setFetching(true);
+              return () => { setFetching(false); };
+            },
+            onSubmit: (event) => {
+              event.preventDefault();
+              if (!cardFormRef.current) {
+                console.warn("MercadoPago: CardForm instance not ready");
+                return;
+              }
+
+              // Validation before submit using ref to get current value
+              if (!validationRef.current.isEmailValid || !validationRef.current.isDocValid) return;
+
+              const {
+                token, issuerId, paymentMethodId, installments,
+                identificationType: type, identificationNumber: number, cardholderEmail: email,
+              } = cardFormRef.current.getCardFormData();
+
+              onSubmitRef.current({
+                card_token: token,
+                payment_method_id: paymentMethodId,
+                installments: Number(installments),
+                issuer_id: issuerId,
+                payer: {
+                  email,
+                  identification: {
+                    type,
+                    number: number.replace(/\D/g, "")
+                  },
+                },
+              });
+            },
+          },
+        });
+
+        cardFormRef.current = cardFormInstance;
+      } catch (err) {
+        console.error("MercadoPago init error:", err);
+      }
     };
 
     void init();
+
     return () => {
       cancelled = true;
-      cardFormRef.current?.unmount();
+      if (cardFormRef.current) {
+        try {
+          cardFormRef.current.unmount();
+        } catch (err) {
+          if (err instanceof Error)
+            console.error("Unexpected error while unmount: ", err)
+        }
+        cardFormRef.current = null;
+      }
+      setMounted(false);
+      setBrandName(null);
+      setFetching(false);
     };
-  }, [amount]);
+  }, [amount, sellerPublicKey]);
 
   const isLoading = loading || fetching || !mounted;
+
+  const handleDocChange = (val: string) => {
+    const formatted = identificationType === "CPF" ? formatCPF(val) : formatCNPJ(val);
+    setIdentificationNumber(formatted);
+  };
 
   return (
     <form id="form-checkout" className="space-y-4">
@@ -353,24 +426,62 @@ function CreditCardForm({
 
       <SelectField id="form-checkout__installments" label="Parcelas" />
 
-      <select id="form-checkout__issuer" className="hidden" defaultValue="">
+      {/* Hidden issuer select but not with display:none to avoid node not found errors */}
+      <select id="form-checkout__issuer" className="absolute opacity-0 pointer-events-none -z-10" defaultValue="">
         <option value="" disabled />
       </select>
 
-      {/* Documento — capturado pelo cardForm e enviado no identification */}
       <div className="grid grid-cols-5 gap-3">
-        <SelectField id="form-checkout__identificationType" label="Tipo" className="col-span-2" />
-        <div className="space-y-1.5 col-span-3">
-          <Label htmlFor="form-checkout__identificationNumber" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            CPF / CNPJ
+        <div className="space-y-1.5 col-span-2">
+          <Label htmlFor="form-checkout__identificationType" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Tipo
           </Label>
+          <select
+            id="form-checkout__identificationType"
+            name="identificationType"
+            value={identificationType}
+            onChange={(e) => {
+              setIdentificationType(e.target.value);
+              setIdentificationNumber("");
+            }}
+            className={cn(
+              inputLike,
+              "h-9 cursor-pointer appearance-none",
+              "bg-[image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")] bg-no-repeat bg-position-[right_0.75rem_center] pr-8"
+            )}
+          >
+            <option value="CPF">CPF</option>
+            <option value="CNPJ">CNPJ</option>
+          </select>
+        </div>
+        <div className="space-y-1.5 col-span-3">
+          <Label htmlFor="doc-display" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {identificationType}
+          </Label>
+          {/* Visible input with mask for the user */}
           <Input
+            id="doc-display"
+            value={identificationNumber}
+            onChange={(e) => { handleDocChange(e.target.value); }}
+            placeholder={identificationType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
+            inputMode="numeric"
+            className={cn(
+              "text-sm font-mono",
+              !isDocValid && identificationNumber.length > 0 && "border-destructive focus-visible:ring-destructive"
+            )}
+          />
+          {/* Hidden input for Mercado Pago SDK with UNMASKED value */}
+          <input
+            type="hidden"
             id="form-checkout__identificationNumber"
             name="identificationNumber"
-            placeholder="000.000.000-00"
-            inputMode="numeric"
-            className="text-sm font-mono"
+            value={identificationNumber.replace(/\D/g, "")}
           />
+          {!isDocValid && identificationNumber.length > 0 && (
+            <p className="text-[10px] text-destructive flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> {identificationType} inválido
+            </p>
+          )}
         </div>
       </div>
 
@@ -382,14 +493,24 @@ function CreditCardForm({
           id="form-checkout__cardholderEmail"
           name="cardholderEmail"
           type="email"
+          value={cardholderEmail}
+          onChange={(e) => { setCardholderEmail(e.target.value); }}
           placeholder="email@exemplo.com"
           autoComplete="email"
-          className="text-sm"
+          className={cn(
+            "text-sm",
+            !isEmailValid && cardholderEmail.length > 0 && "border-destructive focus-visible:ring-destructive"
+          )}
         />
+        {!isEmailValid && cardholderEmail.length > 0 && (
+          <p className="text-[10px] text-destructive flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" /> E-mail inválido
+          </p>
+        )}
       </div>
 
       <div className="pt-1 space-y-2.5">
-        <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+        <Button type="submit" className="w-full h-11 gap-2" disabled={isLoading || !isEmailValid || !isDocValid}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
           {loading ? "Processando…" : !mounted ? "Carregando…" : `Pagar ${formatBRL(amount)}`}
         </Button>
@@ -401,24 +522,15 @@ function CreditCardForm({
   );
 }
 
-// ─── Export ───────────────────────────────────────────────────────────────────
-
 interface PropsI {
   amount: number;
+  method: PaymentMethodI;
   handleSubmit: (data: SubmitPaymentPayloadI) => void;
-  seller_public_key: string;
+  sellerPublicKey: string;
 }
 
-export function MercadoPagoForm({ amount, handleSubmit, seller_public_key }: PropsI) {
-  const isTooLowForCreditCard = amount < 100;
-  const [method, setMethod] = useState<PaymentMethod>(isTooLowForCreditCard ? "pix" : "credit_card");
+export function MercadoPagoForm({ amount, handleSubmit, method, sellerPublicKey }: PropsI) {
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (isTooLowForCreditCard && method === "credit_card") {
-      setMethod("pix");
-    }
-  }, [amount, isTooLowForCreditCard, method]);
 
   const handlePixSubmit = (
     email: string,
@@ -432,7 +544,7 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_public_key }: Pro
         payer_email: email,
         payment_method_type: "bank_transfer",
         identification_type: identificationType,
-        identification_number: identificationNumber,
+        identification_number: identificationNumber.replace(/\D/g, ""),
       });
     } finally {
       setLoading(false);
@@ -447,7 +559,7 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_public_key }: Pro
         payer_email: data.payer.email,
         payment_method_type: "credit_card",
         identification_type: data.payer.identification.type,
-        identification_number: data.payer.identification.number,
+        identification_number: data.payer.identification.number.replace(/\D/g, ""),
       });
     } finally {
       setLoading(false);
@@ -456,44 +568,16 @@ export function MercadoPagoForm({ amount, handleSubmit, seller_public_key }: Pro
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex border-b border-border">
-        {(["credit_card", "pix"] as const).map((m) => {
-          const isDisabled = m === "credit_card" && isTooLowForCreditCard;
-          return (
-            <button
-              key={m}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => { setMethod(m); }}
-              className={cn(
-                "flex items-center gap-1.5 px-0 py-2 mr-5 text-xs font-semibold uppercase tracking-wide",
-                "border-b-2 -mb-px transition-colors duration-150",
-                method === m
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-                isDisabled && "opacity-40 cursor-not-allowed"
-              )}
-            >
-              {m === "credit_card" ? <CreditCard className="h-3.5 w-3.5" /> : <QrCode className="h-3.5 w-3.5" />}
-              {m === "credit_card" ? "Cartão" : "Pix"}
-            </button>
-          );
-        })}
-      </div>
-
-      {isTooLowForCreditCard && (
-        <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1.5 rounded">
-          ⚠️ O valor mínimo para pagamento via cartão é de R$ 1,00. Use Pix para este valor.
-        </p>
+      {method === "credit_card" ? (
+        <CreditCardForm
+          amount={amount}
+          onSubmit={handleCardSubmit}
+          loading={loading}
+          sellerPublicKey={sellerPublicKey}
+        />
+      ) : (
+        <PixForm amount={amount} onSubmit={handlePixSubmit} loading={loading} />
       )}
-
-      <div className="pt-1">
-        {method === "credit_card" ? (
-          <CreditCardForm amount={amount} onSubmit={handleCardSubmit} loading={loading} seller_public_key={seller_public_key} />
-        ) : (
-          <PixForm amount={amount} onSubmit={handlePixSubmit} loading={loading} />
-        )}
-      </div>
     </div>
   );
 }

@@ -30,3 +30,5 @@ export const submitPaymentPayload = z.object({
 })
 
 export type SubmitPaymentPayloadI = z.infer<typeof submitPaymentPayload>
+
+export type PaymentMethodI = "credit_card" | "pix"

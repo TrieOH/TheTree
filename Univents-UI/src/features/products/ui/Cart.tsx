@@ -135,27 +135,40 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
 export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { items, totalCents, removeItem, updateQuantity, clearCart, getMaxQuantity } = useCart(editionId);
 
   useEffect(() => {
+    if (animTimeoutRef.current) {
+      clearTimeout(animTimeoutRef.current);
+    }
+
     if (isOpen) {
       setIsVisible(true);
-      setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setIsAnimating(true);
       }, 10);
     } else {
       setIsAnimating(false);
-      const timer = setTimeout(() => {
+      animTimeoutRef.current = setTimeout(() => {
         setIsVisible(false);
       }, 300);
-      return () => { clearTimeout(timer); };
     }
+
+    return () => {
+      if (animTimeoutRef.current) {
+        clearTimeout(animTimeoutRef.current);
+      }
+    };
   }, [isOpen]);
 
   const handleClose = () => {
     setIsAnimating(false);
-    setTimeout(() => {
+    if (animTimeoutRef.current) {
+      clearTimeout(animTimeoutRef.current);
+    }
+    animTimeoutRef.current = setTimeout(() => {
       onClose();
     }, 300);
   };

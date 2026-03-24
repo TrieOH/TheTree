@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
 import { useAuth } from "@soramux/node-auth-sdk/react"
 import {
   BarChart3,
@@ -94,14 +94,14 @@ const adminNav: NavItemConfig[] = [
 
 
 function useIsActive(to: string, exact = false) {
-  const { location } = useRouterState()
+  const location = useLocation()
   if (to === "/" || to.startsWith("/?")) return location.pathname === "/"
   if (exact) return location.pathname === to
   return location.pathname.startsWith(to)
 }
 
 function useAdminEventsCtx() {
-  const { location } = useRouterState()
+  const location = useLocation()
   const m = /\/admin\/events\/([^/]+)(?:\/editions\/([^/]+))?/.exec(location.pathname)
   return {
     eventId: m?.[1],
@@ -112,7 +112,7 @@ function useAdminEventsCtx() {
 }
 
 function useParticipantEventsCtx(): NavContext {
-  const { location } = useRouterState()
+  const location = useLocation()
   if (location.pathname.startsWith("/admin")) {
     return {
       isInsideEvents: false,

@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
 import { Fragment } from "react/jsx-runtime"
 import { SidebarTrigger } from "@/shared/ui/shadcn/sidebar"
 import { Separator } from "@/shared/ui/shadcn/separator"
@@ -24,7 +24,7 @@ const LABELS: Record<string, string> = {
 }
 
 function useCrumbs() {
-  const { location } = useRouterState()
+  const location = useLocation()
   const segments = location.pathname.split("/").filter(Boolean)
 
   return segments.map((seg, i) => {

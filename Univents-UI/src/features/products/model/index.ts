@@ -30,7 +30,6 @@ export const buyRequestItemSchema = z.object({
 
 export type BuyRequestItemI = z.infer<typeof buyRequestItemSchema>
 
-
 export interface ProductI {
   id: string;
   scope_id: string;
@@ -50,4 +49,21 @@ export interface ProductI {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+export interface ReservedItemI {
+  product_id: string;
+  name: string;
+  quantity: number;
+  price_cents: number;
+  product_type: ProductType;
+  ticket_id?: string;
+}
+
+export interface UnavailableItemI {
+  product_id: string;
+  name: string;
+  reason: string;
+  requested: number;
+  reserved: number;
 }
