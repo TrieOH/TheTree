@@ -73,6 +73,7 @@ func registerIntentsRoutes(
 		r.Post("/intents", h.InitiateCheckout)
 		r.Get("/intents/{intent_id}", h.GetByID)
 		r.Post("/intents/{intent_id}/cancel", h.CancelIntent)
+		r.Post("/intents/{intent_id}/cancel-pix", h.CancelPix)
 		r.Post("/intents/{intent_id}/charge", h.Charge)
 	})
 }
