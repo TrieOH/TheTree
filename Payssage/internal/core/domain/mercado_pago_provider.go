@@ -345,7 +345,7 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *Init
 
 func (p *MercadoPagoImpl) CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error {
 	body := map[string]any{
-		"status": "canceled",
+		"status": "cancelled",
 	}
 
 	bodyBytes, err := json.Marshal(body)
