@@ -434,7 +434,17 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 }
 
 func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent) error {
-	// TODO: uc.payments.CancelPixIntent(ctx, intent.ID) — cancel the PIX intent on the provider side
+	edition, err := uc.editions.GetByID(ctx, session.EditionID)
+	if err != nil {
+		telemetry.Log().Debug("Failed to fetch edition for pix cancel", zap.Error(err))
+	} else {
+		if _, err := uc.payments.CancelPixIntent(ctx, intent.ID, paymentsSDK.CancelPixRequest{
+			Provider:           viper.GetString("TRIEPAYMENTS_PROVIDER"),
+			SellerCredentialID: edition.TriePaymentsCredentialID.String(),
+		}); err != nil {
+			telemetry.Log().Debug("Failed to cancel pix intent", zap.Error(err))
+		}
+	}
 
 	updates, err := uc.products.UnreserveItems(ctx, session.SessionID)
 	if err != nil {
