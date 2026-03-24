@@ -52,9 +52,19 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			},
 		})
 
-		payReq, err := uc.submitPayment(ctx, conn)
-		if err != nil || payReq == nil {
+		payReq, err := uc.submitPayment(conn)
+		if err != nil {
 			return err
+		}
+		if payReq == nil {
+			// user canceled before submitting payment
+			updates, _ := uc.products.UnreserveItems(ctx, session.SessionID)
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, session.EditionID, updates)
+			}
+			_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_cancelled"})
+			return nil
 		}
 
 		intent, isPix, err := uc.checkout(ctx, conn, session, payReq)
@@ -98,9 +108,19 @@ func (uc *CommandService) Purchase(ctx context.Context, conn *websocket.Conn, ed
 			return err
 		}
 
-		payReq, err := uc.submitPayment(ctx, conn)
-		if err != nil || payReq == nil {
+		payReq, err := uc.submitPayment(conn)
+		if err != nil {
 			return err
+		}
+		if payReq == nil {
+			// user canceled before submitting payment
+			updates, _ := uc.products.UnreserveItems(ctx, session.SessionID)
+			if len(updates) > 0 {
+				_ = uc.inventory.Publish(ctx, session.EditionID, updates)
+			}
+			_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_cancelled"})
+			return nil
 		}
 
 		intent, isPix, err := uc.checkout(ctx, conn, session, payReq)
@@ -319,32 +339,33 @@ func (uc *CommandService) reserveItemsStage(ctx context.Context, conn *websocket
 	return &session, nil
 }
 
-func (uc *CommandService) submitPayment(ctx context.Context, conn *websocket.Conn) (*dtos.SubmitPaymentPayload, error) {
+func (uc *CommandService) submitPayment(conn *websocket.Conn) (*dtos.SubmitPaymentPayload, error) {
 	var payMsg sockets.WSMessage
 	if err := conn.ReadJSON(&payMsg); err != nil {
 		return nil, errors.New("close socket")
 	}
 
-	if payMsg.Type != "submit_payment" {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment message type"})
+	switch payMsg.Type {
+	case "submit_payment":
+		payloadBytes, err := json.Marshal(payMsg.Payload)
+		if err != nil {
+			return nil, err
+		}
+		var payReq dtos.SubmitPaymentPayload
+		if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
+			_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
+			return nil, errors.New("close socket")
+		}
+		return &payReq, nil
+
+	case "cancel_purchase":
+		return nil, nil // nil, nil signals caller to run cleanup
+
+	default:
+		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "expected submit_payment or cancel_purchase"})
 		return nil, errors.New("close socket")
 	}
-
-	payloadBytes, err := json.Marshal(payMsg.Payload)
-	if err != nil {
-		return nil, err
-	}
-
-	var payReq dtos.SubmitPaymentPayload
-	if err = json.Unmarshal(payloadBytes, &payReq); err != nil {
-		_ = conn.WriteJSON(sockets.WSMessage{Type: "error", Payload: "invalid submit_payment payload"})
-		return nil, errors.New("close socket")
-	}
-
-	return &payReq, nil
 }
-
-// FIXME: Add blocking behaviour on PIX to wait for the Webhook
 
 func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, payReq *dtos.SubmitPaymentPayload) (*paymentsSDK.Intent, bool, error) {
 	edition, err := uc.editions.GetByID(ctx, session.EditionID)
@@ -412,6 +433,27 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	return intent, false, nil
 }
 
+func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent) error {
+	// TODO: uc.payments.CancelPixIntent(ctx, intent.ID) — cancel the PIX intent on the provider side
+
+	updates, err := uc.products.UnreserveItems(ctx, session.SessionID)
+	if err != nil {
+		telemetry.Log().Debug("Unreserve failed on pix cancel", zap.Error(err))
+	}
+	if len(updates) > 0 {
+		_ = uc.inventory.Publish(ctx, session.EditionID, updates)
+	}
+
+	if err := uc.sessions.Delete(ctx, session.UserID, session.SessionID); err != nil {
+		telemetry.Log().Debug("Failed to delete session on pix cancel", zap.Error(err))
+	}
+
+	uc.ws.Remove(session.SessionID.String())
+
+	_ = conn.WriteJSON(sockets.WSMessage{Type: "purchase_cancelled"})
+	return nil
+}
+
 func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Conn, session *domain.PurchaseSession, intent *paymentsSDK.Intent, isPix bool) error {
 	uc.ws.Register(session.SessionID.String(), conn)
 
@@ -424,6 +466,7 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 
 	connClosed := make(chan struct{})
 	webhookMsg := make(chan sockets.WSMessage, 1)
+	cancelMsg := make(chan struct{}, 1)
 
 	uc.ws.RegisterCallback(session.SessionID.String(), func(msg sockets.WSMessage) {
 		webhookMsg <- msg
@@ -431,8 +474,13 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 
 	go func() {
 		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
+			var msg sockets.WSMessage
+			if err := conn.ReadJSON(&msg); err != nil {
 				close(connClosed)
+				return
+			}
+			if isPix && msg.Type == "cancel_purchase" {
+				cancelMsg <- struct{}{}
 				return
 			}
 		}
@@ -442,6 +490,8 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 	case msg := <-webhookMsg:
 		_ = conn.WriteJSON(msg)
 		return nil
+	case <-cancelMsg:
+		return uc.cancelPixRequest(ctx, conn, session, intent)
 	case <-timer:
 		_ = conn.WriteJSON(sockets.WSMessage{
 			Type:    "payment_pending",
