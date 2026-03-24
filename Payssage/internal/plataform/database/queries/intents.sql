@@ -56,3 +56,9 @@ SELECT *
 FROM intents
 WHERE provider_data->>'order_id' = $1::text
   AND provider = 'mercadopago';
+
+-- name: GetIntentByMPTransactionID :one
+SELECT *
+FROM intents
+WHERE provider_data->>'transaction_id' = $1::text
+  AND provider = 'mercadopago';

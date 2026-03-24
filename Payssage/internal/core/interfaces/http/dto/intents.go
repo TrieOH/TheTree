@@ -21,6 +21,11 @@ type CreateIntentRequest struct {
 	IdentificationType   string          `json:"identification_type"`
 }
 
+type CancelPixRequest struct {
+	Provider           string    `json:"provider"`
+	SellerCredentialID uuid.UUID `json:"seller_credential_id"`
+}
+
 type PayIntentRequest struct {
 	SellerCredentialID uuid.UUID `json:"seller_credential_id"`
 }

@@ -20,6 +20,7 @@ type IntentRepository interface {
 	Fail(ctx context.Context, id uuid.UUID) (*Intent, error)
 	UpdateProviderData(ctx context.Context, intent Intent) (*Intent, error)
 	GetByMPOrderID(ctx context.Context, orderID string) (*Intent, error)
+	GetByMPTransactionID(ctx context.Context, transactionID string) (*Intent, error)
 }
 
 type WorkspaceRepo interface {

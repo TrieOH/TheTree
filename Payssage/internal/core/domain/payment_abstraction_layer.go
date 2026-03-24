@@ -184,6 +184,8 @@ type MercadoPagoProvider interface {
 	// Populates PixQRCode and PixQRCodeB64 on the returned data.
 	InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*Intent, error)
 
+	CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error
+
 	// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
 	NormalizeStatus(status string, statusDetail string) IntentStatus
 }

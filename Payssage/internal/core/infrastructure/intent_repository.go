@@ -230,3 +230,15 @@ func (repo *intentsRepo) GetByMPOrderID(ctx context.Context, orderID string) (*d
 
 	return mapIntentFromDB(&sqlcIntent)
 }
+
+func (repo *intentsRepo) GetByMPTransactionID(ctx context.Context, transactionID string) (*domain.Intent, error) {
+	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByMPTransactionID")
+	defer span.End()
+
+	sqlcIntent, err := repo.queries(ctx).GetIntentByMPTransactionID(ctx, transactionID)
+	if err != nil {
+		return nil, errx.FromDB(err, "intent")
+	}
+
+	return mapIntentFromDB(&sqlcIntent)
+}
