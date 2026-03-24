@@ -440,10 +440,7 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 
 	select {
 	case msg := <-webhookMsg:
-		_ = conn.WriteJSON(sockets.WSMessage{
-			Type:    "payment_response",
-			Payload: msg,
-		})
+		_ = conn.WriteJSON(msg)
 		return nil
 	case <-timer:
 		_ = conn.WriteJSON(sockets.WSMessage{

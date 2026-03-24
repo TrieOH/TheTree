@@ -84,7 +84,7 @@ func (uc *CommandService) finalizeConfirmedPurchase(ctx context.Context, payment
 	if purchase.SessionID != nil {
 		sessionID := *purchase.SessionID
 		if err := uc.ws.Notify(sessionID.String(), sockets.WSMessage{
-			Type:    "order_confirmed",
+			Type:    "payment_confirmed",
 			Payload: map[string]string{"purchase_id": purchase.ID.String()},
 		}); err != nil {
 			log.Printf("[confirm] ws already closed for session %s: %v", sessionID, err)
