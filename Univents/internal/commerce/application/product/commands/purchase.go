@@ -13,7 +13,6 @@ import (
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -373,21 +372,6 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		return nil, false, err
 	}
 
-	telemetry.Log().Info("Before Initiate",
-		zap.Int("total", session.TotalCents),
-		zap.String("currency", "BRL"),
-		zap.String("provider", viper.GetString("TRIEPAYMENTS_PROVIDER")),
-		zap.Any("metadata", json.RawMessage(`{"session_id": "`+session.SessionID.String()+`", "user_id": "`+session.UserID.String()+`"}`)),
-		zap.String("payment_method_id", payReq.PaymentMethodID),
-		zap.Int("installments", payReq.Installments),
-		zap.String("card_token", payReq.CardToken),
-		zap.String("payment_method_type", payReq.PaymentMethodType),
-		zap.String("seller_credential_id", edition.TriePaymentsCredentialID.String()),
-		zap.String("payer_email", payReq.PayerEmail),
-		zap.String("identification_number", payReq.IdentificationNumber),
-		zap.String("identification_type", payReq.IdentificationType),
-	)
-
 	unreserveAndCleanup := func() {
 		updates, uErr := uc.products.UnreserveItems(ctx, session.SessionID)
 		if uErr != nil {
@@ -399,10 +383,31 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		_ = uc.sessions.Delete(ctx, session.UserID, session.SessionID)
 	}
 
+	if edition.TriePaymentsProvider == nil {
+		telemetry.Log().Error("edition not set up to receive payments, should block store")
+		unreserveAndCleanup()
+		return nil, true, errors.New("edition not set up to receive payments")
+	}
+
+	telemetry.Log().Info("Before Initiate",
+		zap.Int("total", session.TotalCents),
+		zap.String("currency", "BRL"),
+		zap.String("provider", *edition.TriePaymentsProvider),
+		zap.Any("metadata", json.RawMessage(`{"session_id": "`+session.SessionID.String()+`", "user_id": "`+session.UserID.String()+`"}`)),
+		zap.String("payment_method_id", payReq.PaymentMethodID),
+		zap.Int("installments", payReq.Installments),
+		zap.String("card_token", payReq.CardToken),
+		zap.String("payment_method_type", payReq.PaymentMethodType),
+		zap.String("seller_credential_id", edition.TriePaymentsCredentialID.String()),
+		zap.String("payer_email", payReq.PayerEmail),
+		zap.String("identification_number", payReq.IdentificationNumber),
+		zap.String("identification_type", payReq.IdentificationType),
+	)
+
 	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
 		Amount:               int64(session.TotalCents),
 		Currency:             "BRL",
-		Provider:             viper.GetString("TRIEPAYMENTS_PROVIDER"),
+		Provider:             *edition.TriePaymentsProvider,
 		Metadata:             json.RawMessage(`{"session_id": "` + session.SessionID.String() + `", "user_id": "` + session.UserID.String() + `"}`),
 		PaymentMethodID:      payReq.PaymentMethodID,
 		Installments:         payReq.Installments,
