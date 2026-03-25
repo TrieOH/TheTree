@@ -1,4 +1,4 @@
-import { ShoppingCart, Package, AlertCircle } from "lucide-react";
+import { ShoppingCart, Package, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { useCart } from "../hooks/use-cart";
 import type { ProductI } from "../model";
@@ -13,6 +13,7 @@ import { cn } from "@/shared/lib/utils";
 interface ProductCardProps {
   product: ProductI;
   inventoryRemaining: number;
+  onProductSelect: () => void;
 }
 
 interface ClickAnimation {
@@ -22,9 +23,10 @@ interface ClickAnimation {
   value: string;
 }
 
-export function ProductCard({ product, inventoryRemaining }: ProductCardProps) {
+export function ProductCard({ product, inventoryRemaining, onProductSelect }: ProductCardProps) {
   const { items, addItem, isLimitReached: checkLimitReached } = useCart(product.edition_id);
   const [animations, setAnimations] = useState<ClickAnimation[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const idCounter = useRef(0);
 
   const cartItem = items.find(i => i.id === product.id);
@@ -38,7 +40,24 @@ export function ProductCard({ product, inventoryRemaining }: ProductCardProps) {
     currency: "BRL",
   }).format(product.price_cents / 100);
 
+  const images = product.thumbnail_url
+    ? [product.thumbnail_url]
+    : (product.gallery_urls ?? []).filter(Boolean) as string[];
+
+  const hasMultipleImages = images.length > 1;
+
+  const handleNextImage = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  }, [images.length]);
+
+  const handlePrevImage = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  }, [images.length]);
+
   const handleAddClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     if (!canAdd) return;
 
     let clientX, clientY;
@@ -79,18 +98,17 @@ export function ProductCard({ product, inventoryRemaining }: ProductCardProps) {
   const isAvailable = product.status === "available";
   const isOutOfStock = product.has_inventory && inventoryRemaining <= 0;
   const isLowStock = product.has_inventory && inventoryRemaining <= 5 && inventoryRemaining > 0;
-  // const isOutOfStock = product.has_inventory && product.inventory_remaining <= 0;
-  // const isLowStock = product.has_inventory && product.inventory_remaining <= 5 && product.inventory_remaining > 0;
 
   return (
     <>
       <Card
-        className={`
-          group relative overflow-hidden transition-all duration-200 ease-out p-0!
-          ${isAvailable ? 'hover:-translate-y-1 hover:shadow-lg hover:border-primary/50' : 'opacity-75'}
-        `}
+        className={cn(
+          "group relative overflow-hidden transition-all cursor-pointer",
+          "cursor-pointer duration-200 ease-out p-0!",
+          isAvailable ? 'hover:-translate-y-1 hover:shadow-lg hover:border-primary/50' : 'opacity-75'
+        )}
+        onClick={onProductSelect}
       >
-        {/* Botão Flutuante do Carrinho - Ação direta + spam */}
         <div className="absolute top-2 right-2 z-30">
           <Button
             size="icon"
@@ -121,9 +139,51 @@ export function ProductCard({ product, inventoryRemaining }: ProductCardProps) {
 
         {/* Image */}
         <div className="relative aspect-video bg-secondary/30 overflow-hidden shrink-0">
-          <div className="absolute inset-0 flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-105">
-            <Package className="w-10 h-10 text-muted-foreground/40" />
-          </div>
+          {images.length > 0 ? (
+            <img
+              src={images[currentImageIndex]}
+              alt={product.name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-105"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-105">
+              <Package className="w-10 h-10 text-muted-foreground/40" />
+            </div>
+          )}
+
+          {hasMultipleImages && (
+            <div className="absolute inset-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/30 backdrop-blur-sm hover:bg-background/60"
+                onClick={handlePrevImage}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/30 backdrop-blur-sm hover:bg-background/60"
+                onClick={handleNextImage}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {images.map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-all duration-300 shadow-sm",
+                      i === currentImageIndex
+                        ? "bg-primary scale-125"
+                        : "bg-background/60"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Status Overlays */}
           {!isAvailable || isOutOfStock ? (

@@ -12,7 +12,7 @@ import { createEventFn, getOwnEventsFn, publishEventFn } from '@/features/events
 import { createEditionFn, getAllAdminEditionsFn, publishEditionFn, disconnectPaymentAccountToEditionFn } from '@/features/editions/api'
 import { createActivityFn, getAllAdminActivitiesFn, publishActivityFn } from '@/features/activities/api'
 import { createTicketFn, getAllTicketsFn } from '@/features/tickets/api'
-import { createProductFn, getAllAdminProductsFn, publishProductFn } from '@/features/products/api'
+import { createProductFn, getAllAdminProductsFn, publishProductFn, softDeleteProductFn, restoreSoftDeletedProductFn, addImageToTheProductGalleryFn, removeImageToTheProductGalleryFn, setProductThumbnailFn, unsetProductThumbnailFn } from '@/features/products/api'
 import { createCheckpointFn, getAllCheckpointsFn } from '@/features/checkpoints/api'
 import {
   formatDateForDatetimeLocal,
@@ -132,6 +132,7 @@ function RouteComponent() {
   const [products, setProducts] = useState<ProductI[]>([])
   const [productError, setProductError] = useState<string | null>(null)
   const [productCreated, setProductCreated] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   // checkpoints-related state
   const [checkpointForm, setCheckpointForm] = useState<CheckpointCreateI>({
@@ -537,6 +538,78 @@ function RouteComponent() {
       setCheckpointError(errorMessage);
     }
   }
+
+  const handleUploadAndModerate = async (file: File) => {
+    setIsUploading(true);
+    try {
+      // 1. Get signed URL
+      const uploadRes = await fetch("/storage/upload", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: `${Date.now()}-${file.name}`,
+          contentType: file.type,
+          size: file.size,
+        }),
+      });
+      if (!uploadRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadUrl, key, publicUrl } = (await uploadRes.json()) as { uploadUrl: string; key: string; publicUrl: string };
+
+      // 2. Upload to MinIO
+      const putRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      if (!putRes.ok) throw new Error("Failed to upload file");
+
+      // 3. Moderate
+      const modRes = await fetch("/storage/moderate", {
+        method: "POST",
+        body: JSON.stringify({ key }),
+      });
+      if (!modRes.ok) throw new Error("Failed to moderate file");
+      const { approved } = (await modRes.json()) as { approved: boolean };
+
+      if (!approved) {
+        throw new Error("Image not approved by moderation");
+      }
+
+      return publicUrl;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAddGalleryImage = async (prod: ProductI, file: File) => {
+    try {
+      const url = await handleUploadAndModerate(file);
+      if (selectedEventId && selectedEditionId) {
+        await addImageToTheProductGalleryFn(selectedEventId, selectedEditionId, prod.id, { url });
+        setProductCreated(true);
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetThumbnail = async (prod: ProductI, file: File) => {
+    try {
+      const url = await handleUploadAndModerate(file);
+      if (selectedEventId && selectedEditionId) {
+        await setProductThumbnailFn(selectedEventId, selectedEditionId, prod.id, { url });
+        setProductCreated(true);
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleSetThumbnailFromGallery = async (prod: ProductI, url: string) => {
+    if (selectedEventId && selectedEditionId) {
+      await setProductThumbnailFn(selectedEventId, selectedEditionId, prod.id, { url });
+      setProductCreated(true);
+    }
+  };
 
   return (
     <div className='flex flex-col items-center my-4 gap-2'>
@@ -1264,19 +1337,124 @@ function RouteComponent() {
                   <strong>Created At:</strong> {new Date(prod.created_at).toLocaleDateString()} {new Date(prod.created_at).toLocaleTimeString()}<br />
                   <strong>Updated At:</strong> {new Date(prod.updated_at).toLocaleDateString()} {new Date(prod.updated_at).toLocaleTimeString()}<br />
                   <strong>Deleted At:</strong> {prod.deleted_at ? `${new Date(prod.deleted_at).toLocaleDateString()} ${new Date(prod.deleted_at).toLocaleTimeString()}` : 'N/A'}
-                  <button
-                    className="mt-2 block bg-orange-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
-                    disabled={prod.status !== 'draft'}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (selectedEventId && selectedEditionId) {
-                        await publishProductFn(selectedEventId, selectedEditionId, prod.id);
-                        setProductCreated(true);
-                      }
-                    }}
-                  >
-                    {prod.status === 'draft' ? 'Publish Product' : 'Published'}
-                  </button>
+
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <button
+                      className="bg-orange-600 text-white py-1 px-3 rounded disabled:bg-gray-400"
+                      disabled={prod.status !== 'draft'}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (selectedEventId && selectedEditionId) {
+                          await publishProductFn(selectedEventId, selectedEditionId, prod.id);
+                          setProductCreated(true);
+                        }
+                      }}
+                    >
+                      {prod.status === 'draft' ? 'Publish' : 'Published'}
+                    </button>
+
+                    {prod.deleted_at ? (
+                      <button
+                        className="bg-green-600 text-white py-1 px-3 rounded"
+                        onClick={async () => {
+                          if (selectedEventId && selectedEditionId) {
+                            await restoreSoftDeletedProductFn(selectedEventId, selectedEditionId, prod.id);
+                            setProductCreated(true);
+                          }
+                        }}
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        className="bg-red-600 text-white py-1 px-3 rounded"
+                        onClick={async () => {
+                          if (selectedEventId && selectedEditionId) {
+                            await softDeleteProductFn(selectedEventId, selectedEditionId, prod.id);
+                            setProductCreated(true);
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 border-t pt-2">
+                    <p className="font-semibold">Thumbnail:</p>
+                    {prod.thumbnail_url ? (
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src={prod.thumbnail_url} alt="Thumbnail" className="w-16 h-16 object-cover border" />
+                        <button
+                          className="text-xs bg-red-100 text-red-600 p-1 rounded"
+                          onClick={async () => {
+                            if (selectedEventId && selectedEditionId) {
+                              await unsetProductThumbnailFn(selectedEventId, selectedEditionId, prod.id);
+                              setProductCreated(true);
+                            }
+                          }}
+                        >
+                          Remove Thumbnail
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">No thumbnail set</p>
+                    )}
+                    <label className="text-xs block mt-1">
+                      Upload New Thumbnail:
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleSetThumbnail(prod, file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-4 border-t pt-2">
+                    <p className="font-semibold">Gallery:</p>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(prod.gallery_urls ?? []).map((url, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={url} alt={`Gallery ${idx}`} className="w-16 h-16 object-cover border" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 transition-opacity">
+                            <button
+                              className="text-[10px] bg-blue-600 text-white px-1 rounded"
+                              onClick={() => handleSetThumbnailFromGallery(prod, url)}
+                            >
+                              Set Thumb
+                            </button>
+                            <button
+                              className="text-[10px] bg-red-600 text-white px-1 rounded"
+                              onClick={async () => {
+                                if (selectedEventId && selectedEditionId) {
+                                  await removeImageToTheProductGalleryFn(selectedEventId, selectedEditionId, prod.id, { url });
+                                  setProductCreated(true);
+                                }
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <label className="text-xs block mt-1">
+                      Add to Gallery:
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAddGalleryImage(prod, file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </li>))}
             </ul>
           </div>

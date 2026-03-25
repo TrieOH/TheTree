@@ -49,6 +49,8 @@ export interface ProductI {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  thumbnail_url: string | null;
+  gallery_urls: string[] | null;
 }
 
 export interface ReservedItemI {
@@ -67,3 +69,10 @@ export interface UnavailableItemI {
   requested: number;
   reserved: number;
 }
+
+export const imageURLProductSchema = z.object({
+  url: z.url(),
+})
+
+export type ImageURLProductI = z.infer<typeof imageURLProductSchema>
+

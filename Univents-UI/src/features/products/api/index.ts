@@ -1,6 +1,6 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { ProductCreateI, ProductI } from "../model";
+import type { ImageURLProductI, ProductCreateI, ProductI } from "../model";
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
@@ -80,11 +80,103 @@ export const publishProductFn = createClientOnlyFn((
   );
 });
 
-
 /**
  * Get websocket token.
  * @returns A promise that resolves to the API null response.
  */
 export const getWebsocketAuthToken = createClientOnlyFn(() => {
   return authFetcher.get<{ token: string }>("/ws/token");
+});
+
+/**
+ * Restores a soft deleted product. Only works if the product has not been hard deleted yet.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API null response.
+ */
+export const restoreSoftDeletedProductFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/restore`
+  );
+});
+
+/**
+ * Soft Delete a product
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API null response.
+ */
+export const softDeleteProductFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string
+) => {
+  return authFetcher.delete<null>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}`
+  );
+});
+
+/**
+ * Adds a MinIO URL to the product's gallery_urls array.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API ProductI response.
+ */
+export const addImageToTheProductGalleryFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+) => {
+  return authFetcher.post<ProductI>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/gallery`,
+    urlData
+  );
+});
+
+/**
+ * Removes a URL from the product's gallery_urls array and deletes the object from MinIO.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API ProductI response.
+ */
+export const removeImageToTheProductGalleryFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+) => {
+  return authFetcher.delete<ProductI>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/gallery`,
+    urlData
+  );
+});
+
+/**
+ * Sets the product thumbnail URL. If the URL is not already in gallery_urls it is added automatically.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API ProductI response.
+ */
+export const setProductThumbnailFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+) => {
+  return authFetcher.put<ProductI>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/thumbnail`,
+    urlData
+  );
+});
+
+/**
+ * Clears the product thumbnail. The image remains in gallery_urls.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @returns A promise that resolves to the API ProductI response.
+ */
+export const unsetProductThumbnailFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string
+) => {
+  return authFetcher.delete<ProductI>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}/thumbnail`
+  );
 });

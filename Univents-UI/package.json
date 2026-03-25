@@ -36,6 +36,7 @@
     "@tanstack/react-store": "^0.9.1",
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/store": "^0.9.1",
+    "aws4fetch": "^1.0.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.561.0",

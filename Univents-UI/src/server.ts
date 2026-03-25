@@ -1,29 +1,37 @@
+/// <reference path="../worker-configuration.d.ts" />
 import handler from "@tanstack/react-start/server-entry";
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
-export interface Env {
-  MINIO_ENDPOINT: string;
-  MINIO_ACCESS_KEY: string;
-  MINIO_SECRET_KEY: string;
-  BUCKET_NAME: string;
-  AI: Ai;
-}
+import { AwsClient } from "aws4fetch";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+export interface Env extends Cloudflare.Env {
+  MINIO_ACCESS_KEY: string;
+  MINIO_SECRET_KEY: string;
+  MINIO_ENDPOINT: string;
+  BUCKET_NAME: string;
+  AI: Ai; // Cloudflare AI binding
+}
+
+// Initialize AWS client for MinIO/S3-compatible storage
+const getAwsClient = (env: Env) =>
+  new AwsClient({
+    accessKeyId: env.MINIO_ACCESS_KEY,
+    secretAccessKey: env.MINIO_SECRET_KEY,
+    service: "s3",
+    region: "us-east-1", // MinIO typically uses us-east-1 or auto
+  });
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/storage/upload" && request.method === "POST") {
-      const { filename, contentType, size } = await request.json();
+      const { filename, contentType, size } = (await request.json()) as {
+        filename: string;
+        contentType: string;
+        size: number;
+      };
 
       if (!ALLOWED_TYPES.includes(contentType)) {
         return Response.json({ error: "Only PNG, JPEG, and WebP are allowed" }, { status: 400 });
@@ -34,11 +42,12 @@ export default {
       }
 
       const uploadUrl = await getUploadUrl(filename, contentType, env);
-      return Response.json({ uploadUrl, key: filename });
+      const publicUrl = `${env.MINIO_ENDPOINT}/${env.BUCKET_NAME}/${filename}`;
+      return Response.json({ uploadUrl, key: filename, publicUrl });
     }
 
     if (url.pathname === "/storage/moderate" && request.method === "POST") {
-      const { key } = await request.json();
+      const { key } = (await request.json()) as { key: string };
       const isSafe = await moderateFile(key, env);
       if (!isSafe) {
         await deleteFile(key, env);
@@ -47,44 +56,45 @@ export default {
       return Response.json({ approved: true });
     }
 
+    // Fallback to TanStack handler
+    // @ts-expect-error handler.fetch might only accept 2 arguments in some environments
     return handler.fetch(request, env, ctx);
   },
 };
 
-const getS3Client = (env: Env) =>
-  new S3Client({
-    region: "auto",
-    endpoint: env.MINIO_ENDPOINT,
-    credentials: {
-      accessKeyId: env.MINIO_ACCESS_KEY,
-      secretAccessKey: env.MINIO_SECRET_KEY,
-    },
-    forcePathStyle: true,
-  });
-
 async function getUploadUrl(key: string, contentType: string, env: Env): Promise<string> {
-  const client = getS3Client(env);
-  return getSignedUrl(
-    client,
-    new PutObjectCommand({ Bucket: env.BUCKET_NAME, Key: key, ContentType: contentType }),
-    { expiresIn: 300 }
+  const aws = getAwsClient(env);
+  const uploadUrl = new URL(`${env.MINIO_ENDPOINT}/${env.BUCKET_NAME}/${key}`);
+  uploadUrl.searchParams.set("X-Amz-Expires", "300"); // 5 minutes
+
+  const signed = await aws.sign(
+    new Request(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+    }),
+    { aws: { signQuery: true } }
   );
+
+  return signed.url.toString();
 }
 
 async function moderateFile(key: string, env: Env): Promise<boolean> {
-  const client = getS3Client(env);
-  const url = await getSignedUrl(
-    client,
-    new GetObjectCommand({ Bucket: env.BUCKET_NAME, Key: key }),
-    { expiresIn: 60 }
+  const aws = getAwsClient(env);
+  const downloadUrl = new URL(`${env.MINIO_ENDPOINT}/${env.BUCKET_NAME}/${key}`);
+  downloadUrl.searchParams.set("X-Amz-Expires", "60"); // 1 minute
+
+  const signed = await aws.sign(
+    new Request(downloadUrl, { method: "GET" }),
+    { aws: { signQuery: true } }
   );
 
-  const fileRes = await fetch(url);
+  const fileRes = await fetch(signed.url);
+  if (!fileRes.ok) throw new Error("Failed to fetch file for moderation");
+
   const buffer = await fileRes.arrayBuffer();
 
   const response = await env.AI.run("@cf/llava-hf/llava-1.5-7b-hf", {
-    prompt:
-      "Does this image contain any explicit, violent, or inappropriate content? Reply with only 'safe' or 'unsafe'.",
+    prompt: "Does this image contain any explicit, violent, or inappropriate content? Reply with only 'safe' or 'unsafe'.",
     image: [...new Uint8Array(buffer)],
     max_tokens: 5,
   });
@@ -94,6 +104,14 @@ async function moderateFile(key: string, env: Env): Promise<boolean> {
 }
 
 async function deleteFile(key: string, env: Env): Promise<void> {
-  const client = getS3Client(env);
-  await client.send(new DeleteObjectCommand({ Bucket: env.BUCKET_NAME, Key: key }));
+  const aws = getAwsClient(env);
+  const deleteUrl = new URL(`${env.MINIO_ENDPOINT}/${env.BUCKET_NAME}/${key}`);
+
+  const signed = await aws.sign(
+    new Request(deleteUrl, { method: "DELETE" }),
+    { aws: { signQuery: true } }
+  );
+
+  const res = await fetch(signed.url, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete file: ${res.statusText}`);
 }

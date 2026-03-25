@@ -1,10 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingCart, X, Trash2, Plus, Minus, CreditCard } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard } from "lucide-react";
+import { useRef } from "react";
 import { useCart } from "../hooks/use-cart";
 import type { CartItem as CartItemType } from "../model/cart";
 import { Button } from "@/shared/ui/shadcn/button";
 import { cn } from "@/shared/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+} from "@/shared/ui/shadcn/sheet";
 
 interface CartProps {
   isOpen: boolean;
@@ -133,44 +140,10 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
 }
 
 export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const animTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const { items, totalCents, removeItem, updateQuantity, clearCart, getMaxQuantity } = useCart(editionId);
 
-  useEffect(() => {
-    if (animTimeoutRef.current) {
-      clearTimeout(animTimeoutRef.current);
-    }
-
-    if (isOpen) {
-      setIsVisible(true);
-      animTimeoutRef.current = setTimeout(() => {
-        setIsAnimating(true);
-      }, 10);
-    } else {
-      setIsAnimating(false);
-      animTimeoutRef.current = setTimeout(() => {
-        setIsVisible(false);
-      }, 300);
-    }
-
-    return () => {
-      if (animTimeoutRef.current) {
-        clearTimeout(animTimeoutRef.current);
-      }
-    };
-  }, [isOpen]);
-
   const handleClose = () => {
-    setIsAnimating(false);
-    if (animTimeoutRef.current) {
-      clearTimeout(animTimeoutRef.current);
-    }
-    animTimeoutRef.current = setTimeout(() => {
-      onClose();
-    }, 300);
+    onClose();
   };
 
   const priceFormatted = (cents: number) =>
@@ -179,28 +152,16 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
       currency: "BRL",
     }).format(cents / 100);
 
-  if (!isVisible) return null;
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end pointer-events-none">
-      {/* Overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/60 pointer-events-auto",
-          "transition-opacity duration-300 ease-out",
-          isAnimating ? "opacity-100" : "opacity-0"
-        )}
-        onClick={handleClose}
-      />
-
-      {/* Drawer */}
-      <div className={cn(
-        "relative min-w-[320px] max-w-100 w-full sm:w-90 bg-background h-full shadow-2xl flex flex-col pointer-events-auto",
-        "transition-transform duration-300 ease-out",
-        isAnimating ? "translate-x-0" : "translate-x-full"
-      )}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+      <SheetContent className="min-w-[320px] max-w-100 w-full sm:w-90 p-0 flex flex-col">
+        <SheetHeader className="flex-row items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
           <div className="flex items-center gap-3">
             <div className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -210,19 +171,12 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                 </span>
               )}
             </div>
-            <h2 className="font-semibold text-sm tracking-wide uppercase">Seu Carrinho</h2>
+            <SheetTitle className="font-semibold text-sm tracking-wide uppercase text-primary-foreground">
+              Seu Carrinho
+            </SheetTitle>
           </div>
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={handleClose}
-            className="h-8 w-8 bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground hover:text-primary border border-primary-foreground/30"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+        </SheetHeader>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto overscroll-contain bg-background">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground px-6 py-12">
@@ -254,9 +208,8 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
           )}
         </div>
 
-        {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t bg-secondary/20 p-4 space-y-4">
+          <SheetFooter className="border-t bg-secondary/20 p-4 space-y-4 flex-col">
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground uppercase tracking-wide">
                 <span>{items.reduce((acc, i) => acc + i.quantity, 0)} itens</span>
@@ -309,15 +262,18 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                     "hover:bg-destructive hover:text-destructive-foreground",
                     "transition-colors duration-300 rounded-sm"
                   )}
-                  onClick={clearCart}
+                  onClick={() => {
+                    clearCart();
+                    handleClose();
+                  }}
                 >
                   Limpar
                 </Button>
               </div>
             </div>
-          </div>
+          </SheetFooter>
         )}
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
