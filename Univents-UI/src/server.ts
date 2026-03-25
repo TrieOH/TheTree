@@ -86,6 +86,7 @@ async function moderateFile(key: string, env: Env): Promise<boolean> {
     prompt:
       "Does this image contain any explicit, violent, or inappropriate content? Reply with only 'safe' or 'unsafe'.",
     image: [...new Uint8Array(buffer)],
+    max_tokens: 5,
   });
 
   const result = (response as { description: string }).description.trim().toLowerCase();
