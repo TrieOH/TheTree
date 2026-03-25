@@ -18,6 +18,7 @@ import CheckoutPaymentForm from "@/features/payments/ui/checkout/CheckoutPayment
 import CheckoutCartChanged from "@/features/payments/ui/checkout/CheckoutCartChanged"
 import { editionQueryOptions } from "@/features/editions/api"
 import CheckoutPaymentFailed from "@/features/payments/ui/checkout/status/CheckoutPaymentFailed"
+import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading"
 
 export const Route = createFileRoute(
   "/events/$eventId/editions/$editionId/checkout",
@@ -287,11 +288,15 @@ function CheckoutPage() {
     return <CheckoutPaymentPending message={state.pendingMessage} />
   }
 
+  if (phase === "payment_processing" || phase === "awaiting_payment") {
+    return (
+      <WaveSpinnerLoading />
+    )
+  }
+
   // ── Main payment form ──────────────────────────────────────────────────────
   if (
-    (phase === "reservation_confirmed" ||
-      phase === "awaiting_payment" ||
-      phase === "payment_processing") && edition?.trie_payments_provider_public_key
+    phase === "reservation_confirmed" && edition?.trie_payments_provider_public_key
   ) {
     return (
       <CheckoutPaymentForm

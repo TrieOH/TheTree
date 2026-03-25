@@ -3,7 +3,6 @@ import {
   ChevronLeft,
   ChevronRight,
   PackageX,
-  Loader2,
   Ticket,
   Coins,
   Package,
@@ -15,6 +14,7 @@ import { ProductCard } from "./ProductCard";
 import type { ProductI, ProductType } from "../model";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Button } from "@/shared/ui/shadcn/button";
+import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
 
 interface ProductListProps {
   products: ProductI[];
@@ -147,9 +147,8 @@ export function ProductList({
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Carregando produtos...</span>
+        <div className="mt-12">
+          <WaveSpinnerLoading text="Carregando produtos..." />
         </div>
       ) : (
         <div className="space-y-4">

@@ -29,7 +29,7 @@ export type CheckoutPhase =
   | "reservation_confirmed"
   | "partial_reservation"
   | "reservation_failed"
-  | "awaiting_payment"
+  | "awaiting_payment" // Only front
   | "payment_processing"
   | "payment_failed"
   | "purchase_cancelled"
