@@ -539,14 +539,15 @@ function RouteComponent() {
     }
   }
 
-  const handleUploadAndModerate = async (file: File) => {
+  const handleUploadAndModerate = async (file: File, path?: string) => {
     setIsUploading(true);
     try {
       // 1. Get signed URL
+      const filename = path ? `${path}/${Date.now()}-${file.name}` : `${Date.now()}-${file.name}`;
       const uploadRes = await fetch("/storage/upload", {
         method: "POST",
         body: JSON.stringify({
-          filename: `${Date.now()}-${file.name}`,
+          filename,
           contentType: file.type,
           size: file.size,
         }),
@@ -582,7 +583,8 @@ function RouteComponent() {
 
   const handleAddGalleryImage = async (prod: ProductI, file: File) => {
     try {
-      const url = await handleUploadAndModerate(file);
+      const path = `events/${selectedEventId}/editions/${selectedEditionId}/products/${prod.id}`;
+      const url = await handleUploadAndModerate(file, path);
       if (selectedEventId && selectedEditionId) {
         await addImageToTheProductGalleryFn(selectedEventId, selectedEditionId, prod.id, { url });
         setProductCreated(true);
@@ -594,7 +596,8 @@ function RouteComponent() {
 
   const handleSetThumbnail = async (prod: ProductI, file: File) => {
     try {
-      const url = await handleUploadAndModerate(file);
+      const path = `events/${selectedEventId}/editions/${selectedEditionId}/products/${prod.id}`;
+      const url = await handleUploadAndModerate(file, path);
       if (selectedEventId && selectedEditionId) {
         await setProductThumbnailFn(selectedEventId, selectedEditionId, prod.id, { url });
         setProductCreated(true);
