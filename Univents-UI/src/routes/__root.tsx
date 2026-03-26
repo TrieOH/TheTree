@@ -21,9 +21,7 @@ import type { useAuth } from '@soramux/node-auth-sdk/react';
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
 import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
-import { SidebarInset, SidebarProvider } from '@/shared/ui/shadcn/sidebar'
-import { AppSidebar } from '@/widgets/ui/sidebar'
-import { AppTopbar } from '@/widgets/ui/topbar'
+import { NavigationDock } from '@/widgets/ui/navigation-dock'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -73,31 +71,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           exchangeURL={env.VITE_EXCHANGE_API_URL}
         >
           <AuthContextUpdater>
-            <SidebarProvider>
-              <AppSidebar />
-              <SidebarInset className='m-0! rounded-none! min-w-[320px]'>
-                <AppTopbar />
-
-                <PostHogProvider>
-                  <TanStackQueryProvider>
-                    {children}
-                    <TanStackDevtools
-                      config={{
-                        position: 'bottom-right',
-                      }}
-                      plugins={[
-                        {
-                          name: 'Tanstack Router',
-                          render: <TanStackRouterDevtoolsPanel />,
-                        },
-                        StoreDevtools,
-                        TanStackQueryDevtools,
-                      ]}
-                    />
-                  </TanStackQueryProvider>
-                </PostHogProvider>
-              </SidebarInset>
-            </SidebarProvider>
+            <NavigationDock />
+            <PostHogProvider>
+              <TanStackQueryProvider>
+                {children}
+                {/* <TanStackDevtools
+                  config={{
+                    position: 'bottom-right',
+                  }}
+                  plugins={[
+                    {
+                      name: 'Tanstack Router',
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                    StoreDevtools,
+                    TanStackQueryDevtools,
+                  ]}
+                /> */}
+              </TanStackQueryProvider>
+            </PostHogProvider>
           </AuthContextUpdater>
         </AuthProvider>
         <Scripts />

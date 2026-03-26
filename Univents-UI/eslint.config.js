@@ -46,7 +46,7 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js', '.content-collections/'],
+    ignores: ['eslint.config.js', 'prettier.config.js'],
   },
   {
     files: ['src/routes/**/*.{ts,tsx}'],

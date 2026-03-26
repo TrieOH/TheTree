@@ -9,15 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TempIndexRouteImport } from './routes/temp/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
-import { Route as BlogIndexRouteImport } from './routes/blog.index'
-import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdIndexRouteImport } from './routes/events/$eventId/editions/$editionId/index'
@@ -28,11 +24,6 @@ import { Route as AdminEventsEventIdEditionsEditionIdIndexRouteImport } from './
 import { Route as AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/checkpoints/index'
 import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId/editions/$editionId/callback.payment'
 
-const RssDotxmlRoute = RssDotxmlRouteImport.update({
-  id: '/rss.xml',
-  path: '/rss.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ComparativeRoute = ComparativeRouteImport.update({
   id: '/comparative',
   path: '/comparative',
@@ -41,11 +32,6 @@ const ComparativeRoute = ComparativeRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -61,16 +47,6 @@ const TempIndexRoute = TempIndexRouteImport.update({
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
@@ -129,12 +105,8 @@ const AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
-  '/rss.xml': typeof RssDotxmlRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog/': typeof BlogIndexRoute
   '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -149,12 +121,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
-  '/rss.xml': typeof RssDotxmlRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog': typeof BlogIndexRoute
   '/events': typeof EventsIndexRoute
   '/temp': typeof TempIndexRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -170,12 +138,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
-  '/rss.xml': typeof RssDotxmlRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/blog/': typeof BlogIndexRoute
   '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -192,12 +156,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
     | '/auth'
     | '/comparative'
-    | '/rss.xml'
-    | '/blog/$slug'
-    | '/blog/'
     | '/events/'
     | '/temp/'
     | '/admin/events/'
@@ -212,12 +172,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
     | '/auth'
     | '/comparative'
-    | '/rss.xml'
-    | '/blog/$slug'
-    | '/blog'
     | '/events'
     | '/temp'
     | '/admin/events'
@@ -232,12 +188,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/about'
     | '/auth'
     | '/comparative'
-    | '/rss.xml'
-    | '/blog/$slug'
-    | '/blog/'
     | '/events/'
     | '/temp/'
     | '/admin/events/'
@@ -253,12 +205,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   ComparativeRoute: typeof ComparativeRoute
-  RssDotxmlRoute: typeof RssDotxmlRoute
-  BlogSlugRoute: typeof BlogSlugRoute
-  BlogIndexRoute: typeof BlogIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   TempIndexRoute: typeof TempIndexRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
@@ -274,13 +222,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/rss.xml': {
-      id: '/rss.xml'
-      path: '/rss.xml'
-      fullPath: '/rss.xml'
-      preLoaderRoute: typeof RssDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/comparative': {
       id: '/comparative'
       path: '/comparative'
@@ -293,13 +234,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -321,20 +255,6 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof EventsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/': {
@@ -405,12 +325,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   ComparativeRoute: ComparativeRoute,
-  RssDotxmlRoute: RssDotxmlRoute,
-  BlogSlugRoute: BlogSlugRoute,
-  BlogIndexRoute: BlogIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   TempIndexRoute: TempIndexRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
