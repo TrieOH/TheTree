@@ -140,6 +140,11 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
     localStorage.setItem(IS_UP_TO_DATE_KEY, String(claims.is_up_to_date));
   }
 
+  authStore.set({
+    isAuthenticated: !!claims.access_data,
+    isUpToDate: claims.is_up_to_date ?? isUpToDate(),
+  });
+
   logger.log("Token claims saved");
 }
 

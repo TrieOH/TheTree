@@ -1,4 +1,3 @@
-// ---- Auth Store ----
 type AuthState = {
   isAuthenticated: boolean;
   isUpToDate: boolean;
