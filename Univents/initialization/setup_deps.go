@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 	"univents/internal/plataform/database"
+	"univents/internal/plataform/telemetry"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
@@ -17,7 +18,23 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
+
+// SimpleLogger is a custom interceptor
+type SimpleLogger struct{}
+
+// Intercept is called for responses sent with a context
+func (l *SimpleLogger) Intercept(ctx context.Context, rs *resp.Response, statusCode int) {
+	l.InterceptSimple(rs, statusCode)
+}
+
+// InterceptSimple is called for responses sent without a context
+func (l *SimpleLogger) InterceptSimple(rs *resp.Response, statusCode int) {
+	if statusCode == 500 {
+		telemetry.Log().Info("InternalServerError Response", zap.Any("response", rs))
+	}
+}
 
 func SetupFUN() {
 	module := viper.GetString("MODULE")
@@ -33,6 +50,11 @@ func SetupFUN() {
 		EnableSizeValidation: true,
 		DefaultModule:        module,
 	})
+
+	err := resp.AddInterceptor(&SimpleLogger{})
+	if err != nil {
+		log.Fatalf("Failed to add interceptor: %v", err)
+	}
 }
 
 func SetupPayments(app *UniventsApp) {
@@ -172,6 +194,7 @@ func SetupGoAuth(app *UniventsApp) {
 				ProductsPublish,
 				ProductsDelete,
 				ProductsRestore,
+				ProductsEdit,
 				CheckpointsCreate,
 				CheckpointsRead,
 				TicketsCreate,
@@ -323,6 +346,14 @@ var (
 		Meta: map[string]interface{}{
 			"color": "#10b981",
 			"icon":  "RotateCcw",
+		},
+	}
+	ProductsEdit = goauth.PermissionDefinition{
+		Object: "products",
+		Action: "edit",
+		Meta: map[string]interface{}{
+			"color": "#6366f1",
+			"icon":  "PenLine",
 		},
 	}
 	CheckpointsCreate = goauth.PermissionDefinition{

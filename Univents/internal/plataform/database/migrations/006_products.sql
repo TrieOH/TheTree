@@ -7,19 +7,6 @@ CREATE TYPE product_type AS ENUM (
     'bundle'        -- composite product
 );
 
-CREATE TYPE product_status AS ENUM (
-    'draft',
-    'available',
-    'sold_out',
-    'unavailable'
-);
-
--- CREATE TYPE bundle_discount_type AS ENUM (
---    'percentage',
---    'fixed_amount',
---    'none'
---);
-
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     scope_id UUID NOT NULL,
@@ -41,9 +28,12 @@ CREATE TABLE products (
     price_cents INT NOT NULL DEFAULT 0, -- 0 = free
 
     -- visibility
-    status product_status NOT NULL DEFAULT 'draft',
+    status TEXT NOT NULL DEFAULT 'draft',
     available_from TIMESTAMPTZ NULL,
     available_until TIMESTAMPTZ NULL,
+
+    CONSTRAINT chk_product_status
+        CHECK (status IN ('draft', 'available', 'sold_out', 'unavailable', 'hidden')),
 
     -- inventory
     has_inventory BOOLEAN NOT NULL DEFAULT FALSE,
@@ -90,14 +80,22 @@ CREATE TABLE products (
     -- pickup_window_start TIMESTAMPTZ NULL,
     -- pickup_window_end TIMESTAMPTZ NULL,
 
+    -- media
+    thumbnail_url TEXT NULL,
+    gallery_urls TEXT[] NULL,
+
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ NULL
+    deleted_at TIMESTAMPTZ NULL,
+    hard_deleted_at TIMESTAMPTZ NULL
 );
 
 CREATE INDEX idx_products_edition ON products(edition_id, status, type)
     WHERE deleted_at IS NULL;
+
+CREATE INDEX idx_products_pending_hard_delete ON products(deleted_at)
+    WHERE deleted_at IS NOT NULL AND hard_deleted_at IS NULL;
 
 -- Bundle items (what's inside)
 CREATE TABLE product_bundle_components (
@@ -146,7 +144,7 @@ CREATE TABLE purchases (
     user_id UUID NOT NULL,
 
     session_id UUID NULL,
-    
+
     status purchase_status NOT NULL DEFAULT 'pending',
 
     -- totals
@@ -210,7 +208,7 @@ DROP INDEX IF EXISTS idx_purchases_edition;
 DROP INDEX IF EXISTS idx_purchases_user;
 DROP TABLE IF EXISTS purchases;
 DROP TYPE IF EXISTS purchase_status;
+DROP INDEX IF EXISTS idx_products_pending_hard_delete;
 DROP INDEX IF EXISTS idx_products_edition;
 DROP TABLE IF EXISTS products;
-DROP TYPE IF EXISTS product_status;
 DROP TYPE IF EXISTS product_type;

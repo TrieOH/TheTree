@@ -134,7 +134,6 @@ func NewEdition(creatorID uuid.UUID, spec CreateEditionSpec) (*Edition, error) {
 }
 
 func (e *Edition) validate() error {
-	now := time.Now()
 	return validation.Run(
 		validation.RequireUUID("edition", "event_id", e.EventID),
 		validation.RequireUUID("edition", "created_by", e.CreatedBy),
@@ -142,8 +141,6 @@ func (e *Edition) validate() error {
 		validation.RequireString("edition", "timezone", e.Timezone),
 		validation.RequireTime("edition", "starts_at", e.StartsAt),
 		validation.RequireTime("edition", "ends_at", e.EndsAt),
-		validation.Assert("edition", e.StartsAt.After(now), "start at must not be before now, legacy editions are not supported for now"),
-		validation.Assert("edition", e.EndsAt.After(now), "ends at must not be before now, legacy editions are not supported for now"),
 		validation.Assert("edition", e.StartsAt.Before(e.EndsAt), "edition start must be before edition end"),
 		validation.AssertIf("edition",
 			func() bool { return e.RegistrationOpensAt != nil && e.RegistrationClosesAt != nil },

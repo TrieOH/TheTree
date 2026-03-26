@@ -47,7 +47,7 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	}
 
 	if err = uc.minio.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{}); err != nil {
-		return nil, errx.Internal("product").SetMessage("failed to delete image from storage")
+		return nil, errx.Internal("product").SetMessage("failed to delete image from storage: " + err.Error())
 	}
 
 	product, err = uc.products.RemoveGalleryImage(ctx, product.ID, url)
