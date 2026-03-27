@@ -2,9 +2,11 @@ import z from "zod";
 
 export const eventCreateSchema = z.object({
   organization_id: z.uuid().optional().nullable(),
-  name: z.string().min(2),
+  name: z.string({ error: "Name is required" })
+    .min(2, "Name must be at least 2 characters long."),
   acronym: z.string().optional().nullable(),
-  slug: z.string().min(2),
+  slug: z.string({ error: "Slug is required" })
+    .min(2, "Slug must be at least 2 characters long."),
   tagline: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   is_series: z.boolean(),
@@ -14,7 +16,6 @@ export const eventCreateSchema = z.object({
 })
 
 export type EventCreateI = z.infer<typeof eventCreateSchema>
-
 
 interface SocialLinks {
   twitter?: string

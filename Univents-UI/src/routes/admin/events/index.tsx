@@ -1,192 +1,246 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import React, { useState } from 'react'
-import type { EventCreateI, EventI } from '@/features/events/model'
-import { createEventFn, getOwnEventsFn, publishEventFn } from '@/features/events/api'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
-  AdminShell, PageHeader, FormField, ErrorMsg, StatusBadge,
-  EmptyState, cardClass, inputClass, btnPrimary, btnSecondary
-} from '@/shared/ui'
+  Plus,
+  ShieldCheck,
+  MoreVertical,
+  Calendar,
+} from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import type { EventCreateI, EventI } from '@/features/events/model';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/shared/ui/shadcn/drawer'
+import { cn } from '@/shared/lib/utils'
+import { eventCreateSchema } from '@/features/events/model'
+import { FormDrawer } from '@/widgets/form/ui/form-drawer'
+import { AlertDrawer } from '@/widgets/ui/alert-drawer'
+import { eventFields } from '@/features/events/model/field'
+import { ownEventsQueryOptions } from '@/features/events/api'
+import AdminEventCard from '@/features/events/ui/AdminEventCard'
 
 export const Route = createFileRoute('/admin/events/')({
-  component: RouteComponent,
+  component: AdminEventsPage,
 })
 
-const INITIAL_FORM: EventCreateI = {
-  organization_id: undefined,
-  name: '',
-  acronym: undefined,
-  slug: '',
-  tagline: undefined,
-  description: undefined,
-  is_series: false,
-  logo_url: undefined,
-  banner_url: undefined,
-  contact_email: '',
-}
-
-function RouteComponent() {
-  const [events, setEvents] = useState<EventI[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<EventCreateI>(INITIAL_FORM)
-  const [error, setError] = useState<string | null>(null)
+function AdminEventsPage() {
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<EventI | null>(null)
+  const [deletingEvent, setDeletingEvent] = useState<EventI | null>(null)
+  const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
+  const [isActionsOpen, setIsActionsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [refresh, setRefresh] = useState(0)
 
-  React.useEffect(() => {
-    getOwnEventsFn().then(setEvents)
-  }, [refresh])
+  const { data: events = [] } = useQuery(ownEventsQueryOptions())
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const t = e.target as HTMLInputElement
-    setForm(f => ({ ...f, [t.name]: t.type === 'checkbox' ? t.checked : t.value }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+  const handleCreate = (data: EventCreateI) => {
     setLoading(true)
-    try {
-      const res = await createEventFn(form)
-      if (res.success) {
-        setForm(INITIAL_FORM)
-        setShowForm(false)
-        setRefresh(r => r + 1)
-      } else throw new Error(res.message)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar evento')
-    } finally {
-      setLoading(false)
-    }
+    console.log('create', data)
+    setLoading(false)
   }
+
+  const handleEdit = (data: EventCreateI) => {
+    setLoading(true)
+    console.log('edit', data)
+    setLoading(false)
+    setEditingEvent(null)
+  }
+
+  const handleDelete = () => {
+    if (!deletingEvent) return
+    console.log('delete', deletingEvent.id)
+    setDeletingEvent(null)
+  }
+
+  const handlePublish = () => {
+    if (!publishingEvent) return
+    console.log('publish', publishingEvent.id)
+    setPublishingEvent(null)
+  }
+
+  const getInitialData = (event: EventI | null): Partial<EventCreateI> => event ? {
+    name: event.name,
+    slug: event.slug,
+    acronym: event.acronym,
+    contact_email: event.contact_email ?? undefined,
+    tagline: event.tagline,
+    description: event.description,
+    is_series: event.is_series,
+    logo_url: event.logo_url,
+    banner_url: event.banner_url,
+  } : {}
 
   return (
-    <AdminShell>
-      <PageHeader
-        title="Eventos"
-        subtitle={`${events.length} evento${events.length !== 1 ? 's' : ''}`}
-        action={
-          <button className={btnPrimary} onClick={() => { setShowForm(s => !s); }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Novo evento
-          </button>
-        }
+    <div className="min-h-screen bg-background relative pb-20 md:pb-0">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2 h-14">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground shrink-0 flex items-center gap-2">
+              Eventos
+              <span className="text-sm font-normal text-muted-foreground">({events.length})</span>
+            </h1>
+
+            <div className="hidden sm:flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => { setIsCreateOpen(true); }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg",
+                  "bg-primary text-primary-foreground hover:bg-primary/90",
+                  "text-sm font-medium"
+                )}
+              >
+                <Plus className="w-4 h-4" />
+                Novo evento
+              </button>
+            </div>
+
+            <div className="sm:hidden flex items-center gap-1 ml-auto">
+              <Drawer open={isActionsOpen} onOpenChange={setIsActionsOpen}>
+                <DrawerTrigger asChild>
+                  <button className={cn("flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted")}>
+                    <MoreVertical className="w-5 h-5 text-foreground" />
+                  </button>
+                </DrawerTrigger>
+                <DrawerContent className="z-60 rounded-t-2xl">
+                  <DrawerHeader className="pb-4 border-b">
+                    <DrawerTitle className="text-base font-semibold">Ações</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="p-2 pb-8 space-y-1">
+                    <button
+                      onClick={() => { setIsActionsOpen(false); setIsCreateOpen(true) }}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Plus className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="font-medium">Novo evento</span>
+                    </button>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+            </div>
+
+            <Link
+              to="/events"
+              className={cn(
+                "group relative flex items-center justify-center",
+                "w-9 h-9 rounded-lg transition-all",
+                "bg-primary text-primary-foreground",
+                "hover:bg-primary/90",
+                "shrink-0"
+              )}
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span
+                className={cn(
+                  "pointer-events-none absolute -bottom-9 right-0",
+                  "whitespace-nowrap rounded-md px-2 py-1",
+                  "bg-popover text-popover-foreground border text-xs shadow-md",
+                  "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
+                  "transition-all"
+                )}>
+                Sair do admin
+              </span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+        <AnimatePresence mode="wait">
+          {events.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center py-24 space-y-6"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center">
+                <Calendar className="w-10 h-10 text-muted-foreground/30" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-medium">Nenhum evento ainda</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Crie seu primeiro evento para começar a gerenciar inscrições e programação.
+                </p>
+              </div>
+              <button
+                onClick={() => { setIsCreateOpen(true); }}
+                className={cn(
+                  "mt-2 px-5 py-2.5 rounded-lg",
+                  "bg-primary text-primary-foreground hover:bg-primary/90",
+                  "text-sm font-medium",
+                  "active:scale-95 transition-all"
+                )}
+              >
+                Criar evento
+              </button>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {events.map((event, idx) => (
+                <AdminEventCard
+                  key={event.id}
+                  event={event}
+                  index={idx}
+                  onEdit={setEditingEvent}
+                  onDelete={setDeletingEvent}
+                  onPublish={setPublishingEvent}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <FormDrawer
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        title="Novo evento"
+        fields={eventFields}
+        schema={eventCreateSchema}
+        onSubmit={handleCreate}
+        submitLabel="Criar evento"
+        loading={loading}
       />
 
-      {/* Create form */}
-      {showForm && (
-        <div className="bg-white border border-gray-100 rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900 mb-5">Criar evento</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Nome" required>
-              <input className={inputClass} name="name" value={form.name} onChange={handleChange} placeholder="Ex: TechConf" />
-            </FormField>
-            <FormField label="Slug" required>
-              <input className={inputClass} name="slug" value={form.slug} onChange={handleChange} placeholder="ex: tech-conf" />
-            </FormField>
-            <FormField label="Sigla">
-              <input className={inputClass} name="acronym" value={form.acronym ?? ''} onChange={handleChange} placeholder="TC" />
-            </FormField>
-            <FormField label="E-mail de contato" required>
-              <input className={inputClass} type="email" name="contact_email" value={form.contact_email ?? ''} onChange={handleChange} placeholder="contato@email.com" />
-            </FormField>
-            <FormField label="Tagline">
-              <input className={inputClass} name="tagline" value={form.tagline ?? ''} onChange={handleChange} placeholder="Uma frase curta sobre o evento" />
-            </FormField>
-            <FormField label="Organization ID">
-              <input className={inputClass} name="organization_id" value={form.organization_id ?? ''} onChange={handleChange} />
-            </FormField>
-            <div className="sm:col-span-2">
-              <FormField label="Descrição">
-                <textarea className={inputClass + ' resize-none'} rows={3} name="description" value={form.description ?? ''} onChange={handleChange} placeholder="Descreva o evento..." />
-              </FormField>
-            </div>
-            <div className="sm:col-span-2">
-              <FormField label="Logo URL">
-                <input className={inputClass} name="logo_url" value={form.logo_url ?? ''} onChange={handleChange} />
-              </FormField>
-            </div>
-            <div className="sm:col-span-2">
-              <FormField label="Banner URL">
-                <input className={inputClass} name="banner_url" value={form.banner_url ?? ''} onChange={handleChange} />
-              </FormField>
-            </div>
-            <div className="sm:col-span-2 flex items-center gap-2">
-              <input
-                type="checkbox" id="is_series" name="is_series"
-                checked={form.is_series}
-                onChange={handleChange}
-                className="w-4 h-4 rounded border-gray-300 accent-gray-900"
-              />
-              <label htmlFor="is_series" className="text-sm text-gray-600">É uma série de eventos</label>
-            </div>
+      <FormDrawer
+        open={!!editingEvent}
+        onOpenChange={(open) => {
+          if (!open) setEditingEvent(null)
+        }}
+        title="Editar evento"
+        fields={eventFields}
+        schema={eventCreateSchema}
+        onSubmit={handleEdit}
+        defaultValues={getInitialData(editingEvent)}
+        submitLabel="Salvar alterações"
+        loading={loading}
+      />
 
-            <ErrorMsg msg={error} />
+      <AlertDrawer
+        open={!!publishingEvent}
+        onOpenChange={() => { setPublishingEvent(null); }}
+        title="Publicar evento?"
+        description={`Ao publicar "${publishingEvent?.name}", ele ficará visível para o público.`}
+        confirmLabel="Publicar"
+        onConfirm={handlePublish}
+        variant="success"
+      />
 
-            <div className="sm:col-span-2 flex gap-2 pt-2">
-              <button type="submit" className={btnPrimary} disabled={loading}>
-                {loading ? 'Criando...' : 'Criar evento'}
-              </button>
-              <button type="button" className={btnSecondary} onClick={() => { setShowForm(false); }}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Events list */}
-      {events.length === 0 ? (
-        <EmptyState
-          icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" /></svg>}
-          title="Nenhum evento ainda"
-          description="Crie seu primeiro evento para começar."
-        />
-      ) : (
-        <div className="grid gap-3">
-          {events.map(ev => (
-            <div key={ev.id} className={cardClass + ' flex items-center justify-between'}>
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 shrink-0 text-xs font-bold">
-                  {ev.acronym ? ev.acronym.slice(0, 2).toUpperCase() : ev.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 truncate">{ev.name}</span>
-                    <StatusBadge status={ev.status} />
-                    {ev.is_series && (
-                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">série</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 truncate">{ev.slug} · {ev.contact_email} · {ev.editions_count} edição{ev.editions_count !== 1 ? 'ões' : ''}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 ml-4">
-                {ev.status === 'draft' && (
-                  <button
-                    className={btnSecondary + ' text-xs py-1.5'}
-                    onClick={async () => { await publishEventFn(ev.id); setRefresh(r => r + 1) }}
-                  >
-                    Publicar
-                  </button>
-                )}
-                <Link
-                  to="/admin/events/$eventId/editions"
-                  params={{ eventId: ev.id }}
-                  className={btnPrimary + ' text-xs py-1.5'}
-                >
-                  Ver edições
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </AdminShell>
+      <AlertDrawer
+        open={!!deletingEvent}
+        onOpenChange={() => { setDeletingEvent(null); }}
+        title="Deletar evento?"
+        description={`Tem certeza que deseja deletar "${deletingEvent?.name}"?`}
+        confirmLabel="Deletar"
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
+    </div>
   )
 }
