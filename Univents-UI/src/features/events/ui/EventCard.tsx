@@ -15,7 +15,7 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
 
   const handleClick = () => {
     void navigate({
-      to: '/events/$eventId/editions',
+      to: '/events/$eventId',
       params: { eventId: event.id }
     })
   }

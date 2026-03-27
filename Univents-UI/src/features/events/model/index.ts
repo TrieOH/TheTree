@@ -23,6 +23,8 @@ interface SocialLinks {
   website?: string
 }
 
+export type EventStatusI = 'draft' | 'active' | 'archived' | 'discontinued'
+
 export interface EventI {
   id: string;
   owner_id: string | null;
@@ -41,7 +43,7 @@ export interface EventI {
   gallery_urls: string[];
   contact_email: string | null;
   social_links: SocialLinks | null;
-  status: "draft" | "active" | "archived" | "discontinued";
+  status: EventStatusI;
   created_by: string;
   created_at: string;
   updated_at: string;

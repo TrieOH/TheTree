@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TempIndexRouteImport } from './routes/temp/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdIndexRouteImport } from './routes/events/$eventId/editions/$editionId/index'
@@ -47,6 +48,11 @@ const TempIndexRoute = TempIndexRouteImport.update({
 const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
+  id: '/events/$eventId/',
+  path: '/events/$eventId/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
+  '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/temp': typeof TempIndexRoute
   '/admin/events': typeof AdminEventsIndexRoute
+  '/events/$eventId': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
+  '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/temp/'
     | '/admin/events/'
+    | '/events/$eventId/'
     | '/events/$eventId/editions/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/events'
     | '/temp'
     | '/admin/events'
+    | '/events/$eventId'
     | '/events/$eventId/editions'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/events/'
     | '/temp/'
     | '/admin/events/'
+    | '/events/$eventId/'
     | '/events/$eventId/editions/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   EventsIndexRoute: typeof EventsIndexRoute
   TempIndexRoute: typeof TempIndexRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+  EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
   EventsEventIdEditionsIndexRoute: typeof EventsEventIdEditionsIndexRoute
   EventsEventIdEditionsEditionIdCheckoutRoute: typeof EventsEventIdEditionsEditionIdCheckoutRoute
   EventsEventIdEditionsEditionIdProductsRoute: typeof EventsEventIdEditionsEditionIdProductsRoute
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId/': {
+      id: '/events/$eventId/'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId/'
+      preLoaderRoute: typeof EventsEventIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/events/': {
@@ -330,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsIndexRoute: EventsIndexRoute,
   TempIndexRoute: TempIndexRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
+  EventsEventIdIndexRoute: EventsEventIdIndexRoute,
   EventsEventIdEditionsIndexRoute: EventsEventIdEditionsIndexRoute,
   EventsEventIdEditionsEditionIdCheckoutRoute:
     EventsEventIdEditionsEditionIdCheckoutRoute,

@@ -1,11 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Search, ChevronDown, X } from 'lucide-react'
+import { Search, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { eventsQueryOptions } from '@/features/events/api'
 import { cn } from '@/shared/lib/utils'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/shared/ui/shadcn/drawer'
 
 export const Route = createFileRoute('/events/')({
   component: EventsPage,
@@ -23,12 +30,11 @@ function EventsPage() {
   const { data: events } = useSuspenseQuery(eventsQueryOptions())
   const [filter, setFilter] = useState<'all' | 'series'>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const isAdmin = true
 
   const filteredEvents = filter === 'series'
     ? events.filter(e => e.is_series)
     : events
-
-  const currentLabel = filterOptions.find(o => o.value === filter)?.label
 
   const handleFilterSelect = (value: 'all' | 'series') => {
     setFilter(value)
@@ -36,37 +42,24 @@ function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <AnimatePresence>
-        {isFilterOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => { setIsFilterOpen(false); }}
-            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 sm:hidden"
-          />
-        )}
-      </AnimatePresence>
-
+    <div className="min-h-screen bg-background relative pb-20 md:pb-0">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 h-14">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground shrink-0">
+          <div className="flex items-center justify-between gap-2 h-14">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground shrink-0 flex items-center gap-2">
               Eventos
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
+              <span className="text-sm font-normal text-muted-foreground">
                 ({filteredEvents.length})
               </span>
             </h1>
 
-            {/* Desktop: Tabs */}
+            {/* Desktop */}
             <nav className="hidden sm:flex items-center bg-muted rounded-lg p-1 ml-auto">
               {filterOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => { setFilter(option.value); }}
+                  onClick={() => { setFilter(option.value) }}
                   className={cn(
                     "px-3 py-1.5 text-sm rounded-md transition-all whitespace-nowrap",
                     filter === option.value
@@ -79,84 +72,102 @@ function EventsPage() {
               ))}
             </nav>
 
-            <div className="sm:hidden ml-auto">
-              <button
-                onClick={() => { setIsFilterOpen(true); }}
-                className="flex items-center gap-2 bg-muted hover:bg-muted/80 active:bg-muted/60 transition-colors rounded-lg px-3 py-2"
-                aria-expanded={isFilterOpen}
-                aria-haspopup="listbox"
-              >
-                <span className="text-sm font-medium text-foreground">
-                  {currentLabel === 'Todos os eventos' ? 'Todos' : 'Séries'}
-                </span>
-                <ChevronDown
+            {/* Mobile */}
+            <div className="sm:hidden flex items-center gap-1 ml-auto">
+              <Drawer open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <DrawerTrigger asChild>
+                  <button
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 rounded-lg transition-colors",
+                      "hover:bg-muted active:bg-muted/60",
+                      isFilterOpen && "bg-muted"
+                    )}
+                    aria-label="Filtrar eventos"
+                  >
+                    <SlidersHorizontal className="w-5 h-5 text-foreground" />
+                  </button>
+                </DrawerTrigger>
+
+                <DrawerContent className="z-60 rounded-t-2xl border-t border-border bg-card">
+                  <DrawerHeader className="pb-4 border-b border-border">
+                    <DrawerTitle className="text-base font-semibold text-left">
+                      Filtrar eventos
+                    </DrawerTitle>
+                  </DrawerHeader>
+
+                  <div className="p-2 pb-8 space-y-1">
+                    {filterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => { handleFilterSelect(option.value) }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors",
+                          filter === option.value
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-foreground hover:bg-muted"
+                        )}
+                      >
+                        <span>{option.label}</span>
+                        {filter === option.value && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex items-center justify-center w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs"
+                          >
+                            ✓
+                          </motion.span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </DrawerContent>
+              </Drawer>
+
+              {isAdmin && (
+                <Link
+                  to="/admin/events"
                   className={cn(
-                    "w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200",
-                    isFilterOpen && "rotate-180"
+                    "flex items-center justify-center",
+                    "w-9 h-9 rounded-lg transition-all duration-200",
+                    "text-muted-foreground hover:text-foreground",
+                    "hover:bg-muted active:bg-muted/60"
                   )}
-                />
-              </button>
+                  aria-label="Painel administrativo"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                </Link>
+              )}
             </div>
+
+            {/* Desktop: Admin */}
+            {isAdmin && (
+              <Link
+                to="/admin/events"
+                className={cn(
+                  "hidden sm:flex group relative items-center justify-center",
+                  "w-9 h-9 rounded-lg transition-all duration-200",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-muted active:bg-muted/60",
+                  "shrink-0"
+                )}
+                aria-label="Painel administrativo"
+              >
+                <ShieldCheck className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                <span className={cn(
+                  "pointer-events-none absolute -bottom-9 right-0",
+                  "whitespace-nowrap rounded-md px-2 py-1",
+                  "bg-popover text-popover-foreground border border-border",
+                  "text-xs shadow-md",
+                  "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
+                  "transition-all duration-150"
+                )}>
+                  Modo admin
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
-
-      <AnimatePresence>
-        {isFilterOpen && (
-          <>
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card border-t border-border rounded-t-2xl shadow-2xl"
-            >
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
-              </div>
-
-              <div className="flex items-center justify-between px-4 pb-4 border-b border-border">
-                <h2 className="text-base font-semibold text-foreground">Filtrar eventos</h2>
-                <button
-                  onClick={() => { setIsFilterOpen(false); }}
-                  className="p-2 -mr-2 hover:bg-muted rounded-full transition-colors"
-                  aria-label="Fechar filtros"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-
-              <div className="p-2 pb-8" role="listbox">
-                {filterOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => { handleFilterSelect(option.value); }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors",
-                      filter === option.value
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-foreground hover:bg-muted"
-                    )}
-                    role="option"
-                    aria-selected={filter === option.value}
-                  >
-                    <span>{option.label}</span>
-                    {filter === option.value && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center justify-center w-5 h-5 bg-primary text-primary-foreground rounded-full text-xs"
-                      >
-                        ✓
-                      </motion.span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {filteredEvents.length > 0 ? (
