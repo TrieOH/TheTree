@@ -25,11 +25,12 @@ export default function WaveText({
   props.current = { duration, delay, lift, waveWidth };
 
   const frame = useCallback((ts: number) => {
-    if (!startTime.current) startTime.current = ts;
+    startTime.current ??= ts
 
-    const { duration, lift, waveWidth, delay } = props.current;
-    const halfW = waveWidth / 100 / 2;
-    const t = Math.min((ts - startTime.current) / duration, 1);
+    const p = props.current;
+
+    const halfW = p.waveWidth / 100 / 2;
+    const t = Math.min((ts - startTime.current) / p.duration, 1);
     const waveCenter = -halfW + t * (1 + 2 * halfW);
     const els = spans.current;
     const n = els.length - 1;

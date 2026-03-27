@@ -20,6 +20,7 @@ import {
 } from '@/shared/lib/date'
 import { connectEditionSellerToWorkspaceFn, disconnectEditionSellerToWorkspaceFn } from '@/features/payments/api'
 import { env } from '@/env'
+import { uploadAndModerateFile } from '@/features/storage/api'
 
 export const Route = createFileRoute('/temp/')({
   component: RouteComponent,
@@ -227,12 +228,19 @@ function RouteComponent() {
   const handleEditionChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
-    const target = e.target as HTMLInputElement | HTMLSelectElement
-    const { name, value } = target
+    const { name, value } = e.target
     setEditionForm((f) => ({
       ...f,
       [name]: value,
-    } as unknown as EditionCreateI))
+    }))
+  }
+
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) return err.message;
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+      return (err as { message: string }).message;
+    }
+    return 'request failed';
   }
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -247,13 +255,7 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setError(errorMessage);
+      setError(getErrorMessage(err));
     }
 
   }
@@ -331,13 +333,7 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setEditionError(errorMessage);
+      setEditionError(getErrorMessage(err));
     }
   }
 
@@ -351,7 +347,7 @@ function RouteComponent() {
     setActivityForm((f) => ({
       ...f,
       [name]: type === 'checkbox' ? checked : value,
-    } as unknown as ActivityCreateI))
+    }))
   }
 
   const handleActivitySubmit = async (
@@ -383,13 +379,7 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setActivityError(errorMessage);
+      setActivityError(getErrorMessage(err));
     }
   }
 
@@ -427,13 +417,7 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setTicketError(errorMessage);
+      setTicketError(getErrorMessage(err));
     }
   }
 
@@ -447,7 +431,7 @@ function RouteComponent() {
     setProductForm((f) => ({
       ...f,
       [name]: type === 'checkbox' ? checked : value,
-    } as unknown as ProductCreateI))
+    }))
   }
 
   const handleProductSubmit = async (
@@ -480,26 +464,19 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setProductError(errorMessage);
+      setProductError(getErrorMessage(err));
     }
   }
 
   const handleChangeCheckpoint = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const target = e.target as HTMLInputElement | HTMLSelectElement
-    const { name, value } = target
+    const { name, value } = e.target
 
     setCheckpointForm((f) => ({
       ...f,
       [name]: value,
-    } as unknown as CheckpointCreateI))
+    }))
   }
 
   const handleCheckpointSubmit = async (
@@ -529,81 +506,39 @@ function RouteComponent() {
         throw new Error(res.message)
       }
     } catch (err: unknown) {
-      let errorMessage = 'request failed';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        errorMessage = (err as { message: string }).message;
-      }
-      setCheckpointError(errorMessage);
+      setCheckpointError(getErrorMessage(err));
     }
   }
 
-  const handleUploadAndModerate = async (file: File, path?: string) => {
+  const handleAddGalleryImage = async (prod: ProductI, file: File) => {
     setIsUploading(true);
     try {
-      // 1. Get signed URL
-      const filename = path ? `${path}/${Date.now()}-${file.name}` : `${Date.now()}-${file.name}`;
-      const uploadRes = await fetch("/storage/upload", {
-        method: "POST",
-        body: JSON.stringify({
-          filename,
-          contentType: file.type,
-          size: file.size,
-        }),
-      });
-      if (!uploadRes.ok) throw new Error("Failed to get upload URL");
-      const { uploadUrl, key, publicUrl } = (await uploadRes.json()) as { uploadUrl: string; key: string; publicUrl: string };
-
-      // 2. Upload to MinIO
-      const putRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-      if (!putRes.ok) throw new Error("Failed to upload file");
-
-      // 3. Moderate
-      const modRes = await fetch("/storage/moderate", {
-        method: "POST",
-        body: JSON.stringify({ key }),
-      });
-      if (!modRes.ok) throw new Error("Failed to moderate file");
-      const { approved } = (await modRes.json()) as { approved: boolean };
-
-      if (!approved) {
-        throw new Error("Image not approved by moderation");
+      const path = `events/${selectedEventId}/editions/${selectedEditionId}/products/${prod.id}`;
+      const url = await uploadAndModerateFile(file, path);
+      if (selectedEventId && selectedEditionId) {
+        await addImageToTheProductGalleryFn(selectedEventId, selectedEditionId, prod.id, { url });
+        setProductCreated(true);
       }
-
-      return publicUrl;
+    } catch (err: unknown) {
+      alert(getErrorMessage(err));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleAddGalleryImage = async (prod: ProductI, file: File) => {
-    try {
-      const path = `events/${selectedEventId}/editions/${selectedEditionId}/products/${prod.id}`;
-      const url = await handleUploadAndModerate(file, path);
-      if (selectedEventId && selectedEditionId) {
-        await addImageToTheProductGalleryFn(selectedEventId, selectedEditionId, prod.id, { url });
-        setProductCreated(true);
-      }
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
   const handleSetThumbnail = async (prod: ProductI, file: File) => {
+    setIsUploading(true);
     try {
       const path = `events/${selectedEventId}/editions/${selectedEditionId}/products/${prod.id}`;
-      const url = await handleUploadAndModerate(file, path);
+      const url = await uploadAndModerateFile(file, path);
       if (selectedEventId && selectedEditionId) {
         await setProductThumbnailFn(selectedEventId, selectedEditionId, prod.id, { url });
         setProductCreated(true);
       }
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(getErrorMessage(err));
+    } finally {
+      setIsUploading(false);
     }
   };
 

@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { ProductCard } from "./ProductCard";
+import { ProductDetails } from "./ProductDetails";
 import type { ProductI, ProductType } from "../model";
 import { Input } from "@/shared/ui/shadcn/input";
 import { Button } from "@/shared/ui/shadcn/button";
 import WaveSpinnerLoading from "@/shared/ui/loader/WaveSpinnerLoading";
-import { ProductDetails } from "./ProductDetails";
 
 interface ProductListProps {
   products: ProductI[];
@@ -175,7 +175,7 @@ export function ProductList({
                       key={product.id}
                       product={product}
                       inventoryRemaining={inventory[product.id] ?? product.inventory_remaining}
-                      onProductSelect={() => handleProductSelect(product)}
+                      onProductSelect={() => { handleProductSelect(product); }}
                     />
                   ))}
                 </div>
@@ -254,7 +254,9 @@ export function ProductList({
       </div>
       <ProductDetails
         isOpen={!!selectedProduct}
-        onOpenChange={(isOpen) => !isOpen && handleDetailsClose()}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) handleDetailsClose()
+        }}
         product={selectedProduct}
         inventoryRemaining={selectedProduct ? inventory[selectedProduct.id] ?? selectedProduct.inventory_remaining : 0}
       />

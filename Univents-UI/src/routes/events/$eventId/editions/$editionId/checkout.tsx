@@ -96,7 +96,7 @@ function CheckoutPage() {
         const snapshot = JSON.parse(raw) as SessionSnapshot
         if (cartMatchesSnapshot(snapshot)) {
           // Cart unchanged — resume silently.
-          resumeSession(snapshot.sessionId)
+          void resumeSession(snapshot.sessionId)
           return
         }
         // Cart changed — hold the snapshot and ask the user.
@@ -110,19 +110,16 @@ function CheckoutPage() {
     }
 
     // No session or malformed — start fresh.
-    if (items.length > 0) {
-      buyRequest(cartSnapshot)
-    } else {
-      router.history.back()
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (items.length > 0) void buyRequest(cartSnapshot)
+    else router.history.back()
+  }, [])
 
   // Persist session ID + cart snapshot whenever the session is established.
   useEffect(() => {
     if (!state.sessionId) return
     const snapshot: SessionSnapshot = { sessionId: state.sessionId, items: cartSnapshot }
     sessionStorage.setItem(sessionKey, JSON.stringify(snapshot))
-  }, [state.sessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.sessionId])
 
   // When the server confirms the reservation, sync the cart with the
   // exact items/quantities/prices it reserved — backend is the source of truth.
@@ -138,7 +135,7 @@ function CheckoutPage() {
         has_inventory: true,
       }))
     )
-  }, [state.phase]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.phase])
 
   // Clear session when order is confirmed.
   useEffect(() => {
@@ -146,19 +143,17 @@ function CheckoutPage() {
       sessionStorage.removeItem(sessionKey)
       clearCart()
     }
-  }, [state.phase, sessionKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.phase, sessionKey])
 
   // session_expired → drop stale session and immediately start a fresh purchase.
   useEffect(() => {
     if (state.phase !== "session_expired") return
     sessionStorage.removeItem(sessionKey)
     reset()
-    if (items.length > 0) {
-      buyRequest(cartSnapshot)
-    } else {
-      router.history.back()
-    }
-  }, [state.phase]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (items.length > 0) void buyRequest(cartSnapshot)
+    else router.history.back()
+
+  }, [state.phase])
 
   const handleCancelReservation = () => {
     cancelReservation()
@@ -176,11 +171,8 @@ function CheckoutPage() {
 
   const handleRetry = () => {
     reset()
-    if (items.length > 0) {
-      buyRequest(cartSnapshot)
-    } else {
-      router.history.back()
-    }
+    if (items.length > 0) void buyRequest(cartSnapshot)
+    else router.history.back()
   }
 
   // ── Cart changed: user chose to resume the old session ────────────────────
@@ -189,7 +181,7 @@ function CheckoutPage() {
     if (!snapshot) return
     setCartChanged(false)
     pendingSnapshotRef.current = null
-    resumeSession(snapshot.sessionId)
+    void resumeSession(snapshot.sessionId)
   }
 
   // ── Cart changed: user chose to start fresh with the new cart ─────────────
@@ -197,11 +189,8 @@ function CheckoutPage() {
     sessionStorage.removeItem(sessionKey)
     pendingSnapshotRef.current = null
     setCartChanged(false)
-    if (items.length > 0) {
-      buyRequest(cartSnapshot)
-    } else {
-      router.history.back()
-    }
+    if (items.length > 0) void buyRequest(cartSnapshot)
+    else router.history.back()
   }
 
   const { phase } = state

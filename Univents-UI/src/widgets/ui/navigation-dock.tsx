@@ -1,12 +1,13 @@
 import { useRef, memo, useMemo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Home, User, Calendar, LogIn, LogOut, type LucideIcon } from 'lucide-react';
+import { Home, User, Calendar, LogIn, LogOut  } from 'lucide-react';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import type {LucideIcon} from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/shadcn/tooltip';
 import { cn } from '@/shared/lib/utils';
-import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
 
-type NavItemType = {
+interface NavItemType {
   id: string;
   label: string;
   icon: LucideIcon | React.ComponentType;
@@ -14,11 +15,11 @@ type NavItemType = {
   authRequired?: boolean;
   hideIfAuthenticated?: boolean;
   onClick?: () => void | Promise<void>;
-};
+}
 
-type NavigationDockProps = {
+interface NavigationDockProps {
   className?: string;
-};
+}
 
 const UVIcon = () => (
   <span
@@ -234,8 +235,8 @@ export const NavigationDock = memo(function NavigationDock({
       <nav
         role="navigation"
         className={cn('fixed bottom-8 left-1/2 -translate-x-1/2 z-50 hidden md:flex', className)}
-        onMouseMove={(e) => mouseX.set(e.clientX)}
-        onMouseLeave={() => mouseX.set(0)}
+        onMouseMove={(e) => { mouseX.set(e.clientX); }}
+        onMouseLeave={() => { mouseX.set(0); }}
       >
         <motion.div
           initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
@@ -248,7 +249,7 @@ export const NavigationDock = memo(function NavigationDock({
               key={item.id}
               item={item}
               isActive={activeId === item.id}
-              onClick={() => handleNavigate(item)}
+              onClick={() => { handleNavigate(item); }}
               mouseX={mouseX}
             />
           ))}
@@ -271,7 +272,7 @@ export const NavigationDock = memo(function NavigationDock({
               key={item.id}
               item={item}
               isActive={activeId === item.id}
-              onClick={() => handleNavigate(item)}
+              onClick={() => { handleNavigate(item); }}
             />
           ))}
         </motion.div>

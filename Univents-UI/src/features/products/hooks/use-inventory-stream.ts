@@ -31,6 +31,7 @@ export function useInventoryStream(eventId: string, editionId: string) {
       credentials: "include",
       signal: controller.signal,
 
+      // eslint-disable-next-line @typescript-eslint/require-await
       onopen: async (res) => {
         if (res.ok && res.headers.get("content-type") === EventStreamContentType) {
           console.log(`[InventoryStream] Connection established to ${url}`);
@@ -79,9 +80,9 @@ export function useInventoryStream(eventId: string, editionId: string) {
       },
     });
 
-    return () => { 
+    return () => {
       console.log(`[InventoryStream] Aborting connection to ${url}`);
-      controller.abort(); 
+      controller.abort();
     };
   }, [eventId, editionId]);
 

@@ -49,7 +49,7 @@ export default function CheckoutPixPending({
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
           <code className="flex-1 text-xs truncate text-foreground">{qrCode}</code>
           <button
-            onClick={handleCopy}
+            onClick={() => { void handleCopy() }}
             className="text-xs text-primary hover:underline shrink-0"
           >
             Copiar

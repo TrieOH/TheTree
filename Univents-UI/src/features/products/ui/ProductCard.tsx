@@ -42,7 +42,7 @@ export function ProductCard({ product, inventoryRemaining, onProductSelect }: Pr
 
   const images = product.thumbnail_url
     ? [product.thumbnail_url]
-    : (product.gallery_urls ?? []).filter(Boolean) as string[];
+    : (product.gallery_urls ?? []).filter(Boolean);
 
   const hasMultipleImages = images.length > 1;
 

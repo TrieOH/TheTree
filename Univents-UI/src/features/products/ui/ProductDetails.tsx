@@ -1,3 +1,6 @@
+import { Package, ShoppingCart } from "lucide-react";
+import { useState } from "react";
+import { useCart } from "../hooks/use-cart";
 import type { ProductI } from "../model";
 import {
   Sheet,
@@ -10,10 +13,7 @@ import {
 } from "@/shared/ui/shadcn/sheet";
 import { Button } from "@/shared/ui/shadcn/button";
 import { Badge } from "@/shared/ui/shadcn/badge";
-import { Package, ShoppingCart } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { useCart } from "../hooks/use-cart";
 
 interface ProductDetailsProps {
   product: ProductI | null;
@@ -31,7 +31,7 @@ export function ProductDetails({ product, isOpen, onOpenChange, inventoryRemaini
     setCurrentImageIndex(0);
   }
 
-  const displayProduct = product || lastProduct;
+  const displayProduct = product ?? lastProduct;
 
   const {
     items,
@@ -52,7 +52,7 @@ export function ProductDetails({ product, isOpen, onOpenChange, inventoryRemaini
   const isLimitReached = checkLimitReached(displayProduct, cartQuantity);
   const canAdd = displayProduct.status === "available" && !isLimitReached;
 
-  const allImages = (displayProduct.gallery_urls ?? []).filter(Boolean) as string[];
+  const allImages = (displayProduct.gallery_urls ?? []).filter(Boolean);
 
   const priceFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -102,7 +102,7 @@ export function ProductDetails({ product, isOpen, onOpenChange, inventoryRemaini
                 {allImages.map((_, index) => (
                   <Button
                     key={index}
-                    onClick={() => setCurrentImageIndex(index)}
+                    onClick={() => { setCurrentImageIndex(index); }}
                     className={cn(
                       "w-2 h-2 rounded-full",
                       currentImageIndex === index ? "bg-primary" : "bg-muted-foreground/50"
