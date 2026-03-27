@@ -23,6 +23,7 @@ function Index() {
   const navigate = Route.useNavigate()
 
   const setMode = (mode: Mode) => {
+    if (mode === as) return;
     void navigate({
       search: (prev) => ({ ...prev, as: mode }),
       replace: true,

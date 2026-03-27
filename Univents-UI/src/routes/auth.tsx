@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import z from 'zod';
 import { requireGuest } from '@/features/auths/lib/route-guard';
 import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
+import { cn } from '@/shared/lib/utils';
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
@@ -41,26 +42,31 @@ function App() {
   }
 
   return (
-    <motion.main
-      key={isLogin ? 'signin' : 'signup'}
-      initial={{ opacity: 0, scale: 0.8, y: 5 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className='flex justify-center items-center py-2 h-screen'
-    >
-      {isLogin ? (
-        <SignIn
-          signUpRedirect={() => { setIsLogin(false); }}
-          onSuccess={onLoginSuccess}
-          onFailed={handleFailure}
-        />
-      ) : (
-        <SignUp
-          loginRedirect={() => { setIsLogin(true); }}
-          onSuccess={handleSignUpSuccess}
-          onFailed={handleFailure}
-        />
-      )}
-    </motion.main>
+    <main className={cn(
+      "bg-background h-full text-foreground",
+      "antialiased selection:bg-muted selection:text-foreground"
+    )}>
+      <motion.div
+        key={isLogin ? 'signin' : 'signup'}
+        initial={{ opacity: 0, scale: 0.8, y: 5 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="flex justify-center items-center py-2 min-h-screen"
+      >
+        {isLogin ? (
+          <SignIn
+            signUpRedirect={() => { setIsLogin(false); }}
+            onSuccess={onLoginSuccess}
+            onFailed={handleFailure}
+          />
+        ) : (
+          <SignUp
+            loginRedirect={() => { setIsLogin(true); }}
+            onSuccess={handleSignUpSuccess}
+            onFailed={handleFailure}
+          />
+        )}
+      </motion.div>
+    </main>
   )
 }

@@ -3,7 +3,7 @@ import { useAuth } from '@soramux/node-auth-sdk/react'
 import { toast } from 'sonner'
 
 export function useAuthActions() {
-  const { auth: authManager } = useAuth()
+  const { auth: authManager, isAuthenticated: isAuthenticatedManager } = useAuth()
   const router = useRouter()
   const navigate = useNavigate()
 
@@ -39,12 +39,12 @@ export function useAuthActions() {
   }
 
   const handleLoginSuccess = async (redirect?: string) => {
-    await handleAuthAction(true, redirect ?? '/admin', 'Login successful!')
+    await handleAuthAction(true, redirect ?? '/', 'Login successful!')
   }
 
   const handleLogout = async () => {
     await handleAuthAction(false, '/', 'Logout successful!', () => authManager.logout())
   }
 
-  return { handleLoginSuccess, handleLogout }
+  return { handleLoginSuccess, handleLogout, isAuthenticated: isAuthenticatedManager }
 }

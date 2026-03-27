@@ -1,28 +1,67 @@
-import { useState, useRef } from 'react';
+import { useRef, memo, useMemo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Home, Search, Settings, Bell, type LucideIcon } from 'lucide-react';
+import { Home, User, Calendar, LogIn, LogOut, type LucideIcon } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/shadcn/tooltip';
 import { cn } from '@/shared/lib/utils';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
 
-export type NavItemType = {
+type NavItemType = {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType;
   href?: string;
+  authRequired?: boolean;
+  hideIfAuthenticated?: boolean;
+  onClick?: () => void | Promise<void>;
 };
 
-export type NavigationDockProps = {
-  items?: NavItemType[];
-  activeId?: string;
-  onNavigate?: (id: string) => void;
+type NavigationDockProps = {
   className?: string;
 };
 
-const defaultItems: NavItemType[] = [
-  { id: 'home', label: 'Home', icon: Home },
-  { id: 'search', label: 'Search', icon: Search },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'settings', label: 'Settings', icon: Settings },
+const UVIcon = () => (
+  <span
+    className={cn(
+      "font-heading font-semibold text-lg flex",
+      "items-center justify-center w-full h-full"
+    )}
+  >
+    UV
+  </span>
+);
+
+/**
+ * Ordered by specificity: most specific matches first, default at the end.
+ */
+const navConfigs = (actions: { logout: () => Promise<void> }) => [
+  {
+    id: 'event-context',
+    // Matches /events/$eventId/... (but not /events/ index)
+    match: (parts: string[]) => parts[0] === 'events' && parts[1] && parts[1] !== 'index',
+    getItems: (parts: string[]): NavItemType[] => {
+      const eventId = parts[1];
+      const eventBase = `/events/${eventId}`;
+      return [
+        { id: 'back-home', label: 'Univents', icon: UVIcon, href: '/' },
+        { id: 'event-home', label: 'Evento', icon: Home, href: eventBase },
+        { id: 'event-editions', label: 'Edições', icon: Calendar, href: `${eventBase}/editions` },
+        { id: 'event-profile', label: 'Perfil', icon: User, href: `${eventBase}/profile`, authRequired: true },
+        { id: 'event-login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
+      ];
+    }
+  },
+  {
+    id: 'default',
+    match: () => true,
+    getItems: (): NavItemType[] => [
+      { id: 'home', label: 'Início', icon: Home, href: '/' },
+      { id: 'events', label: 'Eventos', icon: Calendar, href: '/events' },
+      { id: 'profile', label: 'Perfil', icon: User, href: '/profile', authRequired: true },
+      { id: 'logout', label: 'Sair', icon: LogOut, onClick: actions.logout, authRequired: true },
+      { id: 'login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
+    ]
+  }
 ];
 
 const DesktopNavItem = ({
@@ -70,13 +109,13 @@ const DesktopNavItem = ({
           >
             {isActive && (
               <motion.div
-                layoutId="active-ring"
                 className="absolute inset-0 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background"
-                initial={false}
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}
-
             <motion.div style={{ width: iconSize, height: iconSize }} className="flex items-center justify-center">
               <Icon
                 style={{ width: '100%', height: '100%' }}
@@ -105,60 +144,89 @@ const MobileNavItem = ({
   const Icon = item.icon;
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
       className={cn(
         'relative flex flex-col items-center justify-center flex-1 py-3 gap-1.5 outline-none',
-        isActive ? 'text-primary' : 'text-muted-foreground',
+        isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
       )}
       aria-label={item.label}
       aria-current={isActive ? 'page' : undefined}
+      whileTap={{ scale: 0.95 }}
     >
-      {isActive && (
+      <div className="absolute top-0 left-1/2 -translate-x-1/2">
         <motion.div
-          layoutId="mobile-indicator"
-          className="absolute top-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-primary"
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
+          className="h-1 bg-primary rounded-b-full"
+          initial={false}
+          animate={{
+            width: isActive ? 32 : 0,
+            opacity: isActive ? 1 : 0,
+          }}
           transition={{ type: 'spring', stiffness: 500, damping: 35 }}
         />
-      )}
+      </div>
 
       <motion.div
-        animate={isActive ? { scale: 1.05, y: -2 } : { scale: 1, y: 0 }}
+        animate={isActive ? { scale: 1.1, y: -1 } : { scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
       </motion.div>
 
-      <motion.span
-        animate={isActive ? { opacity: 1, y: 0 } : { opacity: 0.6, y: 0 }}
-        transition={{ duration: 0.15 }}
-        className="text-[10px] font-medium tracking-tight"
+      <span
+        className={cn(
+          'text-[10px] font-medium tracking-tight transition-colors duration-200',
+          isActive ? 'text-primary' : 'text-muted-foreground'
+        )}
       >
         {item.label}
-      </motion.span>
-    </button>
+      </span>
+    </motion.button>
   );
 };
 
-export function NavigationDock({
-  items = defaultItems,
-  activeId: controlledActiveId,
-  onNavigate,
+export const NavigationDock = memo(function NavigationDock({
   className,
 }: NavigationDockProps) {
-  const [internalActiveId, setInternalActiveId] = useState(items[0]?.id ?? '');
-  const activeId = controlledActiveId ?? internalActiveId;
+  const { handleLogout, isAuthenticated } = useAuthActions();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleNavigate = (id: string) => {
-    if (controlledActiveId === undefined) setInternalActiveId(id);
-    onNavigate?.(id);
+  const configs = useMemo(() => navConfigs({ logout: handleLogout }), [handleLogout]);
+
+  const navItems = useMemo(() => {
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    const config = configs.find(c => c.match(pathParts));
+    const allItems = config?.getItems(pathParts) ?? [];
+    return allItems.filter(item => {
+      if (item.authRequired && !isAuthenticated) return false;
+      if (item.hideIfAuthenticated && isAuthenticated) return false;
+      return true;
+    });
+  }, [location.pathname, isAuthenticated, configs]);
+
+  const activeId = useMemo(() => {
+    const activeItem = [...navItems].reverse().find(item =>
+      item.href === '/' ? location.pathname === '/' : (item.href ? location.pathname.startsWith(item.href) : false)
+    );
+    return activeItem?.id ?? '';
+  }, [location.pathname, navItems]);
+
+  const handleNavigate = (item: NavItemType) => {
+    if (item.onClick) {
+      void item.onClick();
+      return;
+    }
+
+    if (item.href) {
+      if (location.pathname === item.href) return;
+      void navigate({ to: item.href });
+    }
   };
 
-  const navItems = items.slice(0, 6);
   const mouseX = useMotionValue(0);
+
+  if (navItems.length === 0) return null;
 
   return (
     <>
@@ -180,7 +248,7 @@ export function NavigationDock({
               key={item.id}
               item={item}
               isActive={activeId === item.id}
-              onClick={() => handleNavigate(item.id)}
+              onClick={() => handleNavigate(item)}
               mouseX={mouseX}
             />
           ))}
@@ -196,14 +264,14 @@ export function NavigationDock({
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-          className="flex items-stretch justify-around px-4 pt-2 pb-safe bg-background/90 backdrop-blur-2xl border-t border-border/40"
+          className="flex items-stretch justify-around px-2 pb-safe bg-background/90 backdrop-blur-2xl border-t border-border/40"
         >
           {navItems.map((item) => (
             <MobileNavItem
               key={item.id}
               item={item}
               isActive={activeId === item.id}
-              onClick={() => handleNavigate(item.id)}
+              onClick={() => handleNavigate(item)}
             />
           ))}
         </motion.div>
@@ -211,6 +279,4 @@ export function NavigationDock({
       </nav>
     </>
   );
-}
-
-export { DesktopNavItem, MobileNavItem };
+});

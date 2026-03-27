@@ -22,6 +22,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
 import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
 import { NavigationDock } from '@/widgets/ui/navigation-dock'
+import NotFound from '@/widgets/feedback/ui/NotFound'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -52,6 +53,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: NotFound
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -66,16 +68,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AuthProvider
-          baseURL={env.VITE_AUTH_API_URL}
-          exchangeURL={env.VITE_EXCHANGE_API_URL}
-        >
-          <AuthContextUpdater>
-            <NavigationDock />
-            <PostHogProvider>
-              <TanStackQueryProvider>
+        <PostHogProvider>
+          <TanStackQueryProvider>
+            <AuthProvider
+              baseURL={env.VITE_AUTH_API_URL}
+              exchangeURL={env.VITE_EXCHANGE_API_URL}
+            >
+              <AuthContextUpdater>
                 {children}
-                {/* <TanStackDevtools
+                <NavigationDock />
+                <TanStackDevtools
                   config={{
                     position: 'bottom-right',
                   }}
@@ -87,11 +89,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     StoreDevtools,
                     TanStackQueryDevtools,
                   ]}
-                /> */}
-              </TanStackQueryProvider>
-            </PostHogProvider>
-          </AuthContextUpdater>
-        </AuthProvider>
+                />
+
+              </AuthContextUpdater>
+            </AuthProvider>
+          </TanStackQueryProvider>
+        </PostHogProvider>
         <Scripts />
       </body>
     </html>

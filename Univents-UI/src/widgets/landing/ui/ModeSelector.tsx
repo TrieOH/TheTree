@@ -14,7 +14,10 @@ export function ModeSelector({ current, onChange }: Props) {
       <div className="inline-flex p-1 bg-muted rounded-full">
         <button
           onClick={() => { onChange('guest') }}
-          className="relative px-4 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-medium transition-colors z-10"
+          className={cn(
+            "relative px-4 py-2 md:px-6 md:py-2.5 rounded-full text-xs",
+            "md:text-sm font-medium transition-colors z-10")
+          }
         >
           {current === 'guest' && (
             <motion.div
@@ -32,7 +35,10 @@ export function ModeSelector({ current, onChange }: Props) {
         </button>
         <button
           onClick={() => { onChange('host') }}
-          className="relative px-4 py-2 md:px-6 md:py-2.5 rounded-full text-xs md:text-sm font-medium transition-colors z-10"
+          className={cn(
+            "relative px-4 py-2 md:px-6 md:py-2.5 rounded-full text-xs",
+            "md:text-sm font-medium transition-colors z-10")
+          }
         >
           {current === 'host' && (
             <motion.div
@@ -51,14 +57,24 @@ export function ModeSelector({ current, onChange }: Props) {
       </div>
 
       {/* Headline */}
-      <h1 className="text-center px-2">
+      <h1 className="text-center px-2 font-heading">
         {current === 'guest' ? (
-          <span className="block text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-foreground leading-[1.1]">
+          <span
+            className={cn(
+              "block text-3xl sm:text-4xl md:text-6xl lg:text-7xl",
+              "font-semibold tracking-tight text-foreground leading-[1.1]"
+            )}
+          >
             Descubra eventos,<br />
             <span className="text-muted-foreground">viva experiências.</span>
           </span>
         ) : (
-          <span className="block text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-foreground leading-[1.1]">
+          <span
+            className={cn(
+              "block text-3xl sm:text-4xl md:text-6xl lg:text-7xl",
+              "font-semibold tracking-tight text-foreground leading-[1.1]"
+            )}
+          >
             Seus eventos,<br />
             <span className="text-muted-foreground">sob controle total.</span>
           </span>
