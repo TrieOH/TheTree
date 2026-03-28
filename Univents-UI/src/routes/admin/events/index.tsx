@@ -135,7 +135,7 @@ function AdminEventsPage() {
       return
     }
 
-    patchMutation.mutate({ id: editingEvent.id, data: changes })
+    patchMutation.mutate({ id: editingEvent.id, data: data })
   }
 
   const handleDelete = () => {
