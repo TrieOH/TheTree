@@ -13,6 +13,15 @@ export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
 });
 
 /**
+ * Update Event on the server.
+ * @param eventData - The data of the event to update.
+ * @returns A promise that resolves to the API response containing the updated event.
+ */
+export const patchEventFn = createClientOnlyFn((id: string, eventData: Partial<EventI>) => {
+  return authFetcher.patch<EventI>(`/events/${id}`, eventData);
+});
+
+/**
  * Fetches all own events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */

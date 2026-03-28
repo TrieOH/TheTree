@@ -101,7 +101,7 @@ export default function AdminEventCard({
               status.dot
             )} />
             <span className="text-[11px] text-muted-foreground">
-              {status.label} · {event.editions_count} edição{event.editions_count !== 1 ? 'ões' : ''}
+              {status.label} · {event.editions_count} {event.editions_count === 1 ? 'edição' : 'edições'}
             </span>
             {event.is_series && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-medium">

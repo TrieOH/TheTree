@@ -4,14 +4,14 @@ export const eventCreateSchema = z.object({
   organization_id: z.uuid().optional().nullable(),
   name: z.string({ error: "Name is required" })
     .min(2, "Name must be at least 2 characters long."),
-  acronym: z.string().optional().nullable(),
+  acronym: z.string().optional().nullable().transform(val => val === "" ? null : val),
   slug: z.string({ error: "Slug is required" })
     .min(2, "Slug must be at least 2 characters long."),
-  tagline: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
+  tagline: z.string().optional().nullable().transform(val => val === "" ? null : val),
+  description: z.string().optional().nullable().transform(val => val === "" ? null : val),
   is_series: z.boolean(),
-  logo_url: z.string().optional().nullable(),
-  banner_url: z.string().optional().nullable(),
+  logo_url: z.string().optional().nullable().transform(val => val === "" ? null : val),
+  banner_url: z.string().optional().nullable().transform(val => val === "" ? null : val),
   contact_email: z.email(),
 })
 

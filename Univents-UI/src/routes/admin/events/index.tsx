@@ -7,7 +7,8 @@ import {
   MoreVertical,
   Calendar,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { EventCreateI, EventI } from '@/features/events/model';
 import {
   Drawer,
@@ -16,51 +17,137 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
-import { cn } from '@/shared/lib/utils'
+import { cn, getDirtyFields } from '@/shared/lib/utils'
 import { eventCreateSchema } from '@/features/events/model'
 import { FormDrawer } from '@/widgets/form/ui/form-drawer'
-import { AlertDrawer } from '@/widgets/ui/alert-drawer'
 import { getEventFields } from '@/features/events/model/field'
-import { ownEventsQueryOptions } from '@/features/events/api'
+import { ownEventsQueryOptions, eventsQueryOptions, createEventFn, patchEventFn, publishEventFn } from '@/features/events/api'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
+import { AlertModal } from '@/widgets/ui/alert-modal'
 
 export const Route = createFileRoute('/admin/events/')({
   component: AdminEventsPage,
 })
 
 function AdminEventsPage() {
+  const queryClient = useQueryClient()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<EventI | null>(null)
   const [deletingEvent, setDeletingEvent] = useState<EventI | null>(null)
   const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
   const [isActionsOpen, setIsActionsOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
 
   const { data: events = [] } = useQuery(ownEventsQueryOptions())
 
+  const createMutation = useMutation({
+    mutationFn: createEventFn,
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.setQueryData<EventI[]>(
+          ownEventsQueryOptions().queryKey,
+          (old = []) => [...old, res.data]
+        )
+        setIsCreateOpen(false)
+        toast.success('Evento criado com sucesso!')
+      } else toast.error(res.message || 'Erro ao criar evento')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  })
+
+  const patchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<EventI> }) => patchEventFn(id, data),
+    onSuccess: (res) => {
+      if (res.success) {
+        // Update Admin Cache
+        queryClient.setQueryData<EventI[]>(
+          ownEventsQueryOptions().queryKey,
+          (old = []) => old.map(event => event.id === res.data.id ? res.data : event)
+        )
+
+        // Update Public Cache (if it exists)
+        queryClient.setQueryData<EventI[]>(
+          eventsQueryOptions().queryKey,
+          (old = []) => old.map(event => event.id === res.data.id ? res.data : event)
+        )
+
+        setEditingEvent(null)
+        toast.success('Evento atualizado com sucesso!')
+      } else toast.error(res.message || 'Erro ao atualizar evento')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  })
+
+  const publishMutation = useMutation({
+    mutationFn: publishEventFn,
+    onSuccess: (res, eventId) => {
+      if (res.success) {
+        let updatedEvent: EventI | undefined;
+
+        // Update Admin Cache and get the updated event object
+        queryClient.setQueryData<EventI[]>(ownEventsQueryOptions().queryKey, (old = []) =>
+          old.map(event => {
+            if (event.id === eventId) {
+              updatedEvent = { ...event, status: 'active' as const };
+              return updatedEvent;
+            }
+            return event;
+          })
+        )
+
+        // Sync with Public Cache
+        queryClient.setQueryData<EventI[]>(eventsQueryOptions().queryKey, (old) => {
+          if (!updatedEvent) return old;
+
+          const publicEvents = old ?? [];
+          const index = publicEvents.findIndex(e => e.id === eventId);
+
+          if (index === -1) return [...publicEvents, updatedEvent];
+
+          const copy = [...publicEvents];
+          copy[index] = updatedEvent;
+
+          return copy;
+        });
+
+        setPublishingEvent(null)
+        toast.success('Evento publicado com sucesso!')
+      } else toast.error(res.message || 'Erro ao publicar evento')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  })
+
   const handleCreate = (data: EventCreateI) => {
-    setLoading(true)
-    console.log('create', data)
-    setLoading(false)
+    createMutation.mutate(data)
   }
 
   const handleEdit = (data: EventCreateI) => {
-    setLoading(true)
-    console.log('edit', data)
-    setLoading(false)
-    setEditingEvent(null)
+    if (!editingEvent) return
+
+    // Using generic diff util
+    const changes = getDirtyFields(data, editingEvent as unknown as EventCreateI, [
+      'name', 'slug', 'acronym', 'tagline', 'description',
+      'is_series', 'logo_url', 'banner_url', 'contact_email', 'organization_id'
+    ])
+
+    if (Object.keys(changes).length === 0) {
+      toast.info('Nenhuma alteração detectada')
+      setEditingEvent(null)
+      return
+    }
+
+    patchMutation.mutate({ id: editingEvent.id, data: changes })
   }
 
   const handleDelete = () => {
     if (!deletingEvent) return
+    // FIXME: Implement deleteEventFn in API and use it here
     console.log('delete', deletingEvent.id)
     setDeletingEvent(null)
   }
 
   const handlePublish = () => {
     if (!publishingEvent) return
-    console.log('publish', publishingEvent.id)
-    setPublishingEvent(null)
+    publishMutation.mutate(publishingEvent.id)
   }
 
   const getInitialData = (event: EventI | null): Partial<EventCreateI> => event ? {
@@ -74,6 +161,8 @@ function AdminEventsPage() {
     logo_url: event.logo_url,
     banner_url: event.banner_url,
   } : {}
+
+  const loading = createMutation.isPending || patchMutation.isPending || publishMutation.isPending
 
   return (
     <div className="min-h-screen bg-background relative pb-20 md:pb-0">
@@ -222,7 +311,7 @@ function AdminEventsPage() {
         loading={loading}
       />
 
-      <AlertDrawer
+      <AlertModal
         open={!!publishingEvent}
         onOpenChange={() => { setPublishingEvent(null); }}
         title="Publicar evento?"
@@ -230,9 +319,10 @@ function AdminEventsPage() {
         confirmLabel="Publicar"
         onConfirm={handlePublish}
         variant="success"
+        loading={loading}
       />
 
-      <AlertDrawer
+      <AlertModal
         open={!!deletingEvent}
         onOpenChange={() => { setDeletingEvent(null); }}
         title="Deletar evento?"

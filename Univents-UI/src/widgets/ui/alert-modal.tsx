@@ -1,13 +1,14 @@
+import { Loader2 } from 'lucide-react'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/shared/ui/shadcn/drawer'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/shadcn/dialog'
 import { Button } from '@/shared/ui/shadcn/button'
 import { cn } from '@/shared/lib/utils'
 
-interface AlertDrawerProps {
+interface AlertModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -16,9 +17,10 @@ interface AlertDrawerProps {
   cancelLabel?: string
   onConfirm: () => void | Promise<void>
   variant?: 'default' | 'destructive' | 'success'
+  loading?: boolean
 }
 
-export function AlertDrawer({
+export function AlertModal({
   open,
   onOpenChange,
   title,
@@ -27,37 +29,51 @@ export function AlertDrawer({
   cancelLabel = 'Cancelar',
   onConfirm,
   variant = 'default',
-}: AlertDrawerProps) {
+  loading = false,
+}: AlertModalProps) {
   const variantStyles = {
     default: 'bg-primary text-primary-foreground hover:bg-primary/90',
     destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
     success: 'bg-green-600 text-white hover:bg-green-700',
   }
 
+  const handleConfirm = async () => {
+    await onConfirm()
+  }
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="z-60 rounded-t-2xl border-t border-border bg-card">
-        <DrawerHeader className="pb-4 border-b border-border">
-          <DrawerTitle className="text-base font-semibold text-left">{title}</DrawerTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md z-50">
+        <DialogHeader className="pb-4 border-b border-border">
+          <DialogTitle className="text-base font-semibold text-left">{title}</DialogTitle>
           {description && <p className="text-sm text-muted-foreground text-left mt-1">{description}</p>}
-        </DrawerHeader>
+        </DialogHeader>
 
         <div className="p-4 flex gap-2">
           <Button
             variant="secondary"
             onClick={() => { onOpenChange(false); }}
+            disabled={loading}
             className="flex-1 rounded-xl"
           >
             {cancelLabel}
           </Button>
           <Button
-            onClick={() => { void onConfirm() }}
+            onClick={() => { void handleConfirm() }}
+            disabled={loading}
             className={cn("flex-1 rounded-xl", variantStyles[variant])}
           >
-            {confirmLabel}
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processando...
+              </span>
+            ) : (
+              confirmLabel
+            )}
           </Button>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   )
 }
