@@ -20,7 +20,7 @@ import { cn } from '@/shared/lib/utils'
 import { eventCreateSchema } from '@/features/events/model'
 import { FormDrawer } from '@/widgets/form/ui/form-drawer'
 import { AlertDrawer } from '@/widgets/ui/alert-drawer'
-import { eventFields } from '@/features/events/model/field'
+import { getEventFields } from '@/features/events/model/field'
 import { ownEventsQueryOptions } from '@/features/events/api'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
 
@@ -201,7 +201,7 @@ function AdminEventsPage() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         title="Novo evento"
-        fields={eventFields}
+        fields={getEventFields()}
         schema={eventCreateSchema}
         onSubmit={handleCreate}
         submitLabel="Criar evento"
@@ -214,7 +214,7 @@ function AdminEventsPage() {
           if (!open) setEditingEvent(null)
         }}
         title="Editar evento"
-        fields={eventFields}
+        fields={getEventFields(editingEvent?.id)}
         schema={eventCreateSchema}
         onSubmit={handleEdit}
         defaultValues={getInitialData(editingEvent)}

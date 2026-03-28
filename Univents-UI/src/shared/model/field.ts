@@ -1,5 +1,5 @@
 export type FieldType = 'text' | 'email' | 'textarea' | 'checkbox' | 'select' |
-  'number' | 'url' | 'percentage'
+  'number' | 'url' | 'percentage' | 'image-upload'
 
 export interface FormFieldI<T> {
   name: keyof T
@@ -10,4 +10,8 @@ export interface FormFieldI<T> {
   options?: { value: string; label: string }[]
   rows?: number
   span?: 'full' | 'half'
+  // Image only
+  accept?: string
+  maxSize?: number
+  uploadFn?: (file: File) => Promise<string>
 }

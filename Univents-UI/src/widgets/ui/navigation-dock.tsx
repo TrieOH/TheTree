@@ -35,7 +35,7 @@ const UVIcon = () => (
 /**
  * Ordered by specificity: most specific matches first, default at the end.
  */
-const navConfigs = (actions: { logout: () => Promise<void> }) => [
+const navConfigs = (actions: { logout: () => Promise<void> }, isAdmin: boolean) => [
   {
     id: 'event-context',
     // Matches /events/$eventId/... (but not /events/ index)
@@ -57,7 +57,12 @@ const navConfigs = (actions: { logout: () => Promise<void> }) => [
     match: () => true,
     getItems: (): NavItemType[] => [
       { id: 'home', label: 'Início', icon: Home, href: '/' },
-      { id: 'events', label: 'Eventos', icon: Calendar, href: '/events' },
+      { 
+        id: 'events', 
+        label: 'Eventos', 
+        icon: Calendar, 
+        href: isAdmin ? '/admin/events' : '/events' 
+      },
       { id: 'profile', label: 'Perfil', icon: User, href: '/profile', authRequired: true },
       { id: 'logout', label: 'Sair', icon: LogOut, onClick: actions.logout, authRequired: true },
       { id: 'login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
@@ -68,11 +73,13 @@ const navConfigs = (actions: { logout: () => Promise<void> }) => [
 const DesktopNavItem = ({
   item,
   isActive,
+  isAdmin,
   onClick,
   mouseX,
 }: {
   item: NavItemType;
   isActive: boolean;
+  isAdmin: boolean;
   onClick: () => void;
   mouseX: ReturnType<typeof useMotionValue<number>>;
 }) => {
@@ -101,7 +108,7 @@ const DesktopNavItem = ({
             className={cn(
               'relative flex items-center justify-center rounded-full outline-none transition-colors duration-200',
               isActive
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30'
+                ? (isAdmin ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'bg-primary text-primary-foreground shadow-lg shadow-primary/30')
                 : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground',
             )}
             aria-label={item.label}
@@ -110,7 +117,10 @@ const DesktopNavItem = ({
           >
             {isActive && (
               <motion.div
-                className="absolute inset-0 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background"
+                className={cn(
+                  "absolute inset-0 rounded-full ring-2 ring-offset-2 ring-offset-background",
+                  isAdmin ? "ring-amber-500" : "ring-primary"
+                )}
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.5 }}
@@ -136,10 +146,12 @@ const DesktopNavItem = ({
 const MobileNavItem = ({
   item,
   isActive,
+  isAdmin,
   onClick,
 }: {
   item: NavItemType;
   isActive: boolean;
+  isAdmin: boolean;
   onClick: () => void;
 }) => {
   const Icon = item.icon;
@@ -149,7 +161,9 @@ const MobileNavItem = ({
       onClick={onClick}
       className={cn(
         'relative flex flex-col items-center justify-center flex-1 py-3 gap-1.5 outline-none',
-        isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+        isActive 
+          ? (isAdmin ? 'text-amber-600' : 'text-primary') 
+          : 'text-muted-foreground hover:text-foreground'
       )}
       aria-label={item.label}
       aria-current={isActive ? 'page' : undefined}
@@ -157,7 +171,10 @@ const MobileNavItem = ({
     >
       <div className="absolute top-0 left-1/2 -translate-x-1/2">
         <motion.div
-          className="h-1 bg-primary rounded-b-full"
+          className={cn(
+            "h-1 rounded-b-full",
+            isAdmin ? "bg-amber-500" : "bg-primary"
+          )}
           initial={false}
           animate={{
             width: isActive ? 32 : 0,
@@ -177,7 +194,7 @@ const MobileNavItem = ({
       <span
         className={cn(
           'text-[10px] font-medium tracking-tight transition-colors duration-200',
-          isActive ? 'text-primary' : 'text-muted-foreground'
+          isActive ? (isAdmin ? 'text-amber-600' : 'text-primary') : 'text-muted-foreground'
         )}
       >
         {item.label}
@@ -193,7 +210,9 @@ export const NavigationDock = memo(function NavigationDock({
   const location = useLocation();
   const navigate = useNavigate();
 
-  const configs = useMemo(() => navConfigs({ logout: handleLogout }), [handleLogout]);
+  const isAdmin = useMemo(() => location.pathname.includes('/admin'), [location.pathname]);
+
+  const configs = useMemo(() => navConfigs({ logout: handleLogout }, isAdmin), [handleLogout, isAdmin]);
 
   const navItems = useMemo(() => {
     const pathParts = location.pathname.split('/').filter(Boolean);
@@ -242,13 +261,17 @@ export const NavigationDock = memo(function NavigationDock({
           initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
           animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
           transition={{ type: 'spring', stiffness: 260, damping: 24, delay: 0.05 }}
-          className="flex items-center gap-2 px-3 py-3 rounded-full bg-background/80 backdrop-blur-2xl border border-border/60 shadow-lg shadow-black/5"
+          className={cn(
+            "flex items-center gap-2 px-3 py-3 rounded-full bg-background/80 backdrop-blur-2xl border shadow-lg shadow-black/5",
+            isAdmin ? "border-amber-500/20" : "border-border/60"
+          )}
         >
           {navItems.map((item) => (
             <DesktopNavItem
               key={item.id}
               item={item}
               isActive={activeId === item.id}
+              isAdmin={isAdmin}
               onClick={() => { handleNavigate(item); }}
               mouseX={mouseX}
             />
@@ -265,13 +288,17 @@ export const NavigationDock = memo(function NavigationDock({
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-          className="flex items-stretch justify-around px-2 pb-safe bg-background/90 backdrop-blur-2xl border-t border-border/40"
+          className={cn(
+            "flex items-stretch justify-around px-2 pb-safe bg-background/90 backdrop-blur-2xl border-t",
+            isAdmin ? "border-amber-500/30" : "border-border/40"
+          )}
         >
           {navItems.map((item) => (
             <MobileNavItem
               key={item.id}
               item={item}
               isActive={activeId === item.id}
+              isAdmin={isAdmin}
               onClick={() => { handleNavigate(item); }}
             />
           ))}
