@@ -1,5 +1,5 @@
 -- +goose Up
--- 012_create_api_keys.sql
+-- 011_create_api_keys.sql
 CREATE TABLE api_keys (
     project_id UUID PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
     client_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

@@ -10,9 +10,6 @@ type Repositories struct {
 	Sessions       outbounds.SessionRepository
 	Projects       outbounds.ProjectRepository
 	ProjectUsers   outbounds.ProjectUserRepository
-	Schemas        outbounds.SchemaRepository
-	SchemaVersions outbounds.SchemaVersionRepository
-	SchemaFields   outbounds.SchemaFieldsRepository
 	Scopes         outbounds.ScopeRepository
 	Permissions    outbounds.PermissionRepository
 	Roles          outbounds.RoleRepository
@@ -27,9 +24,6 @@ func NewRepositories(infra infrastructure.Infra) *Repositories {
 		Sessions:       NewSessionRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Projects:       NewProjectRepo(infra.Queries, infra.Logger, infra.Tracer),
 		ProjectUsers:   NewProjectUserRepo(infra.Queries, infra.Logger, infra.Tracer),
-		Schemas:        NewSchemaRepo(infra.Queries, infra.Logger, infra.Tracer),
-		SchemaVersions: NewSchemaVersionRepo(infra.Queries, infra.Logger, infra.Tracer),
-		SchemaFields:   NewFieldsRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Scopes:         NewScopeRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Permissions:    NewPermissionRepo(infra.Queries, infra.Logger, infra.Tracer),
 		Roles:          NewRoleRepo(infra.Queries, infra.Logger, infra.Tracer),

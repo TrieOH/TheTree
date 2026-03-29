@@ -10,7 +10,6 @@ import (
 	"GoAuth/internal/domain/key"
 	project2 "GoAuth/internal/domain/project"
 	"GoAuth/internal/domain/project_users"
-	"GoAuth/internal/domain/schema"
 	"GoAuth/internal/domain/session"
 	"GoAuth/internal/domain/user"
 	"GoAuth/internal/errx"
@@ -18,7 +17,6 @@ import (
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
 	"context"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -40,7 +38,6 @@ var (
 type UseCase struct {
 	deps          Deps
 	keys          inbounds.KeysService
-	schema        inbounds.SchemaService
 	tokenIssuer   inbounds.TokenIssuer
 	tokenVerifier inbounds.TokenVerifier
 	mailRenderer  outbounds.EmailRenderer
@@ -51,9 +48,6 @@ type UseCase struct {
 type Deps struct {
 	Users          outbounds.UserRepository
 	Sessions       outbounds.SessionRepository
-	Schemas        outbounds.SchemaRepository
-	Versions       outbounds.SchemaVersionRepository
-	Fields         outbounds.SchemaFieldsRepository
 	Projects       outbounds.ProjectRepository
 	ProjectUsers   outbounds.ProjectUserRepository
 	Keys           outbounds.KeysRepository
@@ -68,14 +62,12 @@ func New(
 	repos Deps,
 	infra infrastructure.Infra,
 	keys inbounds.KeysService,
-	schema inbounds.SchemaService,
 	tokenBundle tokens.TokenBundle,
 	mailBundle email.MailBundle,
 ) inbounds.AuthService {
 	return &UseCase{
 		deps:          repos,
 		keys:          keys,
-		schema:        schema,
 		tokenIssuer:   tokenBundle.Issuer,
 		tokenVerifier: tokenBundle.Verifier,
 		mailRenderer:  mailBundle.Renderer,
@@ -324,7 +316,6 @@ func (uc *UseCase) Login(ctx context.Context, in inbounds.LoginUserInput) (token
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 		Domain:             "https://dev.trieauth.trieoh.com",
-		IsUpToDate:         true,
 	}, nil
 }
 
@@ -564,7 +555,6 @@ func (uc *UseCase) finishClientRefresh(
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 		Domain:             "https://dev.trieauth.trieoh.com",
-		IsUpToDate:         true,
 	}, nil
 }
 
@@ -656,12 +646,6 @@ func (uc *UseCase) finishProjectUserRefresh(
 
 	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
 
-	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, projectUser.ID, *sess.ProjectID)
-	if err != nil {
-		logs.L().Error("Failed to check schema compatibility during refresh", zap.Error(err))
-		isUpToDate = false
-	}
-
 	var project *project2.Project
 	project, err = uc.deps.Projects.GetByIDInternal(ctx, *sess.ProjectID)
 	if err != nil {
@@ -674,7 +658,6 @@ func (uc *UseCase) finishProjectUserRefresh(
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 		Domain:             project.Domain,
-		IsUpToDate:         isUpToDate,
 	}, nil
 }
 
@@ -731,34 +714,6 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 	in.FlowID = strings.TrimSpace(strings.ToLower(in.FlowID))
 	in.SchemaType = strings.TrimSpace(strings.ToLower(in.SchemaType))
 
-	if !schema.IsValidSchemaType(in.SchemaType) {
-		return outbounds.Email{}, fail.New(errx.SchemaInvalidSchemaType).RecordCtx(ctx)
-	}
-
-	// FlowIDs cannot be the same as schema types so if this matches we error out
-	if schema.IsValidSchemaType(in.FlowID) {
-		return outbounds.Email{}, fail.New(errx.SchemaInvalidFlowID).WithArgs("flow id can't be the same as a schema type").RecordCtx(ctx)
-	}
-
-	if schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID) && in.CustomFields != nil {
-		return outbounds.Email{}, fail.New(errx.SchemaMetadataNotAllowed).RecordCtx(ctx)
-	}
-
-	empty := json.RawMessage(`{}`)
-	customFields := &empty
-
-	// Validate and construct metadata for non-core or non-reserved flows
-	isCoreWithReservedFlow := schema.Type(in.SchemaType) == schema.Core && schema.IsFlowIDReserved(in.FlowID)
-	if !isCoreWithReservedFlow {
-		validatedMetadata, err := uc.schema.ValidateAndConstructMetadata(ctx, in.ProjectID, schema.Type(in.SchemaType), in.FlowID, in.CustomFields)
-		if err != nil {
-			return outbounds.Email{}, err
-		}
-		if validatedMetadata != nil {
-			customFields = validatedMetadata
-		}
-	}
-
 	if len(in.Password) > 72 {
 		return outbounds.Email{}, fail.New(errx.AuthInvalidPassword).RecordCtx(ctx)
 	}
@@ -773,7 +728,6 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		ProjectID:    in.ProjectID,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
-		Metadata:     customFields,
 	})
 	if err != nil {
 		return outbounds.Email{}, err
@@ -951,12 +905,6 @@ func (uc *UseCase) LoginProjectUser(
 
 	refreshTokenStr := issuer.AssembleJWT(refreshPayload, refreshSig)
 
-	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, usr.ID, in.ProjectID)
-	if err != nil {
-		logs.L().Error("Failed to check schema compatibility during login", zap.Error(err))
-		isUpToDate = false
-	}
-
 	var project *project2.Project
 	project, err = uc.deps.Projects.GetByIDInternal(ctx, in.ProjectID)
 	if err != nil {
@@ -969,7 +917,6 @@ func (uc *UseCase) LoginProjectUser(
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExpiresAt,
 		Domain:             project.Domain,
-		IsUpToDate:         isUpToDate,
 	}, nil
 }
 

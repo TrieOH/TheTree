@@ -229,7 +229,7 @@
 
 ### 5. Project Private Keys Encrypted via DB Session Key (SQLi Risk)
 *   **Severity:** High (Critical context)
-*   **Affected components:** `internal/database/database.go` (`SetJWTMasterKey`), `internal/database/migrations/009_create_keys.sql` (`key_pair` table, `private_key` column)
+*   **Affected components:** `internal/database/database.go` (`SetJWTMasterKey`), `internal/database/migrations/008_create_keys.sql` (`key_pair` table, `private_key` column)
 *   **How it was fixed:** The `SetJWTMasterKey` function has been removed from `internal/database/database.go`. Key encryption/decryption is now handled at the application layer, using a key managed outside the database session. This eliminates the database session as a vector for key exfiltration via SQL injection.
 *   **What changed:** The responsibility for encryption of private keys shifted from the database (using session variables) to the application layer.
 *   **Why the fix is sufficient:** By performing encryption/decryption in the application, the `JWT_MASTER_KEY` is no longer exposed to the database session, preventing attackers with SQL injection capabilities from easily decrypting private keys using database functions.

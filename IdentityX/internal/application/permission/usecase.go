@@ -23,7 +23,6 @@ type UseCase struct {
 	projects     outbounds.ProjectRepository
 	projectUsers outbounds.ProjectUserRepository
 	sessions     outbounds.SessionRepository
-	schema       inbounds.SchemaService
 	tx           inbounds.TxRunner
 }
 
@@ -34,7 +33,6 @@ func New(
 	projects outbounds.ProjectRepository,
 	projectUsers outbounds.ProjectUserRepository,
 	sessions outbounds.SessionRepository,
-	schema inbounds.SchemaService,
 	tx inbounds.TxRunner,
 ) inbounds.PermissionService {
 	return &UseCase{
@@ -42,7 +40,6 @@ func New(
 		projects:     projects,
 		projectUsers: projectUsers,
 		sessions:     sessions,
-		schema:       schema,
 		tx:           tx,
 	}
 }
@@ -469,15 +466,6 @@ func (uc *UseCase) GetEffective(ctx context.Context, in inbounds.ManagePermissio
 
 	if !userBelongs {
 		return nil, fail.New(errx.ProjectUserNotFromProject).RecordCtx(ctx)
-	}
-
-	// CHECK COMPATIBILITY
-	isUpToDate, err := uc.schema.CheckSchemaCompatibility(ctx, in.EntityID, *in.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-	if !isUpToDate {
-		return nil, fail.New(errx.AuthUserSchemaOutdated).RecordCtx(ctx)
 	}
 
 	userIdentity, err := uc.sessions.GetIdentityByEntityIDAndType(ctx, in.EntityID, session.ProjectIdentity)

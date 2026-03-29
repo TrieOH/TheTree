@@ -49,7 +49,6 @@ func rotateKeysJob(ctx context.Context, app *GoauthApp, txRunner inbounds.TxRunn
 				logs.L().Error("Scheduled key rotation failed, rolled back", zap.Error(err))
 			}
 		}, db),
-		gocron.WithContext(ctx),
 	)
 
 	if err != nil {
@@ -110,7 +109,6 @@ func tokenReuseCleanupJob(ctx context.Context, app *GoauthApp) {
 			}
 			logs.L().Info("Cleared expired token reuse entries")
 		}, db),
-		gocron.WithContext(ctx),
 	)
 
 	if err != nil {
