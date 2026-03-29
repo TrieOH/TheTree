@@ -62,11 +62,18 @@ func (repo *projectUserRepo) Register(ctx context.Context, toRegister project_us
 	)
 	defer span.End()
 
+	var metadata json.RawMessage
+	if toRegister.Metadata != nil {
+		metadata = *toRegister.Metadata
+	} else {
+		metadata = json.RawMessage("{}")
+	}
+
 	sqlcUser, err := repo.queries(ctx).RegisterProjectUser(ctx, sqlc.RegisterProjectUserParams{
 		ProjectID:    toRegister.ProjectID,
 		Email:        toRegister.Email,
 		PasswordHash: toRegister.PasswordHash,
-		Metadata:     *toRegister.Metadata,
+		Metadata:     metadata,
 	})
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)
