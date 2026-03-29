@@ -12,4 +12,4 @@ SELECT EXISTS (
 
 -- name: DeleteExpiredTokenReuseListEntries :exec
 DELETE FROM token_reuse_list
-WHERE expired_at < now();
+WHERE expires_at < now();
