@@ -35,9 +35,6 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 	registerAuthRoutes(r, handlerBundle.AuthHandler, authMW)
 	registerSessionRoutes(r, handlerBundle.SessionHandler, authMW)
 	registerProjectRoutes(r, handlerBundle.ProjectHandler, authMW)
-	registerSchemaRoutes(r, handlerBundle.SchemaHandler, authMW)
-	registerSchemaVersionRoutes(r, handlerBundle.SchemaVersionHandler, authMW)
-	registerSchemaFieldsRoutes(r, handlerBundle.SchemaFieldsHandler, authMW)
 	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
 	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
 	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
@@ -123,12 +120,6 @@ func registerAuthRoutes(
 		} else {
 			r.Post("/projects/{project_id}/login", h.ProjectLogin)
 		}
-
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			Group(func(r chi.Router) {
-				r.Get("/projects/{project_id}/upgrade-form", h.GetUpgradeForm)
-				r.Post("/projects/{project_id}/metadata", h.UpdateMetadata)
-			})
 	})
 }
 
@@ -162,81 +153,6 @@ func registerProjectRoutes(
 		r.Delete("/projects/{project_id}", h.DeleteProjectByID)
 		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
 		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
-	})
-}
-
-func registerSchemaRoutes(
-	r *chi.Mux,
-	schemas *handlers.SchemaHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-		r.Route("/projects/{project_id}/schemas", func(r chi.Router) {
-			r.Post("/", schemas.Draft)
-			r.Get("/", schemas.List)
-			r.Get("/ids", schemas.GetIDsFromProjectID)
-			r.Get("/{schema_id}", schemas.GetByID)
-
-			// UUID-based form routes (schema_id must be valid UUID)
-			r.Get("/{schema_id}/latest", schemas.GetLatestFormByID)
-			r.Get("/{schema_id}/v{version:[0-9]+}", schemas.GetSpecificFormByID)
-
-			// Flow-based lookup form routes (query params required)
-			r.With(
-				middleware.DefaultQueryParam("schema_type", "context"),
-				middleware.RequireQueryParams("flow_id"),
-			).Get("/lookup/latest", schemas.GetLatestFormByFlow)
-			r.With(
-				middleware.DefaultQueryParam("schema_type", "context"),
-				middleware.RequireQueryParams("flow_id"),
-			).Get("/lookup/v{version:[0-9]+}", schemas.GetSpecificFormByFlow)
-
-			r.Get("/{schema_id}/verbose", schemas.GetVerbose)
-			r.Post("/{schema_id}/publish", schemas.Publish)
-		})
-	})
-}
-
-func registerSchemaVersionRoutes(
-	r *chi.Mux,
-	h *handlers.SchemaVersionHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-		r.Route("/projects/{project_id}/schemas/{schema_id}/versions", func(r chi.Router) {
-			r.Post("/draft", h.Draft)
-			r.Post("/publish", h.Publish)
-			r.Get("/current", h.GetCurrent)
-			r.Get("/latest", h.GetLatest)
-			r.Get("/v{version:[0-9]+}", h.GetVerbose)
-		})
-	})
-}
-
-func registerSchemaFieldsRoutes(
-	r *chi.Mux,
-	h *handlers.SchemaFieldsHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-		r.Post("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}", h.Create)
-		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields", h.BatchUpdateFields)
-		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.EditField)
-		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}", h.DeleteField)
-		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options", h.SetFieldOptions)
-		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/options/{option_id}", h.DeleteFieldOption)
-		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules", h.SetVisibilityRules)
-		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules/{rule_id}", h.EditVisibilityRule)
-		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/visibility-rules/{rule_id}", h.DeleteVisibilityRule)
-		r.Put("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules", h.SetRequiredRules)
-		r.Patch("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules/{rule_id}", h.EditRequiredRule)
-		r.Delete("/projects/{project_id}/schemas/{schema_id}/v{version:[0-9]+}/fields/{field_id}/required-rules/{rule_id}", h.DeleteRequiredRule)
 	})
 }
 

@@ -28,8 +28,7 @@ type UserTokensOutput struct {
 	AccessExpiresAt  time.Time
 	RefreshExpiresAt time.Time
 
-	Domain     string
-	IsUpToDate bool
+	Domain string
 }
 
 type ProjectRegisterInput struct {
@@ -66,16 +65,6 @@ type ErrSchemaRegisterValidation struct {
 
 func (e ErrSchemaRegisterValidation) Error() string {
 	return "error validating fields for schema register"
-}
-
-type FormResponse struct {
-	SchemaID      uuid.UUID
-	Title         string
-	FlowID        string
-	SchemaType    string
-	VersionID     uuid.UUID
-	VersionNumber int
-	Fields        []FormField
 }
 
 type ForgotPasswordInput struct {
