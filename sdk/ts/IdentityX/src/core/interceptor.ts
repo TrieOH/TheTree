@@ -2,17 +2,18 @@ import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
   decodeJwtExp,
+  getCookieDomain,
   isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveSession,
   saveTokenClaims,
-  setCookie,
   TokenClaims,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
 import { logger } from "@soramux/node-fetch-sdk";
 import { simpleFetch } from "@soramux/node-fetch-sdk";
+import { cookieStorage } from "../utils/storage-adapter";
 
 
 export interface RequestOptions extends RequestInit {
@@ -100,12 +101,18 @@ export class AuthInterceptor {
       throw new Error(res.message || "Failed to exchange tokens");
     }
 
-    const expiresDate = new Date(res.data.expires_at).getTime().toString();
-    setCookie("svc_session", res.data.session_id, expiresDate);
+    const expiresDate = new Date(res.data.expires_at).toUTCString();
+    cookieStorage.set("svc_session", res.data.session_id, {
+      expires: expiresDate,
+      domain: getCookieDomain()
+    });
 
     const claims = await this.fetchClaimsAndSave();
     const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-    setCookie("refresh_token", refresh_token, refreshExpiry);
+    cookieStorage.set("refresh_token", refresh_token, {
+      expires: refreshExpiry,
+      domain: getCookieDomain()
+    });
 
     return claims;
   }
