@@ -1,9 +1,8 @@
 type AuthState = {
   isAuthenticated: boolean;
-  isUpToDate: boolean;
 };
 
-let _state: AuthState = { isAuthenticated: false, isUpToDate: false };
+let _state: AuthState = { isAuthenticated: false };
 const _listeners = new Set<() => void>();
 
 const notify = () => _listeners.forEach(l => l());
@@ -20,7 +19,7 @@ export const authStore = {
     notify();
   },
   reset: () => {
-    _state = { isAuthenticated: false, isUpToDate: false };
+    _state = { isAuthenticated: false };
     notify();
   },
 };

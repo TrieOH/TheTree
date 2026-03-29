@@ -4,8 +4,6 @@ import {
   clearAuthTokens,
   fetchAndSaveClaims,
   getUserInfo,
-  isUpToDate,
-  TokenClaims,
   withExchange
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
@@ -15,7 +13,6 @@ import { env } from "./env";
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;
-  is_up_to_date: boolean;
 }
 
 export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
@@ -88,8 +85,6 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
   refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
-
-  isUpToDate: () => isUpToDate(),
 
   getProfileUpgradeForms: async () => {
     validateProjectKey();

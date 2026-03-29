@@ -9,7 +9,7 @@ import {
 } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims, isUpToDate } from "../utils/token-utils";
+import { getTokenClaims } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
@@ -18,7 +18,6 @@ import { logger } from "@soramux/node-fetch-sdk";
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
-  isUpToDate: boolean;
   isClient?: boolean;
 };
 
@@ -39,7 +38,7 @@ export function AuthProvider({
 }) {
   const [ready, setReady] = useState(false);
 
-  const { isAuthenticated, isUpToDate: upToDate } = useSyncExternalStore(
+  const { isAuthenticated } = useSyncExternalStore(
     authStore.subscribe,
     authStore.getSnapshot,
     authStore.getServerSnapshot,
@@ -63,7 +62,6 @@ export function AuthProvider({
     undefined,
     (claims) => authStore.set({
       isAuthenticated: !!claims.access_data,
-      isUpToDate: claims.is_up_to_date ?? false,
     }),
     exchangeURL,
   ), [baseURL, exchangeURL]);
@@ -78,7 +76,7 @@ export function AuthProvider({
 
     const restoreSession = async () => {
       if (getTokenClaims()) {
-        authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
+        authStore.set({ isAuthenticated: true });
         setReady(true);
         return;
       }
@@ -87,7 +85,7 @@ export function AuthProvider({
       try {
         const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
         if (res.success) {
-          authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
+          authStore.set({ isAuthenticated: true });
           logger.log("Session restored.");
         } else {
           authStore.reset();
@@ -108,7 +106,7 @@ export function AuthProvider({
   if (!ready) return null;
 
   return (
-    <AuthContext.Provider value={{ auth, isAuthenticated, isUpToDate: upToDate, isClient }}>
+    <AuthContext.Provider value={{ auth, isAuthenticated, isClient }}>
       {children}
     </AuthContext.Provider>
   );

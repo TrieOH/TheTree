@@ -25,14 +25,12 @@ export interface TokenClaims {
 export interface AuthTokenClaims {
   access_data: TokenClaims;
   refresh_expiry_date: string | number;
-  is_up_to_date?: boolean;
 }
 
 // Stored only in memory
 let memoryClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
-const IS_UP_TO_DATE_KEY = "trieoh_is_up_to_date";
 
 function getCookieDomain(hostname: string) {
   if (hostname.endsWith('univents.com.br')) return 'univents.com.br';
@@ -107,7 +105,6 @@ export const withExchange = async (
       apiInstance,
       res.data.access_token,
       res.data.refresh_token,
-      res.data.is_up_to_date,
       exchangeURL,
     );
     return res;
@@ -136,13 +133,8 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
     logger.error("Invalid access expiry received:", claims.access_data.exp);
   } else localStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
 
-  if (claims.is_up_to_date !== undefined) {
-    localStorage.setItem(IS_UP_TO_DATE_KEY, String(claims.is_up_to_date));
-  }
-
   authStore.set({
     isAuthenticated: !!claims.access_data,
-    isUpToDate: claims.is_up_to_date ?? isUpToDate(),
   });
 
   logger.log("Token claims saved");
@@ -151,12 +143,6 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
 export function getTokenClaims(): AuthTokenClaims | null {
   if (memoryClaims) return memoryClaims;
   return null;
-}
-
-export function isUpToDate(): boolean {
-  if (memoryClaims?.is_up_to_date !== undefined) return memoryClaims.is_up_to_date;
-  const stored = localStorage.getItem(IS_UP_TO_DATE_KEY);
-  return stored === "true";
 }
 
 function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
@@ -186,7 +172,6 @@ export function clearAuthTokens(): void {
   memoryClaims = null;
   localStorage.removeItem(ACCESS_EXPIRY_KEY);
   localStorage.removeItem(REFRESH_EXPIRY_KEY);
-  localStorage.removeItem(IS_UP_TO_DATE_KEY);
 
   removeCookie("svc_session");
   removeCookie("refresh_token");
@@ -205,7 +190,6 @@ export function getUserInfo() {
 
 export const fetchAndSaveClaims = async (
   apiInstance: Api,
-  is_up_to_date?: boolean,
   skipRefresh?: boolean
 ) => {
   try {
@@ -213,9 +197,8 @@ export const fetchAndSaveClaims = async (
       { requiresAuth: true, skipRefresh }
     );
     if (res.success) {
-      const claims = { ...res.data, is_up_to_date: is_up_to_date ?? isUpToDate() };
-      saveTokenClaims(claims);
-      return { ...res, data: claims };
+      saveTokenClaims(res.data);
+      return { ...res, data: res.data };
     }
     throw new Error(res.message || "Failed to fetch session claims");
   } catch (error) {
@@ -238,7 +221,6 @@ export const exchangeAndSaveClaims = async (
   apiInstance: Api,
   access_token: string,
   refresh_token: string,
-  is_up_to_date: boolean,
   exchangeURL?: string
 ) => {
   // Project: Custom URL
@@ -256,7 +238,6 @@ export const exchangeAndSaveClaims = async (
       const refreshExp = decodeJwtExp(refresh_token);
       const claims: AuthTokenClaims = {
         access_data: res.data.claims,
-        is_up_to_date,
         refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
       };
 
@@ -288,7 +269,7 @@ export const exchangeAndSaveClaims = async (
     const expiresDate = new Date(res.data.ttl).getTime().toString();
     setCookie("svc_session", res.data.session_id, expiresDate);
 
-    const claimsRes = await fetchAndSaveClaims(apiInstance, is_up_to_date, true);
+    const claimsRes = await fetchAndSaveClaims(apiInstance, true);
 
     const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();
     setCookie("refresh_token", refresh_token, refreshExpiry);
