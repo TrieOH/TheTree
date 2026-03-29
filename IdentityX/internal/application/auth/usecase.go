@@ -728,6 +728,7 @@ func (uc *UseCase) registerProjectUserInternal(ctx context.Context, in inbounds.
 		ProjectID:    in.ProjectID,
 		Email:        in.Email,
 		PasswordHash: string(hashedPassword),
+		Metadata:     in.CustomFields,
 	})
 	if err != nil {
 		return outbounds.Email{}, err
