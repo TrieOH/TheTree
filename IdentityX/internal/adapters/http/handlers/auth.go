@@ -267,6 +267,11 @@ func (handler *AuthHandler) ProjectRegister(w http.ResponseWriter, r *http.Reque
 		FlowID:       flowID,
 	}
 
+	if in.CustomFields == nil {
+		meta := json.RawMessage("{}")
+		in.CustomFields = &meta
+	}
+
 	ctx := r.Context()
 	if err := handler.auth.RegisterProjectUser(ctx, in); err != nil {
 		resp.FromError(err).Send(w)
