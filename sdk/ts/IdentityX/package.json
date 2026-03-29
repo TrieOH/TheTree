@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/node-auth-sdk",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "SDK to consume GOAuth",
   "exports": {
     ".": {
