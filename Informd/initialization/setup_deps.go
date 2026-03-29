@@ -109,6 +109,8 @@ func SetupGoAuth(app *TrieForms) {
 				ApiKeysCreate,
 				ApiKeysRevoke,
 				ApiKeysRead,
+				FormsCreate,
+				FormsRead,
 			},
 			Meta: map[string]interface{}{
 				"color": "#10b981",
@@ -161,6 +163,22 @@ var (
 	}
 	ApiKeysRead = goauth.PermissionDefinition{
 		Object: "api_keys",
+		Action: "read",
+		Meta: map[string]interface{}{
+			"color": "#f59e0b",
+			"icon":  "Eye",
+		},
+	}
+	FormsCreate = goauth.PermissionDefinition{
+		Object: "forms",
+		Action: "create",
+		Meta: map[string]interface{}{
+			"color": "#10b981",
+			"icon":  "Zap",
+		},
+	}
+	FormsRead = goauth.PermissionDefinition{
+		Object: "forms",
 		Action: "read",
 		Meta: map[string]interface{}{
 			"color": "#f59e0b",

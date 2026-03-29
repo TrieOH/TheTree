@@ -14,7 +14,7 @@ CREATE TABLE api_keys (
 
 CREATE UNIQUE INDEX idx_api_keys_name_project
     ON api_keys (name, project_id)
-    WHERE revoked_at IS NOT NULL;
+    WHERE revoked_at IS NULL;
 
 CREATE INDEX idx_api_keys_owner_id ON api_keys (owner_id);
 CREATE INDEX idx_api_keys_key_prefix ON api_keys (key_prefix);

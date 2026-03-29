@@ -3,6 +3,7 @@
 package router
 
 import (
+	"TrieForms/internal/features/forms"
 	"TrieForms/internal/features/keys"
 	"TrieForms/internal/features/projects"
 	"TrieForms/internal/interfaces/http/middleware"
@@ -28,7 +29,7 @@ type HTTPDeps struct {
 	SystemHandler   *system.SystemHandler
 	ProjectsHandler *projects.Handler
 	ApiKeysHandler  *keys.Handler
-
+	FormsHandler    *forms.Handler
 	AuthMiddleware  *middleware.AuthMiddleware
 	AsynqmonHandler http.Handler
 }

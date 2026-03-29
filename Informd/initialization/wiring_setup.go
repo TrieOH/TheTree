@@ -1,6 +1,7 @@
 package initialization
 
 import (
+	"TrieForms/internal/features/forms"
 	"TrieForms/internal/features/keys"
 	"TrieForms/internal/features/projects"
 	"TrieForms/internal/interfaces/http/middleware"
@@ -54,7 +55,7 @@ func TrieFormsSetup() *TrieForms {
 	return &app
 }
 
-func TrieFormsStart(app *TrieForms, skipMux bool) {
+func TrieFormsStart(app *TrieForms) {
 	ctx := context.Background()
 
 	defer app.DB.Close()
@@ -91,6 +92,7 @@ func TrieFormsStart(app *TrieForms, skipMux bool) {
 	// Init Repos
 	projectsRepo := projects.NewProjectRepo(q, logs, tracer)
 	apiKeysRepo := keys.NewApiKeyRepo(q, logs, tracer)
+	formsRepo := forms.NewFormRepo(q, logs, tracer)
 
 	authMW := middleware.NewAuthMiddleware(app.GaClient, apiKeysRepo, projectsRepo, tracer)
 
@@ -112,11 +114,14 @@ func TrieFormsStart(app *TrieForms, skipMux bool) {
 	projectsQ := projects.NewProjectQueryService(projectsRepo, app.GaClient, txRunner, tracer)
 	apiKeysC := keys.NewApiKeyCommandService(apiKeysRepo, projectsRepo, app.GaClient, txRunner, tracer)
 	apiKeysQ := keys.NewApiKeyQueryService(apiKeysRepo, projectsRepo, app.GaClient, txRunner, tracer)
+	formsC := forms.NewFormCommandService(formsRepo, projectsRepo, app.GaClient, txRunner, tracer)
+	formsQ := forms.NewFormQueryService(formsRepo, projectsRepo, app.GaClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler(app.GaClient)
 	projectsHandler := projects.NewProjectHandler(projectsC, projectsQ)
 	apiKeysHandler := keys.NewApiKeysHandler(apiKeysC, apiKeysQ)
+	formsHandler := forms.NewFormsHandler(formsC, formsQ)
 
 	asynqmonHandler := asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
@@ -131,6 +136,7 @@ func TrieFormsStart(app *TrieForms, skipMux bool) {
 		SystemHandler:   systemHandler,
 		ProjectsHandler: projectsHandler,
 		ApiKeysHandler:  apiKeysHandler,
+		FormsHandler:    formsHandler,
 		AuthMiddleware:  authMW,
 		AsynqmonHandler: asynqmonHandler,
 	}

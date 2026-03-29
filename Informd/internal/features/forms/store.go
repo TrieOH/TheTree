@@ -1,0 +1,90 @@
+package forms
+
+import (
+	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/plataform/database/sqlc"
+	"TrieForms/internal/shared/errx"
+	"TrieForms/internal/shared/ports"
+	"TrieForms/internal/shared/types"
+	"context"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+)
+
+type repo struct {
+	q      *sqlc.Queries
+	log    *zap.Logger
+	tracer trace.Tracer
+}
+
+var _ ports.FormsRepo = (*repo)(nil)
+
+func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+	return &repo{
+		q:      q,
+		log:    log,
+		tracer: tracer,
+	}
+}
+
+func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
+	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
+		return repo.q.WithTx(tx)
+	}
+	return repo.q
+}
+
+func mapFormFromDB(src *sqlc.Form) *types.Form {
+	return &types.Form{
+		ID:               src.ID,
+		ProjectID:        src.ProjectID,
+		OwnerID:          src.OwnerID,
+		ScopeID:          src.ScopeID,
+		Title:            src.Title,
+		Status:           types.FormStatus(src.Status),
+		CurrentVersionID: src.CurrentVersionID,
+		CreatedAt:        src.CreatedAt,
+		UpdatedAt:        src.UpdatedAt,
+		OpenedAt:         src.OpenedAt,
+		ClosedAt:         src.ClosedAt,
+		ArchivedAt:       src.ArchivedAt,
+	}
+}
+
+func (repo *repo) Create(ctx context.Context, toCreate types.Form) (*types.Form, error) {
+	ctx, span := repo.tracer.Start(ctx, "FormsRepo.Create")
+	defer span.End()
+
+	sqlcForm, err := repo.queries(ctx).CreateForm(ctx, sqlc.CreateFormParams{
+		ID:        toCreate.ID,
+		ProjectID: toCreate.ProjectID,
+		OwnerID:   toCreate.OwnerID,
+		ScopeID:   toCreate.ScopeID,
+		Title:     toCreate.Title,
+		Status:    string(toCreate.Status),
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "form")
+	}
+
+	return mapFormFromDB(&sqlcForm), nil
+}
+
+func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]types.Form, error) {
+	ctx, span := repo.tracer.Start(ctx, "FormsRepo.ListByProject")
+	defer span.End()
+
+	sqlcForm, err := repo.queries(ctx).ListFormsByProject(ctx, projectID)
+	if err != nil {
+		return nil, errx.FromDB(err, "form")
+	}
+
+	out := make([]types.Form, 0, len(sqlcForm))
+	for _, form := range sqlcForm {
+		out = append(out, *mapFormFromDB(&form))
+	}
+	return out, nil
+}

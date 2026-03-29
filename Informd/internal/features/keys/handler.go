@@ -88,7 +88,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}).Send(w)
 }
 
-// ListAPIKeys godoc
+// List godoc
 // @Summary List API keys
 // @Description Lists all API keys for the given project (raw keys are never returned)
 // @Tags api_keys
@@ -102,7 +102,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /projects/{project_id}/keys [get]
-func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
 	if rs == nil {
 		rs.Send(w)
@@ -129,7 +129,7 @@ func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 	resp.OK().WithData(out).Send(w)
 }
 
-// RevokeAPIKey godoc
+// Revoke godoc
 // @Summary Revoke an API key
 // @Description Revokes the given API key, immediately invalidating it
 // @Tags api_keys
@@ -145,7 +145,7 @@ func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} swag.ErrorResponse
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /projects/{project_id}/keys/{id} [delete]
-func (h *Handler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
 	if rs == nil {
 		rs.Send(w)

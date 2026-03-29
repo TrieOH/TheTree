@@ -108,7 +108,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 }
 
 func (s *CommandService) RevokeAPIKey(ctx context.Context, projectID, keyID uuid.UUID) error {
-	ctx, span := s.tracer.Start(ctx, "ApiKeys.RevokeAPIKey")
+	ctx, span := s.tracer.Start(ctx, "ApiKeys.Revoke")
 	defer span.End()
 
 	ga := s.gaClient

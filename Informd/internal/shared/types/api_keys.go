@@ -23,7 +23,7 @@ type APIKey struct {
 func NewAPIKey(projectID, userID uuid.UUID, name, keyHash, keyPrefix string) (*APIKey, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, errx.Internal("product").SetMessage("error generating uuid").SetCause(err)
+		return nil, errx.Internal("api_key").SetMessage("error generating uuid").SetCause(err)
 	}
 
 	ak := &APIKey{

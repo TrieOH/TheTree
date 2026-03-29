@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	initialization.TrieFormsStart(app, false)
+	initialization.TrieFormsStart(app)
 }

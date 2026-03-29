@@ -12,7 +12,7 @@ WHERE key_prefix = $1 AND revoked_at IS NULL;
 SELECT *
 FROM api_keys
 WHERE project_id = $1
-  AND (revoked IS NULL OR revoked >= now() - INTERVAL '30 days')
+  AND (revoked_at IS NULL OR revoked_at >= now() - INTERVAL '30 days')
 ORDER BY created_at DESC;
 
 -- name: RevokeAPIKey :one

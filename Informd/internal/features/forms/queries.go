@@ -1,4 +1,4 @@
-package keys
+package forms
 
 import (
 	"TrieForms/internal/plataform/database"
@@ -14,22 +14,22 @@ import (
 )
 
 type QueryService struct {
-	apiKeys  ports.ApiKeysRepo
+	forms    ports.FormsRepo
 	projects ports.ProjectsRepo
 	gaClient *goauth.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
-func NewApiKeyQueryService(
-	apiKeys ports.ApiKeysRepo,
+func NewFormQueryService(
+	forms ports.FormsRepo,
 	projects ports.ProjectsRepo,
 	gaClient *goauth.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
-		apiKeys:  apiKeys,
+		forms:    forms,
 		projects: projects,
 		gaClient: gaClient,
 		tx:       tx,
@@ -37,8 +37,8 @@ func NewApiKeyQueryService(
 	}
 }
 
-func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []types.APIKey, err error) {
-	ctx, span := s.tracer.Start(ctx, "ApiKeyService.List")
+func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (forms []types.Form, err error) {
+	ctx, span := s.tracer.Start(ctx, "FormService.List")
 	defer span.End()
 
 	ga := s.gaClient
@@ -57,7 +57,7 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []type
 
 	var allowed bool
 	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
+		Object("forms").
 		Action("read").
 		Scope(project.ScopeID).
 		Allowed(ctx)
@@ -65,14 +65,13 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []type
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("api key").SetMessage("insufficient permissions")
+		return nil, errx.Forbidden("form").SetMessage("insufficient permissions")
 	}
 
-	var keys []types.APIKey
-	keys, err = s.apiKeys.ListByProject(ctx, projectID)
+	forms, err = s.forms.ListByProject(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	return keys, nil
+	return forms, nil
 }

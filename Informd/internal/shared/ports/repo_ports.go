@@ -20,3 +20,8 @@ type ProjectsRepo interface {
 	GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*types.Project, error)
 	List(ctx context.Context, ownerID uuid.UUID) ([]types.Project, error)
 }
+
+type FormsRepo interface {
+	Create(ctx context.Context, toCreate types.Form) (*types.Form, error)
+	ListByProject(ctx context.Context, projectID uuid.UUID) ([]types.Form, error)
+}
