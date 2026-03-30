@@ -26,8 +26,7 @@ export const Route = createFileRoute('/callback/$provider/')({
       })
 
       window.location.href = target.toString()
-    }
-    toast.error('Failed to connect provider.')
+    } else toast.error('Failed to connect provider.')
     throw redirect({ to: '/' })
   },
   pendingComponent: RoutePendingComponent,

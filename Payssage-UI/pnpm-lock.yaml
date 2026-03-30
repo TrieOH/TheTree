@@ -18,8 +18,8 @@ importers:
         specifier: ^1.7.0
         version: 1.8.2(@types/react@19.2.14)(posthog-js@1.359.1)(react@19.2.4)
       '@soramux/node-auth-sdk':
-        specifier: ^0.8.5
-        version: 0.8.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^0.9.0
+        version: 0.9.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.10(typescript@5.9.3)(zod@4.3.6)
@@ -1126,8 +1126,8 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/node-auth-sdk@0.8.5':
-    resolution: {integrity: sha512-7I3dlAsnk9f/lBlXep8NBPkSe8g4PiwqHwjGf+J5+sTeD/Z+fot/que7YEIjYN+xiwlZ+hBge70zSLVD6lNOJA==}
+  '@soramux/node-auth-sdk@0.9.0':
+    resolution: {integrity: sha512-i9UKIXB24xNEgHSjqrV2L6XiE3YdIsT5p8D79hHT7q5V/NvG0YSs05SYOwq2z2PS/DvRlKfTG2+kKmN9WyhW5Q==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -3886,7 +3886,7 @@ snapshots:
     dependencies:
       solid-js: 1.9.11
 
-  '@soramux/node-auth-sdk@0.8.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@soramux/node-auth-sdk@0.9.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@soramux/node-fetch-sdk': 0.1.0
       react: 19.2.4

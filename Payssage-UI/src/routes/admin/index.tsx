@@ -42,7 +42,7 @@ function RouteComponent() {
             old.map((ws) => (ws.id === response.data.id ? response.data : ws))
         )
         setIsCreateOpen(false)
-        toast.success('Workspace is ready to production')
+        toast.success('Workspace is ready to test')
       }
     },
   })
@@ -57,7 +57,7 @@ function RouteComponent() {
             old.map((ws) => (ws.id === response.data.id ? response.data : ws))
         )
         setIsCreateOpen(false)
-        toast.success('Workspace is ready to test')
+        toast.success('Workspace is ready to production')
       }
     },
   })
