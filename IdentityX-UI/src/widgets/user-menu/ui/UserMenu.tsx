@@ -23,6 +23,7 @@ export default function UserMenu() {
         },
       })
 
+      router.options.context.queryClient.clear()
       await navigate({ to: '/', replace: true })
       toast.success("Logout successful!")
     } else toast.error("Auth Initialization Failed")
