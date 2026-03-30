@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import {
   Key,
