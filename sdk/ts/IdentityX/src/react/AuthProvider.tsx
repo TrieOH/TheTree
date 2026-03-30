@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -9,7 +10,7 @@ import {
 } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims, isUpToDate } from "../utils/token-utils";
+import { getTokenClaims, type AuthTokenClaims } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
@@ -18,7 +19,6 @@ import { logger } from "@soramux/node-fetch-sdk";
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
-  isUpToDate: boolean;
   isClient?: boolean;
 };
 
@@ -38,35 +38,34 @@ export function AuthProvider({
   isClient?: boolean;
 }) {
   const [ready, setReady] = useState(false);
+  const isRestoring = useRef(false);
 
-  const { isAuthenticated, isUpToDate: upToDate } = useSyncExternalStore(
+  const { isAuthenticated } = useSyncExternalStore(
     authStore.subscribe,
     authStore.getSnapshot,
     authStore.getServerSnapshot,
   );
 
-  const prevConfig = useRef({ projectId, baseURL });
+  // Configuração estável de ambiente
   useEffect(() => {
-    const prev = prevConfig.current;
-    if (prev.projectId === projectId && prev.baseURL === baseURL) return;
-
     configure({
       ...(projectId ? { PROJECT_ID: projectId } : {}),
       ...(baseURL ? { BASE_URL: baseURL } : {}),
     });
-
-    prevConfig.current = { projectId, baseURL };
   }, [projectId, baseURL]);
+
+  const onTokenRefreshed = useCallback((claims: AuthTokenClaims) => {
+    authStore.set({
+      isAuthenticated: !!claims.access_data,
+    });
+  }, []);
 
   const apiInstance = useMemo(() => new Api(
     baseURL,
     undefined,
-    (claims) => authStore.set({
-      isAuthenticated: !!claims.access_data,
-      isUpToDate: claims.is_up_to_date ?? false,
-    }),
+    onTokenRefreshed,
     exchangeURL,
-  ), [baseURL, exchangeURL]);
+  ), [baseURL, exchangeURL, onTokenRefreshed]);
 
   const auth = useMemo(
     () => createAuthService(apiInstance, exchangeURL),
@@ -77,8 +76,11 @@ export function AuthProvider({
     if (isClient) validateProjectKey();
 
     const restoreSession = async () => {
+      if (isRestoring.current) return;
+      isRestoring.current = true;
+
       if (getTokenClaims()) {
-        authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
+        authStore.set({ isAuthenticated: true });
         setReady(true);
         return;
       }
@@ -87,7 +89,7 @@ export function AuthProvider({
       try {
         const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
         if (res.success) {
-          authStore.set({ isAuthenticated: true, isUpToDate: isUpToDate() });
+          authStore.set({ isAuthenticated: true });
           logger.log("Session restored.");
         } else {
           authStore.reset();
@@ -102,13 +104,18 @@ export function AuthProvider({
     };
 
     restoreSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [auth, exchangeURL, isClient]);
+
+  const contextValue = useMemo(() => ({
+    auth,
+    isAuthenticated,
+    isClient
+  }), [auth, isAuthenticated, isClient]);
 
   if (!ready) return null;
 
   return (
-    <AuthContext.Provider value={{ auth, isAuthenticated, isUpToDate: upToDate, isClient }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

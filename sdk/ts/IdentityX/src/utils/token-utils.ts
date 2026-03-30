@@ -2,6 +2,7 @@ import type { Api, ApiResponse } from "../core/api";
 import { AuthTokens } from "../core/services";
 import { authStore } from "../store/auth-store";
 import { logger } from "@soramux/node-fetch-sdk";
+import { browserStorage, cookieStorage } from "./storage-adapter";
 
 export interface TokenClaims {
   sub: {
@@ -25,16 +26,17 @@ export interface TokenClaims {
 export interface AuthTokenClaims {
   access_data: TokenClaims;
   refresh_expiry_date: string | number;
-  is_up_to_date?: boolean;
 }
 
 // Stored only in memory
 let memoryClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
-const IS_UP_TO_DATE_KEY = "trieoh_is_up_to_date";
 
-function getCookieDomain(hostname: string) {
+export function getCookieDomain() {
+  if (typeof window === "undefined") return null;
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost') return null;
   if (hostname.endsWith('univents.com.br')) return 'univents.com.br';
 
   const parts = hostname.split('.');
@@ -46,41 +48,24 @@ function getCookieDomain(hostname: string) {
   return hostname;
 }
 
-export function setCookie(name: string, value: string, expires?: string) {
-  if (typeof window === "undefined") return;
-
-  const hostname = window.location.hostname;
-  const isSecure = window.location.protocol === 'https:';
-  const domain = hostname !== 'localhost' ? getCookieDomain(hostname) : null;
-
-  const cookieParts = [
-    `${name}=${value}`,
-    domain ? `Domain=${domain}` : '',
-    `Path=/`,
-    isSecure ? 'SameSite=None' : 'SameSite=Lax',
-    isSecure ? 'Secure' : '',
-    expires ? `expires=${expires}` : '',
-  ];
-
-  const cookieString = cookieParts.filter(Boolean).join('; ');
-  document.cookie = cookieString;
-}
-
-export function removeCookie(name: string): void {
-  setCookie(name, "", "Thu, 01 Jan 1970 00:00:00 GMT");
-}
-
 export function saveSession(
   claims: AuthTokenClaims,
   session_id: string,
   session_ttl: string,
   refresh_token: string,
 ): void {
-  const sessionExpiry = new Date(session_ttl).getTime().toString();
-  setCookie("svc_session", session_id, sessionExpiry);
+  cookieStorage.set("svc_session", session_id, {
+    expires: new Date(session_ttl).toUTCString(),
+    domain: getCookieDomain()
+  });
+
   saveTokenClaims(claims);
+
   const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-  setCookie("refresh_token", refresh_token, refreshExpiry);
+  cookieStorage.set("refresh_token", refresh_token, {
+    expires: refreshExpiry,
+    domain: getCookieDomain()
+  });
 }
 
 export const withExchange = async (
@@ -95,7 +80,6 @@ export const withExchange = async (
       apiInstance,
       res.data.access_token,
       res.data.refresh_token,
-      res.data.is_up_to_date,
       exchangeURL,
     );
     return res;
@@ -118,15 +102,15 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
 
   if (isNaN(refreshExpiry)) {
     logger.error("Invalid refresh_expiry_date received:", claims.refresh_expiry_date);
-  } else localStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
+  } else browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
 
   if (isNaN(accessExpiry)) {
     logger.error("Invalid access expiry received:", claims.access_data.exp);
-  } else localStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
+  } else browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
 
-  if (claims.is_up_to_date !== undefined) {
-    localStorage.setItem(IS_UP_TO_DATE_KEY, String(claims.is_up_to_date));
-  }
+  authStore.set({
+    isAuthenticated: !!claims.access_data,
+  });
 
   logger.log("Token claims saved");
 }
@@ -136,15 +120,9 @@ export function getTokenClaims(): AuthTokenClaims | null {
   return null;
 }
 
-export function isUpToDate(): boolean {
-  if (memoryClaims?.is_up_to_date !== undefined) return memoryClaims.is_up_to_date;
-  const stored = localStorage.getItem(IS_UP_TO_DATE_KEY);
-  return stored === "true";
-}
-
 function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
   try {
-    const expiryStr = localStorage.getItem(key);
+    const expiryStr = browserStorage.getItem(key);
     if (!expiryStr) return true;
     const expiry = parseInt(expiryStr, 10);
     if (isNaN(expiry)) return true;
@@ -159,7 +137,7 @@ export const isTokenExpiringSoon = (t = 30) => isExpiringSoon(ACCESS_EXPIRY_KEY,
 export const isRefreshSessionExpired = (t = 10) => isExpiringSoon(REFRESH_EXPIRY_KEY, t);
 
 export function isAuthenticated(): boolean {
-  const expiryStr = localStorage.getItem(ACCESS_EXPIRY_KEY);
+  const expiryStr = browserStorage.getItem(ACCESS_EXPIRY_KEY);
   if (!expiryStr) return false;
   const accessExpiryTimestamp = parseInt(expiryStr, 10);
   return accessExpiryTimestamp > Date.now();
@@ -167,12 +145,12 @@ export function isAuthenticated(): boolean {
 
 export function clearAuthTokens(): void {
   memoryClaims = null;
-  localStorage.removeItem(ACCESS_EXPIRY_KEY);
-  localStorage.removeItem(REFRESH_EXPIRY_KEY);
-  localStorage.removeItem(IS_UP_TO_DATE_KEY);
+  browserStorage.removeItem(ACCESS_EXPIRY_KEY);
+  browserStorage.removeItem(REFRESH_EXPIRY_KEY);
 
-  removeCookie("svc_session");
-  removeCookie("refresh_token");
+  const domain = getCookieDomain();
+  cookieStorage.remove("svc_session", domain);
+  cookieStorage.remove("refresh_token", domain);
 
   authStore.reset();
 
@@ -188,7 +166,6 @@ export function getUserInfo() {
 
 export const fetchAndSaveClaims = async (
   apiInstance: Api,
-  is_up_to_date?: boolean,
   skipRefresh?: boolean
 ) => {
   try {
@@ -196,9 +173,8 @@ export const fetchAndSaveClaims = async (
       { requiresAuth: true, skipRefresh }
     );
     if (res.success) {
-      const claims = { ...res.data, is_up_to_date: is_up_to_date ?? isUpToDate() };
-      saveTokenClaims(claims);
-      return { ...res, data: claims };
+      saveTokenClaims(res.data);
+      return { ...res, data: res.data };
     }
     throw new Error(res.message || "Failed to fetch session claims");
   } catch (error) {
@@ -221,7 +197,6 @@ export const exchangeAndSaveClaims = async (
   apiInstance: Api,
   access_token: string,
   refresh_token: string,
-  is_up_to_date: boolean,
   exchangeURL?: string
 ) => {
   // Project: Custom URL
@@ -239,17 +214,10 @@ export const exchangeAndSaveClaims = async (
       const refreshExp = decodeJwtExp(refresh_token);
       const claims: AuthTokenClaims = {
         access_data: res.data.claims,
-        is_up_to_date,
         refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
       };
 
-      const expiresDate = new Date(res.data.ttl).getTime().toString();
-      setCookie("svc_session", res.data.session_id, expiresDate);
-
-      saveTokenClaims(claims);
-
-      const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-      setCookie("refresh_token", refresh_token, refreshExpiry);
+      saveSession(claims, res.data.session_id, res.data.ttl, refresh_token);
 
       return { ...res, data: claims };
     }
@@ -268,13 +236,18 @@ export const exchangeAndSaveClaims = async (
   );
 
   if (res.success) {
-    const expiresDate = new Date(res.data.ttl).getTime().toString();
-    setCookie("svc_session", res.data.session_id, expiresDate);
+    cookieStorage.set("svc_session", res.data.session_id, {
+      expires: new Date(res.data.ttl).toUTCString(),
+      domain: getCookieDomain()
+    });
 
-    const claimsRes = await fetchAndSaveClaims(apiInstance, is_up_to_date, true);
+    const claimsRes = await fetchAndSaveClaims(apiInstance, true);
 
     const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();
-    setCookie("refresh_token", refresh_token, refreshExpiry);
+    cookieStorage.set("refresh_token", refresh_token, {
+      expires: refreshExpiry,
+      domain: getCookieDomain()
+    });
 
     return claimsRes;
   }
