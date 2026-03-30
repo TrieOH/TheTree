@@ -16,10 +16,11 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
-import { AuthProvider } from '@trieoh/node-auth-sdk/react';
-import type { useAuth } from "@trieoh/node-auth-sdk/react";
+import { AuthProvider } from '@soramux/node-auth-sdk/react';
+import type { useAuth } from "@soramux/node-auth-sdk/react";
 import { Toaster } from '#/shared/ui/shadcn/sonner'
 import { AuthContextUpdater } from '#/app/integrations/auth/auth-context-updater'
+import { env } from '#/env'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -39,7 +40,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: env.VITE_APP_TITLE,
       },
     ],
     links: [
@@ -60,10 +61,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider baseURL='http://localhost:8080'>
+            <AuthProvider baseURL={env.VITE_AUTH_API_URL} exchangeURL={env.VITE_EXCHANGE_API_URL}>
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools
