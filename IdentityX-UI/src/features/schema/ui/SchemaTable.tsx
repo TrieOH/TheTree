@@ -18,7 +18,7 @@ interface PropsI {
 }
 
 export default function SchemaTable({ project_id }: PropsI) {
-  const navigate = useNavigate({from: "/projects/config"});
+  const navigate = useNavigate({from: "/projects/$projectId/config"});
   const queryClient = useQueryClient();
   const { data = [] } = useQuery(schemasQueryOptions(project_id))
   const [isPublishConfirmOpen, setIsPublishConfirmOpen] = useState(false);
@@ -109,9 +109,11 @@ export default function SchemaTable({ project_id }: PropsI) {
           {
             label: "Inspect",
             onClick: (row) => {
-              navigationActions.setCurrentSchemaId(row.id);
               navigationActions.setCurrentSchemaVersion(null);
-              navigate({to: '/schemas/editor'})
+              navigate({
+                to: '/projects/$projectId/schemas/$schemaId/editor', 
+                params: {schemaId: row.id}
+              })
             },
             icon: Eye,
             variant: "ghost-primary",

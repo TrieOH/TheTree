@@ -5,6 +5,7 @@ import { publishSchemaVersionFn } from "../api";
 import { toast } from "sonner";
 import { useStore as useNavigationStore } from "@tanstack/react-store";
 import { navigationStore } from "@/features/navigation";
+import { useParams } from "@tanstack/react-router";
 
 interface PublishSchemaVersionButtonProps {
   hasChanges: boolean;
@@ -16,7 +17,8 @@ export default function PublishSchemaVersionButton({
   isMobile,
 }: PublishSchemaVersionButtonProps) {
   const queryClient = useQueryClient();
-  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useNavigationStore(navigationStore);
+  const { projectId: currentProjectId, schemaId: currentSchemaId } = useParams({ strict: false });
+  const { currentSchemaVersion } = useNavigationStore(navigationStore);
 
   const publishSchemaVersionMutation = useMutation({
     mutationFn: publishSchemaVersionFn,

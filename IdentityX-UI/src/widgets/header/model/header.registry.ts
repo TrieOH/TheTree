@@ -42,7 +42,7 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
         id: "schemas_editor_back_000",
         type: 'back',
         visibleOn: "fixed",
-        to: "/projects/config?tab=schema"
+        to: "/projects/$projectId/config?tab=scope"
       }
     ],
     rightActions: [

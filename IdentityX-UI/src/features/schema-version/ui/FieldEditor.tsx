@@ -28,12 +28,14 @@ import { optionsDiff } from '../lib/field-options-diff-utils';
 import { rulesDiff } from '../lib/field-rules-diff-utils';
 import { EditorForm } from '@soramux/node-auth-sdk/react';
 import { mapFieldDefinitionResultToSchemaFieldCreateRequest } from '../lib/convert-field-utils';
+import { useParams } from "@tanstack/react-router";
 
 const EMPTY_FIELDS: FieldDefinitionResultI[] = [];
 
 export default function FieldEditor() {
   const queryClient = useQueryClient();
-  const { currentProjectId, currentSchemaId, currentSchemaVersion } = useStore(navigationStore);
+  const { projectId: currentProjectId, schemaId: currentSchemaId } = useParams({ from: '/projects/$projectId/schemas/$schemaId/editor/' });
+  const { currentSchemaVersion } = useStore(navigationStore);
   const isVersionNull = currentSchemaVersion === null || currentSchemaVersion === undefined;
 
   const [nextId, setNextId] = useState(-1);
