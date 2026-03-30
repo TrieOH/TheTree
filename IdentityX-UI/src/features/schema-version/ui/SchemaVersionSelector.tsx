@@ -18,12 +18,12 @@ import { cn } from "@/shared/lib/utils"
 import { navigationStore, navigationActions } from "@/features/navigation"
 import { useStore } from "@tanstack/react-store"
 import { toast } from "sonner"
+import { useParams } from "@tanstack/react-router"
 
 export default function SchemaVersionSelector() {
   const [open, setOpen] = React.useState(false);
+  const { projectId: currentProjectId, schemaId: currentSchemaId } = useParams({ strict: false }) as Record<string, string>;
   const { 
-    currentProjectId, 
-    currentSchemaId, 
     currentSchemaVersion: storedVersion 
   } = useStore(navigationStore)
   const queryClient = useQueryClient();

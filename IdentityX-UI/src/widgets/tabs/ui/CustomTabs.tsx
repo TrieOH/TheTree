@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/shared/lib/utils';
@@ -20,28 +20,33 @@ type Props = {
   className?: string;
 };
 
-const TabIcon = React.memo(({ icon: Icon, className }: { icon: React.ElementType; className?: string }) => {
+const TabIcon = memo(({ icon: Icon, className }: { icon: React.ElementType; className?: string }) => {
   return <Icon className={cn("h-4 w-4 shrink-0", className)} />;
 });
 
 TabIcon.displayName = 'TabIcon';
 
-const TabTriggerItem = React.memo(({ 
+const springTransition = {
+  type: "spring",
+  stiffness: 500,
+  damping: 38,
+  mass: 1
+} as const;
+
+const TabTriggerItem = memo(({ 
   tab, 
   isActive, 
-  isMobile 
 }: { 
   tab: TabItem; 
   isActive: boolean; 
-  isMobile: boolean 
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = useCallback(async (e: React.MouseEvent) => {
+  const handleRefresh = useCallback(async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     if (tab.onRefresh) {
       setIsRefreshing(true);
-      await tab.onRefresh();
+      tab.onRefresh();
       // Artificial delay to show the animation
       setTimeout(() => setIsRefreshing(false), 500);
     }
@@ -66,7 +71,7 @@ const TabTriggerItem = React.memo(({
             "md:rounded-r-lg md:rounded-l-none"
           )}
           initial={false}
-          transition={{ type: isMobile ? 'tween' : 'spring', stiffness: 400, damping: 30 }}
+          transition={springTransition}
         />
       )}
       {isActive && (
@@ -77,7 +82,7 @@ const TabTriggerItem = React.memo(({
             "md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-0.5 md:h-full"
           )}
           initial={false}
-          transition={{ type: isMobile ? 'tween' : 'spring', stiffness: 400, damping: 30 }}
+          transition={springTransition}
         />
       )}
       <span className="relative z-20 flex items-center justify-between w-full gap-2">
@@ -88,16 +93,23 @@ const TabTriggerItem = React.memo(({
         </div>
         
         {isActive && tab.onRefresh && (
-          <motion.button
+          <motion.span
+            role="button"
+            tabIndex={0}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={handleRefresh}
-            className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors hidden md:block"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleRefresh(e)
+              }
+            }}
+            className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors hidden md:block cursor-pointer"
           >
             <RefreshCcw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
-          </motion.button>
+          </motion.span>
         )}
       </span>
     </TabsTrigger>
@@ -118,23 +130,27 @@ export default function CustomTabs({
   const [activeTab, setActiveTab] = useState<string>(first);
   const [displayTab, setDisplayTab] = useState<string | null>(first);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
-  const [direction, setDirection] = useState<number>(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const idxOf = useCallback((v: string) => safeItems.findIndex((t) => t.value === v), [safeItems]);
 
-  // Sync with initialValue (e.g. from search params)
+  const activeIndex = idxOf(activeTab);
+  const prevIndexRef = useRef(activeIndex);
+  const direction = activeIndex > prevIndexRef.current ? 1 : activeIndex < prevIndexRef.current ? -1 : 0;
+
+  useEffect(() => {
+    prevIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  // Sync with initialValue
   useEffect(() => {
     if (initialValue && initialValue !== activeTab) {
       const newIndex = idxOf(initialValue);
-      const currentIndex = idxOf(activeTab);
       if (newIndex !== -1) {
-        setDirection(newIndex > currentIndex ? 1 : -1);
         setActiveTab(initialValue);
         setDisplayTab(initialValue);
         
-        // Refresh when navigating via initialValue (back/forward)
         const item = safeItems[newIndex];
         if (item?.onRefresh) item.onRefresh();
       }
@@ -151,14 +167,10 @@ export default function CustomTabs({
   }, []);
 
   const handleTabChange = useCallback((newValue: string) => {
-    // Call refresh on every click, even if it's the active tab
     const activeItem = safeItems.find(item => item.value === newValue);
     if (activeItem?.onRefresh) activeItem.onRefresh();
 
     if (newValue === activeTab && !deferTabSwitch) return;
-    const newIndex = idxOf(newValue);
-    const currentIndex = idxOf(activeTab);
-    setDirection(newIndex > currentIndex ? 1 : -1);
 
     if (deferTabSwitch) {
       if (pendingTab === newValue) return;
@@ -176,19 +188,33 @@ export default function CustomTabs({
         tab: newValue,
       }),
     });
-  }, [activeTab, deferTabSwitch, idxOf, navigate, pendingTab, safeItems]);
+  }, [activeTab, deferTabSwitch, navigate, pendingTab, safeItems]);
 
   const contentVariants = useMemo(() => ({
     enter: (dir: number) => ({
       opacity: 0,
-      x: isMobile ? (dir > 0 ? 30 : -30) : 0,
-      y: isMobile ? 0 : (dir > 0 ? 20 : -20)
+      x: isMobile ? (dir > 0 ? 20 : -20) : 0,
+      y: isMobile ? 0 : (dir > 0 ? 15 : -15),
+      filter: "blur(4px)",
+      scale: 0.99,
+      pointerEvents: "auto" as const
     }),
-    center: { opacity: 1, x: 0, y: 0 },
+    center: { 
+      opacity: 1, 
+      x: 0, 
+      y: 0, 
+      filter: "blur(0px)",
+      scale: 1,
+      pointerEvents: "auto" as const
+    },
     exit: (dir: number) => ({
       opacity: 0,
-      x: isMobile ? (dir > 0 ? -30 : 30) : 0,
-      y: isMobile ? 0 : (dir > 0 ? -20 : 20)
+      x: isMobile ? (dir > 0 ? -20 : 20) : 0,
+      y: isMobile ? 0 : (dir > 0 ? -15 : 15),
+      filter: "blur(4px)",
+      scale: 0.99,
+      pointerEvents: "none" as const, // Impede que abas saindo bloqueiem cliques
+      transition: { duration: 0.2 }
     })
   }), [isMobile]);
 
@@ -220,7 +246,7 @@ export default function CustomTabs({
       >
         <div
           className={cn(
-            "absolute bottom-0 left-0 bg-border",
+            "absolute bottom-0 left-0 bg-border/50",
             "md:left-0 md:top-0 md:bottom-0 md:right-auto md:w-0.5 md:h-full"
           )}
         />
@@ -236,7 +262,6 @@ export default function CustomTabs({
               key={tab.value} 
               tab={tab} 
               isActive={activeTab === tab.value} 
-              isMobile={isMobile}
             />
           ))}
         </TabsList>
@@ -245,8 +270,9 @@ export default function CustomTabs({
       {/* Content */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
         <AnimatePresence
-          mode="wait"
+          mode="popLayout"
           custom={direction}
+          initial={false}
           onExitComplete={() => {
             if (pendingTab) {
               setActiveTab(pendingTab);
@@ -263,8 +289,11 @@ export default function CustomTabs({
               initial="enter" 
               animate="center" 
               exit="exit" 
-              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }} 
-              className={cn("absolute inset-0 h-full", isMobile && "pb-12")}
+              transition={{ 
+                duration: 0.3, 
+                ease: [0.23, 1, 0.32, 1] 
+              }} 
+              className={cn("absolute inset-0 h-full w-full", isMobile && "pb-12")}
             >
               <div className="flex flex-col h-full overflow-y-auto overflow-x-hidden p-4">
                 {activeContent}

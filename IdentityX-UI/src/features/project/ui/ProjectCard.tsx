@@ -4,7 +4,6 @@ import { ArrowRight, Clock, ClockFading, Edit, Trash2 } from "lucide-react"
 import { formatDate } from "@/shared/lib/date-utils"
 import { projectActions } from "../store"
 import { useNavigate } from "@tanstack/react-router"
-import { navigationActions } from "@/features/navigation"
 
 interface PropsI {
   data: Project
@@ -14,8 +13,7 @@ export default function ProjectCard({ data }: PropsI) {
   const navigate = useNavigate({ from: '/projects' })
 
   const handleProjectCardClick = () => {
-    navigationActions.setCurrentProjectId(data.id);
-    navigate({ to: '/projects/config' });
+    navigate({ to: '/projects/$projectId/config', params: { projectId: data.id } });
   };
 
   return (

@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useParams } from '@tanstack/react-router'
 import type { HeaderAction } from '../model/header.types'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import AuthButton from '@/features/auth/ui/AuthButton'
@@ -7,11 +7,20 @@ import CreateProjectButton from '@/features/project/ui/CreateProjectButton'
 import SchemaVersionSelector from '@/features/schema-version/ui/SchemaVersionSelector'
 
 export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
+  const params = useParams({ strict: false });
+
+  const resolveTo = (to?: string) => {
+    if (!to) return to
+    let resolved = to
+    if (params.projectId) resolved = resolved.replace('$projectId', params.projectId)
+    if (params.schemaId) resolved = resolved.replace('$schemaId', params.schemaId)
+    return resolved
+  }
   
   switch (action.type) {
     case 'link':
       return (
-        <Link to={action.to} className="custom-underline">
+        <Link to={resolveTo(action.to)} className="custom-underline">
           {action.label}
         </Link>
       )
@@ -25,7 +34,7 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
 
     case 'schemaVersionSelector': return <SchemaVersionSelector />
 
-    case 'back': return <BackButton value='Back' to={action.to} />
+    case 'back': return <BackButton value='Back' to={resolveTo(action.to)} />
 
     case 'authButton': return <AuthButton />
 
