@@ -5,11 +5,13 @@ import { ImExit } from "react-icons/im";
 export interface LogoutProps {
   onSuccess?: () => Promise<void>;
   onFailed?: (message: string) => Promise<void>;
+  forceLogout?: boolean;
 }
 
 export function BasicLogoutButton({
   onSuccess,
-  onFailed
+  onFailed,
+  forceLogout
 }: LogoutProps) {
   const { auth } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export function BasicLogoutButton({
 
     setLoading(true);
 
-    const res = await auth.logout();
+    const res = await auth.logout({ forceLogout });
     if(res.success && onSuccess) await onSuccess();
     else if(onFailed) await onFailed(res.message);
     setLoading(false);

@@ -2,17 +2,18 @@ import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
   decodeJwtExp,
+  getCookieDomain,
   isRefreshSessionExpired,
   isTokenExpiringSoon,
   saveSession,
   saveTokenClaims,
-  setCookie,
   TokenClaims,
   type AuthTokenClaims
 } from "../utils/token-utils";
 import { env } from "./env";
 import { logger } from "@soramux/node-fetch-sdk";
 import { simpleFetch } from "@soramux/node-fetch-sdk";
+import { cookieStorage } from "../utils/storage-adapter";
 
 
 export interface RequestOptions extends RequestInit {
@@ -45,7 +46,7 @@ export class AuthInterceptor {
     this.onRefreshFailed = config?.onRefreshFailed;
   }
 
-  private async fetchClaimsAndSave(is_up_to_date?: boolean): Promise<AuthTokenClaims> {
+  private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
     const res = await simpleFetch<{ data?: AuthTokenClaims, code: number }>(
       joinUrl(this.authBaseURL, "/sessions/me")
     );
@@ -55,15 +56,13 @@ export class AuthInterceptor {
       throw new Error("Failed to fetch session claims after refresh");
     }
 
-    const claims = { ...res.data, is_up_to_date };
-    saveTokenClaims(claims);
-    return claims;
+    saveTokenClaims(res.data);
+    return res.data;
   }
 
   private async exchange(
     access_token: string,
     refresh_token: string,
-    is_up_to_date: boolean
   ): Promise<AuthTokenClaims> {
     // Project: Custom URL
     if (this.exchangeURL) {
@@ -84,7 +83,6 @@ export class AuthInterceptor {
       const refreshExp = decodeJwtExp(refresh_token);
       const claims: AuthTokenClaims = {
         access_data: res.data.claims,
-        is_up_to_date,
         refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
       };
 
@@ -103,12 +101,18 @@ export class AuthInterceptor {
       throw new Error(res.message || "Failed to exchange tokens");
     }
 
-    const expiresDate = new Date(res.data.expires_at).getTime().toString();
-    setCookie("svc_session", res.data.session_id, expiresDate);
+    const expiresDate = new Date(res.data.expires_at).toUTCString();
+    cookieStorage.set("svc_session", res.data.session_id, {
+      expires: expiresDate,
+      domain: getCookieDomain()
+    });
 
-    const claims = await this.fetchClaimsAndSave(is_up_to_date);
+    const claims = await this.fetchClaimsAndSave();
     const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-    setCookie("refresh_token", refresh_token, refreshExpiry);
+    cookieStorage.set("refresh_token", refresh_token, {
+      expires: refreshExpiry,
+      domain: getCookieDomain()
+    });
 
     return claims;
   }
@@ -132,9 +136,9 @@ export class AuthInterceptor {
           throw new Error(data.message || "Failed to refresh token");
         }
 
-        const { access_token, refresh_token, is_up_to_date } = data.data;
+        const { access_token, refresh_token } = data.data;
 
-        const claims = await this.exchange(access_token, refresh_token, is_up_to_date);
+        const claims = await this.exchange(access_token, refresh_token);
 
         this.onTokenRefreshed?.(claims);
         logger.log("Token refreshed successfully");

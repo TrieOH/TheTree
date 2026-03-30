@@ -1,10 +1,8 @@
-// ---- Auth Store ----
 type AuthState = {
   isAuthenticated: boolean;
-  isUpToDate: boolean;
 };
 
-let _state: AuthState = { isAuthenticated: false, isUpToDate: false };
+let _state: AuthState = { isAuthenticated: false };
 const _listeners = new Set<() => void>();
 
 const notify = () => _listeners.forEach(l => l());
@@ -21,7 +19,21 @@ export const authStore = {
     notify();
   },
   reset: () => {
-    _state = { isAuthenticated: false, isUpToDate: false };
+    _state = { isAuthenticated: false };
     notify();
   },
 };
+
+// Sync between tabs
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === "trieoh_access_expiry") {
+      if (!event.newValue) authStore.reset();
+      else {
+        const expiry = parseInt(event.newValue, 10);
+        const isAuthenticated = !isNaN(expiry) && expiry > Date.now();
+        authStore.set({ isAuthenticated });
+      }
+    }
+  });
+}
