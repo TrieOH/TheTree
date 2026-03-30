@@ -23,6 +23,7 @@ import { env } from '@/env'
 import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
 import { NavigationDock } from '@/widgets/ui/navigation-dock'
 import NotFound from '@/widgets/feedback/ui/NotFound'
+import { Toaster } from '@/shared/ui/shadcn/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -95,6 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </AuthProvider>
           </TanStackQueryProvider>
         </PostHogProvider>
+        <Toaster />
         <Scripts />
       </body>
     </html>
