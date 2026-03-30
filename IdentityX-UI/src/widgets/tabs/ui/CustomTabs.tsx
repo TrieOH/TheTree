@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/shadcn/tabs';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/shared/lib/utils';
@@ -20,7 +20,7 @@ type Props = {
   className?: string;
 };
 
-const TabIcon = React.memo(({ icon: Icon, className }: { icon: React.ElementType; className?: string }) => {
+const TabIcon = memo(({ icon: Icon, className }: { icon: React.ElementType; className?: string }) => {
   return <Icon className={cn("h-4 w-4 shrink-0", className)} />;
 });
 
@@ -33,7 +33,7 @@ const springTransition = {
   mass: 1
 } as const;
 
-const TabTriggerItem = React.memo(({ 
+const TabTriggerItem = memo(({ 
   tab, 
   isActive, 
 }: { 
@@ -42,7 +42,7 @@ const TabTriggerItem = React.memo(({
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = useCallback(async (e: React.MouseEvent) => {
+  const handleRefresh = useCallback(async (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     if (tab.onRefresh) {
       setIsRefreshing(true);
@@ -103,7 +103,7 @@ const TabTriggerItem = React.memo(({
             onClick={handleRefresh}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                handleRefresh(e as any)
+                handleRefresh(e)
               }
             }}
             className="p-1 hover:bg-muted-foreground/10 rounded-full transition-colors hidden md:block cursor-pointer"
