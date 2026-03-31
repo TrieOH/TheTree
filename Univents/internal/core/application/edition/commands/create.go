@@ -47,7 +47,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 	}
 
 	var event *domain.Event
-	event, err = uc.events.GetEventByID(ctx, in.EventID)
+	event, err = uc.events.GetByID(ctx, in.EventID)
 	if err != nil {
 		return nil, err
 	}

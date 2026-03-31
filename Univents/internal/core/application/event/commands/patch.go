@@ -28,7 +28,7 @@ func (uc *CommandService) PatchEvent(ctx context.Context, in domain.PatchEventSp
 	}
 
 	var event *domain.Event
-	event, err = uc.events.GetEventByID(ctx, in.ID)
+	event, err = uc.events.GetByID(ctx, in.ID)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -20,7 +20,7 @@ func (uc *CommandService) PublishEvent(ctx context.Context, eventID uuid.UUID) e
 		return err
 	}
 
-	event, err := uc.events.GetEventByID(ctx, eventID)
+	event, err := uc.events.GetByID(ctx, eventID)
 	if err != nil {
 		return err
 	}

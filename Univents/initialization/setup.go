@@ -146,7 +146,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 		}
 	}()
 
-	eventCommands := commands.New(eventRepo, app.GaClient, tracer, txRunner)
+	eventCommands := commands.New(eventRepo, app.Minio, app.GaClient, tracer, txRunner)
 	eventQueries := queries.New(eventRepo, app.GaClient, tracer, txRunner)
 	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
 	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)

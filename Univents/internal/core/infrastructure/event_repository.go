@@ -116,8 +116,8 @@ func (repo *eventsRepo) PatchEvent(ctx context.Context, toPatch *domain.Event) (
 	return mapEventFromDB(&event), nil
 }
 
-func (repo *eventsRepo) GetEventByID(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
-	ctx, span := repo.tracer.Start(ctx, "EventsRepo.GetEventByID")
+func (repo *eventsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.GetByID")
 	defer span.End()
 
 	event, err := repo.queries(ctx).GetEventByID(ctx, id)
@@ -186,4 +186,88 @@ func (repo *eventsRepo) AddEdition(ctx context.Context, eventID uuid.UUID) error
 	}
 
 	return nil
+}
+
+func (repo *eventsRepo) AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.AddGalleryImage")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).AddEventGalleryImage(ctx, sqlc.AddEventGalleryImageParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
+}
+
+func (repo *eventsRepo) RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.RemoveGalleryImage")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).RemoveEventGalleryImage(ctx, sqlc.RemoveEventGalleryImageParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
+}
+
+func (repo *eventsRepo) SetLogo(ctx context.Context, id uuid.UUID, url string) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.SetLogo")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).SetEventLogo(ctx, sqlc.SetEventLogoParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
+}
+
+func (repo *eventsRepo) UnsetLogo(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.UnsetLogo")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).UnsetEventLogo(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
+}
+
+func (repo *eventsRepo) SetBanner(ctx context.Context, id uuid.UUID, url string) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.SetBanner")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).SetEventBanner(ctx, sqlc.SetEventBannerParams{
+		ID:  id,
+		Url: url,
+	})
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
+}
+
+func (repo *eventsRepo) UnsetBanner(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
+	ctx, span := repo.tracer.Start(ctx, "EventsRepo.UnsetBanner")
+	defer span.End()
+
+	sqlcEvent, err := repo.queries(ctx).UnsetEventBanner(ctx, id)
+	if err != nil {
+		return nil, errx.FromDB(err, "event")
+	}
+
+	return mapEventFromDB(&sqlcEvent), nil
 }

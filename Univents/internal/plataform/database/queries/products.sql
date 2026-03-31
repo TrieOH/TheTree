@@ -174,7 +174,7 @@ WHERE id = $1
     AND deleted_at IS NOT NULL
     AND hard_deleted_at IS NULL;
 
--- name: AddGalleryImage :one
+-- name: AddProductGalleryImage :one
 UPDATE products
 SET gallery_urls = array_append(COALESCE(gallery_urls, '{}'), @url::text)
 WHERE id = @id
@@ -182,7 +182,7 @@ WHERE id = @id
   AND deleted_at IS NULL
     RETURNING *;
 
--- name: RemoveGalleryImage :one
+-- name: RemoveProductGalleryImage :one
 UPDATE products
 SET gallery_urls = array_remove(gallery_urls, @url::text)
 WHERE id = @id

@@ -299,7 +299,7 @@ func (repo *productsRepo) AddGalleryImage(ctx context.Context, id uuid.UUID, url
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.AddGalleryImage")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).AddGalleryImage(ctx, sqlc.AddGalleryImageParams{
+	sqlcProduct, err := repo.queries(ctx).AddProductGalleryImage(ctx, sqlc.AddProductGalleryImageParams{
 		ID:  id,
 		Url: url,
 	})
@@ -314,7 +314,7 @@ func (repo *productsRepo) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.RemoveGalleryImage")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).RemoveGalleryImage(ctx, sqlc.RemoveGalleryImageParams{
+	sqlcProduct, err := repo.queries(ctx).RemoveProductGalleryImage(ctx, sqlc.RemoveProductGalleryImageParams{
 		ID:  id,
 		Url: url,
 	})

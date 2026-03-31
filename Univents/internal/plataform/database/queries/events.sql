@@ -55,6 +55,50 @@ WHERE id = $1
         OR editions_count = 0
     );
 
+-- name: AddEventGalleryImage :one
+UPDATE events
+SET gallery_urls = array_append(COALESCE(gallery_urls, '{}'), @url::text)
+WHERE id = @id
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: RemoveEventGalleryImage :one
+UPDATE events
+SET gallery_urls = array_remove(gallery_urls, @url::text)
+WHERE id = @id
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: SetEventLogo :one
+UPDATE events
+SET
+    logo_url = @url::text
+WHERE id = @id
+  AND deleted_at IS NULL
+RETURNING *;
+
+-- name: UnsetEventLogo :one
+UPDATE events
+SET logo_url = NULL
+WHERE id = @id
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: SetEventBanner :one
+UPDATE events
+SET
+    banner_url = @url::text
+WHERE id = @id
+  AND deleted_at IS NULL
+    RETURNING *;
+
+-- name: UnsetEventBanner :one
+UPDATE events
+SET banner_url = NULL
+WHERE id = @id
+  AND deleted_at IS NULL
+    RETURNING *;
+
 -------------------------------------------------------------------------------------------
 ------------------------------------------ Audit ------------------------------------------
 -------------------------------------------------------------------------------------------

@@ -9,11 +9,17 @@ import (
 type EventsRepository interface {
 	CreateEvent(ctx context.Context, toCreate *Event) (*Event, error)
 	PatchEvent(ctx context.Context, toPatch *Event) (*Event, error)
-	GetEventByID(ctx context.Context, id uuid.UUID) (*Event, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Event, error)
 	ListEvents(ctx context.Context) ([]Event, error)
 	ListOwnEvents(ctx context.Context, ownerID uuid.UUID) ([]Event, error)
 	PublishEvent(ctx context.Context, id uuid.UUID) error
 	AddEdition(ctx context.Context, eventID uuid.UUID) error
+	AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*Event, error)
+	RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*Event, error)
+	SetLogo(ctx context.Context, id uuid.UUID, url string) (*Event, error)
+	UnsetLogo(ctx context.Context, id uuid.UUID) (*Event, error)
+	SetBanner(ctx context.Context, id uuid.UUID, url string) (*Event, error)
+	UnsetBanner(ctx context.Context, id uuid.UUID) (*Event, error)
 }
 
 type EditionsRepository interface {

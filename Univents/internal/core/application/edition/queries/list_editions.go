@@ -35,7 +35,7 @@ func (uc *QueryService) ListEditionsAdmin(ctx context.Context, eventID uuid.UUID
 	}
 
 	var event *domain.Event
-	event, err = uc.events.GetEventByID(ctx, eventID)
+	event, err = uc.events.GetByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}

@@ -50,6 +50,12 @@ func registerEventsRoutes(
 		r.Post("/events", h.CreateEvent)
 		r.Patch("/events/{event_id}", h.PatchEvent)
 		r.Post("/events/{event_id}/publish", h.PublishEvent)
+		r.Post("/events/{event_id}/gallery", h.AddGalleryImage)
+		r.Delete("/events/{event_id}/gallery", h.RemoveGalleryImage)
+		r.Put("/events/{event_id}/logo", h.SetLogo)
+		r.Delete("/events/{event_id}/logo", h.UnsetLogo)
+		r.Put("/events/{event_id}/banner", h.SetBanner)
+		r.Delete("/events/{event_id}/banner", h.UnsetBanner)
 	})
 }
 
