@@ -1,7 +1,10 @@
 import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
 import type { SessionI } from "../types/sessions-types";
-import type { CheckPermissionResponse, CheckPermissionRequest } from "../types/permission-types";
-import type { CompletePermissionBuilder } from "./permission";
+import type {
+  CheckPermissionResponse,
+  CheckPermissionRequest,
+  CompletePermissionBuilder
+} from "../types/permission-types";
 import {
   clearAuthTokens,
   fetchAndSaveClaims,
