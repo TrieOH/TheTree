@@ -17,8 +17,7 @@ SET
     has_gallery = $9,
     contact_email = $10,
     social_links = $11,
-    updated_at = now(),
-    owner_id = $14
+    updated_at = now()
 WHERE
     id = $12
     AND goauth_scope_id = $13
