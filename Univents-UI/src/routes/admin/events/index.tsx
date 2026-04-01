@@ -124,7 +124,7 @@ function AdminEventsPage() {
     if (!editingEvent) return
 
     // Using generic diff util
-    const changes = getDirtyFields(data, editingEvent as unknown as EventCreateI, [
+    const changes = getDirtyFields(data, editingEvent as EventCreateI, [
       'name', 'slug', 'acronym', 'tagline', 'description',
       'is_series', 'logo_url', 'banner_url', 'contact_email', 'organization_id'
     ])

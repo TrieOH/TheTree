@@ -1,7 +1,9 @@
-import { createClientOnlyFn } from "@tanstack/react-start";
+import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EventCreateI, EventI } from "../model";
+import type { CheckPermissionRequest } from "@soramux/node-auth-sdk"
 import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { serverAuth } from "@/features/auths/lib/server-auth";
 
 /**
  * Creates a new Event on the server.
@@ -128,4 +130,14 @@ export const publishEventFn = createClientOnlyFn((
     `/events/${eventId}/publish`
   );
 });
+
+
+// Server
+export const checkAdminPermissionFn = createServerFn({ method: "POST" })
+  .inputValidator((data: CheckPermissionRequest) => {
+    return data
+  })
+  .handler(async ({ data }) => {
+    return serverAuth.checkPermission(data)
+  });
 

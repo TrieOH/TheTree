@@ -5,7 +5,8 @@ export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
     TRIEOH_PAY_SECRET_KEY: z.string(),
-    TRIEOH_PAY_BASE_URL: z.url().optional()
+    TRIEOH_PAY_BASE_URL: z.url().optional(),
+    TRIEOH_AUTH_API_KEY: z.string().optional()
   },
 
   /**
@@ -32,7 +33,8 @@ export const env = createEnv({
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
     TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
-    TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL
+    TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
+    TRIEOH_AUTH_API_KEY: process.env.TRIEOH_AUTH_API_KEY
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:")

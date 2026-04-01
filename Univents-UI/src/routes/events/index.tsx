@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Search, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'motion/react'
+import { useAuth } from '@soramux/node-auth-sdk/react'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { eventsQueryOptions } from '@/features/events/api'
 import { cn } from '@/shared/lib/utils'
@@ -13,6 +14,8 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
+import { canCreateEvent, canEditEvent, canPublishEvent } from '@/features/events/model/permissions'
+import { usePermissions } from '@/features/auths/hooks/use-permissions'
 
 export const Route = createFileRoute('/events/')({
   component: EventsPage,
@@ -27,10 +30,17 @@ const filterOptions = [
 ] as const
 
 function EventsPage() {
+  const { auth } = useAuth();
+  const userProfile = auth.profile()
   const { data: events } = useSuspenseQuery(eventsQueryOptions())
+  const { some: somePerms } = usePermissions(
+    { canEditEvent, canPublishEvent, canCreateEvent },
+    userProfile?.id
+  )
+  const isAdmin = somePerms('canEditEvent', 'canPublishEvent', 'canCreateEvent')
+
   const [filter, setFilter] = useState<'all' | 'series'>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const isAdmin = true
 
   const filteredEvents = filter === 'series'
     ? events.filter(e => e.is_series)

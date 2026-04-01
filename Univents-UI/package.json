@@ -22,7 +22,7 @@
     "@mercadopago/sdk-js": "^0.0.3",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@posthog/react": "^1.7.0",
-    "@soramux/node-auth-sdk": "^0.9.0",
+    "@soramux/node-auth-sdk": "link:../NodeAuth",
     "@soramux/node-fetch-sdk": "^0.1.0",
     "@soramux/node-payments-sdk": "^0.1.0",
     "@t3-oss/env-core": "^0.13.8",

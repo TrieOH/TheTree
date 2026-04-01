@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, PencilLine, Share2, Save, X, ArrowRight, Calendar, Loader2 } from 'lucide-react'
+import { PencilLine, Share2, Save, X, ArrowRight, Calendar, Loader2 } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -144,50 +144,6 @@ function RouteComponent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="mx-auto max-w-7xl flex items-center justify-between px-4 h-14">
-          <Link
-            to="/events"
-            className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2 rounded-md hover:bg-muted/50"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-
-          <div className="flex items-center gap-1 text-muted-foreground">
-            {!edit ? (
-              <>
-                <Button
-                  className="h-9 w-9 hover:text-foreground duration-200 transition-colors"
-                  variant="ghost"
-                  onClick={toggleEditMode}
-                  title="Editar evento"
-                >
-                  <PencilLine className="h-4 w-4" />
-                </Button>
-                <Button
-                  className="h-9 w-9 hover:text-foreground duration-200 transition-colors"
-                  variant="ghost"
-                  onClick={() => { void handleShare() }}
-                  title="Compartilhar"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <Button
-                className="h-9 w-9"
-                variant="ghost"
-                onClick={toggleEditMode}
-                title="Cancelar edição"
-              >
-                <X className="h-4 w-4 text-destructive" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
       {/* Banner */}
       <InlineImageEdit
         value={eventData.banner_url}
@@ -235,8 +191,42 @@ function RouteComponent() {
                 )}
               />
 
-              {/* Status and Edition */}
+              {/* Status, Edition and Actions */}
               <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1">
+                  {!edit ? (
+                    <>
+                      <Button
+                        className="h-8 w-8 hover:text-foreground duration-200 transition-colors text-muted-foreground"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { void handleShare() }}
+                        title="Compartilhar"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        className="h-8 w-8 hover:text-foreground duration-200 transition-colors text-muted-foreground"
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleEditMode}
+                        title="Editar evento"
+                      >
+                        <PencilLine className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      className="h-8 w-8"
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleEditMode}
+                      title="Cancelar edição"
+                    >
+                      <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
                 <Badge
                   variant="outline"
                   className={`text-xs font-medium ${statusColors[eventData.status]}`}
