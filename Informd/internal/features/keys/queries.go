@@ -3,11 +3,11 @@ package keys
 import (
 	"TrieForms/internal/plataform/database"
 	"TrieForms/internal/shared/authz"
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -65,7 +65,7 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []type
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("api key").SetMessage("insufficient permissions")
+		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	var keys []types.APIKey

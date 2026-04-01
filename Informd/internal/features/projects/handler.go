@@ -43,13 +43,13 @@ type CreateProjectRequest struct {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateProjectRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
 	project, err := h.commands.Create(r.Context(), req.Name)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := h.queries.List(r.Context())
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 

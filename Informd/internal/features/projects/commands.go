@@ -3,12 +3,12 @@ package projects
 import (
 	"TrieForms/internal/plataform/database"
 	"TrieForms/internal/shared/authz"
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
 	"encoding/json"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -61,7 +61,7 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Pro
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("project").SetMessage("insufficient permissions")
+		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	meta := json.RawMessage(`{"color": "#6a07e3", "icon": "Shield"}`)

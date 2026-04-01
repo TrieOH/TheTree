@@ -58,7 +58,7 @@ func (handler *SystemHandler) Health(w http.ResponseWriter, r *http.Request) {
 func (handler *SystemHandler) ProtectedHealth(w http.ResponseWriter, r *http.Request) {
 	sub, err := authz.RequireSubject(r.Context())
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 

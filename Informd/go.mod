@@ -3,7 +3,7 @@ module TrieForms
 go 1.25.6
 
 require (
-	github.com/MintzyG/FastUtilitiesNet v0.6.0
+	github.com/MintzyG/FastUtilitiesNet v0.6.5
 	github.com/MintzyG/fail/v3 v3.2.0
 	github.com/TrieOH/goauth-sdk-go v0.5.2
 	github.com/exaring/otelpgx v0.10.0

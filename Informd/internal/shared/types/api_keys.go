@@ -1,10 +1,10 @@
 package types
 
 import (
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/validation"
 	"time"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +23,7 @@ type APIKey struct {
 func NewAPIKey(projectID, userID uuid.UUID, name, keyHash, keyPrefix string) (*APIKey, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, errx.Internal("api_key").SetMessage("error generating uuid").SetCause(err)
+		return nil, fun.NewErrorf("error generating uuid for api key: %s", err.Error()).Internal()
 	}
 
 	ak := &APIKey{

@@ -1,10 +1,10 @@
 package authz
 
 import (
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/types"
 	"context"
-	"fmt"
+
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
 const ProjectContextKey contextKey = "project"
@@ -16,12 +16,12 @@ func WithProject(ctx context.Context, project *types.Project) context.Context {
 func RequireProject(ctx context.Context) (*types.Project, error) {
 	val := ctx.Value(ProjectContextKey)
 	if val == nil {
-		return nil, errx.NotFound("project").SetMessage("project not found in context")
+		return nil, fun.NewError("project not found in context").Internal()
 	}
 
 	ws, ok := val.(*types.Project)
 	if !ok {
-		return nil, errx.Invalid("project").SetMessage(fmt.Sprintf("type was %T", val))
+		return nil, fun.NewErrorf("Invalid project type, was: %T", val).Internal()
 	}
 
 	return ws, nil

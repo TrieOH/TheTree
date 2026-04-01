@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"TrieForms/internal/shared/errx"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
@@ -54,15 +54,16 @@ func ValidateRule(value interface{}, rule, fieldName string) error {
 	}
 
 	var errs []error
-	validationErrors, ok := err.(validator.ValidationErrors)
+	var validationErrors validator.ValidationErrors
+	ok := errors.As(err, &validationErrors)
 	if !ok {
-		return errx.Invalid("request").SetMessage("error validating request").SetCause(err)
+		return fun.NewErrorf("error validating request: %s", err.Error()).BadRequest()
 	}
 	for _, e := range validationErrors {
-		msg := formatValidationMessage(e, fieldName, value)
-		errs = append(errs, errors.New(msg))
+		ve := formatValidationMessage(e, fieldName, value)
+		errs = append(errs, ve)
 	}
-	return errx.Combine("validation", errs...)
+	return fun.NewError("validation errors").WithErrors(errs...).Validation()
 }
 
 func formatValue(v interface{}) string {
@@ -86,33 +87,42 @@ func formatValue(v interface{}) string {
 }
 
 // formatValidationMessage creates user-friendly error messages that include the field name
-func formatValidationMessage(err validator.FieldError, fieldName string, value interface{}) string {
+func formatValidationMessage(err validator.FieldError, fieldName string, value any) error {
 	field := fieldName
 	val := formatValue(value)
 
+	var message string
 	switch err.Tag() {
 	case "required":
-		return fmt.Sprintf("%s is required", field)
+		message = fmt.Sprintf("%s is required", field)
 	case "email":
-		return fmt.Sprintf("%s must be a valid email address (got %s)", field, val)
+		message = fmt.Sprintf("%s must be a valid email address (got %s)", field, val)
 	case "uuid":
-		return fmt.Sprintf("%s must be a valid UUID (got %s)", field, val)
+		message = fmt.Sprintf("%s must be a valid UUID (got %s)", field, val)
 	case "uuid7":
-		return fmt.Sprintf("%s must be a valid UUIDv7 (got %s)", field, val)
+		message = fmt.Sprintf("%s must be a valid UUIDv7 (got %s)", field, val)
 	case "min":
 		if err.Kind() == reflect.String {
-			return fmt.Sprintf("%s must be at least %s characters long", field, err.Param())
+			message = fmt.Sprintf("%s must be at least %s characters long", field, err.Param())
+		} else {
+			message = fmt.Sprintf("%s must be at least %s", field, err.Param())
 		}
-		return fmt.Sprintf("%s must be at least %s", field, err.Param())
 	case "max":
 		if err.Kind() == reflect.String {
-			return fmt.Sprintf("%s must be at most %s characters long", field, err.Param())
+			message = fmt.Sprintf("%s must be at most %s characters long", field, err.Param())
+		} else {
+			message = fmt.Sprintf("%s must be at most %s", field, err.Param())
 		}
-		return fmt.Sprintf("%s must be at most %s", field, err.Param())
 	case "oneof":
-		return fmt.Sprintf("%s must be one of: %s (got %s)", field, strings.ReplaceAll(err.Param(), " ", ", "), val)
+		message = fmt.Sprintf("%s must be one of: %s (got %s)", field, strings.ReplaceAll(err.Param(), " ", ", "), val)
 	default:
-		return fmt.Sprintf("%s failed %s validation (got %s)", field, err.Tag(), val)
+		message = fmt.Sprintf("%s failed %s validation (got %s)", field, err.Tag(), val)
+	}
+
+	return &fun.FieldError{
+		Field:   fieldName,
+		Message: message,
+		Value:   value,
 	}
 }
 
@@ -126,12 +136,11 @@ func ValidateStruct(s interface{}) error {
 	var errs []error
 	var validationErrors validator.ValidationErrors
 	if !errors.As(err, &validationErrors) {
-		return errx.Invalid("request").SetMessage("error validating request").SetCause(err)
+		return fun.NewErrorf("error validating request: %s", err.Error()).BadRequest()
 	}
 	for _, err := range validationErrors {
 		structFieldName := err.StructField()
 		fieldName := structFieldName
-		var msg string
 		var value interface{}
 
 		// Get JSON field name if available
@@ -148,21 +157,24 @@ func ValidateStruct(s interface{}) error {
 			}
 		}
 
-		msg = formatValidationMessage(err, fieldName, value)
-		errs = append(errs, errors.New(msg))
+		errs = append(errs, fun.FieldError{
+			Field:   fieldName,
+			Message: err.Error(),
+			Value:   value,
+		})
 	}
-	return errx.Combine("validation", errs...)
+	return fun.NewError("validation errors").WithErrors(errs...).Validation()
 }
 
 // ValidateInto validates JSON into a provided pointer
 func ValidateInto[T any](r *http.Request, target *T) error {
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		return errx.Invalid("request").SetMessage("content type is not application/json")
+		return fun.NewError("request content type is not application/json").BadRequest()
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		return errx.Invalid("request").SetMessage("invalid JSON").SetCause(err)
+		return fun.NewErrorf("request body is invalid json: %s", err.Error()).BadRequest()
 	}
 
 	if err := ValidateStruct(*target); err != nil {
@@ -190,15 +202,13 @@ func Run(validators ...Validator) error {
 		return nil
 	}
 
-	return errx.Combine("validation", errs...)
+	return fun.NewError("validation errors").WithErrors(errs...).Validation()
 }
 
 func RequireUUID(domain, field string, value uuid.UUID) Validator {
 	return func() error {
 		if value == uuid.Nil {
-			return errx.Invalid(domain).
-				SetField(field).
-				SetMessage("cannot be nil")
+			return fun.FieldError{Field: domain + "." + field, Message: "missing required field"}
 		}
 		return nil
 	}
@@ -207,9 +217,7 @@ func RequireUUID(domain, field string, value uuid.UUID) Validator {
 func RequireString(domain, field, value string) Validator {
 	return func() error {
 		if value == "" {
-			return errx.Invalid(domain).
-				SetField(field).
-				SetMessage("missing required field")
+			return fun.FieldError{Field: domain + "." + field, Message: "missing required field"}
 		}
 		return nil
 	}
@@ -218,9 +226,7 @@ func RequireString(domain, field, value string) Validator {
 func RequireTime(domain, field string, value time.Time) Validator {
 	return func() error {
 		if value.IsZero() {
-			return errx.Invalid(domain).
-				SetField(field).
-				SetMessage("missing required field")
+			return fun.FieldError{Field: domain + "." + field, Message: "missing required field"}
 		}
 		return nil
 	}
@@ -229,8 +235,7 @@ func RequireTime(domain, field string, value time.Time) Validator {
 func Assert(domain string, condition bool, message string) Validator {
 	return func() error {
 		if !condition {
-			return errx.Invalid(domain).
-				SetMessage(message)
+			return fun.FieldError{Field: domain, Message: message}
 		}
 		return nil
 	}
@@ -242,7 +247,7 @@ func AssertIf(domain string, guard func() bool, condition func() bool, message s
 			return nil
 		}
 		if !condition() {
-			return errx.Invalid(domain).SetMessage(message)
+			return fun.FieldError{Field: domain, Message: message}
 		}
 		return nil
 	}

@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"TrieForms/internal/plataform/telemetry"
-	"TrieForms/internal/shared/errx"
 	"context"
 	"net/http"
 	"strings"
 	"time"
 
+	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -75,7 +75,7 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				telemetry.Log().Error("request_id error", zap.Error(errx.Internal("request_id").SetMessage("error generating uuid").SetCause(err)))
+				telemetry.Log().Error("request_id error", zap.Error(resp.NewErrorf("error generating id for request_id: %s", err.Error()).Internal()))
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

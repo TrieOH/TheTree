@@ -23,7 +23,7 @@ func NewFormsHandler(
 }
 
 type CreateFormRequest struct {
-	Title string `json:"title"`
+	Title string `json:"title" validate:"required"`
 }
 
 // Create godoc
@@ -51,13 +51,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateFormRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
 	form, err := h.commands.Create(r.Context(), req.Title, projectID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	forms, err := h.queries.List(r.Context(), projectID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 

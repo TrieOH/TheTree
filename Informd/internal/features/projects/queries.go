@@ -3,11 +3,11 @@ package projects
 import (
 	"TrieForms/internal/plataform/database"
 	"TrieForms/internal/shared/authz"
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -54,7 +54,7 @@ func (s *QueryService) List(ctx context.Context) (ws []types.Project, err error)
 		return nil, err
 	}
 	if !allowed {
-		return nil, errx.Forbidden("project").SetMessage("insufficient permissions")
+		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	var projects []types.Project

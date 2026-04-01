@@ -66,13 +66,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateAPIKeyRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
 	rawKey, apiKey, err := h.commands.Create(r.Context(), req.Name, projectID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	keys, err := h.queries.List(r.Context(), projectID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -159,7 +159,7 @@ func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.commands.RevokeAPIKey(r.Context(), projectID, keyID); err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 

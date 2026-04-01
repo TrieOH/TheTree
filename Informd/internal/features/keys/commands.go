@@ -3,7 +3,6 @@ package keys
 import (
 	"TrieForms/internal/plataform/database"
 	"TrieForms/internal/shared/authz"
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
@@ -11,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -69,7 +69,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 	if !allowed {
-		return "", nil, errx.Forbidden("api key").SetMessage("insufficient permissions")
+		return "", nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	rawBytes := make([]byte, 32)
@@ -134,7 +134,7 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, projectID, keyID uuid
 		return err
 	}
 	if !allowed {
-		return errx.Forbidden("api key").SetMessage("insufficient permissions")
+		return fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	if _, err := s.apiKeys.Revoke(ctx, keyID, sub.ID); err != nil {

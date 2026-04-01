@@ -1,10 +1,10 @@
 package types
 
 import (
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/validation"
 	"time"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +35,7 @@ type Form struct {
 func NewForm(projectID, ownerID uuid.UUID, title string) (*Form, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, errx.Internal("form").SetMessage("error generating uuid").SetCause(err)
+		return nil, fun.NewErrorf("error generating uuid for form: %s", err.Error()).Internal()
 	}
 
 	f := &Form{
@@ -46,7 +46,7 @@ func NewForm(projectID, ownerID uuid.UUID, title string) (*Form, error) {
 		Status:    FormStatusDraft,
 	}
 
-	if err := f.validate(); err != nil {
+	if err = f.validate(); err != nil {
 		return nil, err
 	}
 	return f, nil

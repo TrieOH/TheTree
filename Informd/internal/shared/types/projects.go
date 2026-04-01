@@ -1,10 +1,10 @@
 package types
 
 import (
-	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/validation"
 	"time"
 
+	fun "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 )
 
@@ -20,7 +20,7 @@ type Project struct {
 func NewProject(ownerID uuid.UUID, name string) (*Project, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, errx.Internal("project").SetMessage("error generating uuid").SetCause(err)
+		return nil, fun.NewErrorf("error generating uuid for project: %s", err.Error()).Internal()
 	}
 
 	w := &Project{
