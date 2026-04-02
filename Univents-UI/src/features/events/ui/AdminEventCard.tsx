@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import {
   Pencil,
-  Trash2,
   MoreVertical,
   Eye,
   Users,
@@ -45,7 +44,7 @@ interface AdminEventCardProps {
   event: EventI
   index: number
   onEdit: (event: EventI) => void
-  onDelete: (event: EventI) => void
+  // onDelete: (event: EventI) => void
   onPublish: (event: EventI) => void
 }
 
@@ -53,7 +52,6 @@ export default function AdminEventCard({
   event,
   index,
   onEdit,
-  onDelete,
   onPublish
 }: AdminEventCardProps) {
   const isDraft = event.status === 'draft'
@@ -150,13 +148,6 @@ export default function AdminEventCard({
             <Pencil className="w-3.5 h-3.5" />
           </button>
 
-          <button
-            onClick={() => { onDelete(event); }}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            title="Excluir"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
 
           <Link
             to="/admin/events/$eventId/editions"
@@ -234,14 +225,6 @@ export default function AdminEventCard({
                 </button>
 
                 <div className="h-px bg-border my-2" />
-
-                <button
-                  onClick={() => { onDelete(event); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span className="font-medium">Excluir</span>
-                </button>
               </div>
             </DrawerContent>
           </Drawer>

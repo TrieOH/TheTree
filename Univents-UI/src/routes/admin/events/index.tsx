@@ -33,7 +33,6 @@ function AdminEventsPage() {
   const queryClient = useQueryClient()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<EventI | null>(null)
-  const [deletingEvent, setDeletingEvent] = useState<EventI | null>(null)
   const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
   const [isActionsOpen, setIsActionsOpen] = useState(false)
 
@@ -123,7 +122,6 @@ function AdminEventsPage() {
   const handleEdit = (data: EventCreateI) => {
     if (!editingEvent) return
 
-    // Using generic diff util
     const changes = getDirtyFields(data, editingEvent as EventCreateI, [
       'name', 'slug', 'acronym', 'tagline', 'description',
       'is_series', 'logo_url', 'banner_url', 'contact_email', 'organization_id'
@@ -136,13 +134,6 @@ function AdminEventsPage() {
     }
 
     patchMutation.mutate({ id: editingEvent.id, data: data })
-  }
-
-  const handleDelete = () => {
-    if (!deletingEvent) return
-    // FIXME: Implement deleteEventFn in API and use it here
-    console.log('delete', deletingEvent.id)
-    setDeletingEvent(null)
   }
 
   const handlePublish = () => {
@@ -277,7 +268,6 @@ function AdminEventsPage() {
                   event={event}
                   index={idx}
                   onEdit={setEditingEvent}
-                  onDelete={setDeletingEvent}
                   onPublish={setPublishingEvent}
                 />
               ))}
@@ -322,7 +312,7 @@ function AdminEventsPage() {
         loading={loading}
       />
 
-      <AlertModal
+      {/* <AlertModal
         open={!!deletingEvent}
         onOpenChange={() => { setDeletingEvent(null); }}
         title="Deletar evento?"
@@ -330,7 +320,7 @@ function AdminEventsPage() {
         confirmLabel="Deletar"
         onConfirm={handleDelete}
         variant="destructive"
-      />
+      /> */}
     </div>
   )
 }
