@@ -61,6 +61,7 @@ function RouteComponent() {
     logo_url: undefined,
     banner_url: undefined,
     contact_email: '',
+    gallery_urls: [],
   })
 
   // editions-related state

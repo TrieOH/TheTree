@@ -14,12 +14,24 @@ import { cn } from '@/shared/lib/utils'
 import { parseDatetimeLocal } from '@/shared/lib/date'
 import InlineEdit from '@/shared/ui/inline-edit/InlineEdit'
 import InlineImageEdit from '@/shared/ui/inline-edit/InlineImageEdit'
-import { eventQueryOptions, ownEventQueryOptions, patchEventFn } from '@/features/events/api'
+import InlineGalleryEdit from '@/shared/ui/inline-edit/InlineGalleryEdit'
+import {
+  eventQueryOptions,
+  ownEventQueryOptions,
+  patchEventFn,
+  addImageToTheEventGalleryFn,
+  removeImageToTheEventGalleryFn,
+  setEventBannerFn,
+  unsetEventBannerFn,
+  setEventLogoFn,
+  unsetEventLogoFn,
+} from '@/features/events/api'
 import { uploadAndModerateFile } from '@/features/storage/api'
 import { InfoRow, SectionCard, SocialChip } from '@/features/events/ui/EventDetailComponents'
 import { usePermissions } from '@/features/auths/hooks/use-permissions'
 import { canEditEvent } from '@/features/events/model/permissions'
 import WaveSpinnerLoading from '@/shared/ui/loader/WaveSpinnerLoading'
+import { getDirtyFields } from '@/shared/lib/diff'
 
 export const Route = createLazyFileRoute('/events/$eventId/')({
   component: RouteComponent,
@@ -61,48 +73,86 @@ function RouteComponent() {
   const [eventData, setEventData] = useState<EventI | null>(null)
 
   useEffect(() => {
-    if (event) setEventData(event)
-  }, [event])
+    if (event && !edit) setEventData(event)
+  }, [event, edit])
 
   const [editingField, setEditingField] = useState<string | null>(null)
 
+  const fieldsToCompare = useMemo(() => [
+    'name', 'slug', 'acronym', 'tagline', 'description',
+    'is_series', 'contact_email', 'social_links', 'logo_url', 'banner_url', 'gallery_urls'
+  ] as (keyof EventI)[], [])
+
   const isDirty = useMemo(() => {
     if (!event || !eventData) return false
-    return JSON.stringify(event) !== JSON.stringify(eventData)
-  }, [event, eventData])
+    return Object.keys(getDirtyFields(eventData, event, fieldsToCompare)).length > 0
+  }, [event, eventData, fieldsToCompare])
 
   const mutation = useMutation({
-    mutationFn: (data: Partial<EventI>) => patchEventFn(eventId, data),
-    onSuccess: (res) => {
-      if (res.success) {
-        queryClient.setQueryData(ownEventQueryOptions(eventId).queryKey, res.data)
-        toast.success('Alterações salvas!')
+    mutationFn: async (current: EventI) => {
+      if (!event) throw new Error('No original event')
+
+      const changes = getDirtyFields(current, event, fieldsToCompare)
+
+      if (Object.keys(changes).length === 0) {
+        toast.info('Nenhuma alteração detectada')
+        return
+      }
+
+      const ops: Promise<unknown>[] = []
+
+      ops.push(patchEventFn(eventId, {
+        name: current.name,
+        acronym: current.acronym,
+        tagline: current.tagline,
+        description: current.description,
+        slug: current.slug,
+        is_series: current.is_series,
+        contact_email: current.contact_email,
+        logo_url: current.logo_url,
+        banner_url: current.banner_url,
+      }))
+
+      if ('logo_url' in changes)
+        ops.push(current.logo_url ? setEventLogoFn(eventId, { url: current.logo_url }) : unsetEventLogoFn(eventId))
+
+      if ('banner_url' in changes)
+        ops.push(current.banner_url ? setEventBannerFn(eventId, { url: current.banner_url }) : unsetEventBannerFn(eventId))
+
+      if ('gallery_urls' in changes) {
+        const orig = event.gallery_urls
+        const curr = current.gallery_urls
+        for (const url of curr.filter(u => !orig.includes(u))) ops.push(addImageToTheEventGalleryFn(eventId, { url }))
+        for (const url of orig.filter(u => !curr.includes(u))) ops.push(removeImageToTheEventGalleryFn(eventId, { url }))
+      }
+
+      await Promise.all(ops)
+    },
+    onSuccess: () => {
+      if (eventData) {
         void navigate({ search: (prev) => ({ ...prev, edit: false }) })
-      } else toast.error('Erro ao salvar alterações')
+        queryClient.setQueryData(ownEventQueryOptions(eventId).queryKey, eventData)
+        queryClient.setQueryData(eventQueryOptions(eventId).queryKey, eventData)
+        toast.success('Alterações salvas!')
+      }
     },
     onError: () => toast.error('Erro ao salvar alterações'),
   })
 
   const toggleEditMode = () => {
-    void navigate({ search: (prev) => ({ ...prev, edit: !edit }) })
+    const nextEdit = !edit
+    void navigate({ search: (prev) => ({ ...prev, edit: nextEdit }) })
+    if (nextEdit && event) setEventData(event)
     setEditingField(null)
   }
 
-  const updateField = (field: keyof EventI, value: string) => {
-    if (!eventData) return
+  const updateField = (field: keyof EventI, value: unknown) => {
     setEventData((prev) => prev ? { ...prev, [field]: value } : null)
   }
 
   const handleSave = () => {
     if (!eventData) return
-    const {
-      name, acronym, tagline, description, logo_url, banner_url,
-      slug, is_series, contact_email, gallery_urls
-    } = eventData
-    mutation.mutate({
-      name, acronym, tagline, description, logo_url, banner_url,
-      slug, is_series, contact_email, gallery_urls
-    })
+    mutation.mutate(eventData)
   }
 
   const handleShare = async () => {
@@ -153,6 +203,19 @@ function RouteComponent() {
     eventData.social_links?.instagram ??
     eventData.social_links?.linkedin
   )
+
+  const galleryItemActions = [
+    {
+      label: 'Definir como Logo',
+      icon: 'star' as const,
+      onClick: (url: string) => { updateField('logo_url', url); },
+    },
+    {
+      label: 'Definir como Banner',
+      icon: 'layout' as const,
+      onClick: (url: string) => { updateField('banner_url', url); },
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -333,11 +396,19 @@ function RouteComponent() {
             </div>
           </div>
 
-          {eventData.description && (
+          {(eventData.description ?? edit) && (
             <SectionCard label="Sobre">
-              <p className="text-sm text-foreground/75 leading-relaxed">
-                {eventData.description}
-              </p>
+              <InlineEdit
+                value={eventData.description ?? ''}
+                onChange={(val) => { updateField('description', val); }}
+                isEditEnabled={edit}
+                isEditing={editingField === 'description'}
+                onStartEdit={() => { setEditingField('description'); }}
+                onFinishEdit={() => { setEditingField(null); }}
+                multiline
+                className="text-sm text-foreground/75 leading-relaxed w-full"
+                placeholder="Descrição do evento..."
+              />
             </SectionCard>
           )}
 
@@ -350,45 +421,49 @@ function RouteComponent() {
             </div>
           </SectionCard>
 
-          {eventData.gallery_urls.length > 0 && (
+          {(eventData.gallery_urls.length > 0 || edit) && (
             <SectionCard label="Galeria">
-              <div className="grid grid-cols-3 gap-1.5">
-                {eventData.gallery_urls.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="aspect-square rounded-lg overflow-hidden bg-muted block"
-                  >
-                    <img
-                      src={url}
-                      alt={`Galeria ${i + 1}`}
-                      className="h-full w-full object-cover hover:scale-105 transition-transform duration-200"
-                    />
-                  </a>
-                ))}
-              </div>
+              <InlineGalleryEdit
+                value={eventData.gallery_urls}
+                onChange={(urls) => { updateField('gallery_urls', urls); }}
+                isEditEnabled={edit}
+                onUpload={(file) => uploadAndModerateFile(file, `events/${eventId}`)}
+                itemActions={galleryItemActions}
+              />
             </SectionCard>
           )}
 
-          {(eventData.contact_email ?? hasSocialLinks) && (
+          {(Boolean(eventData.contact_email) || hasSocialLinks || edit) && (
             <SectionCard label="Contato">
               <div className="flex flex-wrap gap-2">
-                {eventData.contact_email && (
-                  <a
-                    href={`mailto:${eventData.contact_email}`}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-2 rounded-lg',
-                      'bg-background border border-border',
-                      'text-sm text-foreground/80 hover:text-foreground',
-                      'hover:bg-muted transition-colors min-w-0',
-                    )}
-                  >
-                    <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate max-w-50">{eventData.contact_email}</span>
-                  </a>
-                )}
+                {edit
+                  ? (
+                    <InlineEdit
+                      value={eventData.contact_email ?? ''}
+                      onChange={(val) => { updateField('contact_email', val); }}
+                      isEditEnabled={edit}
+                      isEditing={editingField === 'contact_email'}
+                      onStartEdit={() => { setEditingField('contact_email'); }}
+                      onFinishEdit={() => { setEditingField(null); }}
+                      className="text-sm text-foreground/80"
+                      placeholder="email@contato.com"
+                    />
+                  )
+                  : eventData.contact_email && (
+                    <a
+                      href={`mailto:${eventData.contact_email}`}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2 rounded-lg',
+                        'bg-background border border-border',
+                        'text-sm text-foreground/80 hover:text-foreground',
+                        'hover:bg-muted transition-colors min-w-0',
+                      )}
+                    >
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate max-w-50">{eventData.contact_email}</span>
+                    </a>
+                  )
+                }
                 {eventData.social_links?.website && (
                   <SocialChip href={eventData.social_links.website} label="Website" icon={<Globe className="h-3.5 w-3.5" />} />
                 )}

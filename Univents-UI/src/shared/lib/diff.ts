@@ -41,7 +41,7 @@ function deepEqual(a: unknown, b: unknown): boolean {
  * Returns an object containing only the fields from 'data' that are different 
  * from their counterparts in 'original'.
  */
-export function getDirtyFields<T extends Record<string, unknown>>(
+export function getDirtyFields<T extends object>(
   data: T,
   original: T,
   fieldsToCompare?: (keyof T)[]
