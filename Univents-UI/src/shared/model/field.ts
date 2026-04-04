@@ -1,8 +1,10 @@
-export type FieldType = 'text' | 'email' | 'textarea' | 'checkbox' | 'select' |
-  'number' | 'url' | 'percentage' | 'image-upload'
+import type { Path, PathValue, FieldValues } from "react-hook-form"
 
-export interface FormFieldI<T> {
-  name: keyof T
+export type FieldType = 'text' | 'email' | 'textarea' | 'checkbox' | 'select' |
+  'number' | 'url' | 'percentage' | 'image-upload' | 'gallery-upload'
+
+export interface FormFieldI<T extends FieldValues> {
+  name: Path<T>
   label: string
   type: FieldType
   placeholder?: string
@@ -10,8 +12,15 @@ export interface FormFieldI<T> {
   options?: { value: string; label: string }[]
   rows?: number
   span?: 'full' | 'half'
-  // Image only
+  autocomplete?: string
+  autoFocus?: boolean
+  // Image and Gallery
   accept?: string
   maxSize?: number
   uploadFn?: (file: File) => Promise<string>
+  itemActions?: {
+    label: string
+    icon?: 'image' | 'layout' | 'star'
+    onClick?: (url: string, setValue: (name: Path<T>, value: PathValue<T, Path<T>>) => void) => void
+  }[]
 }

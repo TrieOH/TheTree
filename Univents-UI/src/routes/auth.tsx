@@ -14,9 +14,7 @@ const authSearchSchema = z.object({
 
 export const Route = createFileRoute('/auth')({
   validateSearch: (search) => authSearchSchema.parse(search),
-  beforeLoad: (ctx) => {
-    requireGuest(ctx)
-  },
+  beforeLoad: requireGuest,
   component: App,
 })
 

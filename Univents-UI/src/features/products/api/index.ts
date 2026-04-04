@@ -1,6 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { ImageURLProductI, ProductCreateI, ProductI } from "../model";
+import type { ProductCreateI, ProductI } from "../model";
+import type { ImageURLUploadI } from "@/shared/model/generic";
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
@@ -126,7 +127,7 @@ export const softDeleteProductFn = createClientOnlyFn((
  * @returns A promise that resolves to the API ProductI response.
  */
 export const addImageToTheProductGalleryFn = createClientOnlyFn((
-  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+  eventId: string, editionId: string, productId: string, urlData: ImageURLUploadI
 ) => {
   return authFetcher.post<ProductI>(
     `/events/${eventId}/editions/${editionId}/products/${productId}/gallery`,
@@ -142,7 +143,7 @@ export const addImageToTheProductGalleryFn = createClientOnlyFn((
  * @returns A promise that resolves to the API ProductI response.
  */
 export const removeImageToTheProductGalleryFn = createClientOnlyFn((
-  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+  eventId: string, editionId: string, productId: string, urlData: ImageURLUploadI
 ) => {
   return authFetcher.delete<ProductI>(
     `/events/${eventId}/editions/${editionId}/products/${productId}/gallery`,
@@ -158,7 +159,7 @@ export const removeImageToTheProductGalleryFn = createClientOnlyFn((
  * @returns A promise that resolves to the API ProductI response.
  */
 export const setProductThumbnailFn = createClientOnlyFn((
-  eventId: string, editionId: string, productId: string, urlData: ImageURLProductI
+  eventId: string, editionId: string, productId: string, urlData: ImageURLUploadI
 ) => {
   return authFetcher.put<ProductI>(
     `/events/${eventId}/editions/${editionId}/products/${productId}/thumbnail`,

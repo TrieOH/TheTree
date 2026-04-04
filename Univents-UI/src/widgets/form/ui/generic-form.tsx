@@ -1,14 +1,16 @@
-import { useForm } from "react-hook-form"
+import { useForm, get } from "react-hook-form"
 import { useState, useCallback, useEffect } from "react"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { FormField } from "./form-field"
 import type { ZodType } from "zod"
-import type { DefaultValues, FieldValues } from "react-hook-form"
+import type { DefaultValues, FieldValues, Path, PathValue } from "react-hook-form"
 import type { FormFieldI } from "@/shared/model/field"
 import { Button } from '@/shared/ui/shadcn/button'
 
 interface GenericFormProps<T extends FieldValues> {
+  idPrefix?: string
   fields: readonly FormFieldI<T>[]
   schema: ZodType<T>
   onSubmit: (data: T) => void | Promise<void>
@@ -18,7 +20,10 @@ interface GenericFormProps<T extends FieldValues> {
   loading?: boolean
 }
 
+type PendingFileType = File | File[] | null
+
 export function GenericForm<T extends FieldValues>({
+  idPrefix,
   fields,
   schema,
   onSubmit,
@@ -28,11 +33,11 @@ export function GenericForm<T extends FieldValues>({
   loading: externalLoading = false,
 }: GenericFormProps<T>) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({})
+  const [pendingFiles, setPendingFiles] = useState<Record<string, PendingFileType>>({})
 
   const loading = externalLoading || isSubmitting
 
-  const { register, handleSubmit, formState: { errors }, reset, control } = useForm<T>({
+  const { register, handleSubmit, formState: { errors }, reset, control, setValue, getValues } = useForm<T>({
     resolver: standardSchemaResolver(schema),
     defaultValues,
   })
@@ -41,22 +46,28 @@ export function GenericForm<T extends FieldValues>({
     reset(defaultValues)
   }, [defaultValues, reset])
 
-  const handleFileSelect = useCallback((fieldName: string, file: File | null) => {
+  const handleFileSelect = useCallback((fieldName: string, file: PendingFileType) => {
     setPendingFiles(prev => ({ ...prev, [fieldName]: file }))
   }, [])
 
-  const processUploads = async (): Promise<Record<string, string>> => {
-    const urls: Record<string, string> = {}
+  const processUploads = async (): Promise<Record<string, string | string[]>> => {
+    const urls: Record<string, string | string[]> = {}
 
-    for (const [fieldName, file] of Object.entries(pendingFiles)) {
-      if (!file) continue
+    for (const [fieldName, files] of Object.entries(pendingFiles)) {
+      if (!files) continue
 
-      const field = fields.find(f => String(f.name) === fieldName)
-      if (!field?.uploadFn) continue
+      const field = fields.find(f => f.name === fieldName)
+      const uploadFn = field?.uploadFn
+      if (!uploadFn) continue
 
       try {
-        const url = await field.uploadFn(file)
-        urls[fieldName] = url
+        if (Array.isArray(files)) {
+          const uploadedUrls = await Promise.all(files.map(file => uploadFn(file)))
+          urls[fieldName] = uploadedUrls
+        } else {
+          const url = await uploadFn(files)
+          urls[fieldName] = url
+        }
       } catch (error) {
         throw new Error(`Falha no upload de ${field.label}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
       }
@@ -70,13 +81,24 @@ export function GenericForm<T extends FieldValues>({
 
     try {
       const uploadedUrls = await processUploads()
-      const finalData = { ...data, ...uploadedUrls } as T
 
-      await onSubmit(finalData)
+      Object.entries(uploadedUrls).forEach(([key, value]) => {
+        const fieldName = key as Path<T>
+        if (Array.isArray(value)) {
+          const current = data[key] as unknown
+          const existing = Array.isArray(current) ? (current as unknown[]) : []
+          setValue(fieldName, [...existing, ...value] as PathValue<T, Path<T>>)
+        } else {
+          setValue(fieldName, value as PathValue<T, Path<T>>)
+        }
+      })
+
+      await onSubmit(getValues())
       setPendingFiles({})
       reset()
     } catch (error) {
       console.error('Erro no submit:', error)
+      toast.error(error instanceof Error ? error.message : 'Erro ao processar formulário')
     } finally {
       setIsSubmitting(false)
     }
@@ -88,7 +110,7 @@ export function GenericForm<T extends FieldValues>({
     onCancel()
   }
 
-  const hasPendingUploads = Object.values(pendingFiles).some(f => f !== null)
+  const hasPendingUploads = Object.values(pendingFiles).some(f => f !== null && (Array.isArray(f) ? f.length > 0 : true))
 
   return (
     <form
@@ -100,14 +122,16 @@ export function GenericForm<T extends FieldValues>({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {fields.map((field) => (
           <FormField
-            key={String(field.name)}
+            key={field.name}
+            idPrefix={idPrefix}
             field={field}
             register={register}
             control={control}
-            error={errors[field.name] as { message?: string }}
+            setValue={setValue}
+            error={get(errors, field.name) as { message?: string } | undefined}
             loading={loading}
-            pendingFile={pendingFiles[String(field.name)]}
-            onFileSelect={(file) => { handleFileSelect(String(field.name), file); }}
+            pendingFile={pendingFiles[field.name] ?? null}
+            onFileSelect={(file) => { handleFileSelect(field.name, file); }}
           />
         ))}
       </div>

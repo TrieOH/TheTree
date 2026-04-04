@@ -21,7 +21,19 @@ import { cn, getDirtyFields } from '@/shared/lib/utils'
 import { eventCreateSchema } from '@/features/events/model'
 import { FormDrawer } from '@/widgets/form/ui/form-drawer'
 import { getEventFields } from '@/features/events/model/field'
-import { ownEventsQueryOptions, eventsQueryOptions, createEventFn, patchEventFn, publishEventFn } from '@/features/events/api'
+import {
+  ownEventsQueryOptions,
+  eventsQueryOptions,
+  createEventFn,
+  patchEventFn,
+  publishEventFn,
+  addImageToTheEventGalleryFn,
+  removeImageToTheEventGalleryFn,
+  setEventBannerFn,
+  unsetEventBannerFn,
+  setEventLogoFn,
+  unsetEventLogoFn,
+} from '@/features/events/api'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
 import { AlertModal } from '@/widgets/ui/alert-modal'
 
@@ -119,12 +131,39 @@ function AdminEventsPage() {
     createMutation.mutate(data)
   }
 
-  const handleEdit = (data: EventCreateI) => {
+  const updateEventMedia = async (id: string, data: EventCreateI, original: EventI, changes: Partial<EventCreateI>) => {
+    // Gallery
+    if (changes.gallery_urls !== undefined) {
+      const currentGallery = original.gallery_urls
+      const targetGallery = data.gallery_urls
+
+      for (const url of targetGallery.filter(u => !currentGallery.includes(u))) {
+        await addImageToTheEventGalleryFn(id, { url })
+      }
+      for (const url of currentGallery.filter(u => !targetGallery.includes(u))) {
+        await removeImageToTheEventGalleryFn(id, { url })
+      }
+    }
+
+    // Banner
+    if (changes.banner_url !== undefined) {
+      if (data.banner_url) await setEventBannerFn(id, { url: data.banner_url })
+      else await unsetEventBannerFn(id)
+    }
+
+    // Logo
+    if (changes.logo_url !== undefined) {
+      if (data.logo_url) await setEventLogoFn(id, { url: data.logo_url })
+      else await unsetEventLogoFn(id)
+    }
+  }
+
+  const handleEdit = async (data: EventCreateI) => {
     if (!editingEvent) return
 
     const changes = getDirtyFields(data, editingEvent as EventCreateI, [
       'name', 'slug', 'acronym', 'tagline', 'description',
-      'is_series', 'logo_url', 'banner_url', 'contact_email', 'organization_id'
+      'is_series', 'contact_email', 'social_links', 'logo_url', 'banner_url', 'gallery_urls'
     ])
 
     if (Object.keys(changes).length === 0) {
@@ -133,7 +172,8 @@ function AdminEventsPage() {
       return
     }
 
-    patchMutation.mutate({ id: editingEvent.id, data: data })
+    await updateEventMedia(editingEvent.id, data, editingEvent, changes)
+    await patchMutation.mutateAsync({ id: editingEvent.id, data })
   }
 
   const handlePublish = () => {
@@ -151,6 +191,8 @@ function AdminEventsPage() {
     is_series: event.is_series,
     logo_url: event.logo_url,
     banner_url: event.banner_url,
+    gallery_urls: event.gallery_urls,
+    social_links: event.social_links ?? undefined,
   } : {}
 
   const loading = createMutation.isPending || patchMutation.isPending || publishMutation.isPending
@@ -277,6 +319,7 @@ function AdminEventsPage() {
       </main>
 
       <FormDrawer
+        idPrefix="create-"
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         title="Novo evento"
@@ -288,6 +331,7 @@ function AdminEventsPage() {
       />
 
       <FormDrawer
+        idPrefix="edit-"
         open={!!editingEvent}
         onOpenChange={(open) => {
           if (!open) setEditingEvent(null)
@@ -311,16 +355,6 @@ function AdminEventsPage() {
         variant="success"
         loading={loading}
       />
-
-      {/* <AlertModal
-        open={!!deletingEvent}
-        onOpenChange={() => { setDeletingEvent(null); }}
-        title="Deletar evento?"
-        description={`Tem certeza que deseja deletar "${deletingEvent?.name}"?`}
-        confirmLabel="Deletar"
-        onConfirm={handleDelete}
-        variant="destructive"
-      /> */}
     </div>
   )
 }

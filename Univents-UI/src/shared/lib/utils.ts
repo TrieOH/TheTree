@@ -26,9 +26,12 @@ export function getDirtyFields<T extends Record<string, unknown>>(
     const normalizedNew = newVal === "" ? null : (newVal ?? null)
     const normalizedOld = oldVal === "" ? null : (oldVal ?? null)
 
-    if (normalizedNew !== normalizedOld) {
-      changes[key] = newVal
-    }
+    const isObject = (val: unknown): val is Record<string, unknown> =>
+      typeof val === 'object' && val !== null && !Array.isArray(val)
+
+    if (isObject(normalizedNew) && isObject(normalizedOld)) {
+      if (JSON.stringify(normalizedNew) !== JSON.stringify(normalizedOld)) changes[key] = newVal
+    } else if (normalizedNew !== normalizedOld) changes[key] = newVal
   })
 
   return changes

@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { Upload, X } from "lucide-react"
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/shadcn/button'
 
 interface ImageUploadFieldProps {
+  id?: string
+  name?: string
   value?: string
   onChange: (url: string) => void
   onBlur?: () => void
@@ -15,6 +16,8 @@ interface ImageUploadFieldProps {
 }
 
 export default function ImageUploadField({
+  id,
+  name,
   value,
   onChange,
   onBlur,
@@ -31,8 +34,15 @@ export default function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+
+    if (value && preview && value !== preview) {
+      setPreview(null)
+      setSelectedFile(null)
+      onFileSelect?.(null)
+    }
+
     if (!value && !selectedFile) setPreview(null)
-  }, [value, selectedFile])
+  }, [value, preview, selectedFile, onFileSelect])
 
   const validateFile = (file: File): string | null => {
     if (maxSize && file.size > maxSize) {
@@ -108,83 +118,81 @@ export default function ImageUploadField({
 
   const displayImage = preview ?? value
 
-  if (displayImage) {
-    return (
-      <div className="relative group">
-        <div className="relative rounded-xl overflow-hidden border border-border bg-muted">
-          <img
-            src={displayImage}
-            alt="Preview"
-            className="w-full h-40 object-cover"
-          />
-
-          {selectedFile && (
-            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md">
-              Pronto para upload
-            </div>
-          )}
-
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleRemove}
-              disabled={disabled}
-              className="rounded-lg bg-white/90 hover:bg-white text-destructive"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Remover
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-2">
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClick}
-        className={cn(
-          "relative border-2 border-dashed rounded-xl p-4 transition-all duration-200",
-          "flex flex-col items-center justify-center gap-2",
-          "min-h-30 cursor-pointer",
-          isDragging
-            ? "border-primary bg-primary/5 scale-[1.02]"
-            : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30",
-          disabled && "opacity-50 cursor-not-allowed",
-          error && "border-destructive bg-destructive/5"
-        )}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          onChange={handleFileSelect}
-          disabled={disabled}
-          className="hidden"
-        />
+      <input
+        ref={inputRef}
+        id={id}
+        name={name}
+        type="file"
+        accept={accept}
+        onChange={handleFileSelect}
+        disabled={disabled}
+        className="hidden"
+      />
 
-        <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
-          isDragging ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-        )}>
-          <Upload className="w-5 h-5" />
-        </div>
+      {displayImage ? (
+        <div className="relative group">
+          <div className="relative rounded-xl overflow-hidden border border-border bg-muted">
+            <img
+              src={displayImage}
+              alt="Preview"
+              className="w-full h-40 object-cover"
+            />
 
-        <div className="text-center space-y-0.5">
-          <p className="text-sm font-medium text-foreground">
-            {isDragging ? 'Solte aqui' : placeholder}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {accept.replace(/image\//g, '').replace(/,/g, ', ')} até {(maxSize / 1024 / 1024).toFixed(0)}MB
-          </p>
+            {selectedFile && (
+              <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md">
+                Pronto para upload
+              </div>
+            )}
+
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+              <button
+                type="button"
+                onClick={handleRemove}
+                disabled={disabled}
+                title="Remover"
+                className="p-1.5 rounded-full bg-destructive text-destructive-foreground hover:scale-110 transition-all active:scale-95 shadow-sm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleClick}
+          className={cn(
+            "relative border-2 border-dashed rounded-xl p-4 transition-all duration-200",
+            "flex flex-col items-center justify-center gap-2",
+            "min-h-30 cursor-pointer",
+            isDragging
+              ? "border-primary bg-primary/5 scale-[1.02]"
+              : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30",
+            disabled && "opacity-50 cursor-not-allowed",
+            error && "border-destructive bg-destructive/5"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+            isDragging ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+          )}>
+            <Upload className="w-5 h-5" />
+          </div>
+
+          <div className="text-center space-y-0.5">
+            <p className="text-sm font-medium text-foreground">
+              {isDragging ? 'Solte aqui' : placeholder}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {accept.replace(/image\//g, '').replace(/,/g, ', ')} até {(maxSize / 1024 / 1024).toFixed(0)}MB
+            </p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="text-xs text-destructive">

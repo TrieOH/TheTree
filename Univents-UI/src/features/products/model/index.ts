@@ -69,10 +69,3 @@ export interface UnavailableItemI {
   requested: number;
   reserved: number;
 }
-
-export const imageURLProductSchema = z.object({
-  url: z.url(),
-})
-
-export type ImageURLProductI = z.infer<typeof imageURLProductSchema>
-

@@ -11,6 +11,7 @@ import {
 } from '@/shared/ui/shadcn/drawer'
 
 interface FormDrawerProps<T extends FieldValues> {
+  idPrefix?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -24,6 +25,7 @@ interface FormDrawerProps<T extends FieldValues> {
 }
 
 export function FormDrawer<T extends FieldValues>({
+  idPrefix,
   open,
   onOpenChange,
   title,
@@ -58,6 +60,7 @@ export function FormDrawer<T extends FieldValues>({
 
 
         <GenericForm
+          idPrefix={idPrefix}
           fields={fields}
           schema={schema}
           onSubmit={handleFormSubmit}

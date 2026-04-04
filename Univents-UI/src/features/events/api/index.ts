@@ -2,6 +2,7 @@ import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EventCreateI, EventI } from "../model";
 import type { CheckPermissionRequest } from "@soramux/node-auth-sdk"
+import type { ImageURLUploadI } from "@/shared/model/generic";
 import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { serverAuth } from "@/features/auths/lib/server-auth";
 
@@ -126,11 +127,75 @@ export const eventsQueryOptions = () => {
 export const publishEventFn = createClientOnlyFn((
   eventId: string
 ) => {
-  return authFetcher.post<null>(
-    `/events/${eventId}/publish`
-  );
+  return authFetcher.post<null>(`/events/${eventId}/publish`);
 });
 
+
+/**
+ * Adds a MinIO URL to the event's gallery_urls array.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const addImageToTheEventGalleryFn = createClientOnlyFn((
+  eventId: string, urlData: ImageURLUploadI
+) => {
+  return authFetcher.post<EventI>(`/events/${eventId}/gallery`, urlData);
+});
+
+/**
+ * Removes a URL from the event's gallery_urls array and deletes the object from MinIO.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const removeImageToTheEventGalleryFn = createClientOnlyFn((
+  eventId: string, urlData: ImageURLUploadI
+) => {
+  return authFetcher.delete<EventI>(`/events/${eventId}/gallery`, urlData);
+});
+
+/**
+ * Sets the event banner URL. If the URL is not already in gallery_urls it is added automatically.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const setEventBannerFn = createClientOnlyFn((
+  eventId: string, urlData: ImageURLUploadI
+) => {
+  return authFetcher.put<EventI>(`/events/${eventId}/banner`, urlData);
+});
+
+/**
+ * Clears the event banner. The image remains in gallery_urls.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const unsetEventBannerFn = createClientOnlyFn((
+  eventId: string,
+) => {
+  return authFetcher.delete<EventI>(`/events/${eventId}/banner`);
+});
+
+/**
+ * Sets the event logo URL. If the URL is not already in gallery_urls it is added automatically.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const setEventLogoFn = createClientOnlyFn((
+  eventId: string, urlData: ImageURLUploadI
+) => {
+  return authFetcher.put<EventI>(`/events/${eventId}/logo`, urlData);
+});
+
+/**
+ * Clears the event logo. The image remains in gallery_urls.
+ * @param eventId - The event id
+ * @returns A promise that resolves to the API EventI response.
+ */
+export const unsetEventLogoFn = createClientOnlyFn((
+  eventId: string,
+) => {
+  return authFetcher.delete<EventI>(`/events/${eventId}/logo`);
+});
 
 // Server
 export const checkAdminPermissionFn = createServerFn({ method: "POST" })
