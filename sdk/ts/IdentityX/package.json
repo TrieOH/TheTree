@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/node-auth-sdk",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "SDK to consume GOAuth",
   "exports": {
     ".": {
@@ -56,7 +56,7 @@
     "react-dom": "^19.2.0"
   },
   "dependencies": {
-    "@soramux/node-fetch-sdk": "^0.1.0",
+    "@soramux/node-fetch-sdk": "^0.1.1",
     "react-icons": "^5.5.0",
     "ua-parser-js": "^2.0.7"
   }
