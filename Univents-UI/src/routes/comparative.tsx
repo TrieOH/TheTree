@@ -440,7 +440,7 @@ function ComparativoPage() {
               ]}
             />
             <PlatformCard
-              name="Even3"
+              name="Concorrente X"
               tagline="Plataforma Concorrente"
               stats={[
                 { label: 'Recursos Exclusivos', value: `${stats.competitorUnique}+` },
