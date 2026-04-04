@@ -49,12 +49,14 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() => import('./routes/events/index.lazy').then((d) => d.Route))
 const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
   id: '/events/$eventId/',
   path: '/events/$eventId/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/events/$eventId/index.lazy').then((d) => d.Route),
+)
 const AdminEventsIndexRoute = AdminEventsIndexRouteImport.update({
   id: '/admin/events/',
   path: '/admin/events/',
