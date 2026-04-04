@@ -17,7 +17,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
-import { cn, getDirtyFields } from '@/shared/lib/utils'
+import { cn } from '@/shared/lib/utils'
 import { eventCreateSchema } from '@/features/events/model'
 import { FormDrawer } from '@/widgets/form/ui/form-drawer'
 import { getEventFields } from '@/features/events/model/field'
@@ -36,6 +36,7 @@ import {
 } from '@/features/events/api'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
 import { AlertModal } from '@/widgets/ui/alert-modal'
+import { getDirtyFields } from '@/shared/lib/diff'
 
 export const Route = createFileRoute('/admin/events/')({
   component: AdminEventsPage,
