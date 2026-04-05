@@ -42,13 +42,13 @@ function TooltipContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        className="isolate z-50"
+        className="isolate z-100"
       >
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
             // Layout
-            "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5",
+            "z-100 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5",
             "rounded-md px-3 py-1.5 text-xs font-medium",
 
             // Colors
@@ -81,7 +81,7 @@ function TooltipContent({
           {children}
           <TooltipPrimitive.Arrow
             className={cn(
-              "z-50 size-2 rotate-45 rounded-[2px]",
+              "z-100 size-2 rotate-45 rounded-[2px]",
               // Arrow
               "bg-popover border-r border-b border-border/50",
               // Positioning

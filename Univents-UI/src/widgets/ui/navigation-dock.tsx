@@ -1,8 +1,8 @@
 import { useRef, memo, useMemo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Home, User, Calendar, LogIn, LogOut  } from 'lucide-react';
+import { Home, User, Calendar, LogIn, LogOut } from 'lucide-react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import type {LucideIcon} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/shadcn/tooltip';
 import { cn } from '@/shared/lib/utils';
 import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
@@ -38,15 +38,27 @@ const UVIcon = () => (
 const navConfigs = (actions: { logout: () => Promise<void> }, isAdmin: boolean) => [
   {
     id: 'event-context',
-    // Matches /events/$eventId/... (but not /events/ index)
-    match: (parts: string[]) => parts[0] === 'events' && parts[1] && parts[1] !== 'index',
+    // Matches /events/$eventId/... or /admin/events/$eventId/...
+    match: (parts: string[]) => {
+      if (parts[0] === 'events' && parts[1] && parts[1] !== 'index') return true;
+      if (parts[0] === 'admin' && parts[1] === 'events' && parts[2]) return true;
+      return false;
+    },
     getItems: (parts: string[]): NavItemType[] => {
-      const eventId = parts[1];
+      const isAdminRoute = parts[0] === 'admin';
+      const eventId = isAdminRoute ? parts[2] : parts[1];
       const eventBase = `/events/${eventId}`;
+      const adminBase = `/admin/events/${eventId}`;
+
       return [
         { id: 'back-home', label: 'Univents', icon: UVIcon, href: '/' },
         { id: 'event-home', label: 'Evento', icon: Home, href: eventBase },
-        { id: 'event-editions', label: 'Edições', icon: Calendar, href: `${eventBase}/editions` },
+        {
+          id: 'event-editions',
+          label: 'Edições',
+          icon: Calendar,
+          href: `${isAdminRoute ? adminBase : eventBase}/editions`
+        },
         { id: 'event-profile', label: 'Perfil', icon: User, href: `${eventBase}/profile`, authRequired: true },
         { id: 'event-login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
       ];
@@ -57,11 +69,11 @@ const navConfigs = (actions: { logout: () => Promise<void> }, isAdmin: boolean) 
     match: () => true,
     getItems: (): NavItemType[] => [
       { id: 'home', label: 'Início', icon: Home, href: '/' },
-      { 
-        id: 'events', 
-        label: 'Eventos', 
-        icon: Calendar, 
-        href: isAdmin ? '/admin/events' : '/events' 
+      {
+        id: 'events',
+        label: 'Eventos',
+        icon: Calendar,
+        href: isAdmin ? '/admin/events' : '/events'
       },
       { id: 'profile', label: 'Perfil', icon: User, href: '/profile', authRequired: true },
       { id: 'logout', label: 'Sair', icon: LogOut, onClick: actions.logout, authRequired: true },
@@ -161,8 +173,8 @@ const MobileNavItem = ({
       onClick={onClick}
       className={cn(
         'relative flex flex-col items-center justify-center flex-1 py-3 gap-1.5 outline-none',
-        isActive 
-          ? (isAdmin ? 'text-amber-600' : 'text-primary') 
+        isActive
+          ? (isAdmin ? 'text-amber-600' : 'text-primary')
           : 'text-muted-foreground hover:text-foreground'
       )}
       aria-label={item.label}
@@ -218,6 +230,7 @@ export const NavigationDock = memo(function NavigationDock({
     const pathParts = location.pathname.split('/').filter(Boolean);
     const config = configs.find(c => c.match(pathParts));
     const allItems = config?.getItems(pathParts) ?? [];
+
     return allItems.filter(item => {
       if (item.authRequired && !isAuthenticated) return false;
       if (item.hideIfAuthenticated && isAuthenticated) return false;

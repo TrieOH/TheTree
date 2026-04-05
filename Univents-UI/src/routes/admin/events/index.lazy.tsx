@@ -199,13 +199,15 @@ function RouteComponent() {
   const loading = createMutation.isPending || patchMutation.isPending || publishMutation.isPending
 
   return (
-    <div className="min-h-screen bg-background relative pb-20 md:pb-0">
+    <div className="min-h-screen bg-background relative">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 h-14">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground shrink-0 flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground">
               Eventos
-              <span className="text-sm font-normal text-muted-foreground">({events.length})</span>
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({events.length})
+              </span>
             </h1>
 
             <div className="hidden sm:flex items-center gap-2 ml-auto">

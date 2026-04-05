@@ -1,7 +1,7 @@
 import type { Path, PathValue, FieldValues } from "react-hook-form"
 
 export type FieldType = 'text' | 'email' | 'textarea' | 'checkbox' | 'select' |
-  'number' | 'url' | 'percentage' | 'image-upload' | 'gallery-upload'
+  'number' | 'url' | 'percentage' | 'image-upload' | 'gallery-upload' | 'datetime'
 
 export interface FormFieldI<T extends FieldValues> {
   name: Path<T>

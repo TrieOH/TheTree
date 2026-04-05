@@ -1,11 +1,9 @@
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
 import { Search, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import { useAuth } from '@soramux/node-auth-sdk/react'
 import { EventCard } from '@/features/events/ui/EventCard'
-import { eventsQueryOptions } from '@/features/events/api'
 import { cn } from '@/shared/lib/utils'
 import {
   Drawer,
@@ -14,7 +12,11 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
-import { canCreateEvent, canEditEvent, canPublishEvent } from '@/features/events/model/permissions'
+import {
+  canCreateEvent,
+  canEditEvent,
+  canPublishEvent
+} from '@/features/events/model/permissions'
 import { usePermissions } from '@/features/auths/hooks/use-permissions'
 
 export const Route = createLazyFileRoute('/events/')({
@@ -29,7 +31,7 @@ const filterOptions = [
 function EventsPage() {
   const { auth } = useAuth();
   const userProfile = auth.profile()
-  const { data: events } = useSuspenseQuery(eventsQueryOptions())
+  const events = Route.useLoaderData()
   const { some: somePerms } = usePermissions(
     { canEditEvent, canPublishEvent, canCreateEvent },
     userProfile?.id
@@ -49,14 +51,14 @@ function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative pb-20 md:pb-0">
+    <div className="min-h-screen bg-background relative">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-2 h-14">
-            <h1 className="text-lg md:text-xl font-semibold text-foreground shrink-0 flex items-center gap-2">
+            <h1 className="text-lg md:text-xl font-semibold text-foreground">
               Eventos
-              <span className="text-sm font-normal text-muted-foreground">
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({filteredEvents.length})
               </span>
             </h1>

@@ -69,7 +69,9 @@ const EventsEventIdEditionsIndexRoute =
     id: '/events/$eventId/editions/',
     path: '/events/$eventId/editions/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/events/$eventId/editions/index.lazy').then((d) => d.Route),
+  )
 const EventsEventIdEditionsEditionIdIndexRoute =
   EventsEventIdEditionsEditionIdIndexRouteImport.update({
     id: '/events/$eventId/editions/$editionId/',
@@ -81,7 +83,11 @@ const AdminEventsEventIdEditionsIndexRoute =
     id: '/admin/events/$eventId/editions/',
     path: '/admin/events/$eventId/editions/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/admin/events/$eventId/editions/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const EventsEventIdEditionsEditionIdProductsRoute =
   EventsEventIdEditionsEditionIdProductsRouteImport.update({
     id: '/events/$eventId/editions/$editionId/products',

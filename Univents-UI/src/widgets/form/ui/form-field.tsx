@@ -2,6 +2,7 @@ import { Controller } from "react-hook-form"
 import { AlertCircle } from "lucide-react"
 import ImageUploadField from "./image-upload-field"
 import GalleryUploadField from "./gallery-upload-field"
+import { DateTimePicker } from "./date-time-picker"
 import type { Control, FieldValues, Path, PathValue, UseFormRegister, UseFormSetValue } from "react-hook-form"
 import type { FormFieldI } from "@/shared/model/field"
 import { Input } from '@/shared/ui/shadcn/input'
@@ -112,6 +113,25 @@ export function FormField<T extends FieldValues>({
                   action.onClick?.(url, typedSetValue)
                 }
               }))}
+            />
+          )}
+        />
+      )
+    }
+
+    // DateTime Picker
+    if (field.type === 'datetime') {
+      return (
+        <Controller
+          name={fieldName}
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <DateTimePicker
+              id={uniqueId}
+              value={typeof value === 'string' ? value : undefined}
+              onChange={onChange}
+              disabled={loading}
+              placeholder={field.placeholder}
             />
           )}
         />
