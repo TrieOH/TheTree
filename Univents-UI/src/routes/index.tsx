@@ -33,12 +33,13 @@ function Index() {
   return (
     <div
       className={cn(
-        "min-h-screen antialiased selection:bg-muted selection:text-foreground",
-        "bg-background text-foreground"
+        "min-h-screen antialiased selection:bg-primary/10 selection:text-primary",
+        "bg-background text-foreground overflow-x-hidden relative",
+        "pt-6 md:pb-12 pb-16"
       )}
     >
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="pt-24 pb-4 md:pt-12 md:pb-16">
+      <div className="px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="pb-4 md:pb-10">
           <div className="max-w-5xl mx-auto">
             <ModeSelector current={as} onChange={setMode} />
           </div>
