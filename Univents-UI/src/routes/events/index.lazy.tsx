@@ -2,7 +2,6 @@ import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import { Search, SlidersHorizontal, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import { useAuth } from '@soramux/node-auth-sdk/react'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -29,8 +28,8 @@ const filterOptions = [
 ] as const
 
 function EventsPage() {
-  const { auth } = useAuth();
-  const userProfile = auth.profile()
+  const auth = Route.useRouteContext().auth?.auth
+  const userProfile = auth?.profile()
   const events = Route.useLoaderData()
   const { some: somePerms } = usePermissions(
     { canEditEvent, canPublishEvent, canCreateEvent },

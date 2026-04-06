@@ -8,7 +8,6 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useAuth } from '@soramux/node-auth-sdk/react'
 import { cn } from '@/shared/lib/utils'
 import { EditionCard } from '@/features/editions/ui/EditionCard'
 import { usePermissions } from '@/features/auths/hooks/use-permissions'
@@ -41,8 +40,8 @@ export const Route = createLazyFileRoute('/events/$eventId/editions/')({
 
 function RouteComponent() {
   const { eventId } = Route.useParams()
-  const { auth } = useAuth()
-  const userProfile = auth.profile()
+  const auth = Route.useRouteContext().auth?.auth
+  const userProfile = auth?.profile()
   const { some: somePerms } = usePermissions(
     { canCreateEdition, canReadEdition, canAnnounceEdition },
     userProfile?.id

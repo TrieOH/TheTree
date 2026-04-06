@@ -1,6 +1,5 @@
 import { motion } from 'motion/react'
-import { useNavigate, Link } from '@tanstack/react-router'
-import { useAuth } from '@soramux/node-auth-sdk/react'
+import { useNavigate, Link, useRouteContext } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { FAQSection } from './FAQSection'
 import { EventCard } from '@/features/events/ui/EventCard'
@@ -81,13 +80,13 @@ function EventCardSkeleton() {
 }
 
 export function ParticipantView() {
-  const { isAuthenticated } = useAuth()
+  const isAuthenticated = useRouteContext({ from: "/" }).auth?.isAuthenticated
   const navigate = useNavigate()
 
   const { data: events = [], isLoading } = useQuery(eventsQueryOptions());
 
   const handleGetStarted = () => {
-    if (isAuthenticated) void navigate({ to: '/' })
+    if (isAuthenticated) void navigate({ to: '/events' })
     else void navigate({ to: '/auth' })
   }
 

@@ -135,7 +135,7 @@ function RouteComponent() {
   const updateEventMedia = async (id: string, data: EventCreateI, original: EventI, changes: Partial<EventCreateI>) => {
     // Gallery
     if (changes.gallery_urls !== undefined) {
-      const currentGallery = original.gallery_urls
+      const currentGallery = original.gallery_urls ?? []
       const targetGallery = data.gallery_urls
 
       for (const url of targetGallery.filter(u => !currentGallery.includes(u))) {
@@ -192,7 +192,7 @@ function RouteComponent() {
     is_series: event.is_series,
     logo_url: event.logo_url,
     banner_url: event.banner_url,
-    gallery_urls: event.gallery_urls,
+    gallery_urls: event.gallery_urls ?? undefined,
     social_links: event.social_links ?? undefined,
   } : {}
 

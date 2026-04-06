@@ -6,7 +6,6 @@ import {
 import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@soramux/node-auth-sdk/react'
 import type { EventI } from '@/features/events/model'
 import { Button } from '@/shared/ui/shadcn/button'
 import { Badge } from '@/shared/ui/shadcn/badge'
@@ -58,8 +57,8 @@ function RouteComponent() {
   const navigate = Route.useNavigate()
   const { eventId } = Route.useParams()
   const queryClient = useQueryClient()
-  const { auth } = useAuth()
-  const userProfile = auth.profile()
+  const auth = Route.useRouteContext().auth?.auth
+  const userProfile = auth?.profile()
 
   const { data: event, isLoading, error } = useQuery(
     edit ? ownEventQueryOptions(eventId) : eventQueryOptions(eventId)
