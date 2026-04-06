@@ -1,20 +1,17 @@
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import { Navigation, Map as MapIcon } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback } from "react";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import 'leaflet/dist/leaflet.css'
 
-import L from 'leaflet'
-import icon from 'leaflet/dist/images/marker-icon.png'
-import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+export interface LocationInfo {
+  name: string;
+  address: string;
+}
 
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-})
-
-L.Marker.prototype.options.icon = DefaultIcon
+interface GeoResult {
+  lat: number;
+  lon: number;
+  displayName: string;
+}
 
 interface NominatimResult {
   lat: string
@@ -22,166 +19,388 @@ interface NominatimResult {
   display_name: string
 }
 
-interface MapEmbedProps {
-  name: string
-  address: string
+interface LocationMapProps {
+  location: LocationInfo;
+  /** Initial Map Zoom (default: 15) */
+  zoom?: number;
+  /** Container height (default: "400px") */
+  height?: string;
+  className?: string;
 }
 
-type MapStyle = 'standard' | 'satellite' | 'terrain'
+const CACHE_KEY_PREFIX = "geo_cache_";
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-const tileLayers: Record<MapStyle, { url: string; name: string }> = {
-  standard: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    name: 'Padrão',
-  },
-  satellite: {
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    name: 'Satélite',
-  },
-  terrain: {
-    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    name: 'Terreno',
-  },
+interface CacheEntry {
+  result: GeoResult;
+  timestamp: number;
 }
 
-export default function MapEmbed({ name, address }: MapEmbedProps) {
-  const [coords, setCoords] = useState<[number, number] | null>(null)
-  const [displayName, setDisplayName] = useState('')
-  const [style, setStyle] = useState<MapStyle>('standard')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+function getCached(query: string): GeoResult | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY_PREFIX + btoa(query));
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as CacheEntry;
+    if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY_PREFIX + btoa(query));
+      return null;
+    }
+    return entry.result;
+  } catch {
+    return null;
+  }
+}
 
-  const fullAddress = `${name}, ${address}`
+function setCache(query: string, result: GeoResult): void {
+  const entry: CacheEntry = { result, timestamp: Date.now() };
+  localStorage.setItem(CACHE_KEY_PREFIX + btoa(query), JSON.stringify(entry));
+}
+
+const geoQueue: Array<() => void> = [];
+let geoRunning = false;
+
+function enqueueGeoRequest(fn: () => void) {
+  geoQueue.push(fn);
+  if (!geoRunning) drainQueue();
+}
+
+function drainQueue() {
+  if (geoQueue.length === 0) {
+    geoRunning = false;
+    return;
+  }
+  geoRunning = true;
+  const next = geoQueue.shift();
+  if (!next) return;
+  next();
+  setTimeout(drainQueue, 1100);
+}
+
+async function geocode(location: LocationInfo): Promise<GeoResult> {
+  const query = `${location.name}, ${location.address}`;
+  const cached = getCached(query);
+  if (cached) return cached;
+
+  return new Promise((resolve, reject) => {
+    enqueueGeoRequest(() => {
+      void (async () => {
+        try {
+          const params = new URLSearchParams({
+            q: query,
+            format: "json",
+            limit: "1",
+            addressdetails: "0",
+          });
+
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?${params}`,
+            {
+              headers: {
+                "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+              },
+            }
+          );
+
+          if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
+
+          const data: NominatimResult[] = await res.json();
+          if (!data.length) throw new Error("Endereço não encontrado");
+
+          const result: GeoResult = {
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon),
+            displayName: data[0].display_name,
+          };
+
+          setCache(query, result);
+          resolve(result);
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      })();
+    });
+  });
+}
+
+type Status = "idle" | "loading" | "success" | "error";
+
+export function LocationMap({
+  location,
+  zoom = 15,
+  height = "400px",
+  className = "",
+}: LocationMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<LeafletMarker | null>(null);
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const initMap = useCallback(async () => {
+    if (!mapContainerRef.current) return;
+
+    setStatus("loading");
+    setErrorMsg("");
+
+    const L = (await import("leaflet")).default;
+
+    // @ts-expect-error _getIconUrl is not in the official type
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      iconUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    });
+
+    try {
+      const geo = await geocode(location);
+
+      if (mapRef.current) {
+        mapRef.current.setView([geo.lat, geo.lon], zoom);
+        if (markerRef.current) {
+          markerRef.current.setLatLng([geo.lat, geo.lon]);
+          markerRef.current
+            .getPopup()
+            ?.setContent(popupContent(location.name, location.address));
+        }
+        setStatus("success");
+        return;
+      }
+
+      const map = L.map(mapContainerRef.current, {
+        center: [geo.lat, geo.lon],
+        zoom,
+        zoomControl: true,
+        scrollWheelZoom: false,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      const marker = L.marker([geo.lat, geo.lon])
+        .addTo(map)
+        .bindPopup(popupContent(location.name, location.address))
+        .openPopup();
+
+      mapRef.current = map;
+      markerRef.current = marker;
+      setStatus("success");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido");
+    }
+  }, [location, zoom]);
 
   useEffect(() => {
-    setLoading(true)
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        fullAddress
-      )}&limit=1`
-    )
-      .then(async (res) => {
-        const data: NominatimResult[] = await res.json()
+    void initMap();
 
-        if (!Array.isArray(data) || !data[0]) {
-          throw new Error('Invalid geocode response')
-        }
-
-        return data
-      })
-      .then((data) => {
-        setCoords([Number(data[0].lat), Number(data[0].lon)])
-        setDisplayName(data[0].display_name)
-      })
-      .catch(() => {
-        setError(true)
-        setLoading(false)
-      })
-  }, [fullAddress])
-
-  const openInGoogleMaps = () => {
-    if (!coords) return
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${coords[0]},${coords[1]}`
-    window.open(url, '_blank')
-  }
-
-  const openInWaze = () => {
-    if (!coords) return
-    const url = `https://waze.com/ul?ll=${coords[0]},${coords[1]}&navigate=yes`
-    window.open(url, '_blank')
-  }
-
-  if (loading) {
-    return (
-      <div className="h-48 rounded-xl bg-muted animate-pulse flex items-center justify-center">
-        <span className="text-xs text-muted-foreground">Carregando mapa...</span>
-      </div>
-    )
-  }
-
-  if (error || !coords) {
-    return (
-      <div className="h-48 rounded-xl bg-muted border border-dashed border-border flex flex-col items-center justify-center gap-2 p-4 text-center">
-        <MapIcon className="w-8 h-8 text-muted-foreground/50" />
-        <p className="text-xs text-muted-foreground">Não foi possível carregar o mapa</p>
-        <a
-          href={`https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-primary hover:underline"
-        >
-          Buscar no Google Maps
-        </a>
-      </div>
-    )
-  }
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+      }
+    };
+  }, [initMap]);
 
   return (
-    <div className="space-y-3">
-      {/* Map */}
-      <div className="relative">
-        <MapContainer
-          center={coords}
-          zoom={16}
-          scrollWheelZoom={false}
-          className="h-48 rounded-xl z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url={tileLayers[style].url}
-          />
-          <Marker position={coords}>
-            <Popup>
-              <div className="text-sm">
-                <p className="font-semibold">{name}</p>
-                <p className="text-muted-foreground">{address}</p>
-              </div>
-            </Popup>
-          </Marker>
-        </MapContainer>
+    <div className={`location-map-wrapper ${className}`} style={{ position: "relative" }}>
+      <div
+        ref={mapContainerRef}
+        style={{
+          height,
+          width: "100%",
+          borderRadius: "12px",
+          overflow: "hidden",
+          background: "#e8e0d8",
+        }}
+      />
 
-        {/* Layers */}
-        <div className="absolute top-2 right-2 z-400">
-          <div className="bg-background/90 backdrop-blur-sm rounded-lg border border-border shadow-sm p-1 flex gap-1">
-            {(Object.keys(tileLayers) as MapStyle[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => { setStyle(s) }}
-                className={`px-2 py-1 text-[10px] font-medium rounded-md transition-colors ${style === s
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted text-muted-foreground'
-                  }`}
-              >
-                {tileLayers[s].name}
-              </button>
-            ))}
-          </div>
+      {status === "loading" && (
+        <div style={overlayStyle}>
+          <div style={spinnerStyle} />
+          <span style={{ marginTop: 12, fontSize: 14, color: "#555" }}>
+            Carregando mapa…
+          </span>
         </div>
-      </div>
+      )}
 
-      {/* Info and Actions */}
-      <div className="space-y-2">
-        {displayName && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{displayName}</p>
-        )}
-
-        <div className="flex gap-2">
+      {status === "error" && (
+        <div style={overlayStyle}>
+          <span style={{ fontSize: 32 }}>📍</span>
+          <p style={{ margin: "8px 0 4px", fontWeight: 600, color: "#333" }}>
+            {location.name}
+          </p>
+          <p style={{ margin: 0, fontSize: 13, color: "#666", textAlign: "center" }}>
+            {location.address}
+          </p>
+          <p style={{ margin: "12px 0 0", fontSize: 12, color: "#e55" }}>
+            {errorMsg}
+          </p>
           <button
-            onClick={openInGoogleMaps}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:brightness-110 active:scale-[0.98] transition-all"
+            onClick={() => void initMap()}
+            style={retryButtonStyle}
           >
-            <Navigation className="w-3.5 h-3.5" />
-            Google Maps
-          </button>
-          <button
-            onClick={openInWaze}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-500/10 text-blue-600 border border-blue-500/20 text-xs font-semibold hover:bg-blue-500/15 active:scale-[0.98] transition-all"
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            Waze
+            Tentar novamente
           </button>
         </div>
-      </div>
+      )}
     </div>
-  )
+  );
+}
+
+function popupContent(name: string, address: string) {
+  return `
+    <div style="min-width:160px; font-family: sans-serif;">
+      <strong style="display:block; margin-bottom:4px;">${name}</strong>
+      <span style="font-size:12px; color:#555;">${address}</span>
+    </div>
+  `;
+}
+
+const overlayStyle: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "rgba(255,255,255,0.88)",
+  borderRadius: "12px",
+  zIndex: 1000,
+  padding: "24px",
+};
+
+const spinnerStyle: React.CSSProperties = {
+  width: 36,
+  height: 36,
+  border: "3px solid #ddd",
+  borderTopColor: "#555",
+  borderRadius: "50%",
+  animation: "spin 0.8s linear infinite",
+};
+
+const retryButtonStyle: React.CSSProperties = {
+  marginTop: 12,
+  padding: "6px 16px",
+  border: "1px solid #ccc",
+  borderRadius: 6,
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: 13,
+};
+
+
+interface MultiLocationMapProps {
+  locations: LocationInfo[];
+  height?: string;
+  className?: string;
+}
+
+export function MultiLocationMap({
+  locations,
+  height = "500px",
+  className = "",
+}: MultiLocationMapProps) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || !locations.length) return;
+
+    cancelledRef.current = false;
+    setStatus("loading");
+
+    void (async () => {
+      const L = (await import("leaflet")).default;
+
+      // @ts-expect-error _getIconUrl is not in the official type
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+        iconUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        shadowUrl:
+          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+      });
+
+      try {
+        const results = await Promise.all(locations.map(geocode));
+        if (cancelledRef.current) return;
+
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+
+        const bounds: [number, number][] = results.map((r) => [r.lat, r.lon]);
+
+        if (!mapContainerRef.current) return;
+        const map = L.map(mapContainerRef.current, {
+          scrollWheelZoom: false,
+        });
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(map);
+
+        results.forEach((geo, i) => {
+          L.marker([geo.lat, geo.lon])
+            .addTo(map)
+            .bindPopup(popupContent(locations[i].name, locations[i].address));
+        });
+
+        map.fitBounds(bounds, { padding: [40, 40] });
+        mapRef.current = map;
+        setStatus("success");
+      } catch (err) {
+        if (!cancelledRef.current) {
+          setStatus("error");
+          setErrorMsg(err instanceof Error ? err.message : "Erro desconhecido");
+        }
+      }
+    })();
+
+    return () => {
+      cancelledRef.current = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [locations]);
+
+  return (
+    <div className={`location-map-wrapper ${className}`} style={{ position: "relative" }}>
+      <div
+        ref={mapContainerRef}
+        style={{ height, width: "100%", borderRadius: "12px", background: "#e8e0d8" }}
+      />
+      {status === "loading" && (
+        <div style={overlayStyle}>
+          <div style={spinnerStyle} />
+          <span style={{ marginTop: 12, fontSize: 14, color: "#555" }}>
+            Geocodificando {locations.length} endereço{locations.length > 1 ? "s" : ""}…
+          </span>
+        </div>
+      )}
+      {status === "error" && (
+        <div style={overlayStyle}>
+          <span style={{ color: "#e55", fontSize: 13 }}>{errorMsg}</span>
+        </div>
+      )}
+    </div>
+  );
 }
