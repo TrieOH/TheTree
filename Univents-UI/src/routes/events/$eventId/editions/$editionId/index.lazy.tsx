@@ -16,6 +16,7 @@ import type { EditionI } from '@/features/editions/model'
 import { formatDateRange } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 import EditionInfoCard from '@/features/editions/ui/EditionInfoCard'
+import MapEmbed from '@/widgets/ui/map-embed'
 
 const statusConfig: Record<
   EditionI['status'],
@@ -194,6 +195,12 @@ function RouteComponent() {
           value={edition.location_name}
           sub={edition.location_address}
           iconClass="bg-amber-500/10 text-amber-600"
+          footer={
+            <MapEmbed
+              name={edition.location_name}
+              address={edition.location_address}
+            />
+          }
         />
 
         {/* Registration */}
