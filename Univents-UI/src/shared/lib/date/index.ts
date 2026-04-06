@@ -18,3 +18,20 @@ export function formatDateForDatetimeLocal(date: Date): string {
 export function parseDatetimeLocal(localDateTimeString: string): Date {
   return new Date(localDateTimeString);
 }
+
+/**
+ * Formats a date range between two ISO date strings into a human-readable format.
+ * If both dates are in the same month and year, only the day range is shown before the month/year.
+ * @param starts The ISO date string for the start of the range.
+ * @param ends The ISO date string for the end of the range.
+ * @returns A formatted string representing the date range (e.g., "10 – 15 de set. de 2026").
+ */
+export function formatDateRange(starts: string, ends: string) {
+  const s = new Date(starts)
+  const e = new Date(ends)
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+  if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
+    return `${s.getDate()} – ${e.toLocaleDateString('pt-BR', { ...opts, year: 'numeric' })}`
+  }
+  return `${s.toLocaleDateString('pt-BR', opts)} – ${e.toLocaleDateString('pt-BR', { ...opts, year: 'numeric' })}`
+}

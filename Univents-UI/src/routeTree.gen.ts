@@ -77,7 +77,11 @@ const EventsEventIdEditionsEditionIdIndexRoute =
     id: '/events/$eventId/editions/$editionId/',
     path: '/events/$eventId/editions/$editionId/',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/events/$eventId/editions/$editionId/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
     id: '/admin/events/$eventId/editions/',
