@@ -120,8 +120,8 @@ function RouteComponent() {
         ops.push(current.banner_url ? setEventBannerFn(eventId, { url: current.banner_url }) : unsetEventBannerFn(eventId))
 
       if ('gallery_urls' in changes) {
-        const orig = event.gallery_urls
-        const curr = current.gallery_urls
+        const orig = event.gallery_urls ?? []
+        const curr = current.gallery_urls ?? []
         for (const url of curr.filter(u => !orig.includes(u))) ops.push(addImageToTheEventGalleryFn(eventId, { url }))
         for (const url of orig.filter(u => !curr.includes(u))) ops.push(removeImageToTheEventGalleryFn(eventId, { url }))
       }
@@ -421,10 +421,10 @@ function RouteComponent() {
             </div>
           </SectionCard>
 
-          {(eventData.gallery_urls.length > 0 || edit) && (
+          {((eventData.gallery_urls && eventData.gallery_urls.length > 0) ?? edit) && (
             <SectionCard label="Galeria">
               <InlineGalleryEdit
-                value={eventData.gallery_urls}
+                value={eventData.gallery_urls ?? []}
                 onChange={(urls) => { updateField('gallery_urls', urls); }}
                 isEditEnabled={edit}
                 onUpload={(file) => uploadAndModerateFile(file, `events/${eventId}`)}

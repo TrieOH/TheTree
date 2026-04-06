@@ -47,7 +47,7 @@ export interface EventI {
   editions_count: number;
   logo_url: string | null;
   banner_url: string | null;
-  gallery_urls: string[];
+  gallery_urls: string[] | null;
   contact_email: string | null;
   social_links: SocialLinks | null;
   status: EventStatusI;
