@@ -57,6 +57,7 @@ export const Route = createLazyFileRoute(
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams()
   const edition = Route.useLoaderData()
+  const isAuthenticated = Route.useRouteContext().auth?.isAuthenticated
 
   if (!edition) {
     return (
@@ -149,14 +150,22 @@ function RouteComponent() {
       {/* Activities button */}
       <div className="px-4 -mt-6 relative z-10 max-w-2xl mx-auto">
         <Link
-          to="/events/$eventId/editions/$editionId"
-          params={{ eventId, editionId }}
+          to={isAuthenticated ? "/events/$eventId/editions/$editionId/activities" : "/auth"}
+          params={isAuthenticated ? { eventId, editionId } : undefined}
+          search={
+            !isAuthenticated
+              ? { redirect: `/events/${eventId}/editions/${editionId}/activities` }
+              : undefined
+          }
           className={cn(
             'flex items-center justify-between w-full',
             'bg-primary text-primary-foreground border border-primary/20',
             'rounded-2xl px-4 py-4 sm:px-5',
             'shadow-xl shadow-primary/20',
-            'transition-all active:scale-[0.98] hover:brightness-110',
+            'transition-all',
+            isAuthenticated
+              ? 'active:scale-[0.98] hover:brightness-110'
+              : 'opacity-80'
           )}
         >
           <div className="flex items-center gap-3">
@@ -167,7 +176,12 @@ function RouteComponent() {
               <p className="text-[9px] font-bold tracking-widest uppercase text-primary-foreground/70">
                 Programação
               </p>
-              <p className="text-base font-bold tracking-tight">Ver Atividades</p>
+
+              <p className="text-base font-bold tracking-tight">
+                {isAuthenticated
+                  ? 'Ver Atividades'
+                  : 'Faça login para ver as atividades'}
+              </p>
             </div>
           </div>
           <div className="w-7 h-7 rounded-full bg-primary-foreground/10 flex items-center justify-center shrink-0">

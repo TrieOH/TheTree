@@ -1,6 +1,6 @@
 import { useRef, memo, useMemo } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import { Home, User, Calendar, LogIn, LogOut } from 'lucide-react';
+import { Home, User, Calendar, LogIn, LogOut, Store, Activity } from 'lucide-react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/shadcn/tooltip';
@@ -36,6 +36,45 @@ const UVIcon = () => (
  * Ordered by specificity: most specific matches first, default at the end.
  */
 const navConfigs = (actions: { logout: () => Promise<void> }, isAdmin: boolean) => [
+  {
+    id: 'edition-context',
+    match: (parts: string[]) => {
+      // /events/:eventId/editions/:editionId
+      if (parts[0] === 'events' && parts[2] === 'editions' && parts[3]) return true;
+      // /admin/events/:eventId/editions/:editionId
+      if (parts[0] === 'admin' && parts[1] === 'events' && parts[3] === 'editions' && parts[4])
+        return true;
+      return false;
+    },
+    getItems: (parts: string[]): NavItemType[] => {
+      const isAdminRoute = parts[0] === 'admin';
+      const eventId = isAdminRoute ? parts[2] : parts[1];
+      const editionId = isAdminRoute ? parts[4] : parts[3];
+
+      const eventBase = `/events/${eventId}`;
+      const editionBase = `${eventBase}/editions/${editionId}`;
+      const adminEditionBase = `/admin/events/${eventId}/editions/${editionId}`;
+
+      return [
+        { id: 'back-home', label: 'Univents', icon: UVIcon, href: '/' },
+        { id: 'edition-home', label: 'Edição', icon: Home, href: editionBase },
+        {
+          id: 'edition-activities',
+          label: 'Atividades',
+          icon: Activity,
+          href: `${isAdminRoute ? adminEditionBase : editionBase}/activities`
+        },
+        {
+          id: 'edition-products',
+          label: 'Produtos',
+          icon: Store,
+          href: `${isAdminRoute ? adminEditionBase : editionBase}/products`
+        },
+        { id: 'edition-profile', label: 'Perfil', icon: User, href: `${editionBase}/profile`, authRequired: true },
+        { id: 'edition-login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
+      ];
+    }
+  },
   {
     id: 'event-context',
     // Matches /events/$eventId/... or /admin/events/$eventId/...
