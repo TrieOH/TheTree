@@ -23,4 +23,7 @@ export interface FormFieldI<T extends FieldValues> {
     icon?: 'image' | 'layout' | 'star'
     onClick?: (url: string, setValue: (name: Path<T>, value: PathValue<T, Path<T>>) => void) => void
   }[]
+  min?: number
+  max?: number
+  step?: number
 }

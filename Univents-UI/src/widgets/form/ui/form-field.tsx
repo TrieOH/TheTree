@@ -3,6 +3,7 @@ import { AlertCircle } from "lucide-react"
 import ImageUploadField from "./image-upload-field"
 import GalleryUploadField from "./gallery-upload-field"
 import { DateTimePicker } from "./date-time-picker"
+import { FormFieldNumber } from "./form-field-number"
 import type { Control, FieldValues, Path, PathValue, UseFormRegister, UseFormSetValue } from "react-hook-form"
 import type { FormFieldI } from "@/shared/model/field"
 import { Input } from '@/shared/ui/shadcn/input'
@@ -171,17 +172,30 @@ export function FormField<T extends FieldValues>({
       )
     }
 
+    // Number and Percentage fields
+    if (field.type === 'number' || field.type === 'percentage') {
+      return (
+        <FormFieldNumber
+          idPrefix={idPrefix}
+          field={field}
+          register={register}
+          error={error}
+          loading={loading}
+        />
+      );
+    }
+
     // Default input types
     return (
       <Input
         id={uniqueId}
-        type={field.type === 'percentage' ? 'number' : field.type}
+        type={field.type}
         placeholder={field.placeholder}
-        step={field.type === 'percentage' ? '0.01' : undefined}
         className={baseInputClass}
         autoComplete={field.autocomplete}
         autoFocus={field.autoFocus}
-        {...register(fieldName, field.type === 'percentage' ? { valueAsNumber: true } : undefined)}
+        {...register(fieldName)}
+        disabled={loading}
       />
     )
   }

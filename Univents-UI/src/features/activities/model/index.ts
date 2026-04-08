@@ -9,7 +9,7 @@ type DifficultyType = z.infer<typeof difficultyTypeSchema>
 
 export const activityCreateSchema = z.object({
   title: z.string().min(3),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   location: z.string(),
   starts_at: z.iso.datetime(),
   ends_at: z.iso.datetime(),
@@ -40,6 +40,21 @@ export interface ActivityI {
   remaining_capacity: number;
   difficulty: DifficultyType;
   created_by: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type AttendanceStatusType = "registered" | "waitlisted" | "promoted" |
+  "checked_in" | "checked_out" | "completed" | "partial" | "no_show" | "cancelled";
+
+export interface AttendanceRecordI {
+  id: string;
+  activity_id: string;
+  user_id: string;
+  status: AttendanceStatusType;
+  checked_in_at: string | null;
+  cancelled_at: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
