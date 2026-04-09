@@ -24,9 +24,9 @@ export function getContext() {
           return failureCount < 3;
         },
         staleTime: 0, // 0 Seconds for test //1000 * 60 * 5, // 5 minutes
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
       },
     },
   })
