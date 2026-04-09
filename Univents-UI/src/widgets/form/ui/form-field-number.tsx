@@ -1,8 +1,6 @@
-import { AlertCircle } from "lucide-react"
 import type { FieldValues, UseFormRegister } from "react-hook-form"
 import type { FormFieldI } from "@/shared/model/field"
 import { Input } from '@/shared/ui/shadcn/input'
-import { Label } from '@/shared/ui/shadcn/label'
 import { cn } from '@/shared/lib/utils'
 
 export interface NumberFormFieldProps<T extends FieldValues> extends FormFieldI<T> {
@@ -45,32 +43,18 @@ export function FormFieldNumber<T extends FieldValues>({
   };
 
   return (
-    <div className={cn("space-y-1.5", field.span === 'full' ? 'sm:col-span-2' : '')}>
-      <Label htmlFor={uniqueId} className="text-sm font-medium flex items-center gap-1">
-        {field.label}
-        {field.required && <span className="text-destructive">*</span>}
-      </Label>
-
-      <Input
-        id={uniqueId}
-        type={inputType}
-        placeholder={field.placeholder}
-        min={field.min !== undefined ? field.min.toString() : undefined}
-        max={field.max !== undefined ? field.max.toString() : undefined}
-        step={stepValue}
-        className={baseInputClass}
-        autoComplete={field.autocomplete}
-        autoFocus={field.autoFocus}
-        {...register(fieldName, validationOptions)}
-        disabled={loading}
-      />
-
-      {error && (
-        <span className="text-xs text-destructive flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          {typeof error.message === "string" ? error.message : ""}
-        </span>
-      )}
-    </div>
+    <Input
+      id={uniqueId}
+      type={inputType}
+      placeholder={field.placeholder}
+      min={field.min !== undefined ? field.min.toString() : undefined}
+      max={field.max !== undefined ? field.max.toString() : undefined}
+      step={stepValue}
+      className={baseInputClass}
+      autoComplete={field.autocomplete}
+      autoFocus={field.autoFocus}
+      {...register(fieldName, validationOptions)}
+      disabled={loading}
+    />
   );
 }

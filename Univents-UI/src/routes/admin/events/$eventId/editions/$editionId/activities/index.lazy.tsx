@@ -7,6 +7,11 @@ import {
   MoreVertical,
   CheckSquare,
   ShieldCheck,
+  Eye,
+  Edit3,
+  UserCheck,
+  Copy,
+  Trash2,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -45,6 +50,7 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { eventId, editionId } = Route.useParams()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [managingActivity, setManagingActivity] = useState<ActivityI | null>(null)
   const [editingActivity, setEditingActivity] = useState<ActivityI | null>(null)
   const [deletingActivity, setDeletingActivity] = useState<ActivityI | null>(null)
   const [publishingActivity, setPublishingActivity] = useState<ActivityI | null>(null)
@@ -131,6 +137,7 @@ function RouteComponent() {
           allAdminActivitiesQueryOptions(eventId, editionId).queryKey,
           (old) => [...(old ?? []), res.data]
         );
+        setManagingActivity(null);
         toast.success('Atividade duplicada com sucesso!');
       } else toast.error(res.message || 'Erro ao duplicar atividade');
     },
@@ -305,13 +312,8 @@ function RouteComponent() {
                         key={activity.id}
                         activity={activity}
                         index={idx}
-                        onEdit={setEditingActivity}
+                        onManage={setManagingActivity}
                         onPublish={setPublishingActivity}
-                        onAttendance={setViewingAttendance}
-                        onDelete={setDeletingActivity}
-                        onDuplicate={(act) => {
-                          duplicateMutation.mutate(act)
-                        }}
                       />
                     ))}
                   </div>
@@ -333,6 +335,7 @@ function RouteComponent() {
         onSubmit={handleCreate}
         submitLabel="Criar atividade"
         loading={loading}
+        closeOnSubmit={false}
       />
 
       {/* Edit Drawer */}
@@ -348,6 +351,7 @@ function RouteComponent() {
           onSubmit={handleUpdate}
           submitLabel="Salvar alterações"
           loading={loading}
+          closeOnSubmit={false}
         />
       )}
 
@@ -426,6 +430,76 @@ function RouteComponent() {
           )}
         </DrawerContent>
       </Drawer>
+
+      {/* Manage Activity Drawer */}
+      {managingActivity && <Drawer open={!!managingActivity} onOpenChange={() => { setManagingActivity(null) }}>
+        <DrawerContent className="z-60 rounded-t-3xl">
+          <DrawerHeader className="pb-4 border-b">
+            <DrawerTitle className="text-base font-bold text-center">Gerenciar Atividade</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-4 pb-12 space-y-2">
+            {managingActivity.status === 'draft' && (
+              <button
+                onClick={() => { setPublishingActivity(managingActivity) }}
+                className="w-full sm:hidden flex items-center gap-3 px-4 py-4 rounded-2xl bg-primary/10 text-primary active:bg-primary/20 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <span className="font-bold text-sm">Publicar atividade</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => { setEditingActivity(managingActivity) }}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-muted active:bg-muted/80 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Edit3 className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-bold text-sm">Editar detalhes</span>
+            </button>
+
+            <button
+              onClick={() => { setViewingAttendance(managingActivity) }}
+              className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-muted active:bg-muted/80 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                <UserCheck className="w-5 h-5 text-blue-600" />
+              </div>
+              <span className="font-bold text-sm">Lista de presença</span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-border/50">
+              <button
+                onClick={() => {
+                  duplicateMutation.mutate(managingActivity)
+                }}
+                className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl hover:bg-muted transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <Copy className="w-5 h-5 text-slate-600" />
+                </div>
+                <span className="font-bold text-xs text-slate-600">Duplicar</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setDeletingActivity(managingActivity);
+                  setManagingActivity(null);
+                }}
+                className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl hover:bg-red-50 text-red-600 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <span className="font-bold text-xs text-destructive">Excluir</span>
+              </button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+      }
     </div>
   )
 }

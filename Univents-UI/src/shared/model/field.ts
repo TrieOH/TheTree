@@ -26,4 +26,7 @@ export interface FormFieldI<T extends FieldValues> {
   min?: number
   max?: number
   step?: number
+  rules?: {
+    isVisible?: (values: T) => boolean
+  }
 }

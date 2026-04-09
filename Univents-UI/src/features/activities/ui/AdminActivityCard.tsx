@@ -2,24 +2,12 @@ import { motion } from 'motion/react'
 import {
   MapPin,
   Users,
-  Edit3,
-  UserCheck,
-  Eye,
-  MoreVertical,
-  Trash2,
-  Copy,
   Coins,
+  MoreVertical,
 } from 'lucide-react'
 import { formatTime, formatDuration, difficultyConfig } from './ActivityCard'
 import type { ActivityI } from '@/features/activities/model'
 import { cn } from '@/shared/lib/utils'
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/shared/ui/shadcn/drawer'
 
 export const statusConfig: Record<
   ActivityI['status'],
@@ -60,21 +48,18 @@ export const statusConfig: Record<
 interface AdminActivityCardProps {
   activity: ActivityI
   index?: number
-  onEdit: (activity: ActivityI) => void
+  onManage: (activity: ActivityI) => void
   onPublish: (activity: ActivityI) => void
-  onAttendance: (activity: ActivityI) => void
-  onDelete: (activity: ActivityI) => void
-  onDuplicate: (activity: ActivityI) => void
+  // onAttendance: (activity: ActivityI) => void
+  // onDelete: (activity: ActivityI) => void
+  // onDuplicate: (activity: ActivityI) => void
 }
 
 export default function AdminActivityCard({
   activity,
   index = 0,
-  onEdit,
   onPublish,
-  onAttendance,
-  onDelete,
-  onDuplicate,
+  onManage,
 }: AdminActivityCardProps) {
   const difficulty = difficultyConfig[activity.difficulty]
   const status = statusConfig[activity.status]
@@ -164,74 +149,14 @@ export default function AdminActivityCard({
               </button>
             )}
 
-            {/* Options Menu */}
-            <Drawer>
-              <DrawerTrigger asChild>
-                <button className="flex items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-90 outline-none">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </DrawerTrigger>
-              <DrawerContent className="z-60 rounded-t-3xl">
-                <DrawerHeader className="pb-4 border-b">
-                  <DrawerTitle className="text-base font-bold text-center">Gerenciar Atividade</DrawerTitle>
-                </DrawerHeader>
-                <div className="p-4 pb-12 space-y-2">
-                  {activity.status === 'draft' && (
-                    <button
-                      onClick={() => { onPublish(activity); }}
-                      className="w-full sm:hidden flex items-center gap-3 px-4 py-4 rounded-2xl bg-primary/10 text-primary active:bg-primary/20 transition-colors"
-                    >
-                      <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-                        <Eye className="w-5 h-5" />
-                      </div>
-                      <span className="font-bold text-sm">Publicar atividade</span>
-                    </button>
-                  )}
+            {/* Options Menu Button */}
+            <button
+              className="flex items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-90 outline-none"
+              onClick={() => { onManage(activity) }}
 
-                  <button
-                    onClick={() => { onEdit(activity); }}
-                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-muted active:bg-muted/80 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Edit3 className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-bold text-sm">Editar detalhes</span>
-                  </button>
-
-                  <button
-                    onClick={() => { onAttendance(activity); }}
-                    className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl hover:bg-muted active:bg-muted/80 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                      <UserCheck className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <span className="font-bold text-sm">Lista de presença</span>
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-border/50">
-                    <button
-                      onClick={() => { onDuplicate(activity); }}
-                      className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl hover:bg-muted transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                        <Copy className="w-5 h-5 text-slate-600" />
-                      </div>
-                      <span className="font-bold text-xs text-slate-600">Duplicar</span>
-                    </button>
-
-                    <button
-                      onClick={() => { onDelete(activity); }}
-                      className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl hover:bg-red-50 text-red-600 transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                        <Trash2 className="w-5 h-5 text-destructive" />
-                      </div>
-                      <span className="font-bold text-xs text-destructive">Excluir</span>
-                    </button>
-                  </div>
-                </div>
-              </DrawerContent>
-            </Drawer>
+            >
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
         </div>
 

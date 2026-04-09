@@ -3,22 +3,43 @@ import z from "zod";
 const productTypeSchema = z
   .enum(
     ["merchandise", "ticket", "token", "bundle"],
-    { error: "Invalid product type" }
+    { error: "Tipo do Produto inválido" }
   ).default("merchandise");
 
 export type ProductType = z.infer<typeof productTypeSchema>
 
 export const productCreateSchema = z.object({
   edition_scope_id: z.uuid(),
-  name: z.string().min(3),
-  description: z.string().optional().nullable(),
+  name: z.string({
+    error: "Nome é obrigatório",
+  }).min(3, {
+    message: "O nome deve ter pelo menos 3 caracteres",
+  }),
+  description: z.string().nullable().optional(),
   type: productTypeSchema,
-  ticket_id: z.uuid().optional().nullable(),
-  price_cents: z.int().nonnegative(),
-  available_from: z.iso.datetime().optional().nullable(),
-  available_until: z.iso.datetime().optional().nullable(),
+  ticket_id: z.preprocess(
+    (val) => val === "" ? null : val,
+    z.uuid({
+      message: "ID do ticket inválido",
+    }).nullable().optional()
+  ),
+  price_cents: z.int({
+    message: "O preço deve ser um número inteiro",
+  }).nonnegative({
+    message: "O preço não pode ser negativo",
+  }),
+  available_from: z.iso.datetime({
+    message: "Data de início inválida",
+  }).nullable().optional(),
+  available_until: z.iso.datetime({
+    message: "Data de término inválida",
+  }).nullable().optional(),
   has_inventory: z.boolean().default(false),
-  inventory_quantity: z.int().nonnegative().default(0),
+  inventory_quantity: z.int({
+    message: "Quantidade de estoque deve ser um número inteiro",
+  }).nonnegative({
+    message: "Quantidade de estoque não pode ser negativa",
+  }).default(0),
 })
 
 export type ProductCreateI = z.infer<typeof productCreateSchema>

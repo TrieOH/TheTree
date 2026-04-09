@@ -22,6 +22,7 @@ interface FormDrawerProps<T extends FieldValues> {
   defaultValues?: DefaultValues<T>
   submitLabel?: string
   loading?: boolean
+  closeOnSubmit?: boolean
 }
 
 export function FormDrawer<T extends FieldValues>({
@@ -36,10 +37,11 @@ export function FormDrawer<T extends FieldValues>({
   defaultValues,
   submitLabel,
   loading,
+  closeOnSubmit = true,
 }: FormDrawerProps<T>) {
   const handleFormSubmit = async (data: T) => {
     await onSubmit(data)
-    onOpenChange(false)
+    if (closeOnSubmit) onOpenChange(false)
   }
 
   const handleCancel = () => {
