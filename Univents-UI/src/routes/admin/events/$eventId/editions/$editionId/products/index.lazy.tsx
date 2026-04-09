@@ -65,7 +65,7 @@ function RouteComponent() {
   const publishMutation = useMutation({
     mutationFn: ({ productId }: { productId: string }) =>
       publishProductFn(eventId, editionId, productId),
-    onSuccess: (res, variables) => {
+    onSuccess: async (res, variables) => {
       if (res.success) {
         queryClient.setQueryData<ProductI[]>(
           allAdminProductsQueryOptions(eventId, editionId).queryKey,
@@ -73,7 +73,7 @@ function RouteComponent() {
             prod.id === variables.productId ? { ...prod, status: 'available' as const } : prod
           )
         )
-        queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
+        await queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
         setPublishingProduct(null)
         toast.success('Produto publicado com sucesso!')
       } else toast.error(res.message || 'Erro ao publicar produto')
@@ -84,7 +84,7 @@ function RouteComponent() {
   const softDeleteMutation = useMutation({
     mutationFn: ({ productId }: { productId: string }) =>
       softDeleteProductFn(eventId, editionId, productId),
-    onSuccess: (res, variables) => {
+    onSuccess: async (res, variables) => {
       if (res.success) {
         queryClient.setQueryData<ProductI[]>(
           allAdminProductsQueryOptions(eventId, editionId).queryKey,
@@ -92,7 +92,7 @@ function RouteComponent() {
             prod.id === variables.productId ? { ...prod, deleted_at: new Date().toISOString() } : prod
           )
         )
-        queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
+        await queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
         setSoftDeletingProduct(null)
         toast.success('Produto excluído com sucesso!')
       } else toast.error(res.message || 'Erro ao excluir produto')
@@ -103,7 +103,7 @@ function RouteComponent() {
   const restoreMutation = useMutation({
     mutationFn: ({ productId }: { productId: string }) =>
       restoreSoftDeletedProductFn(eventId, editionId, productId),
-    onSuccess: (res, variables) => {
+    onSuccess: async (res, variables) => {
       if (res.success) {
         queryClient.setQueryData<ProductI[]>(
           allAdminProductsQueryOptions(eventId, editionId).queryKey,
@@ -111,7 +111,7 @@ function RouteComponent() {
             prod.id === variables.productId ? { ...prod, deleted_at: null } : prod
           )
         )
-        queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
+        await queryClient.invalidateQueries(allProductsQueryOptions(eventId, editionId))
         setRestoringProduct(null)
         toast.success('Produto restaurado com sucesso!')
       } else toast.error(res.message || 'Erro ao restaurar produto')
