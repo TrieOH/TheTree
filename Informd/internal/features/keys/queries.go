@@ -7,8 +7,7 @@ import (
 	"TrieForms/internal/shared/types"
 	"context"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -16,7 +15,7 @@ import (
 type QueryService struct {
 	apiKeys  ports.ApiKeysRepo
 	projects ports.ProjectsRepo
-	gaClient *goauth.Client
+	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -24,14 +23,14 @@ type QueryService struct {
 func NewApiKeyQueryService(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.ProjectsRepo,
-	gaClient *goauth.Client,
+	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
 		apiKeys:  apiKeys,
 		projects: projects,
-		gaClient: gaClient,
+		az:       az,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -41,31 +40,18 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []type
 	ctx, span := s.tracer.Start(ctx, "ApiKeyService.List")
 	defer span.End()
 
-	ga := s.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var project *types.Project
-	project, err = s.projects.GetByID(ctx, projectID)
-	if err != nil {
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("list_keys"),
+		authz.Resource("project", projectID.String()),
+	); err != nil {
 		return nil, err
-	}
-
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
-		Action("read").
-		Scope(project.ScopeID).
-		Allowed(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if !allowed {
-		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	var keys []types.APIKey

@@ -22,6 +22,7 @@ WORKDIR /app
 COPY --from=builder /app/trieForms .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/internal/plataform/database/migrations ./internal/plataform/database/migrations
+COPY --from=builder /app/internal/plataform/authz/schema.zed ./internal/plataform/authz/schema.zed
 
 EXPOSE 8080
 

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -33,6 +34,7 @@ type TrieForms struct {
 	Redis     *redis.Client
 	Scheduler gocron.Scheduler
 	GaClient  *goauth.Client
+	AzClient  *v1.Client
 
 	Deps *router.HTTPDeps
 }
@@ -42,6 +44,7 @@ func TrieFormsSetup() *TrieForms {
 
 	LoadEnv(&app)
 	app.Redis = SetupRedis(15 * time.Second)
+	SetupSpiceDB(&app)
 	SetupGoAuth(&app)
 	SetupFUN()
 	if viper.GetString("ENV") != "test" {
@@ -110,12 +113,12 @@ func TrieFormsStart(app *TrieForms) {
 	}()
 
 	// Init Commands and Queries
-	projectsC := projects.NewProjectCommandService(projectsRepo, app.GaClient, txRunner, tracer)
-	projectsQ := projects.NewProjectQueryService(projectsRepo, app.GaClient, txRunner, tracer)
-	apiKeysC := keys.NewApiKeyCommandService(apiKeysRepo, projectsRepo, app.GaClient, txRunner, tracer)
-	apiKeysQ := keys.NewApiKeyQueryService(apiKeysRepo, projectsRepo, app.GaClient, txRunner, tracer)
-	formsC := forms.NewFormCommandService(formsRepo, projectsRepo, app.GaClient, txRunner, tracer)
-	formsQ := forms.NewFormQueryService(formsRepo, projectsRepo, app.GaClient, txRunner, tracer)
+	projectsC := projects.NewProjectCommandService(projectsRepo, app.AzClient, txRunner, tracer)
+	projectsQ := projects.NewProjectQueryService(projectsRepo, app.AzClient, txRunner, tracer)
+	apiKeysC := keys.NewApiKeyCommandService(apiKeysRepo, projectsRepo, app.AzClient, txRunner, tracer)
+	apiKeysQ := keys.NewApiKeyQueryService(apiKeysRepo, projectsRepo, app.AzClient, txRunner, tracer)
+	formsC := forms.NewFormCommandService(formsRepo, projectsRepo, app.AzClient, txRunner, tracer)
+	formsQ := forms.NewFormQueryService(formsRepo, projectsRepo, app.AzClient, txRunner, tracer)
 
 	// Init Handlers
 	systemHandler := system.NewSystemHandler(app.GaClient)

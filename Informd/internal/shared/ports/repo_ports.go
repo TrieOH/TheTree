@@ -19,6 +19,7 @@ type ProjectsRepo interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*types.Project, error)
 	GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*types.Project, error)
 	List(ctx context.Context, ownerID uuid.UUID) ([]types.Project, error)
+	ListByIDs(ctx context.Context, ids []string) ([]types.Project, error)
 }
 
 type FormsRepo interface {

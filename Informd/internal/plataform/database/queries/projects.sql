@@ -18,3 +18,9 @@ SELECT *
 FROM projects
 WHERE owner_id = $1
 ORDER BY created_at DESC;
+
+-- name: ListProjectsByIDs :many
+SELECT *
+FROM projects
+WHERE id = ANY($1::uuid[])
+ORDER BY created_at DESC;

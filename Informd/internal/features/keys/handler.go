@@ -146,19 +146,13 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} swag.ErrorResponse
 // @Router /projects/{project_id}/keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs == nil {
-		rs.Send(w)
-		return
-	}
-
 	keyID, rs := validation.GetUUID(r, "id")
 	if rs != nil {
 		rs.Send(w)
 		return
 	}
 
-	if err := h.commands.RevokeAPIKey(r.Context(), projectID, keyID); err != nil {
+	if err := h.commands.RevokeAPIKey(r.Context(), keyID); err != nil {
 		resp.Error(err).Send(w)
 		return
 	}

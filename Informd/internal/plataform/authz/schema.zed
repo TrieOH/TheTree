@@ -1,0 +1,39 @@
+definition user {}
+
+definition platform {
+    relation member: user
+
+    permission create_project = member
+    permission list_projects = member
+}
+
+definition project {
+    relation platform: platform
+    relation owner: user
+    relation member: user
+
+    permission create_form = owner + member
+    permission create_key  = owner
+    permission list_forms  = owner + member
+    permission list_keys   = owner + member
+    permission edit        = owner
+    permission delete      = owner
+}
+
+definition form {
+    relation project: project
+    relation owner: user
+
+    permission view   = owner + project->member + project->owner
+    permission edit   = owner + project->owner
+    permission delete = owner + project->owner
+}
+
+definition key {
+    relation project: project
+    relation owner: user
+
+    permission view   = owner + project->owner
+    permission edit   = owner + project->owner
+    permission delete = owner + project->owner
+}

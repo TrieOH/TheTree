@@ -6,29 +6,27 @@ import (
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
-	"encoding/json"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type CommandService struct {
 	projects ports.ProjectsRepo
-	gaClient *goauth.Client
+	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
 func NewProjectCommandService(
 	projects ports.ProjectsRepo,
-	gaClient *goauth.Client,
+	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		projects: projects,
-		gaClient: gaClient,
+		az:       az,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -37,8 +35,6 @@ func NewProjectCommandService(
 func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Project, err error) {
 	ctx, span := s.tracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
-
-	ga := s.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -52,26 +48,13 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Pro
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("projects").
-		Action("create").
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_project"),
+		authz.Resource("platform", "global"),
+	); err != nil {
 		return nil, err
 	}
-	if !allowed {
-		return nil, fun.NewError("insufficient permissions").Forbidden()
-	}
-
-	meta := json.RawMessage(`{"color": "#6a07e3", "icon": "Shield"}`)
-	var scope *goauth.Scope
-	var idStr = project.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, project.Name, &idStr, nil, meta)
-	if err != nil {
-		return nil, err
-	}
-	project.AddScope(scope.ID)
 
 	var created *types.Project
 	created, err = s.projects.Create(ctx, *project)

@@ -106,3 +106,28 @@ func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]types.Project,
 	}
 	return out, nil
 }
+
+func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]types.Project, error) {
+	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.ListByIDs")
+	defer span.End()
+
+	uuids := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		parsed, err := uuid.Parse(id)
+		if err != nil {
+			continue
+		}
+		uuids = append(uuids, parsed)
+	}
+
+	sqlcProjects, err := repo.queries(ctx).ListProjectsByIDs(ctx, uuids)
+	if err != nil {
+		return nil, errx.FromDB(err, "project")
+	}
+
+	out := make([]types.Project, 0, len(sqlcProjects))
+	for _, project := range sqlcProjects {
+		out = append(out, *mapProjectFromDB(&project))
+	}
+	return out, nil
+}

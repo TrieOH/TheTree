@@ -6,10 +6,8 @@ import (
 	"TrieForms/internal/shared/ports"
 	"TrieForms/internal/shared/types"
 	"context"
-	"encoding/json"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -17,7 +15,7 @@ import (
 type CommandService struct {
 	forms    ports.FormsRepo
 	projects ports.ProjectsRepo
-	gaClient *goauth.Client
+	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -25,14 +23,14 @@ type CommandService struct {
 func NewFormCommandService(
 	forms ports.FormsRepo,
 	projects ports.ProjectsRepo,
-	gaClient *goauth.Client,
+	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		forms:    forms,
 		projects: projects,
-		gaClient: gaClient,
+		az:       az,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -41,8 +39,6 @@ func NewFormCommandService(
 func (s *CommandService) Create(ctx context.Context, title string, projectID uuid.UUID) (created *types.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
-
-	ga := s.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -56,17 +52,12 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("forms").
-		Action("create").
-		Scope(project.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_form"),
+		authz.Resource("project", project.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	var form *types.Form
@@ -74,15 +65,6 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 	if err != nil {
 		return nil, err
 	}
-
-	meta := json.RawMessage(`{"color": "#57e389", "icon": "Form", "folder": "forms"}`)
-	var scope *goauth.Scope
-	var idStr = form.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, project.Name, &idStr, &project.ScopeID, meta)
-	if err != nil {
-		return nil, err
-	}
-	form.AddScope(scope.ID)
 
 	created, err = s.forms.Create(ctx, *form)
 	if err != nil {

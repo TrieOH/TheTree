@@ -39,18 +39,18 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 
 func mapFormFromDB(src *sqlc.Form) *types.Form {
 	return &types.Form{
-		ID:               src.ID,
-		ProjectID:        src.ProjectID,
-		OwnerID:          src.OwnerID,
-		ScopeID:          src.ScopeID,
-		Title:            src.Title,
-		Status:           types.FormStatus(src.Status),
-		CurrentVersionID: src.CurrentVersionID,
-		CreatedAt:        src.CreatedAt,
-		UpdatedAt:        src.UpdatedAt,
-		OpenedAt:         src.OpenedAt,
-		ClosedAt:         src.ClosedAt,
-		ArchivedAt:       src.ArchivedAt,
+		ID:        src.ID,
+		ProjectID: src.ProjectID,
+		OwnerID:   src.OwnerID,
+		ScopeID:   src.ScopeID,
+		Title:     src.Title,
+		Status:    types.FormStatus(src.Status),
+		//CurrentVersionID: src.CurrentVersionID,
+		CreatedAt:  src.CreatedAt,
+		UpdatedAt:  src.UpdatedAt,
+		OpenedAt:   src.OpenedAt,
+		ClosedAt:   src.ClosedAt,
+		ArchivedAt: src.ArchivedAt,
 	}
 }
 

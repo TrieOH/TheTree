@@ -14,6 +14,8 @@ services:
         condition: service_started
       forms-redis:
         condition: service_started
+      forms-spicedb:
+        condition: service_healthy
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
 
@@ -34,6 +36,9 @@ services:
       GOAUTH_URL: ${GOAUTH_URL:-http://go-auth:8080}
       GOAUTH_API_KEY: ${GOAUTH_API_KEY}
       GO_AUTH_PROJECT_ID: ${GO_AUTH_PROJECT_ID}
+
+      SPICEDB_ADDR: forms-spicedb:50051
+      SPICEDB_TOKEN: ${SPICEDB_TOKEN}
 
   forms-database:
     container_name: trie-forms-database
@@ -59,6 +64,44 @@ services:
       - "6382:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - internal
+
+  forms-spicedb-migrate:
+    container_name: forms-spicedb-migrate
+    image: authzed/spicedb:latest
+    command: migrate head
+    restart: on-failure
+    environment:
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      forms-database:
+        condition: service_started
+    networks:
+      - internal
+
+  forms-spicedb:
+    container_name: forms-spicedb
+    image: authzed/spicedb:latest
+    command: serve
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+      - "8443:8443"
+    environment:
+      SPICEDB_GRPC_PRESHARED_KEY: ${SPICEDB_TOKEN}
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      forms-spicedb-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - internal
 

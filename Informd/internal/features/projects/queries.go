@@ -7,27 +7,26 @@ import (
 	"TrieForms/internal/shared/types"
 	"context"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type QueryService struct {
 	projects ports.ProjectsRepo
-	gaClient *goauth.Client
+	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
 func NewProjectQueryService(
 	projects ports.ProjectsRepo,
-	gaClient *goauth.Client,
+	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
 		projects: projects,
-		gaClient: gaClient,
+		az:       az,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -37,29 +36,22 @@ func (s *QueryService) List(ctx context.Context) (ws []types.Project, err error)
 	ctx, span := s.tracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
-	ga := s.gaClient
-
 	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
+	if sub, err = authz.RequireSubject(ctx); err != nil {
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("projects").
-		Action("read").
-		Allowed(ctx)
-	if err != nil {
+	var ids []string
+	if ids, err = authz.Lookup(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("view"),
+		authz.ResourceType("project"),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	var projects []types.Project
-	projects, err = s.projects.List(ctx, sub.ID)
-	if err != nil {
+	if projects, err = s.projects.ListByIDs(ctx, ids); err != nil {
 		return nil, err
 	}
 

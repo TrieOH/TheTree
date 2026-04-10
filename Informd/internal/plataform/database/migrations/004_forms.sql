@@ -7,7 +7,7 @@ CREATE TABLE forms (
     scope_id UUID NOT NULL,
     title TEXT NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
-    current_version_id UUID REFERENCES versions(id),
+    --current_version_id UUID REFERENCES versions(id),
 
     CHECK (status IN ('draft', 'open', 'closed', 'archived')),
 
@@ -28,8 +28,8 @@ CREATE TABLE forms (
 CREATE UNIQUE INDEX idx_forms_title_project
     ON forms (title, project_id);
 
-CREATE INDEX idx_forms_current_version_id
-    ON forms (current_version_id);
+--CREATE INDEX idx_forms_current_version_id
+--    ON forms (current_version_id);
 
 CREATE INDEX idx_forms_owner_id ON forms (owner_id);
 
@@ -124,6 +124,6 @@ DROP INDEX IF EXISTS uniq_version_number;
 DROP INDEX IF EXISTS idx_versions_forms_id;
 DROP TABLE IF EXISTS versions;
 DROP INDEX IF EXISTS idx_forms_owner_id;
-DROP INDEX IF EXISTS idx_forms_current_version_id;
+--DROP INDEX IF EXISTS idx_forms_current_version_id;
 DROP INDEX IF EXISTS idx_forms_title_project;
 DROP TABLE IF EXISTS forms;

@@ -8,10 +8,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
@@ -20,7 +18,7 @@ import (
 type CommandService struct {
 	apiKeys  ports.ApiKeysRepo
 	projects ports.ProjectsRepo
-	gaClient *goauth.Client
+	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -28,14 +26,14 @@ type CommandService struct {
 func NewApiKeyCommandService(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.ProjectsRepo,
-	gaClient *goauth.Client,
+	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		apiKeys:  apiKeys,
 		projects: projects,
-		gaClient: gaClient,
+		az:       az,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -44,8 +42,6 @@ func NewApiKeyCommandService(
 func (s *CommandService) Create(ctx context.Context, keyName string, projectID uuid.UUID) (rawKey string, ak *types.APIKey, err error) {
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
 	defer span.End()
-
-	ga := s.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -59,17 +55,12 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
-		Action("create").
-		Scope(project.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_key"),
+		authz.Resource("project", project.ID.String()),
+	); err != nil {
 		return "", nil, err
-	}
-	if !allowed {
-		return "", nil, fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	rawBytes := make([]byte, 32)
@@ -89,15 +80,6 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	meta := json.RawMessage(`{"color": "#de7907", "icon": "KeyRound", "folder": "Api Keys"}`)
-	var scope *goauth.Scope
-	var idStr = apiKey.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, apiKey.Name, &idStr, &project.ScopeID, meta)
-	if err != nil {
-		return "", nil, err
-	}
-	apiKey.AddScope(scope.ID)
-
 	var created *types.APIKey
 	created, err = s.apiKeys.Create(ctx, *apiKey)
 	if err != nil {
@@ -107,34 +89,21 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 	return rawKey, created, nil
 }
 
-func (s *CommandService) RevokeAPIKey(ctx context.Context, projectID, keyID uuid.UUID) error {
+func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) error {
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Revoke")
 	defer span.End()
-
-	ga := s.gaClient
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}
 
-	var project *types.Project
-	project, err = s.projects.GetByID(ctx, projectID)
-	if err != nil {
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("revoke"),
+		authz.Resource("api_key", keyID.String()),
+	); err != nil {
 		return err
-	}
-
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
-		Action("revoke").
-		Scope(project.ScopeID).
-		Allowed(ctx)
-	if err != nil {
-		return err
-	}
-	if !allowed {
-		return fun.NewError("insufficient permissions").Forbidden()
 	}
 
 	if _, err := s.apiKeys.Revoke(ctx, keyID, sub.ID); err != nil {
