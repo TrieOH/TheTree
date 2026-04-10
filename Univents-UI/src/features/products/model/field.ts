@@ -1,7 +1,8 @@
 import type { FormFieldI } from '@/shared/model/field'
 import type { ProductCreateI } from '.'
+import { uploadAndModerateFile } from '@/features/storage/api'
 
-export const getProductFields = (): FormFieldI<ProductCreateI>[] => [
+export const getProductFields = (eventId: string = 'temp', editionId: string = 'temp', productId: string = 'temp'): FormFieldI<ProductCreateI>[] => [
   {
     name: 'name',
     label: 'Nome do Produto',
@@ -14,6 +15,31 @@ export const getProductFields = (): FormFieldI<ProductCreateI>[] => [
     label: 'Descrição',
     type: 'textarea',
     placeholder: 'Uma breve descrição do produto.',
+  },
+  {
+    name: 'thumbnail_url',
+    label: 'Thumbnail',
+    type: 'image-upload',
+    span: 'full',
+    accept: 'image/png,image/jpeg,image/webp',
+    maxSize: 2 * 1024 * 1024,
+    uploadFn: (file) => uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
+  },
+  {
+    name: 'gallery_urls',
+    label: 'Galeria de Fotos',
+    type: 'gallery-upload',
+    span: 'full',
+    accept: 'image/png,image/jpeg,image/webp',
+    maxSize: 5 * 1024 * 1024,
+    uploadFn: (file) => uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
+    itemActions: [
+      {
+        label: 'Definir como Thumbnail',
+        icon: 'star',
+        onClick: (url, setValue) => { setValue('thumbnail_url', url); },
+      },
+    ]
   },
   {
     name: 'type',

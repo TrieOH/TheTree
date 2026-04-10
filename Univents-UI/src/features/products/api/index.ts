@@ -21,6 +21,23 @@ export const createProductFn = createClientOnlyFn((
 });
 
 /**
+ * Patches a Product on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param productId - The product id
+ * @param productData - The partial data for the product.
+ * @returns A promise that resolves to the API response containing the updated product.
+ */
+export const patchProductFn = createClientOnlyFn((
+  eventId: string, editionId: string, productId: string, productData: Partial<ProductI>
+) => {
+  return authFetcher.patch<ProductI>(
+    `/events/${eventId}/editions/${editionId}/products/${productId}`,
+    productData
+  );
+});
+
+/**
  * Fetches all products for a specific edition from the server.
  * @returns A promise that resolves to an array of Product objects.
  */

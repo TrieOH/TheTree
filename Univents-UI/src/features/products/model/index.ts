@@ -28,12 +28,20 @@ export const productCreateSchema = z.object({
   }).nonnegative({
     message: "O preço não pode ser negativo",
   }),
-  available_from: z.iso.datetime({
-    message: "Data de início inválida",
-  }).nullable().optional(),
-  available_until: z.iso.datetime({
-    message: "Data de término inválida",
-  }).nullable().optional(),
+  available_from: z.preprocess(
+    (val) => val === "" ? null : val,
+    z.iso.datetime({
+      message: "Data de início inválida",
+    }).nullable().optional()
+  ),
+  available_until: z.preprocess(
+    (val) => val === "" ? null : val,
+    z.iso.datetime({
+      message: "Data de término inválida",
+    }).nullable().optional()
+  ),
+  thumbnail_url: z.string().optional().nullable().transform(val => val === "" ? null : val),
+  gallery_urls: z.array(z.string()).nullish().transform(val => val ?? []),
   has_inventory: z.boolean().default(false),
   inventory_quantity: z.int({
     message: "Quantidade de estoque deve ser um número inteiro",

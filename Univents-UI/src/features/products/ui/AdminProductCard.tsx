@@ -1,14 +1,6 @@
 import { motion } from 'motion/react'
-import { MoreVertical, Tag, Eye, EyeOff, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { MoreVertical, Tag, Eye, EyeOff, Trash2, Pencil, Package, Calendar, Info } from 'lucide-react'
 import type { ProductI } from '@/features/products/model'
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/shared/ui/shadcn/drawer'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,25 +8,35 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/shadcn/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
+import { StatusBadge } from '@/shared/ui'
+import { formatDateRange } from '@/shared/lib/date'
 
 interface AdminProductCardProps {
   product: ProductI
   index: number
+  onEdit: (product: ProductI) => void
   onPublish: (product: ProductI) => void
   onSoftDelete: (product: ProductI) => void
   onRestore: (product: ProductI) => void
 }
 
+const typeLabels: Record<string, string> = {
+  merchandise: 'Mercadoria',
+  ticket: 'Ingresso',
+  token: 'Token',
+  bundle: 'Pacote',
+}
+
 export function AdminProductCard({
   product,
   index,
+  onEdit,
   onPublish,
   onSoftDelete,
   onRestore,
 }: AdminProductCardProps) {
-  const [isActionsOpen, setIsActionsOpen] = useState(false)
-
-  const handleAction = (type: 'publish' | 'delete' | 'restore') => {
+  const handleAction = (type: 'edit' | 'publish' | 'delete' | 'restore') => {
+    if (type === 'edit') onEdit(product)
     if (type === 'publish') onPublish(product)
     if (type === 'delete') onSoftDelete(product)
     if (type === 'restore') onRestore(product)
@@ -49,96 +51,101 @@ export function AdminProductCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        'relative flex flex-col justify-between p-4 rounded-xl border border-border bg-card',
+        'group relative flex flex-col bg-card border border-border rounded-xl overflow-hidden transition-all duration-200',
+        'hover:border-primary/20 hover:shadow-sm',
         isDeleted && 'opacity-60 grayscale'
       )}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Tag className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              {product.type} - R$ {(product.price_cents / 100).toFixed(2)}
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-4 p-4">
+        {/* Thumbnail */}
+        <div className="w-full sm:w-24 h-40 sm:h-24 rounded-lg bg-muted shrink-0 overflow-hidden border border-border/50 flex items-center justify-center">
+          {product.thumbnail_url ? (
+            <img src={product.thumbnail_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          ) : (
+            <Tag className="w-8 h-8 text-muted-foreground/30" />
+          )}
         </div>
 
-        <div className="hidden sm:flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted">
-                  <MoreVertical className="w-5 h-5 text-foreground" />
-                </button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => { handleAction('publish'); }} disabled={isPublished}>
-                <Eye className="mr-2 h-4 w-4" />
-                <span>Publicar</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { handleAction('delete'); }} disabled={isDeleted}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                <span>Excluir</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { handleAction('restore'); }} disabled={!isDeleted}>
-                <EyeOff className="mr-2 h-4 w-4" />
-                <span>Restaurar</span>
-              </DropdownMenuItem>
-              {/* Add edit link here once the edit page is available */}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="sm:hidden">
-          <Drawer open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-            <DrawerTrigger asChild>
-              <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted">
-                <MoreVertical className="w-5 h-5 text-foreground" />
-              </button>
-            </DrawerTrigger>
-            <DrawerContent className="z-60 rounded-t-2xl">
-              <DrawerHeader className="pb-4 border-b">
-                <DrawerTitle className="text-base font-semibold">Ações para {product.name}</DrawerTitle>
-              </DrawerHeader>
-              <div className="p-2 pb-8 space-y-1">
-                <button
-                  onClick={() => { handleAction('publish'); setIsActionsOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted"
-                  disabled={isPublished}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Eye className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-medium">Publicar</span>
-                </button>
-                <button
-                  onClick={() => { handleAction('delete'); setIsActionsOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted"
-                  disabled={isDeleted}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Trash2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-medium">Excluir</span>
-                </button>
-                <button
-                  onClick={() => { handleAction('restore'); setIsActionsOpen(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-muted"
-                  disabled={!isDeleted}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <EyeOff className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="font-medium">Restaurar</span>
-                </button>
-                {/* Add edit link here once the edit page is available */}
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-semibold text-foreground truncate">{product.name}</h3>
+                <StatusBadge status={product.status === 'available' ? 'published' : product.status} />
               </div>
-            </DrawerContent>
-          </Drawer>
+              <p className="text-sm text-muted-foreground line-clamp-1">{product.description}</p>
+            </div>
+
+            <div className="shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted transition-colors">
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => { handleAction('edit'); }}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <span>Editar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { handleAction('publish'); }} disabled={isPublished}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    <span>Publicar</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { handleAction('delete'); }} disabled={isDeleted}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Excluir</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { handleAction('restore'); }} disabled={!isDeleted}>
+                    <EyeOff className="mr-2 h-4 w-4" />
+                    <span>Restaurar</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Package className="w-3.5 h-3.5" />
+              <span className="bg-muted px-1.5 py-0.5 rounded font-medium">{typeLabels[product.type] || product.type}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="w-3.5 h-3.5" />
+              <span className="font-semibold text-foreground">R$ {(product.price_cents / 100).toFixed(2)}</span>
+            </div>
+
+            {product.has_inventory && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground col-span-2 sm:col-span-1">
+                <Package className="w-3.5 h-3.5 text-primary/60" />
+                <span className={cn(
+                  "font-medium px-1.5 py-0.5 rounded",
+                  product.inventory_remaining === 0 ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                )}>
+                  {product.inventory_remaining} / {product.inventory_quantity}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {(product.available_from ?? product.available_until) && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Calendar className="w-3.5 h-3.5 opacity-60" />
+              <span>
+                {product.available_from && product.available_until
+                  ? formatDateRange(product.available_from, product.available_until)
+                  : product.available_from
+                    ? `Desde ${new Date(product.available_from).toLocaleDateString('pt-BR')}`
+                    : product.available_until
+                      ? `Até ${new Date(product.available_until).toLocaleDateString('pt-BR')}`
+                      : null}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

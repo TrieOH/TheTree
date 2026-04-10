@@ -23,14 +23,20 @@ import {
   allAdminProductsQueryOptions,
   allProductsQueryOptions,
   createProductFn,
+  patchProductFn,
   publishProductFn,
   restoreSoftDeletedProductFn,
   softDeleteProductFn,
+  addImageToTheProductGalleryFn,
+  removeImageToTheProductGalleryFn,
+  setProductThumbnailFn,
+  unsetProductThumbnailFn,
 } from '@/features/products/api'
 import { AlertModal } from '@/widgets/ui/alert-modal'
 import { productCreateSchema } from '@/features/products/model'
 import { getProductFields } from '@/features/products/model/field'
 import { AdminProductCard } from '@/features/products/ui/AdminProductCard'
+import { getDirtyFields } from '@/shared/lib/diff'
 
 export const Route = createLazyFileRoute('/admin/events/$eventId/editions/$editionId/products/')({
   component: RouteComponent,
@@ -40,6 +46,7 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { eventId, editionId } = Route.useParams()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<ProductI | null>(null)
   const [publishingProduct, setPublishingProduct] = useState<ProductI | null>(null)
   const [softDeletingProduct, setSoftDeletingProduct] = useState<ProductI | null>(null)
   const [restoringProduct, setRestoringProduct] = useState<ProductI | null>(null)
@@ -58,6 +65,22 @@ function RouteComponent() {
         setIsCreateOpen(false)
         toast.success('Produto criado com sucesso!')
       } else toast.error(res.message || 'Erro ao criar produto')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  })
+
+  const patchMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<ProductI> }) =>
+      patchProductFn(eventId, editionId, id, data),
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.setQueryData<ProductI[]>(
+          allAdminProductsQueryOptions(eventId, editionId).queryKey,
+          (old = []) => old.map(prod => prod.id === res.data.id ? res.data : prod)
+        )
+        setEditingProduct(null)
+        toast.success('Produto atualizado com sucesso!')
+      } else toast.error(res.message || 'Erro ao atualizar produto')
     },
     onError: () => toast.error('Erro ao conectar com o servidor')
   })
@@ -124,6 +147,45 @@ function RouteComponent() {
     createMutation.mutate(data)
   }
 
+  const updateProductMedia = async (id: string, data: ProductCreateI, original: ProductI, changes: Partial<ProductCreateI>) => {
+    // Gallery
+    if (changes.gallery_urls !== undefined) {
+      const currentGallery = original.gallery_urls ?? []
+      const targetGallery = data.gallery_urls
+
+      for (const url of targetGallery.filter(u => !currentGallery.includes(u))) {
+        await addImageToTheProductGalleryFn(eventId, editionId, id, { url })
+      }
+      for (const url of currentGallery.filter(u => !targetGallery.includes(u))) {
+        await removeImageToTheProductGalleryFn(eventId, editionId, id, { url })
+      }
+    }
+
+    // Thumbnail
+    if (changes.thumbnail_url !== undefined) {
+      if (data.thumbnail_url) await setProductThumbnailFn(eventId, editionId, id, { url: data.thumbnail_url })
+      else await unsetProductThumbnailFn(eventId, editionId, id)
+    }
+  }
+
+  const handleEdit = async (data: ProductCreateI) => {
+    if (!editingProduct) return
+
+    const changes = getDirtyFields(data, editingProduct as unknown as ProductCreateI, [
+      'name', 'description', 'type', 'price_cents', 'has_inventory', 'inventory_quantity',
+      'available_from', 'available_until', 'ticket_id', 'thumbnail_url', 'gallery_urls'
+    ])
+
+    if (Object.keys(changes).length === 0) {
+      toast.info('Nenhuma alteração detectada')
+      setEditingProduct(null)
+      return
+    }
+
+    await updateProductMedia(editingProduct.id, data, editingProduct, changes)
+    await patchMutation.mutateAsync({ id: editingProduct.id, data })
+  }
+
   const handlePublish = () => {
     if (!publishingProduct) return
     publishMutation.mutate({ productId: publishingProduct.id })
@@ -139,7 +201,22 @@ function RouteComponent() {
     restoreMutation.mutate({ productId: restoringProduct.id })
   }
 
-  const loading = createMutation.isPending || publishMutation.isPending || softDeleteMutation.isPending || restoreMutation.isPending
+  const getInitialData = (product: ProductI | null): Partial<ProductCreateI> => product ? {
+    edition_scope_id: product.edition_id,
+    name: product.name,
+    description: product.description ?? undefined,
+    type: product.type,
+    price_cents: product.price_cents,
+    has_inventory: product.has_inventory,
+    inventory_quantity: product.inventory_quantity,
+    available_from: product.available_from ?? undefined,
+    available_until: product.available_until ?? undefined,
+    ticket_id: product.ticket_id ?? undefined,
+    thumbnail_url: product.thumbnail_url ?? undefined,
+    gallery_urls: product.gallery_urls ?? undefined,
+  } : {}
+
+  const loading = createMutation.isPending || patchMutation.isPending || publishMutation.isPending || softDeleteMutation.isPending || restoreMutation.isPending
 
   return (
     <div className="min-h-screen bg-background relative pb-20 md:pb-0">
@@ -267,6 +344,7 @@ function RouteComponent() {
                   key={product.id}
                   product={product}
                   index={idx}
+                  onEdit={() => { setEditingProduct(product) }}
                   onPublish={() => { setPublishingProduct(product) }}
                   onSoftDelete={() => { setSoftDeletingProduct(product) }}
                   onRestore={() => { setRestoringProduct(product) }}
@@ -282,13 +360,27 @@ function RouteComponent() {
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         title="Novo produto"
-        fields={getProductFields()}
+        fields={getProductFields(eventId, editionId)}
         schema={productCreateSchema}
         onSubmit={handleCreate}
         submitLabel="Criar produto"
         loading={loading}
         closeOnSubmit={false}
         defaultValues={{ edition_scope_id: editionId }}
+      />
+
+      <FormDrawer
+        idPrefix="edit-product-"
+        open={!!editingProduct}
+        onOpenChange={(open) => { if (!open) setEditingProduct(null) }}
+        title="Editar produto"
+        fields={getProductFields(eventId, editionId, editingProduct?.id)}
+        schema={productCreateSchema}
+        onSubmit={handleEdit}
+        submitLabel="Salvar alterações"
+        loading={loading}
+        closeOnSubmit={false}
+        defaultValues={getInitialData(editingProduct)}
       />
 
       <AlertModal
