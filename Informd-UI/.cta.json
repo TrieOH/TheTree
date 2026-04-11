@@ -1,0 +1,20 @@
+{
+  "projectName": "trie-forms-frontend",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "npm",
+  "includeExamples": false,
+  "tailwind": true,
+  "addOnOptions": {},
+  "envVarValues": {},
+  "git": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "eslint",
+    "t3env",
+    "posthog",
+    "tanstack-query"
+  ]
+}
