@@ -110,6 +110,7 @@ export function saveTokenClaims(claims: AuthTokenClaims): void {
 
   authStore.set({
     isAuthenticated: !!claims.access_data,
+    isInitializing: false,
   });
 
   logger.log("Token claims saved");

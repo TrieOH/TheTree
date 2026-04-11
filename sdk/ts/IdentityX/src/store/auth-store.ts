@@ -1,11 +1,15 @@
 type AuthState = {
   isAuthenticated: boolean;
+  isInitializing: boolean;
 };
 
-let _state: AuthState = { isAuthenticated: false };
+let _state: AuthState = {
+  isAuthenticated: false,
+  isInitializing: true,
+};
 const _listeners = new Set<() => void>();
 
-const notify = () => _listeners.forEach(l => l());
+const notify = () => _listeners.forEach((l) => l());
 
 export const authStore = {
   subscribe: (cb: () => void) => {
@@ -19,7 +23,10 @@ export const authStore = {
     notify();
   },
   reset: () => {
-    _state = { isAuthenticated: false };
+    _state = {
+      isAuthenticated: false,
+      isInitializing: false,
+    };
     notify();
   },
 };
@@ -32,7 +39,7 @@ if (typeof window !== "undefined") {
       else {
         const expiry = parseInt(event.newValue, 10);
         const isAuthenticated = !isNaN(expiry) && expiry > Date.now();
-        authStore.set({ isAuthenticated });
+        authStore.set({ isAuthenticated, isInitializing: false });
       }
     }
   });
