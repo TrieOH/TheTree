@@ -4,6 +4,7 @@ import (
 	http2 "GoAuth/internal/adapters/http/handlers"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -22,6 +23,16 @@ func LoadEnv(app *GoauthApp) {
 	}
 	if smtpPort := viper.GetString("SMTP_PORT"); smtpPort == "" {
 		log.Fatalf("SMTP_PORT environment variable not set.")
+	}
+
+	if keyDuration := viper.GetDuration("GOAUTH_KEY_LIFETIME"); keyDuration == time.Duration(0) {
+		log.Fatalf("GOAUTH_KEY_LIFETIME environment variable not set.")
+	}
+	if keyDuration := viper.GetDuration("GOAUTH_KEY_VERIFY_LIFETIME"); keyDuration == time.Duration(0) {
+		log.Fatalf("GOAUTH_KEY_VERIFY_LIFETIME environment variable not set.")
+	}
+	if keyDuration := viper.GetDuration("ROTATE_KEYS_JOB_DURATION"); keyDuration == time.Duration(0) {
+		log.Fatalf("ROTATE_KEYS_JOB_DURATION environment variable not set.")
 	}
 
 	env := viper.GetString("ENV")

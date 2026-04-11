@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/viper"
 )
 
 func SetupRuntimeEnv(db *pgxpool.Pool) {
@@ -58,7 +59,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			}
 
 			kid := "goauth:" + ulid.Make().String()
-			expiresAt := time.Now().Add(7 * 24 * time.Hour)
+			expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
 			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 				Kid:             kid,
@@ -70,7 +71,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 				Usage:           "sign",
 				Status:          "active",
 				ExpiresAt:       expiresAt,
-				VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
+				VerifyExpiresAt: expiresAt.Add(viper.GetDuration("GOAUTH_KEY_LIFETIME")),
 			})
 
 			fe := fail.From(err)
@@ -144,7 +145,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	}
 
 	kid := "goauth:" + ulid.Make().String()
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
@@ -156,9 +157,12 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 		Usage:           "sign",
 		Status:          "active",
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
+		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("GOAUTH_KEY_LIFETIME")),
 	})
 
+	if err == nil {
+		return nil
+	}
 	fe := fail.From(err)
 	if errx.IsUniqueViolation(fe) {
 		return nil
@@ -211,7 +215,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 	}
 
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
@@ -223,7 +227,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		Usage:           "sign",
 		Status:          "active",
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(7 * 24 * time.Hour),
+		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("GOAUTH_KEY_LIFETIME")),
 	})
 
 	if err == nil {

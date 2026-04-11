@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -20,7 +21,7 @@ func rotateKeysJob(ctx context.Context, app *GoauthApp, txRunner inbounds.TxRunn
 
 	_, err := scheduler.NewJob(
 		gocron.DurationJob(
-			time.Hour,
+			viper.GetDuration("ROTATE_KEYS_JOB_DURATION"),
 		),
 		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) {
 			if err := txRunner.WithinTx(ctx, func(txCtx context.Context) error {
@@ -53,9 +54,9 @@ func rotateKeysJob(ctx context.Context, app *GoauthApp, txRunner inbounds.TxRunn
 
 	if err != nil {
 		log.Fatalf("Couldn't create RotateKeys cron job: %v", err)
-	} else {
-		log.Println("Created RotateKeys cron job")
 	}
+
+	log.Println("Created RotateKeys cron job")
 }
 
 func sessionCleanupJob(ctx context.Context, app *GoauthApp, txRunner inbounds.TxRunner) {
@@ -87,9 +88,9 @@ func sessionCleanupJob(ctx context.Context, app *GoauthApp, txRunner inbounds.Tx
 
 	if err != nil {
 		log.Fatalf("Couldn't create SessionCleanup cron job: %v", err)
-	} else {
-		log.Println("Created SessionCleanup cron job")
 	}
+
+	log.Println("Created SessionCleanup cron job")
 }
 
 func tokenReuseCleanupJob(ctx context.Context, app *GoauthApp) {
@@ -113,7 +114,7 @@ func tokenReuseCleanupJob(ctx context.Context, app *GoauthApp) {
 
 	if err != nil {
 		log.Fatalf("Couldn't create TokenReuseCleanup cron job: %v", err)
-	} else {
-		log.Println("Created TokenReuseCleanup cron job")
 	}
+
+	log.Println("Created TokenReuseCleanup cron job")
 }
