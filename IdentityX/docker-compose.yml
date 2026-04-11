@@ -41,6 +41,10 @@ services:
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
+      GOAUTH_KEY_LIFETIME: ${GOAUTH_KEY_LIFETIME:-168h}
+      GOAUTH_KEY_VERIFY_LIFETIME: ${GOAUTH_KEY_LIFETIME:-336h}
+      ROTATE_KEYS_JOB_DURATION: ${ROTATE_KEYS_JOB_DURATION:-24h}
+
   go-auth-database:
     container_name: trieauth-database
     image: postgres:18

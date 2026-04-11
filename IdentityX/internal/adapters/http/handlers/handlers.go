@@ -13,7 +13,6 @@ type HandlerBundle struct {
 	PermissionHandler *PermissionHandler
 	RoleHandler       *RoleHandler
 	ApiKeyHandler     *ApiKeyHandler
-	SubContextHandler *SubContextHandler
 	SystemHandler     *SystemHandler
 }
 
@@ -26,7 +25,6 @@ func New(app *application.Application, rdc outbounds.RedisCacheService) *Handler
 		PermissionHandler: NewPermissionHandler(app.Permission),
 		RoleHandler:       NewRoleHandler(app.Role),
 		ApiKeyHandler:     NewApiKeyHandler(app.ApiKey),
-		SubContextHandler: NewSubContextHandler(app.SubContext),
 		SystemHandler:     NewSystemHandler(),
 	}
 }

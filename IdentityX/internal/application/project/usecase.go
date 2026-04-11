@@ -16,6 +16,7 @@ import (
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -111,6 +112,7 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		ulid.Make().String(),
 	)
 
+	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 	_, err = uc.keys.CreateKeyPair(ctx, key.Pair{
 		KID:             kid,
 		ProjectID:       &createdProject.ID,
@@ -120,8 +122,8 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		PrivateKey:      encryptedPriv,
 		Usage:           key.UsageSign,
 		Status:          key.StatusActive,
-		ExpiresAt:       time.Now().Add(7 * 24 * time.Hour),
-		VerifyExpiresAt: time.Now().Add(14 * 24 * time.Hour),
+		ExpiresAt:       expiresAt,
+		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("GOAUTH_KEY_LIFETIME")),
 	})
 	if err != nil {
 		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
