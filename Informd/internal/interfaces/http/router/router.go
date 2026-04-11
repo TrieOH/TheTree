@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	_ "TrieForms/docs"
+	_ "TrieForms/internal/shared/contracts"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -61,13 +61,13 @@ type HTTPDeps struct {
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
-// @response 400 {object} swag.ErrorResponse "Standard error response for bad requests"
-// @response 401 {object} swag.ErrorResponse "Standard error response for unauthorized requests"
-// @response 403 {object} swag.ErrorResponse "Standard error response for forbidden requests"
-// @response 404 {object} swag.ErrorResponse "Standard error response for not found errors"
-// @response 413 {object} swag.ErrorResponse "Standard error response for payload too large 1MB"
-// @response 429 {object} swag.ErrorResponse "Standard error response for too many requests"
-// @response 500 {object} swag.ErrorResponse "Standard error response for internal server errors"
+// @response 400 {object} contracts.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} contracts.ErrorResponse "Standard error response for unauthorized requests"
+// @response 403 {object} contracts.ErrorResponse "Standard error response for forbidden requests"
+// @response 404 {object} contracts.ErrorResponse "Standard error response for not found errors"
+// @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
+// @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
+// @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
 // @securityDefinitions.apikey Cookie
 // @in header
 // @name Cookie

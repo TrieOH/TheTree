@@ -1,9 +1,9 @@
-package initialization
+package app
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
+	cache "TrieForms/internal/platform/memory/redis"
 	"context"
-	"errors"
 	"log"
 	"os"
 	"time"
@@ -11,7 +11,7 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/goauth-sdk-go"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	v1 "github.com/authzed/authzed-go/v1"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
@@ -23,9 +23,9 @@ import (
 )
 
 func SetupFUN() {
-	module := viper.GetString("MODULE")
-	if module == "" {
-		module = "trie-forms-module"
+	var module string
+	if module = viper.GetString("MODULE"); module == "" {
+		module = "FormService"
 	}
 
 	resp.SetConfig(resp.Config{
@@ -38,18 +38,15 @@ func SetupFUN() {
 	})
 }
 
-func SetupDB(app *TrieForms, migrationPath string) {
-	var err error
+func SetupDB(migrationPath string) *pgxpool.Pool {
 	db, err := database.WaitForDB(30 * time.Second)
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
-
-	app.DB = db
-
-	if err := database.RunMigrations(db, migrationPath); err != nil {
+	if err = database.RunMigrations(db, migrationPath); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
+	return db
 }
 
 func SetupRedis(timeout time.Duration) *redis.Client {
@@ -57,29 +54,25 @@ func SetupRedis(timeout time.Duration) *redis.Client {
 	if err != nil {
 		log.Fatalf("Failed to connect Redis: %v", err)
 	}
-
 	return rdb
 }
 
-func SetupCron(db *pgxpool.Pool, app *TrieForms) {
-	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
+func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create Scheduler: %v", err)
 	}
 
-	app.Scheduler = scheduler
-
-	_ = database.NewPGXTxRunner(db)
+	//_ = database.NewPGXTxRunner(db)
+	// Call Jobs in jobs.go
 
 	go scheduler.Start()
 	log.Println("Started the cron Scheduler")
+	return scheduler
 }
 
-func SetupSpiceDB(app *TrieForms) {
-	client, err := v1.NewClient(
+func SetupSpiceDB() *authzed.Client {
+	client, err := authzed.NewClient(
 		viper.GetString("SPICEDB_ADDR"),
 		grpcutil.WithInsecureBearerToken(viper.GetString("SPICEDB_TOKEN")),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -87,15 +80,14 @@ func SetupSpiceDB(app *TrieForms) {
 	if err != nil {
 		log.Fatalf("failed to connect to SpiceDB: %v", err)
 	}
-	app.AzClient = client
 
-	schema, err := os.ReadFile("./internal/plataform/authz/schema.zed")
+	schema, err := os.ReadFile("./schema.zed")
 	if err != nil {
 		log.Fatalf("failed to read SpiceDB schema: %v", err)
 	}
 
 	ctx := context.Background()
-	_, err = app.AzClient.WriteSchema(ctx, &pb.WriteSchemaRequest{
+	_, err = client.WriteSchema(ctx, &pb.WriteSchemaRequest{
 		Schema: string(schema),
 	})
 	if err != nil {
@@ -103,16 +95,17 @@ func SetupSpiceDB(app *TrieForms) {
 	}
 
 	log.Println("SpiceDB schema ensured")
+	return client
 }
 
-func SetupGoAuth(app *TrieForms) {
+func SetupGoAuth(redisInstance *redis.Client) *goauth.Client {
 	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
 	client, err := goauth.NewClient(goauth.Config{
 		BaseURL:      viper.GetString("GOAUTH_URL"),
 		APIKey:       viper.GetString("GOAUTH_API_KEY"),
 		ProjectID:    projectID,
 		Debug:        true,
-		SessionCache: NewRedisSessionCache(app.Redis),
+		SessionCache: cache.NewSessionCache(redisInstance),
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())
@@ -125,34 +118,5 @@ func SetupGoAuth(app *TrieForms) {
 			log.Fatalf("error fetching initial JWKS: %s", err.Error())
 		}
 	}()
-
-	app.GaClient = client
-}
-
-type RedisSessionCache struct {
-	client *redis.Client
-}
-
-func NewRedisSessionCache(rdb *redis.Client) *RedisSessionCache {
-	return &RedisSessionCache{
-		client: rdb,
-	}
-}
-
-func (r *RedisSessionCache) GetSession(ctx context.Context, id string) ([]byte, error) {
-	val, err := r.client.Get(ctx, id).Result()
-	if errors.Is(err, redis.Nil) {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-	return []byte(val), nil
-}
-
-func (r *RedisSessionCache) SetSession(ctx context.Context, id string, data []byte, ttl time.Duration) error {
-	return r.client.Set(ctx, id, data, ttl).Err()
-}
-
-func (r *RedisSessionCache) DeleteSession(ctx context.Context, id string) error {
-	return r.client.Del(ctx, id).Err()
+	return client
 }

@@ -4,6 +4,8 @@ import (
 	"TrieForms/internal/shared/validation"
 	"net/http"
 
+	_ "TrieForms/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
@@ -36,11 +38,11 @@ type CreateFormRequest struct {
 // @Security Cookie
 // @Param project_id path string true "Project ID"
 // @Param request body CreateFormRequest true "Form title"
-// @Success 201 {object} types.Form "Form created successfully"
-// @Failure 400 {object} swag.ErrorResponse
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Success 201 {object} contracts.Form "Form created successfully"
+// @Failure 400 {object} contracts.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
@@ -73,10 +75,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param project_id path string true "Project ID"
-// @Success 200 {array} types.Form "Forms retrieved successfully"
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Success 200 {array} contracts.Form "Forms retrieved successfully"
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/forms [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")

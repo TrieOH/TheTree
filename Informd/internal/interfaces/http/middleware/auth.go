@@ -1,10 +1,9 @@
 package middleware
 
 import (
-	"TrieForms/internal/interfaces/http/system"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"errors"
 	"net/http"
 
@@ -67,7 +66,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			snapshot, err := system.UnmarshalSnapshot(sessionData)
+			snapshot, err := authz.UnmarshalSnapshot(sessionData)
 			if err != nil {
 				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return
@@ -114,7 +113,7 @@ func (mw *AuthMiddleware) APIKey() func(http.Handler) http.Handler {
 				return
 			}
 
-			var matched *types.APIKey
+			var matched *contracts.APIKey
 			for _, candidate := range candidates {
 				if err := bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)); err == nil {
 					matched = &candidate
@@ -158,7 +157,7 @@ func (mw *AuthMiddleware) AnyAuth() func(http.Handler) http.Handler {
 					return
 				}
 
-				var matched *types.APIKey
+				var matched *contracts.APIKey
 				for _, candidate := range candidates {
 					if err := bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)); err == nil {
 						matched = &candidate
@@ -194,7 +193,7 @@ func (mw *AuthMiddleware) AnyAuth() func(http.Handler) http.Handler {
 				return
 			}
 
-			snapshot, err := system.UnmarshalSnapshot(sessionData)
+			snapshot, err := authz.UnmarshalSnapshot(sessionData)
 			if err != nil {
 				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return

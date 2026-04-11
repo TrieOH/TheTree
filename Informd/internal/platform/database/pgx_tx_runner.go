@@ -1,7 +1,7 @@
 package database
 
 import (
-	"TrieForms/internal/plataform/telemetry"
+	"TrieForms/internal/platform/telemetry"
 	"context"
 
 	fun "github.com/MintzyG/FastUtilitiesNet/response"

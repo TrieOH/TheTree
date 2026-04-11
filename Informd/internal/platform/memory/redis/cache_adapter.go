@@ -1,29 +1,30 @@
 package redis
 
 import (
-	"TriePayments/internal/plataform/memory"
+	"TrieForms/internal/platform/memory"
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisCache struct {
+type Cache struct {
 	client *redis.Client
 }
 
-var _ memory.CacheService = (*RedisCache)(nil)
+var _ memory.CacheService = (*Cache)(nil)
 
-func NewRedisCache(rdb *redis.Client) *RedisCache {
-	return &RedisCache{
+func NewRedisCache(rdb *redis.Client) *Cache {
+	return &Cache{
 		client: rdb,
 	}
 }
 
-func (r *RedisCache) Get(ctx context.Context, key string) (any, bool) {
+func (r *Cache) Get(ctx context.Context, key string) (any, bool) {
 	val, err := r.client.Get(ctx, key).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return nil, false
 	} else if err != nil {
 		return nil, false
@@ -38,7 +39,7 @@ func (r *RedisCache) Get(ctx context.Context, key string) (any, bool) {
 	return result, true
 }
 
-func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Duration) {
+func (r *Cache) Set(ctx context.Context, key string, value any, ttl time.Duration) {
 	var data []byte
 	var err error
 
@@ -54,17 +55,17 @@ func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Du
 	r.client.Set(ctx, key, data, ttl)
 }
 
-func (r *RedisCache) Delete(ctx context.Context, key string) {
+func (r *Cache) Delete(ctx context.Context, key string) {
 	r.client.Del(ctx, key)
 }
 
-func (r *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) {
+func (r *Cache) DeleteByPrefix(ctx context.Context, prefix string) {
 	iter := r.client.Scan(ctx, 0, prefix+"*", 0).Iterator()
 	for iter.Next(ctx) {
 		r.client.Del(ctx, iter.Val())
 	}
 }
 
-func (r *RedisCache) Clear(ctx context.Context) {
+func (r *Cache) Clear(ctx context.Context) {
 	r.client.FlushDB(ctx)
 }

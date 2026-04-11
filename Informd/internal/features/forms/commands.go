@@ -1,10 +1,10 @@
 package forms
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
@@ -36,7 +36,7 @@ func NewFormCommandService(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, title string, projectID uuid.UUID) (created *types.Form, err error) {
+func (s *CommandService) Create(ctx context.Context, title string, projectID uuid.UUID) (created *contracts.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 
@@ -46,7 +46,7 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 		return nil, err
 	}
 
-	var project *types.Project
+	var project *contracts.Project
 	project, err = s.projects.GetByID(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 		return nil, err
 	}
 
-	var form *types.Form
-	form, err = types.NewForm(project.ID, sub.ID, title)
+	var form *contracts.Form
+	form, err = contracts.NewForm(project.ID, sub.ID, title)
 	if err != nil {
 		return nil, err
 	}

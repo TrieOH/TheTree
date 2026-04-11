@@ -1,10 +1,10 @@
 package projects
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
@@ -32,7 +32,7 @@ func NewProjectQueryService(
 	}
 }
 
-func (s *QueryService) List(ctx context.Context) (ws []types.Project, err error) {
+func (s *QueryService) List(ctx context.Context) (ws []contracts.Project, err error) {
 	ctx, span := s.tracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
@@ -50,7 +50,7 @@ func (s *QueryService) List(ctx context.Context) (ws []types.Project, err error)
 		return nil, err
 	}
 
-	var projects []types.Project
+	var projects []contracts.Project
 	if projects, err = s.projects.ListByIDs(ctx, ids); err != nil {
 		return nil, err
 	}

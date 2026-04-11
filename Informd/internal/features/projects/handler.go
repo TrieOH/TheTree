@@ -4,6 +4,8 @@ import (
 	"TrieForms/internal/shared/validation"
 	"net/http"
 
+	_ "TrieForms/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 
@@ -35,10 +37,10 @@ type CreateProjectRequest struct {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param request body CreateProjectRequest true "Project details"
-// @Success 201 {object} types.Project "Project created successfully"
-// @Failure 400 {object} swag.ErrorResponse
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Success 201 {object} contracts.Project "Project created successfully"
+// @Failure 400 {object} contracts.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateProjectRequest
@@ -64,9 +66,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Success 200 {array} types.Project "Projects retrieved successfully"
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Success 200 {array} contracts.Project "Projects retrieved successfully"
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := h.queries.List(r.Context())

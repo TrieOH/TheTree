@@ -1,10 +1,10 @@
 package keys
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -39,7 +39,7 @@ func NewApiKeyCommandService(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, keyName string, projectID uuid.UUID) (rawKey string, ak *types.APIKey, err error) {
+func (s *CommandService) Create(ctx context.Context, keyName string, projectID uuid.UUID) (rawKey string, ak *contracts.APIKey, err error) {
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
 	defer span.End()
 
@@ -49,7 +49,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	var project *types.Project
+	var project *contracts.Project
 	project, err = s.projects.GetByID(ctx, projectID)
 	if err != nil {
 		return "", nil, err
@@ -75,12 +75,12 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	apiKey, err := types.NewAPIKey(project.ID, sub.ID, keyName, string(hash), prefix)
+	apiKey, err := contracts.NewAPIKey(project.ID, sub.ID, keyName, string(hash), prefix)
 	if err != nil {
 		return "", nil, err
 	}
 
-	var created *types.APIKey
+	var created *contracts.APIKey
 	created, err = s.apiKeys.Create(ctx, *apiKey)
 	if err != nil {
 		return "", nil, err

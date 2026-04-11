@@ -1,11 +1,11 @@
 package keys
 
 import (
-	"TrieForms/internal/plataform/database"
-	"TrieForms/internal/plataform/database/sqlc"
+	"TrieForms/internal/platform/database"
+	"TrieForms/internal/platform/database/sqlc"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,8 +37,8 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapApiKeyFromDB(src *sqlc.ApiKey) *types.APIKey {
-	return &types.APIKey{
+func mapApiKeyFromDB(src *sqlc.ApiKey) *contracts.APIKey {
+	return &contracts.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
 		ScopeID:   src.ScopeID,
@@ -51,7 +51,7 @@ func mapApiKeyFromDB(src *sqlc.ApiKey) *types.APIKey {
 	}
 }
 
-func (repo *repo) Create(ctx context.Context, toCreate types.APIKey) (*types.APIKey, error) {
+func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contracts.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Create")
 	defer span.End()
 
@@ -71,7 +71,7 @@ func (repo *repo) Create(ctx context.Context, toCreate types.APIKey) (*types.API
 	return mapApiKeyFromDB(&sqlcApiKey), nil
 }
 
-func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]types.APIKey, error) {
+func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Create")
 	defer span.End()
 
@@ -80,14 +80,14 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]types.APIKe
 		return nil, errx.FromDB(err, "api key")
 	}
 
-	out := make([]types.APIKey, 0, len(sqlcApiKeys))
+	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
 		out = append(out, *mapApiKeyFromDB(&key))
 	}
 	return out, nil
 }
 
-func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]types.APIKey, error) {
+func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.ListByProject")
 	defer span.End()
 
@@ -96,14 +96,14 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]typ
 		return nil, errx.FromDB(err, "api key")
 	}
 
-	out := make([]types.APIKey, 0, len(sqlcApiKeys))
+	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
 		out = append(out, *mapApiKeyFromDB(&key))
 	}
 	return out, nil
 }
 
-func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*types.APIKey, error) {
+func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Revoke")
 	defer span.End()
 

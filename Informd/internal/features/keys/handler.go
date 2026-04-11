@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	_ "TrieForms/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 )
@@ -52,10 +54,10 @@ type CreateAPIKeyResponse struct {
 // @Param project_id path string true "Project ID"
 // @Param request body CreateAPIKeyRequest true "API key details"
 // @Success 201 {object} CreateAPIKeyResponse "API key created successfully"
-// @Failure 400 {object} swag.ErrorResponse
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Failure 400 {object} contracts.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
@@ -98,9 +100,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Security Cookie
 // @Param project_id path string true "Project ID"
 // @Success 200 {array} APIKeyResponse "API keys retrieved successfully"
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
@@ -140,10 +142,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Param project_id path string true "Project ID"
 // @Param id path string true "API key ID"
 // @Success 200 {object} object "Key revoked"
-// @Failure 400 {object} swag.ErrorResponse
-// @Failure 401 {object} swag.ErrorResponse
-// @Failure 404 {object} swag.ErrorResponse
-// @Failure 500 {object} swag.ErrorResponse
+// @Failure 400 {object} contracts.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	keyID, rs := validation.GetUUID(r, "id")

@@ -1,11 +1,11 @@
 package forms
 
 import (
-	"TrieForms/internal/plataform/database"
-	"TrieForms/internal/plataform/database/sqlc"
+	"TrieForms/internal/platform/database"
+	"TrieForms/internal/platform/database/sqlc"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,14 +37,14 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapFormFromDB(src *sqlc.Form) *types.Form {
-	return &types.Form{
+func mapFormFromDB(src *sqlc.Form) *contracts.Form {
+	return &contracts.Form{
 		ID:        src.ID,
 		ProjectID: src.ProjectID,
 		OwnerID:   src.OwnerID,
 		ScopeID:   src.ScopeID,
 		Title:     src.Title,
-		Status:    types.FormStatus(src.Status),
+		Status:    contracts.FormStatus(src.Status),
 		//CurrentVersionID: src.CurrentVersionID,
 		CreatedAt:  src.CreatedAt,
 		UpdatedAt:  src.UpdatedAt,
@@ -54,7 +54,7 @@ func mapFormFromDB(src *sqlc.Form) *types.Form {
 	}
 }
 
-func (repo *repo) Create(ctx context.Context, toCreate types.Form) (*types.Form, error) {
+func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contracts.Form, error) {
 	ctx, span := repo.tracer.Start(ctx, "FormsRepo.Create")
 	defer span.End()
 
@@ -73,7 +73,7 @@ func (repo *repo) Create(ctx context.Context, toCreate types.Form) (*types.Form,
 	return mapFormFromDB(&sqlcForm), nil
 }
 
-func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]types.Form, error) {
+func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.Form, error) {
 	ctx, span := repo.tracer.Start(ctx, "FormsRepo.ListByProject")
 	defer span.End()
 
@@ -82,7 +82,7 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]typ
 		return nil, errx.FromDB(err, "form")
 	}
 
-	out := make([]types.Form, 0, len(sqlcForm))
+	out := make([]contracts.Form, 0, len(sqlcForm))
 	for _, form := range sqlcForm {
 		out = append(out, *mapFormFromDB(&form))
 	}

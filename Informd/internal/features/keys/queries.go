@@ -1,10 +1,10 @@
 package keys
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
@@ -36,7 +36,7 @@ func NewApiKeyQueryService(
 	}
 }
 
-func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []types.APIKey, err error) {
+func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []contracts.APIKey, err error) {
 	ctx, span := s.tracer.Start(ctx, "ApiKeyService.List")
 	defer span.End()
 
@@ -54,7 +54,7 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (ak []type
 		return nil, err
 	}
 
-	var keys []types.APIKey
+	var keys []contracts.APIKey
 	keys, err = s.apiKeys.ListByProject(ctx, projectID)
 	if err != nil {
 		return nil, err

@@ -27,7 +27,6 @@ services:
       ENV: ${ENV:-development}
 
       DISABLE_RATE_LIMIT: false
-      TEST_MODE: ${TEST_MODE:-false}
 
       REDIS_ADDR: ${REDIS_ADDR:-payments-redis:6379}
       REDIS_DB: ${REDIS_DB:-0}

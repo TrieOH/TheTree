@@ -1,10 +1,10 @@
 package projects
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
@@ -32,7 +32,7 @@ func NewProjectCommandService(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Project, err error) {
+func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts.Project, err error) {
 	ctx, span := s.tracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 
@@ -42,8 +42,8 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Pro
 		return nil, err
 	}
 
-	var project *types.Project
-	project, err = types.NewProject(sub.ID, name)
+	var project *contracts.Project
+	project, err = contracts.NewProject(sub.ID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *types.Pro
 		return nil, err
 	}
 
-	var created *types.Project
+	var created *contracts.Project
 	created, err = s.projects.Create(ctx, *project)
 	if err != nil {
 		return nil, err

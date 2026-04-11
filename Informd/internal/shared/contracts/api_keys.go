@@ -1,4 +1,4 @@
-package types
+package contracts
 
 import (
 	"TrieForms/internal/shared/validation"

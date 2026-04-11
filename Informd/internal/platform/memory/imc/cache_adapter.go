@@ -1,7 +1,7 @@
 package imc
 
 import (
-	"TriePayments/internal/plataform/memory"
+	"TrieForms/internal/platform/memory"
 	"context"
 	"time"
 )

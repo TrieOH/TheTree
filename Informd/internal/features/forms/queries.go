@@ -1,10 +1,10 @@
 package forms
 
 import (
-	"TrieForms/internal/plataform/database"
+	"TrieForms/internal/platform/database"
 	"TrieForms/internal/shared/authz"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
@@ -36,7 +36,7 @@ func NewFormQueryService(
 	}
 }
 
-func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (forms []types.Form, err error) {
+func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (forms []contracts.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.List")
 	defer span.End()
 

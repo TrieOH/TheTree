@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"TrieForms/internal/plataform/telemetry"
+	"TrieForms/internal/platform/telemetry"
 	"context"
 	"net/http"
 	"strings"

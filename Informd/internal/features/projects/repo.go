@@ -1,11 +1,11 @@
 package projects
 
 import (
-	"TrieForms/internal/plataform/database"
-	"TrieForms/internal/plataform/database/sqlc"
+	"TrieForms/internal/platform/database"
+	"TrieForms/internal/platform/database/sqlc"
+	"TrieForms/internal/shared/contracts"
 	"TrieForms/internal/shared/errx"
 	"TrieForms/internal/shared/ports"
-	"TrieForms/internal/shared/types"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,8 +37,8 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapProjectFromDB(src *sqlc.Project) *types.Project {
-	return &types.Project{
+func mapProjectFromDB(src *sqlc.Project) *contracts.Project {
+	return &contracts.Project{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
 		ScopeID:   src.ScopeID,
@@ -48,7 +48,7 @@ func mapProjectFromDB(src *sqlc.Project) *types.Project {
 	}
 }
 
-func (repo *repo) Create(ctx context.Context, toCreate types.Project) (*types.Project, error) {
+func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.Create")
 	defer span.End()
 
@@ -65,7 +65,7 @@ func (repo *repo) Create(ctx context.Context, toCreate types.Project) (*types.Pr
 	return mapProjectFromDB(&sqlcProject), nil
 }
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*types.Project, error) {
+func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.GetByID")
 	defer span.End()
 
@@ -76,7 +76,7 @@ func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*types.Project, er
 
 	return mapProjectFromDB(&sqlcProject), nil
 }
-func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*types.Project, error) {
+func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.GetByName")
 	defer span.End()
 
@@ -91,7 +91,7 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 	return mapProjectFromDB(&sqlcProject), nil
 }
 
-func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]types.Project, error) {
+func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.List")
 	defer span.End()
 
@@ -100,14 +100,14 @@ func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]types.Project,
 		return nil, errx.FromDB(err, "project")
 	}
 
-	out := make([]types.Project, 0, len(sqlcProjects))
+	out := make([]contracts.Project, 0, len(sqlcProjects))
 	for _, project := range sqlcProjects {
 		out = append(out, *mapProjectFromDB(&project))
 	}
 	return out, nil
 }
 
-func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]types.Project, error) {
+func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.ListByIDs")
 	defer span.End()
 
@@ -125,7 +125,7 @@ func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]types.Project,
 		return nil, errx.FromDB(err, "project")
 	}
 
-	out := make([]types.Project, 0, len(sqlcProjects))
+	out := make([]contracts.Project, 0, len(sqlcProjects))
 	for _, project := range sqlcProjects {
 		out = append(out, *mapProjectFromDB(&project))
 	}
