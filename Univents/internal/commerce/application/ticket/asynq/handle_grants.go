@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"univents/internal/commerce/domain"
+	"univents/internal/shared/authz"
 
 	"github.com/hibiken/asynq"
 )
@@ -15,8 +16,6 @@ func (uc *AsynqHandlers) HandleGrantTicketPermissions(ctx context.Context, t *as
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("invalid payload: %w", err)
 	}
-
-	ga := uc.gaClient
 
 	log.Printf("[task] granting permissions for %d tickets", len(p.Grants))
 
@@ -42,8 +41,7 @@ func (uc *AsynqHandlers) HandleGrantTicketPermissions(ctx context.Context, t *as
 						log.Printf("[task] error getting checkpoint: " + err.Error())
 						return err
 					}
-					err = ga.Permissions.GiveDirect(ctx, grant.UserID, "checkpoints", "access", &checkpoint.ScopeID)
-					if err != nil {
+					if err = authz.GrantPerm(ctx, uc.az, "checkpoint:"+checkpoint.ID.String()+"#access@user:"+grant.UserID.String()); err != nil {
 						log.Printf("[task] error giving permission: " + err.Error())
 						return err
 					}
@@ -55,8 +53,7 @@ func (uc *AsynqHandlers) HandleGrantTicketPermissions(ctx context.Context, t *as
 						log.Printf("[task] error getting activity: " + err.Error())
 						return err
 					}
-					err = ga.Permissions.GiveDirect(ctx, grant.UserID, "activities", "attend", &activity.ScopeID)
-					if err != nil {
+					if err = authz.GrantPerm(ctx, uc.az, "activity:"+activity.ID.String()+"#attend@user:"+grant.UserID.String()); err != nil {
 						log.Printf("[task] error giving permission: " + err.Error())
 						return err
 					}
@@ -68,8 +65,7 @@ func (uc *AsynqHandlers) HandleGrantTicketPermissions(ctx context.Context, t *as
 						log.Printf("[task] error getting product: " + err.Error())
 						return err
 					}
-					err = ga.Permissions.GiveDirect(ctx, grant.UserID, "products", "purchase", &product.ScopeID)
-					if err != nil {
+					if err = authz.GrantPerm(ctx, uc.az, "product:"+product.ID.String()+"#purchase@user:"+grant.UserID.String()); err != nil {
 						log.Printf("[task] error giving permission: " + err.Error())
 						return err
 					}

@@ -1,1 +1,88 @@
 definition user {}
+
+definition platform {
+    relation super_admin: user
+}
+
+definition event {
+    relation platform: platform
+    relation owner: user
+
+    permission manage = owner + platform->super_admin
+}
+
+definition edition {
+    relation event: event
+    relation editor: user
+    relation reader: user
+    relation announcer: user
+
+    permission create = editor + event->manage
+    permission read = reader + editor + event->manage
+    permission announce = announcer + event->manage
+}
+
+definition activity {
+    relation edition: edition
+    relation creator: user
+    relation publisher: user
+    relation manager: user
+    relation reader: user
+    relation attendee: user  // grant explícito pós-compra
+
+    permission create = creator + edition->event->manage
+    permission publish = publisher + edition->event->manage
+    permission read = reader + creator + publisher + manager + edition->read
+    permission manage = manager + edition->event->manage
+    permission attend = attendee + edition->event->manage  // só quem comprou ou o gestor
+}
+
+definition product {
+    relation edition: edition
+    relation creator: user
+    relation publisher: user
+    relation editor: user
+
+    permission create = creator + edition->event->manage
+    permission read = publisher + creator + editor + edition->read
+    permission publish = publisher + edition->event->manage
+    permission edit = editor + edition->event->manage
+    permission delete = edition->event->manage
+    permission restore = edition->event->manage
+    permission purchase = edition->read  // qualquer um que pode ver a edition
+}
+
+definition ticket {
+    relation edition: edition
+    relation creator: user
+    relation editor: user
+
+    permission create = creator + edition->event->manage
+    permission edit = editor + edition->event->manage
+    permission read = edition->read
+}
+
+definition payment {
+    relation edition: edition
+    relation connector: user
+
+    permission connect = connector + edition->event->manage
+    permission disconnect = connector + edition->event->manage
+}
+
+definition checkpoint {
+    relation edition: edition
+    relation creator: user
+    relation accessor: user  // grant explícito pós-compra
+
+    permission create = creator + edition->event->manage
+    permission read = edition->read
+    permission access = accessor + edition->event->manage  // só quem comprou ou o gestor
+}
+
+definition attendance {
+    relation activity: activity
+    relation marker: user
+
+    permission mark = marker + activity->edition->event->manage
+}

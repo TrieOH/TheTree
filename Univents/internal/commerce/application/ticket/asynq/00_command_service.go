@@ -6,6 +6,7 @@ import (
 	"univents/internal/plataform/database"
 
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -16,6 +17,7 @@ type AsynqHandlers struct {
 	checkpoints domain2.CheckpointsRepository
 	gaClient    *goauth.Client
 	tracer      trace.Tracer
+	az          *authzed.Client
 	tx          database.TxRunner
 }
 
@@ -26,6 +28,7 @@ func New(
 	checkpoints domain2.CheckpointsRepository,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
+	az *authzed.Client,
 	tx database.TxRunner,
 ) *AsynqHandlers {
 	return &AsynqHandlers{
@@ -35,6 +38,7 @@ func New(
 		checkpoints: checkpoints,
 		gaClient:    gaClient,
 		tracer:      tracer,
+		az:          az,
 		tx:          tx,
 	}
 }
