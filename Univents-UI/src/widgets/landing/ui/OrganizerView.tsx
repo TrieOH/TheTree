@@ -229,23 +229,22 @@ export function OrganizerView() {
         <FAQSection items={faqs} />
       </section>
 
-      {/* CTA Final */}
-      <section className="bg-foreground rounded-2xl md:rounded-3xl p-6 md:p-12 lg:p-16 text-center space-y-4 md:space-y-6">
-        <h2 className="text-xl md:text-3xl font-semibold text-background">
+      <section className="bg-muted rounded-2xl md:rounded-3xl p-6 md:p-12 lg:p-16 text-center space-y-4 md:space-y-6">
+        <h2 className="text-xl md:text-3xl font-semibold text-foreground">
           Seu próximo evento começa aqui
         </h2>
-        <p className="text-sm md:text-base text-muted/80 max-w-md mx-auto">
+        <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
           Crie sua conta gratuita e descubra como simplificar toda a gestão dos seus eventos.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-background text-foreground rounded-full text-sm font-medium hover:bg-background/90 transition-colors">
+          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
             Começar gratuitamente
           </button>
-          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-muted/50 text-background rounded-full text-sm font-medium hover:border-muted transition-colors">
+          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors">
             Falar com vendas
           </button>
         </div>
-        <p className="text-xs text-muted/60">Sem cartão de crédito. Cancele quando quiser.</p>
+        <p className="text-xs text-muted-foreground/70">Sem cartão de crédito. Cancele quando quiser.</p>
       </section>
     </div>
   )
