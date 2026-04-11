@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8083:8080"
+      - "8084:8080"
     networks:
       - internal
       - univents-net
@@ -67,7 +67,7 @@ services:
       - internal
 
   forms-spicedb-migrate:
-    container_name: forms-spicedb-migrate
+    container_name: trie-forms-spicedb-migrate
     image: authzed/spicedb:latest
     command: migrate head
     restart: on-failure
@@ -81,7 +81,7 @@ services:
       - internal
 
   forms-spicedb:
-    container_name: forms-spicedb
+    container_name: trie-forms-spicedb
     image: authzed/spicedb:latest
     command: serve
     restart: unless-stopped
