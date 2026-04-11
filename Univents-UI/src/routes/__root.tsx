@@ -24,6 +24,7 @@ import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
 import { NavigationDock } from '@/widgets/ui/navigation-dock'
 import NotFound from '@/widgets/feedback/ui/NotFound'
 import { Toaster } from '@/shared/ui/shadcn/sonner'
+import WaveSpinnerLoading from '@/shared/ui/loader/WaveSpinnerLoading'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -74,6 +75,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             <AuthProvider
               baseURL={env.VITE_AUTH_API_URL}
               exchangeURL={env.VITE_EXCHANGE_API_URL}
+              clientConfig={{
+                timeout: 5_000
+              }}
+              fallback={
+                <div className='h-screen w-screen flex items-center justify-center'>
+                  <WaveSpinnerLoading text='Carregando...' />
+                </div>
+              }
             >
               <AuthContextUpdater>
                 {children}

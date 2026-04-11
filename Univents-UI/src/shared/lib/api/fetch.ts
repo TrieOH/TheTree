@@ -7,7 +7,8 @@ import { env } from "@/env";
  */
 export const simpleFetcher = createDefaultFetchClient({
   baseURL: env.VITE_API_URL,
-  credentials: "omit"
+  credentials: "omit",
+  timeout: 10_000, // 10 seconds timeout
 })
 
 export const authFetcher = createFetcher(
@@ -15,6 +16,9 @@ export const authFetcher = createFetcher(
     baseURL: env.VITE_API_URL,
     authBaseURL: env.VITE_AUTH_API_URL,
     exchangeURL: env.VITE_EXCHANGE_API_URL,
+    clientConfig: {
+      timeout: 10_000, // 10 seconds timeout
+    }
   }
 );
 
@@ -23,5 +27,8 @@ export const tanstackQueryFetcher = createQueryFetcher(
     baseURL: env.VITE_API_URL,
     authBaseURL: env.VITE_AUTH_API_URL,
     exchangeURL: env.VITE_EXCHANGE_API_URL,
+    clientConfig: {
+      timeout: 10_000, // 10 seconds timeout
+    }
   }
 );
