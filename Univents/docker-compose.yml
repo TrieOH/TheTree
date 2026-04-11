@@ -14,6 +14,8 @@ services:
         condition: service_started
       univents-redis:
         condition: service_started
+      univents-spicedb:
+        condition: service_healthy
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
 
@@ -46,6 +48,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
 
+      SPICEDB_ADDR: univents-spicedb:50051
+      SPICEDB_TOKEN: ${SPICEDB_TOKEN}
+
   univents-database:
     container_name: univents-database
     image: postgres:18
@@ -70,6 +75,44 @@ services:
       - "6380:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - internal
+
+  univents-spicedb-migrate:
+    container_name: univents-spicedb-migrate
+    image: authzed/spicedb:latest
+    command: migrate head
+    restart: on-failure
+    environment:
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      univents-database:
+        condition: service_started
+    networks:
+      - internal
+
+  univents-spicedb:
+    container_name: univents-spicedb
+    image: authzed/spicedb:latest
+    command: serve
+    restart: unless-stopped
+    ports:
+      - "50052:50051"
+      - "8444:8443"
+    environment:
+      SPICEDB_GRPC_PRESHARED_KEY: ${SPICEDB_TOKEN}
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      univents-spicedb-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD", "grpc_health_probe", "-addr=:50051" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - internal
 

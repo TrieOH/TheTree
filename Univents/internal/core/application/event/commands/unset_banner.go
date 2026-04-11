@@ -30,16 +30,12 @@ func (uc *CommandService) UnsetBanner(ctx context.Context, id uuid.UUID) (event 
 		return nil, errx.Invalid("event").SetMessage("already has no banner")
 	}
 
-	allowed, err := uc.gaClient.Authz.Check().User(sub.ID).
-		Object("events").
-		Action("edit").
-		Scope(event.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("edit"),
+		authz.Resource("event", event.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("event").SetMessage("insufficient permissions")
 	}
 
 	bucket, key, err := parseMinioURL(*event.BannerUrl)

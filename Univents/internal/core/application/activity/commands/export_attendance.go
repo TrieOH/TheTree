@@ -7,6 +7,7 @@ import (
 	"time"
 	"univents/internal/core/domain"
 	"univents/internal/plataform/telemetry"
+	"univents/internal/shared/authz"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -59,7 +60,26 @@ func (uc *CommandService) ExportAttendance(ctx context.Context, editionID uuid.U
 	ctx, span := uc.tracer.Start(ctx, "ExportAttendanceCSV.ExportAttendance")
 	defer span.End()
 
-	// TODO: permission check — verify caller has export rights for this edition
+	var err error
+	var sub *authz.UserSubject
+	sub, err = authz.RequireSubject(ctx)
+	if err != nil {
+		return err
+	}
+
+	var edition *domain.Edition
+	edition, err = uc.editions.GetByID(ctx, editionID)
+	if err != nil {
+		return err
+	}
+
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("export_attendance"),
+		authz.Resource("edition", edition.ID.String()),
+	); err != nil {
+		return err
+	}
 
 	dbRows, err := uc.activities.AttendanceExport(ctx, editionID, req.Filters)
 	if err != nil {

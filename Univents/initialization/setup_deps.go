@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"os"
 	"time"
 	"univents/internal/plataform/database"
 	"univents/internal/plataform/telemetry"
@@ -11,6 +12,9 @@ import (
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
+	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
+	"github.com/authzed/grpcutil"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,6 +23,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // SimpleLogger is a custom interceptor
@@ -456,4 +462,31 @@ func (r *RedisSessionCache) SetSession(ctx context.Context, id string, data []by
 
 func (r *RedisSessionCache) DeleteSession(ctx context.Context, id string) error {
 	return r.client.Del(ctx, id).Err()
+}
+
+func SetupSpiceDB() *authzed.Client {
+	client, err := authzed.NewClient(
+		viper.GetString("SPICEDB_ADDR"),
+		grpcutil.WithInsecureBearerToken(viper.GetString("SPICEDB_TOKEN")),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("failed to connect to SpiceDB: %v", err)
+	}
+
+	schema, err := os.ReadFile("./schema.zed")
+	if err != nil {
+		log.Fatalf("failed to read SpiceDB schema: %v", err)
+	}
+
+	ctx := context.Background()
+	_, err = client.WriteSchema(ctx, &pb.WriteSchemaRequest{
+		Schema: string(schema),
+	})
+	if err != nil {
+		log.Fatalf("failed to write SpiceDB schema: %v", err)
+	}
+
+	log.Println("SpiceDB schema ensured")
+	return client
 }

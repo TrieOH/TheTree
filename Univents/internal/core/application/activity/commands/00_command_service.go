@@ -6,6 +6,7 @@ import (
 	"univents/internal/shared/csvwriter"
 
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -17,6 +18,7 @@ type CommandService struct {
 	gaClient   *goauth.Client
 	csvWriter  *csvwriter.Writer[exportRow]
 	tracer     trace.Tracer
+	az         *authzed.Client
 	tx         database.TxRunner
 }
 
@@ -26,6 +28,7 @@ func New(
 	asynq *asynq.Client,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
+	az *authzed.Client,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
@@ -35,6 +38,7 @@ func New(
 		gaClient:   gaClient,
 		csvWriter:  csvwriter.New[exportRow](),
 		tracer:     tracer,
+		az:         az,
 		tx:         tx,
 	}
 }

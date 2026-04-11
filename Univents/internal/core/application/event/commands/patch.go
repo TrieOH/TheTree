@@ -5,7 +5,6 @@ import (
 	"context"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -19,8 +18,6 @@ func (uc *CommandService) PatchEvent(ctx context.Context, in domain.PatchEventSp
 
 	span.SetAttributes(attribute.String("event.id", in.ID.String()))
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -33,17 +30,12 @@ func (uc *CommandService) PatchEvent(ctx context.Context, in domain.PatchEventSp
 		return nil, nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("events").
-		Action("edit").
-		Scope(event.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("edit"),
+		authz.Resource("event", event.ID.String()),
+	); err != nil {
 		return nil, nil, err
-	}
-	if !allowed {
-		return nil, nil, errx.Forbidden("event").SetMessage("insufficient permissions")
 	}
 
 	if event.Name != in.Name {

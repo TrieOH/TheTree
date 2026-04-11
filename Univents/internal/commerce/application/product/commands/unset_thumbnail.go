@@ -4,7 +4,6 @@ import (
 	"context"
 	"univents/internal/commerce/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -25,16 +24,12 @@ func (uc *CommandService) UnsetThumbnail(ctx context.Context, id uuid.UUID) (pro
 		return nil, err
 	}
 
-	allowed, err := uc.gaClient.Authz.Check().User(sub.ID).
-		Object("products").
-		Action("edit").
-		Scope(product.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("edit"),
+		authz.Resource("product", product.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("product").SetMessage("insufficient permissions")
 	}
 
 	product, err = uc.products.UnsetThumbnail(ctx, product.ID)

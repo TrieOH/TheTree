@@ -6,7 +6,6 @@ import (
 	"time"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -20,8 +19,6 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 		span.SetAttributes(attribute.Bool("announce.success", err == nil))
 	}()
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -34,17 +31,12 @@ func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("editions").
-		Action("announce").
-		Scope(edition.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("announce"),
+		authz.Resource("edition", edition.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("edition").SetMessage("insufficient permissions")
 	}
 
 	if edition.Status != domain.EditionStatusDraft {

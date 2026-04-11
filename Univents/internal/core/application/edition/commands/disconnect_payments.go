@@ -5,7 +5,6 @@ import (
 	"errors"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 )
@@ -13,8 +12,6 @@ import (
 func (uc *CommandService) DisconnectPayments(ctx context.Context, editionID uuid.UUID) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "EditionService.DisconnectPayments")
 	defer span.End()
-
-	ga := uc.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -28,17 +25,12 @@ func (uc *CommandService) DisconnectPayments(ctx context.Context, editionID uuid
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("payments").
-		Action("disconnect").
-		Scope(edition.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("disconnect_payments"),
+		authz.Resource("event", edition.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("edition").SetMessage("insufficient permissions")
 	}
 
 	if edition.TriePaymentsCredentialID == nil {

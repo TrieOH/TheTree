@@ -8,6 +8,7 @@ import (
 
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/hibiken/asynq"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +27,7 @@ type CommandService struct {
 	inspector *asynq.Inspector
 	gaClient  *goauth.Client
 	tracer    trace.Tracer
+	az        *authzed.Client
 	tx        database.TxRunner
 }
 
@@ -42,6 +44,7 @@ func New(
 	inspector *asynq.Inspector,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
+	az *authzed.Client,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
@@ -57,6 +60,7 @@ func New(
 		inspector: inspector,
 		gaClient:  gaClient,
 		tracer:    tracer,
+		az:        az,
 		tx:        tx,
 	}
 }

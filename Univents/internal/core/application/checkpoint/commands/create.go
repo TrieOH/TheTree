@@ -2,12 +2,9 @@ package commands
 
 import (
 	"context"
-	"encoding/json"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -17,8 +14,6 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateCheckpoint
 	defer func() {
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
-
-	ga := uc.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -38,29 +33,13 @@ func (uc *CommandService) Create(ctx context.Context, in domain.CreateCheckpoint
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("checkpoints").
-		Action("create").
-		Scope(edition.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_checkpoints"),
+		authz.Resource("edition", edition.ID.String()),
+	); err != nil {
 		return nil, err
 	}
-	if !allowed {
-		return nil, errx.Forbidden("checkpoint").SetMessage("insufficient permissions")
-	}
-
-	span.SetAttributes(attribute.String("checkpoint.id", validCheckpoint.ID.String()))
-
-	meta := json.RawMessage(`{"color": "#fc620f", "icon": "FlagTriangleRight", "folder": "checkpoints"}`)
-	var scope *goauth.Scope
-	var idStr = validCheckpoint.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validCheckpoint.Name, &idStr, &edition.GoauthScopeID, meta)
-	if err != nil {
-		return nil, err
-	}
-	validCheckpoint.AddScope(scope.ID)
 
 	var created *domain.Checkpoint
 	created, err = uc.checkpoints.Create(ctx, validCheckpoint)

@@ -17,8 +17,6 @@ func (uc *CommandService) Delete(ctx context.Context, id uuid.UUID) (err error) 
 		span.SetAttributes(attribute.Bool("delete.success", err == nil))
 	}()
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -31,17 +29,12 @@ func (uc *CommandService) Delete(ctx context.Context, id uuid.UUID) (err error) 
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("products").
-		Action("delete").
-		Scope(product.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("delete"),
+		authz.Resource("product", product.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("product").SetMessage("insufficient permissions")
 	}
 
 	var hasPurchase bool

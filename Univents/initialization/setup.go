@@ -40,6 +40,7 @@ import (
 
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -59,6 +60,7 @@ type UniventsApp struct {
 	GaClient  *goauth.Client
 	Payments  *paymentsSDK.Client
 	Minio     *minio.Client
+	sdbClient *authzed.Client
 
 	Deps *router.HTTPDeps
 }
@@ -74,6 +76,7 @@ func UniventsSetup() *UniventsApp {
 	SetupMinio(&app)
 	SetupDB(&app, "./internal/plataform/database/migrations")
 	SetupCron(app.DB, &app)
+	app.sdbClient = SetupSpiceDB()
 
 	return &app
 }
@@ -146,19 +149,19 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 		}
 	}()
 
-	eventCommands := commands.New(eventRepo, app.Minio, app.GaClient, tracer, txRunner)
-	eventQueries := queries.New(eventRepo, app.GaClient, tracer, txRunner)
-	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
-	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, txRunner)
-	activitiesC := activityCommands.New(activityRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
-	activitiesQ := activityQueries.New(activityRepo, editionRepo, app.GaClient, tracer, txRunner)
-	checkpointsC := checkpointCommands.New(checkpointRepo, editionRepo, asynqClient, app.GaClient, tracer, txRunner)
-	checkpointsQ := checkpointQueries.New(checkpointRepo, editionRepo, app.GaClient, tracer, txRunner)
+	eventCommands := commands.New(eventRepo, app.Minio, app.GaClient, tracer, app.sdbClient, txRunner)
+	eventQueries := queries.New(eventRepo, app.GaClient, tracer, app.sdbClient, txRunner)
+	editionC := editionCommands.New(eventRepo, editionRepo, asynqClient, app.GaClient, tracer, app.sdbClient, txRunner)
+	editionQ := editionQueries.New(eventRepo, editionRepo, app.GaClient, tracer, app.sdbClient, txRunner)
+	activitiesC := activityCommands.New(activityRepo, editionRepo, asynqClient, app.GaClient, tracer, app.sdbClient, txRunner)
+	activitiesQ := activityQueries.New(activityRepo, editionRepo, app.GaClient, tracer, app.sdbClient, txRunner)
+	checkpointsC := checkpointCommands.New(checkpointRepo, editionRepo, asynqClient, app.GaClient, tracer, app.sdbClient, txRunner)
+	checkpointsQ := checkpointQueries.New(checkpointRepo, editionRepo, app.GaClient, tracer, app.sdbClient, txRunner)
 
 	ticketsC := ticketsCommands.New(editionRepo, ticketRepo, asynqClient, app.GaClient, tracer, txRunner)
 	ticketsQ := ticketsQueries.New(ticketRepo, editionRepo, app.GaClient, tracer, txRunner)
-	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, purchaseSessionStore, ws, inventoryPublisher, app.Minio, asynqClient, inspector, app.GaClient, tracer, txRunner)
-	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, inventorySubscriber, app.GaClient, tracer, txRunner)
+	productsC := productsCommands.New(editionRepo, productRepo, purchaseRepo, app.Payments, purchaseSessionStore, ws, inventoryPublisher, app.Minio, asynqClient, inspector, app.GaClient, tracer, app.sdbClient, txRunner)
+	productsQ := productsQueries.New(productRepo, purchaseRepo, editionRepo, inventorySubscriber, app.GaClient, tracer, app.sdbClient, txRunner)
 
 	eventHandler := eventhttp.NewEventsHandler(eventCommands, eventQueries)
 	editionHandler := editionhttp.NewEditionsHandler(editionC, editionQ)

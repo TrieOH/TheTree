@@ -2,12 +2,9 @@ package commands
 
 import (
 	"context"
-	"encoding/json"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -32,8 +29,6 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -52,29 +47,13 @@ func (uc *CommandService) createInternal(ctx context.Context, in domain.CreateEd
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("editions").
-		Action("create").
-		Scope(event.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_editions"),
+		authz.Resource("event", event.ID.String()),
+	); err != nil {
 		return nil, err
 	}
-	if !allowed {
-		return nil, errx.Forbidden("edition").SetMessage("insufficient permissions")
-	}
-
-	span.SetAttributes(attribute.String("event.id", validEdition.ID.String()))
-
-	meta := json.RawMessage(`{"color": "#a84bfa", "icon": "Tickets"}`)
-	var scope *goauth.Scope
-	var idStr = validEdition.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, validEdition.EditionName, &idStr, &event.GoauthScopeID, meta)
-	if err != nil {
-		return nil, err
-	}
-	validEdition.AddScope(scope.ID)
 
 	var created *domain.Edition
 	created, err = uc.editions.Create(ctx, validEdition) // FIXME if this fails the scope must be undone (SAGA PATTERN)

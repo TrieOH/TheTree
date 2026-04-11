@@ -4,7 +4,6 @@ import (
 	"context"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 )
@@ -25,25 +24,18 @@ func (uc *QueryService) AdminList(ctx context.Context, editionID uuid.UUID) (out
 		return nil, err
 	}
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	allowed, err := ga.Authz.Check().
-		User(sub.ID).
-		Object("activities").
-		Action("read").
-		Scope(edition.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("view_activities"),
+		authz.Resource("edition", edition.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("activities").SetMessage("insufficient permissions")
 	}
 
 	return uc.activities.ListAdmin(ctx, editionID)

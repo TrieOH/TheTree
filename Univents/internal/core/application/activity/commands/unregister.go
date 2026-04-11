@@ -35,7 +35,7 @@ func (uc *CommandService) Unregister(ctx context.Context, id uuid.UUID) (err err
 		return err
 	}
 	if !isRegistered {
-		return errx.Invalid("activity").SetMessage("user is already not registered")
+		return errx.Invalid("activity").SetMessage("user isn't registered")
 	}
 
 	if err = uc.activities.Unregister(ctx, sub.ID, activity.ID); err != nil {

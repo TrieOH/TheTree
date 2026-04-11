@@ -19,8 +19,6 @@ func (uc *CommandService) MarkAttendance(ctx context.Context, activityID, record
 		span.SetAttributes(attribute.Bool("mark.success", err == nil))
 	}()
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -33,17 +31,12 @@ func (uc *CommandService) MarkAttendance(ctx context.Context, activityID, record
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("attendance").
-		Action("mark").
-		Scope(activity.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("mark_attendance"),
+		authz.Resource("activity", activity.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("activity").SetMessage("insufficient permissions")
 	}
 
 	var attendanceRecord *domain.AttendanceRecord

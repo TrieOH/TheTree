@@ -4,7 +4,6 @@ import (
 	"context"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -16,8 +15,6 @@ func (uc *CommandService) ListRecords(ctx context.Context, activityID uuid.UUID)
 	defer func() {
 		span.SetAttributes(attribute.Bool("mark.success", err == nil))
 	}()
-
-	ga := uc.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -31,17 +28,12 @@ func (uc *CommandService) ListRecords(ctx context.Context, activityID uuid.UUID)
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("activities").
-		Action("manage").
-		Scope(activity.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("view_attendance"),
+		authz.Resource("activity", activity.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("activity").SetMessage("insufficient permissions")
 	}
 
 	var attendanceRecords []domain.AttendanceRecord

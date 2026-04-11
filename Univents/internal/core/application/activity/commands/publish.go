@@ -5,7 +5,6 @@ import (
 	"errors"
 	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
-	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -19,8 +18,6 @@ func (uc *CommandService) Publish(ctx context.Context, id uuid.UUID) (err error)
 		span.SetAttributes(attribute.Bool("publish.success", err == nil))
 	}()
 
-	ga := uc.gaClient
-
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
@@ -33,17 +30,12 @@ func (uc *CommandService) Publish(ctx context.Context, id uuid.UUID) (err error)
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("activities").
-		Action("publish").
-		Scope(activity.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("publish"),
+		authz.Resource("activity", activity.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("activity").SetMessage("insufficient permissions")
 	}
 
 	if activity.Status != domain.ActivityStatusDraft {

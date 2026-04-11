@@ -13,8 +13,6 @@ func (uc *CommandService) PublishEvent(ctx context.Context, eventID uuid.UUID) e
 	ctx, span := uc.tracer.Start(ctx, "EventService.PublishEvent")
 	defer span.End()
 
-	ga := uc.gaClient
-
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
 		return err
@@ -25,16 +23,12 @@ func (uc *CommandService) PublishEvent(ctx context.Context, eventID uuid.UUID) e
 		return err
 	}
 
-	allowed, err := ga.Authz.Check().User(sub.ID).
-		Object("events").
-		Action("publish").
-		Scope(event.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("publish"),
+		authz.Resource("event", event.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("event").SetMessage("insufficient permissions")
 	}
 
 	if event.Status != domain.StatusDraft {

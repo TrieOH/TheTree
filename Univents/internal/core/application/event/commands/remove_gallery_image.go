@@ -29,16 +29,12 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 		return nil, err
 	}
 
-	allowed, err := uc.gaClient.Authz.Check().User(sub.ID).
-		Object("events").
-		Action("edit").
-		Scope(event.GoauthScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("edit"),
+		authz.Resource("event", event.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("event").SetMessage("insufficient permissions")
 	}
 
 	bucket, key, err := parseMinioURL(url)
