@@ -10,7 +10,7 @@ sql:
         emit_prepared_queries: false
         emit_exact_table_names: false
         package: "sqlc"
-        out: "internal/plataform/database/sqlc"
+        out: "internal/platform/database/sqlc"
         sql_package: "pgx/v5"
         overrides:
           - db_type: "pg_catalog.varchar"
