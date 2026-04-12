@@ -13,12 +13,13 @@ export const readSchema = createServerFn({
 }).handler(async () => {
   const response = await spicedb.schema.read()
   if (response.success) return response.data
-  else return { schemaText: "" }
+  else return { schemaText: "", readAt: { token: "" } }
 })
 
 export const schemaQueryOptions = queryOptions({
   queryKey: ["schema"],
-  queryFn: () => readSchema()
+  queryFn: () => readSchema(),
+  staleTime: 0,
 });
 
 export const writeSchema = createServerFn({
