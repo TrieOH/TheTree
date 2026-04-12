@@ -7,7 +7,7 @@ import (
 	"TrieForms/internal/shared/ports"
 	"context"
 
-	v1 "github.com/authzed/authzed-go/v1"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -15,7 +15,7 @@ import (
 type CommandService struct {
 	forms    ports.FormsRepo
 	projects ports.ProjectsRepo
-	az       *v1.Client
+	az       *authzed.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -23,7 +23,7 @@ type CommandService struct {
 func NewFormCommandService(
 	forms ports.FormsRepo,
 	projects ports.ProjectsRepo,
-	az *v1.Client,
+	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
