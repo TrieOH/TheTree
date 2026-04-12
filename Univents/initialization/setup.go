@@ -131,7 +131,7 @@ func UniventsStart(app *UniventsApp, skipMux bool) {
 	workerHandlers := async.New(editionRepo, app.GaClient, tracer, txRunner)
 	activitiesAsyncHandlers := activityAsync.New(activityRepo, app.GaClient, tracer, txRunner)
 	productsAsyncHandlers := productsAsync.New(productRepo, purchaseRepo, app.Payments, inventoryPublisher, purchaseSessionStore, ws, app.GaClient, tracer, txRunner)
-	ticketsAsyncHandlers := ticketsAsync.New(ticketRepo, productRepo, activityRepo, checkpointRepo, app.GaClient, tracer, txRunner)
+	ticketsAsyncHandlers := ticketsAsync.New(ticketRepo, productRepo, activityRepo, checkpointRepo, app.GaClient, tracer, app.sdbClient, txRunner)
 	server, asynqClient, scheduler, inspector, err := worker.InitAsynq(worker.Deps{
 		Handlers:         workerHandlers,
 		ActivityHandlers: activitiesAsyncHandlers,
