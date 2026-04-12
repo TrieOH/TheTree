@@ -4,7 +4,6 @@ import (
 	"GoAuth/internal/adapters/persistence/sqlc"
 	"GoAuth/internal/adapters/persistence/transactions"
 	"GoAuth/internal/crypto"
-	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/errx"
 	"context"
 	"log"
@@ -89,14 +88,6 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			log.Fatalf("failed checking GoAuth signing key: %v", err.Error())
 		}
 	}
-
-	_, err = queries.CreateScope(ctx, sqlc.CreateScopeParams{
-		Type:       string(scopes.ScopeTypeGlobal),
-		ProjectID:  nil,
-		Name:       nil,
-		ExternalID: nil,
-		ParentID:   nil,
-	})
 
 	fe := fail.From(err)
 

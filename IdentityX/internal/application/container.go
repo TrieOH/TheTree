@@ -9,10 +9,7 @@ import (
 	"GoAuth/internal/application/auth"
 	"GoAuth/internal/application/authenticator"
 	"GoAuth/internal/application/keys"
-	"GoAuth/internal/application/permission"
 	"GoAuth/internal/application/project"
-	"GoAuth/internal/application/role"
-	"GoAuth/internal/application/scope"
 	"GoAuth/internal/application/session"
 	"GoAuth/internal/application/tokens"
 	"GoAuth/internal/infrastructure"
@@ -28,9 +25,6 @@ type Application struct {
 	Project       inbounds.ProjectService
 	Session       inbounds.SessionService
 	Authenticator inbounds.RequestAuthenticator
-	Permission    inbounds.PermissionService
-	Role          inbounds.RoleService
-	Scope         inbounds.ScopeService
 	Verifier      inbounds.TokenVerifier
 	ApiKey        inbounds.ApiKeyService
 }
@@ -74,7 +68,6 @@ func NewApplication(infra infrastructure.Infra) *Application {
 		Project: project.New(
 			repos.Projects,
 			repos.ProjectUsers,
-			repos.Scopes,
 			repos.Keys,
 			infra.Tx,
 		),
@@ -84,10 +77,7 @@ func NewApplication(infra infrastructure.Infra) *Application {
 			TokenVerifier: tokensBundle.Verifier,
 			ApiKey:        apiKeyService,
 		}, infra.Tracer),
-		Permission: permission.New(repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
-		Role:       role.New(repos.Roles, repos.Permissions, repos.Projects, repos.ProjectUsers, repos.Sessions, infra.Tx),
-		Scope:      scope.New(repos.Projects, repos.Scopes, infra.Tx),
-		Verifier:   tokensBundle.Verifier,
-		ApiKey:     apiKeyService,
+		Verifier: tokensBundle.Verifier,
+		ApiKey:   apiKeyService,
 	}
 }

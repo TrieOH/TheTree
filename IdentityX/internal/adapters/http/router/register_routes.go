@@ -35,9 +35,6 @@ func registerRoutes(db *pgxpool.Pool, rdb *redis.Client, r *chi.Mux) (*chi.Mux, 
 	registerAuthRoutes(r, handlerBundle.AuthHandler, authMW)
 	registerSessionRoutes(r, handlerBundle.SessionHandler, authMW)
 	registerProjectRoutes(r, handlerBundle.ProjectHandler, authMW)
-	registerScopeRoutes(r, handlerBundle.ScopeHandler, authMW)
-	registerPermissionRoutes(r, handlerBundle.PermissionHandler, authMW)
-	registerRoleRoutes(r, handlerBundle.RoleHandler, authMW)
 	registerApiKeyRoutes(r, handlerBundle.ApiKeyHandler, authMW)
 	registerSystemRoutes(r, handlerBundle.SystemHandler, authMW)
 
@@ -152,81 +149,5 @@ func registerProjectRoutes(
 		r.Delete("/projects/{project_id}", h.DeleteProjectByID)
 		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
 		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
-	})
-}
-
-func registerScopeRoutes(
-	r *chi.Mux,
-	h *handlers.ScopeHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-		r.Route("/projects/{project_id}/scopes", func(r chi.Router) {
-			r.Post("/", h.Create)
-			r.Get("/", h.GetProjectScopes)
-			r.Get("/{scope_id}", h.GetByID)
-			r.Delete("/{scope_id}", h.Delete)
-			r.Patch("/{scope_id}/meta", h.UpdateMeta)
-		})
-	})
-}
-
-func registerPermissionRoutes(
-	r *chi.Mux,
-	h *handlers.PermissionHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-		r.Post("/authz/check", h.Check)
-		r.With(middleware.AllowOnlyQueryParams("scope_id")).
-			Get("/projects/{project_id}/identities/{entity_id}/permissions", h.GetEffective)
-		r.Post("/projects/{project_id}/identities/{entity_id}/permissions", h.GiveDirect)
-		r.Delete("/projects/{project_id}/identities/{entity_id}/permissions", h.TakeDirect)
-		r.Post("/projects/{project_id}/identities/{entity_id}/permissions/by-id", h.GiveDirectByID)
-		r.Delete("/projects/{project_id}/identities/{entity_id}/permissions/by-id", h.TakeDirectByID)
-		r.Route("/projects/{project_id}/permissions", func(r chi.Router) {
-			r.Post("/", h.Create)
-			r.Post("/ensure", h.EnsureExists)
-			r.Get("/{permission_id}", h.GetByID)
-			r.Delete("/{permission_id}", h.Delete)
-			r.Patch("/{permission_id}/meta", h.UpdateMeta)
-			r.With(middleware.AllowOnlyQueryParams("object", "action")).
-				Get("/", h.ListByProject)
-		})
-	})
-}
-
-func registerRoleRoutes(
-	r *chi.Mux,
-	h *handlers.RoleHandler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Use(authMW.Auth())
-		r.Use(middleware.ClientOnly())
-
-		r.Post("/projects/{project_id}/roles/ensure", h.EnsureExists)
-		r.Post("/projects/{project_id}/roles", h.Create)
-		r.Get("/projects/{project_id}/roles/{role_id}", h.GetByID)
-		r.Patch("/projects/{project_id}/roles/{role_id}/description", h.UpdateDescription)
-		r.Patch("/projects/{project_id}/roles/{role_id}/meta", h.UpdateMeta)
-		r.Delete("/projects/{project_id}/roles/{role_id}", h.Delete)
-		r.Get("/projects/{project_id}/roles", h.ListByProject)
-		r.With(middleware.RequireOnlyQueryParams("name")).
-			Get("/projects/{project_id}/roles/search", h.GetByName)
-
-		r.Get("/projects/{project_id}/roles/{role_id}/permissions", h.GetPermissions)
-		r.Post("/projects/{project_id}/roles/{role_id}/permissions/{permission_id}", h.AddPermission)
-		r.Delete("/projects/{project_id}/roles/{role_id}/permissions/{permission_id}", h.RemovePermission)
-
-		r.Get("/projects/{project_id}/identities/{entity_id}/roles", h.GetUserRoles)
-		r.Post("/projects/{project_id}/identities/{entity_id}/roles", h.GiveRole)
-		r.Delete("/projects/{project_id}/identities/{entity_id}/roles", h.TakeRole)
-		r.Post("/projects/{project_id}/identities/{entity_id}/roles/by-name", h.GiveRoleByName)
-		r.Delete("/projects/{project_id}/identities/{entity_id}/roles/by-name", h.TakeRoleByName)
 	})
 }
