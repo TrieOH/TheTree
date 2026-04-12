@@ -17,9 +17,10 @@ definition edition {
     relation reader: user
     relation announcer: user
 
-    permission create = editor + event->manage
-    permission read = reader + editor + event->manage
-    permission announce = announcer + event->manage
+    permission manage = editor + event->manage
+    permission create = manage
+    permission read = reader + manage
+    permission announce = announcer + manage
 }
 
 definition activity {
@@ -28,13 +29,13 @@ definition activity {
     relation publisher: user
     relation manager: user
     relation reader: user
-    relation attendee: user  // grant explícito pós-compra
+    relation attendee: user
 
-    permission create = creator + edition->event->manage
-    permission publish = publisher + edition->event->manage
+    permission manage = manager + edition->manage
+    permission create = creator + edition->manage
+    permission publish = publisher + edition->manage
     permission read = reader + creator + publisher + manager + edition->read
-    permission manage = manager + edition->event->manage
-    permission attend = attendee + edition->event->manage  // só quem comprou ou o gestor
+    permission attend = attendee + manage
 }
 
 definition product {
@@ -43,13 +44,14 @@ definition product {
     relation publisher: user
     relation editor: user
 
-    permission create = creator + edition->event->manage
+    permission manage = edition->manage
+    permission create = creator + manage
     permission read = publisher + creator + editor + edition->read
-    permission publish = publisher + edition->event->manage
-    permission edit = editor + edition->event->manage
-    permission delete = edition->event->manage
-    permission restore = edition->event->manage
-    permission purchase = edition->read  // qualquer um que pode ver a edition
+    permission publish = publisher + manage
+    permission edit = editor + manage
+    permission delete = manage
+    permission restore = manage
+    permission purchase = edition->read
 }
 
 definition ticket {
@@ -57,8 +59,9 @@ definition ticket {
     relation creator: user
     relation editor: user
 
-    permission create = creator + edition->event->manage
-    permission edit = editor + edition->event->manage
+    permission manage = edition->manage
+    permission create = creator + manage
+    permission edit = editor + manage
     permission read = edition->read
 }
 
@@ -66,23 +69,25 @@ definition payment {
     relation edition: edition
     relation connector: user
 
-    permission connect = connector + edition->event->manage
-    permission disconnect = connector + edition->event->manage
+    permission manage = edition->manage
+    permission connect = connector + manage
+    permission disconnect = connector + manage
 }
 
 definition checkpoint {
     relation edition: edition
     relation creator: user
-    relation accessor: user  // grant explícito pós-compra
+    relation accessor: user
 
-    permission create = creator + edition->event->manage
+    permission manage = edition->manage
+    permission create = creator + manage
     permission read = edition->read
-    permission access = accessor + edition->event->manage  // só quem comprou ou o gestor
+    permission access = accessor + manage
 }
 
 definition attendance {
     relation activity: activity
     relation marker: user
 
-    permission mark = marker + activity->edition->event->manage
+    permission mark = marker + activity->manage
 }
