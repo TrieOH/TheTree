@@ -15,7 +15,7 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '#/env'
 import TanstackQueryProvider from '#/integrations/tanstack-query/root-provider'
-import { WorkspaceLayout } from '#/features/admin/ui/admin-layout'
+import AdminLayout from '#/features/admin/ui/admin-layout'
 import { Toaster } from '#/shared/ui/shadcn/sonner'
 import { ThemeProvider } from 'next-themes'
 
@@ -61,9 +61,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <PostHogProvider>
           <TanstackQueryProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <WorkspaceLayout>
+              <AdminLayout>
                 {children}
-              </WorkspaceLayout>
+              </AdminLayout>
               <TanStackDevtools
                 config={{
                   position: 'bottom-right',

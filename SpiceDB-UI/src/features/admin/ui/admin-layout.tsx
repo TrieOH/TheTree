@@ -8,7 +8,7 @@ interface WorkspaceLayoutProps {
   children: React.ReactNode
 }
 
-export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
+export default function AdminLayout({ children }: WorkspaceLayoutProps) {
   const navItems = [
     {
       to: '/',
