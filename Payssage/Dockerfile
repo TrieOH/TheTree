@@ -13,18 +13,18 @@ COPY . .
 
 RUN sqlc generate
 RUN swag init -g internal/interfaces/http/router/router.go -o docs --parseInternal --parseDependency
-RUN CGO_ENABLED=0 GOOS=linux go build -o triePayments .
+RUN CGO_ENABLED=0 GOOS=linux go build -o payssage ./cmd/payments
 
 FROM alpine:3.20
 
 WORKDIR /app
 
-COPY --from=builder /app/triePayments .
+COPY --from=builder /app/payssage .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/internal/plataform/database/migrations ./internal/plataform/database/migrations
+COPY --from=builder /app/internal/platform/database/migrations ./internal/platform/database/migrations
 COPY --from=builder /app/schema.zed ./schema.zed
 
 EXPOSE 8080
 
-CMD ["./triePayments"]
+CMD ["./payssage"]
 

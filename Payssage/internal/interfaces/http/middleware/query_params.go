@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"TriePayments/internal/shared/errx"
 	"net/http"
+	"payssage/internal/shared/errx"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )

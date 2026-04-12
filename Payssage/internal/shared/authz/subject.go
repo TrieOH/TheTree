@@ -1,10 +1,10 @@
 package authz
 
 import (
-	"TriePayments/internal/shared/errx"
 	"context"
 	"encoding/json"
 	"fmt"
+	"payssage/internal/shared/errx"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

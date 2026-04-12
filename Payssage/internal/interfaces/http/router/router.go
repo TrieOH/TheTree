@@ -3,19 +3,19 @@
 package router
 
 import (
-	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
-	intents "TriePayments/internal/core/interfaces/http/intent_handler"
-	"TriePayments/internal/core/interfaces/http/oauth_handler"
-	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
-	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
-	"TriePayments/internal/interfaces/http/middleware"
-	"TriePayments/internal/interfaces/http/system"
 	"log"
 	"net/http"
+	"payssage/internal/features/api_keys"
+	"payssage/internal/features/intents"
+	"payssage/internal/features/oauth"
+	"payssage/internal/features/webhooks"
+	"payssage/internal/features/workspaces"
+	"payssage/internal/interfaces/http/middleware"
+	"payssage/internal/interfaces/http/system"
 	"strings"
 	"time"
 
-	_ "TriePayments/docs"
+	_ "payssage/internal/shared/contracts"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -28,12 +28,12 @@ import (
 )
 
 type HTTPDeps struct {
-	SystemHandler     *system.SystemHandler
+	SystemHandler     *system.Handler
 	IntentsHandler    *intents.Handler
 	WorkspacesHandler *workspaces.Handler
-	ApiKeysHandler    *apiKeys.Handler
+	ApiKeysHandler    *api_keys.Handler
 	WebhooksHandler   *webhooks.Handler
-	OauthHandler      *oauth_handler.Handler
+	OauthHandler      *oauth.Handler
 	AuthMiddleware    *middleware.AuthMiddleware
 	AsynqmonHandler   http.Handler
 }
@@ -65,13 +65,13 @@ type HTTPDeps struct {
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
-// @response 400 {object} swag.ErrorResponse "Standard error response for bad requests"
-// @response 401 {object} swag.ErrorResponse "Standard error response for unauthorized requests"
-// @response 403 {object} swag.ErrorResponse "Standard error response for forbidden requests"
-// @response 404 {object} swag.ErrorResponse "Standard error response for not found errors"
-// @response 413 {object} swag.ErrorResponse "Standard error response for payload too large 1MB"
-// @response 429 {object} swag.ErrorResponse "Standard error response for too many requests"
-// @response 500 {object} swag.ErrorResponse "Standard error response for internal server errors"
+// @response 400 {object} contracts.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} contracts.ErrorResponse "Standard error response for unauthorized requests"
+// @response 403 {object} contracts.ErrorResponse "Standard error response for forbidden requests"
+// @response 404 {object} contracts.ErrorResponse "Standard error response for not found errors"
+// @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
+// @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
+// @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
 // @securityDefinitions.apikey Cookie
 // @in header
 // @name Cookie

@@ -1,12 +1,12 @@
 package validation
 
 import (
-	"TriePayments/internal/shared/errx"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
+	"payssage/internal/shared/errx"
 	"strconv"
 	"strings"
 

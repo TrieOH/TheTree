@@ -1,13 +1,13 @@
 package router
 
 import (
-	apiKeys "TriePayments/internal/core/interfaces/http/api_keys_handler"
-	intents "TriePayments/internal/core/interfaces/http/intent_handler"
-	"TriePayments/internal/core/interfaces/http/oauth_handler"
-	webhooks "TriePayments/internal/core/interfaces/http/webhooks_handler"
-	workspaces "TriePayments/internal/core/interfaces/http/workspaces_handler"
-	"TriePayments/internal/interfaces/http/middleware"
-	"TriePayments/internal/interfaces/http/system"
+	"payssage/internal/features/api_keys"
+	"payssage/internal/features/intents"
+	"payssage/internal/features/oauth"
+	"payssage/internal/features/webhooks"
+	"payssage/internal/features/workspaces"
+	"payssage/internal/interfaces/http/middleware"
+	"payssage/internal/interfaces/http/system"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -23,7 +23,7 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 
 func registerSystemRoutes(
 	r *chi.Mux,
-	h *system.SystemHandler,
+	h *system.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -50,7 +50,7 @@ func registerWorkspacesRoutes(
 
 func registerApiKeysRoutes(
 	r *chi.Mux,
-	h *apiKeys.Handler,
+	h *api_keys.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -97,7 +97,7 @@ func registerWebhookRoutes(
 
 func registerOAuthRoutes(
 	r *chi.Mux,
-	h *oauth_handler.Handler,
+	h *oauth.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	// callback from provider — no auth, browser redirect

@@ -1,7 +1,7 @@
 package validation
 
 import (
-	"TriePayments/internal/shared/errx"
+	"payssage/internal/shared/errx"
 
 	"github.com/google/uuid"
 )

@@ -1,11 +1,11 @@
 package validation
 
 import (
-	"TriePayments/internal/shared/errx"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"payssage/internal/shared/errx"
 	"reflect"
 	"strings"
 	"time"

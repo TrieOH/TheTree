@@ -1,4 +1,4 @@
-module TriePayments
+module payssage
 
 go 1.25.6
 

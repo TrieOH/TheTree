@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"TriePayments/internal/plataform/telemetry"
-	"TriePayments/internal/shared/errx"
 	"context"
 	"net/http"
+	"payssage/internal/platform/telemetry"
+	"payssage/internal/shared/errx"
 	"strings"
 	"time"
 

@@ -1,6 +1,6 @@
 services:
-  trie-payments:
-    container_name: trie-payments
+  payssage:
+    container_name: payssage
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,11 +10,11 @@ services:
       - internal
       - univents-net
     depends_on:
-      payments-database:
+      payssage-database:
         condition: service_started
-      payments-redis:
+      payssage-redis:
         condition: service_started
-      payments-spicedb:
+      payssage-spicedb:
         condition: service_healthy
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
@@ -29,7 +29,7 @@ services:
       DISABLE_RATE_LIMIT: false
       TEST_MODE: ${TEST_MODE:-false}
 
-      REDIS_ADDR: ${REDIS_ADDR:-payments-redis:6379}
+      REDIS_ADDR: ${REDIS_ADDR:-payssage-redis:6379}
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
@@ -46,11 +46,11 @@ services:
       MP_TEST_ACCESS_TOKEN: ${MP_TEST_ACCESS_TOKEN}
       MP_TEST_PUBLIC_KEY: ${MP_TEST_PUBLIC_KEY}
 
-      SPICEDB_ADDR: payments-spicedb:50051
+      SPICEDB_ADDR: payssage-spicedb:50051
       SPICEDB_TOKEN: ${SPICEDB_TOKEN}
 
-  payments-database:
-    container_name: trie-payments-database
+  payssage-database:
+    container_name: payssage-database
     image: postgres:18
     restart: unless-stopped
     environment:
@@ -64,8 +64,8 @@ services:
     networks:
       - internal
 
-  payments-redis:
-    container_name: trie-payments-redis
+  payssage-redis:
+    container_name: payssage-redis
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfsync everysec
@@ -76,8 +76,8 @@ services:
     networks:
       - internal
 
-  payments-spicedb-migrate:
-    container_name: trie-payments-spicedb-migrate
+  payssage-spicedb-migrate:
+    container_name: payssage-spicedb-migrate
     image: authzed/spicedb:latest
     command: migrate head
     restart: on-failure
@@ -85,13 +85,13 @@ services:
       SPICEDB_DATASTORE_ENGINE: postgres
       SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
     depends_on:
-      payments-database:
+      payssage-database:
         condition: service_started
     networks:
       - internal
 
-  payments-spicedb:
-    container_name: trie-payments-spicedb
+  payssage-spicedb:
+    container_name: payssage-spicedb
     image: authzed/spicedb:latest
     command: serve
     restart: unless-stopped
@@ -103,7 +103,7 @@ services:
       SPICEDB_DATASTORE_ENGINE: postgres
       SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
     depends_on:
-      payments-spicedb-migrate:
+      payssage-spicedb-migrate:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "grpc_health_probe", "-addr=:50051"]
