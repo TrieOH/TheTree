@@ -5,7 +5,6 @@ import (
 	"GoAuth/internal/domain/authz"
 	"GoAuth/internal/domain/key"
 	"GoAuth/internal/domain/project"
-	"GoAuth/internal/domain/scopes"
 	"GoAuth/internal/errx"
 	"GoAuth/internal/ports/inbounds"
 	"GoAuth/internal/ports/outbounds"
@@ -29,7 +28,6 @@ var (
 type UseCase struct {
 	projects     outbounds.ProjectRepository
 	projectUsers outbounds.ProjectUserRepository
-	scopes       outbounds.ScopeRepository
 	keys         outbounds.KeysRepository
 	tx           inbounds.TxRunner
 }
@@ -39,14 +37,12 @@ var _ inbounds.ProjectService = (*UseCase)(nil)
 func New(
 	projects outbounds.ProjectRepository,
 	projectUsers outbounds.ProjectUserRepository,
-	scopes outbounds.ScopeRepository,
 	keys outbounds.KeysRepository,
 	tx inbounds.TxRunner,
 ) inbounds.ProjectService {
 	return &UseCase{
 		projects:     projects,
 		projectUsers: projectUsers,
-		scopes:       scopes,
 		keys:         keys,
 		tx:           tx,
 	}
@@ -133,19 +129,6 @@ func (uc *UseCase) createInternal(ctx context.Context, in inbounds.ProjectServic
 		attribute.String("project.id", createdProject.ID.String()),
 		attribute.String("project.owner_id", createdProject.OwnerID.String()),
 		attribute.String("project.name", createdProject.ProjectName),
-	)
-
-	createdScope, err := uc.scopes.Create(ctx, scopes.Scope{
-		Type:      scopes.ScopeTypeProjectRoot,
-		ProjectID: &createdProject.ID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	span.SetAttributes(
-		attribute.String("project.scope.id", createdScope.ID.String()),
-		attribute.String("project.scope.type", string(createdScope.Type)),
 	)
 
 	return inbounds.OutputProjectFromProject(createdProject), nil
