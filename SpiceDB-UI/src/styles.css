@@ -62,8 +62,22 @@ body,
 
 button,
 a {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
-    transform 180ms ease;
+  @apply cursor-pointer transition-all duration-150 ease-in-out;
+}
+
+button:active:not(:disabled),
+a:active:not(:disabled) {
+  @apply scale-95;
+}
+
+button:disabled,
+a:disabled {
+  @apply cursor-not-allowed opacity-50 grayscale;
+}
+
+button:disabled:active,
+a:disabled:active {
+  @apply scale-100;
 }
 
 @theme inline {

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { spicedb } from "@trieoh/node-perm-sdk";
+import { queryOptions } from "@tanstack/react-query";
 
 const writeSchemaInput = z.object({
   schema: z.string().min(1),
@@ -14,6 +15,11 @@ export const readSchema = createServerFn({
   if (response.success) return response.data
   else return { schemaText: "" }
 })
+
+export const schemaQueryOptions = queryOptions({
+  queryKey: ["schema"],
+  queryFn: () => readSchema()
+});
 
 export const writeSchema = createServerFn({
   method: "POST",

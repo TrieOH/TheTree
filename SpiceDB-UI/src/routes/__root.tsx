@@ -17,6 +17,7 @@ import { env } from '#/env'
 import TanstackQueryProvider from '#/integrations/tanstack-query/root-provider'
 import { WorkspaceLayout } from '#/features/admin/ui/admin-layout'
 import { Toaster } from '#/shared/ui/shadcn/sonner'
+import { ThemeProvider } from 'next-themes'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -59,21 +60,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <PostHogProvider>
           <TanstackQueryProvider>
-            <WorkspaceLayout>
-              {children}
-            </WorkspaceLayout>
-            <TanStackDevtools
-              config={{
-                position: 'bottom-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-              ]}
-            />
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <WorkspaceLayout>
+                {children}
+              </WorkspaceLayout>
+              <TanStackDevtools
+                config={{
+                  position: 'bottom-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                  TanStackQueryDevtools,
+                ]}
+              />
+            </ThemeProvider>
           </TanstackQueryProvider>
         </PostHogProvider>
         <Toaster />
