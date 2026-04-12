@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -48,6 +49,7 @@ type TriePayments struct {
 	Redis     *redis.Client
 	Scheduler gocron.Scheduler
 	GaClient  *goauth.Client
+	sdbClient *authzed.Client
 
 	Deps *router.HTTPDeps
 }
@@ -66,6 +68,7 @@ func TriePaymentsSetup() *TriePayments {
 		SetupDB(&app, "../internal/plataform/database/migrations")
 	}
 	SetupCron(app.DB, &app)
+	app.sdbClient = SetupSpiceDB()
 
 	return &app
 }
@@ -153,11 +156,11 @@ func TriePaymentsStart(app *TriePayments, skipMux bool) {
 	}()
 
 	// Init Commands and Queries
-	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, intentRepo, providerCredentialsRepo, asynqClient, app.GaClient, txRunner, tracer)
-	webhooksQ := webhooksQueries.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, app.GaClient, txRunner, tracer)
+	webhooksC := webhooksCommands.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, intentRepo, providerCredentialsRepo, asynqClient, app.GaClient, app.sdbClient, txRunner, tracer)
+	webhooksQ := webhooksQueries.New(endpointsRepo, deliveriesRepo, eventsRepo, workspaceRepo, app.GaClient, app.sdbClient, txRunner, tracer)
 	intentC := intentCommands.New(intentRepo, workspaceRepo, providerCredentialsRepo, marketplaceRepo, webhooksC, oauthProviderMap, paymentProviderMap, app.GaClient, txRunner, tracer)
 	intentQ := intentQueries.New(intentRepo, workspaceRepo, app.GaClient, txRunner, tracer)
-	workspaceC := workspaceCommands.New(workspaceRepo, app.GaClient, txRunner, tracer)
+	workspaceC := workspaceCommands.New(workspaceRepo, app.GaClient, app.sdbClient, txRunner, tracer)
 	workspaceQ := workspaceQueries.New(workspaceRepo, app.GaClient, txRunner, tracer)
 	apiKeyC := apiKeyCommands.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)
 	apiKeyQ := apiKeyQueries.New(apiKeysRepo, workspaceRepo, app.GaClient, txRunner, tracer)

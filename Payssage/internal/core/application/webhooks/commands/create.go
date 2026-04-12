@@ -3,7 +3,6 @@ package commands
 import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/shared/authz"
-	"TriePayments/internal/shared/errx"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -12,8 +11,6 @@ import (
 func (uc *CommandService) RegisterWebhookEndpoint(ctx context.Context, workspaceName, url string) (*domain.WebhookEndpoint, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.RegisterWebhookEndpoint")
 	defer span.End()
-
-	ga := uc.gaClient
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
@@ -25,17 +22,12 @@ func (uc *CommandService) RegisterWebhookEndpoint(ctx context.Context, workspace
 		return nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("webhooks").
-		Action("create").
-		Scope(workspace.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_webhooks"),
+		authz.Resource("workspace", workspace.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("webhooks").SetMessage("insufficient permissions")
 	}
 
 	// generate HMAC secret

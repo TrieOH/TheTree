@@ -2,7 +2,6 @@ package commands
 
 import (
 	"TriePayments/internal/shared/authz"
-	"TriePayments/internal/shared/errx"
 	"context"
 
 	"github.com/google/uuid"
@@ -11,8 +10,6 @@ import (
 func (uc *CommandService) RevokeAPIKey(ctx context.Context, workspaceName string, keyID uuid.UUID) error {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.RevokeAPIKey")
 	defer span.End()
-
-	ga := uc.gaClient
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
@@ -24,17 +21,12 @@ func (uc *CommandService) RevokeAPIKey(ctx context.Context, workspaceName string
 		return err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
-		Action("revoke").
-		Scope(workspace.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("revoke_api_keys"),
+		authz.Resource("workspace", workspace.ID.String()),
+	); err != nil {
 		return err
-	}
-	if !allowed {
-		return errx.Forbidden("api key").SetMessage("insufficient permissions")
 	}
 
 	if _, err := uc.apiKeys.Revoke(ctx, keyID, workspace.ID); err != nil {

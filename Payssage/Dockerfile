@@ -22,6 +22,7 @@ WORKDIR /app
 COPY --from=builder /app/triePayments .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/internal/plataform/database/migrations ./internal/plataform/database/migrations
+COPY --from=builder /app/schema.zed ./schema.zed
 
 EXPOSE 8080
 

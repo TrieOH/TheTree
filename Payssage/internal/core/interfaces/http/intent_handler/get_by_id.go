@@ -4,6 +4,8 @@ import (
 	"TriePayments/internal/shared/validation"
 	"net/http"
 
+	_ "TriePayments/internal/core/domain"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 

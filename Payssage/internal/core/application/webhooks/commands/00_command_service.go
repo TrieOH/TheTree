@@ -5,6 +5,7 @@ import (
 	"TriePayments/internal/plataform/database"
 
 	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/authzed/authzed-go/v1"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -18,6 +19,7 @@ type CommandService struct {
 	credentials domain.ProviderCredentialRepo
 	asynq       *asynq.Client
 	gaClient    *goauth.Client
+	az          *authzed.Client
 	tx          database.TxRunner
 	tracer      trace.Tracer
 }
@@ -31,6 +33,7 @@ func New(
 	credentials domain.ProviderCredentialRepo,
 	asynq *asynq.Client,
 	gaClient *goauth.Client,
+	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -43,6 +46,7 @@ func New(
 		credentials: credentials,
 		asynq:       asynq,
 		gaClient:    gaClient,
+		az:          az,
 		tx:          tx,
 		tracer:      tracer,
 	}

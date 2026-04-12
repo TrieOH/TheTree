@@ -3,21 +3,16 @@ package commands
 import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/shared/authz"
-	"TriePayments/internal/shared/errx"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName string) (rawKey string, ak *domain.APIKey, err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Create")
 	defer span.End()
-
-	ga := uc.gaClient
 
 	var sub *authz.UserSubject
 	sub, err = authz.RequireSubject(ctx)
@@ -30,17 +25,12 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 		return "", nil, err
 	}
 
-	var allowed bool
-	allowed, err = ga.Authz.Check().User(sub.ID).
-		Object("api_keys").
-		Action("create").
-		Scope(workspace.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_api_keys"),
+		authz.Resource("workspace", workspace.ID.String()),
+	); err != nil {
 		return "", nil, err
-	}
-	if !allowed {
-		return "", nil, errx.Forbidden("api key").SetMessage("insufficient permissions")
 	}
 
 	rawBytes := make([]byte, 32)
@@ -59,15 +49,6 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 	if err != nil {
 		return "", nil, err
 	}
-
-	meta := json.RawMessage(`{"color": "#de7907", "icon": "KeyRound", "folder": "Api Keys"}`)
-	var scope *goauth.Scope
-	var idStr = apiKey.ID.String()
-	scope, err = ga.Scopes.CreateWithParent(ctx, "API Key ("+prefix+")", &idStr, &workspace.ScopeID, meta)
-	if err != nil {
-		return "", nil, err
-	}
-	apiKey.AddScope(scope.ID)
 
 	var created *domain.APIKey
 	created, err = uc.apiKeys.Create(ctx, *apiKey)

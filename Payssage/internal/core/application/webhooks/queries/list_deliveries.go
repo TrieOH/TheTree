@@ -3,7 +3,6 @@ package queries
 import (
 	"TriePayments/internal/core/domain"
 	"TriePayments/internal/shared/authz"
-	"TriePayments/internal/shared/errx"
 	"context"
 
 	"github.com/google/uuid"
@@ -23,16 +22,12 @@ func (uc *QueryService) ListWebhookDeliveries(ctx context.Context, workspaceName
 		return nil, err
 	}
 
-	allowed, err := uc.gaClient.Authz.Check().User(sub.ID).
-		Object("webhooks").
-		Action("read").
-		Scope(workspace.ScopeID).
-		Allowed(ctx)
-	if err != nil {
+	if err = authz.Require(ctx, uc.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("view_webhook_deliveries"),
+		authz.Resource("workspace", workspace.ID.String()),
+	); err != nil {
 		return nil, err
-	}
-	if !allowed {
-		return nil, errx.Forbidden("webhooks").SetMessage("insufficient permissions")
 	}
 
 	return uc.deliveries.ListByEndpoint(ctx, endpointID)

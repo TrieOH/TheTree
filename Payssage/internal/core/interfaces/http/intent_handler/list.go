@@ -4,6 +4,8 @@ import (
 	"TriePayments/internal/core/domain"
 	"net/http"
 
+	_ "TriePayments/internal/core/domain"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/go-chi/chi/v5"
 )
