@@ -69,7 +69,9 @@ function SchemaEditorPage() {
               <Icon className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">{label}</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                {label}
+              </span>
               <span className="text-xl font-semibold tracking-tight">{v}</span>
             </div>
           </div>
