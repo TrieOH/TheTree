@@ -4,6 +4,8 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
+    TRIEOH_AUTHZED_TOKEN: z.string(),
+    TRIEOH_AUTHZED_ENDPOINT: z.string(),
   },
 
   /**
@@ -14,14 +16,14 @@ export const env = createEnv({
 
   client: {
     VITE_APP_TITLE: z.string().min(1).optional(),
-    VITE_API_URL: z.url(),
     VITE_POSTHOG_KEY: z.string(),
     VITE_POSTHOG_HOST: z.url().optional(),
-
   },
   runtimeEnv: {
     ...import.meta.env,
-    SERVER_URL: process.env.SERVER_URL
+    SERVER_URL: process.env.SERVER_URL,
+    TRIEOH_AUTHZED_TOKEN: process.env.TRIEOH_AUTHZED_TOKEN,
+    TRIEOH_AUTHZED_ENDPOINT: process.env.TRIEOH_AUTHZED_ENDPOINT
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:")

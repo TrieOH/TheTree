@@ -15,6 +15,8 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '#/env'
 import TanstackQueryProvider from '#/integrations/tanstack-query/root-provider'
+import { WorkspaceLayout } from '#/features/admin/ui/admin-layout'
+import { Toaster } from '#/shared/ui/shadcn/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -57,7 +59,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased wrap-anywhere">
         <PostHogProvider>
           <TanstackQueryProvider>
-            {children}
+            <WorkspaceLayout>
+              {children}
+            </WorkspaceLayout>
             <TanStackDevtools
               config={{
                 position: 'bottom-right',
@@ -72,6 +76,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             />
           </TanstackQueryProvider>
         </PostHogProvider>
+        <Toaster />
         <Scripts />
       </body>
     </html >
