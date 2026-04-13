@@ -18,6 +18,8 @@ import TanstackQueryProvider from '#/integrations/tanstack-query/root-provider'
 import AdminLayout from '#/features/admin/ui/admin-layout'
 import { Toaster } from '#/shared/ui/shadcn/sonner'
 import { ThemeProvider } from 'next-themes'
+import { SiteHeader } from '#/shared/ui/site-header'
+import ErrorPage from '#/shared/ui/error-page'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -47,6 +49,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  errorComponent: ErrorPage,
   notFoundComponent: () => null,
 })
 
@@ -61,6 +64,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <PostHogProvider>
           <TanstackQueryProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <SiteHeader />
               <AdminLayout>
                 {children}
               </AdminLayout>

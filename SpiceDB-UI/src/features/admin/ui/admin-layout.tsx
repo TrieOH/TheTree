@@ -11,7 +11,7 @@ interface WorkspaceLayoutProps {
 export default function AdminLayout({ children }: WorkspaceLayoutProps) {
   const navItems = [
     {
-      to: '/',
+      to: '/$envId',
       icon: LayoutDashboard,
       label: 'Overview',
       exact: true
@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: WorkspaceLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 w-full pb-24 lg:pb-0">
+      <div className="flex-1 min-w-0 w-full pb-20 lg:pb-0">
         {children}
       </div>
 

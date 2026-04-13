@@ -3,31 +3,33 @@ import { z } from "zod";
 import { spicedb } from "@trieoh/node-perm-sdk";
 import { queryOptions } from "@tanstack/react-query";
 
-const writeSchemaInput = z.object({
-  schema: z.string().min(1),
-});
-
 
 export const readSchema = createServerFn({
   method: "GET",
-}).handler(async () => {
-  const response = await spicedb.schema.read()
-  if (response.success) return response.data
-  else return { schemaText: "", readAt: { token: "" } }
 })
+  .inputValidator((envId: string) => envId)
+  .handler(async ({ data: envId }) => {
+    const response = await spicedb.schema(envId).read()
+    if (response.success) return response.data
+    else if (response.code === 5) return { schemaText: "", readAt: { token: "" } }
+    throw new Error(response.message || "Erro ao ler o schema")
+  })
 
-export const schemaQueryOptions = queryOptions({
-  queryKey: ["schema"],
-  queryFn: () => readSchema(),
+export const schemaQueryOptions = (envId: string) => queryOptions({
+  queryKey: ["schema", envId],
+  queryFn: () => readSchema({ data: envId }),
   staleTime: 0,
 });
 
 export const writeSchema = createServerFn({
   method: "POST",
 })
-  .inputValidator(writeSchemaInput)
+  .inputValidator(z.object({
+    envId: z.string(),
+    schema: z.string().min(1),
+  }))
   .handler(async ({ data }) => {
-    const response = await spicedb.schema.write({ schema: data.schema })
+    const response = await spicedb.schema(data.envId).write({ schema: data.schema })
     if (!response.success) {
       return {
         success: false,
