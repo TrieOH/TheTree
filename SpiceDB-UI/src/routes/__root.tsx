@@ -15,10 +15,8 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '#/env'
 import TanstackQueryProvider from '#/integrations/tanstack-query/root-provider'
-import AdminLayout from '#/features/admin/ui/admin-layout'
 import { Toaster } from '#/shared/ui/shadcn/sonner'
 import { ThemeProvider } from 'next-themes'
-import { SiteHeader } from '#/shared/ui/site-header'
 import ErrorPage from '#/shared/ui/error-page'
 
 interface MyRouterContext {
@@ -64,10 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <PostHogProvider>
           <TanstackQueryProvider>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <SiteHeader />
-              <AdminLayout>
-                {children}
-              </AdminLayout>
+              {children}
               <TanStackDevtools
                 config={{
                   position: 'bottom-right',

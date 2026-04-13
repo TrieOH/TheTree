@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as EnvIdRouteImport } from './routes/$envId'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EnvIdIndexRouteImport } from './routes/$envId/index'
+import { Route as EnvIdRelationshipsRouteImport } from './routes/$envId/relationships'
 
 const EnvIdRoute = EnvIdRouteImport.update({
   id: '/$envId',
@@ -22,31 +24,46 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnvIdIndexRoute = EnvIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EnvIdRoute,
+} as any)
+const EnvIdRelationshipsRoute = EnvIdRelationshipsRouteImport.update({
+  id: '/relationships',
+  path: '/relationships',
+  getParentRoute: () => EnvIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$envId': typeof EnvIdRoute
+  '/$envId': typeof EnvIdRouteWithChildren
+  '/$envId/relationships': typeof EnvIdRelationshipsRoute
+  '/$envId/': typeof EnvIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$envId': typeof EnvIdRoute
+  '/$envId/relationships': typeof EnvIdRelationshipsRoute
+  '/$envId': typeof EnvIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$envId': typeof EnvIdRoute
+  '/$envId': typeof EnvIdRouteWithChildren
+  '/$envId/relationships': typeof EnvIdRelationshipsRoute
+  '/$envId/': typeof EnvIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$envId'
+  fullPaths: '/' | '/$envId' | '/$envId/relationships' | '/$envId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$envId'
-  id: '__root__' | '/' | '/$envId'
+  to: '/' | '/$envId/relationships' | '/$envId'
+  id: '__root__' | '/' | '/$envId' | '/$envId/relationships' | '/$envId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EnvIdRoute: typeof EnvIdRoute
+  EnvIdRoute: typeof EnvIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +82,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$envId/': {
+      id: '/$envId/'
+      path: '/'
+      fullPath: '/$envId/'
+      preLoaderRoute: typeof EnvIdIndexRouteImport
+      parentRoute: typeof EnvIdRoute
+    }
+    '/$envId/relationships': {
+      id: '/$envId/relationships'
+      path: '/relationships'
+      fullPath: '/$envId/relationships'
+      preLoaderRoute: typeof EnvIdRelationshipsRouteImport
+      parentRoute: typeof EnvIdRoute
+    }
   }
 }
 
+interface EnvIdRouteChildren {
+  EnvIdRelationshipsRoute: typeof EnvIdRelationshipsRoute
+  EnvIdIndexRoute: typeof EnvIdIndexRoute
+}
+
+const EnvIdRouteChildren: EnvIdRouteChildren = {
+  EnvIdRelationshipsRoute: EnvIdRelationshipsRoute,
+  EnvIdIndexRoute: EnvIdIndexRoute,
+}
+
+const EnvIdRouteWithChildren = EnvIdRoute._addFileChildren(EnvIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EnvIdRoute: EnvIdRoute,
+  EnvIdRoute: EnvIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

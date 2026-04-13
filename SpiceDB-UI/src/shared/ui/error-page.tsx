@@ -11,7 +11,7 @@ export default function ErrorPage({
   const message = error instanceof Error ? error.message : String(error)
 
   return (
-    <main className="min-h-(--content-height) flex flex-col items-center justify-center gap-6 px-6 py-12 text-center">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-6 py-12 text-center">
       <XCircle className="w-16 h-16 text-destructive" />
       <div className="max-w-2xl">
         <h1 className="text-3xl font-semibold">

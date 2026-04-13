@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import {
   LayoutDashboard,
+  Network,
 } from 'lucide-react'
 import { cn } from '#/shared/lib/class-utils'
 
@@ -14,6 +15,12 @@ export default function AdminLayout({ children }: WorkspaceLayoutProps) {
       to: '/$envId',
       icon: LayoutDashboard,
       label: 'Overview',
+      exact: true
+    },
+    {
+      to: '/$envId/relationships',
+      icon: Network,
+      label: 'Relationships',
       exact: true
     },
     // {
