@@ -1,0 +1,93 @@
+definition user {}
+
+definition platform {
+    relation super_admin: user
+}
+
+definition event {
+    relation platform: platform
+    relation owner: user
+
+    permission manage = owner + platform->super_admin
+}
+
+definition edition {
+    relation event: event
+    relation editor: user
+    relation reader: user
+    relation announcer: user
+
+    permission manage = editor + event->manage
+    permission create = manage
+    permission read = reader + manage
+    permission announce = announcer + manage
+}
+
+definition activity {
+    relation edition: edition
+    relation creator: user
+    relation publisher: user
+    relation manager: user
+    relation reader: user
+    relation attendee: user
+
+    permission manage = manager + edition->manage
+    permission create = creator + edition->manage
+    permission publish = publisher + edition->manage
+    permission read = reader + creator + publisher + manager + edition->read
+    permission attend = attendee + manage
+}
+
+definition product {
+    relation edition: edition
+    relation creator: user
+    relation publisher: user
+    relation editor: user
+
+    permission manage = edition->manage
+    permission create = creator + manage
+    permission read = publisher + creator + editor + edition->read
+    permission publish = publisher + manage
+    permission edit = editor + manage
+    permission delete = manage
+    permission restore = manage
+    permission purchase = edition->read
+}
+
+definition ticket {
+    relation edition: edition
+    relation creator: user
+    relation editor: user
+
+    permission manage = edition->manage
+    permission create = creator + manage
+    permission edit = editor + manage
+    permission read = edition->read
+}
+
+definition payment {
+    relation edition: edition
+    relation connector: user
+
+    permission manage = edition->manage
+    permission connect = connector + manage
+    permission disconnect = connector + manage
+}
+
+definition checkpoint {
+    relation edition: edition
+    relation creator: user
+    relation accessor: user
+
+    permission manage = edition->manage
+    permission create = creator + manage
+    permission read = edition->read
+    permission access = accessor + manage
+}
+
+definition attendance {
+    relation activity: activity
+    relation marker: user
+
+    permission mark = marker + activity->manage
+}

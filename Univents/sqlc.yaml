@@ -1,7 +1,7 @@
 version: "2"
 sql:
-  - schema: "internal/database/migrations"
-    queries: "internal/database/queries/*.sql"
+  - schema: "internal/platform/database/migrations"
+    queries: "internal/platform/database/queries/*.sql"
     engine: "postgresql"
     gen:
       go:
@@ -10,7 +10,7 @@ sql:
         emit_prepared_queries: false
         emit_exact_table_names: false
         package: "sqlc"
-        out: "internal/adapters/persistence/sqlc"
+        out: "internal/platform/database/sqlc"
         sql_package: "pgx/v5"
         overrides:
           - db_type: "pg_catalog.varchar"
@@ -183,3 +183,27 @@ sql:
               import: "time"
               type: "Time"
               pointer: false
+          - db_type: "event_status"
+            nullable: false
+            go_type:
+              import: "univents/internal/shared/contracts"
+              type: "EventStatus"
+              pointer: false
+          - db_type: "event_status"
+            nullable: true
+            go_type:
+              import: "univents/internal/shared/contracts"
+              type: "EventStatus"
+              pointer: true
+          - db_type: "difficulty_level"
+            nullable: false
+            go_type:
+              import: "univents/internal/shared/contracts"
+              type: "DifficultyLevel"
+              pointer: false
+          - db_type: "difficulty_level"
+            nullable: true
+            go_type:
+              import: "univents/internal/shared/contracts"
+              type: "DifficultyLevel"
+              pointer: true
