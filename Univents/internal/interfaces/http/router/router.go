@@ -7,16 +7,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"univents/internal/commerce/interfaces/http/products"
-	"univents/internal/commerce/interfaces/http/tickets"
-	eventhttp "univents/internal/core/interfaces/http"
-	activityhttp "univents/internal/core/interfaces/http/activities"
-	"univents/internal/core/interfaces/http/checkpoints"
-	"univents/internal/core/interfaces/http/editions"
+	"univents/internal/features/activities"
+	"univents/internal/features/checkpoints"
+	"univents/internal/features/editions"
+	"univents/internal/features/events"
+	"univents/internal/features/products"
+	"univents/internal/features/purchases"
+	"univents/internal/features/tickets"
 	"univents/internal/interfaces/http/middleware"
-	systemhttp "univents/internal/interfaces/http/system"
+	"univents/internal/interfaces/http/system"
 
-	_ "univents/docs"
+	_ "univents/internal/shared/contracts"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -29,15 +30,16 @@ import (
 )
 
 type HTTPDeps struct {
-	EventsHandler      *eventhttp.EventsHandler
-	EditionsHandler    *editions.Handler
-	ActivitiesHandler  *activityhttp.Handler
-	CheckpointsHandler *checkpoints.Handler
-	TicketsHandler     *tickets.TicketsHandler
-	ProductsHandler    *products.Handler
-	SystemHandler      *systemhttp.UniventsHandler
-	AuthMiddleware     *middleware.AuthMiddleware
-	AsynqmonHandler    http.Handler
+	Events          *events.Handler
+	Editions        *editions.Handler
+	Activities      *activities.Handler
+	Checkpoints     *checkpoints.Handler
+	Tickets         *tickets.Handler
+	Products        *products.Handler
+	Purchases       *purchases.Handler
+	System          *system.UniventsHandler
+	AuthMiddleware  *middleware.AuthMiddleware
+	AsynqmonHandler http.Handler
 }
 
 // CreateRouter godoc
@@ -67,13 +69,13 @@ type HTTPDeps struct {
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
-// @response 400 {object} swag.ErrorResponse "Standard error response for bad requests"
-// @response 401 {object} swag.ErrorResponse "Standard error response for unauthorized requests"
-// @response 403 {object} swag.ErrorResponse "Standard error response for forbidden requests"
-// @response 404 {object} swag.ErrorResponse "Standard error response for not found errors"
-// @response 413 {object} swag.ErrorResponse "Standard error response for payload too large 1MB"
-// @response 429 {object} swag.ErrorResponse "Standard error response for too many requests"
-// @response 500 {object} swag.ErrorResponse "Standard error response for internal server errors"
+// @response 400 {object} contracts.ErrorResponse "Standard error response for bad requests"
+// @response 401 {object} contracts.ErrorResponse "Standard error response for unauthorized requests"
+// @response 403 {object} contracts.ErrorResponse "Standard error response for forbidden requests"
+// @response 404 {object} contracts.ErrorResponse "Standard error response for not found errors"
+// @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
+// @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
+// @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
 // @securityDefinitions.apikey Cookie
 // @in header
 // @name Cookie

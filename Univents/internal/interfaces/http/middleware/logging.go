@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"univents/internal/plataform/telemetry"
+	"univents/internal/platform/telemetry"
 	"univents/internal/shared/errx"
 
 	"github.com/go-chi/chi/v5"

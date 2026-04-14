@@ -3,7 +3,6 @@ package middleware
 import (
 	"errors"
 	"net/http"
-	"univents/internal/core/domain"
 	"univents/internal/shared/authz"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
@@ -62,7 +61,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			// Unmarshal payload
-			snapshot, err := domain.UnmarshalSnapshot(sessionData)
+			snapshot, err := authz.UnmarshalSnapshot(sessionData)
 			if err != nil {
 				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
 				return
