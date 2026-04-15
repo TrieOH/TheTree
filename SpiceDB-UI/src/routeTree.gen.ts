@@ -13,6 +13,7 @@ import { Route as EnvIdRouteImport } from './routes/$envId'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EnvIdIndexRouteImport } from './routes/$envId/index'
 import { Route as EnvIdRelationshipsRouteImport } from './routes/$envId/relationships'
+import { Route as EnvIdCheckRouteImport } from './routes/$envId/check'
 
 const EnvIdRoute = EnvIdRouteImport.update({
   id: '/$envId',
@@ -34,15 +35,22 @@ const EnvIdRelationshipsRoute = EnvIdRelationshipsRouteImport.update({
   path: '/relationships',
   getParentRoute: () => EnvIdRoute,
 } as any)
+const EnvIdCheckRoute = EnvIdCheckRouteImport.update({
+  id: '/check',
+  path: '/check',
+  getParentRoute: () => EnvIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$envId': typeof EnvIdRouteWithChildren
+  '/$envId/check': typeof EnvIdCheckRoute
   '/$envId/relationships': typeof EnvIdRelationshipsRoute
   '/$envId/': typeof EnvIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$envId/check': typeof EnvIdCheckRoute
   '/$envId/relationships': typeof EnvIdRelationshipsRoute
   '/$envId': typeof EnvIdIndexRoute
 }
@@ -50,15 +58,27 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$envId': typeof EnvIdRouteWithChildren
+  '/$envId/check': typeof EnvIdCheckRoute
   '/$envId/relationships': typeof EnvIdRelationshipsRoute
   '/$envId/': typeof EnvIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$envId' | '/$envId/relationships' | '/$envId/'
+  fullPaths:
+    | '/'
+    | '/$envId'
+    | '/$envId/check'
+    | '/$envId/relationships'
+    | '/$envId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$envId/relationships' | '/$envId'
-  id: '__root__' | '/' | '/$envId' | '/$envId/relationships' | '/$envId/'
+  to: '/' | '/$envId/check' | '/$envId/relationships' | '/$envId'
+  id:
+    | '__root__'
+    | '/'
+    | '/$envId'
+    | '/$envId/check'
+    | '/$envId/relationships'
+    | '/$envId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -96,15 +116,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EnvIdRelationshipsRouteImport
       parentRoute: typeof EnvIdRoute
     }
+    '/$envId/check': {
+      id: '/$envId/check'
+      path: '/check'
+      fullPath: '/$envId/check'
+      preLoaderRoute: typeof EnvIdCheckRouteImport
+      parentRoute: typeof EnvIdRoute
+    }
   }
 }
 
 interface EnvIdRouteChildren {
+  EnvIdCheckRoute: typeof EnvIdCheckRoute
   EnvIdRelationshipsRoute: typeof EnvIdRelationshipsRoute
   EnvIdIndexRoute: typeof EnvIdIndexRoute
 }
 
 const EnvIdRouteChildren: EnvIdRouteChildren = {
+  EnvIdCheckRoute: EnvIdCheckRoute,
   EnvIdRelationshipsRoute: EnvIdRelationshipsRoute,
   EnvIdIndexRoute: EnvIdIndexRoute,
 }

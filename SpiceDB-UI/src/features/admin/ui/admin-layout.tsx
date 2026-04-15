@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import {
   LayoutDashboard,
   Network,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '#/shared/lib/class-utils'
 
@@ -23,21 +24,12 @@ export default function AdminLayout({ children }: WorkspaceLayoutProps) {
       label: 'Relationships',
       exact: true
     },
-    // {
-    //   to: '/admin/',
-    //   icon: Key,
-    //   label: 'API Keys'
-    // },
-    // {
-    //   to: '/admin/$name/webhooks',
-    //   icon: Webhook,
-    //   label: 'Webhooks'
-    // },
-    // {
-    //   to: '/admin/$name/providers',
-    //   icon: ArrowRightFromLine,
-    //   label: 'Providers'
-    // },
+    {
+      to: '/$envId/check',
+      icon: ShieldCheck,
+      label: 'Check',
+      exact: true
+    },
   ]
 
   return (

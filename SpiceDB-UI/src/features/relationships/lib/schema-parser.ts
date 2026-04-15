@@ -10,17 +10,17 @@ export function parseSpiceDBSchema(schemaText: string): ParsedSchema {
   // Basic regex to find definition blocks
   // Matches "definition <name> {" and "definition <name> {}"
   const definitionRegex = /definition\s+([a-zA-Z0-9_/]+)\s*{/g
-  
+
   let match
   while ((match = definitionRegex.exec(schemaText)) !== null) {
     const defName = match[1]
     definitions.push(defName)
-    
+
     // Find the end of this definition block to extract its relations
     const startIdx = match.index + match[0].length
     let endIdx = -1
     let braceCount = 1
-    
+
     for (let i = startIdx; i < schemaText.length; i++) {
       if (schemaText[i] === '{') braceCount++
       if (schemaText[i] === '}') braceCount--
@@ -29,9 +29,10 @@ export function parseSpiceDBSchema(schemaText: string): ParsedSchema {
         break
       }
     }
-    
+
     if (endIdx !== -1) {
       const blockContent = schemaText.substring(startIdx, endIdx)
+
       // Match "relation <name>:"
       const relationRegex = /relation\s+([a-zA-Z0-9_]+)\s*:/g
       const relations: string[] = []
@@ -39,6 +40,13 @@ export function parseSpiceDBSchema(schemaText: string): ParsedSchema {
       while ((relMatch = relationRegex.exec(blockContent)) !== null) {
         relations.push(relMatch[1])
       }
+
+      // Match "permission <name> ="
+      const permissionRegex = /permission\s+([a-zA-Z0-9_]+)\s*=/g
+      while ((relMatch = permissionRegex.exec(blockContent)) !== null) {
+        relations.push(relMatch[1])
+      }
+
       relationsByDefinition[defName] = relations
     } else {
       relationsByDefinition[defName] = []

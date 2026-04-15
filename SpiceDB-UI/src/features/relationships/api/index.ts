@@ -13,7 +13,7 @@ export const readRelationship = createServerFn({
   .handler(async ({ data }) => {
     try {
       const service = spicedb.relationship(data.envId);
-      
+
       const allResults = await Promise.all(
         data.resources.map(async (resource) => {
           const relationships = [];
@@ -116,6 +116,36 @@ export const deleteRelationship = createServerFn({
         subjectType: data.subject,
         subjectId: data.subjectId,
         relation: data.relation,
+      }
+    )
+    if (!response.success) {
+      return {
+        success: false,
+        message: response.message,
+      }
+    }
+    return response
+  })
+
+export const checkRelationship = createServerFn({
+  method: "POST",
+})
+  .inputValidator(z.object({
+    envId: z.string(),
+    resource: z.string().min(1),
+    resourceId: z.string().min(1),
+    subject: z.string().min(1),
+    subjectId: z.string().min(1),
+    relation: z.string().min(1),
+  }))
+  .handler(async ({ data }) => {
+    const response = await spicedb.relationship(data.envId).check(
+      {
+        resourceType: data.resource,
+        resourceId: data.resourceId,
+        subjectType: data.subject,
+        subjectId: data.subjectId,
+        permission: data.relation,
       }
     )
     if (!response.success) {
