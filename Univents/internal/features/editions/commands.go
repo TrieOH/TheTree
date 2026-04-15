@@ -231,7 +231,7 @@ func (uc *CommandService) DisconnectPayments(ctx context.Context, editionID uuid
 	if err = authz.Require(ctx, uc.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("disconnect_payments"),
-		authz.Resource("event", edition.ID.String()),
+		authz.Resource("edition", edition.ID.String()),
 	); err != nil {
 		return err
 	}
