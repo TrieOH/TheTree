@@ -7,18 +7,20 @@ interface PropsI {
   onChange: (newValue: string | undefined) => void
   theme?: "zed-dark" | "zed-light"
   onMount?: (editor: editor.IStandaloneCodeEditor) => void;
+  language?: string
 }
 
 export default function SchemaEditor({
   value,
   onChange,
   onMount,
-  theme = "zed-dark"
+  theme = "zed-dark",
+  language = ZED_LANGUAGE_ID
 }: PropsI) {
   return (
     <Editor
       height="100%"
-      language={ZED_LANGUAGE_ID}
+      language={language}
       value={value}
       onChange={onChange}
       onMount={onMount}

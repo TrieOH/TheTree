@@ -1,13 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { RelationshipsFeature } from '#/features/relationships/ui/relationships-feature'
 
 export const Route = createFileRoute('/$envId/relationships')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return (
-    <main className="flex flex-col h-(--content-height) min-w-75 border-l">
-
-    </main>
-  )
+  const { envId } = Route.useParams()
+  return <RelationshipsFeature envId={envId} />
 }
