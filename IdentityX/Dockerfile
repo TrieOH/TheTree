@@ -12,8 +12,8 @@ RUN go mod download
 COPY . .
 
 RUN sqlc generate
-RUN swag init -g internal/adapters/http/router/router.go -o docs --parseInternal --parseDependency
-RUN CGO_ENABLED=0 GOOS=linux go build -o GoAuth .
+RUN swag init -g internal/interfaces/http/router/router.go -o docs --parseInternal --parseDependency
+RUN CGO_ENABLED=0 GOOS=linux go build -o GoAuth ./cmd/identityx
 
 FROM alpine:3.20
 
@@ -21,7 +21,7 @@ WORKDIR /app
 
 COPY --from=builder /app/GoAuth .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/internal/database/migrations ./internal/database/migrations
+COPY --from=builder /app/internal/platform/database/migrations ./internal/platform/database/migrations
 
 EXPOSE 8080
 
