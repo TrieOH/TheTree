@@ -7,12 +7,10 @@ import { parseSpiceDBSchema } from '../lib/schema-parser'
 import type { RelationshipFormState } from '../model'
 import { FieldLabel } from './field-label'
 import { ArrowRight, FileText, User, ShieldCheck, ShieldX, ShieldQuestion } from 'lucide-react'
+import CustomSelect from '#/shared/ui/custom-select'
 
 const inputCls =
   'h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-shadow'
-
-const selectCls =
-  'h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-shadow'
 
 const INITIAL_FORM: RelationshipFormState = {
   resource: '',
@@ -41,7 +39,7 @@ export function CheckFeature({ envId }: { envId: string }) {
   useEffect(() => {
     if (parsedSchema.definitions.length > 0 && form.resource === '') {
       const firstDefinition = parsedSchema.definitions[0]
-      const firstRelation = parsedSchema.relationsByDefinition[firstDefinition]?.[0] ?? ''
+      const firstRelation = parsedSchema.relationsByDefinition[firstDefinition]?.[0]?.name ?? ''
       setForm({
         ...INITIAL_FORM,
         resource: firstDefinition,
@@ -77,6 +75,17 @@ export function CheckFeature({ envId }: { envId: string }) {
   }
 
   const availableRelations = parsedSchema.relationsByDefinition[form.resource] || []
+  const selectedRelation = availableRelations.find((r) => r.name === form.relation)
+  const allowedSubjects = selectedRelation?.allowedSubjectTypes || []
+
+  // Update subject type if it's no longer allowed
+  useEffect(() => {
+    if (form.relation && allowedSubjects.length > 0) {
+      if (!allowedSubjects.includes(form.subject)) {
+        set('subject', allowedSubjects[0])
+      }
+    }
+  }, [form.relation, allowedSubjects, form.subject])
 
   return (
     <main className="h-(--content-height) flex flex-col md:flex-row border-l overflow-hidden">
@@ -91,23 +100,19 @@ export function CheckFeature({ envId }: { envId: string }) {
           {/* Resource type */}
           <div>
             <FieldLabel icon={<FileText size={11} />}>Resource type</FieldLabel>
-            <select
+            <CustomSelect
               value={form.resource}
-              onChange={(e) => {
-                const newResource = e.target.value
+              onChange={(val) => {
                 setForm(prev => ({
                   ...prev,
-                  resource: newResource,
+                  resource: val ?? "",
                   relation: ''
                 }))
                 setResult(null)
               }}
-              className={selectCls}
-            >
-              {parsedSchema.definitions.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+              options={parsedSchema.definitions}
+              placeholder="Select a resource..."
+            />
           </div>
 
           {/* Resource ID */}
@@ -125,31 +130,25 @@ export function CheckFeature({ envId }: { envId: string }) {
           {/* Permission/Relation */}
           <div>
             <FieldLabel icon={<ArrowRight size={11} />}>Permission / Relation</FieldLabel>
-            <select
+            <CustomSelect
               value={form.relation}
-              onChange={(e) => set('relation', e.target.value)}
-              className={selectCls}
-            >
-              <option value="">Select permission</option>
-              {availableRelations.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+              onChange={val => set('relation', val ?? "")}
+              options={availableRelations.map(item => item.name)}
+              placeholder="Select a relation or a permission..."
+            />
           </div>
 
           {/* Subject type */}
           <div>
             <FieldLabel icon={<User size={11} />}>Subject type</FieldLabel>
-            <select
+            <CustomSelect
               value={form.subject}
-              onChange={(e) => set('subject', e.target.value)}
-              className={selectCls}
-            >
-              {parsedSchema.definitions.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+              onChange={val => set('subject', val ?? "")}
+              options={allowedSubjects.length > 0 ? allowedSubjects : parsedSchema.definitions}
+              placeholder="Select a subject..."
+            />
           </div>
+
 
           {/* Subject ID */}
           <div>

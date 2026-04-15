@@ -54,7 +54,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
   useEffect(() => {
     if (parsedSchema.definitions.length > 0 && !isEditing && formData.resource === '') {
       const firstDefinition = parsedSchema.definitions[0]
-      const firstRelation = parsedSchema.relationsByDefinition[firstDefinition]?.[0] ?? ''
+      const firstRelation = parsedSchema.relationsByDefinition[firstDefinition]?.find(r => r.type === 'relation')?.name ?? ''
       setFormData({
         ...INITIAL_FORM,
         resource: firstDefinition,

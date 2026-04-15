@@ -8,19 +8,18 @@ import {
 import { useState, useEffect } from 'react'
 import type { RelationshipFormState } from '../model'
 import { FieldLabel } from './field-label'
+import type { RelationInfo } from '../lib/schema-parser'
+import CustomSelect from '#/shared/ui/custom-select'
 
 const inputCls =
   'h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-shadow'
-
-const selectCls =
-  'h-9 w-full rounded-md border border-input bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-shadow'
 
 interface RelationshipFormProps {
   initial: RelationshipFormState
   isEditing: boolean
   isLoading: boolean
   definitions: string[]
-  relationsByDefinition: Record<string, string[]>
+  relationsByDefinition: Record<string, RelationInfo[] | undefined>
   onSubmit: (data: RelationshipFormState) => void
   onCancel: () => void
 }
@@ -50,7 +49,21 @@ export function RelationshipForm({
     onSubmit(form)
   }
 
-  const availableRelations = relationsByDefinition[form.resource] || []
+  const availableRelations = (relationsByDefinition[form.resource] || []).filter(
+    (r) => r.type === 'relation'
+  )
+
+  const selectedRelation = availableRelations.find((r) => r.name === form.relation)
+  const allowedSubjects = selectedRelation?.allowedSubjectTypes || []
+
+  // Update subject type if it's no longer allowed
+  useEffect(() => {
+    if (form.relation && allowedSubjects.length > 0) {
+      if (!allowedSubjects.includes(form.subject)) {
+        set('subject', allowedSubjects[0])
+      }
+    }
+  }, [form.relation, allowedSubjects, form.subject])
 
   return (
     <div className="flex h-full flex-col">
@@ -83,23 +96,19 @@ export function RelationshipForm({
         {/* Resource type */}
         <div>
           <FieldLabel icon={<FileText size={11} />}>Resource type</FieldLabel>
-          <select
+          <CustomSelect
             value={form.resource}
-            onChange={(e) => {
-              const newResource = e.target.value
+            onChange={(val) => {
               setForm(prev => ({
                 ...prev,
-                resource: newResource,
-                relation: '' // Reset relation when resource type changes
+                resource: val ?? "",
+                relation: ''
               }))
             }}
-            className={selectCls}
+            placeholder="Select a resource..."
+            options={definitions}
             disabled={isEditing}
-          >
-            {definitions.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Resource ID */}
@@ -118,31 +127,25 @@ export function RelationshipForm({
         {/* Relation */}
         <div>
           <FieldLabel icon={<ArrowRight size={11} />}>Relation</FieldLabel>
-          <select
+          <CustomSelect
             value={form.relation}
-            onChange={(e) => set('relation', e.target.value)}
-            className={selectCls}
-          >
-            <option value="">Select relation</option>
-            {availableRelations.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
+            onChange={(val) => set('relation', val ?? "")}
+            placeholder="Select a relation..."
+            options={availableRelations.map(item => item.name)}
+            disabled={isEditing}
+          />
         </div>
 
         {/* Subject type */}
         <div>
           <FieldLabel icon={<User size={11} />}>Subject type</FieldLabel>
-          <select
+          <CustomSelect
             value={form.subject}
-            onChange={(e) => set('subject', e.target.value)}
-            className={selectCls}
+            onChange={(val) => set('subject', val ?? "")}
+            placeholder="Select a subject..."
+            options={allowedSubjects.length > 0 ? allowedSubjects : definitions}
             disabled={isEditing}
-          >
-            {definitions.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Subject ID */}
@@ -158,6 +161,7 @@ export function RelationshipForm({
           />
         </div>
       </div>
+
 
       {/* Footer */}
       <div className="border-t p-4">

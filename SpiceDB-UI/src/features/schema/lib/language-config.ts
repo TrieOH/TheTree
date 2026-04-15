@@ -3,16 +3,43 @@ import type { editor, languages, Position } from "monaco-editor";
 
 export const ZED_LANGUAGE_ID = "zed";
 
+const KEYWORD_DOCS: Record<string, { detail: string; documentation: string }> = {
+  definition: {
+    detail: "definition <n> { ... }",
+    documentation:
+      "Declares a new resource type in the SpiceDB schema.\n\n" +
+      "**Example:**\n```\ndefinition document {\n  relation owner: user\n  permission view = owner\n}\n```",
+  },
+  relation: {
+    detail: "relation <n>: <type>[#<relation>] [| ...]",
+    documentation:
+      "Declares a relation between two types. Supports multiple types with `|` and " +
+      "sub-relation references with `#`.\n\n" +
+      "**Examples:**\n```\nrelation owner: user\nrelation viewer: user | group#member\nrelation parent: folder\n```",
+  },
+  permission: {
+    detail: "permission <n> = <expr>",
+    documentation:
+      "Defines a computed permission from relations and logical operators.\n\n" +
+      "**Available operators:** `+` (union), `&` (intersection), `-` (exclusion)\n\n" +
+      "**Example:**\n```\npermission edit = owner + editor\npermission view = viewer & member\npermission delete = owner - banned\n```",
+  },
+};
+
 export const beforeMount: BeforeMount = (monaco) => {
   monaco.editor.defineTheme("zed-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "keyword", foreground: "6366f1" }, // indigo-500
-      { token: "comment", foreground: "64748b", fontStyle: "italic" }, // slate-500
-      { token: "identifier", foreground: "e2e8f0" }, // slate-200
-      { token: "operator", foreground: "94a3b8" }, // slate-400
-      { token: "delimiter", foreground: "94a3b8" }, // slate-400
+      { token: "keyword", foreground: "6366f1" },
+      { token: "comment", foreground: "64748b", fontStyle: "italic" },
+      { token: "identifier", foreground: "e2e8f0" },
+      { token: "type", foreground: "38bdf8" },
+      { token: "operator", foreground: "94a3b8" },
+      { token: "delimiter", foreground: "94a3b8" },
+      { token: "delimiter.arrow", foreground: "fb923c" },
+      { token: "string", foreground: "86efac" },
+      { token: "number", foreground: "fbbf24" },
     ],
     colors: {
       "editor.background": "#00000000",
@@ -27,11 +54,15 @@ export const beforeMount: BeforeMount = (monaco) => {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "keyword", foreground: "4f46e5" }, // indigo-600
-      { token: "comment", foreground: "94a3b8", fontStyle: "italic" }, // slate-400
-      { token: "identifier", foreground: "1e293b" }, // slate-900
-      { token: "operator", foreground: "64748b" }, // slate-500
-      { token: "delimiter", foreground: "64748b" }, // slate-500
+      { token: "keyword", foreground: "4f46e5" },
+      { token: "comment", foreground: "94a3b8", fontStyle: "italic" },
+      { token: "identifier", foreground: "1e293b" },
+      { token: "type", foreground: "0284c7" },
+      { token: "operator", foreground: "64748b" },
+      { token: "delimiter", foreground: "64748b" },
+      { token: "delimiter.arrow", foreground: "ea580c" },
+      { token: "string", foreground: "16a34a" },
+      { token: "number", foreground: "d97706" },
     ],
     colors: {
       "editor.background": "#00000000",
@@ -52,16 +83,26 @@ export const beforeMount: BeforeMount = (monaco) => {
     tokenizer: {
       root: [
         [/\/\/.*$/, "comment"],
-        [/\/\*/, "comment", "@comment"],
+        [/\/\*/, "comment", "@blockComment"],
+
+        [/"([^"\\]|\\.)*$/, "string.invalid"],
+        [/'([^'\\]|\\.)*$/, "string.invalid"],
+
+        [/\b\d+(\.\d+)?\b/, "number"],
+        [/->/, "delimiter.arrow"],
+
         [/\b(definition|relation|permission|with|and|or|not|nil)\b/, "keyword"],
+
         [/[a-zA-Z_][\w/]*/, "identifier"],
-        [/[{}]/, "delimiter.bracket"],
-        [/[+|&]/, "operator"],
+        [/[{}()]/, "delimiter.bracket"],
+        [/[+\-&|]/, "operator"],
         [/=/, "operator"],
         [/:/, "delimiter"],
         [/#/, "delimiter"],
+        [/,/, "delimiter"],
       ],
-      comment: [
+
+      blockComment: [
         [/[^/*]+/, "comment"],
         [/\*\//, "comment", "@pop"],
         [/[/*]/, "comment"],
@@ -79,37 +120,63 @@ export const beforeMount: BeforeMount = (monaco) => {
         endColumn: word.endColumn,
       };
 
-      const suggestions = [
+      const CK = monaco.languages.CompletionItemKind;
+      const SNIPPET = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
+
+      const suggestions: languages.CompletionItem[] = [
         {
           label: "definition",
-          kind: monaco.languages.CompletionItemKind.Keyword,
+          kind: CK.Keyword,
           insertText: "definition ${1:name} {\n\t$0\n}",
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          insertTextRules: SNIPPET,
           range,
-          detail: "Define um novo tipo",
-          documentation: "Cria uma definição de tipo no schema Zed",
+          detail: KEYWORD_DOCS.definition.detail,
+          documentation: { value: KEYWORD_DOCS.definition.documentation },
         },
         {
           label: "relation",
-          kind: monaco.languages.CompletionItemKind.Keyword,
+          kind: CK.Keyword,
           insertText: "relation ${1:name}: ${2:type}",
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          insertTextRules: SNIPPET,
           range,
-          detail: "Define uma relação",
-          documentation: "Declara uma relação entre tipos",
+          detail: KEYWORD_DOCS.relation.detail,
+          documentation: { value: KEYWORD_DOCS.relation.documentation },
         },
         {
           label: "permission",
-          kind: monaco.languages.CompletionItemKind.Keyword,
+          kind: CK.Keyword,
           insertText: "permission ${1:name} = ${2:relation}",
-          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          insertTextRules: SNIPPET,
           range,
-          detail: "Define uma permissão",
-          documentation: "Cria uma permissão baseada em relações",
+          detail: KEYWORD_DOCS.permission.detail,
+          documentation: { value: KEYWORD_DOCS.permission.documentation },
         },
       ];
 
       return { suggestions };
+    },
+  });
+
+  monaco.languages.registerHoverProvider(ZED_LANGUAGE_ID, {
+    provideHover: (model: editor.ITextModel, position: Position) => {
+      const word = model.getWordAtPosition(position);
+      if (!word) return null;
+
+      const token = word.word;
+
+      const doc = KEYWORD_DOCS[token];
+      return {
+        range: new monaco.Range(
+          position.lineNumber,
+          word.startColumn,
+          position.lineNumber,
+          word.endColumn
+        ),
+        contents: [
+          { value: `**\`${doc.detail}\`**` },
+          { value: doc.documentation },
+        ],
+      };
     },
   });
 };
