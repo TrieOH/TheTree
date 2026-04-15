@@ -2,35 +2,36 @@ definition activity {
 	relation parent_edition: edition
 	relation activity_admin: user
 	relation activity_attendee: user
-	permission view_attendance = activity_admin
-	permission mark_attendance = activity_admin
-	permission attend = activity_admin + activity_attendee
-	permission publish = activity_admin
-	permission administrate = view_attendance + mark_attendance + publish + parent_edition->administrate
+	permission view_attendance = activity_admin + parent_edition->administrate
+	permission mark_attendance = activity_admin + parent_edition->administrate
+	permission attend = activity_admin + activity_attendee + parent_edition->administrate
+	permission publish = activity_admin + parent_edition->administrate
+	permission administrate = view_attendance + mark_attendance + publish
 }
 
 definition edition {
 	relation parent_event: event
 	relation edition_admin: user
 	relation edition_attendee: user
-	permission announce = edition_admin
-	permission view_checkpoints = edition_admin
-	permission create_checkpoints = edition_admin
-	permission view_activities = edition_admin + edition_attendee
-	permission create_activity = edition_admin
-	permission connect_payments = edition_admin
-	permission disconnect_payments = edition_admin
-	permission create_products = edition_admin
-	permission view_products = edition_admin + edition_attendee
-	permission create_tickets = edition_admin
-	permission administrate = announce + view_checkpoints + create_checkpoints + view_activities + create_activity + connect_payments + disconnect_payments + create_products + view_products + create_tickets + parent_event->administrate
+	permission announce = edition_admin + parent_event->administrate
+	permission view_checkpoints = edition_admin + parent_event->administrate
+	permission create_checkpoints = edition_admin + parent_event->administrate
+	permission view_activities = edition_admin + edition_attendee + parent_event->administrate
+	permission create_activity = edition_admin + parent_event->administrate
+	permission connect_payments = edition_admin + parent_event->administrate
+	permission disconnect_payments = edition_admin + parent_event->administrate
+	permission create_products = edition_admin + parent_event->administrate
+	permission view_products = edition_admin + edition_attendee + parent_event->administrate
+	permission create_tickets = edition_admin + parent_event->administrate
+	permission administrate = announce + view_checkpoints + create_checkpoints + view_activities + create_activity + connect_payments + disconnect_payments + create_products + view_products + create_tickets
 }
 
 definition event {
 	relation event_admin: user
 	relation event_attendee: user
+	relation viewer: user | user:*
 	permission create_editions = event_admin
-	permission view_editions = event_admin + event_attendee
+	permission view_editions = event_admin + event_attendee + viewer
 	permission publish = event_admin
 	permission edit = event_admin
 	permission administrate = create_editions + view_editions + publish + edit
@@ -45,18 +46,18 @@ definition product {
 	relation parent_edition: edition
 	relation admin: user
 	relation customer: user
-	permission publish = admin
-	permission edit = admin
-	permission delete = admin
-	permission restore = admin
-	permission administrate = publish + edit + delete + restore + parent_edition->administrate
+	permission publish = admin + parent_edition->administrate
+	permission edit = admin + parent_edition->administrate
+	permission delete = admin + parent_edition->administrate
+	permission restore = admin + parent_edition->administrate
+	permission administrate = publish + edit + delete + restore
 }
 
 definition ticket {
 	relation parent_edition: edition
 	relation admin: user
-	permission edit = admin
-	permission administrate = edit + parent_edition->administrate
+	permission edit = admin + parent_edition->administrate
+	permission administrate = edit
 }
 
 /** document represents a document protected by Authzed. */
