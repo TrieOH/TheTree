@@ -5,7 +5,7 @@ import (
 	"univents/internal/platform/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
-	domain2 "univents/internal/shared/ports"
+	"univents/internal/shared/ports"
 
 	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
@@ -14,10 +14,10 @@ import (
 )
 
 type QueryService struct {
-	products  domain2.ProductsRepository
-	purchases domain2.PurchaseRepository
-	editions  domain2.EditionsRepository
-	inventory domain2.InventorySubscriber
+	products  ports.ProductsRepository
+	purchases ports.PurchaseRepository
+	editions  ports.EditionsRepository
+	inventory ports.InventorySubscriber
 	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	az        *authzed.Client
@@ -25,10 +25,10 @@ type QueryService struct {
 }
 
 func NewQueryService(
-	products domain2.ProductsRepository,
-	purchases domain2.PurchaseRepository,
-	editions domain2.EditionsRepository,
-	inventory domain2.InventorySubscriber,
+	products ports.ProductsRepository,
+	purchases ports.PurchaseRepository,
+	editions ports.EditionsRepository,
+	inventory ports.InventorySubscriber,
 	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,

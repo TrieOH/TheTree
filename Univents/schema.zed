@@ -1,93 +1,63 @@
-definition user {}
-
-definition platform {
-    relation super_admin: user
-}
-
-definition event {
-    relation platform: platform
-    relation owner: user
-
-    permission manage = owner + platform->super_admin
+definition activity {
+	relation parent_edition: edition
+	relation activity_admin: user
+	relation activity_attendee: user
+	permission view_attendance = activity_admin
+	permission mark_attendance = activity_admin
+	permission attend = activity_admin + activity_attendee
+	permission publish = activity_admin
+	permission administrate = view_attendance + mark_attendance + publish + parent_edition->administrate
 }
 
 definition edition {
-    relation event: event
-    relation editor: user
-    relation reader: user
-    relation announcer: user
-
-    permission manage = editor + event->manage
-    permission create = manage
-    permission read = reader + manage
-    permission announce = announcer + manage
+	relation parent_event: event
+	relation edition_admin: user
+	relation edition_attendee: user
+	permission announce = edition_admin
+	permission view_checkpoints = edition_admin
+	permission create_checkpoints = edition_admin
+	permission view_activities = edition_admin + edition_attendee
+	permission create_activity = edition_admin
+	permission connect_payments = edition_admin
+	permission disconnect_payments = edition_admin
+	permission create_products = edition_admin
+	permission view_products = edition_admin + edition_attendee
+	permission create_tickets = edition_admin
+	permission administrate = announce + view_checkpoints + create_checkpoints + view_activities + create_activity + connect_payments + disconnect_payments + create_products + view_products + create_tickets + parent_event->administrate
 }
 
-definition activity {
-    relation edition: edition
-    relation creator: user
-    relation publisher: user
-    relation manager: user
-    relation reader: user
-    relation attendee: user
+definition event {
+	relation event_admin: user
+	relation event_attendee: user
+	permission create_editions = event_admin
+	permission view_editions = event_admin + event_attendee
+	permission publish = event_admin
+	permission edit = event_admin
+	permission administrate = create_editions + view_editions + publish + edit
+}
 
-    permission manage = manager + edition->manage
-    permission create = creator + edition->manage
-    permission publish = publisher + edition->manage
-    permission read = reader + creator + publisher + manager + edition->read
-    permission attend = attendee + manage
+definition platform {
+	relation event_creator: user
+	permission create_events = event_creator
 }
 
 definition product {
-    relation edition: edition
-    relation creator: user
-    relation publisher: user
-    relation editor: user
-
-    permission manage = edition->manage
-    permission create = creator + manage
-    permission read = publisher + creator + editor + edition->read
-    permission publish = publisher + manage
-    permission edit = editor + manage
-    permission delete = manage
-    permission restore = manage
-    permission purchase = edition->read
+	relation parent_edition: edition
+	relation admin: user
+	relation customer: user
+	permission publish = admin
+	permission edit = admin
+	permission delete = admin
+	permission restore = admin
+	permission administrate = publish + edit + delete + restore + parent_edition->administrate
 }
 
 definition ticket {
-    relation edition: edition
-    relation creator: user
-    relation editor: user
-
-    permission manage = edition->manage
-    permission create = creator + manage
-    permission edit = editor + manage
-    permission read = edition->read
+	relation parent_edition: edition
+	relation admin: user
+	permission edit = admin
+	permission administrate = edit + parent_edition->administrate
 }
 
-definition payment {
-    relation edition: edition
-    relation connector: user
-
-    permission manage = edition->manage
-    permission connect = connector + manage
-    permission disconnect = connector + manage
-}
-
-definition checkpoint {
-    relation edition: edition
-    relation creator: user
-    relation accessor: user
-
-    permission manage = edition->manage
-    permission create = creator + manage
-    permission read = edition->read
-    permission access = accessor + manage
-}
-
-definition attendance {
-    relation activity: activity
-    relation marker: user
-
-    permission mark = marker + activity->manage
-}
+/** document represents a document protected by Authzed. */
+definition user {}
