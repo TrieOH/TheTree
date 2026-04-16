@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  ChevronLeft,
   FileText,
   Pencil,
   Plus,
@@ -68,8 +69,15 @@ export function RelationshipForm({
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-5 py-3.5">
+      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
         <div className="flex items-center gap-2">
+          <button
+            onClick={onCancel}
+            className="md:hidden -ml-2 mr-1 p-1 hover:bg-muted rounded-full transition-colors"
+            title="Back to list"
+          >
+            <ChevronLeft size={18} />
+          </button>
           <ArrowRight size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium">
             {isEditing ? 'Edit relationship' : 'New relationship'}
@@ -83,7 +91,7 @@ export function RelationshipForm({
         {isEditing && (
           <button
             onClick={onCancel}
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className="hidden md:inline text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             Cancel
           </button>

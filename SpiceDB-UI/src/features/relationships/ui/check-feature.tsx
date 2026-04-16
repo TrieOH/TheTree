@@ -182,12 +182,11 @@ export function CheckFeature({ envId }: { envId: string }) {
             </div>
           </div>
 
-          {/* Submit button - Mobile optimized */}
           <div className="border-t p-4 bg-background safe-area-pb">
             <button
               onClick={handleSubmit}
               disabled={checkMutation.isPending}
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 touch-manipulation"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 touch-manipulation"
             >
               {checkMutation.isPending ? (
                 <>
@@ -196,7 +195,7 @@ export function CheckFeature({ envId }: { envId: string }) {
                 </>
               ) : (
                 <>
-                  <ShieldCheck size={18} />
+                  <ShieldCheck size={13} />
                   Check Permission
                 </>
               )}

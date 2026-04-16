@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#/shared/ui/shadcn/alert-dialog'
+import { Database } from 'lucide-react'
 
 const INITIAL_FORM: RelationshipFormState = {
   resource: '',
@@ -165,37 +166,26 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
 
   const isLoading = createMutation.isPending || updateMutation.isPending || isQueryLoading
 
-  return (
-    <main className="h-(--content-height) min-w-75 border-l">
+  const mobilePreview = `${formData.resource || 'resource'}:${formData.resourceId || 'id'}#${formData.relation || 'relation'}@${formData.subject || 'subject'}:${formData.subjectId || 'id'}`
 
-      {/* ── Mobile toggle bar ── */}
-      <div className="flex border-b md:hidden">
-        <button
-          onClick={() => setMobileView('table')}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${mobileView === 'table'
-            ? 'border-b-2 border-primary text-primary'
-            : 'text-muted-foreground hover:text-foreground'
-            }`}
-        >
-          Relationships
-        </button>
-        <button
-          onClick={handleNew}
-          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${mobileView === 'form'
-            ? 'border-b-2 border-primary text-primary'
-            : 'text-muted-foreground hover:text-foreground'
-            }`}
-        >
-          {isEditing ? 'Edit' : 'New'}
-        </button>
+  return (
+    <main className="h-(--content-height) flex flex-col bg-background border-l">
+      <div className="flex h-14 items-center border-b px-4 bg-background shrink-0 min-w-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <Database size={18} className="text-primary" />
+          <span className="text-sm font-bold whitespace-nowrap hidden sm:inline">Relationships:</span>
+        </div>
+        <div className="flex-1 min-w-0 font-mono text-xs sm:text-sm overflow-hidden">
+          <div className="truncate text-muted-foreground sm:text-foreground">
+            {mobilePreview}
+          </div>
+        </div>
       </div>
 
-      {/* ── Split layout ── */}
-      <div className="flex h-[calc(100%-41px)] md:h-full">
-
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Form sidebar */}
         <div
-          className={`flex flex-col border-r w-full md:w-85 md:shrink-0 ${mobileView === 'form' ? 'flex' : 'hidden md:flex'
+          className={`flex flex-col border-r w-full md:w-85 md:shrink-0 bg-background transition-transform duration-300 ease-out absolute md:relative inset-0 md:translate-x-0 z-10 ${mobileView === 'table' ? '-translate-x-full md:translate-x-0' : 'translate-x-0'
             }`}
         >
           <RelationshipForm
@@ -212,9 +202,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
 
         {/* Table pane */}
         <div
-          className={`flex-1 overflow-y-auto w-full ${mobileView === 'table'
-            ? 'flex flex-col'
-            : 'hidden md:flex md:flex-col'
+          className={`flex-1 overflow-y-auto w-full transition-transform duration-300 ease-out absolute md:relative inset-0 md:translate-x-0 ${mobileView === 'form' ? 'translate-x-full md:translate-x-0' : 'translate-x-0'
             }`}
         >
           <RelationshipsTable
@@ -225,6 +213,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
           />
         </div>
       </div>
+
 
       <AlertDialog open={!!relToDelete} onOpenChange={(open) => !open && setRelToDelete(null)}>
         <AlertDialogContent>

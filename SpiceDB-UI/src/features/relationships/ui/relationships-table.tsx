@@ -34,7 +34,7 @@ export function RelationshipsTable({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-2 border-b px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-3.5">
+      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-muted-foreground" />
           <span className="text-sm font-medium">Relationships</span>
