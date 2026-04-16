@@ -87,23 +87,27 @@ function SchemaEditorPage() {
       if (!res.success) throw new Error(res.message);
       return res;
     },
-    onSuccess: (_, newSchema) => {
-      queryClient.setQueryData(schemaQueryOptions(envId).queryKey, (old) => {
-        if (!old) return {
-          schemaText: newSchema,
-          readAt: { token: '' },
-        }
-        return {
-          ...old,
-          schemaText: newSchema,
-        }
-      })
-      serverSchemaRef.current = newSchema;
-      setValue(newSchema);
-      setIsDirty(false);
+    onSuccess: async (_, newSchema) => {
+      await queryClient.invalidateQueries(schemaQueryOptions(envId));
 
-      toast.success("Schema publicado com sucesso");
-      queryClient.invalidateQueries(schemaQueryOptions(envId));
+      try {
+        // Busca a versão atualizada do servidor
+        const fresh = await queryClient.fetchQuery({
+          ...schemaQueryOptions(envId),
+          staleTime: 0,
+        });
+
+        serverSchemaRef.current = fresh.schemaText;
+        setValue(fresh.schemaText);
+        setIsDirty(false);
+        toast.success("Schema publicado com sucesso");
+      } catch (err) {
+        console.error("Erro ao refetch após publish:", err);
+        serverSchemaRef.current = newSchema;
+        setValue(newSchema);
+        setIsDirty(false);
+        toast.success("Schema publicado");
+      }
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Erro ao publicar o schema");
