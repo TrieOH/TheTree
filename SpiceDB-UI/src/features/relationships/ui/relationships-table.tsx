@@ -1,7 +1,7 @@
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { RelationBadge } from './relation-badge'
-import type { SpiceDBRelationshipI } from '@trieoh/node-perm-sdk'
+import type { SpiceDBRelationshipI } from '@soramux/node-perm-sdk'
 
 interface RelationshipsTableProps {
   rows: SpiceDBRelationshipI[]

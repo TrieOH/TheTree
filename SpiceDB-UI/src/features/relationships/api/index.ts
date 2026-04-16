@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { spicedb } from "@trieoh/node-perm-sdk";
+import { spicedb } from "@soramux/node-perm-sdk";
 import { queryOptions } from "@tanstack/react-query";
 
 export const readRelationship = createServerFn({

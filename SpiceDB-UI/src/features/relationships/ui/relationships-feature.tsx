@@ -12,7 +12,7 @@ import { parseSpiceDBSchema } from '../lib/schema-parser'
 import type { RelationshipFormState } from '../model'
 import { RelationshipForm } from './relationship-form'
 import { RelationshipsTable } from './relationships-table'
-import type { SpiceDBRelationshipI } from '@trieoh/node-perm-sdk'
+import type { SpiceDBRelationshipI } from '@soramux/node-perm-sdk'
 import {
   AlertDialog,
   AlertDialogAction,

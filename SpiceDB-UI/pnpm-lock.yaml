@@ -26,6 +26,9 @@ importers:
       '@soramux/node-auth-sdk':
         specifier: ^0.9.2
         version: 0.9.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@soramux/node-perm-sdk':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@t3-oss/env-core':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.3.6)
@@ -56,9 +59,6 @@ importers:
       '@tanstack/router-plugin':
         specifier: ^1.132.0
         version: 1.167.17(@tanstack/react-router@1.168.18(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
-      '@trieoh/node-perm-sdk':
-        specifier: link:../NodePerm
-        version: link:../NodePerm
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1742,6 +1742,9 @@ packages:
 
   '@soramux/node-fetch-sdk@0.1.1':
     resolution: {integrity: sha512-AadBdXsn1sA2tZoY8zzxQUL80GdQdefi1yPHTpGWuddGldDoHe5RwBEZW1+8ByOz74QIbsWqh4um0VO40hvpZA==}
+
+  '@soramux/node-perm-sdk@0.1.0':
+    resolution: {integrity: sha512-t93XujNS+Cw6yo1V9ufx4tOAlgyJ7vSr4ozrD8d5AsGS3sEguHjqfC0QfjN3aGa2eUX+Vi+/IRnnIxtqjqgzSw==}
 
   '@speed-highlight/core@1.2.15':
     resolution: {integrity: sha512-BMq1K3DsElxDWawkX6eLg9+CKJrTVGCBAWVuHXVUV2u0s2711qiChLSId6ikYPfxhdYocLNt3wWwSvDiTvFabw==}
@@ -5904,6 +5907,10 @@ snapshots:
       ua-parser-js: 2.0.9
 
   '@soramux/node-fetch-sdk@0.1.1': {}
+
+  '@soramux/node-perm-sdk@0.1.0':
+    dependencies:
+      '@soramux/node-fetch-sdk': 0.1.1
 
   '@speed-highlight/core@1.2.15': {}
 
