@@ -34,22 +34,22 @@ export function RelationshipsTable({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <FileText size={14} className="text-muted-foreground" />
-          <span className="text-sm font-medium">Relationships</span>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+      <div className="flex h-14 items-center justify-between border-b px-4 shrink-0 gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText size={14} className="text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium truncate">Relationships</span>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground hidden sm:inline-flex shrink-0">
             {filtered.length}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter..."
-            className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-40 sm:flex-none"
+            className="h-8 min-w-0 max-w-30 sm:max-w-none flex-1 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-40 sm:flex-none"
           />
           {/* Mobile-only new button */}
           <button
