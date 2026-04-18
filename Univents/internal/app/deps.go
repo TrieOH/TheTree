@@ -6,12 +6,11 @@ import (
 	"os"
 	"time"
 	"univents/internal/platform/database"
-	cache "univents/internal/platform/memory/redis"
 	"univents/internal/platform/telemetry"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
-	"github.com/TrieOH/goauth-sdk-go"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -31,7 +30,7 @@ import (
 type SimpleLogger struct{}
 
 // Intercept is called for responses sent with a context
-func (l *SimpleLogger) Intercept(ctx context.Context, rs *resp.Response, statusCode int) {
+func (l *SimpleLogger) Intercept(_ context.Context, rs *resp.Response, statusCode int) {
 	l.InterceptSimple(rs, statusCode)
 }
 
@@ -45,7 +44,7 @@ func (l *SimpleLogger) InterceptSimple(rs *resp.Response, statusCode int) {
 func SetupFUN() {
 	var module string
 	if module = viper.GetString("MODULE"); module == "" {
-		module = "FormAPI"
+		module = "UniventsAPI"
 	}
 
 	resp.SetConfig(resp.Config{
@@ -71,14 +70,13 @@ func SetupRedis(timeout time.Duration) *redis.Client {
 	return rdb
 }
 
-func SetupGoAuth(rdb *redis.Client) *goauth.Client {
+func SetupGoAuth() *idx.Client {
 	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
-	client, err := goauth.NewClient(goauth.Config{
-		BaseURL:      viper.GetString("GOAUTH_URL"),
-		APIKey:       viper.GetString("GOAUTH_API_KEY"),
-		ProjectID:    projectID,
-		Debug:        false,
-		SessionCache: cache.NewSessionCache(rdb),
+	client, err := idx.NewClient(idx.Config{
+		BaseURL:   viper.GetString("GOAUTH_URL"),
+		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		ProjectID: projectID,
+		Debug:     false,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())

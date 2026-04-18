@@ -10,7 +10,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -22,7 +21,6 @@ type CommandService struct {
 	events   ports.EventsRepository
 	editions ports.EditionsRepository
 	asynq    *asynq.Client
-	gaClient *goauth.Client
 	tracer   trace.Tracer
 	az       *authzed.Client
 	tx       database.TxRunner
@@ -32,7 +30,6 @@ func NewCommandService(
 	events ports.EventsRepository,
 	editions ports.EditionsRepository,
 	asynq *asynq.Client,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -41,7 +38,6 @@ func NewCommandService(
 		events:   events,
 		editions: editions,
 		asynq:    asynq,
-		gaClient: gaClient,
 		tracer:   tracer,
 		az:       az,
 		tx:       tx,
@@ -109,7 +105,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 	return created, nil
 }
 
-func (uc *CommandService) Announce(ctx context.Context, eventID, editionID uuid.UUID) (err error) {
+func (uc *CommandService) Announce(ctx context.Context, editionID uuid.UUID) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "EditionService.Announce")
 	defer span.End()
 	defer func() {

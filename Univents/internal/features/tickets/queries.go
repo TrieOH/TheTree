@@ -6,7 +6,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -14,7 +13,6 @@ import (
 type QueryService struct {
 	tickets  ports.TicketsRepository
 	editions ports.EditionsRepository
-	gaClient *goauth.Client
 	tracer   trace.Tracer
 	tx       database.TxRunner
 }
@@ -22,14 +20,12 @@ type QueryService struct {
 func NewQueryService(
 	tickets ports.TicketsRepository,
 	editions ports.EditionsRepository,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *QueryService {
 	return &QueryService{
 		tickets:  tickets,
 		editions: editions,
-		gaClient: gaClient,
 		tracer:   tracer,
 		tx:       tx,
 	}

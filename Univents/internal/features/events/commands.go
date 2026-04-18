@@ -12,7 +12,6 @@ import (
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
@@ -21,29 +20,26 @@ import (
 )
 
 type CommandService struct {
-	events   ports.EventsRepository
-	minio    *minio.Client
-	gaClient *goauth.Client
-	tracer   trace.Tracer
-	az       *authzed.Client
-	tx       database.TxRunner
+	events ports.EventsRepository
+	minio  *minio.Client
+	tracer trace.Tracer
+	az     *authzed.Client
+	tx     database.TxRunner
 }
 
 func NewCommandService(
 	events ports.EventsRepository,
 	minio *minio.Client,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
-		events:   events,
-		minio:    minio,
-		gaClient: gaClient,
-		tracer:   tracer,
-		az:       az,
-		tx:       tx,
+		events: events,
+		minio:  minio,
+		tracer: tracer,
+		az:     az,
+		tx:     tx,
 	}
 }
 

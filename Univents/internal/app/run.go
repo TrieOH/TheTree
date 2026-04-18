@@ -121,7 +121,7 @@ func (app *Univents) startHandlers(rt runtime) *router.HTTPDeps {
 			DB:       viper.GetInt("REDIS_DB"),
 		},
 	})
-	handlers.System = system.NewUniventsHandler(app.gaClient)
+	handlers.System = system.NewUniventsHandler()
 	handlers.Events = events.NewHandler(rt.commands.events, rt.queries.events)
 	handlers.Editions = editions.NewHandler(rt.commands.editions, rt.queries.editions)
 	handlers.Activities = activities.NewHandler(rt.commands.activities, rt.queries.activities)
@@ -134,25 +134,25 @@ func (app *Univents) startHandlers(rt runtime) *router.HTTPDeps {
 
 func (app *Univents) startQueries(rt runtime, r repos) queries {
 	var q queries
-	q.events = events.NewQueryService(r.events, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	q.editions = editions.NewQueryService(r.events, r.editions, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	q.activities = activities.NewQueryService(r.activities, r.editions, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	q.checkpoints = checkpoints.NewQueryService(r.checkpoints, r.editions, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	q.tickets = tickets.NewQueryService(r.tickets, r.editions, app.gaClient, rt.tracer, rt.txRunner)
-	q.products = products.NewQueryService(r.products, r.purchases, r.editions, rt.storeDeps.subscriber, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	q.purchases = purchases.NewQueryService(r.products, r.purchases, r.editions, rt.storeDeps.subscriber, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
+	q.events = events.NewQueryService(r.events, rt.tracer, app.sdbClient, rt.txRunner)
+	q.editions = editions.NewQueryService(r.events, r.editions, rt.tracer, app.sdbClient, rt.txRunner)
+	q.activities = activities.NewQueryService(r.activities, r.editions, rt.tracer, app.sdbClient, rt.txRunner)
+	q.checkpoints = checkpoints.NewQueryService(r.checkpoints, r.editions, rt.tracer, app.sdbClient, rt.txRunner)
+	q.tickets = tickets.NewQueryService(r.tickets, r.editions, rt.tracer, rt.txRunner)
+	q.products = products.NewQueryService(r.products, r.purchases, r.editions, rt.storeDeps.subscriber, rt.tracer, app.sdbClient, rt.txRunner)
+	q.purchases = purchases.NewQueryService(r.products, r.purchases, r.editions, rt.storeDeps.subscriber, rt.tracer, app.sdbClient, rt.txRunner)
 	return q
 }
 
 func (app *Univents) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.events = events.NewCommandService(r.events, app.minio, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	cmd.editions = editions.NewCommandService(r.events, r.editions, rt.asynq.client, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	cmd.activities = activities.NewCommandService(r.activities, r.editions, rt.asynq.client, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	cmd.checkpoints = checkpoints.NewCommandService(r.checkpoints, r.editions, rt.asynq.client, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	cmd.tickets = tickets.NewCommandService(r.editions, r.tickets, rt.asynq.client, app.gaClient, rt.tracer, rt.txRunner)
-	cmd.products = products.NewCommandService(r.editions, r.products, r.purchases, app.payssage, rt.storeDeps.checkoutSessions, rt.ws, rt.storeDeps.publisher, app.minio, rt.asynq.client, rt.asynq.inspector, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
-	cmd.purchases = purchases.NewCommandService(r.editions, r.products, r.purchases, app.payssage, rt.storeDeps.checkoutSessions, rt.ws, rt.storeDeps.publisher, app.minio, rt.asynq.client, rt.asynq.inspector, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.events = events.NewCommandService(r.events, app.minio, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.editions = editions.NewCommandService(r.events, r.editions, rt.asynq.client, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.activities = activities.NewCommandService(r.activities, r.editions, rt.asynq.client, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.checkpoints = checkpoints.NewCommandService(r.checkpoints, r.editions, rt.asynq.client, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.tickets = tickets.NewCommandService(r.editions, r.tickets, rt.asynq.client, rt.tracer, rt.txRunner)
+	cmd.products = products.NewCommandService(r.editions, r.products, r.purchases, app.payssage, rt.storeDeps.checkoutSessions, rt.ws, rt.storeDeps.publisher, app.minio, rt.asynq.client, rt.asynq.inspector, rt.tracer, app.sdbClient, rt.txRunner)
+	cmd.purchases = purchases.NewCommandService(r.editions, r.products, r.purchases, app.payssage, rt.storeDeps.checkoutSessions, rt.ws, rt.storeDeps.publisher, app.minio, rt.asynq.client, rt.asynq.inspector, rt.tracer, app.sdbClient, rt.txRunner)
 
 	return cmd
 }
@@ -186,10 +186,10 @@ func (app *Univents) startMiddlewares(rt runtime) middlewares {
 func (app *Univents) startAsynq(rt runtime, r repos) asynqDeps {
 	var err error
 	var deps asynqDeps
-	workerHandlers := editions.NewAsynqService(r.editions, app.gaClient, rt.tracer, rt.txRunner)
-	activitiesAsyncHandlers := activities.NewAsynqService(r.activities, app.gaClient, rt.tracer, rt.txRunner)
-	purchasesAsyncHandlers := purchases.NewAsynqService(r.products, r.purchases, app.payssage, rt.storeDeps.publisher, rt.storeDeps.checkoutSessions, rt.ws, app.gaClient, rt.tracer, rt.txRunner)
-	ticketsAsyncHandlers := tickets.NewAsynqService(r.tickets, r.products, r.activities, r.checkpoints, app.gaClient, rt.tracer, app.sdbClient, rt.txRunner)
+	workerHandlers := editions.NewAsynqService(r.editions, rt.tracer, rt.txRunner)
+	activitiesAsyncHandlers := activities.NewAsynqService(r.activities, rt.tracer, rt.txRunner)
+	purchasesAsyncHandlers := purchases.NewAsynqService(r.products, r.purchases, app.payssage, rt.storeDeps.publisher, rt.storeDeps.checkoutSessions, rt.ws, rt.tracer, rt.txRunner)
+	ticketsAsyncHandlers := tickets.NewAsynqService(r.tickets, r.products, r.activities, r.checkpoints, rt.tracer, app.sdbClient, rt.txRunner)
 	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{
 		Handlers:         workerHandlers,
 		ActivityHandlers: activitiesAsyncHandlers,

@@ -7,18 +7,13 @@ import (
 	_ "univents/internal/shared/contracts"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 )
 
-type UniventsHandler struct {
-	gaClient *goauth.Client
-}
+type UniventsHandler struct{}
 
-func NewUniventsHandler(gaClient *goauth.Client) *UniventsHandler {
-	return &UniventsHandler{
-		gaClient: gaClient,
-	}
+func NewUniventsHandler() *UniventsHandler {
+	return &UniventsHandler{}
 }
 
 type HealthResponse struct {
@@ -34,7 +29,7 @@ type HealthResponse struct {
 // @Produce json
 // @Success 200 {object} HealthResponse
 // @Router /health [get]
-func (handler *UniventsHandler) Health(w http.ResponseWriter, r *http.Request) {
+func (handler *UniventsHandler) Health(w http.ResponseWriter, _ *http.Request) {
 	response := HealthResponse{
 		Status:  "ok",
 		Service: "univents-api",

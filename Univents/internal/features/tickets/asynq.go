@@ -10,7 +10,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
@@ -21,7 +20,6 @@ type AsynqHandlers struct {
 	products    ports.ProductsRepository
 	activities  ports.ActivitiesRepository
 	checkpoints ports.CheckpointsRepository
-	gaClient    *goauth.Client
 	tracer      trace.Tracer
 	az          *authzed.Client
 	tx          database.TxRunner
@@ -32,7 +30,6 @@ func NewAsynqService(
 	products ports.ProductsRepository,
 	activities ports.ActivitiesRepository,
 	checkpoints ports.CheckpointsRepository,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -42,7 +39,6 @@ func NewAsynqService(
 		products:    products,
 		activities:  activities,
 		checkpoints: checkpoints,
-		gaClient:    gaClient,
 		tracer:      tracer,
 		az:          az,
 		tx:          tx,

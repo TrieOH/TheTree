@@ -1,28 +1,28 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
+	"strings"
 	"univents/internal/shared/authz"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type AuthMiddleware struct {
-	gaClient goauth.Client
-	tracer   trace.Tracer
+	idxClient idx.Client
+	tracer    trace.Tracer
 }
 
 func NewAuthMiddleware(
-	gaClient *goauth.Client,
+	idxClient *idx.Client,
 	tracer trace.Tracer,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
-		gaClient: *gaClient,
-		tracer:   tracer,
+		idxClient: *idxClient,
+		tracer:    tracer,
 	}
 }
 
@@ -40,37 +40,24 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 				span.SetAttributes(attribute.Bool("success", err == nil))
 			}()
 
-			// Get the service session cookie set by the frontend
-			cookie, err := r.Cookie("svc_session")
-			if err != nil {
-				if errors.Is(err, http.ErrNoCookie) {
-					resp.Unauthorized().WithMsg("missing service session cookie").WithModule("AuthMW").Send(w)
-					return
-				}
-				resp.Unauthorized().WithMsg("invalid service session cookie").WithModule("AuthMW").Send(w)
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				resp.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			sessionID := cookie.Value
-
-			// Lookup session in cache
-			sessionData, err := mw.gaClient.Sessions.Get(ctx, sessionID)
-			if err != nil {
-				resp.Unauthorized("service session not found").WithModule("AuthMW").Send(w)
+			_, tokenStr, found := strings.Cut(authHeader, "Bearer ")
+			if !found || tokenStr == "" {
+				resp.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
 				return
 			}
 
-			// Unmarshal payload
-			snapshot, err := authz.UnmarshalSnapshot(sessionData)
-			if err != nil {
-				resp.InternalServerError("invalid session payload").WithModule("AuthMW").Send(w)
-				return
-			}
+			accessClaims, err := mw.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 
 			// Inject subject into context
 			subject := authz.UserSubject{
-				ID:    snapshot.UserID,
-				Email: snapshot.Email,
+				ID:    accessClaims.Sub.ID,
+				Email: accessClaims.Sub.Email,
 			}
 			ctx = authz.WithSubject(ctx, &subject)
 

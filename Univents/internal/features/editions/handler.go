@@ -176,12 +176,6 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/announce [post]
 func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
-	eventID, rs := validation.GetUUID(r, "event_id")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
 	editionID, rs := validation.GetUUID(r, "edition_id")
 	if rs != nil {
 		rs.Send(w)
@@ -189,7 +183,7 @@ func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	err := handler.commands.Announce(ctx, eventID, editionID)
+	err := handler.commands.Announce(ctx, editionID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

@@ -7,7 +7,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
@@ -18,7 +17,6 @@ type CommandService struct {
 	checkpoints ports.CheckpointsRepository
 	editions    ports.EditionsRepository
 	asynq       *asynq.Client
-	gaClient    *goauth.Client
 	tracer      trace.Tracer
 	az          *authzed.Client
 	tx          database.TxRunner
@@ -28,7 +26,6 @@ func NewCommandService(
 	checkpoints ports.CheckpointsRepository,
 	editions ports.EditionsRepository,
 	asynq *asynq.Client,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -37,7 +34,6 @@ func NewCommandService(
 		checkpoints: checkpoints,
 		editions:    editions,
 		asynq:       asynq,
-		gaClient:    gaClient,
 		tracer:      tracer,
 		az:          az,
 		tx:          tx,

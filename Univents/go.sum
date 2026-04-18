@@ -9,12 +9,10 @@ github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/MintzyG/FastUtilitiesNet v0.6.5 h1:pd5k63aEoocu7RoZRp8aXXDBXx7XYgjnp3EAk5aqqfw=
 github.com/MintzyG/FastUtilitiesNet v0.6.5/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
-github.com/MintzyG/fail/v3 v3.2.0 h1:tAyTfiCl2ufcSvi3w8WHHf/iKX16mcfRqdXULHDfD5s=
-github.com/MintzyG/fail/v3 v3.2.0/go.mod h1:Nr7t8S5qnwL9np0+gCl3s6BgfcXW5nDOwomu/VVgjrw=
+github.com/TrieOH/IdentityX-SDK-Go v0.6.2 h1:L4vddL9bwhN3oL1yjDYCIpQ/HZEMSLzB3Thy/3vcGNs=
+github.com/TrieOH/IdentityX-SDK-Go v0.6.2/go.mod h1:1OKstwYfOMD6qf2raKbBRW5ngmd7kwoEzF0/ZmiUSP8=
 github.com/TrieOH/TriePaymentsSDK v0.0.13 h1:U5DMr7TEpb9Sy3tImX6VNv/TsvOAB3Cym8J3da1Sf0A=
 github.com/TrieOH/TriePaymentsSDK v0.0.13/go.mod h1:klySxuwnPqlZIN9jhHopfCPgLlmTa9rcrpTl8iha1QU=
-github.com/TrieOH/goauth-sdk-go v0.5.2 h1:DHffFLC7CW2jam0cyZynXl2rZ51pdvc0IRzpfNw1pjs=
-github.com/TrieOH/goauth-sdk-go v0.5.2/go.mod h1:yJUYZq8cf9hL0e9XAHX+DvRgttqL6tJ6042/X9diSiQ=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=

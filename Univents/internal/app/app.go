@@ -5,8 +5,8 @@ import (
 	"time"
 	"univents/internal/platform/telemetry"
 
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +19,7 @@ type Univents struct {
 	db        *pgxpool.Pool
 	redis     *redis.Client
 	scheduler gocron.Scheduler
-	gaClient  *goauth.Client
+	gaClient  *idx.Client
 	payssage  *paymentsSDK.Client
 	minio     *minio.Client
 	sdbClient *authzed.Client
@@ -30,7 +30,7 @@ func New() *Univents {
 	LoadEnv()
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
-	app.gaClient = SetupGoAuth(app.redis)
+	app.gaClient = SetupGoAuth()
 	app.payssage = SetupPayssage()
 	app.minio = SetupObjectStorage()
 	migrationPath := "./internal/platform/database/migrations"

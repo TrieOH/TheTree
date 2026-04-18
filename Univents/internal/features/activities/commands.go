@@ -9,7 +9,6 @@ import (
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -21,7 +20,6 @@ type CommandService struct {
 	activities ports.ActivitiesRepository
 	editions   ports.EditionsRepository
 	asynq      *asynq.Client
-	gaClient   *goauth.Client
 	tracer     trace.Tracer
 	az         *authzed.Client
 	tx         database.TxRunner
@@ -31,7 +29,6 @@ func NewCommandService(
 	activities ports.ActivitiesRepository,
 	editions ports.EditionsRepository,
 	asynq *asynq.Client,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -40,7 +37,6 @@ func NewCommandService(
 		activities: activities,
 		editions:   editions,
 		asynq:      asynq,
-		gaClient:   gaClient,
 		tracer:     tracer,
 		az:         az,
 		tx:         tx,

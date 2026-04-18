@@ -7,7 +7,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -18,7 +17,6 @@ type QueryService struct {
 	purchases ports.PurchaseRepository
 	editions  ports.EditionsRepository
 	inventory ports.InventorySubscriber
-	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	az        *authzed.Client
 	tx        database.TxRunner
@@ -29,7 +27,6 @@ func NewQueryService(
 	purchases ports.PurchaseRepository,
 	editions ports.EditionsRepository,
 	inventory ports.InventorySubscriber,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -39,7 +36,6 @@ func NewQueryService(
 		purchases: purchases,
 		editions:  editions,
 		inventory: inventory,
-		gaClient:  gaClient,
 		tracer:    tracer,
 		az:        az,
 		tx:        tx,

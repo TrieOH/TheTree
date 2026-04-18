@@ -31,7 +31,6 @@ func registerSystemRoutes(
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Post("/auth/exchange", h.Exchange)
 		r.Get("/health", h.Health)
 		r.With(authMW.Auth()).
 			Get("/protected/health", h.ProtectedHealth)

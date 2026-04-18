@@ -12,7 +12,6 @@ import (
 	"univents/internal/shared/sockets"
 
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -24,7 +23,6 @@ type AsynqHandlers struct {
 	inventory ports.InventoryPublisher
 	sessions  ports.PurchaseSessionStore
 	ws        *sockets.Registry
-	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	tx        database.TxRunner
 }
@@ -36,7 +34,6 @@ func NewAsynqService(
 	inventory ports.InventoryPublisher,
 	sessions ports.PurchaseSessionStore,
 	ws *sockets.Registry,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *AsynqHandlers {
@@ -47,7 +44,6 @@ func NewAsynqService(
 		inventory: inventory,
 		sessions:  sessions,
 		ws:        ws,
-		gaClient:  gaClient,
 		tracer:    tracer,
 		tx:        tx,
 	}

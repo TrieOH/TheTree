@@ -8,7 +8,6 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -16,20 +15,17 @@ import (
 
 type AsynqHandlers struct {
 	activities ports.ActivitiesRepository
-	gaClient   *goauth.Client
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
 
 func NewAsynqService(
 	activities ports.ActivitiesRepository,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *AsynqHandlers {
 	return &AsynqHandlers{
 		activities: activities,
-		gaClient:   gaClient,
 		tracer:     tracer,
 		tx:         tx,
 	}

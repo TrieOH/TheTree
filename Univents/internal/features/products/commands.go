@@ -14,7 +14,6 @@ import (
 	"univents/internal/shared/sockets"
 
 	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -34,7 +33,6 @@ type CommandService struct {
 	minio     *minio.Client
 	asynq     *asynq.Client
 	inspector *asynq.Inspector
-	gaClient  *goauth.Client
 	tracer    trace.Tracer
 	az        *authzed.Client
 	tx        database.TxRunner
@@ -51,7 +49,6 @@ func NewCommandService(
 	minio *minio.Client,
 	asynq *asynq.Client,
 	inspector *asynq.Inspector,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -67,7 +64,6 @@ func NewCommandService(
 		minio:     minio,
 		asynq:     asynq,
 		inspector: inspector,
-		gaClient:  gaClient,
 		tracer:    tracer,
 		az:        az,
 		tx:        tx,
