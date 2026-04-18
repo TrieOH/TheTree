@@ -1,4 +1,4 @@
-package goauth
+package idx
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package goauth
+package idx
 
 type SdkError struct {
 	Message string `json:"message"`

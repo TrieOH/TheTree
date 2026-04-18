@@ -1,4 +1,4 @@
-package goauth
+package idx
 
 import (
 	"context"
@@ -62,4 +62,3 @@ func (s *UserService) Get(ctx context.Context, userID uuid.UUID) (*ProjectUser, 
 
 	return &res.Data, nil
 }
-
