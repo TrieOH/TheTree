@@ -8,6 +8,7 @@ import (
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"errors"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -69,7 +70,7 @@ func (uc *CommandService) List(ctx context.Context) ([]contracts.Session, error)
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
-func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID, currentSessionID uuid.UUID) error {
+func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {
 	ctx, span := uc.tracer.Start(ctx, "SessionService.RevokeByID")
 	defer span.End()
 
@@ -78,7 +79,11 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID, c
 		return err
 	}
 
-	if currentSessionID == sessionID {
+	if principal.Method == authz.AuthMethodApiKey {
+		return errors.New("sessions are not revocable through api keys")
+	}
+
+	if *principal.SessionID == sessionID {
 		return fail.New(errx.SessionSelfRevokeForbidden).RecordCtx(ctx)
 	}
 

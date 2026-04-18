@@ -4,6 +4,8 @@ import (
 	"IdentityX/internal/shared/validation"
 	"net/http"
 
+	_ "IdentityX/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 )
 

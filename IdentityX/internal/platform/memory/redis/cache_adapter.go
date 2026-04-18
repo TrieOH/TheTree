@@ -10,19 +10,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisCache struct {
+type Cache struct {
 	client *redis.Client
 }
 
-var _ ports.RedisCacheService = (*RedisCache)(nil)
+var _ ports.RedisCacheService = (*Cache)(nil)
 
-func NewRedisCache(rdb *redis.Client) *RedisCache {
-	return &RedisCache{
+func NewCache(rdb *redis.Client) *Cache {
+	return &Cache{
 		client: rdb,
 	}
 }
 
-func (r *RedisCache) Get(ctx context.Context, key string) (any, bool, error) {
+func (r *Cache) Get(ctx context.Context, key string) (any, bool, error) {
 	val, err := r.client.Get(ctx, key).Result()
 
 	if errors.Is(err, redis.Nil) {
@@ -41,20 +41,7 @@ func (r *RedisCache) Get(ctx context.Context, key string) (any, bool, error) {
 	return result, true, nil
 }
 
-// New GetAny: returns raw value as []byte (no unmarshal) for compatibility with middleware
-func (r *RedisCache) GetAny(ctx context.Context, key string) (any, bool, error) {
-	val, err := r.client.Get(ctx, key).Result()
-	if errors.Is(err, redis.Nil) {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, err
-	}
-
-	return []byte(val), true, nil
-}
-
-func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+func (r *Cache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	var data []byte
 	var err error
 
@@ -71,11 +58,11 @@ func (r *RedisCache) Set(ctx context.Context, key string, value any, ttl time.Du
 	return cmd.Err()
 }
 
-func (r *RedisCache) Delete(ctx context.Context, key string) error {
+func (r *Cache) Delete(ctx context.Context, key string) error {
 	return r.client.Del(ctx, key).Err()
 }
 
-func (r *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) error {
+func (r *Cache) DeleteByPrefix(ctx context.Context, prefix string) error {
 
 	iter := r.client.Scan(ctx, 0, prefix+"*", 0).Iterator()
 
@@ -92,6 +79,6 @@ func (r *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) error {
 	return nil
 }
 
-func (r *RedisCache) Clear(ctx context.Context) error {
+func (r *Cache) Clear(ctx context.Context) error {
 	return r.client.FlushDB(ctx).Err()
 }

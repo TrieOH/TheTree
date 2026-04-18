@@ -73,7 +73,7 @@ type middlewares struct {
 type caches struct {
 	publicCache  *imc.InMemoryCache
 	privateCache *imc.InMemoryCache
-	sharedCache  *redis.RedisCache
+	sharedCache  *redis.Cache
 }
 
 func (app *IdentityX) run() {
@@ -98,9 +98,9 @@ func (app *IdentityX) run() {
 func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 	var h router.Handlers
 	h.System = system.NewHandler()
-	h.Users = users.NewHandler(*rt.commands.users, redis.NewRedisCache(app.redis))
+	h.Users = users.NewHandler(*rt.commands.users, redis.NewCache(app.redis))
 	h.Projects = projects.NewHandler(*rt.commands.projects)
-	h.Sessions = sessions.NewHandler(*rt.commands.sessions, redis.NewRedisCache(app.redis))
+	h.Sessions = sessions.NewHandler(*rt.commands.sessions, redis.NewCache(app.redis))
 	h.ApiKeys = api_keys.NewHandler(*rt.commands.apiKeys)
 	h.AuthMW = *rt.middlewares.authMW
 	return h
@@ -112,9 +112,9 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	cmd.keys = keys.NewCommandService(r.keys, rt.caches.privateCache, rt.caches.publicCache, rt.logger, rt.tracer, rt.txRunner)
 	cmd.tokens = tokens.NewCommandService(*cmd.keys)
 	cmd.projects = projects.NewCommandService(r.projects, r.projectUsers, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.auth = auth.NewCommandService(r.sessions, r.projects, *cmd.tokens, *cmd.apiKeys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.auth = auth.NewCommandService(r.sessions, r.projects, *cmd.tokens, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
 	cmd.sessions = sessions.NewCommandService(r.sessions, *cmd.tokens, rt.logger, rt.tracer, rt.txRunner)
-	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.projectUsers, r.keys, r.tokenReuseList, redis.NewRedisCache(app.redis), *cmd.keys, *cmd.tokens, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.projectUsers, r.keys, r.tokenReuseList, redis.NewCache(app.redis), *cmd.keys, *cmd.tokens, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	return cmd
 }
 
@@ -146,7 +146,7 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.auth, rt.tracer, redis.NewRedisCache(app.redis), viper.GetString("ISSUER"))
+	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.auth, rt.tracer, redis.NewCache(app.redis), viper.GetString("ISSUER"))
 	return mw
 }
 
@@ -160,6 +160,6 @@ func (app *IdentityX) startCaches() caches {
 
 	c.privateCache = imc.NewInMemoryCache(100, cacheTTL)
 	c.publicCache = imc.NewInMemoryCache(1000, cacheTTL)
-	c.sharedCache = redis.NewRedisCache(app.redis)
+	c.sharedCache = redis.NewCache(app.redis)
 	return c
 }

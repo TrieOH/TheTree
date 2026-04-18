@@ -1,13 +1,12 @@
 package users
 
 import (
-	"IdentityX/internal/shared/authz"
+	_ "IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/validation"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
@@ -127,33 +126,7 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (handler *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	svcCookie, err := r.Cookie("svc_session")
-	if err != nil || svcCookie.Value == "" {
-		resp.Unauthorized().WithMsg("missing svc_session cookie").Send(w)
-		return
-	}
-
-	key := "svc_session:" + svcCookie.Value
-	data, found, err := handler.redis.GetAny(ctx, key)
-	if err != nil || !found {
-		resp.Unauthorized().WithMsg("invalid service session").Send(w)
-		return
-	}
-
-	bytesData, ok := data.([]byte)
-	if !ok {
-		resp.Unauthorized().WithMsg("invalid session type").Send(w)
-		return
-	}
-
-	var snapshot authz.ServiceSnapshot
-	if err := json.Unmarshal(bytesData, &snapshot); err != nil {
-		_ = handler.redis.Delete(ctx, key)
-		resp.Unauthorized().WithMsg("failed to unmarshal session").Send(w)
-		return
-	}
-
-	err = handler.users.Logout(ctx, snapshot)
+	err := handler.users.Logout(ctx)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -527,36 +500,4 @@ func (handler *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK("password reset successfully").Send(w)
-}
-
-// Exchange godoc
-// @Summary Exchange global access token
-// @Description Exchanges a global access token for a project-scoped session snapshot and tokens
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param Authorization header string true "Bearer Global Access Token"
-// @Success 200 {object} ExchangeOutput "Token exchanged successfully"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
-// @Failure 400 {object} contracts.ErrorResponse "Bad request"
-// @Failure 500 {object} contracts.ErrorResponse "Internal server error"
-// @Router /auth/exchange [post]
-func (handler *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
-	if len(authHeader) < 7 || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
-		resp.Unauthorized().WithMsg("missing or invalid Authorization header").Send(w)
-		return
-	}
-
-	globalAccess := strings.TrimSpace(authHeader[7:])
-
-	out, err := handler.users.Exchange(ctx, globalAccess)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK("exchanged").WithData(out).Send(w)
 }

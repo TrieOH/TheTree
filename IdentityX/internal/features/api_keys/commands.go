@@ -9,7 +9,6 @@ import (
 	"IdentityX/internal/shared/ports"
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -104,45 +103,4 @@ func (uc *CommandService) Revoke(ctx context.Context, projectID uuid.UUID) error
 	}
 
 	return uc.apiKeys.Delete(ctx, projectID)
-}
-
-func (uc *CommandService) Authenticate(ctx context.Context, apiKey string) (*authz2.Principal, error) {
-	ctx, span := uc.tracer.Start(ctx, "ApiKeyService.Authenticate")
-	defer span.End()
-
-	if !strings.HasPrefix(apiKey, "gk_") {
-		return nil, fail.New(errx2.AuthInvalidApiKeyShape).RecordCtx(ctx)
-	}
-
-	parts := strings.SplitN(apiKey, "_", 3)
-	if len(parts) != 3 {
-		return nil, fail.New(errx2.AuthInvalidApiKeyShape).RecordCtx(ctx)
-	}
-
-	projectIDStr := parts[1]
-	secret := parts[2]
-
-	projectID, err := uuid.Parse(projectIDStr)
-	if err != nil {
-		return nil, fail.New(errx2.AuthInvalidApiKeyShape).RecordCtx(ctx)
-	}
-
-	keyData, err := uc.apiKeys.GetByProjectID(ctx, projectID)
-	if err != nil {
-		if errx2.IsNotFound(err) {
-			return nil, fail.New(errx2.AuthInvalidApiKey).RecordCtx(ctx)
-		}
-		return nil, err
-	}
-
-	err = crypto.VerifyBcryptSecret(keyData.KeyHash, secret)
-	if err != nil {
-		return nil, fail.New(errx2.AuthInvalidApiKey).RecordCtx(ctx)
-	}
-
-	return &authz2.Principal{
-		UserID:    keyData.ClientID,
-		ProjectID: &keyData.ProjectID,
-		Method:    authz2.AuthMethodApiKey,
-	}, nil
 }

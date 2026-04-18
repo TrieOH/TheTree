@@ -12,6 +12,7 @@ import (
 	"IdentityX/internal/shared/validation"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -335,7 +335,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 
 // Logout handles the business logic for logging out a user.
 // It retrieves the principal from the context, deletes the session, and revokes the refresh token.
-func (uc *CommandService) Logout(ctx context.Context, snapshot authz.ServiceSnapshot) error {
+func (uc *CommandService) Logout(ctx context.Context) error {
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Logout")
 	defer span.End()
 
@@ -346,12 +346,14 @@ func (uc *CommandService) Logout(ctx context.Context, snapshot authz.ServiceSnap
 		}
 	}()
 
-	sessID := snapshot.AccessData.Sub.SessionID
-
 	var principal *authz.Principal
 	principal, err = authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
+	}
+
+	if principal.Method == authz.AuthMethodApiKey {
+		return errors.New("can't logout an api key, please revoke it instead")
 	}
 
 	var identityType contracts.IdentityType
@@ -362,7 +364,7 @@ func (uc *CommandService) Logout(ctx context.Context, snapshot authz.ServiceSnap
 	}
 
 	var sess *contracts.Session
-	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessID, identityType)
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, *principal.SessionID, identityType)
 	if err != nil {
 		return err
 	}
@@ -1299,103 +1301,16 @@ func (uc *CommandService) LogoutProjectUser(ctx context.Context, in ProjectLogou
 	return nil
 }
 
-type ExchangeOutput struct {
-	SessionID string    `json:"session_id"`
-	TTL       time.Time `json:"ttl"`
-}
-
-func (uc *CommandService) Exchange(ctx context.Context, globalAccess string) (*ExchangeOutput, error) {
-	// Verify global JWT locally
-	access, err := uc.tokens.VerifyAccessToken(ctx, globalAccess)
-	if err != nil {
-		return nil, err
-	}
-
-	if access.Sub.UserType != "project" {
-		if viper.GetString("ISSUER") != access.Issuer {
-			telemetry.Log().Info("Issuers", zap.String("server", viper.GetString("ISSUER")), zap.String("client", access.Issuer))
-			return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
-		}
-	} else {
-		var proj *contracts.Project
-		proj, err = uc.projects.GetByIDInternal(ctx, *access.Sub.ProjectID)
-		if err != nil {
-			return nil, err
-		}
-		if proj.ID.String() != access.Issuer {
-			telemetry.Log().Info("Issuers", zap.String("server", proj.ID.String()), zap.String("client", access.Issuer))
-			return nil, fail.New(errx.TokenInvalidIssuer).WithArgs(access.Issuer)
-		}
-	}
-
-	var sess *contracts.Session
-	sess, err = uc.sessions.GetByID(ctx, access.Sub.SessionID)
-	if err != nil {
-		return nil, err
-	}
-
-	// FIXME(auth-arch):
-	// Audience validation not yet enforced.
-	// Needed when multiple relying party boundaries exist.
-
-	// Optional token binding
-	/*
-		if access.IP != ip {
-			return nil, fail.New(errx.TokenIPMismatch)
-		}
-
-		if access.Agent != agent {
-			return nil, fail.New(errx.TokenAgentMismatch)
-		}
-	*/
-
-	// Deterministic service session id
-	serviceSessionID := access.ID
-
-	telemetry.Log().Info(
-		"Exchange called",
-		zap.String("client_issuer", access.Issuer),
-		zap.String("server_issuer", viper.GetString("ISSUER")),
-		zap.String("service_session_id", serviceSessionID),
-		zap.Time("expires_at", access.ExpiresAt.Time),
-	)
-
-	// Compute TTL clamp
-	ttl := time.Until(access.ExpiresAt.Time)
-	if ttl <= 0 {
-		telemetry.Log().Warn("access token expired", zap.Time("expires_at", access.ExpiresAt.Time))
-		return nil, fail.New(errx.TokenExpired).WithArgs("access")
-	}
-
-	// Build service authorization snapshot
-	snapshot := &authz.ServiceSnapshot{
-		AccessData:        *access,
-		RefreshExpiryDate: sess.ExpiresAt,
-	}
-
-	// Store in service cache
-	err = uc.redis.Set(ctx, "svc_session:"+serviceSessionID, snapshot, ttl)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return session handle
-	return &ExchangeOutput{
-		SessionID: serviceSessionID,
-		TTL:       access.ExpiresAt.Time,
-	}, nil
-}
-
 func (uc *CommandService) GetJWKS(ctx context.Context) (map[string]any, error) {
-	keys, err := uc.keys.ListGoAuthPublicKeys(ctx)
+	ekeys, err := uc.keys.ListGoAuthPublicKeys(ctx)
 	if err != nil {
 		telemetry.Log().Error("Failed listing GoAuth public keys", zap.Error(err))
 		return nil, fail.New(errx.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
 	}
 
-	jwkKeys := make([]any, 0, len(keys))
+	jwkKeys := make([]any, 0, len(ekeys))
 	var jwk map[string]any
-	for _, k := range keys {
+	for _, k := range ekeys {
 		jwk, err = contracts.PublicKeyToJWK(k)
 		if err != nil {
 			return nil, err

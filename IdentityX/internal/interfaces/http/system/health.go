@@ -4,6 +4,8 @@ import (
 	"IdentityX/internal/shared/authz"
 	"net/http"
 
+	_ "IdentityX/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/google/uuid"
 )
@@ -27,7 +29,7 @@ type HealthResponse struct {
 // @Produce json
 // @Success 200 {object} HealthResponse
 // @Router /health [get]
-func (handler *Handler) Health(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	response := HealthResponse{
 		Status:  "ok",
 		Service: "IdentityXAPI",

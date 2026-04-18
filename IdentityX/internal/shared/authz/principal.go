@@ -4,7 +4,6 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
 	"context"
-	"time"
 
 	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
@@ -13,28 +12,15 @@ import (
 type AuthMethod string
 
 const (
-	AuthMethodSession        AuthMethod = "session"
-	AuthMethodApiKey         AuthMethod = "api_key"
-	AuthMethodServiceSession AuthMethod = "service_session"
+	AuthMethodSession AuthMethod = "session"
+	AuthMethodApiKey  AuthMethod = "api_key"
 )
 
 type Principal struct {
-	UserID    uuid.UUID
-	ProjectID *uuid.UUID
-	Method    AuthMethod
-}
-
-type ServiceSnapshot struct {
-	AccessData        contracts.AccessClaims `json:"access_data"`
-	RefreshExpiryDate time.Time              `json:"refresh_expiry_date"`
-}
-
-func (ss ServiceSnapshot) ToPrincipal() *Principal {
-	return &Principal{
-		UserID:    ss.AccessData.Sub.ID,
-		ProjectID: ss.AccessData.Sub.ProjectID,
-		Method:    AuthMethodServiceSession,
-	}
+	UserID    uuid.UUID  `json:"user_id"`
+	ProjectID *uuid.UUID `json:"project_id"`
+	SessionID *uuid.UUID `json:"session_id"`
+	Method    AuthMethod `json:"-"`
 }
 
 func NewPrincipal(
@@ -48,6 +34,7 @@ func NewPrincipal(
 	return &Principal{
 		UserID:    access.Sub.ID,
 		ProjectID: access.Sub.ProjectID,
+		SessionID: &access.Sub.SessionID,
 		Method:    AuthMethodSession,
 	}, nil
 }

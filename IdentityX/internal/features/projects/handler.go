@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	_ "IdentityX/internal/shared/contracts"
+
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
 	"go.uber.org/zap"

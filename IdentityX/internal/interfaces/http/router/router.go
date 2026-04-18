@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	_ "IdentityX/internal/shared/contracts"
+
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"

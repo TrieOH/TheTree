@@ -1,16 +1,18 @@
 package auth
 
 import (
-	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/tokens"
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
+	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"strings"
 
 	"github.com/MintzyG/fail/v3"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -20,7 +22,7 @@ type CommandService struct {
 	sessions ports.SessionRepository
 	project  ports.ProjectRepository
 	tokens   tokens.CommandService
-	apiKey   api_keys.CommandService
+	apiKeys  ports.ApiKeyRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	txRunner database.TxRunner
@@ -30,7 +32,7 @@ func NewCommandService(
 	sessions ports.SessionRepository,
 	project ports.ProjectRepository,
 	tokens tokens.CommandService,
-	apiKey api_keys.CommandService,
+	apiKeys ports.ApiKeyRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	txRunner database.TxRunner,
@@ -39,7 +41,7 @@ func NewCommandService(
 		sessions: sessions,
 		project:  project,
 		tokens:   tokens,
-		apiKey:   apiKey,
+		apiKeys:  apiKeys,
 		logger:   logger,
 		tracer:   tracer,
 		txRunner: txRunner,
@@ -57,21 +59,69 @@ type AuthenticateRequestInput struct {
 // This function should only be called by AuthMW and therefore does not log errors on the trace
 // Leaving this responsibility up to the AuthMW
 func (uc *CommandService) AuthenticateRequest(ctx context.Context, in AuthenticateRequestInput) (*authz.Principal, error) {
-	ctx, span := uc.tracer.Start(ctx, "Authenticator.AuthenticateRequest")
+	ctx, span := uc.tracer.Start(ctx, "AuthService.AuthenticateRequest")
 	defer span.End()
 
 	if in.ApiKey != "" {
 		span.SetAttributes(attribute.String("auth.method", string(authz.AuthMethodApiKey)))
-		return uc.apiKey.Authenticate(ctx, in.ApiKey)
+		return uc.AuthenticateAPIKey(ctx, in.ApiKey)
 	}
 
 	span.SetAttributes(attribute.String("auth.method", string(authz.AuthMethodSession)))
+	return uc.AuthenticateSession(ctx, in.AccessToken, in.Issuer)
+}
 
-	if in.AccessToken == "" {
+func (uc *CommandService) AuthenticateAPIKey(ctx context.Context, apiKey string) (*authz.Principal, error) {
+	ctx, span := uc.tracer.Start(ctx, "AuthService.AuthenticateAPIKey")
+	defer span.End()
+
+	if !strings.HasPrefix(apiKey, "gk_") {
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
+	}
+
+	parts := strings.SplitN(apiKey, "_", 3)
+	if len(parts) != 3 {
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
+	}
+
+	projectIDStr := parts[1]
+	secret := parts[2]
+
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		return nil, fail.New(errx.AuthInvalidApiKeyShape).RecordCtx(ctx)
+	}
+
+	keyData, err := uc.apiKeys.GetByProjectID(ctx, projectID)
+	if err != nil {
+		if errx.IsNotFound(err) {
+			return nil, fail.New(errx.AuthInvalidApiKey).RecordCtx(ctx)
+		}
+		return nil, err
+	}
+
+	err = crypto.VerifyBcryptSecret(keyData.KeyHash, secret)
+	if err != nil {
+		return nil, fail.New(errx.AuthInvalidApiKey).RecordCtx(ctx)
+	}
+
+	return &authz.Principal{
+		UserID:    keyData.ClientID,
+		ProjectID: &keyData.ProjectID,
+		SessionID: nil,
+		Method:    authz.AuthMethodApiKey,
+	}, nil
+}
+
+func (uc *CommandService) AuthenticateSession(ctx context.Context, accessTokenStr, issuer string) (*authz.Principal, error) {
+	ctx, span := uc.tracer.Start(ctx, "AuthService.AuthenticateSession")
+	defer span.End()
+
+	if accessTokenStr == "" {
 		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
 	}
 
-	accessToken, err := uc.tokens.VerifyAccessToken(ctx, in.AccessToken)
+	accessToken, err := uc.tokens.VerifyAccessToken(ctx, accessTokenStr)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +130,7 @@ func (uc *CommandService) AuthenticateRequest(ctx context.Context, in Authentica
 		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
 	}
 
-	if err = validateIssuers(ctx, in, accessToken); err != nil {
+	if err = validateIssuers(ctx, issuer, accessToken); err != nil {
 		return nil, err
 	}
 
@@ -118,14 +168,14 @@ func (uc *CommandService) AuthenticateRequest(ctx context.Context, in Authentica
 
 func validateIssuers(
 	ctx context.Context,
-	in AuthenticateRequestInput,
+	issuer string,
 	access *contracts.AccessClaims,
 ) error {
 	if access.Sub.ProjectID != nil {
 		if access.Issuer != access.Sub.ProjectID.String() {
 			return fail.New(errx.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 		}
-	} else if access.Issuer != in.Issuer {
+	} else if access.Issuer != issuer {
 		return fail.New(errx.TokenInvalidIssuer).WithArgs("access").RecordCtx(ctx)
 	}
 
