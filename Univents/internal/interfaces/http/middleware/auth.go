@@ -53,6 +53,10 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			accessClaims, err := mw.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
+			if err != nil {
+				resp.Unauthorized().WithMsg("invalid access token").WithModule("AuthMW").Send(w)
+				return
+			}
 
 			// Inject subject into context
 			subject := authz.UserSubject{
