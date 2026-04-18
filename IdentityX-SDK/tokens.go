@@ -6,10 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -111,12 +111,12 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
-			return nil, fail.New(SDKUnexpectedSigningMethod).WithArgs(token.Header["alg"])
+			return nil, SdkError{"unexpected signing method", nil}
 		}
 
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
-			return nil, fail.New(SDKMissingTokenKID)
+			return nil, SdkError{"missing token kid", nil}
 		}
 
 		// Try with current cache
@@ -143,12 +143,12 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 			}
 		}
 
-		return nil, fail.New(SDKKeyNotInJWKS).WithArgs(kid)
+		return nil, SdkError{"key not in JWKS", nil}
 	}
 
 	token, err := jwt.Parse(tokenStr, keyFunc)
 	if err != nil {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
+		return nil, SdkError{Message: "error parsing token: ", Cause: err}
 	}
 
 	return token, nil
@@ -156,16 +156,16 @@ func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt
 
 func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
 	if key.Kty != "OKP" || key.Crv != "Ed25519" {
-		return nil, fail.New(SDKUnsupportedCurve).WithArgs(key.Kty, key.Crv)
+		return nil, SdkError{"unsupported curve: " + key.Kty + "; " + key.Crv, nil}
 	}
 
 	pubBytes, err := base64.RawURLEncoding.DecodeString(key.X)
 	if err != nil {
-		return nil, fail.New(SDKKeyDecodeFailed).WithArgs(err.Error())
+		return nil, SdkError{"error decoding public key: ", err}
 	}
 
 	if len(pubBytes) != ed25519.PublicKeySize {
-		return nil, fail.New(SDKInvalidKeySize).WithArgs(len(pubBytes))
+		return nil, SdkError{"invalid key size: " + strconv.Itoa(len(pubBytes)), nil}
 	}
 
 	return ed25519.PublicKey(pubBytes), nil
@@ -181,12 +181,12 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 
 	token, _, err := parser.ParseUnverified(tokenStr, claims)
 	if err != nil {
-		return nil, fail.New(SDKBadRequestID).WithArgs(err.Error())
+		return nil, SdkError{"bad request: ", err}
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return nil, fail.New(SDKMissingTokenKID)
+		return nil, SdkError{"missing token kid", nil}
 	}
 
 	// ----------------------------
@@ -196,8 +196,7 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 
 		// enforce Ed25519
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
-			return nil, fail.New(SDKUnexpectedSigningMethod).
-				WithArgs(token.Header["alg"])
+			return nil, SdkError{"unexpected signing method", nil}
 		}
 
 		jwks, err := s.GetJWKS(ctx, false)
@@ -211,7 +210,7 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 			}
 		}
 
-		return nil, fail.New(SDKKeyNotInJWKS).WithArgs(kid)
+		return nil, SdkError{"key not in JWKS", nil}
 	}
 
 	// ----------------------------
@@ -219,11 +218,11 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 	// ----------------------------
 	token, err = jwt.ParseWithClaims(tokenStr, claims, keyFunc)
 	if err != nil {
-		return nil, fail.New(SDKUnauthorizedID).WithArgs(err.Error())
+		return nil, SdkError{"error parsing token claims: ", err}
 	}
 
 	if !token.Valid {
-		return nil, fail.New(SDKUnauthorizedID)
+		return nil, SdkError{"invalid token", nil}
 	}
 
 	// ----------------------------
@@ -232,12 +231,11 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 	now := time.Now()
 
 	if claims.ExpiresAt == nil || now.After(claims.ExpiresAt.Time) {
-		return nil, fail.New(SDKUnauthorizedID).WithArgs("token expired")
+		return nil, SdkError{"token expired", nil}
 	}
 
 	if claims.NotBefore != nil && now.Before(claims.NotBefore.Time) {
-		return nil, fail.New(SDKUnauthorizedID).
-			WithArgs("token not valid yet")
+		return nil, SdkError{"token not yet valid", nil}
 	}
 
 	// ----------------------------
@@ -248,15 +246,13 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 		expected := claims.Sub.ProjectID.String()
 
 		if claims.Issuer != expected {
-			return nil, fail.New(SDKUnauthorizedID).
-				WithArgs("invalid issuer")
+			return nil, SdkError{"invalid token issuer: " + claims.Issuer, nil}
 		}
 
 	} else {
 
 		if claims.Issuer != "goauth" {
-			return nil, fail.New(SDKUnauthorizedID).
-				WithArgs("invalid issuer")
+			return nil, SdkError{"invalid token issuer: " + claims.Issuer, nil}
 		}
 	}
 

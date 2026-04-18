@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 )
 
@@ -21,8 +20,6 @@ type Config struct {
 	ProjectID  uuid.UUID
 	HTTPClient *http.Client
 	Debug      bool
-
-	SessionCache SessionCache
 }
 
 type Client struct {
@@ -31,24 +28,19 @@ type Client struct {
 	projectID  uuid.UUID
 	debug      bool
 
-	Roles       *RoleService
-	Scopes      *ScopeService
-	Permissions *PermissionService
-	Authz       *AuthzService
-	Users       *UserService
-	Tokens      *TokenService
-	Sessions    *SessionRuntime
+	Users  *UserService
+	Tokens *TokenService
 }
 
 func NewClient(config Config) (*Client, error) {
 	if config.BaseURL == "" {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs("BaseURL is required")
+		return nil, SdkError{"BaseURL is required", nil}
 	}
 	if config.APIKey == "" {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs("APIKey is required")
+		return nil, SdkError{"APIKey is required", nil}
 	}
 	if config.ProjectID == uuid.Nil {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs("ProjectID is required")
+		return nil, SdkError{"ProjectID is required", nil}
 	}
 
 	config.BaseURL = strings.TrimSuffix(config.BaseURL, "/")
@@ -66,27 +58,10 @@ func NewClient(config Config) (*Client, error) {
 		debug:      config.Debug,
 	}
 
-	c.Roles = &RoleService{client: c}
-	c.Scopes = &ScopeService{client: c}
-	c.Permissions = &PermissionService{client: c}
-	c.Authz = &AuthzService{client: c}
 	c.Users = &UserService{client: c}
 	c.Tokens = &TokenService{client: c, cacheTTL: time.Hour}
 
-	if config.SessionCache != nil {
-		c.Sessions = &SessionRuntime{
-			cache: config.SessionCache,
-		}
-	}
-
 	return c, nil
-}
-
-func (c *Client) RequireSessions() *SessionRuntime {
-	if c.Sessions == nil {
-		panic("goauth: SessionCache not configured")
-	}
-	return c.Sessions
 }
 
 func (c *Client) newRequest(ctx context.Context, method, path string, body any) (*http.Request, error) {
@@ -94,19 +69,19 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body any) 
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return nil, fail.New(SDKRequestMarshalingErrorID).WithArgs(err.Error())
+			return nil, SdkError{Message: "request marshaling error: ", Cause: err}
 		}
 		buf = bytes.NewReader(b)
 	}
 
 	u, err := url.JoinPath(c.config.BaseURL, path)
 	if err != nil {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
+		return nil, SdkError{Message: "error building URL: ", Cause: err}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, u, buf)
 	if err != nil {
-		return nil, fail.New(SDKUnknownErrorID).WithArgs(err.Error())
+		return nil, SdkError{Message: "error building request: ", Cause: err}
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -125,9 +100,16 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body any) 
 func (c *Client) do(req *http.Request, v any) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fail.New(SDKNetworkErrorID).WithArgs(err.Error())
+		return SdkError{Message: "error executing request: ", Cause: err}
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			if c.debug {
+				log.Printf("error closing response body: %v", err)
+			}
+		}
+	}(resp.Body)
 
 	body, _ := io.ReadAll(resp.Body)
 
@@ -136,34 +118,22 @@ func (c *Client) do(req *http.Request, v any) error {
 	}
 
 	if resp.StatusCode >= 400 {
-		return c.handleErrorResponse(resp, body)
+		return c.handleErrorResponse(body)
 	}
 
 	if v != nil {
 		err = json.Unmarshal(body, v)
 		if err != nil {
-			return fail.New(SDKResponseUnmarshalingErrorID).WithArgs(err.Error())
+			return SdkError{Message: "error unmarshaling response: ", Cause: err}
 		}
 	}
 
 	return nil
 }
 
-type apiErrorResponse struct {
-	ErrorID string   `json:"error_id"`
-	Message string   `json:"message"`
-	Trace   []string `json:"trace"`
-	Code    int      `json:"code"`
-}
-
-func (c *Client) handleErrorResponse(resp *http.Response, body []byte) error {
-	var errResp apiErrorResponse
+func (c *Client) handleErrorResponse(body []byte) error {
+	var errResp ApiError
 	_ = json.Unmarshal(body, &errResp)
 
-	return fail.From(&httpStatusError{
-		status: resp.StatusCode,
-		apiID:  errResp.ErrorID,
-		msg:    errResp.Message,
-		traces: errResp.Trace,
-	})
+	return errResp
 }
