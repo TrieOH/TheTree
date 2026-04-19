@@ -10,12 +10,12 @@ import {
 import { useState } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { EditionCard } from '@/features/editions/ui/EditionCard'
-import { usePermissions } from '@/features/auths/hooks/use-permissions'
-import {
-  canCreateEdition,
-  canAnnounceEdition,
-  canReadEdition
-} from '@/features/editions/model/permissions'
+// import { usePermissions } from '@/features/auths/hooks/use-permissions'
+// import {
+//   canCreateEdition,
+//   canAnnounceEdition,
+//   canReadEdition
+// } from '@/features/editions/model/permissions'
 
 const statusFilters = [
   { value: 'all', label: 'Todos' },
@@ -40,14 +40,14 @@ export const Route = createLazyFileRoute('/events/$eventId/editions/')({
 
 function RouteComponent() {
   const { eventId } = Route.useParams()
-  const auth = Route.useRouteContext().auth?.auth
-  const userProfile = auth?.profile()
-  const { some: somePerms } = usePermissions(
-    { canCreateEdition, canReadEdition, canAnnounceEdition },
-    userProfile?.id
-  )
-
-  const isAdmin = somePerms('canCreateEdition', 'canReadEdition', 'canAnnounceEdition')
+  // const auth = Route.useRouteContext().auth?.auth
+  // const userProfile = auth?.profile()
+  // const { some: somePerms } = usePermissions(
+  //   { canCreateEdition, canReadEdition, canAnnounceEdition },
+  //   userProfile?.id
+  // )
+  const isAdmin = true
+  // const isAdmin = somePerms('canCreateEdition', 'canReadEdition', 'canAnnounceEdition')
 
   const editions = Route.useLoaderData()
   const [statusFilter, setStatusFilter] = useState<string>('all')

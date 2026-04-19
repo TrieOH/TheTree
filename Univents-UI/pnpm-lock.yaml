@@ -24,14 +24,17 @@ importers:
         specifier: ^1.7.0
         version: 1.8.1(@types/react@19.2.14)(posthog-js@1.356.0)(react@19.2.4)
       '@soramux/node-auth-sdk':
-        specifier: ^0.9.2
-        version: 0.9.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^0.9.5
+        version: 0.9.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@soramux/node-fetch-sdk':
         specifier: ^0.1.1
         version: 0.1.1
       '@soramux/node-payments-sdk':
         specifier: ^0.1.0
         version: 0.1.0
+      '@soramux/node-perm-sdk':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@t3-oss/env-core':
         specifier: ^0.13.8
         version: 0.13.10(typescript@5.9.3)(zod@4.3.6)
@@ -1343,8 +1346,8 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/node-auth-sdk@0.9.2':
-    resolution: {integrity: sha512-51IvMuBtKU6CgLyj2MrEO5pNum+QcQOPmyjTgiZxjwG+IvXA8MDKEZlLc1MUDcT+00fQ9gbIau8cqvzLD+kspw==}
+  '@soramux/node-auth-sdk@0.9.5':
+    resolution: {integrity: sha512-+bI1zauIHi22TPXscLGf5376uD3agsllaRFTc7mLMzACXJnB/ePlduMOrTHvt5WzDkHhzZk14T+1yAOVbucPUA==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -1354,6 +1357,9 @@ packages:
 
   '@soramux/node-payments-sdk@0.1.0':
     resolution: {integrity: sha512-RAETGXIfNZzOOEJ1qNXSfbMGdV7jT98jxEsmKnlJiHbQMCba3GWkl7TSVmNQ3qo8+MhGuUYNKCj3pbcPzFGUoQ==}
+
+  '@soramux/node-perm-sdk@0.2.0':
+    resolution: {integrity: sha512-kWc6UnQivHmClu5qiATLRPr29096XEkLdtc1dT/fKgCF0pxbC7DGcH7ELFoaMau09kg5lGGw8IbJr9bM8fyYHg==}
 
   '@speed-highlight/core@1.2.14':
     resolution: {integrity: sha512-G4ewlBNhUtlLvrJTb88d2mdy2KRijzs4UhnlrOSRT4bmjh/IqNElZa3zkrZ+TC47TwtlDWzVLFADljF1Ijp5hA==}
@@ -4463,7 +4469,7 @@ snapshots:
     dependencies:
       solid-js: 1.9.11
 
-  '@soramux/node-auth-sdk@0.9.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@soramux/node-auth-sdk@0.9.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@soramux/node-fetch-sdk': 0.1.1
       react: 19.2.4
@@ -4474,6 +4480,10 @@ snapshots:
   '@soramux/node-fetch-sdk@0.1.1': {}
 
   '@soramux/node-payments-sdk@0.1.0':
+    dependencies:
+      '@soramux/node-fetch-sdk': 0.1.1
+
+  '@soramux/node-perm-sdk@0.2.0':
     dependencies:
       '@soramux/node-fetch-sdk': 0.1.1
 

@@ -74,7 +74,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <TanStackQueryProvider>
             <AuthProvider
               baseURL={env.VITE_AUTH_API_URL}
-              exchangeURL={env.VITE_EXCHANGE_API_URL}
               clientConfig={{
                 timeout: 5_000
               }}

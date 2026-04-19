@@ -1,10 +1,10 @@
 import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EventCreateI, EventI } from "../model";
-import type { CheckPermissionRequest } from "@soramux/node-auth-sdk"
+import type { Permission } from "@soramux/node-perm-sdk"
 import type { ImageURLUploadI } from "@/shared/model/generic";
 import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import { serverAuth } from "@/features/auths/lib/server-auth";
+import { serverPerm } from "@/features/auths/lib/server-auth";
 
 /**
  * Creates a new Event on the server.
@@ -199,10 +199,12 @@ export const unsetEventLogoFn = createClientOnlyFn((
 
 // Server
 export const checkAdminPermissionFn = createServerFn({ method: "POST" })
-  .inputValidator((data: CheckPermissionRequest) => {
+  .inputValidator((data: Permission.CheckPermissionRequestI) => {
     return data
   })
   .handler(async ({ data }) => {
-    return serverAuth.checkPermission(data)
+    const result = await serverPerm.check(data)
+    if (result.success) return { success: true, data: result.data }
+    return { success: false, message: result.message }
   });
 

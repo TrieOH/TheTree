@@ -130,6 +130,8 @@ function RouteComponent() {
     available_until: undefined,
     has_inventory: false,
     inventory_quantity: 0,
+    gallery_urls: [],
+    thumbnail_url: ""
   })
   const [products, setProducts] = useState<ProductI[]>([])
   const [productError, setProductError] = useState<string | null>(null)

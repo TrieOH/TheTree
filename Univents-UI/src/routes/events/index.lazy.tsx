@@ -11,12 +11,12 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
-import {
-  canCreateEvent,
-  canEditEvent,
-  canPublishEvent
-} from '@/features/events/model/permissions'
-import { usePermissions } from '@/features/auths/hooks/use-permissions'
+// import {
+//   canCreateEvent,
+//   canEditEvent,
+//   canPublishEvent
+// } from '@/features/events/model/permissions'
+// import { usePermissions } from '@/features/auths/hooks/use-permissions'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -28,14 +28,15 @@ const filterOptions = [
 ] as const
 
 function EventsPage() {
-  const auth = Route.useRouteContext().auth?.auth
-  const userProfile = auth?.profile()
+  // const auth = Route.useRouteContext().auth?.auth
+  // const userProfile = auth?.profile()
   const events = Route.useLoaderData()
-  const { some: somePerms } = usePermissions(
-    { canEditEvent, canPublishEvent, canCreateEvent },
-    userProfile?.id
-  )
-  const isAdmin = somePerms('canEditEvent', 'canPublishEvent', 'canCreateEvent')
+  // const { some: somePerms } = usePermissions(
+  //   { canEditEvent, canPublishEvent, canCreateEvent },
+  //   userProfile?.id
+  // )
+  // const isAdmin = somePerms('canEditEvent', 'canPublishEvent', 'canCreateEvent')
+  const isAdmin = true
 
   const [filter, setFilter] = useState<'all' | 'series'>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)

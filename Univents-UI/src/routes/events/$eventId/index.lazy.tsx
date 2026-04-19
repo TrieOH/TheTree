@@ -27,8 +27,8 @@ import {
 } from '@/features/events/api'
 import { uploadAndModerateFile } from '@/features/storage/api'
 import { InfoRow, SectionCard, SocialChip } from '@/features/events/ui/EventDetailComponents'
-import { usePermissions } from '@/features/auths/hooks/use-permissions'
-import { canEditEvent } from '@/features/events/model/permissions'
+// import { usePermissions } from '@/features/auths/hooks/use-permissions'
+// import { canEditEvent } from '@/features/events/model/permissions'
 import WaveSpinnerLoading from '@/shared/ui/loader/WaveSpinnerLoading'
 import { getDirtyFields } from '@/shared/lib/diff'
 
@@ -57,17 +57,18 @@ function RouteComponent() {
   const navigate = Route.useNavigate()
   const { eventId } = Route.useParams()
   const queryClient = useQueryClient()
-  const auth = Route.useRouteContext().auth?.auth
-  const userProfile = auth?.profile()
+  // const auth = Route.useRouteContext().auth?.auth
+  // const userProfile = auth?.profile()
 
   const { data: event, isLoading, error } = useQuery(
     edit ? ownEventQueryOptions(eventId) : eventQueryOptions(eventId)
   )
 
-  const { canEditEvent: hasEditPermission } = usePermissions(
-    { canEditEvent },
-    userProfile?.id
-  )
+  // const { canEditEvent: hasEditPermission } = usePermissions(
+  //   { canEditEvent },
+  //   userProfile?.id
+  // )
+  const hasEditPermission = true
 
   const [eventData, setEventData] = useState<EventI | null>(null)
 

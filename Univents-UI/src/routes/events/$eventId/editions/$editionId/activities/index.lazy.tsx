@@ -29,13 +29,13 @@ import {
   registerUserInActivityFn,
   unregisterUserInActivityFn,
 } from '@/features/activities/api'
-import { usePermissions } from '@/features/auths/hooks/use-permissions'
-import {
-  canAnnounceActivity,
-  canCreateActivity,
-  canManageActivity,
-  canPublishActivity,
-} from '@/features/activities/model/permissions'
+// import { usePermissions } from '@/features/auths/hooks/use-permissions'
+// import {
+//   canAnnounceActivity,
+//   canCreateActivity,
+//   canManageActivity,
+//   canPublishActivity,
+// } from '@/features/activities/model/permissions'
 import ActivityCard, {
   difficultyConfig,
   formatDuration,
@@ -51,8 +51,8 @@ export const Route = createLazyFileRoute(
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams()
   const isAuthenticated = Route.useRouteContext().auth?.isAuthenticated
-  const auth = Route.useRouteContext().auth?.auth
-  const userProfile = auth?.profile()
+  // const auth = Route.useRouteContext().auth?.auth
+  // const userProfile = auth?.profile()
 
   const [difficultyFilter, setDifficultyFilter] = useState<ActivityI['difficulty'] | 'all'>('all')
   const [selectedActivity, setSelectedActivity] = useState<ActivityI | null>(null)
@@ -63,12 +63,12 @@ function RouteComponent() {
   // mock
   const myRegistrations: AttendanceRecordI[] = []
 
-  const { some: somePerms } = usePermissions(
-    { canCreateActivity, canManageActivity, canPublishActivity, canAnnounceActivity },
-    userProfile?.id
-  )
-
-  const isAdmin = somePerms('canCreateActivity', 'canManageActivity', 'canPublishActivity', 'canAnnounceActivity')
+  // const { some: somePerms } = usePermissions(
+  //   { canCreateActivity, canManageActivity, canPublishActivity, canAnnounceActivity },
+  //   userProfile?.id
+  // )
+  const isAdmin = true
+  // const isAdmin = somePerms('canCreateActivity', 'canManageActivity', 'canPublishActivity', 'canAnnounceActivity')
 
   const registerMutation = useMutation({
     mutationFn: (activityId: string) => registerUserInActivityFn(eventId, editionId, activityId),

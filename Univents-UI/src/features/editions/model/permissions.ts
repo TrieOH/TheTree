@@ -1,9 +1,21 @@
-import { permission } from "@soramux/node-auth-sdk"
-import { env } from "@/env"
+import { permission } from "@soramux/node-perm-sdk"
 
-const objEditions = permission().object("editions")
-  .project(env.VITE_TRIEOH_AUTH_PROJECT_ID)
+export const canReadAdminEdition = (eventId: string) => permission()
+  .resource("event", eventId)
+  .permission("view_editions")
 
-export const canAnnounceEdition = objEditions.action("announce")
-export const canReadEdition = objEditions.action("read")
-export const canCreateEdition = objEditions.action("create")
+export const canCreateEdition = (eventId: string) => permission()
+  .resource("event", eventId)
+  .permission("create_editions")
+
+export const canAnnounceEdition = (editionId: string) => permission()
+  .resource("edition", editionId)
+  .permission("announce")
+
+export const canConnectPayment = (editionId: string) => permission()
+  .resource("edition", editionId)
+  .permission("connect_payments")
+
+export const canDisconnectPayment = (editionId: string) => permission()
+  .resource("edition", editionId)
+  .permission("disconnect_payments")

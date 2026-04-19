@@ -1,9 +1,9 @@
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import type { BuilderMethods } from "@soramux/node-auth-sdk";
+import type { Permission } from "@soramux/node-perm-sdk";
 import { checkAdminPermissionFn } from "@/features/events/api";
 
-type ReadyPermission = Pick<BuilderMethods<'object' | 'project' | 'action'>, 'user'>
+type ReadyPermission = Pick<Permission.BuilderMethods<'resource' | 'permission'>, 'subject'>
 type PermissionMap<TKey extends string> = Record<TKey, ReadyPermission>
 
 type PermissionResult<TKey extends string> = Record<TKey, boolean> & {
@@ -21,17 +21,17 @@ export function usePermissions<TKey extends string>(
     () => {
       if (!userId) return [];
       return (Object.entries<ReadyPermission>(permissions))
-        .map(([key, permission]) => ({ key, built: permission.user(userId).build() }))
+        .map(([key, permission]) => ({ key, built: permission.subject("user", userId).build() }))
     },
     [userId]
   );
 
   const queries = useQueries({
     queries: entries.map(({ built }) => ({
-      queryKey: ['permission', userId, built.object, built.action] as const,
+      queryKey: ['permission', userId, built.subject, built.resource] as const,
       queryFn: async (): Promise<boolean> => {
         const result = await checkAdminPermissionFn({ data: built });
-        return result.success ? result.data.allowed : false;
+        return result.success ? result.data.permissionship === "PERMISSIONSHIP_HAS_PERMISSION" : false;
       },
       placeholderData: false
     })),

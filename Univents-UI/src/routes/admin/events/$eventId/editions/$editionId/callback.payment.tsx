@@ -24,8 +24,8 @@ export const Route = createFileRoute(
     const { eventId, editionId } = params
     if (!credential_id || !provider || !public_key)
       throw Route.redirect({
-        to: '/admin/events/$eventId/editions/$editionId',
-        params: { eventId, editionId }
+        to: '/admin/events/$eventId/editions',
+        params: { eventId }
       })
     const res = await connectPaymentAccountToEditionFn(
       eventId, editionId, credential_id, provider, public_key
@@ -48,8 +48,8 @@ export const Route = createFileRoute(
       toast.success('connected payment account to edition with success.')
     } else toast.error('Failed to connect payment account to edition.')
     throw Route.redirect({
-      to: '/admin/events/$eventId/editions/$editionId',
-      params: { eventId, editionId }
+      to: '/admin/events/$eventId/editions',
+      params: { eventId }
     })
   },
   pendingComponent: RoutePendingComponent,
