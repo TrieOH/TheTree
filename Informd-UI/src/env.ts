@@ -18,7 +18,6 @@ export const env = createEnv({
     VITE_AUTH_API_URL: z.url(),
 
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
-    VITE_EXCHANGE_API_URL: z.url(),
 
     VITE_POSTHOG_KEY: z.string(),
     VITE_POSTHOG_HOST: z.url().optional(),

@@ -17,10 +17,12 @@ import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
 import { AuthContextUpdater } from '#/integrations/auth/auth-context-updater'
 import { AuthProvider } from '@soramux/node-auth-sdk/react'
+import type { useAuth } from '@soramux/node-auth-sdk/react';
 import { env } from '#/env'
 
 interface MyRouterContext {
   queryClient: QueryClient
+  auth?: ReturnType<typeof useAuth>
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
@@ -59,10 +61,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="font-sans antialiased wrap-anywhere">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider
-              baseURL={env.VITE_AUTH_API_URL}
-              exchangeURL={env.VITE_EXCHANGE_API_URL}
-            >
+            <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
               <AuthContextUpdater>
                 {children}
                 <TanStackDevtools
