@@ -1,8 +1,12 @@
-import type { Api, ApiResponse } from "../core/api";
-import { AuthTokens } from "../core/services";
 import { authStore } from "../store/auth-store";
+import { tokenStore } from "../store/token-store";
 import { logger } from "@soramux/node-fetch-sdk";
 import { browserStorage, cookieStorage } from "./storage-adapter";
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+}
 
 export interface TokenClaims {
   sub: {
@@ -48,71 +52,51 @@ export function getCookieDomain() {
   return hostname;
 }
 
-export function saveSession(
-  claims: AuthTokenClaims,
-  session_id: string,
-  session_ttl: string,
-  refresh_token: string,
-): void {
-  cookieStorage.set("svc_session", session_id, {
-    expires: new Date(session_ttl).toUTCString(),
-    domain: getCookieDomain()
-  });
-
-  saveTokenClaims(claims);
-
-  const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-  cookieStorage.set("refresh_token", refresh_token, {
-    expires: refreshExpiry,
-    domain: getCookieDomain()
-  });
+export function decodeJwt<T>(token: string): T | null {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
 }
 
-export const withExchange = async (
-  apiInstance: Api,
-  res: ApiResponse<AuthTokens>,
-  context: "login" | "refresh",
-  exchangeURL?: string,
-): Promise<ApiResponse<AuthTokens>> => {
-  if (!res.success) return res;
-  try {
-    await exchangeAndSaveClaims(
-      apiInstance,
-      res.data.access_token,
-      res.data.refresh_token,
-      exchangeURL,
-    );
-    return res;
-  } catch (error) {
-    logger.error(`Exchange failed during ${context}:`, error);
-    clearAuthTokens();
-    return {
-      success: false,
-      code: 500,
-      message: error instanceof Error ? error.message : "Authentication failed during exchange",
-    } as ApiResponse<AuthTokens>;
+export function saveAuthSession(
+  access_token: string,
+  refresh_token: string,
+): void {
+  const claims = decodeJwt<TokenClaims>(access_token);
+  const refreshClaims = decodeJwt<{ exp: number }>(refresh_token);
+
+  if (!claims || !refreshClaims) {
+    logger.error("Failed to decode tokens");
+    return;
   }
-};
 
-export function saveTokenClaims(claims: AuthTokenClaims): void {
-  memoryClaims = claims;
+  tokenStore.setAccessToken(access_token);
 
-  const refreshExpiry = new Date(claims.refresh_expiry_date).getTime();
-  const accessExpiry = claims.access_data.exp * 1000;
+  const refreshExpiry = refreshClaims.exp * 1000;
+  const accessExpiry = claims.exp * 1000;
 
-  if (isNaN(refreshExpiry)) {
-    logger.error("Invalid refresh_expiry_date received:", claims.refresh_expiry_date);
-  } else browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
-
-  if (isNaN(accessExpiry)) {
-    logger.error("Invalid access expiry received:", claims.access_data.exp);
-  } else browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
-
-  authStore.set({
-    isAuthenticated: !!claims.access_data,
+  cookieStorage.set("refresh_token", refresh_token, {
+    expires: new Date(refreshExpiry).toUTCString(),
+    domain: getCookieDomain()
   });
 
-  logger.log("Token claims saved");
+  memoryClaims = {
+    access_data: claims,
+    refresh_expiry_date: refreshExpiry,
+  };
+
+  browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
+  browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
+
+  authStore.set({
+    isAuthenticated: true,
+    isInitializing: false,
+  });
+
+  logger.log("Auth session saved");
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
@@ -137,6 +121,7 @@ export const isTokenExpiringSoon = (t = 30) => isExpiringSoon(ACCESS_EXPIRY_KEY,
 export const isRefreshSessionExpired = (t = 10) => isExpiringSoon(REFRESH_EXPIRY_KEY, t);
 
 export function isAuthenticated(): boolean {
+  if (!tokenStore.getAccessToken()) return false;
   const expiryStr = browserStorage.getItem(ACCESS_EXPIRY_KEY);
   if (!expiryStr) return false;
   const accessExpiryTimestamp = parseInt(expiryStr, 10);
@@ -145,11 +130,11 @@ export function isAuthenticated(): boolean {
 
 export function clearAuthTokens(): void {
   memoryClaims = null;
+  tokenStore.clear();
   browserStorage.removeItem(ACCESS_EXPIRY_KEY);
   browserStorage.removeItem(REFRESH_EXPIRY_KEY);
 
   const domain = getCookieDomain();
-  cookieStorage.remove("svc_session", domain);
   cookieStorage.remove("refresh_token", domain);
 
   authStore.reset();
@@ -164,93 +149,7 @@ export function getUserInfo() {
   return claims.access_data.sub
 }
 
-export const fetchAndSaveClaims = async (
-  apiInstance: Api,
-  skipRefresh?: boolean
-) => {
-  try {
-    const res = await apiInstance.get<AuthTokenClaims>("/sessions/me",
-      { requiresAuth: true, skipRefresh }
-    );
-    if (res.success) {
-      saveTokenClaims(res.data);
-      return { ...res, data: res.data };
-    }
-    throw new Error(res.message || "Failed to fetch session claims");
-  } catch (error) {
-    logger.warn("fetch claims failed (network/server)", error);
-    throw error;
-  }
-};
-
 export function decodeJwtExp(token: string): number | null {
-  try {
-    const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload));
-    return decoded.exp ?? null;
-  } catch {
-    return null;
-  }
+  const decoded = decodeJwt<{ exp: number }>(token);
+  return decoded?.exp ?? null;
 }
-
-export const exchangeAndSaveClaims = async (
-  apiInstance: Api,
-  access_token: string,
-  refresh_token: string,
-  exchangeURL?: string
-) => {
-  // Project: Custom URL
-  if (exchangeURL) {
-    const res = await apiInstance.post<{ session_id: string, ttl: string, claims: TokenClaims }>(
-      exchangeURL,
-      undefined,
-      {
-        requiresAuth: false,
-        headers: { "Authorization": `Bearer ${access_token}` },
-      }
-    );
-
-    if (res.success) {
-      const refreshExp = decodeJwtExp(refresh_token);
-      const claims: AuthTokenClaims = {
-        access_data: res.data.claims,
-        refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
-      };
-
-      saveSession(claims, res.data.session_id, res.data.ttl, refresh_token);
-
-      return { ...res, data: claims };
-    }
-
-    throw new Error(res.message || "Failed to exchange tokens (project)");
-  }
-
-  // Default: /auth/exchange + sessions/me
-  const res = await apiInstance.post<{ session_id: string, ttl: string }>(
-    "/auth/exchange",
-    undefined,
-    {
-      requiresAuth: false,
-      headers: { "Authorization": `Bearer ${access_token}` },
-    }
-  );
-
-  if (res.success) {
-    cookieStorage.set("svc_session", res.data.session_id, {
-      expires: new Date(res.data.ttl).toUTCString(),
-      domain: getCookieDomain()
-    });
-
-    const claimsRes = await fetchAndSaveClaims(apiInstance, true);
-
-    const refreshExpiry = new Date(claimsRes.data.refresh_expiry_date).toUTCString();
-    cookieStorage.set("refresh_token", refresh_token, {
-      expires: refreshExpiry,
-      domain: getCookieDomain()
-    });
-
-    return claimsRes;
-  }
-
-  throw new Error(res.message || "Failed to exchange tokens");
-};

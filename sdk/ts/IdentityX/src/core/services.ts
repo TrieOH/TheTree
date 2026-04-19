@@ -1,26 +1,16 @@
 import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
 import type { SessionI } from "../types/sessions-types";
-import type {
-  CheckPermissionResponse,
-  CheckPermissionRequest,
-  CompletePermissionBuilder
-} from "../types/permission-types";
 import {
   clearAuthTokens,
-  fetchAndSaveClaims,
   getUserInfo,
-  withExchange
+  saveAuthSession,
+  type AuthTokens
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
 import type { Api } from "./api";
 import { env } from "./env";
 
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-}
-
-export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
+export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
     if (env.PROJECT_ID) validateProjectKey();
     const url = env.PROJECT_ID ? `/projects/${env.PROJECT_ID}/login` : "/auth/login";
@@ -30,7 +20,11 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
       { requiresAuth: false }
     );
 
-    return withExchange(apiInstance, res, "login", exchangeURL);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+    }
+
+    return res;
   },
 
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
@@ -67,7 +61,11 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
       { skipRefresh: true }
     );
 
-    return withExchange(apiInstance, res, "refresh", exchangeURL);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+    }
+
+    return res;
   },
 
   sessions: async () => {
@@ -82,12 +80,6 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
     const path = revokeAll ? "/sessions" : "/sessions/others"
     return apiInstance.delete<string>(path);
   },
-
-  /**
-   * Only for non Project
-   * @returns APIResponse Claim
-   */
-  refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
 
@@ -228,29 +220,6 @@ export const createServerAuthService = (apiInstance: Api) => ({
       {
         headers: {
           "Authorization": env.API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-  },
-
-  /**
-   * Checks if a user has a specific permission.
-   * @param permission PermissionBuilder instance or raw CheckPermissionRequest object.
-   */
-  checkPermission: async (permission: CompletePermissionBuilder | CheckPermissionRequest) => {
-    validateApiKey();
-    const req = ("toJSON" in permission) ? permission.toJSON() : permission;
-    const payload = {
-      project_id: env.PROJECT_ID,
-      ...req
-    };
-    return apiInstance.post<CheckPermissionResponse>(
-      "/authz/check",
-      payload,
-      {
-        headers: {
-          "X-API-Key": env.API_KEY,
           "Content-Type": "application/json"
         }
       }

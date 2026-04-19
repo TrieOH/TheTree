@@ -1,20 +1,17 @@
 import { joinUrl } from "../utils/url-utils";
 import {
   clearAuthTokens,
-  decodeJwtExp,
-  getCookieDomain,
   isRefreshSessionExpired,
   isTokenExpiringSoon,
-  saveSession,
-  saveTokenClaims,
-  TokenClaims,
-  type AuthTokenClaims
+  saveAuthSession,
+  getTokenClaims,
+  type AuthTokenClaims,
+  type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
-import { logger } from "@soramux/node-fetch-sdk";
-import { simpleFetch } from "@soramux/node-fetch-sdk";
+import { logger, simpleFetch } from "@soramux/node-fetch-sdk";
 import { cookieStorage } from "../utils/storage-adapter";
-
+import { tokenStore } from "../store/token-store";
 
 export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -24,7 +21,6 @@ export interface RequestOptions extends RequestInit {
 interface InterceptorConfig {
   baseURL?: string;
   authBaseURL?: string;
-  exchangeURL?: string;
   onTokenRefreshed?: (claims: AuthTokenClaims) => void;
   onRefreshFailed?: (error: Error) => void;
 }
@@ -32,7 +28,6 @@ interface InterceptorConfig {
 export class AuthInterceptor {
   private baseURL: string;
   private authBaseURL: string;
-  private exchangeURL?: string;
   private isRefreshing = false;
   private refreshPromise: Promise<void> | null = null;
   private onTokenRefreshed?: (claims: AuthTokenClaims) => void;
@@ -41,80 +36,8 @@ export class AuthInterceptor {
   constructor(config?: InterceptorConfig) {
     this.baseURL = config?.baseURL || env.BASE_URL;
     this.authBaseURL = config?.authBaseURL || this.baseURL;
-    this.exchangeURL = config?.exchangeURL;
     this.onTokenRefreshed = config?.onTokenRefreshed;
     this.onRefreshFailed = config?.onRefreshFailed;
-  }
-
-  private async fetchClaimsAndSave(): Promise<AuthTokenClaims> {
-    const res = await simpleFetch<{ data?: AuthTokenClaims, code: number }>(
-      joinUrl(this.authBaseURL, "/sessions/me")
-    );
-
-    if (res.code !== 200 || !res.data) {
-      clearAuthTokens();
-      throw new Error("Failed to fetch session claims after refresh");
-    }
-
-    saveTokenClaims(res.data);
-    return res.data;
-  }
-
-  private async exchange(
-    access_token: string,
-    refresh_token: string,
-  ): Promise<AuthTokenClaims> {
-    // Project: Custom URL
-    if (this.exchangeURL) {
-      const res = await simpleFetch<{
-        data?: { session_id: string; ttl: string; claims: TokenClaims },
-        code: number,
-        message?: string
-      }>(
-        this.exchangeURL,
-        { method: "POST", headers: { "Authorization": `Bearer ${access_token}` } }
-      );
-
-      if (res.code !== 200 || !res.data) {
-        clearAuthTokens();
-        throw new Error(res.message || "Failed to exchange tokens (project)");
-      }
-
-      const refreshExp = decodeJwtExp(refresh_token);
-      const claims: AuthTokenClaims = {
-        access_data: res.data.claims,
-        refresh_expiry_date: refreshExp ? refreshExp * 1000 : 0,
-      };
-
-      saveSession(claims, res.data.session_id, res.data.ttl, refresh_token);
-      return claims;
-    }
-
-    // Default: /auth/exchange + sessions/me
-    const res = await simpleFetch<{ code: number; message?: string; data?: { session_id: string; expires_at: string } }>(
-      joinUrl(this.authBaseURL, "/auth/exchange"),
-      { method: "POST", headers: { "Authorization": `Bearer ${access_token}` } }
-    );
-
-    if (res.code !== 200 || !res.data) {
-      clearAuthTokens();
-      throw new Error(res.message || "Failed to exchange tokens");
-    }
-
-    const expiresDate = new Date(res.data.expires_at).toUTCString();
-    cookieStorage.set("svc_session", res.data.session_id, {
-      expires: expiresDate,
-      domain: getCookieDomain()
-    });
-
-    const claims = await this.fetchClaimsAndSave();
-    const refreshExpiry = new Date(claims.refresh_expiry_date).toUTCString();
-    cookieStorage.set("refresh_token", refresh_token, {
-      expires: refreshExpiry,
-      domain: getCookieDomain()
-    });
-
-    return claims;
   }
 
   private async refreshToken(): Promise<void> {
@@ -123,24 +46,23 @@ export class AuthInterceptor {
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
       try {
-        const response = await fetch(joinUrl(this.authBaseURL, "/auth/refresh"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
+        // Passando a estrutura completa que o simpleFetch retorna
+        const res = await simpleFetch<{ code: number; data?: AuthTokens; message?: string }>(
+          joinUrl(this.authBaseURL, "/auth/refresh"),
+          { method: "POST", credentials: "include" }
+        );
 
-        const data = await response.json();
-
-        if (data.code !== 200) {
-          if (data.code !== 503) clearAuthTokens();
-          throw new Error(data.message || "Failed to refresh token");
+        if (res.code !== 200 || !res.data) {
+          if (res.code !== 503) clearAuthTokens();
+          throw new Error(res.message || "Failed to refresh token");
         }
 
-        const { access_token, refresh_token } = data.data;
+        const { access_token, refresh_token } = res.data;
+        saveAuthSession(access_token, refresh_token);
 
-        const claims = await this.exchange(access_token, refresh_token);
+        const claims = getTokenClaims();
+        if (claims) this.onTokenRefreshed?.(claims);
 
-        this.onTokenRefreshed?.(claims);
         logger.log("Token refreshed successfully");
       } catch (error) {
         logger.warn("Failed to refresh token:", error);
@@ -162,43 +84,65 @@ export class AuthInterceptor {
       return;
     }
 
-    if (isTokenExpiringSoon(30)) {
-      logger.log("Token expiring soon, refreshing...");
+    const hasAccessToken = !!tokenStore.getAccessToken();
+    const hasRefreshToken = !!cookieStorage.get("refresh_token");
+
+    if ((!hasAccessToken && hasRefreshToken) || (hasAccessToken && isTokenExpiringSoon(30))) {
       try {
         await this.refreshToken();
       } catch (error) {
-        logger.warn("Refresh interceptor failed:", error);
+        logger.warn("Proactive refresh failed:", error);
       }
     }
   }
 
   async fetch(url: string, options?: RequestOptions): Promise<Response> {
     const shouldAuth = options?.requiresAuth !== false;
-    const shouldRefresh = !options?.skipRefresh;
+    const isRefreshReq = url.includes("/auth/refresh");
 
-    if (shouldAuth && shouldRefresh) await this.beforeRequest();
+    if (shouldAuth && !isRefreshReq && !options?.skipRefresh) {
+      await this.beforeRequest();
+    }
 
     const finalUrl = joinUrl(this.baseURL, url);
+    
+    const executeFetch = async (): Promise<Response> => {
+      const accessToken = tokenStore.getAccessToken();
+      const headers = new Headers(options?.headers);
+      
+      if (shouldAuth && accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+      }
+      if (!headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
 
-    return fetch(finalUrl, {
-      ...options,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-    });
+      return fetch(finalUrl, {
+        ...options,
+        headers,
+        credentials: "include",
+      });
+    };
+
+    let response = await executeFetch();
+
+    if (response.status === 401 && shouldAuth && !isRefreshReq) {
+      logger.log("401 detected, attempting one-time retry after refresh...");
+      try {
+        await this.refreshToken();
+        response = await executeFetch();
+      } catch (e) {
+        logger.error("Retry failed after refresh error");
+      }
+    }
+
+    return response;
   }
 }
 
-export const createAuthInterceptor = (config?: InterceptorConfig) => {
-  return new AuthInterceptor(config);
-};
+export const createAuthInterceptor = (config?: InterceptorConfig) => new AuthInterceptor(config);
 
 export const createAuthenticatedFetch = (config?: InterceptorConfig) => {
   const interceptor = new AuthInterceptor(config);
-
-  return async (url: string, options?: RequestOptions): Promise<Response> => {
-    return interceptor.fetch(url, options);
-  };
+  return (url: string, options?: RequestOptions) => interceptor.fetch(url, options);
 };

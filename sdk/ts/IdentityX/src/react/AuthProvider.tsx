@@ -5,7 +5,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   useSyncExternalStore
 } from "react";
 import { Api } from "../core/api";
@@ -14,11 +13,12 @@ import { getTokenClaims, type AuthTokenClaims } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
-import { logger } from "@soramux/node-fetch-sdk";
+import { logger, type DefaultFetchClientConfig } from "@soramux/node-fetch-sdk";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
+  isInitializing: boolean;
   isClient?: boolean;
 };
 
@@ -28,25 +28,30 @@ export function AuthProvider({
   children,
   baseURL,
   projectId,
-  exchangeURL,
   isClient = true,
+  fallback,
+  waitSession = true,
+  clientConfig,
 }: {
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
-  exchangeURL?: string;
   isClient?: boolean;
+  /** Component to show while initial auth check is in progress */
+  fallback?: React.ReactNode;
+  /** Whether to wait for the session restoration before rendering children. Defaults to true. */
+  waitSession?: boolean;
+  /** Extra config forwarded to the API client (e.g. timeout) */
+  clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
 }) {
-  const [ready, setReady] = useState(false);
   const isRestoring = useRef(false);
 
-  const { isAuthenticated } = useSyncExternalStore(
+  const { isAuthenticated, isInitializing } = useSyncExternalStore(
     authStore.subscribe,
     authStore.getSnapshot,
     authStore.getServerSnapshot,
   );
 
-  // Configuração estável de ambiente
   useEffect(() => {
     configure({
       ...(projectId ? { PROJECT_ID: projectId } : {}),
@@ -57,6 +62,7 @@ export function AuthProvider({
   const onTokenRefreshed = useCallback((claims: AuthTokenClaims) => {
     authStore.set({
       isAuthenticated: !!claims.access_data,
+      isInitializing: false,
     });
   }, []);
 
@@ -64,12 +70,12 @@ export function AuthProvider({
     baseURL,
     undefined,
     onTokenRefreshed,
-    exchangeURL,
-  ), [baseURL, exchangeURL, onTokenRefreshed]);
+    clientConfig,
+  ), [baseURL, onTokenRefreshed, clientConfig]);
 
   const auth = useMemo(
-    () => createAuthService(apiInstance, exchangeURL),
-    [apiInstance, exchangeURL],
+    () => createAuthService(apiInstance),
+    [apiInstance],
   );
 
   useEffect(() => {
@@ -80,16 +86,15 @@ export function AuthProvider({
       isRestoring.current = true;
 
       if (getTokenClaims()) {
-        authStore.set({ isAuthenticated: true });
-        setReady(true);
+        authStore.set({ isAuthenticated: true, isInitializing: false });
         return;
       }
 
       logger.log("No cached claims, attempting silent refresh...");
       try {
-        const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
+        const res = await auth.refresh();
         if (res.success) {
-          authStore.set({ isAuthenticated: true });
+          authStore.set({ isAuthenticated: true, isInitializing: false });
           logger.log("Session restored.");
         } else {
           authStore.reset();
@@ -99,20 +104,21 @@ export function AuthProvider({
         authStore.reset();
         logger.warn("Could not restore session (offline?).");
       } finally {
-        setReady(true);
+        authStore.set({ isInitializing: false });
       }
     };
 
     restoreSession();
-  }, [auth, exchangeURL, isClient]);
+  }, [auth, isClient]);
 
   const contextValue = useMemo(() => ({
     auth,
     isAuthenticated,
+    isInitializing,
     isClient
-  }), [auth, isAuthenticated, isClient]);
+  }), [auth, isAuthenticated, isInitializing, isClient]);
 
-  if (!ready) return null;
+  if (waitSession && isInitializing) return fallback ?? null;
 
   return (
     <AuthContext.Provider value={contextValue}>
