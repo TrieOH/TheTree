@@ -7,20 +7,15 @@ import type {
 } from "../types/permission-types";
 import {
   clearAuthTokens,
-  fetchAndSaveClaims,
   getUserInfo,
-  withExchange
+  saveAuthSession,
+  type AuthTokens
 } from "../utils/token-utils";
 import { validateApiKey, validateProjectKey } from "../utils/env-validator";
 import type { Api } from "./api";
 import { env } from "./env";
 
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-}
-
-export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
+export const createAuthService = (apiInstance: Api) => ({
   login: async (email: string, password: string) => {
     if (env.PROJECT_ID) validateProjectKey();
     const url = env.PROJECT_ID ? `/projects/${env.PROJECT_ID}/login` : "/auth/login";
@@ -30,7 +25,11 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
       { requiresAuth: false }
     );
 
-    return withExchange(apiInstance, res, "login", exchangeURL);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+    }
+
+    return res;
   },
 
   register: (email: string, password: string, flow_id?: string, custom: Record<string, FieldValue> = {}) => {
@@ -67,7 +66,11 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
       { skipRefresh: true }
     );
 
-    return withExchange(apiInstance, res, "refresh", exchangeURL);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+    }
+
+    return res;
   },
 
   sessions: async () => {
@@ -82,12 +85,6 @@ export const createAuthService = (apiInstance: Api, exchangeURL?: string) => ({
     const path = revokeAll ? "/sessions" : "/sessions/others"
     return apiInstance.delete<string>(path);
   },
-
-  /**
-   * Only for non Project
-   * @returns APIResponse Claim
-   */
-  refreshProfileInfo: async () => fetchAndSaveClaims(apiInstance),
 
   profile: () => getUserInfo(),
 
