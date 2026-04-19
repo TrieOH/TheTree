@@ -1,10 +1,5 @@
 import type { ProjectFieldDefinitionResultI, FieldValue } from "../types/fields-types";
 import type { SessionI } from "../types/sessions-types";
-import type {
-  CheckPermissionResponse,
-  CheckPermissionRequest,
-  CompletePermissionBuilder
-} from "../types/permission-types";
 import {
   clearAuthTokens,
   getUserInfo,
@@ -225,29 +220,6 @@ export const createServerAuthService = (apiInstance: Api) => ({
       {
         headers: {
           "Authorization": env.API_KEY,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-  },
-
-  /**
-   * Checks if a user has a specific permission.
-   * @param permission PermissionBuilder instance or raw CheckPermissionRequest object.
-   */
-  checkPermission: async (permission: CompletePermissionBuilder | CheckPermissionRequest) => {
-    validateApiKey();
-    const req = ("toJSON" in permission) ? permission.toJSON() : permission;
-    const payload = {
-      project_id: env.PROJECT_ID,
-      ...req
-    };
-    return apiInstance.post<CheckPermissionResponse>(
-      "/authz/check",
-      payload,
-      {
-        headers: {
-          "X-API-Key": env.API_KEY,
           "Content-Type": "application/json"
         }
       }
