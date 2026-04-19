@@ -1,12 +1,12 @@
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { RelationBadge } from './relation-badge'
-import type { SpiceDBRelationshipI } from '@soramux/node-perm-sdk'
+import type { Relationship } from '@soramux/node-perm-sdk'
 
 interface RelationshipsTableProps {
-  rows: SpiceDBRelationshipI[]
-  onEdit: (rel: SpiceDBRelationshipI) => void
-  onDelete: (rel: SpiceDBRelationshipI) => void
+  rows: Relationship.SpiceDBRelationshipI[]
+  onEdit: (rel: Relationship.SpiceDBRelationshipI) => void
+  onDelete: (rel: Relationship.SpiceDBRelationshipI) => void
   onNew: () => void
 }
 

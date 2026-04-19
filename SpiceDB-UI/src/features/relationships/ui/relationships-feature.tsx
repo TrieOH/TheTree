@@ -12,7 +12,7 @@ import { parseSpiceDBSchema } from '../lib/schema-parser'
 import type { RelationshipFormState } from '../model'
 import { RelationshipForm } from './relationship-form'
 import { RelationshipsTable } from './relationships-table'
-import type { SpiceDBRelationshipI } from '@soramux/node-perm-sdk'
+import type { Relationship } from '@soramux/node-perm-sdk'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +38,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<RelationshipFormState>(INITIAL_FORM)
   const [mobileView, setMobileView] = useState<'table' | 'form'>('table')
-  const [relToDelete, setRelToDelete] = useState<SpiceDBRelationshipI | null>(null)
+  const [relToDelete, setRelToDelete] = useState<Relationship.SpiceDBRelationshipI | null>(null)
 
   // Fetch schema to get dynamic definitions and relations
   const { data: schemaData } = useQuery(schemaQueryOptions(envId))
@@ -100,7 +100,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (rel: SpiceDBRelationshipI) =>
+    mutationFn: (rel: Relationship.SpiceDBRelationshipI) =>
       deleteRelationship({
         data: {
           envId,
@@ -134,7 +134,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
     setMobileView('form')
   }
 
-  function handleEdit(rel: SpiceDBRelationshipI) {
+  function handleEdit(rel: Relationship.SpiceDBRelationshipI) {
     setIsEditing(true)
     setFormData({
       resource: rel.resource.objectType,
@@ -160,7 +160,7 @@ export function RelationshipsFeature({ envId }: { envId: string }) {
     }
   }
 
-  function handleDelete(rel: SpiceDBRelationshipI) {
+  function handleDelete(rel: Relationship.SpiceDBRelationshipI) {
     setRelToDelete(rel)
   }
 

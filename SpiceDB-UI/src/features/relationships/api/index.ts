@@ -139,12 +139,18 @@ export const checkRelationship = createServerFn({
     relation: z.string().min(1),
   }))
   .handler(async ({ data }) => {
-    const response = await spicedb.relationship(data.envId).check(
+    const response = await spicedb.permission(data.envId).check(
       {
-        resourceType: data.resource,
-        resourceId: data.resourceId,
-        subjectType: data.subject,
-        subjectId: data.subjectId,
+        resource: {
+          objectType: data.resource,
+          objectId: data.resourceId
+        },
+        subject: {
+          object: {
+            objectType: data.subject,
+            objectId: data.subjectId
+          }
+        },
         permission: data.relation,
       }
     )

@@ -7,7 +7,7 @@ export const env = createEnv({
     TRIEOH_AUTHZED_TOKEN: z.string(),
     TRIEOH_AUTHZED_ENVIRONMENTS: z.string().default('[]').transform((v) => {
       try {
-        return JSON.parse(v) as { name: string; url: string }[]
+        return JSON.parse(v) as { name: string; url: string, token?: string }[]
       } catch (e) {
         return []
       }
