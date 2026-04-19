@@ -28,7 +28,6 @@ export function AuthProvider({
   children,
   baseURL,
   projectId,
-  exchangeURL,
   isClient = true,
   fallback,
   waitSession = true,
@@ -37,7 +36,6 @@ export function AuthProvider({
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
-  exchangeURL?: string;
   isClient?: boolean;
   /** Component to show while initial auth check is in progress */
   fallback?: React.ReactNode;
@@ -72,13 +70,12 @@ export function AuthProvider({
     baseURL,
     undefined,
     onTokenRefreshed,
-    exchangeURL,
     clientConfig,
-  ), [baseURL, exchangeURL, onTokenRefreshed, clientConfig]);
+  ), [baseURL, onTokenRefreshed, clientConfig]);
 
   const auth = useMemo(
-    () => createAuthService(apiInstance, exchangeURL),
-    [apiInstance, exchangeURL],
+    () => createAuthService(apiInstance),
+    [apiInstance],
   );
 
   useEffect(() => {
@@ -95,7 +92,7 @@ export function AuthProvider({
 
       logger.log("No cached claims, attempting silent refresh...");
       try {
-        const res = await (exchangeURL ? auth.refresh() : auth.refreshProfileInfo());
+        const res = await auth.refresh();
         if (res.success) {
           authStore.set({ isAuthenticated: true, isInitializing: false });
           logger.log("Session restored.");
@@ -112,7 +109,7 @@ export function AuthProvider({
     };
 
     restoreSession();
-  }, [auth, exchangeURL, isClient]);
+  }, [auth, isClient]);
 
   const contextValue = useMemo(() => ({
     auth,
