@@ -129,6 +129,8 @@ func (app *Univents) startHandlers(rt runtime) *router.HTTPDeps {
 	handlers.Tickets = tickets.NewHandler(rt.commands.tickets, rt.queries.tickets)
 	handlers.Products = products.NewHandler(rt.commands.products, rt.queries.products)
 	handlers.Purchases = purchases.NewHandler(rt.commands.purchases, rt.queries.purchases, rt.ws)
+
+	handlers.AuthMiddleware = rt.middlewares.authMW
 	return &handlers
 }
 
@@ -179,7 +181,7 @@ func (app *Univents) startRepos(rt runtime) repos {
 
 func (app *Univents) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(app.gaClient, rt.tracer)
+	mw.authMW = middleware.NewAuthMiddleware(app.idxClient, rt.tracer)
 	return mw
 }
 

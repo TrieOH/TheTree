@@ -19,7 +19,7 @@ type Univents struct {
 	db        *pgxpool.Pool
 	redis     *redis.Client
 	scheduler gocron.Scheduler
-	gaClient  *idx.Client
+	idxClient *idx.Client
 	payssage  *paymentsSDK.Client
 	minio     *minio.Client
 	sdbClient *authzed.Client
@@ -30,7 +30,7 @@ func New() *Univents {
 	LoadEnv()
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
-	app.gaClient = SetupGoAuth()
+	app.idxClient = SetupGoAuth()
 	app.payssage = SetupPayssage()
 	app.minio = SetupObjectStorage()
 	migrationPath := "./internal/platform/database/migrations"
