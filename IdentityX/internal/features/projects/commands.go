@@ -22,29 +22,29 @@ import (
 )
 
 type CommandService struct {
-	projects     ports.ProjectRepository
-	projectUsers ports.ProjectUserRepository
-	keys         ports.KeysRepository
-	logger       *zap.Logger
-	tracer       trace.Tracer
-	txRunner     database.TxRunner
+	users    ports.UserRepository
+	projects ports.ProjectRepository
+	keys     ports.KeysRepository
+	logger   *zap.Logger
+	tracer   trace.Tracer
+	txRunner database.TxRunner
 }
 
 func NewCommandService(
+	users ports.UserRepository,
 	projects ports.ProjectRepository,
-	projectUsers ports.ProjectUserRepository,
 	keys ports.KeysRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	txRunner database.TxRunner,
 ) *CommandService {
 	return &CommandService{
-		projects:     projects,
-		projectUsers: projectUsers,
-		keys:         keys,
-		logger:       logger,
-		tracer:       tracer,
-		txRunner:     txRunner,
+		users:    users,
+		projects: projects,
+		keys:     keys,
+		logger:   logger,
+		tracer:   tracer,
+		txRunner: txRunner,
 	}
 }
 
@@ -300,18 +300,13 @@ func (uc *CommandService) Delete(ctx context.Context, projectID uuid.UUID) error
 	return nil
 }
 
-func (uc *CommandService) ListUsers(ctx context.Context, projectID uuid.UUID) ([]contracts.ProjectUser, error) {
+func (uc *CommandService) ListUsers(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.ListUsers",
 		trace.WithAttributes(attribute.String("project.id", projectID.String())),
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
-	if err != nil {
-		return nil, err
-	}
-
-	users, err := uc.projectUsers.ListExternal(ctx, projectID, principal.UserID)
+	users, err := uc.users.ListFromProject(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +316,7 @@ func (uc *CommandService) ListUsers(ctx context.Context, projectID uuid.UUID) ([
 	return users, nil
 }
 
-func (uc *CommandService) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*contracts.ProjectUser, error) {
+func (uc *CommandService) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*contracts.User, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.GetUser",
 		trace.WithAttributes(
 			attribute.String("project.id", projectID.String()),
@@ -330,12 +325,7 @@ func (uc *CommandService) GetUser(ctx context.Context, projectID, userID uuid.UU
 	)
 	defer span.End()
 
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := uc.projectUsers.GetByIDExternal(ctx, userID, projectID, principal.UserID)
+	user, err := uc.users.GetByIDFromProject(ctx, userID, projectID)
 	if err != nil {
 		return nil, err
 	}

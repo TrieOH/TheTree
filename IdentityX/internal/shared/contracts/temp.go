@@ -24,7 +24,7 @@ type NewRefreshTokenInput struct {
 
 type NewProjectAccessTokenInput struct {
 	KID                  string
-	User                 ProjectUser
+	User                 User
 	IP, Agent, AccessJTI string
 	SessionID            uuid.UUID
 	FamilyID             uuid.UUID

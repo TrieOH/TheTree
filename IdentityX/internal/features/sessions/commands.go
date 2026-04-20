@@ -51,14 +51,14 @@ func (uc *CommandService) List(ctx context.Context) ([]contracts.Session, error)
 		return nil, err
 	}
 
-	var identityType contracts.IdentityType
+	var userType contracts.UserType
 	if principal.ProjectID == nil {
-		identityType = contracts.ClientIdentity
+		userType = contracts.UserTypeClient
 	} else {
-		identityType = contracts.ProjectIdentity
+		userType = contracts.UserTypeProject
 	}
 
-	sessions, err := uc.sessions.List(ctx, principal.UserID, identityType)
+	sessions, err := uc.sessions.List(ctx, principal.UserID, userType)
 	if err != nil {
 		return nil, err
 	}
@@ -87,15 +87,15 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 		return fail.New(errx.SessionSelfRevokeForbidden).RecordCtx(ctx)
 	}
 
-	var identityType contracts.IdentityType
+	var userType contracts.UserType
 	if principal.ProjectID == nil {
-		identityType = contracts.ClientIdentity
+		userType = contracts.UserTypeClient
 	} else {
-		identityType = contracts.ProjectIdentity
+		userType = contracts.UserTypeProject
 	}
 
 	var sess *contracts.Session
-	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, identityType)
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, userType)
 	if fail.Is(err, errx.SQLNotFound) {
 		return fail.New(errx.SessionNotFound).RecordCtx(ctx)
 	} else if err != nil {
@@ -130,17 +130,17 @@ func (uc *CommandService) RevokeOthers(ctx context.Context, accessToken string) 
 		return err
 	}
 
-	var identityType contracts.IdentityType
+	var userType contracts.UserType
 	if principal.ProjectID == nil {
-		identityType = contracts.ClientIdentity
+		userType = contracts.UserTypeClient
 	} else {
-		identityType = contracts.ProjectIdentity
+		userType = contracts.UserTypeProject
 	}
 
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
-		IdentityType: identityType,
-		EntityID:     principal.UserID,
-		ExcludeID:    &currentSessionID,
+		UserType:  userType,
+		UserID:    principal.UserID,
+		ExcludeID: &currentSessionID,
 	})
 	if err != nil {
 		return err
@@ -160,16 +160,16 @@ func (uc *CommandService) RevokeAll(ctx context.Context) error {
 		return err
 	}
 
-	var identityType contracts.IdentityType
+	var userType contracts.UserType
 	if principal.ProjectID == nil {
-		identityType = contracts.ClientIdentity
+		userType = contracts.UserTypeClient
 	} else {
-		identityType = contracts.ProjectIdentity
+		userType = contracts.UserTypeProject
 	}
 
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
-		IdentityType: identityType,
-		EntityID:     principal.UserID,
+		UserType: userType,
+		UserID:   principal.UserID,
 	})
 	if err != nil {
 		return err

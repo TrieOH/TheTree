@@ -2,7 +2,7 @@ package keys
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
@@ -16,14 +16,14 @@ import (
 )
 
 type keyRepo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.KeysRepository = (*keyRepo)(nil)
 
-func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysRepository {
 	return &keyRepo{
 		q:      q,
 		log:    log,
@@ -31,14 +31,14 @@ func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysR
 	}
 }
 
-func (repo *keyRepo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *keyRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapKeyPairFromDB(dst *contracts.Pair, src *sqlc2.KeyPair) {
+func mapKeyPairFromDB(dst *contracts.Pair, src *sqlc.KeyPair) {
 	dst.ID = src.ID
 	dst.KID = src.Kid
 	dst.ProjectID = src.ProjectID
@@ -53,7 +53,7 @@ func mapKeyPairFromDB(dst *contracts.Pair, src *sqlc2.KeyPair) {
 	dst.VerifyExpiresAt = src.VerifyExpiresAt
 }
 
-func mapGoAuthPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc2.ListActivePublicKeysForGoAuthRow) {
+func mapGoAuthPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc.ListActivePublicKeysForGoAuthRow) {
 	dst.KID = src.Kid
 	dst.Algorithm = contracts.Algorithm(src.Algorithm)
 	dst.PublicKey = src.PublicKey
@@ -61,7 +61,7 @@ func mapGoAuthPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc2.ListActivePub
 	dst.ExpiresAt = src.ExpiresAt
 }
 
-func mapProjectPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc2.ListActivePublicKeysForProjectRow) {
+func mapProjectPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc.ListActivePublicKeysForProjectRow) {
 	dst.KID = src.Kid
 	dst.Algorithm = contracts.Algorithm(src.Algorithm)
 	dst.PublicKey = src.PublicKey
@@ -78,15 +78,15 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*c
 	)
 	defer span.End()
 
-	row, err := repo.queries(ctx).CreateKeyPair(ctx, sqlc2.CreateKeyPairParams{
+	row, err := repo.queries(ctx).CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             pair.KID,
 		ProjectID:       pair.ProjectID,
-		KeyType:         sqlc2.KeyTypeEnum(pair.KeyType),
+		KeyType:         string(pair.KeyType),
 		Algorithm:       string(pair.Algorithm),
 		PublicKey:       pair.PublicKey,
 		PrivateKey:      pair.PrivateKey,
-		Usage:           sqlc2.KeyUsageEnum(pair.Usage),
-		Status:          sqlc2.KeyStatusEnum(pair.Status),
+		Usage:           string(pair.Usage),
+		Status:          string(pair.Status),
 		ExpiresAt:       pair.ExpiresAt,
 		VerifyExpiresAt: pair.VerifyExpiresAt,
 	})

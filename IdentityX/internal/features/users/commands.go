@@ -30,7 +30,6 @@ type CommandService struct {
 	users          ports.UserRepository
 	sessions       ports.SessionRepository
 	projects       ports.ProjectRepository
-	projectUsers   ports.ProjectUserRepository
 	keys           ports.KeysRepository
 	tokenReuseList ports.TokenReuseListRepository
 	redis          ports.RedisCacheService
@@ -47,7 +46,6 @@ func NewCommandService(
 	Users ports.UserRepository,
 	Sessions ports.SessionRepository,
 	Projects ports.ProjectRepository,
-	ProjectUsers ports.ProjectUserRepository,
 	Keys ports.KeysRepository,
 	TokenReuseList ports.TokenReuseListRepository,
 	Redis ports.RedisCacheService,
@@ -63,7 +61,6 @@ func NewCommandService(
 		users:          Users,
 		sessions:       Sessions,
 		projects:       Projects,
-		projectUsers:   ProjectUsers,
 		keys:           Keys,
 		tokenReuseList: TokenReuseList,
 		redis:          Redis,
@@ -146,7 +143,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterUserI
 	}
 
 	var u *contracts.User
-	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword))
+	u, err = uc.users.Register(ctx, in.Email, string(hashedPassword), nil, contracts.UserTypeClient)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -154,18 +151,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterUserI
 	span.SetAttributes(
 		attribute.String("user.id", u.ID.String()),
 		attribute.Int64("user.created_at", u.CreatedAt.Unix()),
-		attribute.String("user.type", u.UserType),
-	)
-
-	var identity *contracts.Identity
-	identity, err = uc.sessions.CreateIdentity(ctx, contracts.ClientIdentity, u.ID)
-	if err != nil {
-		return ports.Email{}, err
-	}
-
-	span.SetAttributes(
-		attribute.String("user.identity.id", identity.ID.String()),
-		attribute.String("user.identity.type", string(identity.IdentityType)),
+		attribute.String("user.type", string(u.UserType)),
 	)
 
 	var SigningKid string
@@ -238,7 +224,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 
 	span.SetAttributes(
 		attribute.String("user.id", u.ID.String()),
-		attribute.String("user.type", u.UserType),
+		attribute.String("user.type", string(u.UserType)),
 		attribute.Int64("user.created_at_unix", u.CreatedAt.Unix()),
 	)
 
@@ -249,22 +235,21 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
-	var identity *contracts.Identity
-	identity, err = uc.sessions.GetIdentityByEntityIDAndType(ctx, u.ID, contracts.ClientIdentity)
+	var sess *contracts.Session
+	sess, err = uc.sessions.Create(ctx, contracts.Session{
+		UserID:    u.ID,
+		ProjectID: u.ProjectID,
+		IssuedAt:  time.Now(),
+		UserAgent: in.Agent,
+		UserIP:    in.IP,
+		ExpiresAt: refreshExpiresAt,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	var sess *contracts.Session
-	sess, err = uc.sessions.Create(ctx, contracts.Session{
-		IdentityID: identity.ID,
-		IssuedAt:   time.Now(),
-		UserAgent:  in.Agent,
-		UserIP:     in.IP,
-		ExpiresAt:  refreshExpiresAt,
-	})
-
-	if err != nil {
+	if err = uc.users.UpdateLastLogin(ctx, u.ID); err != nil {
 		return nil, err
 	}
 
@@ -356,15 +341,15 @@ func (uc *CommandService) Logout(ctx context.Context) error {
 		return errors.New("can't logout an api key, please revoke it instead")
 	}
 
-	var identityType contracts.IdentityType
+	var userType contracts.UserType
 	if principal.ProjectID == nil {
-		identityType = contracts.ClientIdentity
+		userType = contracts.UserTypeClient
 	} else {
-		identityType = contracts.ProjectIdentity
+		userType = contracts.UserTypeProject
 	}
 
 	var sess *contracts.Session
-	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, *principal.SessionID, identityType)
+	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, *principal.SessionID, userType)
 	if err != nil {
 		return err
 	}
@@ -464,7 +449,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 	span.SetAttributes(
 		attribute.String("session.id", sess.SessionID.String()),
 		attribute.String("session.token_id", sess.TokenID.String()),
-		attribute.String("session.user_type", sess.UserType),
+		attribute.String("session.user_type", string(sess.UserType)),
 	)
 
 	if sess.ProjectID == nil {
@@ -490,14 +475,8 @@ func (uc *CommandService) finishClientRefresh(
 		}
 	}()
 
-	var identity *contracts.Identity
-	identity, err = uc.sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, contracts.ClientIdentity)
-	if err != nil {
-		return nil, err
-	}
-
 	var u *contracts.User
-	u, err = uc.users.GetUserByID(ctx, identity.EntityID)
+	u, err = uc.users.GetUserByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -589,13 +568,8 @@ func (uc *CommandService) finishProjectUserRefresh(
 		}
 	}()
 
-	var identity *contracts.Identity
-	identity, err = uc.sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, contracts.ProjectIdentity)
-	if err != nil {
-		return nil, err
-	}
-
-	projectUser, err := uc.projectUsers.GetByIDInternal(ctx, identity.EntityID, *sess.ProjectID)
+	var u *contracts.User
+	u, err = uc.users.GetUserByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -615,7 +589,7 @@ func (uc *CommandService) finishProjectUserRefresh(
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	accessPayload, err = uc.tokens.NewProjectAccessToken(contracts.NewProjectAccessTokenInput{
 		KID:       SigningKid,
-		User:      *projectUser,
+		User:      *u,
 		IP:        in.IP,
 		Agent:     in.Agent,
 		AccessJTI: newAccessJTI.String(),
@@ -736,13 +710,8 @@ func (uc *CommandService) registerProjectUserInternal(ctx context.Context, in Pr
 		return ports.Email{}, fail.New(errx.RequestInvalidPassword).With(err).RecordCtx(ctx)
 	}
 
-	var usr *contracts.ProjectUser
-	usr, err = uc.projectUsers.Register(ctx, contracts.ProjectUser{
-		ProjectID:    in.ProjectID,
-		Email:        in.Email,
-		PasswordHash: string(hashedPassword),
-		Metadata:     in.CustomFields,
-	})
+	var usr *contracts.User
+	usr, err = uc.users.Register(ctx, in.Email, string(hashedPassword), &in.ProjectID, contracts.UserTypeProject)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -750,18 +719,7 @@ func (uc *CommandService) registerProjectUserInternal(ctx context.Context, in Pr
 	span.SetAttributes(
 		attribute.String("user.id", usr.ID.String()),
 		attribute.Int64("user.created_at", usr.CreatedAt.Unix()),
-		attribute.String("user.type", usr.UserType),
-	)
-
-	var identity *contracts.Identity
-	identity, err = uc.sessions.CreateIdentity(ctx, contracts.ProjectIdentity, usr.ID)
-	if err != nil {
-		return ports.Email{}, err
-	}
-
-	span.SetAttributes(
-		attribute.String("user.identity.id", identity.ID.String()),
-		attribute.String("user.identity.type", string(identity.IdentityType)),
+		attribute.String("user.type", string(usr.UserType)),
 	)
 
 	SigningKid, err := uc.keys.GetActiveGoAuthSigningKID(ctx)
@@ -829,8 +787,8 @@ func (uc *CommandService) LoginProjectUser(
 
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
-	var usr *contracts.ProjectUser
-	usr, err = uc.projectUsers.GetByEmailInternal(ctx, in.ProjectID, in.Email)
+	var usr *contracts.User
+	usr, err = uc.users.GetUserByEmailFromProject(ctx, in.Email, in.ProjectID)
 	if fail.Is(err, errx.SQLNotFound) {
 		return nil, fail.New(errx.AuthInvalidCredentials).RecordCtx(ctx)
 	} else if err != nil {
@@ -842,27 +800,21 @@ func (uc *CommandService) LoginProjectUser(
 		return nil, fail.New(errx.AuthInvalidCredentials).Trace(err.Error()).RecordCtx(ctx)
 	}
 
-	var identity *contracts.Identity
-	identity, err = uc.sessions.GetIdentityByEntityIDAndType(ctx, usr.ID, contracts.ProjectIdentity)
-	if err != nil {
-		return nil, err
-	}
-
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 	var sess *contracts.Session
 	sess, err = uc.sessions.Create(ctx, contracts.Session{
-		IssuedAt:   time.Now(),
-		UserAgent:  in.Agent,
-		UserIP:     in.IP,
-		ExpiresAt:  refreshExpiresAt,
-		IdentityID: identity.ID,
-		ProjectID:  &in.ProjectID,
+		UserID:    usr.ID,
+		ProjectID: usr.ProjectID,
+		IssuedAt:  time.Now(),
+		UserAgent: in.Agent,
+		UserIP:    in.IP,
+		ExpiresAt: refreshExpiresAt,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = uc.projectUsers.UpdateLastLogin(ctx, identity.EntityID); err != nil {
+	if err = uc.users.UpdateLastLogin(ctx, usr.ID); err != nil {
 		return nil, err
 	}
 
@@ -972,7 +924,7 @@ func (uc *CommandService) Verify(ctx context.Context, token string) (err error) 
 	} else {
 		span.SetAttributes(attribute.String("user.type", "project"))
 		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
-		wasAlreadyVerified, err = uc.projectUsers.Verify(ctx, claims.Sub.Subject)
+		wasAlreadyVerified, err = uc.users.Verify(ctx, claims.Sub.Subject)
 		if err != nil {
 			return err
 		}
@@ -999,9 +951,9 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	}
 
 	var u *contracts.User
-	var pu *contracts.ProjectUser
+	var pu *contracts.User
 	if principal.ProjectID != nil {
-		pu, err = uc.projectUsers.GetByIDInternal(ctx, principal.UserID, *principal.ProjectID)
+		pu, err = uc.users.GetUserByID(ctx, principal.UserID)
 		if err != nil {
 			return err
 		}
@@ -1094,7 +1046,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 	}()
 
 	var u *contracts.User
-	var pu *contracts.ProjectUser
+	var pu *contracts.User
 
 	u, err = uc.users.GetUserByEmail(ctx, in.Email)
 	if err != nil && !errx.IsNotFound(err) {
@@ -1107,7 +1059,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 			return nil // silent success
 		}
 
-		pu, err = uc.projectUsers.GetByEmailInternal(ctx, *in.ProjectID, in.Email)
+		pu, err = uc.users.GetUserByEmailFromProject(ctx, in.Email, *in.ProjectID)
 		if err != nil {
 			if errx.IsNotFound(err) {
 				return nil // silent success (no enumeration)
@@ -1232,20 +1184,20 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in ResetPas
 			return err
 		}
 		_, err = uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
-			EntityID:     claims.Sub.Subject,
-			IdentityType: contracts.ClientIdentity,
+			UserID:   claims.Sub.Subject,
+			UserType: contracts.UserTypeClient,
 		})
 		if err != nil {
 			return err
 		}
 	} else {
-		err = uc.projectUsers.ResetPassword(ctx, claims.Sub.Subject, hashedPassword)
+		err = uc.users.ResetPassword(ctx, claims.Sub.Subject, hashedPassword)
 		if err != nil {
 			return err
 		}
 		_, err = uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
-			EntityID:     claims.Sub.Subject,
-			IdentityType: contracts.ProjectIdentity,
+			UserID:   claims.Sub.Subject,
+			UserType: contracts.UserTypeProject,
 		})
 		if err != nil {
 			return err
@@ -1288,12 +1240,7 @@ func (uc *CommandService) LogoutProjectUser(ctx context.Context, in ProjectLogou
 		return err
 	}
 
-	identity, err := uc.sessions.GetIdentityByIDAndType(ctx, sess.IdentityID, contracts.ProjectIdentity)
-	if err != nil {
-		return err
-	}
-
-	_, err = uc.sessions.MarkRevokedByID(ctx, identity.EntityID, sess.SessionID, contracts.ProjectIdentity)
+	_, err = uc.sessions.MarkRevokedByID(ctx, sess.UserID, sess.SessionID, contracts.UserTypeProject)
 	if err != nil {
 		return err
 	}

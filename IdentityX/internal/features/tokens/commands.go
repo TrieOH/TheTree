@@ -32,7 +32,7 @@ func (uc *CommandService) NewAccessToken(in contracts.NewAccessTokenInput) ([]by
 	claims := contracts.AccessClaims{
 		Sub: contracts.AccessSub{
 			ID:         in.User.ID,
-			UserType:   in.User.UserType,
+			UserType:   string(in.User.UserType),
 			Email:      in.User.Email,
 			SessionID:  in.SessionID,
 			UserAgent:  in.Agent,
@@ -89,9 +89,8 @@ func (uc *CommandService) NewProjectAccessToken(in contracts.NewProjectAccessTok
 	claims := contracts.AccessClaims{
 		Sub: contracts.AccessSub{
 			ID:         in.User.ID,
-			UserType:   in.User.UserType,
-			ProjectID:  &in.User.ProjectID,
-			Metadata:   in.User.Metadata,
+			UserType:   string(in.User.UserType),
+			ProjectID:  in.User.ProjectID,
 			Email:      in.User.Email,
 			SessionID:  in.SessionID,
 			UserAgent:  in.Agent,

@@ -4,7 +4,6 @@ import (
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/keys"
-	"IdentityX/internal/features/project_users"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
 	"IdentityX/internal/features/tokens"
@@ -60,7 +59,6 @@ type repos struct {
 	users          ports.UserRepository
 	sessions       ports.SessionRepository
 	projects       ports.ProjectRepository
-	projectUsers   ports.ProjectUserRepository
 	keys           ports.KeysRepository
 	tokenReuseList ports.TokenReuseListRepository
 	apiKeys        ports.ApiKeyRepository
@@ -91,7 +89,7 @@ func (app *IdentityX) run() {
 	//rt.queries = app.startQueries(rt)
 	mux := router.CreateRouter(rt.handlers)
 	port := viper.GetString("PORT")
-	log.Printf("TrieForms listening on :%s", port)
+	log.Printf("IdentityX listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
@@ -111,10 +109,10 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	cmd.apiKeys = api_keys.NewCommandService(r.apiKeys, r.projects, rt.logger, rt.tracer, rt.txRunner)
 	cmd.keys = keys.NewCommandService(r.keys, rt.caches.privateCache, rt.caches.publicCache, rt.logger, rt.tracer, rt.txRunner)
 	cmd.tokens = tokens.NewCommandService(*cmd.keys)
-	cmd.projects = projects.NewCommandService(r.projects, r.projectUsers, r.keys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.projects = projects.NewCommandService(r.users, r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
 	cmd.auth = auth.NewCommandService(r.sessions, r.projects, *cmd.tokens, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
 	cmd.sessions = sessions.NewCommandService(r.sessions, *cmd.tokens, rt.logger, rt.tracer, rt.txRunner)
-	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.projectUsers, r.keys, r.tokenReuseList, redis.NewCache(app.redis), *cmd.keys, *cmd.tokens, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), *cmd.keys, *cmd.tokens, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	return cmd
 }
 
@@ -137,7 +135,6 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	r.users = users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.projectUsers = project_users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.keys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.tokenReuseList = tokens.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)

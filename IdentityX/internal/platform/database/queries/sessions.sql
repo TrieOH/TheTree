@@ -1,5 +1,5 @@
 -- name: CreateUserSession :one
-INSERT INTO sessions (identity_id, issued_at, user_agent, user_ip, expires_at, project_id, user_type, created_at, updated_at)
+INSERT INTO sessions (user_id, issued_at, user_agent, user_ip, expires_at, project_id, user_type, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6,
         CASE
             WHEN $6::UUID IS NULL THEN 'client'
@@ -28,17 +28,16 @@ WHERE token_id = $1
   AND expires_at > NOW();
 
 -- name: ListSessions :many
-SELECT s.*
-FROM sessions s
-JOIN identities i ON i.id = s.identity_id
-WHERE i.type = $1
-    AND i.entity_id = $2
-    AND s.revoked_at IS NULL
-    AND s.expires_at > NOW()
-ORDER BY s.created_at DESC;
+SELECT *
+FROM sessions
+WHERE user_type = $1
+    AND user_id = $2
+    AND revoked_at IS NULL
+    AND expires_at > NOW()
+ORDER BY created_at DESC;
 
 -- name: UpdateSession :exec
-UPDATE sessions s
+UPDATE sessions
 SET
     issued_at  = $4,
     user_agent = $5,
@@ -46,12 +45,11 @@ SET
     expires_at = $7,
     token_id   = $8,
     updated_at = NOW()
-    FROM identities i
-WHERE s.session_id = $1
-  AND s.identity_id = i.id
-  AND i.type = $2
-  AND i.entity_id = $3
-  AND s.revoked_at IS NULL;
+WHERE session_id = $1
+  AND user_id = $2
+  AND user_type = $3
+  AND entity_id = $4
+  AND revoked_at IS NULL;
 
 -- name: DeleteRevokedSessions :many
 DELETE FROM sessions
@@ -76,50 +74,44 @@ WHERE family_id = $2
 -- ============================
 
 -- name: RevokeSessionByID :one
-UPDATE sessions s
+UPDATE sessions
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-    FROM identities i
-WHERE s.session_id = $1
-  AND s.identity_id = i.id
-  AND i.type = $2
-  AND i.entity_id = $3
-  AND s.revoked_at IS NULL
-    RETURNING s.*;
+WHERE session_id = $1
+  AND user_id = $2
+  AND user_type = $3
+  AND revoked_at IS NULL
+    RETURNING *;
 
 -- name: RevokeSessionByFamilyID :exec
-UPDATE sessions s
+UPDATE sessions
 SET
     revoked_at = NOW(),
     updated_at = NOW()
 WHERE family_id = $1
-AND s.revoked_at IS NULL;
+AND revoked_at IS NULL;
 
 -- name: RevokeOtherSessions :many
-UPDATE sessions s
+UPDATE sessions
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-FROM identities i
-WHERE s.identity_id = i.id
-AND i.type = $1
-AND i.entity_id = $2
-AND s.session_id != $3
-AND s.revoked_at IS NULL
-RETURNING s.*;
+WHERE user_id = $1
+  AND user_type = $2
+  AND session_id != $3
+  AND revoked_at IS NULL
+    RETURNING *;
 
 -- name: RevokeAllSessions :many
 UPDATE sessions s
 SET
     revoked_at = NOW(),
     updated_at = NOW()
-FROM identities i
-WHERE s.identity_id = i.id
-AND i.type = $1
-AND i.entity_id = $2
-AND s.revoked_at IS NULL
-RETURNING s.*;
+WHERE user_id = $1
+  AND user_type = $2
+  AND revoked_at IS NULL
+    RETURNING *;
 
 -- name: RevokeExpiredSessions :many
 UPDATE sessions
@@ -127,5 +119,5 @@ SET
     revoked_at = NOW(),
     updated_at = NOW()
 WHERE expires_at < NOW()
-AND revoked_at IS NULL
-RETURNING *;
+  AND revoked_at IS NULL
+    RETURNING *;

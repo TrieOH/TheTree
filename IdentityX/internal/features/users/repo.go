@@ -2,7 +2,7 @@ package users
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
@@ -16,12 +16,12 @@ import (
 )
 
 type userRepo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
 }
 
-func (repo *userRepo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *userRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
@@ -30,7 +30,7 @@ func (repo *userRepo) queries(ctx context.Context) *sqlc2.Queries {
 
 var _ ports.UserRepository = (*userRepo)(nil)
 
-func NewRepo(q *sqlc2.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepository {
+func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepository {
 	return &userRepo{
 		q:      q,
 		log:    l,
@@ -38,24 +38,30 @@ func NewRepo(q *sqlc2.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRep
 	}
 }
 
-func copyUserFromDB(dst *contracts.User, src *sqlc2.User) {
-	dst.ID = src.ID
-	dst.Email = src.Email
-	dst.PasswordHash = src.PasswordHash
-	dst.UserType = src.UserType
-	dst.CreatedAt = src.CreatedAt
-	dst.UpdatedAt = src.UpdatedAt
-	dst.IsVerified = src.IsVerified
-	dst.VerifiedAt = src.VerifiedAt
+func mapUserFromDB(src *sqlc.User) *contracts.User {
+	return &contracts.User{
+		ID:           src.ID,
+		UserType:     contracts.UserType(src.UserType),
+		ProjectID:    src.ProjectID,
+		Email:        src.Email,
+		PasswordHash: src.PasswordHash,
+		LastLoginAt:  src.LastLoginAt,
+		IsVerified:   src.IsVerified,
+		VerifiedAt:   src.VerifiedAt,
+		CreatedAt:    src.CreatedAt,
+		UpdatedAt:    src.UpdatedAt,
+	}
 }
 
-func (repo *userRepo) Register(ctx context.Context, email, password string) (*contracts.User, error) {
+func (repo *userRepo) Register(ctx context.Context, email, password string, projectID *uuid.UUID, userType contracts.UserType) (*contracts.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "UserRepo.Register")
 	defer span.End()
 
-	sqlcUser, err := repo.queries(ctx).RegisterUser(ctx, sqlc2.RegisterUserParams{
+	sqlcUser, err := repo.queries(ctx).RegisterUser(ctx, sqlc.RegisterUserParams{
 		Email:        email,
 		PasswordHash: password,
+		ProjectID:    projectID,
+		UserType:     string(userType),
 	})
 
 	if err != nil {
@@ -68,10 +74,20 @@ func (repo *userRepo) Register(ctx context.Context, email, password string) (*co
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	var usr contracts.User
-	copyUserFromDB(&usr, &sqlcUser)
+	usr := mapUserFromDB(&sqlcUser)
+	return usr, nil
+}
 
-	return &usr, nil
+func (repo *userRepo) UpdateLastLogin(ctx context.Context, userID uuid.UUID) error {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.UpdateLastLogin")
+	defer span.End()
+
+	err := repo.queries(ctx).UpdateUserLastLogin(ctx, userID)
+	if err != nil {
+		return fail.From(err).RecordCtx(ctx)
+	}
+
+	return nil
 }
 
 func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contracts.User, error) {
@@ -93,10 +109,8 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contr
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	var usr contracts.User
-	copyUserFromDB(&usr, &sqlcUser)
-
-	return &usr, nil
+	usr := mapUserFromDB(&sqlcUser)
+	return usr, nil
 }
 
 func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*contracts.User, error) {
@@ -115,10 +129,31 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*contra
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	var usr contracts.User
-	copyUserFromDB(&usr, &sqlcUser)
+	usr := mapUserFromDB(&sqlcUser)
+	return usr, nil
+}
 
-	return &usr, nil
+func (repo *userRepo) GetUserByEmailFromProject(ctx context.Context, email string, projectID uuid.UUID) (*contracts.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByEmailFromProject")
+	defer span.End()
+
+	sqlcUser, err := repo.queries(ctx).GetUserByEmailFromProject(ctx, sqlc.GetUserByEmailFromProjectParams{
+		Email:     email,
+		ProjectID: &projectID,
+	})
+
+	if err != nil {
+		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
+	}
+
+	span.SetAttributes(
+		attribute.String("user.id", sqlcUser.ID.String()),
+		attribute.String("user.type", sqlcUser.UserType),
+		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
+	)
+
+	usr := mapUserFromDB(&sqlcUser)
+	return usr, nil
 }
 
 func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
@@ -147,7 +182,7 @@ func (repo *userRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passw
 	)
 	defer span.End()
 
-	err := repo.queries(ctx).ResetUserPassword(ctx, sqlc2.ResetUserPasswordParams{
+	err := repo.queries(ctx).ResetUserPassword(ctx, sqlc.ResetUserPasswordParams{
 		PasswordHash: string(passwordHash),
 		ID:           userID,
 	})
@@ -156,4 +191,37 @@ func (repo *userRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passw
 	}
 
 	return nil
+}
+
+func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.ResetPassword")
+	defer span.End()
+
+	sqlcUsers, err := repo.queries(ctx).ListUsersFromProject(ctx, &projectID)
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	users := make([]contracts.User, 0, len(sqlcUsers))
+	for _, sqlcUser := range sqlcUsers {
+		user := mapUserFromDB(&sqlcUser)
+		users = append(users, *user)
+	}
+
+	return users, nil
+}
+
+func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID uuid.UUID) (*contracts.User, error) {
+	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByIDFromProject")
+	defer span.End()
+
+	sqlcUser, err := repo.queries(ctx).GetUserByIDFromProject(ctx, sqlc.GetUserByIDFromProjectParams{
+		ID:        userID,
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, fail.From(err).RecordCtx(ctx)
+	}
+
+	return mapUserFromDB(&sqlcUser), nil
 }

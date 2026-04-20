@@ -1,40 +1,26 @@
 -- +goose Up
-
-CREATE TYPE key_type_enum AS ENUM (
-    'goauth',
-    'project'
-);
-
-CREATE TYPE key_usage_enum AS ENUM (
-    'sign',
-    'verify'
-);
-
-CREATE TYPE key_status_enum AS ENUM (
-    'active',
-    'rotated',
-    'revoked'
-);
-
 CREATE TABLE key_pair (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
     kid TEXT NOT NULL UNIQUE,
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
 
-    key_type key_type_enum NOT NULL,
-    algorithm TEXT NOT NULL DEFAULT 'Ed25519',
+    key_type TEXT NOT NULL default 'goauth',
+    CHECK (key_type in ('goauth', 'project')),
 
     public_key TEXT NOT NULL,
     private_key BYTEA NOT NULL, -- envelope-encrypted, never plaintext
+    algorithm TEXT NOT NULL DEFAULT 'Ed25519',
 
-    usage key_usage_enum NOT NULL DEFAULT 'sign',
-    status key_status_enum NOT NULL DEFAULT 'active',
+    usage TEXT NOT NULL DEFAULT 'sign',
+    CHECK (key_type in ('sign', 'verify')),
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    CHECK (key_type in ('active', 'rotated', 'revoked')),
 
     verify_expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL,
 
     CHECK (
         (key_type = 'goauth' AND project_id IS NULL)

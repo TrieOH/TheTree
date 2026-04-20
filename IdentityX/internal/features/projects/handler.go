@@ -132,7 +132,7 @@ func (handler *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} contracts.ProjectUser "List of project users"
+// @Success 200 {array} contracts.User "List of project users"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
@@ -165,7 +165,7 @@ func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request)
 // @Param project_id path string true "ID of the project"
 // @Param user_id path string true "ID of the user"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} contracts.ProjectUser "Project user details"
+// @Success 200 {object} contracts.User "Project user details"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project or user ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: User or project not found"

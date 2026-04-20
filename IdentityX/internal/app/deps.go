@@ -2,9 +2,9 @@ package app
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
-	crypto2 "IdentityX/internal/shared/crypto"
-	errx2 "IdentityX/internal/shared/errx"
+	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/shared/crypto"
+	"IdentityX/internal/shared/errx"
 	"context"
 	"log"
 	"time"
@@ -27,11 +27,11 @@ func SetupFail() {
 	fail.AllowStaticMutations(true, false)
 	fail.AllowRuntimePanics(true)
 
-	if err := fail.RegisterTranslator(&errx2.HTTPTranslator{}); err != nil {
+	if err := fail.RegisterTranslator(&errx.HTTPTranslator{}); err != nil {
 		log.Fatal(err)
 	}
 
-	fail.RegisterMapper(&errx2.PGXMapper{})
+	fail.RegisterMapper(&errx.PGXMapper{})
 
 	fail.SetLocalizer(localization.New())
 	fail.SetDefaultLocale("en-US")
@@ -58,7 +58,7 @@ func SetupFUN() {
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        module,
-		ErrorHandler:         errx2.ErrToResp,
+		ErrorHandler:         errx.ErrToResp,
 	})
 }
 
@@ -83,7 +83,7 @@ func SetupDB(migrationPath string) *pgxpool.Pool {
 }
 
 func SetupRuntimeEnv(db *pgxpool.Pool) {
-	queries := sqlc2.New(db)
+	queries := sqlc.New(db)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -107,17 +107,17 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 
 	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if fail.Is(fail.From(err), errx2.SQLNotFound) {
+		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			var pub string
 			var priv []byte
-			pub, priv, err = crypto2.GenerateEd25519()
+			pub, priv, err = crypto.GenerateEd25519()
 			if err != nil {
 				log.Fatalf("failed to generate GoAuth key: %v", err)
 			}
 			defer zero(priv)
 
 			var encryptedPriv []byte
-			encryptedPriv, err = crypto2.Encrypt(priv)
+			encryptedPriv, err = crypto.Encrypt(priv)
 			if err != nil {
 				log.Fatalf("failed to encrypt GoAuth key: %v", err)
 			}
@@ -125,7 +125,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			kid := "goauth:" + ulid.Make().String()
 			expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
-			_, err = queries.CreateKeyPair(ctx, sqlc2.CreateKeyPairParams{
+			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 				Kid:             kid,
 				ProjectID:       nil,
 				KeyType:         "goauth",
@@ -141,7 +141,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			fe := fail.From(err)
 
 			if fe != nil {
-				if errx2.IsUniqueViolation(fe) {
+				if errx.IsUniqueViolation(fe) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
 					log.Fatalf("failed to create GoAuth signing key: %v", fe.Error())
@@ -157,7 +157,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	fe := fail.From(err)
 
 	if fe != nil {
-		if fail.Is(fe, errx2.SCOPEOneGlobal) || errx2.IsUniqueViolation(fe) {
+		if fail.Is(fe, errx.SCOPEOneGlobal) || errx.IsUniqueViolation(fe) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
 			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
@@ -167,10 +167,10 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	}
 }
 
-func tryRotateGoAuthKeys(ctx context.Context, q *sqlc2.Queries) error {
+func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 	key, err := q.GetActiveSigningKeyForGoAuth(ctx)
 	if err != nil {
-		if fail.Is(fail.From(err), errx2.SQLNotFound) {
+		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			// defensive: no signing key → create
 			return createGoAuthKey(ctx, q)
 		}
@@ -188,14 +188,14 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc2.Queries) error {
 	return createGoAuthKey(ctx, q)
 }
 
-func createGoAuthKey(ctx context.Context, q *sqlc2.Queries) error {
-	pub, priv, err := crypto2.GenerateEd25519()
+func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
+	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto2.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc2.Queries) error {
 	kid := "goauth:" + ulid.Make().String()
 	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
-	_, err = q.CreateKeyPair(ctx, sqlc2.CreateKeyPairParams{
+	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
 		ProjectID:       nil,
 		KeyType:         "goauth",
@@ -220,13 +220,13 @@ func createGoAuthKey(ctx context.Context, q *sqlc2.Queries) error {
 		return nil
 	}
 	fe := fail.From(err)
-	if errx2.IsUniqueViolation(fe) {
+	if errx.IsUniqueViolation(fe) {
 		return nil
 	}
 	return fe
 }
 
-func tryRotateProjectKeys(ctx context.Context, q *sqlc2.Queries) error {
+func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 	projects, err := q.ListProjectsWithSigningKeys(ctx)
 	fe := fail.From(err)
 	if fe != nil {
@@ -234,10 +234,10 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc2.Queries) error {
 	}
 
 	for _, projectID := range projects {
-		var key sqlc2.KeyPair
+		var key sqlc.KeyPair
 		key, err = q.GetActiveSigningKeyForProject(ctx, projectID)
 		if err != nil {
-			if fail.Is(fail.From(err), errx2.SQLNotFound) {
+			if fail.Is(fail.From(err), errx.SQLNotFound) {
 				_ = createProjectKey(ctx, q, *projectID)
 				continue
 			}
@@ -258,14 +258,14 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc2.Queries) error {
 	return nil
 }
 
-func createProjectKey(ctx context.Context, q *sqlc2.Queries, projectID uuid.UUID) error {
-	pub, priv, err := crypto2.GenerateEd25519()
+func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID) error {
+	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto2.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func createProjectKey(ctx context.Context, q *sqlc2.Queries, projectID uuid.UUID
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
 	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
 
-	_, err = q.CreateKeyPair(ctx, sqlc2.CreateKeyPairParams{
+	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
 		ProjectID:       &projectID,
 		KeyType:         "project",
@@ -291,14 +291,14 @@ func createProjectKey(ctx context.Context, q *sqlc2.Queries, projectID uuid.UUID
 	}
 
 	// Rely on DB uniqueness for safety in concurrent rotations
-	if errx2.IsUniqueViolation(fail.From(err)) {
+	if errx.IsUniqueViolation(fail.From(err)) {
 		return nil
 	}
 
 	return fail.From(err)
 }
 
-func queriesWithTx(ctx context.Context, q *sqlc2.Queries) *sqlc2.Queries {
+func queriesWithTx(ctx context.Context, q *sqlc.Queries) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return q.WithTx(tx)
 	}
