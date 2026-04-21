@@ -13,10 +13,10 @@ CREATE TABLE key_pair (
     algorithm TEXT NOT NULL DEFAULT 'Ed25519',
 
     usage TEXT NOT NULL DEFAULT 'sign',
-    CHECK (key_type in ('sign', 'verify')),
+    CHECK (usage in ('sign', 'verify')),
 
     status TEXT NOT NULL DEFAULT 'active',
-    CHECK (key_type in ('active', 'rotated', 'revoked')),
+    CHECK (status in ('active', 'rotated', 'revoked')),
 
     verify_expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
