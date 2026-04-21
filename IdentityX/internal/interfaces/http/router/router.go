@@ -10,6 +10,7 @@ import (
 	"IdentityX/internal/features/sessions"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/system"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -91,6 +92,13 @@ func CreateRouter(handlers Handlers) http.Handler {
 	r.Handle("/metrics", middleware.Handler())
 
 	r = registerRoutes(handlers, r)
+
+	if viper.GetBool("DEBUG_MODE") {
+		_ = chi.Walk(r, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+			fmt.Printf("[%s] %s\n", method, route)
+			return nil
+		})
+	}
 
 	return otelhttp.NewHandler(r, "http.server")
 }
