@@ -89,23 +89,20 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	defer cancel()
 
 	// First, rotate any expired security to clear the way for new key creation
-	if err := queries.RotateExpiredGoAuthKeys(ctx); err != nil {
-		log.Printf("Warning: failed to rotate expired GoAuth security: %v", err)
-	}
-	if err := queries.RotateExpiredProjectKeys(ctx); err != nil {
-		log.Printf("Warning: failed to rotate expired project security: %v", err)
+	if err := queries.RotateExpiredKeys(ctx); err != nil {
+		log.Printf("Warning: failed to rotate expired signing keys: %v", err)
 	}
 
 	// Also run the full key rotation logic to create new security for projects without active security
 	if err := tryRotateGoAuthKeys(ctx, queries); err != nil {
-		log.Printf("Warning: failed to rotate goauth security: %v", err)
+		log.Printf("Warning: failed to rotate goauth keys: %v", err)
 	}
 
 	if err := tryRotateProjectKeys(ctx, queries); err != nil {
-		log.Printf("Warning: failed to rotate project security: %v", err)
+		log.Printf("Warning: failed to rotate project keys: %v", err)
 	}
 
-	_, err := queries.GetActiveSigningKeyForGoAuth(ctx)
+	_, err := queries.GetActiveSigningKey(ctx, nil)
 	if err != nil {
 		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			var pub string
@@ -168,7 +165,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 }
 
 func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
-	key, err := q.GetActiveSigningKeyForGoAuth(ctx)
+	key, err := q.GetActiveSigningKey(ctx, nil)
 	if err != nil {
 		if fail.Is(fail.From(err), errx.SQLNotFound) {
 			// defensive: no signing key → create
@@ -181,7 +178,7 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 		return nil
 	}
 
-	if err = q.RotateSigningKeysForGoAuth(ctx); err != nil {
+	if err = q.RotateSigningKeys(ctx, nil); err != nil {
 		return fail.From(err)
 	}
 
@@ -235,7 +232,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 
 	for _, projectID := range projects {
 		var key sqlc.KeyPair
-		key, err = q.GetActiveSigningKeyForProject(ctx, projectID)
+		key, err = q.GetActiveSigningKey(ctx, projectID)
 		if err != nil {
 			if fail.Is(fail.From(err), errx.SQLNotFound) {
 				_ = createProjectKey(ctx, q, *projectID)
@@ -248,7 +245,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 			continue
 		}
 
-		if err = q.RotateSigningKeysForProject(ctx, projectID); err != nil {
+		if err = q.RotateSigningKeys(ctx, projectID); err != nil {
 			return fail.From(err)
 		}
 

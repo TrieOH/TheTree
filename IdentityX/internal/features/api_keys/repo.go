@@ -2,7 +2,7 @@ package api_keys
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
@@ -16,14 +16,14 @@ import (
 )
 
 type apiKeyRepo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.ApiKeyRepository = (*apiKeyRepo)(nil)
 
-func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeyRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeyRepository {
 	return &apiKeyRepo{
 		q:      q,
 		log:    log,
@@ -31,14 +31,14 @@ func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKe
 	}
 }
 
-func (repo *apiKeyRepo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *apiKeyRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapApiKeyFromDB(dst *contracts.ApiKey, src *sqlc2.ApiKey) {
+func mapApiKeyFromDB(dst *contracts.ApiKey, src *sqlc.ApiKey) {
 	dst.ProjectID = src.ProjectID
 	dst.ClientID = src.ClientID
 	dst.KeyHash = src.KeyHash
@@ -55,7 +55,7 @@ func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error 
 	)
 	defer span.End()
 
-	err := repo.queries(ctx).UpsertApiKey(ctx, sqlc2.UpsertApiKeyParams{
+	err := repo.queries(ctx).UpsertApiKey(ctx, sqlc.UpsertApiKeyParams{
 		ProjectID: key.ProjectID,
 		ClientID:  key.ClientID,
 		KeyHash:   key.KeyHash,

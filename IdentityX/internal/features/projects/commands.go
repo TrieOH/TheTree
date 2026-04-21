@@ -4,7 +4,7 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	crypto2 "IdentityX/internal/shared/crypto"
+	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
@@ -98,13 +98,13 @@ func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceI
 		return nil, err
 	}
 
-	pub, priv, err := crypto2.GenerateEd25519()
+	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
 		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
 	defer zero(priv)
 
-	encryptedPriv, err := crypto2.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
 		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
 	}
@@ -216,7 +216,7 @@ func (uc *CommandService) GetJWKS(ctx context.Context, projectID uuid.UUID) (map
 		}
 	}
 
-	keys, err := uc.keys.ListProjectPublicKeys(ctx, projectID)
+	keys, err := uc.keys.ListPublicKeys(ctx, &projectID)
 	if err != nil {
 		return map[string]any{"security": []any{}}, err
 	}

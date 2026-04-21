@@ -1,24 +1,22 @@
 package app
 
 import (
+	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/security"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/features/users"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/router"
 	"IdentityX/internal/interfaces/http/system"
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/platform/memory/imc"
 	"IdentityX/internal/platform/memory/redis"
 	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/ports"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -36,17 +34,17 @@ type runtime struct {
 	txRunner    database.TxRunner
 	tracer      trace.Tracer
 	logger      *zap.Logger
-	caches      caches
 	renderer    ports.EmailRenderer
 	mailer      ports.Mailer
 }
 
 type commands struct {
-	users    *users.CommandService
+	users    *auth.CommandService
+	accounts *account.CommandService
 	sessions *sessions.CommandService
 	projects *projects.CommandService
 	apiKeys  *api_keys.CommandService
-	auth     *auth.CommandService
+	auth     *security.CommandService
 }
 
 type queries struct {
@@ -54,6 +52,7 @@ type queries struct {
 
 type repos struct {
 	users          ports.UserRepository
+	accounts       ports.AccountRepository
 	sessions       ports.SessionRepository
 	projects       ports.ProjectRepository
 	keys           ports.KeysRepository
@@ -65,12 +64,6 @@ type middlewares struct {
 	authMW *middleware.AuthMiddleware
 }
 
-type caches struct {
-	publicCache  *imc.InMemoryCache
-	privateCache *imc.InMemoryCache
-	sharedCache  *redis.Cache
-}
-
 func (app *IdentityX) run() {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
@@ -78,7 +71,6 @@ func (app *IdentityX) run() {
 	rt.tracer = otel.Tracer(string(telemetry.IdentityXTracer))
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
-	rt.caches = app.startCaches()
 	rt.renderer, rt.mailer = NewBundle(rt)
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.middlewares = app.startMiddlewares(rt)
@@ -93,7 +85,8 @@ func (app *IdentityX) run() {
 func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 	var h router.Handlers
 	h.System = system.NewHandler()
-	h.Users = users.NewHandler(*rt.commands.users, redis.NewCache(app.redis))
+	h.Users = auth.NewHandler(*rt.commands.users, redis.NewCache(app.redis))
+	h.Accounts = account.NewHandler(*rt.commands.accounts)
 	h.Projects = projects.NewHandler(*rt.commands.projects)
 	h.Sessions = sessions.NewHandler(*rt.commands.sessions, redis.NewCache(app.redis))
 	h.ApiKeys = api_keys.NewHandler(*rt.commands.apiKeys)
@@ -105,16 +98,17 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.apiKeys = api_keys.NewCommandService(r.apiKeys, r.projects, rt.logger, rt.tracer, rt.txRunner)
 	cmd.projects = projects.NewCommandService(r.users, r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.auth = auth.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.auth = security.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
 	cmd.sessions = sessions.NewCommandService(r.sessions, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.users = auth.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.accounts = account.NewCommandService(r.users, r.accounts, r.sessions, r.keys, r.tokenReuseList, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	return cmd
 }
 
 /*
 func (app *IdentityX) startQueries(rt runtime) queries {
 	var q queries
-	q.users = users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	q.auth = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.projectUsers = project_users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
@@ -127,7 +121,8 @@ func (app *IdentityX) startQueries(rt runtime) queries {
 
 func (app *IdentityX) startRepos(rt runtime) repos {
 	var r repos
-	r.users = users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer)
@@ -140,18 +135,4 @@ func (app *IdentityX) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
 	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.auth, rt.tracer, redis.NewCache(app.redis), viper.GetString("ISSUER"))
 	return mw
-}
-
-func (app *IdentityX) startCaches() caches {
-	var c caches
-	cacheTTLStr := viper.GetString("KEYS_CACHE_TTL")
-	cacheTTL, err := time.ParseDuration(cacheTTLStr)
-	if err != nil {
-		cacheTTL = time.Hour
-	}
-
-	c.privateCache = imc.NewInMemoryCache(100, cacheTTL)
-	c.publicCache = imc.NewInMemoryCache(1000, cacheTTL)
-	c.sharedCache = redis.NewCache(app.redis)
-	return c
 }

@@ -3,10 +3,11 @@
 package router
 
 import (
+	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
+	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/features/users"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/system"
 	"log"
@@ -29,7 +30,8 @@ import (
 type Handlers struct {
 	System   *system.Handler
 	ApiKeys  *api_keys.Handler
-	Users    *users.Handler
+	Users    *auth.Handler
+	Accounts *account.Handler
 	Sessions *sessions.Handler
 	Projects *projects.Handler
 	AuthMW   middleware.AuthMiddleware

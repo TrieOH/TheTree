@@ -21,36 +21,18 @@ import (
 	"github.com/spf13/viper"
 )
 
-func SignGoAuth(ctx context.Context, payload []byte, goauthKeyPair *contracts.Pair) ([]byte, error) {
-	var priv ed25519.PrivateKey
-	decrypted, err := crypto.Decrypt(goauthKeyPair.PrivateKey)
+func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
+	decrypted, err := crypto.Decrypt(pair.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	priv, err = parseEd25519Private(decrypted)
+	priv, err := parseEd25519Private(decrypted)
 	if err != nil {
 		return nil, err
 	}
 
-	sig := ed25519.Sign(priv, payload)
-	return sig, nil
-}
-
-func SignProject(ctx context.Context, projectID uuid.UUID, payload []byte, projectKeyPair *contracts.Pair) ([]byte, error) {
-	var priv ed25519.PrivateKey
-	decrypted, err := crypto.Decrypt(projectKeyPair.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	priv, err = parseEd25519Private(decrypted)
-	if err != nil {
-		return nil, err
-	}
-
-	sig := ed25519.Sign(priv, payload)
-	return sig, nil
+	return ed25519.Sign(priv, payload), nil
 }
 
 func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
@@ -117,10 +99,16 @@ func zero(b []byte) {
 }
 
 func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
+	issuer := viper.GetString("ISSUER")
+	if in.User.ProjectID != nil {
+		issuer = in.User.ProjectID.String()
+	}
+
 	claims := contracts.AccessClaims{
 		Sub: contracts.AccessSub{
 			ID:         in.User.ID,
 			UserType:   string(in.User.UserType),
+			ProjectID:  in.User.ProjectID,
 			Email:      in.User.Email,
 			SessionID:  in.SessionID,
 			UserAgent:  in.Agent,
@@ -131,7 +119,7 @@ func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			ID:        in.AccessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

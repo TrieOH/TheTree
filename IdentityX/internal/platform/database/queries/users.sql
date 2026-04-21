@@ -14,12 +14,8 @@ WHERE id = $1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users
-WHERE email = $1;
-
--- name: GetUserByEmailFromProject :one
-SELECT * FROM users
 WHERE email = $1
-  AND project_id = $2;
+  AND project_id IS NOT DISTINCT FROM $2;
 
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY created_at DESC;

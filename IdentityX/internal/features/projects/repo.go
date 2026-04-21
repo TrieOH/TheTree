@@ -2,7 +2,7 @@ package projects
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
@@ -17,14 +17,14 @@ import (
 )
 
 type projectRepo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
 }
 
 var _ ports.ProjectRepository = (*projectRepo)(nil)
 
-func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectRepository {
 	return &projectRepo{
 		q:      q,
 		log:    log,
@@ -32,14 +32,14 @@ func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.Proje
 	}
 }
 
-func (repo *projectRepo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *projectRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapProjectFromDB(dst *contracts.Project, src *sqlc2.Project) {
+func mapProjectFromDB(dst *contracts.Project, src *sqlc.Project) {
 	dst.ID = src.ID
 	dst.ProjectName = src.ProjectName
 	dst.Domain = src.Domain
@@ -59,7 +59,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project)
 	)
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc2.CreateProjectParams{
+	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
 		ProjectName: toCreate.ProjectName,
 		Domain:      toCreate.Domain,
 		OwnerID:     toCreate.OwnerID,
@@ -85,7 +85,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 	)
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).GetProjectByIDExternal(ctx, sqlc2.GetProjectByIDExternalParams{
+	sqlcProject, err := repo.queries(ctx).GetProjectByIDExternal(ctx, sqlc.GetProjectByIDExternalParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
@@ -129,7 +129,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 	)
 	defer span.End()
 
-	isOwner, err := repo.queries(ctx).IsOwnerOf(ctx, sqlc2.IsOwnerOfParams{
+	isOwner, err := repo.queries(ctx).IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
 		OwnerID: ownerID,
 		ID:      projectID,
 	})
@@ -174,7 +174,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project,
 	)
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).UpdateProject(ctx, sqlc2.UpdateProjectParams{
+	sqlcProject, err := repo.queries(ctx).UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ID:          toUpdate.ID,
 		OwnerID:     ownerID,
 		ProjectName: toUpdate.ProjectName,
@@ -198,7 +198,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	)
 	defer span.End()
 
-	affectedRows, err := repo.queries(ctx).DeleteProject(ctx, sqlc2.DeleteProjectParams{
+	affectedRows, err := repo.queries(ctx).DeleteProject(ctx, sqlc.DeleteProjectParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})

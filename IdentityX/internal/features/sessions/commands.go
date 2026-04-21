@@ -127,15 +127,11 @@ func (uc *CommandService) RevokeOthers(ctx context.Context, accessTokenStr strin
 	var keyPair *contracts.Pair
 	if accessToken.Sub.ProjectID != nil {
 		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
-		keyPair, err = uc.keys.GetActiveProjectSigningKey(ctx, *accessToken.Sub.ProjectID)
-		if err != nil {
-			return err
-		}
-	} else {
-		keyPair, err = uc.keys.GetActiveGoAuthSigningKey(ctx)
-		if err != nil {
-			return err
-		}
+	}
+
+	keyPair, err = uc.keys.GetActiveSigningKey(ctx, accessToken.Sub.ProjectID)
+	if err != nil {
+		return err
 	}
 
 	claims, err := security.VerifyAccessToken(ctx, accessTokenStr, keyPair)

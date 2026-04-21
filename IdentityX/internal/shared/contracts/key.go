@@ -12,14 +12,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type Type string
+type KeyType string
 type Usage string
 type Status string
 type Algorithm string
 
 const (
-	TypeGoAuth  Type = "goauth"
-	TypeProject Type = "project"
+	TypeGoAuth  KeyType = "goauth"
+	TypeProject KeyType = "project"
 )
 
 const (
@@ -42,7 +42,7 @@ type Pair struct {
 	KID string    `json:"kid"`
 
 	// Scope
-	KeyType   Type       `json:"key_type"`
+	KeyType   KeyType    `json:"key_type"`
 	ProjectID *uuid.UUID `json:"project_id"` // nil for goauth
 
 	// Crypto

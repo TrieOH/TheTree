@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"IdentityX/internal/features/auth"
+	"IdentityX/internal/features/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/ports"
 	"context"
@@ -14,14 +14,14 @@ import (
 )
 
 type AuthMiddleware struct {
-	authenticator auth.CommandService
+	authenticator security.CommandService
 	tracer        trace.Tracer
 	cache         ports.RedisCacheService
 	issuer        string
 }
 
 func NewAuthMiddleware(
-	authenticator auth.CommandService,
+	authenticator security.CommandService,
 	tracer trace.Tracer,
 	cache ports.RedisCacheService,
 	issuer string,
@@ -44,7 +44,7 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			ctx, span := mw.tracer.Start(ctx, "Middleware.Auth")
 			defer span.End()
 
-			in := auth.AuthenticateRequestInput{
+			in := security.AuthenticateRequestInput{
 				Issuer: mw.issuer,
 			}
 
@@ -80,7 +80,7 @@ func (mw *AuthMiddleware) handleAuth(
 	w http.ResponseWriter,
 	r *http.Request,
 	next http.Handler,
-	in auth.AuthenticateRequestInput,
+	in security.AuthenticateRequestInput,
 ) {
 	principal, err := mw.authenticator.AuthenticateRequest(ctx, in)
 	if err != nil {

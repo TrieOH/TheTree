@@ -4,6 +4,7 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
@@ -42,7 +43,7 @@ func mapKeyPairFromDB(dst *contracts.Pair, src *sqlc.KeyPair) {
 	dst.ID = src.ID
 	dst.KID = src.Kid
 	dst.ProjectID = src.ProjectID
-	dst.KeyType = contracts.Type(src.KeyType)
+	dst.KeyType = contracts.KeyType(src.KeyType)
 	dst.Algorithm = contracts.Algorithm(src.Algorithm)
 	dst.PublicKey = src.PublicKey
 	dst.PrivateKey = src.PrivateKey
@@ -53,15 +54,7 @@ func mapKeyPairFromDB(dst *contracts.Pair, src *sqlc.KeyPair) {
 	dst.VerifyExpiresAt = src.VerifyExpiresAt
 }
 
-func mapGoAuthPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc.ListActivePublicKeysForGoAuthRow) {
-	dst.KID = src.Kid
-	dst.Algorithm = contracts.Algorithm(src.Algorithm)
-	dst.PublicKey = src.PublicKey
-	dst.CreatedAt = src.CreatedAt
-	dst.ExpiresAt = src.ExpiresAt
-}
-
-func mapProjectPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc.ListActivePublicKeysForProjectRow) {
+func mapPublicKeyFromDB(dst *contracts.PublicKey, src *sqlc.ListPublicKeysRow) {
 	dst.KID = src.Kid
 	dst.Algorithm = contracts.Algorithm(src.Algorithm)
 	dst.PublicKey = src.PublicKey
@@ -98,67 +91,13 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*c
 	return &pair, nil
 }
 
-func (repo *keyRepo) RotateGoAuthSigningKeys(ctx context.Context) error {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.RotateGoAuthSigningKeys")
-	defer span.End()
-
-	if err := repo.queries(ctx).RotateSigningKeysForGoAuth(ctx); err != nil {
-		return fail.From(err).RecordCtx(ctx)
-	}
-
-	return nil
-}
-
-func (repo *keyRepo) RotateProjectSigningKeys(ctx context.Context, projectID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.RotateProjectSigningKeys",
-		trace.WithAttributes(attribute.String("project.id", projectID.String())),
-	)
-	defer span.End()
-
-	if err := repo.queries(ctx).RotateSigningKeysForProject(ctx, &projectID); err != nil {
-		return fail.From(err).RecordCtx(ctx)
-	}
-
-	return nil
-}
-
-func (repo *keyRepo) GetActiveGoAuthSigningKey(ctx context.Context) (*contracts.Pair, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveGoAuthSigningKey")
-	defer span.End()
-
-	row, err := repo.queries(ctx).GetActiveSigningKeyForGoAuth(ctx)
-	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
-	}
-
-	var pair contracts.Pair
-	mapKeyPairFromDB(&pair, &row)
-	return &pair, nil
-}
-
-func (repo *keyRepo) GetActiveProjectSigningKey(ctx context.Context, projectID uuid.UUID) (*contracts.Pair, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveProjectSigningKey",
-		trace.WithAttributes(attribute.String("project.id", projectID.String())),
-	)
-	defer span.End()
-
-	row, err := repo.queries(ctx).GetActiveSigningKeyForProject(ctx, &projectID)
-	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
-	}
-
-	var pair contracts.Pair
-	mapKeyPairFromDB(&pair, &row)
-	return &pair, nil
-}
-
-func (repo *keyRepo) GetGoAuthKeyByKID(ctx context.Context, kid string) (*contracts.Pair, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetGoAuthKeyByKID",
+func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*contracts.Pair, error) {
+	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetKeyByKID",
 		trace.WithAttributes(attribute.String("key.kid", kid)),
 	)
 	defer span.End()
 
-	row, err := repo.queries(ctx).GetGoAuthKeyByKID(ctx, kid)
+	row, err := repo.queries(ctx).GetKeyByKID(ctx, kid)
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)
 	}
@@ -168,15 +107,18 @@ func (repo *keyRepo) GetGoAuthKeyByKID(ctx context.Context, kid string) (*contra
 	return &pair, nil
 }
 
-func (repo *keyRepo) GetProjectKeyByKID(ctx context.Context, kid string) (*contracts.Pair, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetProjectKeyByKID",
-		trace.WithAttributes(attribute.String("key.kid", kid)),
-	)
+func (repo *keyRepo) GetActiveSigningKey(ctx context.Context, projectID *uuid.UUID) (*contracts.Pair, error) {
+	var attrs []attribute.KeyValue
+	if projectID != nil {
+		attrs = append(attrs, attribute.String("project.id", projectID.String()))
+	}
+
+	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveSigningKey", trace.WithAttributes(attrs...))
 	defer span.End()
 
-	row, err := repo.queries(ctx).GetProjectKeyByKID(ctx, kid)
+	row, err := repo.queries(ctx).GetActiveSigningKey(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "signing key")
 	}
 
 	var pair contracts.Pair
@@ -184,11 +126,33 @@ func (repo *keyRepo) GetProjectKeyByKID(ctx context.Context, kid string) (*contr
 	return &pair, nil
 }
 
-func (repo *keyRepo) ListGoAuthPublicKeys(ctx context.Context) ([]contracts.PublicKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.ListGoAuthPublicKeys")
+func (repo *keyRepo) GetActiveSigningKID(ctx context.Context, projectID *uuid.UUID) (string, error) {
+	var attrs []attribute.KeyValue
+	if projectID != nil {
+		attrs = append(attrs, attribute.String("project.id", projectID.String()))
+	}
+
+	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveSigningKID", trace.WithAttributes(attrs...))
 	defer span.End()
 
-	rows, err := repo.queries(ctx).ListActivePublicKeysForGoAuth(ctx)
+	kid, err := repo.queries(ctx).GetActiveSigningKID(ctx, projectID)
+	if err != nil {
+		return "", errx.FromDB(err, "signing kid")
+	}
+
+	return kid, nil
+}
+
+func (repo *keyRepo) ListPublicKeys(ctx context.Context, projectID *uuid.UUID) ([]contracts.PublicKey, error) {
+	var attrs []attribute.KeyValue
+	if projectID != nil {
+		attrs = append(attrs, attribute.String("project.id", projectID.String()))
+	}
+
+	ctx, span := repo.tracer.Start(ctx, "KeyRepo.ListPublicKeys", trace.WithAttributes(attrs...))
+	defer span.End()
+
+	rows, err := repo.queries(ctx).ListPublicKeys(ctx, projectID)
 	if err != nil {
 		return nil, fail.From(err).RecordCtx(ctx)
 	}
@@ -196,32 +160,27 @@ func (repo *keyRepo) ListGoAuthPublicKeys(ctx context.Context) ([]contracts.Publ
 	keys := make([]contracts.PublicKey, 0, len(rows))
 	for _, row := range rows {
 		var k contracts.PublicKey
-		mapGoAuthPublicKeyFromDB(&k, &row)
+		mapPublicKeyFromDB(&k, &row)
 		keys = append(keys, k)
 	}
 
 	return keys, nil
 }
 
-func (repo *keyRepo) ListProjectPublicKeys(ctx context.Context, projectID uuid.UUID) ([]contracts.PublicKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.ListProjectPublicKeys",
-		trace.WithAttributes(attribute.String("project.id", projectID.String())),
-	)
+func (repo *keyRepo) RotateSigningKeys(ctx context.Context, projectID *uuid.UUID) error {
+	var attrs []attribute.KeyValue
+	if projectID != nil {
+		attrs = append(attrs, attribute.String("project.id", projectID.String()))
+	}
+
+	ctx, span := repo.tracer.Start(ctx, "KeyRepo.RotateSigningKeys", trace.WithAttributes(attrs...))
 	defer span.End()
 
-	rows, err := repo.queries(ctx).ListActivePublicKeysForProject(ctx, &projectID)
-	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+	if err := repo.queries(ctx).RotateSigningKeys(ctx, projectID); err != nil {
+		return fail.From(err).RecordCtx(ctx)
 	}
 
-	keys := make([]contracts.PublicKey, 0, len(rows))
-	for _, row := range rows {
-		var k contracts.PublicKey
-		mapProjectPublicKeyFromDB(&k, &row)
-		keys = append(keys, k)
-	}
-
-	return keys, nil
+	return nil
 }
 
 func (repo *keyRepo) RevokeKeyByKID(ctx context.Context, kid string) error {
@@ -246,32 +205,4 @@ func (repo *keyRepo) DeleteExpiredRevokedKeys(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (repo *keyRepo) GetActiveGoAuthSigningKID(ctx context.Context) (string, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveGoAuthSigningKID")
-	defer span.End()
-
-	kid, err := repo.queries(ctx).GetActiveGoAuthSigningKID(ctx)
-	if err != nil {
-		return "", fail.From(err).WithArgs("signing kid").RecordCtx(ctx)
-	}
-
-	return kid, nil
-}
-
-func (repo *keyRepo) GetActiveProjectSigningKID(ctx context.Context, projectID uuid.UUID) (string, error) {
-	ctx, span := repo.tracer.Start(ctx, "KeyRepo.GetActiveProjectSigningKID",
-		trace.WithAttributes(
-			attribute.String("project.id", projectID.String()),
-		),
-	)
-	defer span.End()
-
-	kid, err := repo.queries(ctx).GetActiveProjectSigningKID(ctx, &projectID)
-	if err != nil {
-		return "", fail.From(err).WithArgs("signing kid").RecordCtx(ctx)
-	}
-
-	return kid, nil
 }

@@ -2,10 +2,10 @@ package api_keys
 
 import (
 	"IdentityX/internal/platform/database"
-	authz2 "IdentityX/internal/shared/authz"
+	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
-	errx2 "IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"fmt"
@@ -47,7 +47,7 @@ func (uc *CommandService) Rotate(ctx context.Context, projectID uuid.UUID) (stri
 	)
 	defer span.End()
 
-	principal, err := authz2.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -58,17 +58,17 @@ func (uc *CommandService) Rotate(ctx context.Context, projectID uuid.UUID) (stri
 		return "", err
 	}
 	if !isOwner {
-		return "", fail.New(errx2.ProjectNotFound).RecordCtx(ctx)
+		return "", fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	secret, err := crypto.GenerateRandomSecret(32)
 	if err != nil {
-		return "", fail.New(errx2.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
 	}
 
 	hash, err := crypto.HashBcryptSecret(secret)
 	if err != nil {
-		return "", fail.New(errx2.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
 	}
 
 	err = uc.apiKeys.Upsert(ctx, contracts.ApiKey{
@@ -89,7 +89,7 @@ func (uc *CommandService) Revoke(ctx context.Context, projectID uuid.UUID) error
 	)
 	defer span.End()
 
-	principal, err := authz2.RequirePrincipal(ctx)
+	principal, err := authz.RequirePrincipal(ctx)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (uc *CommandService) Revoke(ctx context.Context, projectID uuid.UUID) error
 		return err
 	}
 	if !isOwner {
-		return fail.New(errx2.ProjectNotFound).RecordCtx(ctx)
+		return fail.New(errx.ProjectNotFound).RecordCtx(ctx)
 	}
 
 	return uc.apiKeys.Delete(ctx, projectID)

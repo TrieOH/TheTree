@@ -1,9 +1,10 @@
-package users
+package auth
 
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/contracts"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
@@ -65,7 +66,7 @@ func (repo *userRepo) Register(ctx context.Context, email, password string, proj
 	})
 
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.FromDB(err, "user")
 	}
 
 	span.SetAttributes(
@@ -113,35 +114,14 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contr
 	return usr, nil
 }
 
-func (repo *userRepo) GetUserByEmail(ctx context.Context, email string) (*contracts.User, error) {
+func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectID *uuid.UUID) (*contracts.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByEmail")
 	defer span.End()
 
-	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, email)
-
-	if err != nil {
-		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
-	}
-
-	span.SetAttributes(
-		attribute.String("user.id", sqlcUser.ID.String()),
-		attribute.String("user.type", sqlcUser.UserType),
-		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
-	)
-
-	usr := mapUserFromDB(&sqlcUser)
-	return usr, nil
-}
-
-func (repo *userRepo) GetUserByEmailFromProject(ctx context.Context, email string, projectID uuid.UUID) (*contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByEmailFromProject")
-	defer span.End()
-
-	sqlcUser, err := repo.queries(ctx).GetUserByEmailFromProject(ctx, sqlc.GetUserByEmailFromProjectParams{
+	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, sqlc.GetUserByEmailParams{
 		Email:     email,
-		ProjectID: &projectID,
+		ProjectID: projectID,
 	})
-
 	if err != nil {
 		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
 	}
@@ -152,45 +132,7 @@ func (repo *userRepo) GetUserByEmailFromProject(ctx context.Context, email strin
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
 
-	usr := mapUserFromDB(&sqlcUser)
-	return usr, nil
-}
-
-func (repo *userRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.Verify",
-		trace.WithAttributes(
-			attribute.String("user.id", userID.String()),
-		),
-	)
-	defer span.End()
-
-	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
-	if err != nil {
-		return false, fail.From(err).RecordCtx(ctx)
-	}
-
-	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
-
-	return !wasVerified, nil
-}
-
-func (repo *userRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passwordHash []byte) error {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.ResetPassword",
-		trace.WithAttributes(
-			attribute.String("user.id", userID.String()),
-		),
-	)
-	defer span.End()
-
-	err := repo.queries(ctx).ResetUserPassword(ctx, sqlc.ResetUserPasswordParams{
-		PasswordHash: string(passwordHash),
-		ID:           userID,
-	})
-	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
-	}
-
-	return nil
+	return mapUserFromDB(&sqlcUser), nil
 }
 
 func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {

@@ -1,6 +1,7 @@
-package users
+package auth
 
 import (
+	"IdentityX/internal/platform/telemetry"
 	_ "IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
@@ -10,7 +11,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
-	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -51,13 +52,14 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := RegisterUserInput{
-		Email:    req.Email,
-		Password: req.Password,
+	in := RegisterInput{
+		Email:     req.Email,
+		Password:  req.Password,
+		ProjectID: nil,
 	}
 
 	if err := handler.users.Register(r.Context(), in); err != nil {
-		resp.FromError(err).Send(w)
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -90,12 +92,13 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := LoginUserInput{
+	in := LoginInput{
 		Email:    req.Email,
 		Password: req.Password,
 
-		Agent: r.UserAgent(),
-		IP:    validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
+		Agent:     r.UserAgent(),
+		IP:        validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
+		ProjectID: nil,
 	}
 
 	tokens, err := handler.users.Login(r.Context(), in)
@@ -180,42 +183,9 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}).Send(w)
 }
 
-// GetJWKS godoc
-// @Summary Exposes the public key using a JWKS endpoint
-// @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by the authentication service.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} object "JSON Web Key Set (JWKS)"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /.well-known/jwks.json [get]
-func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	jwks, err := handler.users.GetJWKS(ctx)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	data, err := json.Marshal(jwks)
-	if err != nil {
-		apiErr := fail.New(errx.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
-		resp.FromError(apiErr).Send(w)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "public, max-age=7200")
-	w.WriteHeader(http.StatusOK)
-	if _, err = w.Write(data); err != nil {
-		// Just log if writing fails
-	}
-}
-
 type RegisterProjectUserRequest struct {
-	Email        string           `json:"email" validate:"required,email,max=255"`
-	Password     string           `json:"password" validate:"required,passwd,min=8,max=72"`
-	CustomFields *json.RawMessage `json:"custom_fields"`
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
 }
 
 // ProjectRegister godoc
@@ -246,26 +216,15 @@ func (handler *Handler) ProjectRegister(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	schemaType := r.URL.Query().Get("schema_type")
-	flowID := r.URL.Query().Get("flow_id")
-
-	in := ProjectRegisterInput{
-		Email:        req.Email,
-		Password:     req.Password,
-		CustomFields: req.CustomFields,
-		ProjectID:    projectID,
-		SchemaType:   schemaType,
-		FlowID:       flowID,
-	}
-
-	if in.CustomFields == nil {
-		meta := json.RawMessage("{}")
-		in.CustomFields = &meta
+	in := RegisterInput{
+		Email:     req.Email,
+		Password:  req.Password,
+		ProjectID: &projectID,
 	}
 
 	ctx := r.Context()
-	if err := handler.users.RegisterProjectUser(ctx, in); err != nil {
-		resp.FromError(err).Send(w)
+	if err := handler.users.Register(ctx, in); err != nil {
+		resp.Error(err).Send(w)
 		return
 	}
 
@@ -308,16 +267,16 @@ func (handler *Handler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	agent := r.UserAgent()
 	ip := validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig))
 
-	in := ProjectLoginInput{
+	in := LoginInput{
 		Email:     req.Email,
 		Password:  req.Password,
-		ProjectID: projectID,
 		IP:        ip,
 		Agent:     agent,
+		ProjectID: &projectID,
 	}
 
 	ctx := r.Context()
-	tokens, err := handler.users.LoginProjectUser(ctx, in)
+	tokens, err := handler.users.Login(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -329,175 +288,35 @@ func (handler *Handler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	}).Send(w)
 }
 
-// ProjectLogout godoc
-// @Summary Logs out a project user
-// @Description Logs out an authenticated project user by revoking their GoAuth session.
+// GetJWKS godoc
+// @Summary Exposes the public key using a JWKS endpoint
+// @Description Provides the JSON Web Key Set (JWKS) for verifying JWTs issued by the authentication service.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param Cookie header string true "Cookie: refresh_token=yyy"
-// @Success 200 {object} object "Successfully logged out"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
+// @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /projects/{project_id}/logout [post]
-func (handler *Handler) ProjectLogout(w http.ResponseWriter, r *http.Request) {
+// @Router /.well-known/jwks.json [get]
+func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	refreshTokenCookie, err := r.Cookie("refresh_token")
-	if err != nil || refreshTokenCookie.Value == "" {
-		resp.Unauthorized().WithMsg("missing refresh_token cookie").Send(w)
-		return
-	}
-
-	in := ProjectLogoutInput{
-		ProjectID:          projectID,
-		RefreshTokenCookie: refreshTokenCookie,
-	}
-
-	err = handler.users.LogoutProjectUser(ctx, in)
+	jwks, err := handler.users.GetJWKS(ctx)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
 	}
 
-	resp.OK("Logged out").Send(w)
-}
-
-// Verify godoc
-// @Summary Verify user email
-// @Description Verifies a user's email address using a verification token.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param token query string true "Verification Token"
-// @Success 200 {object} object "User verified successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing or invalid token"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /auth/verify [get]
-func (handler *Handler) Verify(w http.ResponseWriter, r *http.Request) {
-	token, rs := validation.GetString(r, "token")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	ctx := r.Context()
-	err := handler.users.Verify(ctx, token)
+	data, err := json.Marshal(jwks)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		apiErr := fail.New(errx.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
+		resp.FromError(apiErr).Send(w)
 		return
 	}
 
-	resp.OK("user verified, please refresh").Send(w)
-}
-
-// ResendVerificationEmail godoc
-// @Summary Resend verification email
-// @Description Resends the email verification link to the currently authenticated user.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} object "Verification email resent successfully"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /auth/verify/resend [post]
-func (handler *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	err := handler.users.ResendVerificationEmail(ctx)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=7200")
+	w.WriteHeader(http.StatusOK)
+	if _, err = w.Write(data); err != nil {
+		// Just log if writing fails
+		telemetry.Log().Error("failed to write JWKS response", zap.Error(err))
 	}
-
-	resp.OK("verification email resent successfully").Send(w)
-}
-
-type ForgotPasswordRequest struct {
-	Email     string     `json:"email" validate:"required,email"`
-	ProjectID *uuid.UUID `json:"project_id"`
-}
-
-// ForgotPassword godoc
-// @Summary Initiate password reset
-// @Description Sends a password reset email to the user if the account exists.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param forgotInfo body ForgotPasswordRequest true "User email and optional project ID"
-// @Success 200 {object} object "Forgot password email sent"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /auth/forgot-password [post]
-func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
-	var req ForgotPasswordRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	in := ForgotPasswordInput{
-		Email:     req.Email,
-		ProjectID: req.ProjectID,
-	}
-
-	ctx := r.Context()
-	err := handler.users.ForgotPassword(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK("forgot password email sent").Send(w)
-}
-
-type ResetPasswordRequest struct {
-	NewPassword string `json:"new_password" validate:"required,passwd,min=8,max=72"`
-}
-
-// ResetPassword godoc
-// @Summary Reset user password
-// @Description Resets the user's password using a valid reset token.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param token query string true "Reset password token"
-// @Param resetInfo body ResetPasswordRequest true "New password information"
-// @Success 200 {object} object "Password reset successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or token"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid or expired token"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /auth/reset-password [post]
-func (handler *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
-	token, rs := validation.GetString(r, "token")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	var req ResetPasswordRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	in := ResetPasswordInput{
-		Token:       token,
-		NewPassword: req.NewPassword,
-	}
-
-	ctx := r.Context()
-	err := handler.users.ResetPassword(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK("password reset successfully").Send(w)
 }

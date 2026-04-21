@@ -1,10 +1,11 @@
 package router
 
 import (
+	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
+	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/features/users"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/system"
 	"time"
@@ -16,6 +17,7 @@ import (
 
 func registerRoutes(handlers Handlers, r *chi.Mux) *chi.Mux {
 	registerAuthRoutes(r, handlers.Users, &handlers.AuthMW)
+	registerAccountRoutes(r, handlers.Accounts, &handlers.AuthMW)
 	registerSessionRoutes(r, handlers.Sessions, &handlers.AuthMW)
 	registerProjectRoutes(r, handlers.Projects, &handlers.AuthMW)
 	registerApiKeyRoutes(r, handlers.ApiKeys, &handlers.AuthMW)
@@ -51,7 +53,7 @@ func registerApiKeyRoutes(
 
 func registerAuthRoutes(
 	r *chi.Mux,
-	h *users.Handler,
+	h *auth.Handler,
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
@@ -67,30 +69,9 @@ func registerAuthRoutes(
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			Post("/auth/logout", h.Logout)
-		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-			Post("/auth/forgot-password", h.ForgotPassword)
-		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-			With(middleware.RequireQueryParams("token")).
-			Post("/auth/reset-password", h.ResetPassword)
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			With(middleware.RequireQueryParams("token")).
-			Post("/auth/verify", h.Verify)
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			Post("/auth/verify/resend", h.ResendVerificationEmail)
-
 		r.Get("/.well-known/jwks.json", h.GetJWKS)
 
-		// FIXME: Create another endpoint for the register that contains SchemaID
-		r.With(
-			middleware.DefaultQueryParam("schema_type", "core"),
-			middleware.DefaultQueryParam("flow_id", "none"),
-			middleware.DefaultQueryParam("version", "0"),
-		).Post("/projects/{project_id}/register", h.ProjectRegister)
-
-		/*r.With(middleware.DefaultQueryParam("version", "0")).
-		Post("/projects/{project_id}/register/{schema_id}", h.ProjectRegister)*/
-
-		r.Post("/projects/{project_id}/logout", h.ProjectLogout)
+		r.Post("/projects/{project_id}/register", h.ProjectRegister)
 
 		if !viper.GetBool("DISABLE_RATE_LIMIT") {
 			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
@@ -98,6 +79,25 @@ func registerAuthRoutes(
 		} else {
 			r.Post("/projects/{project_id}/login", h.ProjectLogin)
 		}
+	})
+}
+
+func registerAccountRoutes(
+	r *chi.Mux,
+	h *account.Handler,
+	authMW *middleware.AuthMiddleware,
+) {
+	r.Group(func(r chi.Router) {
+		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+			Post("/account/forgot-password", h.ForgotPassword)
+		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
+			With(middleware.RequireQueryParams("token")).
+			Post("/account/reset-password", h.ResetPassword)
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
+			With(middleware.RequireQueryParams("token")).
+			Post("/account/verify", h.Verify)
+		r.With(authMW.Auth(), middleware.NoApiKeys()).
+			Post("/account/verify/resend", h.ResendVerificationEmail)
 	})
 }
 
