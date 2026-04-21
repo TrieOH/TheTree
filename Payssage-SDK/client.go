@@ -1,4 +1,4 @@
-package paymentsSDK
+package payssage
 
 import (
 	"bytes"
@@ -24,10 +24,6 @@ func New(baseURL, apiKey string) *Client {
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 	}
-}
-
-type envelope[T any] struct {
-	Data T `json:"data"`
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, out any) error {

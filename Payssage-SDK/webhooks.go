@@ -1,4 +1,4 @@
-package paymentsSDK
+package payssage
 
 import (
 	"context"
