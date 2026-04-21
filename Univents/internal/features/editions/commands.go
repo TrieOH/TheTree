@@ -136,11 +136,10 @@ func (uc *CommandService) Announce(ctx context.Context, editionID uuid.UUID) (er
 		return errors.New("can't announce editions on statuses different than draft")
 	}
 
-	now := time.Now()
 	var task *asynq.Task
 	opensAt := edition.RegistrationOpensAt
 	if opensAt == nil {
-		opensAt = &now
+		opensAt = new(time.Now())
 	}
 	task, err = contracts.NewOpenEditionTask(edition.ID, *opensAt)
 	if err != nil {

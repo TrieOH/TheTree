@@ -68,8 +68,7 @@ func Combine(errorType string, errs ...error) error {
 		}
 
 		// Flatten nested CombinedErrors
-		var ce *CombinedError
-		if errors.As(err, &ce) {
+		if ce, ok := errors.AsType[*CombinedError](err); ok {
 			filtered = append(filtered, ce.errors...)
 			continue
 		}
@@ -230,16 +229,14 @@ func CheckViolation(resource, constraint string, err error) Error {
 */
 
 func As(err error) (Error, bool) {
-	var appErr Error
-	if errors.As(err, &appErr) {
+	if appErr, ok := errors.AsType[Error](err); ok {
 		return appErr, true
 	}
 	return Error{}, false
 }
 
 func IsKind(err error, kind string) bool {
-	var appErr Error
-	if errors.As(err, &appErr) {
+	if appErr, ok := errors.AsType[Error](err); ok {
 		return appErr.Kind == kind
 	}
 	return false

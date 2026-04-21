@@ -10,7 +10,7 @@ import (
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/TrieOH/IdentityX-SDK-Go"
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/TrieOH/Payssage-SDK-Go"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -70,11 +70,11 @@ func SetupRedis(timeout time.Duration) *redis.Client {
 	return rdb
 }
 
-func SetupGoAuth() *idx.Client {
-	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
+func SetupIdentityX() *idx.Client {
+	projectID := uuid.MustParse(viper.GetString("IDENTITY_X_PROJECT_ID"))
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:   viper.GetString("GOAUTH_URL"),
-		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		BaseURL:   viper.GetString("IDENTITY_X_URL"),
+		APIKey:    viper.GetString("IDENTITY_X_API_KEY"),
 		ProjectID: projectID,
 		Debug:     true,
 	})
@@ -92,20 +92,20 @@ func SetupGoAuth() *idx.Client {
 	return client
 }
 
-func SetupPayssage() *paymentsSDK.Client {
-	paymentsURL := viper.GetString("TRIEPAYMENTS_URL")
+func SetupPayssage() *payssage.Client {
+	paymentsURL := viper.GetString("PAYSSAGE_URL")
 	if paymentsURL == "" {
-		log.Fatal("TRIEPAYMENTS_URl not set")
+		log.Fatal("PAYSSAGE_URl not set")
 	}
-	paymentsAPIKey := viper.GetString("TRIEPAYMENTS_API_KEY")
+	paymentsAPIKey := viper.GetString("PAYSSAGE_API_KEY")
 	if paymentsAPIKey == "" {
-		log.Fatal("TRIEPAYMENTS_API_KEY not set")
+		log.Fatal("PAYSSAGE_API_KEY not set")
 	}
-	paymentsWebhookSecret := viper.GetString("TRIEPAYMENTS_WEBHOOK_SECRET")
+	paymentsWebhookSecret := viper.GetString("PAYSSAGE_WEBHOOK_SECRET")
 	if paymentsWebhookSecret == "" {
-		log.Fatal("TRIEPAYMENTS_WEBHOOK_SECRET not set")
+		log.Fatal("PAYSSAGE_WEBHOOK_SECRET not set")
 	}
-	client := paymentsSDK.New(paymentsURL, paymentsAPIKey)
+	client := payssage.New(paymentsURL, paymentsAPIKey)
 	return client
 }
 

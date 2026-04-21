@@ -11,7 +11,7 @@ import (
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/TrieOH/Payssage-SDK-Go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -19,7 +19,7 @@ import (
 type AsynqHandlers struct {
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
-	payments  *paymentsSDK.Client
+	payssage  *payssage.Client
 	inventory ports.InventoryPublisher
 	sessions  ports.PurchaseSessionStore
 	ws        *sockets.Registry
@@ -30,7 +30,7 @@ type AsynqHandlers struct {
 func NewAsynqService(
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
-	payments *paymentsSDK.Client,
+	payssage *payssage.Client,
 	inventory ports.InventoryPublisher,
 	sessions ports.PurchaseSessionStore,
 	ws *sockets.Registry,
@@ -40,7 +40,7 @@ func NewAsynqService(
 	return &AsynqHandlers{
 		products:  products,
 		purchases: purchases,
-		payments:  payments,
+		payssage:  payssage,
 		inventory: inventory,
 		sessions:  sessions,
 		ws:        ws,

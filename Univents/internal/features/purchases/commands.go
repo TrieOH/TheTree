@@ -14,7 +14,7 @@ import (
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -28,7 +28,7 @@ type CommandService struct {
 	editions  ports.EditionsRepository
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
-	payments  *paymentsSDK.Client
+	payssage  *payssage.Client
 	sessions  ports.PurchaseSessionStore
 	ws        *sockets.Registry
 	inventory ports.InventoryPublisher
@@ -44,7 +44,7 @@ func NewCommandService(
 	editions ports.EditionsRepository,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
-	payments *paymentsSDK.Client,
+	payssage *payssage.Client,
 	session ports.PurchaseSessionStore,
 	ws *sockets.Registry,
 	inventory ports.InventoryPublisher,
@@ -59,7 +59,7 @@ func NewCommandService(
 		editions:  editions,
 		products:  products,
 		purchases: purchases,
-		payments:  payments,
+		payssage:  payssage,
 		sessions:  session,
 		ws:        ws,
 		inventory: inventory,
@@ -447,7 +447,7 @@ func (uc *CommandService) submitPayment(conn *websocket.Conn) (*SubmitPaymentPay
 	}
 }
 
-func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, payReq *SubmitPaymentPayload) (*paymentsSDK.Intent, bool, error) {
+func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, payReq *SubmitPaymentPayload) (*payssage.Intent, bool, error) {
 	edition, err := uc.editions.GetByID(ctx, session.EditionID)
 	if err != nil {
 		return nil, false, err
@@ -485,7 +485,7 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 		zap.String("identification_type", payReq.IdentificationType),
 	)
 
-	intent, err := uc.payments.InitiateCheckout(ctx, paymentsSDK.InitiateCheckoutRequest{
+	intent, err := uc.payssage.InitiateCheckout(ctx, payssage.InitiateCheckoutRequest{
 		Amount:               int64(session.TotalCents),
 		Currency:             "BRL",
 		Provider:             *edition.TriePaymentsProvider,
@@ -519,13 +519,13 @@ func (uc *CommandService) checkout(ctx context.Context, conn *websocket.Conn, se
 	return intent, false, nil
 }
 
-func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, intent *paymentsSDK.Intent) error {
+func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, intent *payssage.Intent) error {
 	edition, err := uc.editions.GetByID(ctx, session.EditionID)
 	if err != nil {
 		telemetry.Log().Info("Failed to fetch edition for pix cancel", zap.Error(err))
 	} else {
 		telemetry.Log().Info("Trying to cancel pix payment", zap.String("intent_id", intent.ID))
-		if _, err := uc.payments.CancelPixIntent(ctx, intent.ID, paymentsSDK.CancelPixRequest{
+		if _, err := uc.payssage.CancelPixIntent(ctx, intent.ID, payssage.CancelPixRequest{
 			Provider:           intent.Provider,
 			SellerCredentialID: edition.TriePaymentsCredentialID.String(),
 		}); err != nil {
@@ -551,7 +551,7 @@ func (uc *CommandService) cancelPixRequest(ctx context.Context, conn *websocket.
 	return nil
 }
 
-func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, intent *paymentsSDK.Intent, isPix bool) error {
+func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Conn, session *contracts.CheckoutSession, intent *payssage.Intent, isPix bool) error {
 	uc.ws.Register(session.SessionID.String(), conn)
 
 	paymentTimeout := time.Until(session.ExpiresAt)
@@ -600,7 +600,7 @@ func (uc *CommandService) waitForPayment(ctx context.Context, conn *websocket.Co
 	}
 }
 
-func (uc *CommandService) ConfirmPayment(ctx context.Context, payload *paymentsSDK.WebhookPayload) error {
+func (uc *CommandService) ConfirmPayment(ctx context.Context, payload *payssage.WebhookPayload) error {
 	paymentIntentID := payload.IntentID
 
 	var meta struct {
@@ -618,7 +618,7 @@ func (uc *CommandService) ConfirmPayment(ctx context.Context, payload *paymentsS
 
 	if err := uc.recordPurchase(ctx, recordPurchaseInput{
 		session: session,
-		intent:  &paymentsSDK.Intent{ID: paymentIntentID, Amount: int64(session.TotalCents), Provider: payload.Provider},
+		intent:  &payssage.Intent{ID: paymentIntentID, Amount: int64(session.TotalCents), Provider: payload.Provider},
 	}); err != nil {
 		return fmt.Errorf("failed to record purchase for intent %s: %w", paymentIntentID, err)
 	}
@@ -708,7 +708,7 @@ func (uc *CommandService) finalizeConfirmedPurchase(ctx context.Context, payment
 	return nil
 }
 
-func (uc *CommandService) CancelPayment(ctx context.Context, payload *paymentsSDK.WebhookPayload) error {
+func (uc *CommandService) CancelPayment(ctx context.Context, payload *payssage.WebhookPayload) error {
 	paymentIntentID := payload.IntentID
 
 	var meta struct {
@@ -736,7 +736,7 @@ func (uc *CommandService) CancelPayment(ctx context.Context, payload *paymentsSD
 
 type recordPurchaseInput struct {
 	session *contracts.CheckoutSession
-	intent  *paymentsSDK.Intent
+	intent  *payssage.Intent
 }
 
 func (uc *CommandService) recordPurchase(ctx context.Context, in recordPurchaseInput) error {

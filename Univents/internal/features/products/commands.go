@@ -13,7 +13,7 @@ import (
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -26,7 +26,7 @@ type CommandService struct {
 	editions  ports.EditionsRepository
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
-	payments  *paymentsSDK.Client
+	payssage  *payssage.Client
 	sessions  ports.PurchaseSessionStore
 	ws        *sockets.Registry
 	inventory ports.InventoryPublisher
@@ -42,7 +42,7 @@ func NewCommandService(
 	editions ports.EditionsRepository,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
-	payments *paymentsSDK.Client,
+	payssage *payssage.Client,
 	session ports.PurchaseSessionStore,
 	ws *sockets.Registry,
 	inventory ports.InventoryPublisher,
@@ -57,7 +57,7 @@ func NewCommandService(
 		editions:  editions,
 		products:  products,
 		purchases: purchases,
-		payments:  payments,
+		payssage:  payssage,
 		sessions:  session,
 		ws:        ws,
 		inventory: inventory,

@@ -11,7 +11,7 @@ import (
 	"univents/internal/shared/validation"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	paymentsSDK "github.com/TrieOH/TriePaymentsSDK"
+	"github.com/TrieOH/Payssage-SDK-Go"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
@@ -194,7 +194,7 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} contracts.ErrorResponse "Invalid webhook signature"
 // @Router /webhooks/payments [post]
 func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
-	payload, err := paymentsSDK.VerifyWebhookSignature(r, viper.GetString("TRIEPAYMENTS_WEBHOOK_SECRET"))
+	payload, err := payssage.VerifyWebhookSignature(r, viper.GetString("PAYSSAGE_WEBHOOK_SECRET"))
 	if err != nil {
 		log.Printf("[webhook] invalid signature: %v", err)
 		resp.BadRequest("invalid signature").Send(w)
@@ -210,12 +210,12 @@ func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		defer cancel()
 
 		switch payload.Event {
-		case paymentsSDK.EventPaymentSucceeded:
+		case payssage.EventPaymentSucceeded:
 			if err := handler.commands.ConfirmPayment(ctx, payload); err != nil {
 				log.Printf("[webhook] failed to confirm payment for intent %s: %v", payload.IntentID, err)
 			}
 
-		case paymentsSDK.EventPaymentFailed, paymentsSDK.EventPaymentCancelled:
+		case payssage.EventPaymentFailed, payssage.EventPaymentCancelled:
 			if err := handler.commands.CancelPayment(ctx, payload); err != nil {
 				log.Printf("[webhook] failed to cancel payment for intent %s: %v", payload.IntentID, err)
 			}
