@@ -33,7 +33,7 @@ services:
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
 
-      GOAUTH_URL: ${GOAUTH_URL:-http://go-auth:8080}
+      GOAUTH_URL: ${GOAUTH_URL:-http://identity-x:8080}
       GOAUTH_API_KEY: ${GOAUTH_API_KEY}
       GO_AUTH_PROJECT_ID: ${GO_AUTH_PROJECT_ID}
 
