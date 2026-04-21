@@ -1,6 +1,6 @@
 module IdentityX
 
-go 1.25.6
+go 1.26
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.6.5
