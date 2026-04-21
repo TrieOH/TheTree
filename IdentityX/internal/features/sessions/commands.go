@@ -52,7 +52,7 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 	}
 
 	if principal.Method == authz.AuthMethodApiKey {
-		return errors.New("sessions are not revocable through api security")
+		return errors.New("sessions are not revocable through api keys")
 	}
 
 	if *principal.SessionID == sessionID {
@@ -96,7 +96,7 @@ func (uc *CommandService) RevokeOthers(ctx context.Context) error {
 	}
 
 	if principal.Method == authz.AuthMethodApiKey {
-		return errors.New("sessions are not revocable through api security")
+		return errors.New("sessions are not revocable through api keys")
 	}
 
 	if principal.ProjectID != nil {

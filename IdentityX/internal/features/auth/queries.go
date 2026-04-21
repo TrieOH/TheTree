@@ -41,7 +41,7 @@ func (uc *QueryService) GetJWKS(ctx context.Context, projectID *uuid.UUID) (map[
 
 	keys, err := uc.keys.ListPublicKeys(ctx, projectID)
 	if err != nil {
-		telemetry.Log().Error("Failed listing public security keys", zap.Error(err), zap.Any("project_id", projectID))
+		telemetry.Log().Error("Failed listing public token keys", zap.Error(err), zap.Any("project_id", projectID))
 		return nil, fail.New(errx.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
 	}
 

@@ -187,7 +187,7 @@ type LoginInput struct {
 
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
-// creates a new session and returns a new set of access and refresh security.
+// creates a new session and returns a new set of access and refresh tokens.
 func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
@@ -356,9 +356,9 @@ type RefreshInput struct {
 	IP            string
 }
 
-// Refresh handles the business logic for refreshing a user's security.
+// Refresh handles the business logic for refreshing a user's tokens.
 // It parses the refresh token, checks if it's revoked, and if not,
-// determines whether to refresh the security for a client or a project user.
+// determines whether to refresh the tokens for a client or a project user.
 func (uc *CommandService) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
 	txOptions := database.TxOptions{
 		Isolation: pgx.ReadCommitted,

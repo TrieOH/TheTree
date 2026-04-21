@@ -46,8 +46,8 @@ func registerApiKeyRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.ClientOnly())
-		r.Post("/projects/{project_id}/api-security/rotate", h.RotateApiKey)
-		r.Delete("/projects/{project_id}/api-security", h.RevokeApiKey)
+		r.Post("/projects/{project_id}/api-keys/rotate", h.RotateApiKey)
+		r.Delete("/projects/{project_id}/api-keys", h.RevokeApiKey)
 	})
 }
 

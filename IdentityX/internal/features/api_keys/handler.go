@@ -31,7 +31,7 @@ func NewHandler(
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
 // @Failure 404 {object} contracts.ErrorResponse "Project not found"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /projects/{project_id}/api-security/rotate [post]
+// @Router /projects/{project_id}/api-keys/rotate [post]
 func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
 	if rs != nil {
@@ -62,7 +62,7 @@ func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
 // @Failure 404 {object} contracts.ErrorResponse "Project not found"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /projects/{project_id}/api-security [delete]
+// @Router /projects/{project_id}/api-keys [delete]
 func (handler *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
 	projectID, rs := validation.GetUUID(r, "project_id")
 	if rs != nil {

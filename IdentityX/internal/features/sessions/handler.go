@@ -127,7 +127,7 @@ func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 
 // Me godoc
 // @Summary Sends current session information to user
-// @Description Returns details about the current access and refresh security, including their expiry times.
+// @Description Returns details about the current access and refresh tokens, including their expiry times.
 // @Tags auth
 // @Accept json
 // @Produce json
