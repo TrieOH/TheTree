@@ -1,18 +1,15 @@
+FROM ghcr.io/trieoh/go-tools:latest AS tools
+
 FROM golang:1.26 AS builder
 
 WORKDIR /app
 
-ARG SQLC_CACHE_BUST=1
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    git clone --depth=1 https://github.com/sqlc-dev/sqlc.git /tmp/sqlc && \
-    cd /tmp/sqlc && \
-    go build -o /go/bin/sqlc ./cmd/sqlc
-
-RUN --mount=type=cache,target=/root/.cache/go-build go install github.com/pressly/goose/v3/cmd/goose@latest
-RUN --mount=type=cache,target=/root/.cache/go-build go install github.com/swaggo/swag/cmd/swag@latest
+COPY --from=tools /go/bin/sqlc /go/bin/sqlc
+COPY --from=tools /go/bin/goose /go/bin/goose
+COPY --from=tools /go/bin/swag /go/bin/swag
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 
@@ -33,4 +30,3 @@ COPY --from=builder /app/internal/platform/database/migrations ./internal/platfo
 EXPOSE 8080
 
 CMD ["./IdentityX"]
-
