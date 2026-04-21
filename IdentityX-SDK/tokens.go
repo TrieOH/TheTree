@@ -89,7 +89,7 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 	}
 
 	// Fetch...
-	path := fmt.Sprintf("/projects/%s/.well-known/jwks.json", s.client.projectID)
+	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
 	req, err := s.client.newRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
