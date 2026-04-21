@@ -6,9 +6,9 @@ import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
 
 export interface ForgotPasswordProps {
-  onSuccess?: () => Promise<void>;
+  onSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
-  loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  loginRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
 }
 
@@ -48,23 +48,23 @@ export default function ForgotPassword({
 
     const res = await auth.sendForgotPassword(email);
 
-    if(res.success) {
-      if(onSuccess) await onSuccess();
-    } else if(onFailed) await onFailed(res.message, res.trace);
-    
+    if (res.success) {
+      if (onSuccess) await onSuccess(res.message);
+    } else if (onFailed) await onFailed(res.message, res.trace);
+
     setLoadingSubmit(false);
   }
 
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
-      <CardAvatar 
-        mainText="Esqueci a senha" 
-        subText="Insira seu e-mail para receber um link de redefinição." 
+      <CardAvatar
+        mainText="Esqueci a senha"
+        subText="Insira seu e-mail para receber um link de redefinição."
       />
 
       <div className="trieoh-card__fields">
-        <BasicInputField 
-          label="Email" 
+        <BasicInputField
+          label="Email"
           name="email"
           placeholder="teste@gmail.com"
           autoComplete="email"
@@ -77,9 +77,9 @@ export default function ForgotPassword({
         />
       </div>
 
-      <BasicSubmitButton 
-        label={loadingSubmit ? "Enviando..." : "Enviar link de redefinição"} 
-        onSubmit={handleSubmit} loading={loadingSubmit} 
+      <BasicSubmitButton
+        label={loadingSubmit ? "Enviando..." : "Enviar link de redefinição"}
+        onSubmit={handleSubmit} loading={loadingSubmit}
       />
       {loginRedirect && <>
         <div className="trieoh-card__divider">

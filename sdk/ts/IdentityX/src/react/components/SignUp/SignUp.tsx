@@ -3,21 +3,17 @@ import { useAuth } from "../../AuthProvider";
 import BasicInputField from "../Form/BasicInputField";
 import BasicSubmitButton from "../Form/BasicSubmitButton";
 import CardAvatar from "../Form/CardAvatar";
-import DynamicFields from "../Form/DynamicFields";
-import { 
-  evaluateRules, 
+import {
+  evaluateRules,
   type Rule,
 } from "../../../utils/field-validator";
-import type { FieldDefinitionResultI, FieldValue } from "../../../types/fields-types";
 
 export interface SignUpProps {
-  onSuccess?: () => Promise<void>;
+  onSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
-  loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
+  loginRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
   passwordRules?: Rule[];
-  flow_id?: string;
-  fields?: FieldDefinitionResultI[];
 }
 
 export function SignUp({
@@ -26,23 +22,16 @@ export function SignUp({
   loginRedirect,
   emailRules,
   passwordRules,
-  flow_id,
-  fields = [],
 }: SignUpProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [dynamicValues, setDynamicValues] = useState<Record<string, FieldValue>>({});
   const [submitted, setSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const emailRef = useRef<HTMLInputElement | null>(null);
   const passwordRef = useRef<HTMLInputElement | null>(null);
   const confirmPasswordRef = useRef<HTMLInputElement | null>(null);
   const { auth } = useAuth();
-
-  const handleDynamicChange = (key: string, value: FieldValue) => {
-    setDynamicValues(prev => ({ ...prev, [key]: value }));
-  };
 
   const rules: Record<string, Rule[]> = {
     email: emailRules || [
@@ -51,9 +40,9 @@ export function SignUp({
     password: passwordRules || [
       { message: "Mínimo de 8 caracteres.", test: v => v.length >= 8 },
       { message: "Deve conter uma letra maiúscula.", test: v => /[A-Z]/.test(v) },
-      { 
-        message: "Inclua pelo menos um caractere especial, ex: ! @ # $ % & * . ,", 
-        test: v => /[!@#$%^&*(),.?":{}|<>_\-+=~`;/\\[\]]/.test(v) 
+      {
+        message: "Inclua pelo menos um caractere especial, ex: ! @ # $ % & * . ,",
+        test: v => /[!@#$%^&*(),.?":{}|<>_\-+=~`;/\\[\]]/.test(v)
       },
       { message: "Deve conter um número.", test: v => /\d/.test(v) },
     ],
@@ -73,9 +62,6 @@ export function SignUp({
     const emailInvalid = emailValidation.some(r => !r.passed);
     const passwordInvalid = passwordValidation.some(r => !r.passed);
     const confirmPasswordInvalid = confirmPasswordValidation.some(r => !r.passed);
-    
-    // Simple validation for dynamic required fields
-    const dynamicInvalid = fields.some(f => f.required && !dynamicValues[f.key]);
 
     if (emailInvalid) {
       emailRef.current?.focus();
@@ -89,24 +75,22 @@ export function SignUp({
       confirmPasswordRef.current?.focus();
       return;
     }
-    if (dynamicInvalid) return;
-    
+
     setLoadingSubmit(true);
 
-    const res = await auth.register(email, password, flow_id, dynamicValues);
-    if(res.success) {
-      if(onSuccess) await onSuccess();
-    } else if(onFailed) {
-      await onFailed(res.message, res.trace);
-    }
+    const res = await auth.register(email, password);
+    if (res.success) {
+      if (onSuccess) await onSuccess(res.message);
+    } else if (onFailed) await onFailed(res.message, res.trace);
+
     setLoadingSubmit(false);
   }
   return (
     <form className="trieoh trieoh-card trieoh-card--full-rounded">
       <CardAvatar mainText="Crie sua conta" subText="Insira seus dados para começar" />
       <div className="trieoh-card__fields">
-        <BasicInputField 
-          label="Email" 
+        <BasicInputField
+          label="Email"
           name="email"
           placeholder="teste@gmail.com"
           autoComplete="email"
@@ -117,8 +101,8 @@ export function SignUp({
           rulesStatus={emailValidation}
           submitted={submitted}
         />
-        <BasicInputField 
-          label="Senha" 
+        <BasicInputField
+          label="Senha"
           name="password"
           placeholder="**********"
           autoComplete="new-password"
@@ -129,8 +113,8 @@ export function SignUp({
           rulesStatus={passwordValidation}
           submitted={submitted}
         />
-        <BasicInputField 
-          label="Confirme a Senha" 
+        <BasicInputField
+          label="Confirme a Senha"
           name="confirm-password"
           placeholder="**********"
           autoComplete="new-password"
@@ -141,14 +125,8 @@ export function SignUp({
           rulesStatus={confirmPasswordValidation}
           submitted={submitted}
         />
-        <DynamicFields 
-          fields={fields} 
-          values={dynamicValues} 
-          onValueChange={handleDynamicChange}
-          submitted={submitted}
-        />
       </div>
-      <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit}/>
+      <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit} />
       {loginRedirect && <>
         <div className="trieoh-card__divider">
           <hr />

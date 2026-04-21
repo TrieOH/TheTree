@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { fn } from 'storybook/test';
 import BasicLogoutWithProvider from './components/BasicLogoutWithProvider';
 
 const meta = {
@@ -7,10 +6,25 @@ const meta = {
   component: BasicLogoutWithProvider,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
-  args: { onSubmit: fn() },
+  argTypes: {
+    isProjectMode: {
+      control: 'boolean',
+      description: 'Whether the project is in Project Mode (requires projectId) or Auth Mode',
+    }
+  }
 } satisfies Meta<typeof BasicLogoutWithProvider>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const ProjectMode: Story = {
+  args: {
+    isProjectMode: true,
+  }
+};
+
+export const AuthMode: Story = {
+  args: {
+    isProjectMode: false,
+  }
+};

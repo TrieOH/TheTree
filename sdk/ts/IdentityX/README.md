@@ -89,17 +89,5 @@ function Header() {
     </nav>
   );
 }
-```
-
-## Server-Side
-
-For server-side operations (Node.js / Next.js API routes), use `createServerAuth`:
-
-```ts
-import { createServerAuth } from '@trieoh/node-auth-sdk/server';
-
-const auth = createServerAuth();
-auth.assignRoleByNameToUser(...)
-```
 
 ---

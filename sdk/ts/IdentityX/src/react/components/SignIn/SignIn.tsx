@@ -9,8 +9,8 @@ import {
 } from "../../../utils/field-validator";
 
 export interface SignInProps {
-  onSuccess?: () => Promise<void>;
-  onFailed?: (message: string) => Promise<void>;
+  onSuccess?: (message?: string) => Promise<void>;
+  onFailed?: (message: string, trace?: string[]) => Promise<void>;
   signUpRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   forgotPasswordRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
   emailRules?: Rule[];
@@ -60,8 +60,9 @@ export function SignIn({
     setLoadingSubmit(true);
 
     const res = await auth.login(email, password);
-    if (res.success && onSuccess) await onSuccess();
-    else if (onFailed) await onFailed(res.message);
+    if (res.success) {
+      if (onSuccess) await onSuccess(res.message);
+    } else if (onFailed) await onFailed(res.message, res.trace);
 
     setLoadingSubmit(false);
   }
