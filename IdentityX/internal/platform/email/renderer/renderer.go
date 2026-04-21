@@ -50,7 +50,7 @@ func (mr *MailRenderer) Verification(ctx context.Context, data ports.Verificatio
 	}{
 		UserID: data.UserID.String(),
 		Email:  data.Email,
-		Link:   template.URL(viper.GetString("API_URL") + "/auth/verify?token=" + data.Token),
+		Link:   template.URL(viper.GetString("APP_URL") + "/auth/verify?token=" + data.Token),
 	})
 
 	if err != nil {
@@ -74,7 +74,7 @@ func (mr *MailRenderer) PasswordReset(ctx context.Context, data ports.PasswordRe
 	subject, textBody, htmlBody, err := mr.render(ctx, key, map[string]any{
 		"UserID": data.UserID,
 		"Email":  data.Email,
-		"Link":   template.URL(viper.GetString("API_URL") + "/reset?token=" + data.Token),
+		"Link":   template.URL(viper.GetString("APP_URL") + "/reset?token=" + data.Token),
 	})
 
 	if err != nil {

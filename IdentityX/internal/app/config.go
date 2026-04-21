@@ -25,11 +25,8 @@ func LoadEnv() {
 		log.Fatalf("SMTP_PORT environment variable not set.")
 	}
 
-	if keyDuration := viper.GetDuration("GOAUTH_KEY_LIFETIME"); keyDuration == time.Duration(0) {
-		log.Fatalf("GOAUTH_KEY_LIFETIME environment variable not set.")
-	}
-	if keyDuration := viper.GetDuration("GOAUTH_KEY_VERIFY_LIFETIME"); keyDuration == time.Duration(0) {
-		log.Fatalf("GOAUTH_KEY_VERIFY_LIFETIME environment variable not set.")
+	if keyDuration := viper.GetDuration("IDENTITY_X_KEY_LIFETIME"); keyDuration == time.Duration(0) {
+		log.Fatalf("IDENTITY_X_KEY_LIFETIME environment variable not set.")
 	}
 	if keyDuration := viper.GetDuration("ROTATE_KEYS_JOB_DURATION"); keyDuration == time.Duration(0) {
 		log.Fatalf("ROTATE_KEYS_JOB_DURATION environment variable not set.")

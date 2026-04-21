@@ -112,7 +112,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceI
 		ulid.Make().String(),
 	)
 
-	expiresAt := time.Now().Add(viper.GetDuration("GOAUTH_KEY_LIFETIME"))
+	expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
 	_, err = uc.keys.CreateKeyPair(ctx, contracts.Pair{
 		KID:             kid,
 		ProjectID:       &createdProject.ID,
@@ -123,7 +123,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceI
 		Usage:           contracts.UsageSign,
 		Status:          contracts.StatusActive,
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("GOAUTH_KEY_LIFETIME")),
+		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
 	})
 	if err != nil {
 		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
