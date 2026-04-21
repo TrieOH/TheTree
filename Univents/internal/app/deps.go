@@ -76,7 +76,7 @@ func SetupGoAuth() *idx.Client {
 		BaseURL:   viper.GetString("GOAUTH_URL"),
 		APIKey:    viper.GetString("GOAUTH_API_KEY"),
 		ProjectID: projectID,
-		Debug:     false,
+		Debug:     true,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())

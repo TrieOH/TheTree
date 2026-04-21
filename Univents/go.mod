@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.6.5
-	github.com/TrieOH/IdentityX-SDK-Go v0.6.2
+	github.com/TrieOH/IdentityX-SDK-Go v0.6.5
 	github.com/TrieOH/TriePaymentsSDK v0.0.13
 	github.com/authzed/authzed-go v1.8.0
 	github.com/authzed/grpcutil v0.0.0-20240123194739-2ea1e3d2d98b
