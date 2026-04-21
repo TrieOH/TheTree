@@ -75,10 +75,17 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body any) 
 		buf = bytes.NewReader(b)
 	}
 
-	u, err := url.JoinPath(c.config.BaseURL, path)
+	base, err := url.Parse(c.config.BaseURL)
 	if err != nil {
-		return nil, SdkError{Message: "error building URL: ", Cause: err}
+		return nil, SdkError{Message: "error parsing base URL: ", Cause: err}
 	}
+
+	ref, err := url.Parse(path)
+	if err != nil {
+		return nil, SdkError{Message: "error parsing path: ", Cause: err}
+	}
+
+	u := base.ResolveReference(ref).String()
 
 	req, err := http.NewRequestWithContext(ctx, method, u, buf)
 	if err != nil {
