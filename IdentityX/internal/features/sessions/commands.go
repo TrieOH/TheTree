@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"IdentityX/internal/platform/database"
-	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
@@ -87,36 +86,21 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 }
 
 // RevokeOthers handles the business logic for revoking all sessions for the authenticated user except for the current one.
-func (uc *CommandService) RevokeOthers(ctx context.Context, accessTokenStr string) error {
+func (uc *CommandService) RevokeOthers(ctx context.Context) error {
 	ctx, span := uc.tracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
-
-	accessToken := &contracts.AccessClaims{}
-	_, err := security.ParseJWTUnverified[*contracts.AccessClaims](accessTokenStr, accessToken)
-	if err != nil {
-		return err
-	}
-
-	var keyPair *contracts.Pair
-	if accessToken.Sub.ProjectID != nil {
-		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
-	}
-
-	keyPair, err = uc.keys.GetActiveSigningKey(ctx, accessToken.Sub.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	claims, err := security.VerifyAccessToken(ctx, accessTokenStr, keyPair)
-	if err != nil {
-		return err
-	}
-
-	currentSessionID := claims.Sub.SessionID
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
 		return err
+	}
+
+	if principal.Method == authz.AuthMethodApiKey {
+		return errors.New("sessions are not revocable through api security")
+	}
+
+	if principal.ProjectID != nil {
+		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
 	}
 
 	var userType contracts.UserType
@@ -129,7 +113,7 @@ func (uc *CommandService) RevokeOthers(ctx context.Context, accessTokenStr strin
 	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
 		UserType:  userType,
 		UserID:    principal.UserID,
-		ExcludeID: &currentSessionID,
+		ExcludeID: principal.SessionID,
 	})
 	if err != nil {
 		return err

@@ -3,12 +3,10 @@ package sessions
 import (
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/validation"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -92,19 +90,12 @@ func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} object "Other sessions revoked successfully"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions/others [delete]
 func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
-	accessToken, err := r.Cookie("access_token")
-	if err != nil {
-		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
-		return
-	}
-
-	err = handler.commands.RevokeOthers(r.Context(), accessToken.Value)
+	err := handler.commands.RevokeOthers(r.Context())
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
