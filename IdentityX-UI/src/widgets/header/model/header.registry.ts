@@ -32,24 +32,6 @@ export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
     leftActions: [{ id: "projects_config_back_000", type: 'back', visibleOn: "fixed", to: "/projects" }],
     showUserMenu: true,
   },
-  "schemas/editor": {
-    variant: "schemas/editor",
-    title: 'Schema Editor',
-    titlePosition: 'none',
-    disableMobileMenu: true,
-    leftActions: [
-      {
-        id: "schemas_editor_back_000",
-        type: 'back',
-        visibleOn: "fixed",
-        to: "/projects/$projectId/config?tab=scope"
-      }
-    ],
-    rightActions: [
-      { id: "schemas_editor_version_selector_000", type: "schemaVersionSelector", visibleOn: "fixed"},
-    ],
-    showUserMenu: true,
-  },
   auth: { variant: 'auth' },
   none: { variant: 'none' }
 } satisfies Record<HeaderVariant, HeaderConfigI>

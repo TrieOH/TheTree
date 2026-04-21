@@ -228,10 +228,10 @@ export default function CustomTabs({
     <Tabs 
       value={activeTab} 
       onValueChange={handleTabChange} 
-      orientation="vertical" 
+      orientation={isMobile ? "horizontal" : "vertical"} 
       className={cn(
         "flex flex-col-reverse md:flex-row w-full h-full",
-        "gap-4 md:gap-8 mx-auto items-start",
+        "gap-4 md:gap-8 mx-auto items-start overflow-x-hidden",
         className
       )}
     >
@@ -253,22 +253,22 @@ export default function CustomTabs({
         <TabsList
           className={cn(
             "flex h-full flex-row justify-around md:flex-col bg-transparent p-0 gap-0",
-            "overflow-x-auto overflow-y-hidden md:overflow-visible scrollbar-hide w-full relative",
-            "md:pr-2 md:py-2"
+            "overflow-hidden md:overflow-visible scrollbar-hide w-full relative",
+            "transform-gpu md:pr-2 md:py-2",
           )}
         >
-          {safeItems.map((tab) => (
-            <TabTriggerItem 
-              key={tab.value} 
-              tab={tab} 
-              isActive={activeTab === tab.value} 
-            />
-          ))}
+            {safeItems.map((tab) => (
+              <TabTriggerItem 
+                key={tab.value} 
+                tab={tab} 
+                isActive={activeTab === tab.value} 
+              />
+            ))}
         </TabsList>
       </div>
 
       {/* Content */}
-      <div className="relative flex-1 w-full h-full overflow-hidden">
+      <div className="relative flex-1 w-full h-full overflow-hidden min-w-0">
         <AnimatePresence
           mode="popLayout"
           custom={direction}

@@ -39,7 +39,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className='min-w-xs' suppressHydrationWarning>
-        <AuthProvider baseURL={env.VITE_API_URL} isClient={false}>
+        <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
           <AuthSynchronizer>
             {/* <PHProvider> */}
               <Header />

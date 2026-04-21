@@ -28,7 +28,7 @@ function RouteComponent() {
   const router = useRouter()
   const search = useSearch({ from: '/auth/' })
 
-  const handleLoginSuccess = async () => {
+  const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth
     if(auth) {
       router.update({ 
@@ -37,16 +37,16 @@ function RouteComponent() {
           auth: {...auth, isAuthenticated: true },
         },
       })
-
       const destination = search.redirect || '/projects'
       await navigate({ to: destination, replace: true })
-      toast.success("Login successful!")
+      toast.success(message ?? "Login successful!")
+      router.options.context.queryClient.invalidateQueries();
     } else toast.error("Auth Initialization Failed")
   }
 
-  const handleSignUpSuccess = async () => {
+  const handleSignUpSuccess = async (message?: string) => {
     setIsLogin(true);
-    toast.success("Account successfully created!")
+    toast.success(message ?? "Account successfully created!")
   }
 
   const handleFailure = async (message: string, trace?: string[]) => {
