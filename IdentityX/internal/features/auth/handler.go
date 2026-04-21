@@ -36,10 +36,11 @@ type RegisterUserRequest struct {
 
 // Register godoc
 // @Summary Register a new user
-// @Description Creates a new user in the system.
+// @Description Creates a new user in the system, optionally scoped to a project.
 // @Tags auth
 // @Accept json
 // @Produce json
+// @Param project_id query string false "Project UUID to scope the registration"
 // @Param registerInfo body RegisterUserRequest true "User registration information"
 // @Success 201 {object} object "User registered successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
@@ -52,13 +53,21 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := RegisterInput{
-		Email:     req.Email,
-		Password:  req.Password,
-		ProjectID: nil,
+	var projectID *uuid.UUID
+	if raw := r.URL.Query().Get("project_id"); raw != "" {
+		id, err := validation.ParseUUID(raw, "project_id")
+		if err != nil {
+			resp.FromError(err).Send(w)
+			return
+		}
+		projectID = &id
 	}
 
-	if err := handler.commands.Register(r.Context(), in); err != nil {
+	if err := handler.commands.Register(r.Context(), RegisterInput{
+		Email:     req.Email,
+		Password:  req.Password,
+		ProjectID: projectID,
+	}); err != nil {
 		resp.Error(err).Send(w)
 		return
 	}
@@ -73,14 +82,13 @@ type LoginUserRequest struct {
 
 // Login godoc
 // @Summary Authenticate a user
-// @Description Authenticates a user and sets authentication cookies.
+// @Description Authenticates a user, optionally scoped to a project.
 // @Tags auth
 // @Accept json
 // @Produce json
+// @Param project_id query string false "Project UUID to scope the login"
 // @Param loginInfo body LoginUserRequest true "User login information"
 // @Success 200 {object} object "Successful authentication"
-// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
-// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input provided"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid credentials"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
@@ -92,16 +100,23 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := LoginInput{
-		Email:    req.Email,
-		Password: req.Password,
-
-		Agent:     r.UserAgent(),
-		IP:        validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
-		ProjectID: nil,
+	var projectID *uuid.UUID
+	if raw := r.URL.Query().Get("project_id"); raw != "" {
+		id, err := validation.ParseUUID(raw, "project_id")
+		if err != nil {
+			resp.FromError(err).Send(w)
+			return
+		}
+		projectID = &id
 	}
 
-	tokens, err := handler.commands.Login(r.Context(), in)
+	tokens, err := handler.commands.Login(r.Context(), LoginInput{
+		Email:     req.Email,
+		Password:  req.Password,
+		Agent:     r.UserAgent(),
+		IP:        validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
+		ProjectID: projectID,
+	})
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -178,111 +193,6 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.OK("Refreshed tokens").WithData(map[string]any{
-		"access_token":  tokens.AccessTokenString,
-		"refresh_token": tokens.RefreshTokenString,
-	}).Send(w)
-}
-
-type RegisterProjectUserRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
-}
-
-// ProjectRegister godoc
-// @Summary Register a new user into a client project
-// @Description Registers a new user within a specific client project.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param project_id path string true "ID of the project to register user"
-// @Param schema_type query string false "Schema type (default: core)"
-// @Param flow_id query string false "Flow ID (default: none)"
-// @Param version query string false "Version (default: 0)"
-// @Param registerInfo body RegisterProjectUserRequest true "User registration information for the project"
-// @Success 201 {object} object "User registered successfully in project"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or missing project ID"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /projects/{project_id}/register [post]
-func (handler *Handler) ProjectRegister(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	var req RegisterProjectUserRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	in := RegisterInput{
-		Email:     req.Email,
-		Password:  req.Password,
-		ProjectID: &projectID,
-	}
-
-	ctx := r.Context()
-	if err := handler.commands.Register(ctx, in); err != nil {
-		resp.Error(err).Send(w)
-		return
-	}
-
-	resp.Created("Registered user").Send(w)
-}
-
-type LoginProjectUserRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password" validate:"required,max=72"`
-}
-
-// ProjectLogin godoc
-// @Summary Authenticates a user into a client project
-// @Description Authenticates a user within a specific client project and sets authentication cookies.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param project_id path string true "ID of the project to login user"
-// @Param loginInfo body LoginProjectUserRequest true "User login information for the project"
-// @Success 200 {object} object "Successfully authenticated into project"
-// @Header 200 {string} Set-Cookie "access_token cookie for authentication"
-// @Header 200 {string} Set-Cookie "refresh_token cookie for authentication"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or missing project ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid credentials"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
-// @Router /projects/{project_id}/login [post]
-func (handler *Handler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
-		return
-	}
-
-	var req LoginProjectUserRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	agent := r.UserAgent()
-	ip := validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig))
-
-	in := LoginInput{
-		Email:     req.Email,
-		Password:  req.Password,
-		IP:        ip,
-		Agent:     agent,
-		ProjectID: &projectID,
-	}
-
-	ctx := r.Context()
-	tokens, err := handler.commands.Login(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK("Logged in").WithData(map[string]any{
 		"access_token":  tokens.AccessTokenString,
 		"refresh_token": tokens.RefreshTokenString,
 	}).Send(w)

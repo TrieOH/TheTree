@@ -57,30 +57,19 @@ func registerAuthRoutes(
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Post("/auth/register", h.Register)
-
 		if !viper.GetBool("DISABLE_RATE_LIMIT") {
-			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-				Post("/auth/login", h.Login)
-		} else {
-			r.Post("/auth/login", h.Login)
+			r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
 		}
+
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.AllowOnlyQueryParams("project_id"))
+			r.Post("/auth/register", h.Register)
+			r.Post("/auth/login", h.Login)
+			r.Get("/.well-known/jwks.json", h.GetJWKS)
+		})
 
 		r.Post("/auth/refresh", h.Refresh)
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			Post("/auth/logout", h.Logout)
-
-		r.With(middleware.AllowOnlyQueryParams("project_id")).
-			Get("/.well-known/jwks.json", h.GetJWKS)
-
-		r.Post("/projects/{project_id}/register", h.ProjectRegister)
-
-		if !viper.GetBool("DISABLE_RATE_LIMIT") {
-			r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-				Post("/projects/{project_id}/login", h.ProjectLogin)
-		} else {
-			r.Post("/projects/{project_id}/login", h.ProjectLogin)
-		}
+		r.With(authMW.Auth(), middleware.NoApiKeys()).Post("/auth/logout", h.Logout)
 	})
 }
 
