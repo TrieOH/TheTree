@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -133,7 +134,11 @@ func (c *Client) do(req *http.Request, v any) error {
 
 func (c *Client) handleErrorResponse(body []byte) error {
 	var errResp ApiError
-	_ = json.Unmarshal(body, &errResp)
-
+	if err := json.Unmarshal(body, &errResp); err != nil {
+		return SdkError{Message: fmt.Sprintf("unexpected error response: %s", string(body))}
+	}
+	if errResp.ErrorID == "" && errResp.Message == "" {
+		return SdkError{Message: fmt.Sprintf("unexpected error response: %s", string(body))}
+	}
 	return errResp
 }
