@@ -7,14 +7,12 @@ import (
 	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type QueryService struct {
 	apiKeys    ports.ApiKeysRepo
 	workspaces ports.WorkspaceRepo
-	gaClient   *goauth.Client
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -22,14 +20,12 @@ type QueryService struct {
 func NewQueryService(
 	apiKeys ports.ApiKeysRepo,
 	workspaces ports.WorkspaceRepo,
-	gaClient *goauth.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
 		apiKeys:    apiKeys,
 		workspaces: workspaces,
-		gaClient:   gaClient,
 		tx:         tx,
 		tracer:     tracer,
 	}

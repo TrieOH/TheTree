@@ -5,7 +5,7 @@ import (
 	"payssage/internal/platform/telemetry"
 	"time"
 
-	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,7 +17,7 @@ type Payssage struct {
 	db        *pgxpool.Pool
 	redis     *redis.Client
 	scheduler gocron.Scheduler
-	ga        *goauth.Client
+	ga        *idx.Client
 	sdb       *authzed.Client
 }
 
@@ -26,7 +26,7 @@ func New() *Payssage {
 	LoadEnv()
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
-	app.ga = SetupGoAuth(app.redis)
+	app.ga = SetupGoAuth()
 	migrationPath := "./internal/platform/database/migrations"
 	app.db = SetupDB(migrationPath)
 	app.scheduler = SetupCron(app.db)

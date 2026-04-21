@@ -14,27 +14,23 @@ import (
 	"payssage/internal/shared/ports"
 	"time"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type AsynqHandlers struct {
 	deliveries ports.WebhookDeliveryRepo
-	gaClient   *goauth.Client
 	tracer     trace.Tracer
 	tx         database.TxRunner
 }
 
 func NewAsynqService(
 	deliveries ports.WebhookDeliveryRepo,
-	gaClient *goauth.Client,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *AsynqHandlers {
 	return &AsynqHandlers{
 		deliveries: deliveries,
-		gaClient:   gaClient,
 		tracer:     tracer,
 		tx:         tx,
 	}

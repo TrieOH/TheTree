@@ -15,7 +15,6 @@ import (
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -30,7 +29,6 @@ type CommandService struct {
 	intents     ports.IntentRepository
 	credentials ports.ProviderCredentialRepo
 	asynq       *asynq.Client
-	gaClient    *goauth.Client
 	az          *authzed.Client
 	tx          database.TxRunner
 	tracer      trace.Tracer
@@ -44,7 +42,6 @@ func NewCommandService(
 	intents ports.IntentRepository,
 	credentials ports.ProviderCredentialRepo,
 	asynq *asynq.Client,
-	gaClient *goauth.Client,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -57,7 +54,6 @@ func NewCommandService(
 		intents:     intents,
 		credentials: credentials,
 		asynq:       asynq,
-		gaClient:    gaClient,
 		az:          az,
 		tx:          tx,
 		tracer:      tracer,

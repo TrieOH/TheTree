@@ -14,7 +14,6 @@ import (
 	"payssage/internal/shared/ports"
 	"time"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -27,7 +26,6 @@ type CommandService struct {
 	credentials ports.ProviderCredentialRepo
 	marketplace ports.MarketplaceConfigRepo
 	providers   map[string]ports.OAuthProvider
-	gaClient    *goauth.Client
 	tx          database.TxRunner
 	tracer      trace.Tracer
 }
@@ -39,7 +37,6 @@ func NewCommandService(
 	credentials ports.ProviderCredentialRepo,
 	marketplace ports.MarketplaceConfigRepo,
 	providers map[string]ports.OAuthProvider,
-	gaClient *goauth.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -50,7 +47,6 @@ func NewCommandService(
 		credentials: credentials,
 		marketplace: marketplace,
 		providers:   providers,
-		gaClient:    gaClient,
 		tx:          tx,
 		tracer:      tracer,
 	}

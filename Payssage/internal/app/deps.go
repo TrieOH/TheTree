@@ -5,11 +5,10 @@ import (
 	"log"
 	"os"
 	"payssage/internal/platform/database"
-	cache "payssage/internal/platform/memory/redis"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -72,14 +71,13 @@ func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 	return scheduler
 }
 
-func SetupGoAuth(rdb *redis.Client) *goauth.Client {
+func SetupGoAuth() *idx.Client {
 	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
-	client, err := goauth.NewClient(goauth.Config{
-		BaseURL:      viper.GetString("GOAUTH_URL"),
-		APIKey:       viper.GetString("GOAUTH_API_KEY"),
-		ProjectID:    projectID,
-		Debug:        true,
-		SessionCache: cache.NewSessionCache(rdb),
+	client, err := idx.NewClient(idx.Config{
+		BaseURL:   viper.GetString("GOAUTH_URL"),
+		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		ProjectID: projectID,
+		Debug:     true,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())

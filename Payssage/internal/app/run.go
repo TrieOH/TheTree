@@ -114,7 +114,7 @@ func (app *Payssage) startHandlers(cmd commands, q queries) *router.HTTPDeps {
 			DB:       viper.GetInt("REDIS_DB"),
 		},
 	})
-	handlers.SystemHandler = system.NewHandler(app.ga)
+	handlers.SystemHandler = system.NewHandler()
 	handlers.IntentsHandler = intents.NewHandler(cmd.intents, q.intents)
 	handlers.WorkspacesHandler = workspaces.NewHandler(cmd.workspaces, q.workspaces)
 	handlers.ApiKeysHandler = api_keys.NewHandler(cmd.apiKeys, q.apiKeys)
@@ -125,22 +125,22 @@ func (app *Payssage) startHandlers(cmd commands, q queries) *router.HTTPDeps {
 
 func (app *Payssage) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.webhooks = webhooks.NewCommandService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, r.intentRepo, r.providerCredentialsRepo, rt.asynq.client, app.ga, app.sdb, rt.txRunner, rt.tracer)
-	cmd.intents = intents.NewCommandService(r.intentRepo, r.workspaceRepo, r.providerCredentialsRepo, r.marketplaceRepo, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, app.ga, rt.txRunner, rt.tracer)
-	cmd.workspaces = workspaces.NewCommandService(r.workspaceRepo, app.ga, app.sdb, rt.txRunner, rt.tracer)
-	cmd.apiKeys = api_keys.NewCommandService(r.apiKeysRepo, r.workspaceRepo, app.ga, rt.txRunner, rt.tracer)
-	cmd.oauth = oauth.NewCommandService(r.intentRepo, r.workspaceRepo, r.oauthStatesRepo, r.providerCredentialsRepo, r.marketplaceRepo, rt.paymentProviders.oauth, app.ga, rt.txRunner, rt.tracer)
+	cmd.webhooks = webhooks.NewCommandService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, r.intentRepo, r.providerCredentialsRepo, rt.asynq.client, app.sdb, rt.txRunner, rt.tracer)
+	cmd.intents = intents.NewCommandService(r.intentRepo, r.workspaceRepo, r.providerCredentialsRepo, r.marketplaceRepo, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, rt.txRunner, rt.tracer)
+	cmd.workspaces = workspaces.NewCommandService(r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
+	cmd.apiKeys = api_keys.NewCommandService(r.apiKeysRepo, r.workspaceRepo, rt.txRunner, rt.tracer)
+	cmd.oauth = oauth.NewCommandService(r.intentRepo, r.workspaceRepo, r.oauthStatesRepo, r.providerCredentialsRepo, r.marketplaceRepo, rt.paymentProviders.oauth, rt.txRunner, rt.tracer)
 
 	return cmd
 }
 
 func (app *Payssage) startQueries(rt runtime, r repos) queries {
 	var q queries
-	q.webhooks = webhooks.NewQueryService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, app.ga, app.sdb, rt.txRunner, rt.tracer)
-	q.intents = intents.NewQueryService(r.intentRepo, r.workspaceRepo, app.ga, rt.txRunner, rt.tracer)
-	q.workspaces = workspaces.NewQueryService(r.workspaceRepo, app.ga, rt.txRunner, rt.tracer)
-	q.apiKeys = api_keys.NewQueryService(r.apiKeysRepo, r.workspaceRepo, app.ga, rt.txRunner, rt.tracer)
-	q.oauth = oauth.NewQueryService(r.workspaceRepo, r.marketplaceRepo, app.ga, rt.txRunner, rt.tracer)
+	q.webhooks = webhooks.NewQueryService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
+	q.intents = intents.NewQueryService(r.intentRepo, r.workspaceRepo, rt.txRunner, rt.tracer)
+	q.workspaces = workspaces.NewQueryService(r.workspaceRepo, rt.txRunner, rt.tracer)
+	q.apiKeys = api_keys.NewQueryService(r.apiKeysRepo, r.workspaceRepo, rt.txRunner, rt.tracer)
+	q.oauth = oauth.NewQueryService(r.workspaceRepo, r.marketplaceRepo, rt.txRunner, rt.tracer)
 	return q
 }
 

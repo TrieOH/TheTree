@@ -13,7 +13,7 @@ COPY . .
 
 RUN sqlc generate
 RUN swag init -g internal/interfaces/http/router/router.go -o docs --parseInternal --parseDependency
-RUN CGO_ENABLED=0 GOOS=linux go build -o payssage ./cmd/payments
+RUN CGO_ENABLED=0 GOOS=linux go build -o payssage ./cmd/payssage
 
 FROM alpine:3.20
 

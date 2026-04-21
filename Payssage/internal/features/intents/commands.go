@@ -13,7 +13,6 @@ import (
 	"payssage/internal/shared/ports"
 	"strings"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -27,7 +26,6 @@ type CommandService struct {
 	webhooks         ports.WebhookDispatcher
 	oauthProvider    map[string]ports.OAuthProvider
 	paymentProviders map[string]ports.PaymentAbstractionLayer
-	gaClient         *goauth.Client
 	tx               database.TxRunner
 	tracer           trace.Tracer
 }
@@ -40,7 +38,6 @@ func NewCommandService(
 	webhooks ports.WebhookDispatcher,
 	oauthProvider map[string]ports.OAuthProvider,
 	paymentProviders map[string]ports.PaymentAbstractionLayer,
-	gaClient *goauth.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -52,7 +49,6 @@ func NewCommandService(
 		webhooks:         webhooks,
 		oauthProvider:    oauthProvider,
 		paymentProviders: paymentProviders,
-		gaClient:         gaClient,
 		tx:               tx,
 		tracer:           tracer,
 	}

@@ -7,7 +7,6 @@ import (
 	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -18,7 +17,6 @@ type QueryService struct {
 	deliveries ports.WebhookDeliveryRepo
 	events     ports.WebhookEventRepo
 	workspaces ports.WorkspaceRepo
-	gaClient   *goauth.Client
 	az         *authzed.Client
 	tx         database.TxRunner
 	tracer     trace.Tracer
@@ -29,7 +27,6 @@ func NewQueryService(
 	deliveries ports.WebhookDeliveryRepo,
 	events ports.WebhookEventRepo,
 	workspaces ports.WorkspaceRepo,
-	gaClient *goauth.Client,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -39,7 +36,6 @@ func NewQueryService(
 		deliveries: deliveries,
 		events:     events,
 		workspaces: workspaces,
-		gaClient:   gaClient,
 		az:         az,
 		tx:         tx,
 		tracer:     tracer,

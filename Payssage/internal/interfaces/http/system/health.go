@@ -7,18 +7,13 @@ import (
 	_ "payssage/internal/shared/contracts"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 )
 
-type Handler struct {
-	gaClient *goauth.Client
-}
+type Handler struct{}
 
-func NewHandler(gaClient *goauth.Client) *Handler {
-	return &Handler{
-		gaClient: gaClient,
-	}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 type HealthResponse struct {

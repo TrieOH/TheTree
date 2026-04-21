@@ -8,14 +8,12 @@ import (
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/ports"
 
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type CommandService struct {
 	workspaces ports.WorkspaceRepo
-	gaClient   *goauth.Client
 	az         *authzed.Client
 	tx         database.TxRunner
 	tracer     trace.Tracer
@@ -23,14 +21,12 @@ type CommandService struct {
 
 func NewCommandService(
 	workspaces ports.WorkspaceRepo,
-	gaClient *goauth.Client,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		workspaces: workspaces,
-		gaClient:   gaClient,
 		az:         az,
 		tx:         tx,
 		tracer:     tracer,
