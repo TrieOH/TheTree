@@ -4,7 +4,6 @@ import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import AuthButton from '@/features/auth/ui/AuthButton'
 import BackButton from '@/features/navigation/ui/BackButton'
 import CreateProjectButton from '@/features/project/ui/CreateProjectButton'
-import SchemaVersionSelector from '@/features/schema-version/ui/SchemaVersionSelector'
 
 export default function HeaderActionRenderer({ action }: { action: HeaderAction }) {
   const params = useParams({ strict: false });
@@ -13,7 +12,6 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
     if (!to) return to
     let resolved = to
     if (params.projectId) resolved = resolved.replace('$projectId', params.projectId)
-    if (params.schemaId) resolved = resolved.replace('$schemaId', params.schemaId)
     return resolved
   }
   
@@ -32,7 +30,6 @@ export default function HeaderActionRenderer({ action }: { action: HeaderAction 
 
     case 'createProject': return  <CreateProjectButton />
 
-    case 'schemaVersionSelector': return <SchemaVersionSelector />
 
     case 'back': return <BackButton value='Back' to={resolveTo(action.to)} />
 

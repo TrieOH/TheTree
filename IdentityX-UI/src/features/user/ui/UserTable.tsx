@@ -2,7 +2,6 @@ import CustomDataTable from "@/widgets/table/ui/CustomDataTable";
 import type { User } from "../model/types";
 import { formatDate } from "@/shared/lib/date-utils";
 import { Badge } from "@/shared/ui/shadcn/badge";
-import UserPermEditor from "./UserPermEditor";
 import { User as UserIcon } from "lucide-react";
 import TruncatedId from "@/shared/ui/TruncatedId";
 
@@ -32,7 +31,7 @@ const UserInfo = ({ user }: { user: User }) => {
   );
 };
 
-export default function UserTable({ data, project_id }: PropsI) {
+export default function UserTable({ data }: PropsI) {
   return (
     <CustomDataTable
       forceMobileView={true}
@@ -68,7 +67,6 @@ export default function UserTable({ data, project_id }: PropsI) {
           searchableTextExtractor: (value) => (value ? formatDate(value as string) : "Unverified"),
         },
       ]}
-      renderExpandedRow={(row) => <UserPermEditor project_id={project_id} user={row} />}
     />
   )
 }

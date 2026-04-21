@@ -14,9 +14,10 @@ export interface Project {
   id: string;
   project_name: string;
   domain: string;
-  is_active: boolean;
   owner_id: string;
   metadata: Record<string, JsonValue>;
+  is_active: boolean;
+  pub_key: string;
   created_at: string;
   updated_at: string;
 }
