@@ -7,7 +7,7 @@ export interface SessionsProps {
   /** If true will revoke even the current session */
   revokeAll?: boolean;
   /** What will happen when sessions are revoked */
-  onSuccess?: () => Promise<void>;
+  onSuccess?: (message?: string) => Promise<void>;
 }
 
 export function Sessions({
@@ -39,11 +39,11 @@ export function Sessions({
   const handleRevokeASession = async (e: MouseEvent<SVGElement>, id: string) => {
     e.preventDefault();
     const sessionToRemove = sessions.find(s => s.session_id === id);
-    if(!sessionToRemove) return;
+    if (!sessionToRemove) return;
     setSessions(sessions.filter(s => s.session_id !== id))
     try {
       const res = await auth.revokeASession(id);
-      if(!res.success) setSessions(prev => [...prev, sessionToRemove]);
+      if (!res.success) setSessions(prev => [...prev, sessionToRemove]);
     } catch {
       setSessions(prev => [...prev, sessionToRemove]);
     }
@@ -56,9 +56,9 @@ export function Sessions({
 
     const res = await auth.revokeSessions(revokeAll);
     const id = auth.profile()?.session_id;
-    if(res.success) {
+    if (res.success) {
       setSessions(revokeAll ? [] : sessions.filter(s => s.session_id === id));
-      if(onSuccess) onSuccess();
+      if (onSuccess) onSuccess(res.message);
     }
     setLoading(false);
   }
@@ -70,7 +70,7 @@ export function Sessions({
           <h3>Navegadores e Dispositivos</h3>
           <p>Esses navegadores e dispositivos estão atualmente conectados à sua conta. Remova quaisquer dispositivos não autorizados.</p>
         </div>
-        <button 
+        <button
           type="submit"
           onClick={handleRevokeSessions}
           disabled={loading}
@@ -84,9 +84,9 @@ export function Sessions({
       </div>
       <div className="trieoh-sessions__content">
         {sessions.length > 0 ? sessions.map(s => (
-          <SessionCard 
-            key={s.session_id} 
-            {...s} 
+          <SessionCard
+            key={s.session_id}
+            {...s}
             is_current={auth.profile()?.session_id === s.session_id}
             onClick={handleRevokeASession}
           />

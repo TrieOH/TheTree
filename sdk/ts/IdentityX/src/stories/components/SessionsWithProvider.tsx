@@ -1,8 +1,12 @@
 import { AuthProvider, Sessions } from "../../react";
 
-export default function SessionsWithProvider() {
+interface SessionsWithProviderProps {
+  isProjectMode?: boolean;
+}
+
+export default function SessionsWithProvider({ isProjectMode = true }: SessionsWithProviderProps) {
   return (
-    <AuthProvider baseURL="http://localhost:8080">
+    <AuthProvider baseURL="http://localhost:8080" isProjectMode={isProjectMode}>
       <Sessions />
     </AuthProvider>
   )

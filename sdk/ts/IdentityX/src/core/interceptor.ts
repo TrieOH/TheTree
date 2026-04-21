@@ -46,7 +46,6 @@ export class AuthInterceptor {
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
       try {
-        // Passando a estrutura completa que o simpleFetch retorna
         const res = await simpleFetch<{ code: number; data?: AuthTokens; message?: string }>(
           joinUrl(this.authBaseURL, "/auth/refresh"),
           { method: "POST", credentials: "include" }
@@ -105,11 +104,11 @@ export class AuthInterceptor {
     }
 
     const finalUrl = joinUrl(this.baseURL, url);
-    
+
     const executeFetch = async (): Promise<Response> => {
       const accessToken = tokenStore.getAccessToken();
       const headers = new Headers(options?.headers);
-      
+
       if (shouldAuth && accessToken) {
         headers.set("Authorization", `Bearer ${accessToken}`);
       }

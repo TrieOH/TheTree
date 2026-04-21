@@ -9,7 +9,7 @@ const meta = {
     layout: 'centered',
   },
   argTypes: {
-    type: { 
+    type: {
       control: "select",
       options: ['text', 'number', 'email', 'password']
     },
