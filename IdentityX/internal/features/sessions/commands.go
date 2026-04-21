@@ -41,33 +41,6 @@ func NewCommandService(
 	}
 }
 
-// List handles the business logic for listing all sessions for the authenticated user.
-func (uc *CommandService) List(ctx context.Context) ([]contracts.Session, error) {
-	ctx, span := uc.tracer.Start(ctx, "SessionService.List")
-	defer span.End()
-
-	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
-	if err != nil {
-		return nil, err
-	}
-
-	var userType contracts.UserType
-	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
-	} else {
-		userType = contracts.UserTypeProject
-	}
-
-	sessions, err := uc.sessions.List(ctx, principal.UserID, userType)
-	if err != nil {
-		return nil, err
-	}
-
-	span.SetAttributes(attribute.Int("sessions.count", len(sessions)))
-
-	return sessions, nil
-}
-
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
 // It ensures that the user is not revoking the current session.
 func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) error {

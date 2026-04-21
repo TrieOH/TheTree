@@ -69,7 +69,9 @@ func registerAuthRoutes(
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(authMW.Auth(), middleware.NoApiKeys()).
 			Post("/auth/logout", h.Logout)
-		r.Get("/.well-known/jwks.json", h.GetJWKS)
+
+		r.With(middleware.AllowOnlyQueryParams("project_id")).
+			Get("/.well-known/jwks.json", h.GetJWKS)
 
 		r.Post("/projects/{project_id}/register", h.ProjectRegister)
 
@@ -88,16 +90,18 @@ func registerAccountRoutes(
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
-		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-			Post("/account/forgot-password", h.ForgotPassword)
-		r.With(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP))).
-			With(middleware.RequireQueryParams("token")).
-			Post("/account/reset-password", h.ResetPassword)
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			With(middleware.RequireQueryParams("token")).
-			Post("/account/verify", h.Verify)
-		r.With(authMW.Auth(), middleware.NoApiKeys()).
-			Post("/account/verify/resend", h.ResendVerificationEmail)
+		r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
+		r.Use(middleware.NoApiKeys())
+
+		r.Post("/account/forgot-password", h.ForgotPassword)
+		r.With(authMW.Auth()).Post("/account/verify/resend", h.ResendVerificationEmail)
+
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireQueryParams("token"))
+
+			r.Post("/account/reset-password", h.ResetPassword)
+			r.With(authMW.Auth()).Post("/account/verify", h.Verify)
+		})
 	})
 }
 
@@ -109,11 +113,11 @@ func registerSessionRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
 		r.Use(middleware.NoApiKeys())
-		r.Get("/sessions", h.ListUserSessions)
+		r.Get("/sessions", h.List)
 		r.Get("/sessions/me", h.Me)
-		r.Delete("/sessions/{session_id}", h.RevokeUserSessionByID)
-		r.Delete("/sessions/others", h.RevokeOtherSessions)
-		r.Delete("/sessions", h.RevokeAllSessions)
+		r.Delete("/sessions/{session_id}", h.RevokeByID)
+		r.Delete("/sessions/others", h.RevokeOthers)
+		r.Delete("/sessions", h.RevokeAll)
 	})
 }
 
@@ -123,12 +127,11 @@ func registerProjectRoutes(
 	authMW *middleware.AuthMiddleware,
 ) {
 	r.With(authMW.Auth(), middleware.ClientOnly()).Group(func(r chi.Router) {
-		r.Get("/projects/{project_id}/.well-known/jwks.json", h.GetProjectJWKS)
-		r.Post("/projects", h.CreateProject)
-		r.Get("/projects", h.ListProjects)
-		r.Get("/projects/{project_id}", h.GetProjectByID)
-		r.Patch("/projects/{project_id}", h.UpdateProjectByID)
-		r.Delete("/projects/{project_id}", h.DeleteProjectByID)
+		r.Post("/projects", h.Create)
+		r.Get("/projects", h.List)
+		r.Get("/projects/{project_id}", h.GetByID)
+		r.Patch("/projects/{project_id}", h.Update)
+		r.Delete("/projects/{project_id}", h.Delete)
 		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
 		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
 	})

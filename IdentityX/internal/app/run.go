@@ -12,6 +12,7 @@ import (
 	"IdentityX/internal/interfaces/http/system"
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/email"
 	"IdentityX/internal/platform/memory/redis"
 	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/ports"
@@ -39,15 +40,18 @@ type runtime struct {
 }
 
 type commands struct {
-	users    *auth.CommandService
+	auth     *auth.CommandService
 	accounts *account.CommandService
 	sessions *sessions.CommandService
 	projects *projects.CommandService
 	apiKeys  *api_keys.CommandService
-	auth     *security.CommandService
+	security *security.CommandService
 }
 
 type queries struct {
+	auth     *auth.QueryService
+	projects *projects.QueryService
+	sessions *sessions.QueryService
 }
 
 type repos struct {
@@ -71,11 +75,11 @@ func (app *IdentityX) run() {
 	rt.tracer = otel.Tracer(string(telemetry.IdentityXTracer))
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
-	rt.renderer, rt.mailer = NewBundle(rt)
+	rt.renderer, rt.mailer = email.NewMailPair(rt.logger, rt.tracer)
 	rt.commands = app.startCommands(rt, rt.repos)
+	rt.queries = app.startQueries(rt, rt.repos)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.handlers = app.startHandlers(rt)
-	//rt.queries = app.startQueries(rt)
 	mux := router.CreateRouter(rt.handlers)
 	port := viper.GetString("PORT")
 	log.Printf("IdentityX listening on :%s", port)
@@ -85,10 +89,10 @@ func (app *IdentityX) run() {
 func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 	var h router.Handlers
 	h.System = system.NewHandler()
-	h.Users = auth.NewHandler(*rt.commands.users, redis.NewCache(app.redis))
+	h.Users = auth.NewHandler(*rt.commands.auth, *rt.queries.auth)
 	h.Accounts = account.NewHandler(*rt.commands.accounts)
-	h.Projects = projects.NewHandler(*rt.commands.projects)
-	h.Sessions = sessions.NewHandler(*rt.commands.sessions, redis.NewCache(app.redis))
+	h.Projects = projects.NewHandler(*rt.commands.projects, *rt.queries.projects)
+	h.Sessions = sessions.NewHandler(*rt.commands.sessions, *rt.queries.sessions)
 	h.ApiKeys = api_keys.NewHandler(*rt.commands.apiKeys)
 	h.AuthMW = *rt.middlewares.authMW
 	return h
@@ -97,27 +101,21 @@ func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.apiKeys = api_keys.NewCommandService(r.apiKeys, r.projects, rt.logger, rt.tracer, rt.txRunner)
-	cmd.projects = projects.NewCommandService(r.users, r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.auth = security.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.projects = projects.NewCommandService(r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.security = security.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
 	cmd.sessions = sessions.NewCommandService(r.sessions, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.users = auth.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.auth = auth.NewCommandService(r.users, r.sessions, r.projects, r.keys, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	cmd.accounts = account.NewCommandService(r.users, r.accounts, r.sessions, r.keys, r.tokenReuseList, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	return cmd
 }
 
-/*
-func (app *IdentityX) startQueries(rt runtime) queries {
+func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var q queries
-	q.auth = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.projectUsers = project_users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.security = security.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.tokenReuseList = security.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	q.auth = auth.NewQueryService(r.keys, rt.logger, rt.tracer, rt.txRunner)
+	q.projects = projects.NewQueryService(r.projects, r.users, rt.logger, rt.tracer, rt.txRunner)
+	q.sessions = sessions.NewQueryService(r.sessions, rt.logger, rt.tracer, rt.txRunner)
 	return q
 }
-*/
 
 func (app *IdentityX) startRepos(rt runtime) repos {
 	var r repos
@@ -133,6 +131,6 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.auth, rt.tracer, redis.NewCache(app.redis), viper.GetString("ISSUER"))
+	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.security, rt.tracer, redis.NewCache(app.redis), viper.GetString("ISSUER"))
 	return mw
 }

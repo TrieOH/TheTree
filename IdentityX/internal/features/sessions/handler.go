@@ -4,7 +4,6 @@ import (
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
-	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/validation"
 	"net/http"
 
@@ -14,21 +13,21 @@ import (
 )
 
 type Handler struct {
-	sessions CommandService
-	redis    ports.RedisCacheService
+	commands CommandService
+	queries  QueryService
 }
 
 func NewHandler(
-	sessions CommandService,
-	redis ports.RedisCacheService,
+	commands CommandService,
+	queries QueryService,
 ) *Handler {
 	return &Handler{
-		sessions: sessions,
-		redis:    redis,
+		commands: commands,
+		queries:  queries,
 	}
 }
 
-// ListUserSessions godoc
+// List godoc
 // @Summary Lists all active user sessions
 // @Description Retrieves a list of all active sessions for the authenticated user.
 // @Tags auth
@@ -39,8 +38,8 @@ func NewHandler(
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions [get]
-func (handler *Handler) ListUserSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, err := handler.sessions.List(r.Context())
+func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
+	sessions, err := handler.queries.List(r.Context())
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -56,7 +55,7 @@ type MeResponse struct {
 	AccessClaims      contracts.AccessClaims `json:"access"`
 }
 
-// RevokeUserSessionByID godoc
+// RevokeByID godoc
 // @Summary Revokes a user session by ID
 // @Description Revokes a specific user session by its ID, provided it's not the current session.
 // @Tags auth
@@ -70,7 +69,7 @@ type MeResponse struct {
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: Session not found"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
-func (handler *Handler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	sessionID, rs := validation.GetUUID(r, "session_id")
 	if rs != nil {
@@ -78,7 +77,7 @@ func (handler *Handler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err := handler.sessions.RevokeByID(ctx, sessionID)
+	err := handler.commands.RevokeByID(ctx, sessionID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -87,7 +86,7 @@ func (handler *Handler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Req
 	resp.OK("revoked session").Send(w)
 }
 
-// RevokeOtherSessions godoc
+// RevokeOthers godoc
 // @Summary Revokes all user sessions except the current one
 // @Description Invalidates all active sessions for the authenticated user, except for the one currently in use.
 // @Tags auth
@@ -98,14 +97,14 @@ func (handler *Handler) RevokeUserSessionByID(w http.ResponseWriter, r *http.Req
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions/others [delete]
-func (handler *Handler) RevokeOtherSessions(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := r.Cookie("access_token")
 	if err != nil {
 		resp.FromError(fail.New(errx.AuthMissingAccessCookie).Trace(err.Error())).Send(w)
 		return
 	}
 
-	err = handler.sessions.RevokeOthers(r.Context(), accessToken.Value)
+	err = handler.commands.RevokeOthers(r.Context(), accessToken.Value)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -114,7 +113,7 @@ func (handler *Handler) RevokeOtherSessions(w http.ResponseWriter, r *http.Reque
 	resp.OK("revoked sessions").Send(w)
 }
 
-// RevokeAllSessions godoc
+// RevokeAll godoc
 // @Summary Revokes all user sessions
 // @Description Invalidates all active sessions for the authenticated user, including the current one.
 // @Tags auth
@@ -125,8 +124,8 @@ func (handler *Handler) RevokeOtherSessions(w http.ResponseWriter, r *http.Reque
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions [delete]
-func (handler *Handler) RevokeAllSessions(w http.ResponseWriter, r *http.Request) {
-	err := handler.sessions.RevokeAll(r.Context())
+func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
+	err := handler.commands.RevokeAll(r.Context())
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return

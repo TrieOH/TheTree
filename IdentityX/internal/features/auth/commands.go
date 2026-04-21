@@ -3,7 +3,6 @@ package auth
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/security"
-	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
@@ -26,17 +25,15 @@ import (
 )
 
 type CommandService struct {
-	users          ports.UserRepository
-	sessions       ports.SessionRepository
-	projects       ports.ProjectRepository
-	keys           ports.KeysRepository
-	tokenReuseList ports.TokenReuseListRepository
-	redis          ports.RedisCacheService
-	mailRenderer   ports.EmailRenderer
-	mailSender     ports.Mailer
-	logger         *zap.Logger
-	tracer         trace.Tracer
-	tx             database.TxRunner
+	users        ports.UserRepository
+	sessions     ports.SessionRepository
+	projects     ports.ProjectRepository
+	keys         ports.KeysRepository
+	mailRenderer ports.EmailRenderer
+	mailSender   ports.Mailer
+	logger       *zap.Logger
+	tracer       trace.Tracer
+	tx           database.TxRunner
 }
 
 func NewCommandService(
@@ -44,8 +41,6 @@ func NewCommandService(
 	Sessions ports.SessionRepository,
 	Projects ports.ProjectRepository,
 	Keys ports.KeysRepository,
-	TokenReuseList ports.TokenReuseListRepository,
-	Redis ports.RedisCacheService,
 	renderer ports.EmailRenderer,
 	mailer ports.Mailer,
 	logger *zap.Logger,
@@ -53,17 +48,15 @@ func NewCommandService(
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
-		users:          Users,
-		sessions:       Sessions,
-		projects:       Projects,
-		keys:           Keys,
-		tokenReuseList: TokenReuseList,
-		redis:          Redis,
-		mailRenderer:   renderer,
-		mailSender:     mailer,
-		logger:         logger,
-		tracer:         tracer,
-		tx:             tx,
+		users:        Users,
+		sessions:     Sessions,
+		projects:     Projects,
+		keys:         Keys,
+		mailRenderer: renderer,
+		mailSender:   mailer,
+		logger:       logger,
+		tracer:       tracer,
+		tx:           tx,
 	}
 }
 
@@ -198,7 +191,7 @@ type LoginInput struct {
 func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
-	spanAttrs := []attribute.KeyValue{}
+	var spanAttrs []attribute.KeyValue
 	if in.ProjectID != nil {
 		spanAttrs = append(spanAttrs, attribute.String("project.id", in.ProjectID.String()))
 	}
@@ -526,27 +519,5 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 		AccessExpiresAt:    accessExpiresAt,
 		RefreshExpiresAt:   refreshExp,
 		Domain:             domain,
-	}, nil
-}
-
-func (uc *CommandService) GetJWKS(ctx context.Context) (map[string]any, error) {
-	ekeys, err := uc.keys.ListPublicKeys(ctx, nil)
-	if err != nil {
-		telemetry.Log().Error("Failed listing GoAuth public security", zap.Error(err))
-		return nil, fail.New(errx.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
-	}
-
-	jwkKeys := make([]any, 0, len(ekeys))
-	var jwk map[string]any
-	for _, k := range ekeys {
-		jwk, err = contracts.PublicKeyToJWK(k)
-		if err != nil {
-			return nil, err
-		}
-		jwkKeys = append(jwkKeys, jwk)
-	}
-
-	return map[string]any{
-		"security": jwkKeys,
 	}, nil
 }

@@ -4,28 +4,28 @@ import (
 	"IdentityX/internal/platform/telemetry"
 	_ "IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
-	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/validation"
 	"encoding/json"
 	"net/http"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
 	"github.com/MintzyG/fail/v3"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 type Handler struct {
-	users CommandService
-	redis ports.RedisCacheService
+	commands CommandService
+	queries  QueryService
 }
 
 func NewHandler(
-	users CommandService,
-	redis ports.RedisCacheService,
+	commands CommandService,
+	queries QueryService,
 ) *Handler {
 	return &Handler{
-		users: users,
-		redis: redis,
+		commands: commands,
+		queries:  queries,
 	}
 }
 
@@ -58,7 +58,7 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		ProjectID: nil,
 	}
 
-	if err := handler.users.Register(r.Context(), in); err != nil {
+	if err := handler.commands.Register(r.Context(), in); err != nil {
 		resp.Error(err).Send(w)
 		return
 	}
@@ -101,7 +101,7 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		ProjectID: nil,
 	}
 
-	tokens, err := handler.users.Login(r.Context(), in)
+	tokens, err := handler.commands.Login(r.Context(), in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -129,7 +129,7 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (handler *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	err := handler.users.Logout(ctx)
+	err := handler.commands.Logout(ctx)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -171,7 +171,7 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	tokens, err := handler.users.Refresh(ctx, in)
+	tokens, err := handler.commands.Refresh(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -223,7 +223,7 @@ func (handler *Handler) ProjectRegister(w http.ResponseWriter, r *http.Request) 
 	}
 
 	ctx := r.Context()
-	if err := handler.users.Register(ctx, in); err != nil {
+	if err := handler.commands.Register(ctx, in); err != nil {
 		resp.Error(err).Send(w)
 		return
 	}
@@ -276,7 +276,7 @@ func (handler *Handler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	tokens, err := handler.users.Login(ctx, in)
+	tokens, err := handler.commands.Login(ctx, in)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -294,12 +294,24 @@ func (handler *Handler) ProjectLogin(w http.ResponseWriter, r *http.Request) {
 // @Tags auth
 // @Accept json
 // @Produce json
+// @Param project_id query string false "Project UUID to scope the JWKS"
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
 func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	jwks, err := handler.users.GetJWKS(ctx)
+
+	var projectID *uuid.UUID
+	if raw := r.URL.Query().Get("project_id"); raw != "" {
+		id, err := validation.ParseUUID(raw, "project_id")
+		if err != nil {
+			resp.FromError(err).Send(w)
+			return
+		}
+		projectID = &id
+	}
+
+	jwks, err := handler.queries.GetJWKS(ctx, projectID)
 	if err != nil {
 		resp.FromError(err).Send(w)
 		return
@@ -316,7 +328,6 @@ func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public, max-age=7200")
 	w.WriteHeader(http.StatusOK)
 	if _, err = w.Write(data); err != nil {
-		// Just log if writing fails
 		telemetry.Log().Error("failed to write JWKS response", zap.Error(err))
 	}
 }

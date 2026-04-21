@@ -1,8 +1,8 @@
-package app
+package email
 
 import (
-	"IdentityX/internal/app/renderer"
-	"IdentityX/internal/app/senders"
+	"IdentityX/internal/platform/email/renderer"
+	"IdentityX/internal/platform/email/senders"
 	"IdentityX/internal/shared/ports"
 	"embed"
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	texttemplate "text/template"
 
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type MailBundle struct {
@@ -23,7 +25,7 @@ type MailBundle struct {
 //go:embed renderer/templates/**
 var templatesFS embed.FS
 
-func NewBundle(rt runtime) (ports.EmailRenderer, ports.Mailer) {
+func NewMailPair(logger *zap.Logger, tracer trace.Tracer) (ports.EmailRenderer, ports.Mailer) {
 	htmlTmpls, textTmpls, err := loadTemplates("renderer/templates")
 	if err != nil {
 		log.Fatalf("failed to load base email templates: %s", err)
@@ -31,8 +33,8 @@ func NewBundle(rt runtime) (ports.EmailRenderer, ports.Mailer) {
 
 	var bundle = MailBundle{
 		Mailer: senders.NewSMTPSender(
-			rt.logger,
-			rt.tracer,
+			logger,
+			tracer,
 			senders.SMTPConfig{
 				Host:     viper.GetString("SMTP_HOST"),
 				Port:     viper.GetString("SMTP_PORT"),
@@ -44,8 +46,8 @@ func NewBundle(rt runtime) (ports.EmailRenderer, ports.Mailer) {
 			},
 		),
 		Renderer: renderer.NewMailRenderer(
-			rt.logger,
-			rt.tracer,
+			logger,
+			tracer,
 			htmlTmpls,
 			textTmpls,
 		),
