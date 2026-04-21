@@ -35,7 +35,7 @@ func rotateKeysJob(db *pgxpool.Pool, scheduler gocron.Scheduler, txRunner databa
 				if err := q.DeleteExpiredRevokedKeys(txCtx); err != nil {
 					return err
 				}
-				telemetry.Log().Info("Rotated GoAuth and projects keys")
+				telemetry.Log().Info("Rotated GoAuth and projects security")
 				return nil
 			}); err != nil {
 				telemetry.Log().Error("Scheduled key rotation failed, rolled back", zap.Error(err))

@@ -136,7 +136,7 @@ func (handler *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // Refresh godoc
-// @Summary Refreshes user tokens
+// @Summary Refreshes user security
 // @Description Creates a new access and refresh token pair using a valid refresh token.
 // @Tags auth
 // @Accept json
@@ -174,7 +174,7 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.OK("Refreshed tokens").WithData(map[string]any{
+	resp.OK("Refreshed security").WithData(map[string]any{
 		"access_token":  tokens.AccessTokenString,
 		"refresh_token": tokens.RefreshTokenString,
 	}).Send(w)

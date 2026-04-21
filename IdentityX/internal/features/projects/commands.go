@@ -218,7 +218,7 @@ func (uc *CommandService) GetJWKS(ctx context.Context, projectID uuid.UUID) (map
 
 	keys, err := uc.keys.ListProjectPublicKeys(ctx, projectID)
 	if err != nil {
-		return map[string]any{"keys": []any{}}, err
+		return map[string]any{"security": []any{}}, err
 	}
 
 	jwkKeys := make([]any, 0, len(keys))
@@ -232,7 +232,7 @@ func (uc *CommandService) GetJWKS(ctx context.Context, projectID uuid.UUID) (map
 	}
 
 	return map[string]any{
-		"keys": jwkKeys,
+		"security": jwkKeys,
 	}, nil
 }
 

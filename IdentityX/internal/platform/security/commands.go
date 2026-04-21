@@ -1,12 +1,17 @@
-package tokens
+package security
 
 import (
-	"IdentityX/internal/features/keys"
 	"IdentityX/internal/shared/contracts"
-	errx2 "IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/crypto"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/validation"
 	"context"
+	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,19 +21,102 @@ import (
 	"github.com/spf13/viper"
 )
 
-type CommandService struct {
-	keys keys.CommandService
+func SignGoAuth(ctx context.Context, payload []byte, goauthKeyPair *contracts.Pair) ([]byte, error) {
+	var priv ed25519.PrivateKey
+	decrypted, err := crypto.Decrypt(goauthKeyPair.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err = parseEd25519Private(decrypted)
+	if err != nil {
+		return nil, err
+	}
+
+	sig := ed25519.Sign(priv, payload)
+	return sig, nil
 }
 
-func NewCommandService(
-	keys keys.CommandService,
-) *CommandService {
-	return &CommandService{
-		keys: keys,
+func SignProject(ctx context.Context, projectID uuid.UUID, payload []byte, projectKeyPair *contracts.Pair) ([]byte, error) {
+	var priv ed25519.PrivateKey
+	decrypted, err := crypto.Decrypt(projectKeyPair.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err = parseEd25519Private(decrypted)
+	if err != nil {
+		return nil, err
+	}
+
+	sig := ed25519.Sign(priv, payload)
+	return sig, nil
+}
+
+func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
+	if projectID != nil {
+		if pair.ProjectID == nil || *pair.ProjectID != *projectID {
+			return fail.New(errx.KeysProjectKeyMismatch).RecordCtx(ctx)
+		}
+	}
+
+	pub, err := parseEd25519Public(pair.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	if !ed25519.Verify(pub, payload, sig) {
+		return fail.New(errx.KeysInvalidSignature).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func parseEd25519Private(pemBytes []byte) (ed25519.PrivateKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, errors.New("invalid PEM Private Key")
+	}
+
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PKCS8 Public key: %w", err)
+	}
+
+	priv, ok := key.(ed25519.PrivateKey)
+	if !ok {
+		return nil, errors.New("private key is not an ED25519 private key")
+	}
+
+	return priv, nil
+}
+
+func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
+	block, _ := pem.Decode([]byte(pemStr))
+	if block == nil {
+		return nil, errors.New("invalid PEM Public Key")
+	}
+
+	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PKIX Public key: %w", err)
+	}
+
+	pub, ok := key.(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New("public key is not an ED25519 public key")
+	}
+
+	return pub, nil
+}
+
+func zero(b []byte) {
+	for i := range b {
+		b[i] = 0
 	}
 }
 
-func (uc *CommandService) NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
+func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
 	claims := contracts.AccessClaims{
 		Sub: contracts.AccessSub{
 			ID:         in.User.ID,
@@ -60,7 +148,7 @@ func (uc *CommandService) NewAccessToken(in contracts.NewAccessTokenInput) ([]by
 	return []byte(payload), nil
 }
 
-func (uc *CommandService) NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
+func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 	claims := contracts.RefreshClaims{
 		Sub: contracts.RefreshSub{
 			AccessJTI: in.AccessJTI,
@@ -85,7 +173,7 @@ func (uc *CommandService) NewRefreshToken(in contracts.NewRefreshTokenInput) ([]
 	return []byte(payload), nil
 }
 
-func (uc *CommandService) NewProjectAccessToken(in contracts.NewProjectAccessTokenInput) ([]byte, error) {
+func NewProjectAccessToken(in contracts.NewProjectAccessTokenInput) ([]byte, error) {
 	claims := contracts.AccessClaims{
 		Sub: contracts.AccessSub{
 			ID:         in.User.ID,
@@ -118,7 +206,7 @@ func (uc *CommandService) NewProjectAccessToken(in contracts.NewProjectAccessTok
 	return []byte(payload), nil
 }
 
-func (uc *CommandService) NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error) {
+func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.VerificationClaims{
 		Sub: contracts.VerificationSub{
@@ -145,7 +233,7 @@ func (uc *CommandService) NewVerificationToken(in contracts.NewVerificationToken
 	return []byte(payload), nil
 }
 
-func (uc *CommandService) NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
+func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.ResetPasswordClaims{
 		Sub: contracts.ResetPasswordSub{
@@ -173,56 +261,60 @@ func (uc *CommandService) NewResetPasswordToken(in contracts.NewResetPasswordInp
 	return []byte(payload), nil
 }
 
-func (uc *CommandService) AssembleJWT(payload []byte, sig []byte) string {
+func AssembleJWT(payload []byte, sig []byte) string {
 	return string(payload) + "." + base64.RawURLEncoding.EncodeToString(sig)
 }
 
-func (uc *CommandService) VerifyAccessToken(
+func VerifyAccessToken(
 	ctx context.Context,
 	tokenStr string,
+	pair *contracts.Pair,
 ) (*contracts.AccessClaims, error) {
 	return verifyToken(
 		ctx,
-		uc,
+		pair,
 		"access",
 		tokenStr,
 		&contracts.AccessClaims{},
 	)
 }
 
-func (uc *CommandService) VerifyRefreshToken(
+func VerifyRefreshToken(
 	ctx context.Context,
 	tokenStr string,
+	pair *contracts.Pair,
 ) (*contracts.RefreshClaims, error) {
 	return verifyToken(
 		ctx,
-		uc,
+		pair,
 		"refresh",
 		tokenStr,
 		&contracts.RefreshClaims{},
 	)
 }
 
-func (uc *CommandService) VerifyVerificationToken(
+func VerifyVerificationToken(
 	ctx context.Context,
 	tokenStr string,
+	pair *contracts.Pair,
 ) (*contracts.VerificationClaims, error) {
 	return verifyToken(
 		ctx,
-		uc,
+		pair,
 		"verification",
 		tokenStr,
 		&contracts.VerificationClaims{},
 	)
 }
 
-func (uc *CommandService) VerifyResetPasswordToken(
+func VerifyResetPasswordToken(
 	ctx context.Context,
 	tokenStr string,
+	pair *contracts.Pair,
 ) (*contracts.ResetPasswordClaims, error) {
 	return verifyToken(
 		ctx,
-		uc,
+		pair,
 		"reset password",
 		tokenStr,
 		&contracts.ResetPasswordClaims{},
@@ -231,19 +323,19 @@ func (uc *CommandService) VerifyResetPasswordToken(
 
 func verifyToken[T jwt.Claims](
 	ctx context.Context,
-	uc *CommandService,
+	pair *contracts.Pair,
 	tokenType string,
 	tokenStr string,
 	claims T,
 ) (T, error) {
-	token, err := parseJWTUnverified(tokenStr, claims)
+	token, err := ParseJWTUnverified(tokenStr, claims)
 	if err != nil {
-		return claims, errx2.FromJWTError(err, tokenType)
+		return claims, errx.FromJWTError(err, tokenType)
 	}
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		return claims, fail.New(errx2.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
@@ -251,12 +343,12 @@ func verifyToken[T jwt.Claims](
 		if token.Method != nil {
 			methodAlg = token.Method.Alg()
 		}
-		return claims, fail.New(errx2.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return claims, fail.New(errx2.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	payload, sig, err := splitJWT(ctx, tokenType, tokenStr)
@@ -268,12 +360,12 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "goauth:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 2 {
-			return claims, fail.New(errx2.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
 		}
 
-		if err := uc.keys.VerifyGoAuth(ctx, kid, payload, sig); err != nil {
-			if fail.Is(err, errx2.SQLNotFound) {
-				return claims, fail.New(errx2.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+		if err := VerifyKeyPair(ctx, nil, payload, sig, pair); err != nil {
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
 			}
 			return claims, err
 		}
@@ -281,7 +373,7 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 3 {
-			return claims, fail.New(errx2.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
 		}
 
 		projectID, err := validation.ParseUUID(parts[1], "project_id")
@@ -289,21 +381,21 @@ func verifyToken[T jwt.Claims](
 			return claims, err
 		}
 
-		if err := uc.keys.VerifyProject(ctx, projectID, kid, payload, sig); err != nil {
-			if fail.Is(err, errx2.SQLNotFound) {
-				return claims, fail.New(errx2.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+		if err := VerifyKeyPair(ctx, &projectID, payload, sig, pair); err != nil {
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
 			}
 			return claims, err
 		}
 
 	default:
-		return claims, fail.New(errx2.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fail.New(errx.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	return claims, nil
 }
 
-func parseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, error) {
+func ParseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, error) {
 	parser := new(jwt.Parser)
 	token, _, err := parser.ParseUnverified(tokenStr, claims)
 	return token, err
@@ -312,7 +404,7 @@ func parseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, er
 func splitJWT(ctx context.Context, tokenType, tokenStr string) (signingInput, sig []byte, err error) {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
-		return nil, nil, fail.New(errx2.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
+		return nil, nil, fail.New(errx.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
 	}
 
 	signingInput = []byte(parts[0] + "." + parts[1])

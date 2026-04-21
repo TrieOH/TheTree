@@ -1,9 +1,8 @@
 package users
 
 import (
-	"IdentityX/internal/features/keys"
-	"IdentityX/internal/features/tokens"
 	"IdentityX/internal/platform/database"
+	"IdentityX/internal/platform/security"
 	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
@@ -33,8 +32,6 @@ type CommandService struct {
 	keys           ports.KeysRepository
 	tokenReuseList ports.TokenReuseListRepository
 	redis          ports.RedisCacheService
-	keysS          keys.CommandService
-	tokens         tokens.CommandService
 	mailRenderer   ports.EmailRenderer
 	mailSender     ports.Mailer
 	logger         *zap.Logger
@@ -49,8 +46,6 @@ func NewCommandService(
 	Keys ports.KeysRepository,
 	TokenReuseList ports.TokenReuseListRepository,
 	Redis ports.RedisCacheService,
-	keysS keys.CommandService,
-	tokenBundle tokens.CommandService,
 	renderer ports.EmailRenderer,
 	mailer ports.Mailer,
 	logger *zap.Logger,
@@ -64,8 +59,6 @@ func NewCommandService(
 		keys:           Keys,
 		tokenReuseList: TokenReuseList,
 		redis:          Redis,
-		keysS:          keysS,
-		tokens:         tokenBundle,
 		mailRenderer:   renderer,
 		mailSender:     mailer,
 		logger:         logger,
@@ -161,7 +154,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterUserI
 	}
 
 	var verificationPayload []byte
-	verificationPayload, err = uc.tokens.NewVerificationToken(contracts.NewVerificationTokenInput{
+	verificationPayload, err = security.NewVerificationToken(contracts.NewVerificationTokenInput{
 		KID:       SigningKid,
 		Subject:   u.ID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
@@ -170,13 +163,18 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterUserI
 		return ports.Email{}, err
 	}
 
-	var verificationSig []byte
-	verificationSig, err = uc.keysS.SignGoAuth(ctx, verificationPayload)
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
 	if err != nil {
 		return ports.Email{}, err
 	}
 
-	verificationTokenStr := uc.tokens.AssembleJWT(verificationPayload, verificationSig)
+	var verificationSig []byte
+	verificationSig, err = security.SignGoAuth(ctx, verificationPayload, pair)
+	if err != nil {
+		return ports.Email{}, err
+	}
+
+	verificationTokenStr := security.AssembleJWT(verificationPayload, verificationSig)
 
 	var verificationEmail ports.Email
 	verificationEmail, err = uc.mailRenderer.Verification(ctx, ports.VerificationEmailData{
@@ -202,7 +200,7 @@ type LoginUserInput struct {
 
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
-// creates a new session and returns a new set of access and refresh tokens.
+// creates a new session and returns a new set of access and refresh security.
 func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens *UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
@@ -267,7 +265,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	var accessPayload []byte
-	accessPayload, err = uc.tokens.NewAccessToken(contracts.NewAccessTokenInput{
+	accessPayload, err = security.NewAccessToken(contracts.NewAccessTokenInput{
 		KID:       SigningKid,
 		User:      *u,
 		IP:        in.IP,
@@ -281,16 +279,21 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 		return nil, err
 	}
 
-	var accessSig []byte
-	accessSig, err = uc.keysS.SignGoAuth(ctx, accessPayload)
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	accessTokenStr := uc.tokens.AssembleJWT(accessPayload, accessSig)
+	var accessSig []byte
+	accessSig, err = security.SignGoAuth(ctx, accessPayload, pair)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := security.AssembleJWT(accessPayload, accessSig)
 
 	var refreshPayload []byte
-	refreshPayload, err = uc.tokens.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err = security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID:        SigningKid,
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
@@ -302,12 +305,12 @@ func (uc *CommandService) Login(ctx context.Context, in LoginUserInput) (tokens 
 	}
 
 	var refreshSig []byte
-	refreshSig, err = uc.keysS.SignGoAuth(ctx, refreshPayload)
+	refreshSig, err = security.SignGoAuth(ctx, refreshPayload, pair)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshTokenStr := uc.tokens.AssembleJWT(refreshPayload, refreshSig)
+	refreshTokenStr := security.AssembleJWT(refreshPayload, refreshSig)
 
 	return &UserTokensOutput{
 		AccessTokenString:  accessTokenStr,
@@ -365,9 +368,9 @@ type RefreshInput struct {
 	IP            string
 }
 
-// Refresh handles the business logic for refreshing a user's tokens.
+// Refresh handles the business logic for refreshing a user's security.
 // It parses the refresh token, checks if it's revoked, and if not,
-// determines whether to refresh the tokens for a client or a project user.
+// determines whether to refresh the security for a client or a project user.
 func (uc *CommandService) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
 	txOptions := database.TxOptions{
 		Isolation: pgx.ReadCommitted,
@@ -395,8 +398,8 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 		}
 	}()
 
-	var refreshToken *contracts.RefreshClaims
-	refreshToken, err = uc.tokens.VerifyRefreshToken(ctx, in.RefreshCookie.Value)
+	refreshToken := &contracts.RefreshClaims{}
+	_, err = security.ParseJWTUnverified[*contracts.RefreshClaims](in.RefreshCookie.Value, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +497,7 @@ func (uc *CommandService) finishClientRefresh(
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	var accessPayload []byte
-	accessPayload, err = uc.tokens.NewAccessToken(contracts.NewAccessTokenInput{
+	accessPayload, err = security.NewAccessToken(contracts.NewAccessTokenInput{
 		KID:       SigningKid,
 		User:      *u,
 		IP:        in.IP,
@@ -508,19 +511,24 @@ func (uc *CommandService) finishClientRefresh(
 		return nil, err
 	}
 
-	var accessSig []byte
-	accessSig, err = uc.keysS.SignGoAuth(ctx, accessPayload)
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	accessTokenStr := uc.tokens.AssembleJWT(
+	var accessSig []byte
+	accessSig, err = security.SignGoAuth(ctx, accessPayload, pair)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := security.AssembleJWT(
 		accessPayload,
 		accessSig,
 	)
 
 	var refreshPayload []byte
-	refreshPayload, err = uc.tokens.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err = security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID:        SigningKid,
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
@@ -532,12 +540,12 @@ func (uc *CommandService) finishClientRefresh(
 	}
 
 	var refreshSig []byte
-	refreshSig, err = uc.keysS.SignGoAuth(ctx, refreshPayload)
+	refreshSig, err = security.SignGoAuth(ctx, refreshPayload, pair)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshTokenStr := uc.tokens.AssembleJWT(
+	refreshTokenStr := security.AssembleJWT(
 		refreshPayload,
 		refreshSig,
 	)
@@ -587,7 +595,7 @@ func (uc *CommandService) finishProjectUserRefresh(
 
 	var accessPayload []byte
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
-	accessPayload, err = uc.tokens.NewProjectAccessToken(contracts.NewProjectAccessTokenInput{
+	accessPayload, err = security.NewProjectAccessToken(contracts.NewProjectAccessTokenInput{
 		KID:       SigningKid,
 		User:      *u,
 		IP:        in.IP,
@@ -601,16 +609,21 @@ func (uc *CommandService) finishProjectUserRefresh(
 		return nil, err
 	}
 
-	var accessSig []byte
-	accessSig, err = uc.keysS.SignProject(ctx, *sess.ProjectID, accessPayload)
+	pair, err := uc.keys.GetActiveProjectSigningKey(ctx, *sess.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	accessTokenStr := uc.tokens.AssembleJWT(accessPayload, accessSig)
+	var accessSig []byte
+	accessSig, err = security.SignProject(ctx, *sess.ProjectID, accessPayload, pair)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := security.AssembleJWT(accessPayload, accessSig)
 
 	var refreshPayload []byte
-	refreshPayload, err = uc.tokens.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err = security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID:        SigningKid,
 		AccessJTI:  newAccessJTI,
 		RefreshJTI: refreshJTI,
@@ -622,12 +635,12 @@ func (uc *CommandService) finishProjectUserRefresh(
 	}
 
 	var refreshSig []byte
-	refreshSig, err = uc.keysS.SignProject(ctx, *sess.ProjectID, refreshPayload)
+	refreshSig, err = security.SignProject(ctx, *sess.ProjectID, refreshPayload, pair)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshTokenStr := uc.tokens.AssembleJWT(refreshPayload, refreshSig)
+	refreshTokenStr := security.AssembleJWT(refreshPayload, refreshSig)
 
 	var project *contracts.Project
 	project, err = uc.projects.GetByIDInternal(ctx, *sess.ProjectID)
@@ -728,7 +741,7 @@ func (uc *CommandService) registerProjectUserInternal(ctx context.Context, in Pr
 	}
 
 	var verificationPayload []byte
-	verificationPayload, err = uc.tokens.NewVerificationToken(contracts.NewVerificationTokenInput{
+	verificationPayload, err = security.NewVerificationToken(contracts.NewVerificationTokenInput{
 		KID:       SigningKid,
 		Subject:   usr.ID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
@@ -737,13 +750,18 @@ func (uc *CommandService) registerProjectUserInternal(ctx context.Context, in Pr
 		return ports.Email{}, err
 	}
 
-	var verificationSig []byte
-	verificationSig, err = uc.keysS.SignGoAuth(ctx, verificationPayload)
+	pair, err := uc.keys.GetActiveProjectSigningKey(ctx, in.ProjectID)
 	if err != nil {
 		return ports.Email{}, err
 	}
 
-	verificationTokenStr := uc.tokens.AssembleJWT(
+	var verificationSig []byte
+	verificationSig, err = security.SignGoAuth(ctx, verificationPayload, pair)
+	if err != nil {
+		return ports.Email{}, err
+	}
+
+	verificationTokenStr := security.AssembleJWT(
 		verificationPayload,
 		verificationSig,
 	)
@@ -772,7 +790,7 @@ type ProjectLoginInput struct {
 
 // LoginProjectUser handles the business logic for logging in a project user.
 // It finds the user by email, compares the password, and if successful,
-// creates a new session and returns a new set of access and refresh tokens.
+// creates a new session and returns a new set of access and refresh security.
 func (uc *CommandService) LoginProjectUser(
 	ctx context.Context,
 	in ProjectLoginInput,
@@ -832,7 +850,7 @@ func (uc *CommandService) LoginProjectUser(
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 	var accessPayload []byte
-	accessPayload, err = uc.tokens.NewProjectAccessToken(contracts.NewProjectAccessTokenInput{
+	accessPayload, err = security.NewProjectAccessToken(contracts.NewProjectAccessTokenInput{
 		KID:       SigningKid,
 		User:      *usr,
 		IP:        in.IP,
@@ -846,16 +864,21 @@ func (uc *CommandService) LoginProjectUser(
 		return nil, err
 	}
 
-	var accessSig []byte
-	accessSig, err = uc.keysS.SignProject(ctx, in.ProjectID, accessPayload)
+	pair, err := uc.keys.GetActiveProjectSigningKey(ctx, in.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	accessTokenStr := uc.tokens.AssembleJWT(accessPayload, accessSig)
+	var accessSig []byte
+	accessSig, err = security.SignProject(ctx, in.ProjectID, accessPayload, pair)
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokenStr := security.AssembleJWT(accessPayload, accessSig)
 
 	var refreshPayload []byte
-	refreshPayload, err = uc.tokens.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err = security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID:        SigningKid,
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
@@ -867,12 +890,12 @@ func (uc *CommandService) LoginProjectUser(
 	}
 
 	var refreshSig []byte
-	refreshSig, err = uc.keysS.SignProject(ctx, in.ProjectID, refreshPayload)
+	refreshSig, err = security.SignProject(ctx, in.ProjectID, refreshPayload, pair)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshTokenStr := uc.tokens.AssembleJWT(refreshPayload, refreshSig)
+	refreshTokenStr := security.AssembleJWT(refreshPayload, refreshSig)
 
 	var project *contracts.Project
 	project, err = uc.projects.GetByIDInternal(ctx, in.ProjectID)
@@ -904,8 +927,13 @@ func (uc *CommandService) Verify(ctx context.Context, token string) (err error) 
 		return err
 	}
 
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
+	if err != nil {
+		return err
+	}
+
 	var claims *contracts.VerificationClaims
-	claims, err = uc.tokens.VerifyVerificationToken(ctx, token)
+	claims, err = security.VerifyVerificationToken(ctx, token, pair)
 	if err != nil {
 		return err
 	}
@@ -987,7 +1015,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	}
 
 	var verificationPayload []byte
-	verificationPayload, err = uc.tokens.NewVerificationToken(contracts.NewVerificationTokenInput{
+	verificationPayload, err = security.NewVerificationToken(contracts.NewVerificationTokenInput{
 		KID:       SigningKid,
 		Subject:   principal.UserID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
@@ -996,13 +1024,18 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 		return err
 	}
 
-	var verificationSig []byte
-	verificationSig, err = uc.keysS.SignGoAuth(ctx, verificationPayload)
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
 	if err != nil {
 		return err
 	}
 
-	verificationTokenStr := uc.tokens.AssembleJWT(verificationPayload, verificationSig)
+	var verificationSig []byte
+	verificationSig, err = security.SignGoAuth(ctx, verificationPayload, pair)
+	if err != nil {
+		return err
+	}
+
+	verificationTokenStr := security.AssembleJWT(verificationPayload, verificationSig)
 
 	var verificationEmail ports.Email
 	if pu != nil {
@@ -1087,7 +1120,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 	}
 
 	var resetPayload []byte
-	resetPayload, err = uc.tokens.NewResetPasswordToken(contracts.NewResetPasswordInput{
+	resetPayload, err = security.NewResetPasswordToken(contracts.NewResetPasswordInput{
 		KID:       SigningKid,
 		Subject:   subjectID,
 		ProjectID: in.ProjectID,
@@ -1097,13 +1130,18 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 		return err
 	}
 
-	var resetSig []byte
-	resetSig, err = uc.keysS.SignGoAuth(ctx, resetPayload)
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
 	if err != nil {
 		return err
 	}
 
-	resetPassTokenStr := uc.tokens.AssembleJWT(resetPayload, resetSig)
+	var resetSig []byte
+	resetSig, err = security.SignGoAuth(ctx, resetPayload, pair)
+	if err != nil {
+		return err
+	}
+
+	resetPassTokenStr := security.AssembleJWT(resetPayload, resetSig)
 
 	var e ports.Email
 	e, err = uc.mailRenderer.PasswordReset(ctx, ports.PasswordResetEmailData{
@@ -1146,8 +1184,13 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in ResetPas
 		span.SetAttributes(attribute.Bool("reset_password.success", err == nil))
 	}()
 
+	pair, err := uc.keys.GetActiveGoAuthSigningKey(ctx)
+	if err != nil {
+		return err
+	}
+
 	var claims *contracts.ResetPasswordClaims
-	claims, err = uc.tokens.VerifyResetPasswordToken(ctx, in.Token)
+	claims, err = security.VerifyResetPasswordToken(ctx, in.Token, pair)
 	if err != nil {
 		return err
 	}
@@ -1228,8 +1271,13 @@ func (uc *CommandService) LogoutProjectUser(ctx context.Context, in ProjectLogou
 		}
 	}()
 
+	pair, err := uc.keys.GetActiveProjectSigningKey(ctx, in.ProjectID)
+	if err != nil {
+		return err
+	}
+
 	var refreshToken *contracts.RefreshClaims
-	refreshToken, err = uc.tokens.VerifyRefreshToken(ctx, in.RefreshTokenCookie.Value)
+	refreshToken, err = security.VerifyRefreshToken(ctx, in.RefreshTokenCookie.Value, pair)
 	if err != nil {
 		return err
 	}
@@ -1251,7 +1299,7 @@ func (uc *CommandService) LogoutProjectUser(ctx context.Context, in ProjectLogou
 func (uc *CommandService) GetJWKS(ctx context.Context) (map[string]any, error) {
 	ekeys, err := uc.keys.ListGoAuthPublicKeys(ctx)
 	if err != nil {
-		telemetry.Log().Error("Failed listing GoAuth public keys", zap.Error(err))
+		telemetry.Log().Error("Failed listing GoAuth public security", zap.Error(err))
 		return nil, fail.New(errx.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
 	}
 
@@ -1266,6 +1314,6 @@ func (uc *CommandService) GetJWKS(ctx context.Context) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"keys": jwkKeys,
+		"security": jwkKeys,
 	}, nil
 }

@@ -34,8 +34,8 @@ func NewAuthMiddleware(
 	}
 }
 
-// Auth is a middleware function that checks for valid access and refresh tokens.
-// It validates the tokens, checks if the refresh token is revoked, and creates a principal from the tokens.
+// Auth is a middleware function that checks for valid access and refresh security.
+// It validates the security, checks if the refresh token is revoked, and creates a principal from the security.
 // The principal is then added to the request context.
 func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

@@ -3,10 +3,9 @@ package app
 import (
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/auth"
-	"IdentityX/internal/features/keys"
 	"IdentityX/internal/features/projects"
+	"IdentityX/internal/features/security"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/features/tokens"
 	"IdentityX/internal/features/users"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/router"
@@ -46,8 +45,6 @@ type commands struct {
 	users    *users.CommandService
 	sessions *sessions.CommandService
 	projects *projects.CommandService
-	keys     *keys.CommandService
-	tokens   *tokens.CommandService
 	apiKeys  *api_keys.CommandService
 	auth     *auth.CommandService
 }
@@ -107,12 +104,10 @@ func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.apiKeys = api_keys.NewCommandService(r.apiKeys, r.projects, rt.logger, rt.tracer, rt.txRunner)
-	cmd.keys = keys.NewCommandService(r.keys, rt.caches.privateCache, rt.caches.publicCache, rt.logger, rt.tracer, rt.txRunner)
-	cmd.tokens = tokens.NewCommandService(*cmd.keys)
 	cmd.projects = projects.NewCommandService(r.users, r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.auth = auth.NewCommandService(r.sessions, r.projects, *cmd.tokens, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.sessions = sessions.NewCommandService(r.sessions, *cmd.tokens, rt.logger, rt.tracer, rt.txRunner)
-	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), *cmd.keys, *cmd.tokens, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.auth = auth.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.sessions = sessions.NewCommandService(r.sessions, r.keys, rt.logger, rt.tracer, rt.txRunner)
+	cmd.users = users.NewCommandService(r.users, r.sessions, r.projects, r.keys, r.tokenReuseList, redis.NewCache(app.redis), rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
 	return cmd
 }
 
@@ -123,8 +118,8 @@ func (app *IdentityX) startQueries(rt runtime) queries {
 	q.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.projectUsers = project_users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.keys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	q.tokenReuseList = tokens.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	q.security = security.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	q.tokenReuseList = security.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	q.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return q
 }
@@ -135,8 +130,8 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	r.users = users.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.keys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.tokenReuseList = tokens.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }

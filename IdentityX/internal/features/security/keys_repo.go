@@ -1,4 +1,4 @@
-package keys
+package security
 
 import (
 	"IdentityX/internal/platform/database"
@@ -23,7 +23,7 @@ type keyRepo struct {
 
 var _ ports.KeysRepository = (*keyRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysRepository {
+func NewKeysRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysRepository {
 	return &keyRepo{
 		q:      q,
 		log:    log,

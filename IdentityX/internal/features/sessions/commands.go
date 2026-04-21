@@ -1,8 +1,8 @@
 package sessions
 
 import (
-	"IdentityX/internal/features/tokens"
 	"IdentityX/internal/platform/database"
+	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
@@ -19,7 +19,7 @@ import (
 
 type CommandService struct {
 	sessions ports.SessionRepository
-	tokens   tokens.CommandService
+	keys     ports.KeysRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	txRunner database.TxRunner
@@ -27,14 +27,14 @@ type CommandService struct {
 
 func NewCommandService(
 	sessions ports.SessionRepository,
-	tokens tokens.CommandService,
+	keys ports.KeysRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	txRunner database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		sessions: sessions,
-		tokens:   tokens,
+		keys:     keys,
 		logger:   logger,
 		tracer:   tracer,
 		txRunner: txRunner,
@@ -80,7 +80,7 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 	}
 
 	if principal.Method == authz.AuthMethodApiKey {
-		return errors.New("sessions are not revocable through api keys")
+		return errors.New("sessions are not revocable through api security")
 	}
 
 	if *principal.SessionID == sessionID {
@@ -114,11 +114,31 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 }
 
 // RevokeOthers handles the business logic for revoking all sessions for the authenticated user except for the current one.
-func (uc *CommandService) RevokeOthers(ctx context.Context, accessToken string) error {
+func (uc *CommandService) RevokeOthers(ctx context.Context, accessTokenStr string) error {
 	ctx, span := uc.tracer.Start(ctx, "SessionService.RevokeOthers")
 	defer span.End()
 
-	claims, err := uc.tokens.VerifyAccessToken(ctx, accessToken)
+	accessToken := &contracts.AccessClaims{}
+	_, err := security.ParseJWTUnverified[*contracts.AccessClaims](accessTokenStr, accessToken)
+	if err != nil {
+		return err
+	}
+
+	var keyPair *contracts.Pair
+	if accessToken.Sub.ProjectID != nil {
+		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
+		keyPair, err = uc.keys.GetActiveProjectSigningKey(ctx, *accessToken.Sub.ProjectID)
+		if err != nil {
+			return err
+		}
+	} else {
+		keyPair, err = uc.keys.GetActiveGoAuthSigningKey(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	claims, err := security.VerifyAccessToken(ctx, accessTokenStr, keyPair)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,8 @@
-package tokens
+package security
 
 import (
 	"IdentityX/internal/platform/database"
-	sqlc2 "IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"time"
@@ -15,12 +15,12 @@ import (
 )
 
 type tokenReuseListRepo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
 }
 
-func (repo *tokenReuseListRepo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *tokenReuseListRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
@@ -29,7 +29,7 @@ func (repo *tokenReuseListRepo) queries(ctx context.Context) *sqlc2.Queries {
 
 var _ ports.TokenReuseListRepository = (*tokenReuseListRepo)(nil)
 
-func NewRepo(q *sqlc2.Queries, l *zap.Logger, tracer trace.Tracer) ports.TokenReuseListRepository {
+func NewTokenReuseRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.TokenReuseListRepository {
 	return &tokenReuseListRepo{
 		q:      q,
 		log:    l,
@@ -41,7 +41,7 @@ func (repo *tokenReuseListRepo) Append(ctx context.Context, jit, userID uuid.UUI
 	ctx, span := repo.tracer.Start(ctx, "TokenReuseListRepo.Append")
 	defer span.End()
 
-	err := repo.queries(ctx).TokenReuseListAppend(ctx, sqlc2.TokenReuseListAppendParams{
+	err := repo.queries(ctx).TokenReuseListAppend(ctx, sqlc.TokenReuseListAppendParams{
 		Jit:       jit,
 		UserID:    userID,
 		ExpiresAt: expiresAt,
@@ -57,7 +57,7 @@ func (repo *tokenReuseListRepo) Exists(ctx context.Context, jit, userID uuid.UUI
 	ctx, span := repo.tracer.Start(ctx, "TokenReuseListRepo.Exists")
 	defer span.End()
 
-	exists, err := repo.queries(ctx).TokenReuseListExists(ctx, sqlc2.TokenReuseListExistsParams{
+	exists, err := repo.queries(ctx).TokenReuseListExists(ctx, sqlc.TokenReuseListExistsParams{
 		Jit:    jit,
 		UserID: userID,
 	})

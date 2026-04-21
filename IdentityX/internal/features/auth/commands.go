@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"IdentityX/internal/features/tokens"
 	"IdentityX/internal/platform/database"
+	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
@@ -21,7 +21,7 @@ import (
 type CommandService struct {
 	sessions ports.SessionRepository
 	project  ports.ProjectRepository
-	tokens   tokens.CommandService
+	keys     ports.KeysRepository
 	apiKeys  ports.ApiKeyRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
@@ -31,7 +31,7 @@ type CommandService struct {
 func NewCommandService(
 	sessions ports.SessionRepository,
 	project ports.ProjectRepository,
-	tokens tokens.CommandService,
+	keys ports.KeysRepository,
 	apiKeys ports.ApiKeyRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,
@@ -40,7 +40,7 @@ func NewCommandService(
 	return &CommandService{
 		sessions: sessions,
 		project:  project,
-		tokens:   tokens,
+		keys:     keys,
 		apiKeys:  apiKeys,
 		logger:   logger,
 		tracer:   tracer,
@@ -121,13 +121,29 @@ func (uc *CommandService) AuthenticateSession(ctx context.Context, accessTokenSt
 		return nil, fail.New(errx.RequestEmptyCookie).WithArgs("access_token").RecordCtx(ctx)
 	}
 
-	accessToken, err := uc.tokens.VerifyAccessToken(ctx, accessTokenStr)
+	accessToken := &contracts.AccessClaims{}
+	_, err := security.ParseJWTUnverified[*contracts.AccessClaims](accessTokenStr, accessToken)
 	if err != nil {
 		return nil, err
 	}
 
+	var keyPair *contracts.Pair
 	if accessToken.Sub.ProjectID != nil {
 		span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
+		keyPair, err = uc.keys.GetActiveProjectSigningKey(ctx, *accessToken.Sub.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		keyPair, err = uc.keys.GetActiveGoAuthSigningKey(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	accessToken, err = security.VerifyAccessToken(ctx, accessTokenStr, keyPair)
+	if err != nil {
+		return nil, err
 	}
 
 	if err = validateIssuers(ctx, issuer, accessToken); err != nil {

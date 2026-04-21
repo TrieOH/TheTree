@@ -201,7 +201,7 @@ func (handler *Handler) GetProjectUserByID(w http.ResponseWriter, r *http.Reques
 // @Tags projects
 // @Accept json
 // @Produce json
-// @Param project_id path string true "ID of the project to retrieve keys"
+// @Param project_id path string true "ID of the project to retrieve security"
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
