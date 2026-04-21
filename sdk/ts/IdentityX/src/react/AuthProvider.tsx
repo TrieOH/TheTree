@@ -19,7 +19,7 @@ type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
   isAuthenticated: boolean;
   isInitializing: boolean;
-  isClient?: boolean;
+  isProjectMode?: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,7 +28,7 @@ export function AuthProvider({
   children,
   baseURL,
   projectId,
-  isClient = true,
+  isProjectMode = true,
   fallback,
   waitSession = true,
   clientConfig,
@@ -36,7 +36,7 @@ export function AuthProvider({
   children: React.ReactNode;
   baseURL?: string;
   projectId?: string;
-  isClient?: boolean;
+  isProjectMode?: boolean;
   /** Component to show while initial auth check is in progress */
   fallback?: React.ReactNode;
   /** Whether to wait for the session restoration before rendering children. Defaults to true. */
@@ -79,7 +79,7 @@ export function AuthProvider({
   );
 
   useEffect(() => {
-    if (isClient) validateProjectKey();
+    if (isProjectMode) validateProjectKey();
 
     const restoreSession = async () => {
       if (isRestoring.current) return;
@@ -109,14 +109,14 @@ export function AuthProvider({
     };
 
     restoreSession();
-  }, [auth, isClient]);
+  }, [auth, isProjectMode]);
 
   const contextValue = useMemo(() => ({
     auth,
     isAuthenticated,
     isInitializing,
-    isClient
-  }), [auth, isAuthenticated, isInitializing, isClient]);
+    isProjectMode
+  }), [auth, isAuthenticated, isInitializing, isProjectMode]);
 
   if (waitSession && isInitializing) return fallback ?? null;
 

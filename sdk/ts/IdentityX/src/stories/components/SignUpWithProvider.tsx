@@ -1,17 +1,20 @@
-import type { MouseEvent } from "react";
 import { AuthProvider, SignUp } from "../../react";
-import type { FieldDefinitionResultI } from "../../types/fields-types";
+import { type MouseEvent } from "react";
 
-export interface SignUpWithProviderProps {
-  loginRedirect?:(e: MouseEvent<HTMLSpanElement>) => void;
-  flow_id?: string;
-  fields?: FieldDefinitionResultI[];
+interface SignUpWithProviderProps {
+  loginRedirect?: (e: MouseEvent<HTMLSpanElement>) => void;
+  isProjectMode?: boolean;
 }
 
-export default function SignUpWithProvider({ flow_id, loginRedirect, fields }: SignUpWithProviderProps) {
+export default function SignUpWithProvider({ 
+  loginRedirect,
+  isProjectMode = true
+}: SignUpWithProviderProps) {
   return (
-    <AuthProvider baseURL="http://localhost:8080">
-      <SignUp flow_id={flow_id} loginRedirect={loginRedirect} fields={fields} />
+    <AuthProvider baseURL="http://localhost:8080" isProjectMode={isProjectMode}>
+      <SignUp
+        loginRedirect={loginRedirect}
+      />
     </AuthProvider>
   )
 }

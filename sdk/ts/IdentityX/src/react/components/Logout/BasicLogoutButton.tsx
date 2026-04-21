@@ -3,8 +3,8 @@ import { useAuth } from "../../AuthProvider";
 import { ImExit } from "react-icons/im";
 
 export interface LogoutProps {
-  onSuccess?: () => Promise<void>;
-  onFailed?: (message: string) => Promise<void>;
+  onSuccess?: (message?: string) => Promise<void>;
+  onFailed?: (message: string, trace?: string[]) => Promise<void>;
   forceLogout?: boolean;
 }
 
@@ -23,8 +23,9 @@ export function BasicLogoutButton({
     setLoading(true);
 
     const res = await auth.logout({ forceLogout });
-    if(res.success && onSuccess) await onSuccess();
-    else if(onFailed) await onFailed(res.message);
+    if (res.success) {
+      if (onSuccess) await onSuccess(res.message);
+    } else if (onFailed) await onFailed(res.message, res.trace);
     setLoading(false);
   }
   return (
@@ -34,7 +35,7 @@ export function BasicLogoutButton({
       disabled={loading}
       className={"trieoh trieoh-button--logout"}
     >
-      <ImExit size={24}/> <span>Log out</span>
+      <ImExit size={24} /> <span>Log out</span>
     </button>
   )
 }

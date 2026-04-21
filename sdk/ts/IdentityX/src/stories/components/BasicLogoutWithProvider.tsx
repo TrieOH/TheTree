@@ -1,8 +1,12 @@
 import { AuthProvider, BasicLogoutButton } from "../../react";
 
-export default function BasicLogoutWithProvider() {
+interface BasicLogoutWithProviderProps {
+  isProjectMode?: boolean;
+}
+
+export default function BasicLogoutWithProvider({ isProjectMode = true }: BasicLogoutWithProviderProps) {
   return (
-    <AuthProvider baseURL="http://localhost:8080">
+    <AuthProvider baseURL="http://localhost:8080" isProjectMode={isProjectMode}>
       <BasicLogoutButton />
     </AuthProvider>
   )
