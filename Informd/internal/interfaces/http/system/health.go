@@ -7,18 +7,13 @@ import (
 	_ "TrieForms/internal/shared/contracts"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
 	"github.com/google/uuid"
 )
 
-type SystemHandler struct {
-	gaClient *goauth.Client
-}
+type Handler struct{}
 
-func NewSystemHandler(gaClient *goauth.Client) *SystemHandler {
-	return &SystemHandler{
-		gaClient: gaClient,
-	}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 type HealthResponse struct {
@@ -34,10 +29,10 @@ type HealthResponse struct {
 // @Produce json
 // @Success 200 {object} HealthResponse
 // @Router /health [get]
-func (handler *SystemHandler) Health(w http.ResponseWriter, _ *http.Request) {
+func (handler *Handler) Health(w http.ResponseWriter, _ *http.Request) {
 	response := HealthResponse{
 		Status:  "ok",
-		Service: "forms-api",
+		Service: "InformdAPI",
 	}
 
 	resp.OK("ok").WithData(response).Send(w)
@@ -54,7 +49,7 @@ func (handler *SystemHandler) Health(w http.ResponseWriter, _ *http.Request) {
 // @Success 200 {object} HealthResponse
 // @Failure 401 {object} contracts.ErrorResponse
 // @Router /protected/health [get]
-func (handler *SystemHandler) ProtectedHealth(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) ProtectedHealth(w http.ResponseWriter, r *http.Request) {
 	sub, err := authz.RequireSubject(r.Context())
 	if err != nil {
 		resp.Error(err).Send(w)
@@ -63,7 +58,7 @@ func (handler *SystemHandler) ProtectedHealth(w http.ResponseWriter, r *http.Req
 
 	response := HealthResponse{
 		Status:  "ok",
-		Service: "univents-api",
+		Service: "InformdAPI",
 		UserID:  sub.ID,
 	}
 

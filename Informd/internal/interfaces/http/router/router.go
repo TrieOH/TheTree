@@ -26,7 +26,7 @@ import (
 )
 
 type HTTPDeps struct {
-	SystemHandler   *system.SystemHandler
+	SystemHandler   *system.Handler
 	ProjectsHandler *projects.Handler
 	ApiKeysHandler  *keys.Handler
 	FormsHandler    *forms.Handler

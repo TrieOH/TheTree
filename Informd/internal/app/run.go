@@ -79,7 +79,7 @@ func (app *TrieForms) run() runtime {
 	rt.queries = app.startQueries(rt)
 	rt.handlers = app.startHandlers(rt)
 	mux := router.CreateRouter(rt.handlers)
-	port := viper.GetString("port")
+	port := viper.GetString("PORT")
 	log.Printf("TrieForms listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 	return rt
@@ -95,7 +95,7 @@ func (app *TrieForms) startHandlers(rt runtime) *router.HTTPDeps {
 			DB:       viper.GetInt("REDIS_DB"),
 		},
 	})
-	handlers.SystemHandler = system.NewSystemHandler(app.gaClient)
+	handlers.SystemHandler = system.NewHandler()
 	handlers.ProjectsHandler = projects.NewProjectHandler(rt.commands.projects, rt.queries.projects)
 	handlers.ApiKeysHandler = keys.NewApiKeysHandler(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewFormsHandler(rt.commands.forms, rt.queries.forms)
@@ -112,7 +112,7 @@ func (app *TrieForms) startCommands(rt runtime) commands {
 
 func (app *TrieForms) startQueries(rt runtime) queries {
 	var q queries
-	q.projects = projects.NewProjectQueryService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	q.projects = projects.NewQueryService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewApiKeyQueryService(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	q.forms = forms.NewFormQueryService(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
@@ -128,7 +128,7 @@ func (app *TrieForms) startRepos(rt runtime) repos {
 
 func (app *TrieForms) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(app.gaClient, rt.repos.apiKeys, rt.repos.projects, rt.tracer)
+	mw.authMW = middleware.NewAuthMiddleware(app.idxClient, rt.repos.apiKeys, rt.repos.projects, rt.tracer)
 	return mw
 }
 

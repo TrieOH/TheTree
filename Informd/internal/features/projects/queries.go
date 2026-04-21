@@ -18,7 +18,7 @@ type QueryService struct {
 	tracer   trace.Tracer
 }
 
-func NewProjectQueryService(
+func NewQueryService(
 	projects ports.ProjectsRepo,
 	az *v1.Client,
 	tx database.TxRunner,

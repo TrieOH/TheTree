@@ -2,14 +2,13 @@ package app
 
 import (
 	"TrieForms/internal/platform/database"
-	cache "TrieForms/internal/platform/memory/redis"
 	"context"
 	"log"
 	"os"
 	"time"
 
 	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/goauth-sdk-go"
+	"github.com/TrieOH/IdentityX-SDK-Go"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -98,14 +97,13 @@ func SetupSpiceDB() *authzed.Client {
 	return client
 }
 
-func SetupGoAuth(redisInstance *redis.Client) *goauth.Client {
+func SetupGoAuth() *idx.Client {
 	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
-	client, err := goauth.NewClient(goauth.Config{
-		BaseURL:      viper.GetString("GOAUTH_URL"),
-		APIKey:       viper.GetString("GOAUTH_API_KEY"),
-		ProjectID:    projectID,
-		Debug:        true,
-		SessionCache: cache.NewSessionCache(redisInstance),
+	client, err := idx.NewClient(idx.Config{
+		BaseURL:   viper.GetString("GOAUTH_URL"),
+		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		ProjectID: projectID,
+		Debug:     true,
 	})
 	if err != nil {
 		log.Fatalf("Error creating goauth client: %s", err.Error())
