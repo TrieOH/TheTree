@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/TrieOH/sdkkit"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -54,7 +55,6 @@ type TokenService struct {
 	cacheTTL    time.Duration
 }
 
-// FIXME use something like sqlite to save the token this way if go auth is unavailable momentarily we can still return the token
 func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, error) {
 	s.mu.RLock()
 	cached := s.jwks
@@ -62,14 +62,11 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 	s.mu.RUnlock()
 
 	cacheValid := cached != nil && time.Since(lastUpdated) < s.cacheTTL
-
-	// Cooldown: evita thundering herd em forceRefresh
 	inCooldown := time.Since(lastUpdated) < 5*time.Minute
 
 	if cacheValid && !forceRefresh {
 		return cached, nil
 	}
-
 	if forceRefresh && inCooldown && cached != nil {
 		return cached, nil
 	}
@@ -77,7 +74,7 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Re-check com write lock (outra goroutine pode ter atualizado)
+	// Re-check with write lock (another goroutine may have updated).
 	cacheValid = s.jwks != nil && time.Since(s.lastUpdated) < s.cacheTTL
 	inCooldown = time.Since(s.lastUpdated) < 5*time.Minute
 
@@ -88,19 +85,13 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 		return s.jwks, nil
 	}
 
-	// Fetch...
-	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
-	req, err := s.client.newRequest(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	var res JWKS
-	if err = s.client.do(req, &res); err != nil {
+	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
+	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
 		if s.jwks != nil {
-			return s.jwks, nil // fallback pro cache stale se fetch falhar
+			return s.jwks, nil // stale cache fallback on network error
 		}
-		return nil, err
+		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
 	}
 
 	s.jwks = &res
@@ -108,152 +99,134 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 	return s.jwks, nil
 }
 
+// ValidateToken parses and verifies the signature of a raw JWT string,
+// returning the raw *jwt.Token. Prefer VerifyAccessToken for full claim
+// validation.
 func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
-			return nil, SdkError{"unexpected signing method", nil}
+			return nil, &InvalidTokenError{Cause: fmt.Errorf("unexpected signing method: %T", token.Method)}
 		}
 
 		kid, ok := token.Header["kid"].(string)
-		if !ok {
-			return nil, SdkError{"missing token kid", nil}
+		if !ok || kid == "" {
+			return nil, &InvalidTokenError{Cause: fmt.Errorf("missing kid header")}
 		}
 
-		// Try with current cache
 		jwks, err := s.GetJWKS(ctx, false)
 		if err != nil {
 			return nil, err
 		}
-
 		for _, key := range jwks.Keys {
 			if key.Kid == kid {
 				return s.decodeKey(key)
 			}
 		}
 
-		// Kid not found, try refreshing
+		// Not in cache — try a forced refresh once.
 		jwks, err = s.GetJWKS(ctx, true)
 		if err != nil {
 			return nil, err
 		}
-
 		for _, key := range jwks.Keys {
 			if key.Kid == kid {
 				return s.decodeKey(key)
 			}
 		}
 
-		return nil, SdkError{"key not in JWKS", nil}
+		return nil, &KeyNotFoundError{Kid: kid}
 	}
 
 	token, err := jwt.Parse(tokenStr, keyFunc)
 	if err != nil {
-		return nil, SdkError{Message: "error parsing token: ", Cause: err}
+		return nil, &InvalidTokenError{Cause: err}
 	}
-
 	return token, nil
 }
 
 func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
 	if key.Kty != "OKP" || key.Crv != "Ed25519" {
-		return nil, SdkError{"unsupported curve: " + key.Kty + "; " + key.Crv, nil}
+		return nil, &UnsupportedKeyError{Kty: key.Kty, Crv: key.Crv}
 	}
 
 	pubBytes, err := base64.RawURLEncoding.DecodeString(key.X)
 	if err != nil {
-		return nil, SdkError{"error decoding public key: ", err}
+		return nil, &sdkkit.SDKError{Op: "decode jwks key", Cause: err}
 	}
 
 	if len(pubBytes) != ed25519.PublicKeySize {
-		return nil, SdkError{"invalid key size: " + strconv.Itoa(len(pubBytes)), nil}
+		return nil, &sdkkit.SDKError{
+			Op:    "decode jwks key",
+			Cause: fmt.Errorf("invalid key size: %s bytes", strconv.Itoa(len(pubBytes))),
+		}
 	}
 
 	return ed25519.PublicKey(pubBytes), nil
 }
 
+// VerifyAccessToken fully validates a raw access token string: signature,
+// expiry, nbf, and issuer. Returns the parsed AccessClaims on success.
 func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (*AccessClaims, error) {
 	claims := &AccessClaims{}
 
-	// ----------------------------
-	// Parse unverified to get kid
-	// ----------------------------
+	// Parse unverified first to extract kid so we can fetch the right key
+	// without validating claims we haven't checked yet.
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-
 	token, _, err := parser.ParseUnverified(tokenStr, claims)
 	if err != nil {
-		return nil, SdkError{"bad request: ", err}
+		return nil, &InvalidTokenError{Cause: err}
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return nil, SdkError{"missing token kid", nil}
+		return nil, &InvalidTokenError{Cause: fmt.Errorf("missing kid header")}
 	}
 
-	// ----------------------------
-	// Key resolver (JWKS only)
-	// ----------------------------
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
-
-		// enforce Ed25519
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
-			return nil, SdkError{"unexpected signing method", nil}
+			return nil, &InvalidTokenError{Cause: fmt.Errorf("unexpected signing method: %T", token.Method)}
 		}
 
 		jwks, err := s.GetJWKS(ctx, false)
 		if err != nil {
 			return nil, err
 		}
-
 		for _, key := range jwks.Keys {
 			if key.Kid == kid {
 				return s.decodeKey(key)
 			}
 		}
-
-		return nil, SdkError{"key not in JWKS", nil}
+		return nil, &KeyNotFoundError{Kid: kid}
 	}
 
-	// ----------------------------
-	// Verified parse
-	// ----------------------------
 	token, err = jwt.ParseWithClaims(tokenStr, claims, keyFunc)
 	if err != nil {
-		return nil, SdkError{"error parsing token claims: ", err}
+		return nil, &InvalidTokenError{Cause: err}
 	}
-
 	if !token.Valid {
-		return nil, SdkError{"invalid token", nil}
+		return nil, &InvalidTokenError{}
 	}
 
-	// ----------------------------
-	// Time validation
-	// ----------------------------
+	// Time validation.
 	now := time.Now()
-
 	if claims.ExpiresAt == nil || now.After(claims.ExpiresAt.Time) {
-		return nil, SdkError{"token expired", nil}
+		expAt := time.Time{}
+		if claims.ExpiresAt != nil {
+			expAt = claims.ExpiresAt.Time
+		}
+		return nil, &TokenExpiredError{ExpiredAt: expAt}
 	}
-
 	if claims.NotBefore != nil && now.Before(claims.NotBefore.Time) {
-		return nil, SdkError{"token not yet valid", nil}
+		return nil, &TokenNotYetValidError{ValidAt: claims.NotBefore.Time}
 	}
 
-	// ----------------------------
-	// Issuer validation
-	// ----------------------------
+	// Issuer validation.
+	expectedIssuer := "IdentityX"
 	if claims.Sub.ProjectID != nil {
-
-		expected := claims.Sub.ProjectID.String()
-
-		if claims.Issuer != expected {
-			return nil, SdkError{"invalid token issuer: " + claims.Issuer, nil}
-		}
-
-	} else {
-
-		if claims.Issuer != "goauth" {
-			return nil, SdkError{"invalid token issuer: " + claims.Issuer, nil}
-		}
+		expectedIssuer = claims.Sub.ProjectID.String()
+	}
+	if claims.Issuer != expectedIssuer {
+		return nil, &InvalidIssuerError{Got: claims.Issuer, Expected: expectedIssuer}
 	}
 
 	return claims, nil
