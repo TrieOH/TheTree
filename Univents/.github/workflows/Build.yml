@@ -31,5 +31,5 @@ jobs:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/trieoh/univents:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=univents
+          cache-to: type=gha,mode=max,scope=univents
