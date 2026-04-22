@@ -18,7 +18,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
-        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -31,5 +30,5 @@ jobs:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/trieoh/payssage:latest
-          cache-from: type=gha,scope=payssage
-          cache-to: type=gha,mode=max,scope=payssage
+          cache-from: type=registry,ref=ghcr.io/trieoh/payssage:cache
+          cache-to: ${{ github.event_name == 'push' && 'type=registry,ref=ghcr.io/trieoh/payssage:cache,mode=max' || '' }}
