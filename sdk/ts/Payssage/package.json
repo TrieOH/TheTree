@@ -1,5 +1,5 @@
 {
-  "name": "@trieoh/node-payments-sdk",
+  "name": "@soramux/payssage-sdk-ts",
   "version": "0.1.0",
   "type": "module",
   "exports": {

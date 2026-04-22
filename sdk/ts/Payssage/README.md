@@ -1,4 +1,4 @@
-# node-payments-sdk
+# Payssage SDK - Typescript
 
 To install dependencies:
 
