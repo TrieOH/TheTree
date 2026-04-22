@@ -5,11 +5,11 @@ SDK for integrating with the TrieOH authentication ecosystem.
 ## Installation
 
 ```bash
-npm install @trieoh/node-auth-sdk
+npm install @soramux/identityx-sdk-ts
 # or
-yarn add @trieoh/node-auth-sdk
+yarn add @soramux/identityx-sdk-ts
 # or
-bun add @trieoh/node-auth-sdk
+bun add @soramux/identityx-sdk-ts
 ```
 
 ## Configuration (Vite / React)
@@ -25,7 +25,7 @@ The SDK automatically looks for these variables:
 - `PUBLIC_TRIEOH_AUTH_PROJECT_ID` (General)
 
 ```tsx
-import { AuthProvider } from '@trieoh/node-auth-sdk/react';
+import { AuthProvider } from '@soramux/identityx-sdk-ts/react';
 
 function App() {
   return (
@@ -49,7 +49,7 @@ Useful if you load the project ID dynamically or want to avoid environment issue
 ### Option 3: Global Configuration via Code
 
 ```tsx
-import { configure } from '@trieoh/node-auth-sdk';
+import { configure } from '@soramux/identityx-sdk-ts';
 
 configure({
   PROJECT_ID: 'your-id',
@@ -62,7 +62,7 @@ configure({
 The SDK provides ready-to-use components:
 
 ```tsx
-import { SignIn, SignUp } from '@trieoh/node-auth-sdk/react';
+import { SignIn, SignUp } from '@soramux/identityx-sdk-ts/react';
 
 // Example usage
 const LoginPage = () => <SignIn />;
@@ -74,7 +74,7 @@ const RegisterPage = () => <SignUp />;
 You can access the authentication state anywhere in your application:
 
 ```tsx
-import { useAuth } from '@trieoh/node-auth-sdk/react';
+import { useAuth } from '@soramux/identityx-sdk-ts/react';
 
 function Header() {
   const { isAuthenticated, auth } = useAuth();
