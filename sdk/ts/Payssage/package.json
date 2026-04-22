@@ -21,6 +21,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@soramux/node-fetch-sdk": "^0.1.0"
+    "@soramux/node-fetch-sdk": "^0.1.5"
   }
 }

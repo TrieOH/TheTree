@@ -5,7 +5,7 @@
     "": {
       "name": "@soramux/payssage-sdk-ts",
       "dependencies": {
-        "@soramux/node-fetch-sdk": "^0.1.0",
+        "@soramux/node-fetch-sdk": "^0.1.5",
       },
       "devDependencies": {
         "@types/bun": "latest",
