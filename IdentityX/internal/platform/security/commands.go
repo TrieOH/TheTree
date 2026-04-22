@@ -1,0 +1,406 @@
+package security
+
+import (
+	"IdentityX/internal/shared/contracts"
+	"IdentityX/internal/shared/crypto"
+	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/validation"
+	"context"
+	"crypto/ed25519"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/MintzyG/fail/v3"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
+)
+
+func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
+	decrypted, err := crypto.Decrypt(pair.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	priv, err := parseEd25519Private(decrypted)
+	if err != nil {
+		return nil, err
+	}
+
+	return ed25519.Sign(priv, payload), nil
+}
+
+func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
+	if projectID != nil {
+		if pair.ProjectID == nil || *pair.ProjectID != *projectID {
+			return fail.New(errx.KeysProjectKeyMismatch).RecordCtx(ctx)
+		}
+	}
+
+	pub, err := parseEd25519Public(pair.PublicKey)
+	if err != nil {
+		return err
+	}
+
+	if !ed25519.Verify(pub, payload, sig) {
+		return fail.New(errx.KeysInvalidSignature).RecordCtx(ctx)
+	}
+
+	return nil
+}
+
+func parseEd25519Private(pemBytes []byte) (ed25519.PrivateKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, errors.New("invalid PEM Private Key")
+	}
+
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PKCS8 Public key: %w", err)
+	}
+
+	priv, ok := key.(ed25519.PrivateKey)
+	if !ok {
+		return nil, errors.New("private key is not an ED25519 private key")
+	}
+
+	return priv, nil
+}
+
+func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
+	block, _ := pem.Decode([]byte(pemStr))
+	if block == nil {
+		return nil, errors.New("invalid PEM Public Key")
+	}
+
+	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing PKIX Public key: %w", err)
+	}
+
+	pub, ok := key.(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New("public key is not an ED25519 public key")
+	}
+
+	return pub, nil
+}
+
+func zero(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
+}
+
+func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
+	issuer := viper.GetString("ISSUER")
+	if in.User.ProjectID != nil {
+		issuer = in.User.ProjectID.String()
+	}
+
+	claims := contracts.AccessClaims{
+		Sub: contracts.AccessSub{
+			ID:         in.User.ID,
+			UserType:   string(in.User.UserType),
+			ProjectID:  in.User.ProjectID,
+			Email:      in.User.Email,
+			SessionID:  in.SessionID,
+			UserAgent:  in.Agent,
+			UserIP:     in.IP,
+			IsVerified: in.User.IsVerified,
+			FamilyID:   in.FamilyID,
+			VerifiedAt: in.User.VerifiedAt,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    issuer,
+			ID:        in.AccessJTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
+func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
+	claims := contracts.RefreshClaims{
+		Sub: contracts.RefreshSub{
+			AccessJTI: in.AccessJTI,
+			FamilyID:  in.FamilyID,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    viper.GetString("ISSUER"),
+			ID:        in.RefreshJTI.String(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
+func NewProjectAccessToken(in contracts.NewProjectAccessTokenInput) ([]byte, error) {
+	claims := contracts.AccessClaims{
+		Sub: contracts.AccessSub{
+			ID:         in.User.ID,
+			UserType:   string(in.User.UserType),
+			ProjectID:  in.User.ProjectID,
+			Email:      in.User.Email,
+			SessionID:  in.SessionID,
+			UserAgent:  in.Agent,
+			UserIP:     in.IP,
+			IsVerified: in.User.IsVerified,
+			FamilyID:   in.FamilyID,
+			VerifiedAt: in.User.VerifiedAt,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    in.User.ProjectID.String(),
+			ID:        in.AccessJTI,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
+func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error) {
+	now := time.Now()
+	claims := contracts.VerificationClaims{
+		Sub: contracts.VerificationSub{
+			Subject: in.Subject,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    viper.GetString("ISSUER"),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
+			Audience:  jwt.ClaimStrings{"email-verification"},
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
+func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
+	now := time.Now()
+	claims := contracts.ResetPasswordClaims{
+		Sub: contracts.ResetPasswordSub{
+			Subject:   in.Subject,
+			ProjectID: in.ProjectID,
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(),
+			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
+			Issuer:    viper.GetString("ISSUER"),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
+			Audience:  jwt.ClaimStrings{"password-reset"},
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["kid"] = in.KID
+
+	payload, err := token.SigningString()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(payload), nil
+}
+
+func AssembleJWT(payload []byte, sig []byte) string {
+	return string(payload) + "." + base64.RawURLEncoding.EncodeToString(sig)
+}
+
+func VerifyAccessToken(
+	ctx context.Context,
+	tokenStr string,
+	pair *contracts.Pair,
+) (*contracts.AccessClaims, error) {
+	return verifyToken(
+		ctx,
+		pair,
+		"access",
+		tokenStr,
+		&contracts.AccessClaims{},
+	)
+}
+
+func VerifyRefreshToken(
+	ctx context.Context,
+	tokenStr string,
+	pair *contracts.Pair,
+) (*contracts.RefreshClaims, error) {
+	return verifyToken(
+		ctx,
+		pair,
+		"refresh",
+		tokenStr,
+		&contracts.RefreshClaims{},
+	)
+}
+
+func VerifyVerificationToken(
+	ctx context.Context,
+	tokenStr string,
+	pair *contracts.Pair,
+) (*contracts.VerificationClaims, error) {
+	return verifyToken(
+		ctx,
+		pair,
+		"verification",
+		tokenStr,
+		&contracts.VerificationClaims{},
+	)
+}
+
+func VerifyResetPasswordToken(
+	ctx context.Context,
+	tokenStr string,
+	pair *contracts.Pair,
+) (*contracts.ResetPasswordClaims, error) {
+	return verifyToken(
+		ctx,
+		pair,
+		"reset password",
+		tokenStr,
+		&contracts.ResetPasswordClaims{},
+	)
+}
+
+func verifyToken[T jwt.Claims](
+	ctx context.Context,
+	pair *contracts.Pair,
+	tokenType string,
+	tokenStr string,
+	claims T,
+) (T, error) {
+	token, err := ParseJWTUnverified(tokenStr, claims)
+	if err != nil {
+		return claims, errx.FromJWTError(err, tokenType)
+	}
+
+	alg, _ := token.Header["alg"].(string)
+	if alg != jwt.SigningMethodEdDSA.Alg() {
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
+	}
+
+	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
+		methodAlg := ""
+		if token.Method != nil {
+			methodAlg = token.Method.Alg()
+		}
+		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
+	}
+
+	kid, ok := token.Header["kid"].(string)
+	if !ok || kid == "" {
+		return claims, fail.New(errx.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
+	}
+
+	payload, sig, err := splitJWT(ctx, tokenType, tokenStr)
+	if err != nil {
+		return claims, err
+	}
+
+	switch {
+	case strings.HasPrefix(kid, "goauth:"):
+		parts := strings.Split(kid, ":")
+		if len(parts) < 2 {
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+		}
+
+		if err := VerifyKeyPair(ctx, nil, payload, sig, pair); err != nil {
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+			}
+			return claims, err
+		}
+
+	case strings.HasPrefix(kid, "project:"):
+		parts := strings.Split(kid, ":")
+		if len(parts) < 3 {
+			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+		}
+
+		projectID, err := validation.ParseUUID(parts[1], "project_id")
+		if err != nil {
+			return claims, err
+		}
+
+		if err := VerifyKeyPair(ctx, &projectID, payload, sig, pair); err != nil {
+			if fail.Is(err, errx.SQLNotFound) {
+				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
+			}
+			return claims, err
+		}
+
+	default:
+		return claims, fail.New(errx.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
+	}
+
+	return claims, nil
+}
+
+func ParseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, error) {
+	parser := new(jwt.Parser)
+	token, _, err := parser.ParseUnverified(tokenStr, claims)
+	return token, err
+}
+
+func splitJWT(ctx context.Context, tokenType, tokenStr string) (signingInput, sig []byte, err error) {
+	parts := strings.Split(tokenStr, ".")
+	if len(parts) != 3 {
+		return nil, nil, fail.New(errx.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
+	}
+
+	signingInput = []byte(parts[0] + "." + parts[1])
+
+	sig, err = base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return signingInput, sig, nil
+}
