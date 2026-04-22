@@ -1,4 +1,4 @@
-# NodeAuth
+# IdentityX SDK - Typescript
 
 SDK for integrating with the TrieOH authentication ecosystem.
 
