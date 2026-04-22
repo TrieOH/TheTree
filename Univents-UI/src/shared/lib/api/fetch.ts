@@ -1,4 +1,4 @@
-import { createFetcher, createQueryFetcher } from "@soramux/node-auth-sdk";
+import { createFetcher, createQueryFetcher } from "@soramux/identityx-sdk-ts";
 import { createDefaultFetchClient } from "@soramux/node-fetch-sdk";
 import { env } from "@/env";
 

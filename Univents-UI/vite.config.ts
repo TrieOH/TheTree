@@ -88,9 +88,9 @@ const config = defineConfig({
 
           // Internal SDK
           if (
-            id.includes('@soramux/node-auth-sdk') ||
+            id.includes('@soramux/identityx-sdk-ts') ||
             id.includes('@soramux/node-fetch-sdk') ||
-            id.includes('@soramux/node-payments-sdk')
+            id.includes('@soramux/payssage-sdk-ts')
           ) {
             return 'vendor-soramux'
           }

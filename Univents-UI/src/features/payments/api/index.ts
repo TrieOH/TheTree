@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { workspaceService } from "@soramux/node-payments-sdk"
+import { workspaceService } from "@soramux/payssage-sdk-ts"
 import { paymentConnectSchema, paymentDisconnectSchema } from "../model";
 
 /**

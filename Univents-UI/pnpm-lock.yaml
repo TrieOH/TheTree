@@ -23,18 +23,18 @@ importers:
       '@posthog/react':
         specifier: ^1.7.0
         version: 1.8.1(@types/react@19.2.14)(posthog-js@1.356.0)(react@19.2.4)
-      '@soramux/node-auth-sdk':
-        specifier: ^0.9.5
-        version: 0.9.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@soramux/identityx-sdk-ts':
+        specifier: ^0.10.1
+        version: 0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@soramux/node-fetch-sdk':
-        specifier: ^0.1.1
-        version: 0.1.1
-      '@soramux/node-payments-sdk':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.5
+        version: 0.1.5
       '@soramux/node-perm-sdk':
         specifier: ^0.2.0
         version: 0.2.0
+      '@soramux/payssage-sdk-ts':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@t3-oss/env-core':
         specifier: ^0.13.8
         version: 0.13.10(typescript@5.9.3)(zod@4.3.6)
@@ -1346,20 +1346,20 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/node-auth-sdk@0.9.5':
-    resolution: {integrity: sha512-+bI1zauIHi22TPXscLGf5376uD3agsllaRFTc7mLMzACXJnB/ePlduMOrTHvt5WzDkHhzZk14T+1yAOVbucPUA==}
+  '@soramux/identityx-sdk-ts@0.10.1':
+    resolution: {integrity: sha512-fJstMEAIy6APtNC7qVeAENA1NoZdzBqBpIBMbY8VaYBYI0xaSnKSUUXeq/l0xOn4mkuVMBV4vdXDxwzMIX0C9Q==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
 
-  '@soramux/node-fetch-sdk@0.1.1':
-    resolution: {integrity: sha512-AadBdXsn1sA2tZoY8zzxQUL80GdQdefi1yPHTpGWuddGldDoHe5RwBEZW1+8ByOz74QIbsWqh4um0VO40hvpZA==}
-
-  '@soramux/node-payments-sdk@0.1.0':
-    resolution: {integrity: sha512-RAETGXIfNZzOOEJ1qNXSfbMGdV7jT98jxEsmKnlJiHbQMCba3GWkl7TSVmNQ3qo8+MhGuUYNKCj3pbcPzFGUoQ==}
+  '@soramux/node-fetch-sdk@0.1.5':
+    resolution: {integrity: sha512-Z0w8udYByx+MZsZmMkxDQ2wfwrQ92P4qN4wxealFDT9QcdVc/wLybnDeGNwpddz3KDByS9Cnqx82af+VN1G7CQ==}
 
   '@soramux/node-perm-sdk@0.2.0':
     resolution: {integrity: sha512-kWc6UnQivHmClu5qiATLRPr29096XEkLdtc1dT/fKgCF0pxbC7DGcH7ELFoaMau09kg5lGGw8IbJr9bM8fyYHg==}
+
+  '@soramux/payssage-sdk-ts@0.1.0':
+    resolution: {integrity: sha512-cNPoQGwkrlnYUQoUxXYr6ZdLRmmDGE2Kfa8U4ZBwUJebwxP4Z+xr8xzn+mhii+afmdrTeqt1zNHKer928BYIiw==}
 
   '@speed-highlight/core@1.2.14':
     resolution: {integrity: sha512-G4ewlBNhUtlLvrJTb88d2mdy2KRijzs4UhnlrOSRT4bmjh/IqNElZa3zkrZ+TC47TwtlDWzVLFADljF1Ijp5hA==}
@@ -4469,23 +4469,23 @@ snapshots:
     dependencies:
       solid-js: 1.9.11
 
-  '@soramux/node-auth-sdk@0.9.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@soramux/identityx-sdk-ts@0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@soramux/node-fetch-sdk': 0.1.1
+      '@soramux/node-fetch-sdk': 0.1.5
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       react-icons: 5.6.0(react@19.2.4)
       ua-parser-js: 2.0.9
 
-  '@soramux/node-fetch-sdk@0.1.1': {}
-
-  '@soramux/node-payments-sdk@0.1.0':
-    dependencies:
-      '@soramux/node-fetch-sdk': 0.1.1
+  '@soramux/node-fetch-sdk@0.1.5': {}
 
   '@soramux/node-perm-sdk@0.2.0':
     dependencies:
-      '@soramux/node-fetch-sdk': 0.1.1
+      '@soramux/node-fetch-sdk': 0.1.5
+
+  '@soramux/payssage-sdk-ts@0.1.0':
+    dependencies:
+      '@soramux/node-fetch-sdk': 0.1.5
 
   '@speed-highlight/core@1.2.14': {}
 

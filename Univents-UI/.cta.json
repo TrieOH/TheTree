@@ -1,5 +1,5 @@
 {
-  "projectName": "univents-frontend",
+  "projectName": "univents",
   "mode": "file-router",
   "typescript": true,
   "packageManager": "pnpm",

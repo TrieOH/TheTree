@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { SignIn, SignUp, useAuth } from '@soramux/node-auth-sdk/react'
+import { SignIn, SignUp, useAuth } from '@soramux/identityx-sdk-ts/react'
 import React, { useState } from 'react'
 import { useServerFn } from '@tanstack/react-start'
 import type { EventCreateI, EventI } from '@/features/events/model'
