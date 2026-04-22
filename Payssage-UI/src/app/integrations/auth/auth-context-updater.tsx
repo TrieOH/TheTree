@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router"
-import { useAuth } from "@soramux/node-auth-sdk/react"
+import { useAuth } from "@soramux/identityx-sdk-ts/react"
 import { useLayoutEffect } from "react"
 import type { ReactNode } from "react"
 

@@ -1,4 +1,4 @@
-import { createFetcher, createQueryFetcher } from "@soramux/node-auth-sdk";
+import { createFetcher, createQueryFetcher } from "@soramux/identityx-sdk-ts";
 import { env } from "#/env";
 
 export const authFetcher = createFetcher(

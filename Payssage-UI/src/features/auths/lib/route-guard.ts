@@ -1,6 +1,6 @@
 import { redirect } from '@tanstack/react-router'
 import type { AnySchema, ParsedLocation } from '@tanstack/react-router'
-import type { useAuth } from '@soramux/node-auth-sdk/react';
+import type { useAuth } from '@soramux/identityx-sdk-ts/react';
 
 interface BeforeLoadArgs {
   location: ParsedLocation<AnySchema>;

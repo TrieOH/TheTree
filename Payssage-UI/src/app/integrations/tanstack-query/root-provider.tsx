@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@soramux/node-auth-sdk';
+import { ApiError } from '@soramux/identityx-sdk-ts';
 import type { ReactNode } from 'react';
 
 /**

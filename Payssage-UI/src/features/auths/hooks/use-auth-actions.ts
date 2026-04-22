@@ -1,5 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { useAuth } from '@soramux/node-auth-sdk/react'
+import { useAuth } from '@soramux/identityx-sdk-ts/react'
 import { toast } from 'sonner'
 import { getContext } from '@/app/integrations/tanstack-query/root-provider'
 
@@ -40,13 +40,15 @@ export function useAuthActions() {
   }
 
   const handleLoginSuccess = async (redirect?: string) => {
+    const { queryClient } = getContext()
     await handleAuthAction(true, redirect || '/admin', 'Login successful!')
+    queryClient.invalidateQueries()
   }
 
   const handleLogout = async () => {
     const { queryClient } = getContext()
-    queryClient.clear()
     await handleAuthAction(false, '/', 'Logout successful!', () => authManager.logout())
+    queryClient.clear()
   }
 
   return { handleLoginSuccess, handleLogout }
