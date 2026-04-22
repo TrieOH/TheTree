@@ -4,12 +4,12 @@ import {
   HeadContent,
   Scripts,
 } from '@tanstack/react-router'
-import { AuthProvider, type useAuth } from '@soramux/node-auth-sdk/react'
+import { AuthProvider, type useAuth } from '@soramux/identityx-sdk-ts/react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
 import Header from '@/widgets/header/ui/Header'
-import { Toaster } from 'sonner'
+import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
 
 interface MyRouterContext {
@@ -22,9 +22,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'IdentityX' },
+      { title: env.VITE_APP_TITLE ?? "IdentityX" },
+      { name: 'apple-mobile-web-app-title', content: env.VITE_APP_TITLE ?? 'IdentityX' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'manifest', href: '/site.webmanifest' },
+      { rel: 'icon', type: 'image/png', href: '/favicon-96x96.png', sizes: '96x96' },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'shortcut icon', href: '/favicon.ico' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
+    ],
   }),
 
   shellComponent: RootDocument,
