@@ -87,7 +87,7 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 
 	var res JWKS
 	path := fmt.Sprintf("/.well-known/jwks.json?project_id=%s", s.client.projectID)
-	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
+	if err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res); err != nil {
 		if s.jwks != nil {
 			return s.jwks, nil // stale cache fallback on network error
 		}
