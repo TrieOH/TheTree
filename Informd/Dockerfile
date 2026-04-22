@@ -1,6 +1,6 @@
 FROM ghcr.io/trieoh/go-tools:latest AS tools
 
-FROM golang:1.26 AS builder
+FROM golang:1.26.1 AS builder
 
 WORKDIR /app
 
@@ -31,4 +31,3 @@ COPY --from=builder /app/schema.zed ./schema.zed
 EXPOSE 8080
 
 CMD ["./informd"]
-
