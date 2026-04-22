@@ -6,7 +6,6 @@ export const env = createEnv({
     SERVER_URL: z.url().optional(),
     TRIEOH_PAY_SECRET_KEY: z.string(),
     TRIEOH_PAY_BASE_URL: z.url().optional(),
-    TRIEOH_AUTH_API_KEY: z.string().optional(),
 
     TRIEOH_AUTHZED_URL: z.string(),
     TRIEOH_AUTHZED_TOKEN: z.string(),
@@ -19,13 +18,13 @@ export const env = createEnv({
   clientPrefix: 'VITE_',
 
   client: {
+    VITE_POSTHOG_KEY: z.string(),
+    VITE_POSTHOG_HOST: z.url().optional(),
+
     VITE_APP_TITLE: z.string().min(1).optional(),
     VITE_API_URL: z.url(),
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
-
-    VITE_POSTHOG_KEY: z.string(),
-    VITE_POSTHOG_HOST: z.url().optional(),
 
     VITE_MERCADO_PAGO_CALLBACK_URL: z.url(),
     VITE_MERCADO_PAGO_PUBLIC_KEY: z.string()
@@ -36,7 +35,6 @@ export const env = createEnv({
     SERVER_URL: process.env.SERVER_URL,
     TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
     TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
-    TRIEOH_AUTH_API_KEY: process.env.TRIEOH_AUTH_API_KEY,
     TRIEOH_AUTHZED_URL: process.env.TRIEOH_AUTHZED_URL,
     TRIEOH_AUTHZED_TOKEN: process.env.TRIEOH_AUTHZED_TOKEN
   },
