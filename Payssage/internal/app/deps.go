@@ -71,11 +71,11 @@ func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 	return scheduler
 }
 
-func SetupGoAuth() *idx.Client {
-	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
+func SetupIdentityX() *idx.Client {
+	projectID := uuid.MustParse(viper.GetString("IDENTITY_X_PROJECT_ID"))
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:   viper.GetString("GOAUTH_URL"),
-		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		BaseURL:   viper.GetString("IDENTITY_X_URL"),
+		APIKey:    viper.GetString("IDENTITY_X_API_KEY"),
 		ProjectID: projectID,
 		Debug:     true,
 	})

@@ -15,14 +15,14 @@ func LoadEnv() {
 		log.Fatalf("LoadProxyConfig failed: %v", err.Error())
 	}
 
-	if viper.GetString("GOAUTH_URL") == "" {
-		log.Fatal("GOAUTH_URL must be set")
+	if viper.GetString("IDENTITY_X_URL") == "" {
+		log.Fatal("IDENTITY_X_URL must be set")
 	}
-	if viper.GetString("GOAUTH_API_KEY") == "" {
-		log.Fatal("GOAUTH_API_KEY must be set")
+	if viper.GetString("IDENTITY_X_API_KEY") == "" {
+		log.Fatal("IDENTITY_X_API_KEY must be set")
 	}
-	if viper.GetString("GO_AUTH_PROJECT_ID") == "" {
-		log.Fatal("GO_AUTH_PROJECT_ID must be set")
+	if viper.GetString("IDENTITY_X_PROJECT_ID") == "" {
+		log.Fatal("IDENTITY_X_PROJECT_ID must be set")
 	}
 
 	if viper.GetString("MP_CLIENT_ID") == "" {

@@ -26,7 +26,7 @@ func New() *Payssage {
 	LoadEnv()
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
-	app.ga = SetupGoAuth()
+	app.ga = SetupIdentityX()
 	migrationPath := "./internal/platform/database/migrations"
 	app.db = SetupDB(migrationPath)
 	app.scheduler = SetupCron(app.db)
