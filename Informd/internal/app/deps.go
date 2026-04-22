@@ -97,16 +97,16 @@ func SetupSpiceDB() *authzed.Client {
 	return client
 }
 
-func SetupGoAuth() *idx.Client {
-	projectID := uuid.MustParse(viper.GetString("GO_AUTH_PROJECT_ID"))
+func SetupIdentityX() *idx.Client {
+	projectID := uuid.MustParse(viper.GetString("IDENTITY_X_PROJECT_ID"))
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:   viper.GetString("GOAUTH_URL"),
-		APIKey:    viper.GetString("GOAUTH_API_KEY"),
+		BaseURL:   viper.GetString("IDENTITY_X_URL"),
+		APIKey:    viper.GetString("IDENTITY_X_API_KEY"),
 		ProjectID: projectID,
 		Debug:     true,
 	})
 	if err != nil {
-		log.Fatalf("Error creating goauth client: %s", err.Error())
+		log.Fatalf("Error creating identity_x client: %s", err.Error())
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
