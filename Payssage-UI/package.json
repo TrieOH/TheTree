@@ -1,5 +1,5 @@
 {
-  "name": "trie-payments-frontend",
+  "name": "payssage",
   "private": true,
   "type": "module",
   "imports": {

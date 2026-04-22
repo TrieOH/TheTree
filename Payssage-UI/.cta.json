@@ -1,5 +1,5 @@
 {
-  "projectName": "trie-payments-frontend",
+  "projectName": "payssage",
   "mode": "file-router",
   "typescript": true,
   "packageManager": "pnpm",

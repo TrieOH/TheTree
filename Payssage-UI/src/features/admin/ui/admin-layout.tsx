@@ -7,6 +7,7 @@ import {
 import { Button } from '#/shared/ui/shadcn/button'
 import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
 import { cn } from '#/shared/lib/utils'
+import { env } from '#/env'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { handleLogout } = useAuthActions()
@@ -22,7 +23,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 <LayoutDashboard className="w-4 h-4" />
               </div>
               <span className="font-black text-xl tracking-tighter text-foreground">
-                TriePayments
+                {env.VITE_APP_TITLE ?? "Payssage"}
               </span>
             </Link>
           </div>
