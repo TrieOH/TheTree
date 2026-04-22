@@ -110,19 +110,19 @@ func SetupPayssage() *payssage.Client {
 }
 
 func SetupObjectStorage() *minio.Client {
-	endpoint := viper.GetString("MINIO_ENDPOINT")
-	accessKey := viper.GetString("MINIO_ACCESS_KEY")
-	secretKey := viper.GetString("MINIO_SECRET_KEY")
-	useSSL := viper.GetBool("MINIO_USE_SSL")
+	endpoint := viper.GetString("OBJECT_STORAGE_ENDPOINT")
+	accessKey := viper.GetString("OBJECT_STORAGE_ACCESS_KEY")
+	secretKey := viper.GetString("OBJECT_STORAGE_SECRET_KEY")
+	useSSL := viper.GetBool("OBJECT_STORAGE_USE_SSL")
 
 	if endpoint == "" {
-		log.Fatal("MINIO_ENDPOINT not set")
+		log.Fatal("OBJECT_STORAGE_ENDPOINT not set")
 	}
 	if accessKey == "" {
-		log.Fatal("MINIO_ACCESS_KEY not set")
+		log.Fatal("OBJECT_STORAGE_ACCESS_KEY not set")
 	}
 	if secretKey == "" {
-		log.Fatal("MINIO_SECRET_KEY not set")
+		log.Fatal("OBJECT_STORAGE_SECRET_KEY not set")
 	}
 
 	client, err := minio.New(endpoint, &minio.Options{
