@@ -1,5 +1,5 @@
 import { useFieldContext } from "@/shared/lib/forms";
-import { BasicInputField } from "@soramux/node-auth-sdk/react";
+import { BasicInputField } from "@soramux/identityx-sdk-ts/react";
 
 interface PropsI {
   label: string;

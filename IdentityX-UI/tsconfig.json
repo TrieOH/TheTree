@@ -1,5 +1,10 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": [
+    "**/*.ts", 
+    "**/*.tsx",
+    "vite.config.ts",
+    "worker-configuration.d.ts"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -10,8 +15,6 @@
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": [
-        "./worker-configuration.d.ts",
-        "node",
         "vite/client"
     ],
 

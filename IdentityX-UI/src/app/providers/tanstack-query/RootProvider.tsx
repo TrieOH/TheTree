@@ -1,12 +1,20 @@
+import { ApiError } from '@soramux/identityx-sdk-ts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@/shared/lib/api/fetch';
 
 export function getContext() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: (failureCount, error) => {
-          if (error instanceof ApiError && error.code >= 400 && error.code < 500) return false;
+          if (error instanceof ApiError) {
+            const envelope = error.envelope
+            if (envelope.code >= 400 && envelope.code < 500) return false
+          }
+          if (error instanceof Error) {
+            const err = error as unknown as {code: number};
+            const status = err.code;
+            if (status >= 400 && status < 500) return false;
+          }
           return failureCount < 3;
         },
         staleTime: 1000 * 60 * 5, // 5 minutes

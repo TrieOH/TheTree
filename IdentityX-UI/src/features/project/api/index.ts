@@ -14,11 +14,7 @@ export const createProjectFn = createClientOnlyFn((projectData: Omit<ProjectCRUD
     metadata: {}
   };
 
-  return authFetcher<Project>("/projects", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" }, // it's already used in the lib per default
-    body: JSON.stringify(dataToSend),
-  });
+  return authFetcher.post<Project>("/projects", dataToSend);
 });
 
 /**
@@ -46,11 +42,7 @@ export const projectsQueryOptions = queryOptions({
 export const patchProjectFn = createClientOnlyFn((projectData: ProjectCRUD) => {
   const { id, ...dataToSend } = projectData;
 
-  return authFetcher<Project>(`/projects/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dataToSend),
-  });
+  return authFetcher.patch<Project>(`/projects/${id}`, dataToSend);
 });
 
 /**
@@ -59,8 +51,6 @@ export const patchProjectFn = createClientOnlyFn((projectData: ProjectCRUD) => {
  * @returns A promise that resolves to the API response.
  */
 export const deleteProjectFn = createClientOnlyFn((id: string) => {
-  return authFetcher<void>(`/projects/${id}`, {
-    method: "DELETE",
-  });
+  return authFetcher.delete<void>(`/projects/${id}`);
 });
 

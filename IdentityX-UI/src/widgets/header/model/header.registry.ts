@@ -3,7 +3,7 @@ import type { HeaderConfigI, HeaderVariant } from "./header.types";
 export const headerRegistry: Record<HeaderVariant, HeaderConfigI> = {
   landing: {
     variant: 'landing',
-    title: 'TrieAuth',
+    title: 'IdentityX',
     titlePosition: 'left',
     centerActions: [
       { id: "landing_link_000", type: 'link', label: 'Features', to: '/' },
