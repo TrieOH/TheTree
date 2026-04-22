@@ -13,17 +13,15 @@ export const env = createEnv({
   clientPrefix: 'VITE_',
 
   client: {
+    VITE_POSTHOG_KEY: z.string(),
+    VITE_POSTHOG_HOST: z.url().optional(),
+
     VITE_APP_TITLE: z.string().min(1).optional(),
     VITE_API_URL: z.url(),
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
 
-    VITE_POSTHOG_KEY: z.string(),
-    VITE_POSTHOG_HOST: z.url().optional(),
-
     VITE_MERCADO_PAGO_CALLBACK_URL: z.url(),
-    VITE_MERCADO_PAGO_CLIENT_ID: z.string(),
-
     VITE_SUPPORTED_PROVIDERS: z.string().default("mercadopago").transform((str) => str.split(',').map(s => s.trim()).filter(Boolean)),
   },
 
