@@ -16,6 +16,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -30,5 +32,6 @@ jobs:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/trieoh/payssage:latest
+          provenance: false
           cache-from: type=registry,ref=ghcr.io/trieoh/payssage:cache
           cache-to: ${{ github.event_name == 'push' && 'type=registry,ref=ghcr.io/trieoh/payssage:cache,mode=max' || '' }}
