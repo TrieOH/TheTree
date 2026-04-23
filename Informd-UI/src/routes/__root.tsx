@@ -19,6 +19,7 @@ import { AuthContextUpdater } from '#/integrations/auth/auth-context-updater'
 import { AuthProvider } from '@soramux/identityx-sdk-ts/react'
 import type { useAuth } from '@soramux/identityx-sdk-ts/react';
 import { env } from '#/env'
+import { Toaster } from '#/shared/ui/shadcn/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -80,6 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </AuthProvider>
           </TanStackQueryProvider>
         </PostHogProvider>
+        <Toaster />
         <Scripts />
       </body>
     </html>
