@@ -16,8 +16,8 @@ import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { AuthContextUpdater } from '#/integrations/auth/auth-context-updater'
-import { AuthProvider } from '@soramux/node-auth-sdk/react'
-import type { useAuth } from '@soramux/node-auth-sdk/react';
+import { AuthProvider } from '@soramux/identityx-sdk-ts/react'
+import type { useAuth } from '@soramux/identityx-sdk-ts/react';
 import { env } from '#/env'
 
 interface MyRouterContext {
