@@ -18,8 +18,8 @@ importers:
         specifier: ^1.7.0
         version: 1.8.2(@types/react@19.2.14)(posthog-js@1.359.1)(react@19.2.4)
       '@soramux/identityx-sdk-ts':
-        specifier: ^0.10.1
-        version: 0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^0.10.2
+        version: 0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.10(typescript@5.9.3)(zod@4.3.6)
@@ -1126,8 +1126,8 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/identityx-sdk-ts@0.10.1':
-    resolution: {integrity: sha512-fJstMEAIy6APtNC7qVeAENA1NoZdzBqBpIBMbY8VaYBYI0xaSnKSUUXeq/l0xOn4mkuVMBV4vdXDxwzMIX0C9Q==}
+  '@soramux/identityx-sdk-ts@0.10.2':
+    resolution: {integrity: sha512-QAWVdgnZ189ROgK2QHEubrwhNbfZe3AF4CLRTKeWqrpm9g9L5d58huuLLOmSFr5tTpzkmvo5zZKcT1+odVyedQ==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -3886,7 +3886,7 @@ snapshots:
     dependencies:
       solid-js: 1.9.11
 
-  '@soramux/identityx-sdk-ts@0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@soramux/identityx-sdk-ts@0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@soramux/node-fetch-sdk': 0.1.5
       react: 19.2.4
