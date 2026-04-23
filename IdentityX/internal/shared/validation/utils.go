@@ -61,15 +61,16 @@ func SetTrustProxyHeaders() {
 }
 
 func SetTrustedProxies() error {
-	raw := viper.GetStringSlice("TRUSTED_PROXIES")
-	if len(raw) == 0 {
+	raw := viper.GetString("TRUSTED_PROXIES")
+	if raw == "" {
 		HTTPProxyConfig.TrustedProxies = nil
 		return nil
 	}
 
-	proxies := make([]netip.Prefix, 0, len(raw))
+	parts := strings.Split(raw, ",")
+	proxies := make([]netip.Prefix, 0, len(parts))
 
-	for _, cidr := range raw {
+	for _, cidr := range parts {
 		cidr = strings.TrimSpace(cidr)
 		if cidr == "" {
 			continue
