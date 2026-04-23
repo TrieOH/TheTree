@@ -9,48 +9,86 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminProjectRouteImport } from './routes/admin/$project'
+import { Route as AdminProjectIndexRouteImport } from './routes/admin/$project/index'
 
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProjectRoute = AdminProjectRouteImport.update({
+  id: '/$project',
+  path: '/$project',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProjectIndexRoute = AdminProjectIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminProjectRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/$project': typeof AdminProjectRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$project/': typeof AdminProjectIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/$project': typeof AdminProjectIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/$project': typeof AdminProjectRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$project/': typeof AdminProjectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin/'
+  fullPaths: '/' | '/admin' | '/admin/$project' | '/admin/' | '/admin/$project/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin'
-  id: '__root__' | '/' | '/admin/'
+  to: '/' | '/admin' | '/admin/$project'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/$project'
+    | '/admin/'
+    | '/admin/$project/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminIndexRoute: typeof AdminIndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -60,17 +98,55 @@ declare module '@tanstack/react-router' {
     }
     '/admin/': {
       id: '/admin/'
-      path: '/admin'
+      path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/$project': {
+      id: '/admin/$project'
+      path: '/$project'
+      fullPath: '/admin/$project'
+      preLoaderRoute: typeof AdminProjectRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/$project/': {
+      id: '/admin/$project/'
+      path: '/'
+      fullPath: '/admin/$project/'
+      preLoaderRoute: typeof AdminProjectIndexRouteImport
+      parentRoute: typeof AdminProjectRoute
     }
   }
 }
 
+interface AdminProjectRouteChildren {
+  AdminProjectIndexRoute: typeof AdminProjectIndexRoute
+}
+
+const AdminProjectRouteChildren: AdminProjectRouteChildren = {
+  AdminProjectIndexRoute: AdminProjectIndexRoute,
+}
+
+const AdminProjectRouteWithChildren = AdminProjectRoute._addFileChildren(
+  AdminProjectRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminProjectRoute: typeof AdminProjectRouteWithChildren
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminProjectRoute: AdminProjectRouteWithChildren,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminIndexRoute: AdminIndexRoute,
+  AdminRoute: AdminRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
