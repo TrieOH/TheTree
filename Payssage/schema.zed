@@ -7,11 +7,12 @@ definition user {}
 
 definition workspace {
     relation workspace_admin: user
-    permission create_api_keys = workspace_admin
-    permission revoke_api_keys = workspace_admin
-    permission create_webhooks = workspace_admin
-    permission delete_webhooks = workspace_admin
-    permission view_webhook_deliveries = workspace_admin
-    permission view_webhook_events = workspace_admin
-    permission administrate = create_api_keys + revoke_api_keys + create_webhooks + delete_webhooks + view_webhook_deliveries + view_webhook_events
+    relation parent: platform
+    permission create_api_keys = workspace_admin + parent->client
+    permission revoke_api_keys = workspace_admin + parent->client
+    permission create_webhooks = workspace_admin + parent->client
+    permission delete_webhooks = workspace_admin + parent->client
+    permission view_webhook_deliveries = workspace_admin + parent->client
+    permission view_webhook_events = workspace_admin + parent->client
+    permission administrate = create_api_keys + revoke_api_keys + create_webhooks + delete_webhooks + view_webhook_deliveries + view_webhook_events + parent->client
 }
