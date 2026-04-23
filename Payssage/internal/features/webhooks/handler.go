@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/validation"
+	"time"
 
 	_ "payssage/internal/shared/contracts"
 
@@ -32,6 +33,16 @@ func NewHandler(
 
 type RegisterWebhookEndpointRequest struct {
 	URL string `json:"url" validate:"required"`
+}
+
+type WebhookEndpointResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	ScopeID     uuid.UUID  `json:"scope_id"`
+	WorkspaceID uuid.UUID  `json:"workspace_id"`
+	URL         string     `json:"url"`
+	Secret      string     `json:"secret"`
+	CreatedAt   time.Time  `json:"created_at"`
+	DeletedAt   *time.Time `json:"deleted_at"`
 }
 
 // RegisterWebhookEndpoint godoc
@@ -65,7 +76,15 @@ func (h *Handler) RegisterWebhookEndpoint(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp.Created().WithData(endpoint).Send(w)
+	resp.Created().WithData(WebhookEndpointResponse{
+		ID:          endpoint.ID,
+		ScopeID:     endpoint.ScopeID,
+		WorkspaceID: endpoint.WorkspaceID,
+		URL:         endpoint.URL,
+		Secret:      endpoint.Secret,
+		CreatedAt:   endpoint.CreatedAt,
+		DeletedAt:   endpoint.DeletedAt,
+	}).Send(w)
 }
 
 // DeleteWebhookEndpoint godoc
