@@ -42,6 +42,7 @@ export function getCookieDomain() {
   const hostname = window.location.hostname;
   if (hostname === 'localhost') return null;
   if (hostname.endsWith('univents.com.br')) return 'univents.com.br';
+  if (hostname.endsWith('identityx.com.br')) return 'identityx.com.br';
 
   const parts = hostname.split('.');
   if (hostname.endsWith('trieoh.com') && parts.length >= 3) {
