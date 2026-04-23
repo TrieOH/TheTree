@@ -19,7 +19,7 @@ const config = defineConfig({
         manualChunks: (id) => {
           if (!id.includes('node_modules')) return
 
-          // React Core e TanStack Store
+          // React Core + TanStack Store
           if (
             id.includes('/react/') ||
             id.includes('/react-dom/') ||
@@ -30,7 +30,7 @@ const config = defineConfig({
             return 'vendor-react'
           }
 
-          // TanStack Router, Start e SSR
+          // TanStack Router, Start and SSR
           if (
             id.includes('@tanstack/react-router') ||
             id.includes('@tanstack/router-plugin') ||

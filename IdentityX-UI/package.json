@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
-    "@soramux/identityx-sdk-ts": "^0.10.1",
+    "@soramux/identityx-sdk-ts": "^0.10.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-devtools": "^0.7.0",
