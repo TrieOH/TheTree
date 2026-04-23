@@ -97,14 +97,14 @@ func (app *Payssage) run() {
 	rt.paymentProviders = app.startPaymentProviders()
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
-	rt.handlers = app.startHandlers(rt.commands, rt.queries)
+	rt.handlers = app.startHandlers(rt)
 	mux := router.CreateRouter(rt.handlers)
 	port := viper.GetString("port")
 	log.Printf("payssage listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func (app *Payssage) startHandlers(cmd commands, q queries) *router.HTTPDeps {
+func (app *Payssage) startHandlers(rt runtime) *router.HTTPDeps {
 	var handlers router.HTTPDeps
 	handlers.AsynqmonHandler = asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
@@ -114,12 +114,13 @@ func (app *Payssage) startHandlers(cmd commands, q queries) *router.HTTPDeps {
 			DB:       viper.GetInt("REDIS_DB"),
 		},
 	})
+	handlers.AuthMiddleware = rt.middlewares.authMW
 	handlers.SystemHandler = system.NewHandler()
-	handlers.IntentsHandler = intents.NewHandler(cmd.intents, q.intents)
-	handlers.WorkspacesHandler = workspaces.NewHandler(cmd.workspaces, q.workspaces)
-	handlers.ApiKeysHandler = api_keys.NewHandler(cmd.apiKeys, q.apiKeys)
-	handlers.WebhooksHandler = webhooks.NewHandler(cmd.webhooks, q.webhooks)
-	handlers.OauthHandler = oauth.NewHandler(cmd.oauth, q.oauth)
+	handlers.IntentsHandler = intents.NewHandler(rt.commands.intents, rt.queries.intents)
+	handlers.WorkspacesHandler = workspaces.NewHandler(rt.commands.workspaces, rt.queries.workspaces)
+	handlers.ApiKeysHandler = api_keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
+	handlers.WebhooksHandler = webhooks.NewHandler(rt.commands.webhooks, rt.queries.webhooks)
+	handlers.OauthHandler = oauth.NewHandler(rt.commands.oauth, rt.queries.oauth)
 	return &handlers
 }
 
