@@ -20,6 +20,9 @@ importers:
       '@soramux/identityx-sdk-ts':
         specifier: ^0.10.2
         version: 0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@soramux/node-fetch-sdk':
+        specifier: ^0.1.5
+        version: 0.1.5
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.10(typescript@5.9.3)(zod@4.3.6)

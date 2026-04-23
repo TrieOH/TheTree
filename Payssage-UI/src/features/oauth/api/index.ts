@@ -1,10 +1,22 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type { OauthCallbackResponseI, OauthSetupI, OauthSetupResponseI, OauthWorkspaceMarketplaceConfigI } from "../model";
-import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import { authFetcher, tanstackQueryFetcher, publicFetcher } from "#/shared/lib/api/fetch";
 import { env } from "#/env";
 import { percentageToBps } from "#/shared/lib/utils";
 import { queryOptions } from "@tanstack/react-query";
 
+/**
+ * Resolves the callback URL for the specified provider.
+ * @param provider - The OAuth provider name.
+ * @returns The provider-specific callback URL.
+ */
+export const getProviderCallbackUrl = (provider: string) => {
+  const callbackUrls: Record<string, string> = {
+    mercadopago: env.VITE_MERCADO_PAGO_CALLBACK_URL,
+  };
+
+  return callbackUrls[provider] || env.VITE_MERCADO_PAGO_CALLBACK_URL;
+};
 
 /**
  * Set up OAuth for the specified workspace on the server.
@@ -25,7 +37,7 @@ export const setupOauthOnWorkspaceFn = createClientOnlyFn((
       ...rest,
       fee_bps: percentageToBps(fee_percent),
       is_marketplace: true,
-      provider_redirect_url: env.VITE_MERCADO_PAGO_CALLBACK_URL,
+      provider_redirect_url: getProviderCallbackUrl(provider),
       final_redirect_url: final_url
     }
   );
@@ -38,16 +50,15 @@ export const setupOauthOnWorkspaceFn = createClientOnlyFn((
  * @param provider - The OAuth provider.
  * @returns A promise that resolves to the OAuth callback response.
  */
-export const getProviderCallbackFn = createClientOnlyFn((
+export const getProviderCallbackFn = (
   code: string,
   state: string,
   provider: string
 ) => {
-  // FIXME: VITE_MERCADO_PAGO_CALLBACK_URL make generic
-  return authFetcher.get<OauthCallbackResponseI>(
-    `/oauth/${provider}/callback?code=${code}&state=${state}&redirect_uri=${env.VITE_MERCADO_PAGO_CALLBACK_URL}`
+  return publicFetcher.get<OauthCallbackResponseI>(
+    `/oauth/${provider}/callback?code=${code}&state=${state}&redirect_uri=${getProviderCallbackUrl(provider)}`
   );
-});
+};
 
 /**
  * Fetches all marketplace configs for the specified workspace from the server.
