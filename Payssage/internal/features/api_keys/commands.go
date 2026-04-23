@@ -26,12 +26,14 @@ type CommandService struct {
 func NewCommandService(
 	apiKeys ports.ApiKeysRepo,
 	workspaces ports.WorkspaceRepo,
+	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		apiKeys:    apiKeys,
 		workspaces: workspaces,
+		az:         az,
 		tx:         tx,
 		tracer:     tracer,
 	}

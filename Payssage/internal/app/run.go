@@ -129,7 +129,7 @@ func (app *Payssage) startCommands(rt runtime, r repos) commands {
 	cmd.webhooks = webhooks.NewCommandService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, r.intentRepo, r.providerCredentialsRepo, rt.asynq.client, app.sdb, rt.txRunner, rt.tracer)
 	cmd.intents = intents.NewCommandService(r.intentRepo, r.workspaceRepo, r.providerCredentialsRepo, r.marketplaceRepo, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, rt.txRunner, rt.tracer)
 	cmd.workspaces = workspaces.NewCommandService(r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
-	cmd.apiKeys = api_keys.NewCommandService(r.apiKeysRepo, r.workspaceRepo, rt.txRunner, rt.tracer)
+	cmd.apiKeys = api_keys.NewCommandService(r.apiKeysRepo, r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
 	cmd.oauth = oauth.NewCommandService(r.intentRepo, r.workspaceRepo, r.oauthStatesRepo, r.providerCredentialsRepo, r.marketplaceRepo, rt.paymentProviders.oauth, rt.txRunner, rt.tracer)
 
 	return cmd
