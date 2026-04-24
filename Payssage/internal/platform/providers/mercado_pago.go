@@ -79,6 +79,7 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		"test_token":    viper.GetString("TEST_MODE"),
 	})
 	if err != nil {
+		telemetry.Log().Error("error marshaling MP exchange code request body", zap.Error(err))
 		return contracts.ProviderCredentialData{}, err
 	}
 
@@ -87,18 +88,21 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		bytes.NewReader(body),
 	)
 	if err != nil {
+		telemetry.Log().Error("error creating MP exchange code request", zap.Error(err))
 		return contracts.ProviderCredentialData{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		telemetry.Log().Error("error executing MP exchange code request", zap.Error(err))
 		return contracts.ProviderCredentialData{}, err
 	}
 	defer resp.Body.Close()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
+		telemetry.Log().Error("error reading MP exchange code response body", zap.Error(err))
 		return contracts.ProviderCredentialData{}, err
 	}
 
@@ -114,10 +118,12 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		UserID       int    `json:"user_id"`
 	}
 	if err := json.Unmarshal(rawBody, &result); err != nil {
+		telemetry.Log().Error("error unmarshaling MP exchange code response body", zap.Error(err))
 		return contracts.ProviderCredentialData{}, err
 	}
 
 	if result.AccessToken == "" {
+		telemetry.Log().Error("MP exchange code response had empty access token", zap.Any("result struct", result), zap.Any("rawBody", rawBody))
 		return contracts.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
 	}
 
