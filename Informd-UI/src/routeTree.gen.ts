@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminProjectRouteImport } from './routes/admin/$project'
 import { Route as AdminProjectIndexRouteImport } from './routes/admin/$project/index'
+import { Route as AdminProjectKeysRouteImport } from './routes/admin/$project/keys'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -40,17 +41,24 @@ const AdminProjectIndexRoute = AdminProjectIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminProjectRoute,
 } as any)
+const AdminProjectKeysRoute = AdminProjectKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
+  getParentRoute: () => AdminProjectRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$project': typeof AdminProjectRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$project/keys': typeof AdminProjectKeysRoute
   '/admin/$project/': typeof AdminProjectIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/$project/keys': typeof AdminProjectKeysRoute
   '/admin/$project': typeof AdminProjectIndexRoute
 }
 export interface FileRoutesById {
@@ -59,19 +67,27 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin/$project': typeof AdminProjectRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$project/keys': typeof AdminProjectKeysRoute
   '/admin/$project/': typeof AdminProjectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/admin/$project' | '/admin/' | '/admin/$project/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/$project'
+    | '/admin/'
+    | '/admin/$project/keys'
+    | '/admin/$project/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/admin/$project'
+  to: '/' | '/admin' | '/admin/$project/keys' | '/admin/$project'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/admin/$project'
     | '/admin/'
+    | '/admin/$project/keys'
     | '/admin/$project/'
   fileRoutesById: FileRoutesById
 }
@@ -117,14 +133,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectIndexRouteImport
       parentRoute: typeof AdminProjectRoute
     }
+    '/admin/$project/keys': {
+      id: '/admin/$project/keys'
+      path: '/keys'
+      fullPath: '/admin/$project/keys'
+      preLoaderRoute: typeof AdminProjectKeysRouteImport
+      parentRoute: typeof AdminProjectRoute
+    }
   }
 }
 
 interface AdminProjectRouteChildren {
+  AdminProjectKeysRoute: typeof AdminProjectKeysRoute
   AdminProjectIndexRoute: typeof AdminProjectIndexRoute
 }
 
 const AdminProjectRouteChildren: AdminProjectRouteChildren = {
+  AdminProjectKeysRoute: AdminProjectKeysRoute,
   AdminProjectIndexRoute: AdminProjectIndexRoute,
 }
 

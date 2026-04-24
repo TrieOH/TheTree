@@ -68,59 +68,6 @@ export function ProjectList({
                       </span>
                     </div>
                   </div>
-
-                  {/* <div className="flex items-center gap-1 sm:gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-none hover:bg-muted"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                            }}
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent
-                        align="end"
-                        className="rounded-none min-w-48"
-                      >
-                        <DropdownMenuItem
-                          className="gap-2 text-xs font-bold uppercase tracking-widest rounded-none py-2 px-3"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            if (workspace.sandbox) handleDisableSandbox(workspace.name)
-                            else handleEnableSandbox(workspace.name)
-                          }}
-                        >
-                          <Settings className="w-3.5 h-3.5" />
-                          {workspace.sandbox ? 'Disable Sandbox' : 'Enable Sandbox'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="gap-2 text-xs font-bold uppercase tracking-widest rounded-none py-2 px-3"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            copyToClipboard(workspace.id)
-                          }}
-                        >
-                          {copiedId === workspace.id ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                          Copy ID
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <ArrowRight className="w-5 h-5 text-primary" />
-                  </div> */}
                 </div>
               </CardHeader>
 
