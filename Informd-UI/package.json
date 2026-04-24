@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@hookform/resolvers": "^5.2.2",
     "@posthog/react": "^1.7.0",
     "@soramux/identityx-sdk-ts": "^0.10.2",
     "@soramux/node-fetch-sdk": "^0.1.5",
@@ -38,6 +39,7 @@
     "posthog-js": "^1.358.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hook-form": "^7.73.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.18",
