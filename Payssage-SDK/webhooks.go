@@ -36,23 +36,23 @@ func (c *Client) DeleteWebhookEndpoint(ctx context.Context, workspaceName, endpo
 	return c.do(ctx, "DELETE", fmt.Sprintf("/workspaces/%s/webhooks/%s", workspaceName, endpointID), nil, nil)
 }
 
-// VerifyWebhookSignature verifies the X-TriePayments-Signature header on an inbound delivery.
+// VerifyWebhookSignature verifies the X-Payssage-Signature header on an inbound delivery.
 // Call this in your webhook receiver handler.
 func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, error) {
-	sig := r.Header.Get("X-TriePayments-Signature")
+	sig := r.Header.Get("X-Payssage-Signature")
 	if sig == "" {
-		return nil, errors.New("triepayments: missing X-TriePayments-Signature header")
+		return nil, errors.New("payssage: missing X-Payssage-Signature header")
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("triepayments: read body: %w", err)
+		return nil, fmt.Errorf("payssage: read body: %w", err)
 	}
 
 	// decode signature from hex
 	sigBytes, err := hex.DecodeString(sig)
 	if err != nil {
-		return nil, fmt.Errorf("triepayments: invalid signature encoding")
+		return nil, fmt.Errorf("payssage: invalid signature encoding")
 	}
 
 	// compute expected HMAC
@@ -62,12 +62,12 @@ func VerifyWebhookSignature(r *http.Request, secret string) (*WebhookPayload, er
 
 	// constant-time comparison
 	if !hmac.Equal(expected, sigBytes) {
-		return nil, errors.New("triepayments: invalid signature")
+		return nil, errors.New("payssage: invalid signature")
 	}
 
 	var payload WebhookPayload
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, fmt.Errorf("triepayments: decode payload: %w", err)
+		return nil, fmt.Errorf("payssage: decode payload: %w", err)
 	}
 
 	return &payload, nil

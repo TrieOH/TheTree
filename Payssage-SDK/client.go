@@ -31,14 +31,14 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("triepayments: marshal request: %w", err)
+			return fmt.Errorf("payssage: marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody)
 	if err != nil {
-		return fmt.Errorf("triepayments: build request: %w", err)
+		return fmt.Errorf("payssage: build request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -46,7 +46,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("triepayments: http: %w", err)
+		return fmt.Errorf("payssage: http: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -62,10 +62,10 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 			Data json.RawMessage `json:"data"`
 		}{}
 		if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-			return fmt.Errorf("triepayments: decode envelope: %w", err)
+			return fmt.Errorf("payssage: decode envelope: %w", err)
 		}
 		if err := json.Unmarshal(raw.Data, out); err != nil {
-			return fmt.Errorf("triepayments: decode data: %w", err)
+			return fmt.Errorf("payssage: decode data: %w", err)
 		}
 	}
 
@@ -80,7 +80,7 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	return fmt.Sprintf("triemint: api error %d: %s", e.StatusCode, e.Message)
+	return fmt.Sprintf("payssage: api error %d: %s", e.StatusCode, e.Message)
 }
 
 func IsNotFound(err error) bool {
