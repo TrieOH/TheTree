@@ -92,7 +92,7 @@ func (app *Payssage) run() {
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
-	rt.asynq = app.startAsynq()
+	rt.asynq = app.startAsynq(rt)
 	defer app.stopAsynq(rt.asynq)
 	rt.paymentProviders = app.startPaymentProviders()
 	rt.commands = app.startCommands(rt, rt.repos)
@@ -189,10 +189,13 @@ func (app *Payssage) startMiddlewares(rt runtime) middlewares {
 	return mw
 }
 
-func (app *Payssage) startAsynq() asynqDeps {
+func (app *Payssage) startAsynq(rt runtime) asynqDeps {
+	webhooksAsynq := webhooks.NewAsynqService(rt.repos.deliveriesRepo, rt.tracer, rt.txRunner)
 	var err error
 	var deps asynqDeps
-	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{})
+	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{
+		WebhookAsynq: webhooksAsynq,
+	})
 	if err != nil {
 		telemetry.Log().Fatal("failed to init Asynq", zap.Error(err))
 	}
