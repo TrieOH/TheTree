@@ -56,8 +56,11 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	ctx, span := uc.tracer.Start(ctx, "CommandService.CompleteOAuth")
 	defer span.End()
 
+	telemetry.Log().Info("CompleteOAuth data", zap.String("provider", provider), zap.String("stateToken", stateToken), zap.String("code", code), zap.String("redirectURI", redirectURI))
+
 	oauthState, err := uc.oauthStates.Get(ctx, stateToken)
 	if err != nil {
+		telemetry.Log().Error("error getting oauth_state", zap.Error(err))
 		return "", errx.Invalid("oauth_state").SetMessage("invalid or expired state")
 	}
 
@@ -72,7 +75,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 
 	credData, err := p.ExchangeCode(ctx, code, redirectURI)
 	if err != nil {
-		telemetry.Log().Info("Error exchanging codes", zap.Error(err))
+		telemetry.Log().Error("Error exchanging codes", zap.Error(err))
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
 
@@ -82,11 +85,14 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		Credentials: credData,
 	})
 	if err != nil {
+		telemetry.Log().Error("error creating provider credentials", zap.Error(err))
 		return "", err
 	}
+	telemetry.Log().Info("provider credential", zap.Any("credential", cred))
 
 	u, err := url.Parse(redirectURI)
 	if err != nil {
+		telemetry.Log().Error("error parsing redirect uri", zap.Error(err))
 		return "", err
 	}
 
@@ -131,8 +137,6 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		if err != nil {
 			return "", err
 		}
-	} else {
-
 	}
 
 	_ = uc.oauthStates.Delete(ctx, stateToken)
