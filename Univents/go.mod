@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	github.com/MintzyG/FastUtilitiesNet v0.6.5
 	github.com/TrieOH/IdentityX-SDK-Go v0.7.1
-	github.com/TrieOH/Payssage-SDK-Go v0.1.0
+	github.com/TrieOH/Payssage-SDK-Go v0.1.1
 	github.com/authzed/authzed-go v1.8.0
 	github.com/authzed/grpcutil v0.0.0-20260105210157-e237581949c2
 	github.com/exaring/otelpgx v0.10.0

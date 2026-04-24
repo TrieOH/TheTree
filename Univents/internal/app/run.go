@@ -95,15 +95,20 @@ func (app *Univents) run() runtime {
 	rt.txRunner = database.NewPGXTxRunner(app.db)
 	rt.tracer = otel.Tracer(string(telemetry.UniventsTracer))
 	rt.logger = telemetry.Log()
+
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
-	rt.asynq = app.startAsynq(rt, rt.repos)
-	rt.ws = sockets.New()
-	defer app.stopAsynq(rt.asynq)
+
 	rt.storeDeps = app.startStoreDeps()
+	rt.ws = sockets.New()
+
+	rt.asynq = app.startAsynq(rt, rt.repos)
+	defer app.stopAsynq(rt.asynq)
+
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.handlers = app.startHandlers(rt)
+
 	mux := router.CreateRouter(rt.handlers)
 	port := viper.GetString("PORT")
 	log.Printf("Univents listening on :%s", port)

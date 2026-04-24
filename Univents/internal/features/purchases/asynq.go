@@ -10,6 +10,7 @@ import (
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
+	"univents/internal/shared/validation"
 
 	"github.com/TrieOH/Payssage-SDK-Go"
 	"github.com/hibiken/asynq"
@@ -37,6 +38,18 @@ func NewAsynqService(
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *AsynqHandlers {
+	if err := validation.CheckDeps(map[string]any{
+		"products":  products,
+		"purchases": purchases,
+		"payssage":  payssage,
+		"inventory": inventory,
+		"sessions":  sessions,
+		"ws":        ws,
+		"tracer":    tracer,
+		"tx":        tx,
+	}); err != nil {
+		log.Fatal(err)
+	}
 	return &AsynqHandlers{
 		products:  products,
 		purchases: purchases,

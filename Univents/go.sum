@@ -11,8 +11,8 @@ github.com/MintzyG/FastUtilitiesNet v0.6.5 h1:pd5k63aEoocu7RoZRp8aXXDBXx7XYgjnp3
 github.com/MintzyG/FastUtilitiesNet v0.6.5/go.mod h1:JNOyfLadEjybsenVfHUiA6ASeNGvprNPpbk46WX51as=
 github.com/TrieOH/IdentityX-SDK-Go v0.7.1 h1:rR3jcOpeE5/s5FroneGErJWxBPqlGVmPTe02d/xVep4=
 github.com/TrieOH/IdentityX-SDK-Go v0.7.1/go.mod h1:VhZUo3+/9x4N3vMwqoaJxq90y5Dm5YgRAqBvGIe6Pb8=
-github.com/TrieOH/Payssage-SDK-Go v0.1.0 h1:6EBaWu/zfB18pnmqgObWx4ltXnCpCfQ0m7Qxjv0ng6A=
-github.com/TrieOH/Payssage-SDK-Go v0.1.0/go.mod h1:OjQvj8Dj1bdbEZ4Rm/tEDWn22CHuHueO8O6i+fqN0CE=
+github.com/TrieOH/Payssage-SDK-Go v0.1.1 h1:5OpgrLdZnd5LTcIo/+Odn4Vh+3VB1/7Jjz1F7azkhFg=
+github.com/TrieOH/Payssage-SDK-Go v0.1.1/go.mod h1:OjQvj8Dj1bdbEZ4Rm/tEDWn22CHuHueO8O6i+fqN0CE=
 github.com/TrieOH/sdkkit v0.0.1 h1:YKefAUgBfBngS5r+mb3KmyqRW/a206tynVDoSL3kkMY=
 github.com/TrieOH/sdkkit v0.0.1/go.mod h1:8hBjKJ0vZigFi5sJVB/guDeTIhJEz+6tKDsKUPiuGtw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
