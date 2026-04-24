@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { toast } from "sonner"
 import type { SubmitPaymentPayloadI } from "@/features/payments/model"
 import { useCart } from "@/features/products/hooks/use-cart"
 import { env } from "@/env"
@@ -31,11 +32,12 @@ interface SessionSnapshot {
   items: { product_id: string; quantity: number }[]
 }
 
+// TODO: implementar compras gratuitas no backend
 function CheckoutPage() {
   const { eventId, editionId } = Route.useParams()
   const router = useRouter()
-  const { items, clearCart, replaceCart } = useCart(editionId)
-  const { data: edition } = useQuery(editionQueryOptions(eventId, editionId));
+  const { items, clearCart, replaceCart, totalCents } = useCart(editionId)
+  const { data: edition } = useQuery(editionQueryOptions(eventId, editionId))
 
   const wsUrl = `${env.VITE_API_URL.replace("http", "ws")}events/${eventId}/editions/${editionId}/products/purchase`
 
@@ -43,8 +45,6 @@ function CheckoutPage() {
   const didInitRef = useRef(false)
   const pendingSnapshotRef = useRef<SessionSnapshot | null>(null)
 
-  // When this is set, we're waiting for the user to decide what to do
-  // with their changed cart vs the existing session.
   const [cartChanged, setCartChanged] = useState(false)
 
   const cartSnapshot = items.map((i) => ({ product_id: i.id, quantity: i.quantity }))
@@ -65,7 +65,7 @@ function CheckoutPage() {
     cancelReservation,
     submitPayment,
     reset,
-    cancelPurchase
+    cancelPurchase,
   } = useCheckoutSocket({
     url: wsUrl,
     onPartialReservation: (reserved) => {
@@ -77,13 +77,34 @@ function CheckoutPage() {
           quantity: item.quantity,
           inventory_remaining: item.quantity,
           has_inventory: true,
-        }))
+        })),
       )
     },
     onPixCreated: () => {
       sessionStorage.removeItem(sessionKey)
     },
   })
+
+  // Guard: once edition data is available, validate the cart can proceed.
+  // - Free cart (totalCents === 0): backend doesn't support free purchases yet.
+  // - Paid cart without a payment provider configured: the event isn't set up for sales.
+  useEffect(() => {
+    if (!edition) return
+
+    if (totalCents === 0) {
+      // TODO: implement free purchases on the backend.
+      console.log("[checkout] free cart detected — free purchase flow not yet implemented in backend")
+      return
+    }
+
+    if (!edition.trie_payments_provider_public_key) {
+      toast.warning("Este evento não está configurado para vendas pagas.")
+      void router.navigate({
+        to: "/events/$eventId/editions/$editionId/products",
+        params: { eventId, editionId },
+      })
+    }
+  }, [edition])
 
   // On mount: decide between resume, ask, or new purchase.
   useEffect(() => {
@@ -95,21 +116,19 @@ function CheckoutPage() {
       try {
         const snapshot = JSON.parse(raw) as SessionSnapshot
         if (cartMatchesSnapshot(snapshot)) {
-          // Cart unchanged — resume silently.
           void resumeSession(snapshot.sessionId)
           return
         }
-        // Cart changed — hold the snapshot and ask the user.
         pendingSnapshotRef.current = snapshot
         setCartChanged(true)
         return
       } catch {
         // malformed — fall through to buyRequest
+        console.warn("[checkout] sessão no sessionStorage inválida, iniciando nova compra")
       }
       sessionStorage.removeItem(sessionKey)
     }
 
-    // No session or malformed — start fresh.
     if (items.length > 0) void buyRequest(cartSnapshot)
     else router.history.back()
   }, [])
@@ -122,7 +141,7 @@ function CheckoutPage() {
   }, [state.sessionId])
 
   // When the server confirms the reservation, sync the cart with the
-  // exact items/quantities/prices it reserved — backend is the source of truth.
+  // exact items/quantities/prices it reserved.
   useEffect(() => {
     if (state.phase !== "reservation_confirmed") return
     replaceCart(
@@ -133,7 +152,7 @@ function CheckoutPage() {
         quantity: item.quantity,
         inventory_remaining: item.quantity,
         has_inventory: true,
-      }))
+      })),
     )
   }, [state.phase])
 
@@ -152,7 +171,6 @@ function CheckoutPage() {
     reset()
     if (items.length > 0) void buyRequest(cartSnapshot)
     else router.history.back()
-
   }, [state.phase])
 
   const handleCancelReservation = () => {
@@ -175,7 +193,6 @@ function CheckoutPage() {
     else router.history.back()
   }
 
-  // ── Cart changed: user chose to resume the old session ────────────────────
   const handleResumeOldSession = () => {
     const snapshot = pendingSnapshotRef.current
     if (!snapshot) return
@@ -184,7 +201,6 @@ function CheckoutPage() {
     void resumeSession(snapshot.sessionId)
   }
 
-  // ── Cart changed: user chose to start fresh with the new cart ─────────────
   const handleUseNewCart = () => {
     sessionStorage.removeItem(sessionKey)
     pendingSnapshotRef.current = null
@@ -201,7 +217,7 @@ function CheckoutPage() {
       <CheckoutCartChanged
         onResume={handleResumeOldSession}
         onUseNew={handleUseNewCart}
-        onCancel={() => { router.history.back(); }}
+        onCancel={() => { router.history.back() }}
       />
     )
   }
@@ -235,6 +251,7 @@ function CheckoutPage() {
     )
   }
 
+  // ── Payment failed ─────────────────────────────────────────────────────────
   if (phase === "payment_failed") {
     return (
       <CheckoutPaymentFailed
@@ -256,9 +273,7 @@ function CheckoutPage() {
   }
 
   // ── Order confirmed ────────────────────────────────────────────────────────
-  if (phase === "payment_confirmed") {
-    return <CheckoutOrderConfirmed />
-  }
+  if (phase === "payment_confirmed") return <CheckoutOrderConfirmed />
 
   // ── Pix pending ────────────────────────────────────────────────────────────
   if (phase === "pix_pending" && state.pixData) {
@@ -273,20 +288,13 @@ function CheckoutPage() {
   }
 
   // ── Payment pending (card — webhook handling) ──────────────────────────────
-  if (phase === "payment_pending") {
-    return <CheckoutPaymentPending message={state.pendingMessage} />
-  }
+  if (phase === "payment_pending") return <CheckoutPaymentPending message={state.pendingMessage} />
 
-  if (phase === "payment_processing" || phase === "awaiting_payment") {
-    return (
-      <WaveSpinnerLoading />
-    )
-  }
+  // ── Processing / awaiting payment confirmation ─────────────────────────────
+  if (phase === "payment_processing" || phase === "awaiting_payment") return <WaveSpinnerLoading />
 
   // ── Main payment form ──────────────────────────────────────────────────────
-  if (
-    phase === "reservation_confirmed" && edition?.trie_payments_provider_public_key
-  ) {
+  if (phase === "reservation_confirmed" && edition?.trie_payments_provider_public_key) {
     return (
       <CheckoutPaymentForm
         phase={phase}
@@ -297,7 +305,7 @@ function CheckoutPage() {
         sellerPublicKey={edition.trie_payments_provider_public_key}
         onSubmit={handlePaymentSubmit}
         onCancel={handlePurchaseCancel}
-        onExpire={() => {/* session_expired comes from server */ }}
+        onExpire={() => toast.warning("A sessão anterior expirou!")}
       />
     )
   }

@@ -92,7 +92,6 @@ const INITIAL_STATE: CheckoutState = {
 type Action =
   | { type: "RESET" }
   | { type: "CONNECTING" }
-  | { type: "CANCEL_PURCHASE" }
   | { type: "AWAITING_RESERVATION" }
   | { type: "AWAITING_PAYMENT" }
   | { type: "RESERVATION_CONFIRMED"; sessionId: string; expiresAt: string; items: ReservedItemI[]; totalCents: number }
@@ -102,7 +101,7 @@ type Action =
   | { type: "PAYMENT_PROCESSING" }
   | { type: "PAYMENT_FAILED" }
   | { type: "PURCHASE_CANCELLED" }
-  | { type: "PAYMENT_CONFIRMED", purchase_id: string }
+  | { type: "PAYMENT_CONFIRMED"; purchase_id: string }
   | { type: "PAYMENT_PENDING"; message: string }
   | { type: "PIX_CREATED"; qrCode: string; qrCodeBase64: string }
   | { type: "ERROR"; message: string }
@@ -180,8 +179,8 @@ function reducer(state: CheckoutState, action: Action): CheckoutState {
       return {
         ...state,
         phase: "purchase_cancelled",
-        errorMessage: "Compra Cancelada..."
-      }
+        errorMessage: "Compra Cancelada...",
+      };
 
     case "PAYMENT_PENDING":
       return {
@@ -315,7 +314,7 @@ export interface UseCheckoutSocketReturn {
   state: CheckoutState;
   /** Start a new purchase flow for the given items. */
   buyRequest: (items: BuyRequestItemI[]) => Promise<void>;
-  /** Cancel purchase flow */
+  /** Cancel an in-progress purchase (after reservation, before payment confirmation). */
   cancelPurchase: () => void;
   /** Resume an existing reservation session (e.g. after a page refresh). */
   resumeSession: (sessionId: string) => Promise<void>;
@@ -339,12 +338,10 @@ export function useCheckoutSocket({
   const wsRef = useRef<WebSocket | null>(null);
 
   // Guards against double-connecting while getWebsocketAuthToken is in-flight.
-  // Set to true before the await, back to false in finally — the WebSocket
   const isConnectingRef = useRef(false);
 
   // When we close the socket intentionally (reset, cancel, restart), we flip
   // this to true so onclose doesn't treat it as an unexpected drop.
-  // Cleared back to false inside onclose itself.
   const closingCleanlyRef = useRef(false);
 
   // Keep the latest callbacks in refs so openSocket never needs them as deps.
@@ -355,10 +352,6 @@ export function useCheckoutSocket({
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
-  /**
-   * Closes the current socket (if any) marking it as intentional so that
-   * onclose won't dispatch UNEXPECTED_CLOSE.
-   */
   const closeSocket = useCallback((reason = "done") => {
     const ws = wsRef.current;
     if (!ws) return;
@@ -394,10 +387,8 @@ export function useCheckoutSocket({
 
   const openSocket = useCallback(
     async (firstMessage: Record<string, unknown>): Promise<void> => {
-      // Debounce: ignore if already in the middle of authenticating.
       if (isConnectingRef.current) return;
 
-      // Tear down any existing socket cleanly before re-opening.
       closeSocket("restart");
 
       isConnectingRef.current = true;
@@ -411,8 +402,6 @@ export function useCheckoutSocket({
         }
 
         const ws = new WebSocket(`${url}?token=${res.data.token}`);
-        // Assign synchronously — from this point onward any concurrent
-        // openSocket call will hit the closeSocket("restart") guard above.
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -421,17 +410,15 @@ export function useCheckoutSocket({
         };
 
         ws.onmessage = (event: MessageEvent<string>) => {
-          // Discard frames from a stale socket that was already replaced.
           if (ws !== wsRef.current) return;
 
           let msg: ServerMessage;
           try {
             msg = JSON.parse(event.data) as ServerMessage;
           } catch {
-            return; // malformed frame — ignore
+            return;
           }
 
-          // Side-effect callbacks (always fresh via ref, no dep needed).
           if (msg.type === "partial_reservation") {
             onPartialRef.current?.(msg.payload.reserved);
           }
@@ -444,13 +431,11 @@ export function useCheckoutSocket({
         };
 
         ws.onerror = () => {
-          // Ignore errors from a stale socket.
           if (ws !== wsRef.current) return;
           dispatch({ type: "ERROR", message: "Erro na conexão com o servidor." });
         };
 
         ws.onclose = () => {
-          // Clear our ref only if it still points to this socket.
           if (wsRef.current === ws) wsRef.current = null;
 
           if (closingCleanlyRef.current) {
@@ -474,9 +459,11 @@ export function useCheckoutSocket({
     [openSocket],
   );
 
+  // Sends cancel_purchase to the server and navigates away.
+  // The server confirms with purchase_cancelled and closes the socket —
+  // TERMINAL_PHASES ensures onclose won't surface a spurious error after that.
   const cancelPurchase = useCallback(() => {
     sendJSON({ type: "cancel_purchase" }, { silent: true });
-    dispatch({ type: "CANCEL_PURCHASE" });
   }, [sendJSON]);
 
   const resumeSession = useCallback(
@@ -498,9 +485,9 @@ export function useCheckoutSocket({
       dispatch({ type: "RESET" });
       return;
     }
-    // If sent, wait for reservation_cancelled → RESET via onmessage
-    // The backend closes the socket next → onclose is cleared via TERMINAL_PHASES (idle)
-  }, [sendJSON, closeSocket]);
+    // If sent, wait for reservation_cancelled → RESET via onmessage.
+    // The backend closes the socket next → onclose is cleared via TERMINAL_PHASES (idle).
+  }, [sendJSON]);
 
   const submitPayment = useCallback(
     (payload: SubmitPaymentPayloadI) => {
@@ -516,8 +503,6 @@ export function useCheckoutSocket({
           identification_number: payload.identification_number,
         },
       });
-      // Only advance the phase if the frame was actually sent.
-      // sendJSON already dispatched ERROR if it wasn't.
       if (sent) dispatch({ type: "AWAITING_PAYMENT" });
     },
     [sendJSON],
@@ -536,6 +521,6 @@ export function useCheckoutSocket({
     cancelReservation,
     submitPayment,
     reset,
-    cancelPurchase
+    cancelPurchase,
   };
 }
