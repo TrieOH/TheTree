@@ -7,8 +7,8 @@ cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCB
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
-github.com/MintzyG/FastUtilitiesNet v0.9.2 h1:5GpRGU4JvrNiwsfVlA8Z0VxwRKyEeXwYMObGwQeRgIQ=
-github.com/MintzyG/FastUtilitiesNet v0.9.2/go.mod h1:aAgoyoDwCVcwxYG/YzgaWnTPlcs3FGq1yJ3XEM1sJ90=
+github.com/MintzyG/FastUtilitiesNet v0.9.3 h1:N6P66Rhg68yOA29+iZ/zcYcdYSmR5DfPUgE0WQrUs4g=
+github.com/MintzyG/FastUtilitiesNet v0.9.3/go.mod h1:aAgoyoDwCVcwxYG/YzgaWnTPlcs3FGq1yJ3XEM1sJ90=
 github.com/TrieOH/IdentityX-SDK-Go v0.7.1 h1:rR3jcOpeE5/s5FroneGErJWxBPqlGVmPTe02d/xVep4=
 github.com/TrieOH/IdentityX-SDK-Go v0.7.1/go.mod h1:VhZUo3+/9x4N3vMwqoaJxq90y5Dm5YgRAqBvGIe6Pb8=
 github.com/TrieOH/sdkkit v0.0.1 h1:YKefAUgBfBngS5r+mb3KmyqRW/a206tynVDoSL3kkMY=

@@ -3,7 +3,7 @@ module Informd
 go 1.26.2
 
 require (
-	github.com/MintzyG/FastUtilitiesNet v0.9.2
+	github.com/MintzyG/FastUtilitiesNet v0.9.3
 	github.com/TrieOH/IdentityX-SDK-Go v0.7.1
 	github.com/authzed/authzed-go v1.8.0
 	github.com/authzed/grpcutil v0.0.0-20260105210157-e237581949c2

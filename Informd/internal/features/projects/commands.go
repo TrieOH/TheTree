@@ -18,7 +18,7 @@ type CommandService struct {
 	tracer   trace.Tracer
 }
 
-func NewProjectCommandService(
+func NewCommands(
 	projects ports.ProjectsRepo,
 	az *v1.Client,
 	tx database.TxRunner,

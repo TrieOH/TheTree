@@ -20,7 +20,7 @@ type QueryService struct {
 	tracer   trace.Tracer
 }
 
-func NewApiKeyQueryService(
+func NewQueries(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.ProjectsRepo,
 	az *v1.Client,

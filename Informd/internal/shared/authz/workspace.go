@@ -16,12 +16,12 @@ func WithProject(ctx context.Context, project *contracts.Project) context.Contex
 func RequireProject(ctx context.Context) (*contracts.Project, error) {
 	val := ctx.Value(ProjectContextKey)
 	if val == nil {
-		return nil, fun.NewError("project not found in context").Internal()
+		return nil, fun.ErrInternal("project not found in context")
 	}
 
 	ws, ok := val.(*contracts.Project)
 	if !ok {
-		return nil, fun.NewErrorf("Invalid project type, was: %T", val).Internal()
+		return nil, fun.Errf("Invalid project type, was: %T", val).Internal()
 	}
 
 	return ws, nil

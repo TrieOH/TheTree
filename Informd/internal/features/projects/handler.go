@@ -15,7 +15,7 @@ type Handler struct {
 	queries  *QueryService
 }
 
-func NewProjectHandler(
+func NewHandler(
 	commands *CommandService,
 	queries *QueryService,
 ) *Handler {

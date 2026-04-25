@@ -20,7 +20,7 @@ type CommandService struct {
 	tracer   trace.Tracer
 }
 
-func NewFormCommandService(
+func NewCommands(
 	forms ports.FormsRepo,
 	projects ports.ProjectsRepo,
 	az *authzed.Client,

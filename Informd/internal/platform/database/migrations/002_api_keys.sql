@@ -11,7 +11,7 @@ CREATE TABLE api_keys (
     revoked_at TIMESTAMPTZ NULL
 );
 
-CREATE UNIQUE INDEX idx_api_keys_name_project
+CREATE UNIQUE INDEX uniq_idx_api_keys_name_project
     ON api_keys (name, project_id)
     WHERE revoked_at IS NULL;
 
@@ -21,5 +21,5 @@ CREATE INDEX idx_api_keys_key_prefix ON api_keys (key_prefix);
 -- +goose Down
 DROP INDEX IF EXISTS idx_api_keys_key_prefix;
 DROP INDEX IF EXISTS idx_api_keys_owner_id;
-DROP INDEX IF EXISTS idx_api_keys_name_project;
+DROP INDEX IF EXISTS uniq_idx_api_keys_name_project;
 DROP TABLE IF EXISTS api_keys;

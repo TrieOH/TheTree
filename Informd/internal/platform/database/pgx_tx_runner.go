@@ -34,11 +34,11 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		return fun.NewError("transaction had nil context").Internal()
+		return fun.ErrInternal("transaction had nil context")
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		return fun.NewError("nested transactions not allowed").Internal()
+		return fun.ErrInternal("nested transactions not allowed")
 	}
 
 	pgxOpts := pgx.TxOptions{
@@ -49,7 +49,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		return fun.NewErrorf("error beginning transaction: %s", err.Error()).Internal()
+		return fun.Errf("error beginning transaction: %s", err.Error()).Internal()
 	}
 
 	committed := false
@@ -63,7 +63,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 				}
 			}
 			r.logger.Error("transaction function panicked", zap.Any("panic", p))
-			err = fun.NewErrorf("transaction panicked").Internal()
+			err = fun.ErrInternal("transaction panicked")
 		}
 	}()
 
@@ -82,7 +82,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			r.logger.Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		return fun.NewErrorf("error commiting transaction: %s", err.Error()).Internal()
+		return fun.Errf("error commiting transaction: %s", err.Error()).Internal()
 	}
 	committed = true
 	return nil

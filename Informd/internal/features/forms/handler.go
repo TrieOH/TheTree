@@ -15,7 +15,7 @@ type Handler struct {
 	queries  *QueryService
 }
 
-func NewFormsHandler(
+func NewHandler(
 	commands *CommandService,
 	queries *QueryService,
 ) *Handler {

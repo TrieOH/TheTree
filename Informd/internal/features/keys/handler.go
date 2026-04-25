@@ -17,7 +17,7 @@ type Handler struct {
 	queries  *QueryService
 }
 
-func NewApiKeysHandler(
+func NewHandler(
 	commands *CommandService,
 	queries *QueryService,
 ) *Handler {

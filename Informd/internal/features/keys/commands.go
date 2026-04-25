@@ -23,7 +23,7 @@ type CommandService struct {
 	tracer   trace.Tracer
 }
 
-func NewApiKeyCommandService(
+func NewCommands(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.ProjectsRepo,
 	az *v1.Client,
