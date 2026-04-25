@@ -1,6 +1,6 @@
 -- name: CreateForm :one
-INSERT INTO forms (id, project_id, owner_id, scope_id, title, status)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO forms (id, project_id, owner_id, title, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: ListFormsByProject :many

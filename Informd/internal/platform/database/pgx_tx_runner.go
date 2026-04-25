@@ -1,10 +1,9 @@
 package database
 
 import (
-	"TrieForms/internal/platform/telemetry"
 	"context"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -15,11 +14,12 @@ type TxKey struct{}
 var TxKeyValue = TxKey{}
 
 type PgxTxRunner struct {
-	pool *pgxpool.Pool // Changed from *sql.DB
+	logger *zap.Logger
+	pool   *pgxpool.Pool // Changed from *sql.DB
 }
 
-func NewPGXTxRunner(pool *pgxpool.Pool) TxRunner {
-	return &PgxTxRunner{pool: pool}
+func NewPGXTxRunner(pool *pgxpool.Pool, logger *zap.Logger) TxRunner {
+	return &PgxTxRunner{pool: pool, logger: logger}
 }
 
 // WithinTx executes fn inside a transaction using default options
@@ -59,10 +59,10 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 			if !committed {
 				rbErr := tx.Rollback(ctx)
 				if rbErr != nil {
-					telemetry.Log().Error("error during tx rollback after panic", zap.Error(rbErr))
+					r.logger.Error("error during tx rollback after panic", zap.Error(rbErr))
 				}
 			}
-			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
+			r.logger.Error("transaction function panicked", zap.Any("panic", p))
 			err = fun.NewErrorf("transaction panicked").Internal()
 		}
 	}()
@@ -72,15 +72,15 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	if err = fn(ctx); err != nil {
 		rbErr := tx.Rollback(ctx)
 		if rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after usecase error", zap.Error(rbErr))
+			r.logger.Error("error during tx rollback after usecase error", zap.Error(rbErr))
 		}
 		return err
 	}
 
 	if err = tx.Commit(ctx); err != nil {
-		telemetry.Log().Error("error during tx commit", zap.Error(err))
+		r.logger.Error("error during tx commit", zap.Error(err))
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
+			r.logger.Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
 		return fun.NewErrorf("error commiting transaction: %s", err.Error()).Internal()
 	}

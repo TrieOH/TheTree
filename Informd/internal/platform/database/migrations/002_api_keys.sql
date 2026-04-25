@@ -4,7 +4,6 @@ CREATE TABLE api_keys (
     project_id UUID NOT NULL REFERENCES projects(id)
         ON DELETE CASCADE,
     owner_id UUID NOT NULL,
-    scope_id UUID NOT NULL,
     name TEXT NOT NULL,
     key_hash TEXT NOT NULL,
     key_prefix TEXT NOT NULL,

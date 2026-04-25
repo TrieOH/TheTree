@@ -1,7 +1,8 @@
 package app
 
 import (
-	"TrieForms/internal/platform/telemetry"
+	"Informd/internal/platform/telemetry"
+	"Informd/internal/shared/errx"
 	"context"
 	"time"
 
@@ -10,32 +11,36 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
-type TrieForms struct {
+type Informd struct {
 	db        *pgxpool.Pool
 	redis     *redis.Client
 	scheduler gocron.Scheduler
 	idxClient *idx.Client
 	sdbClient *authzed.Client
+
+	Config Config
 }
 
-func New() *TrieForms {
-	var app TrieForms
-
-	LoadEnv()
-	SetupFUN()
-	app.redis = SetupRedis(15 * time.Second)
-	app.idxClient = SetupIdentityX()
+func New() *Informd {
+	var app Informd
+	var err error
+	app.Config, err = LoadConfig()
+	if err != nil {
+		errx.Must(err, "failed to load config")
+	}
+	SetupFUN(app.Config.AppName)
+	app.redis = SetupRedis(15*time.Second, app.Config.RedisAddr, app.Config.RedisPassword, app.Config.RedisDB)
+	app.idxClient = SetupIdentityX(app.Config)
 	migrationPath := "./internal/platform/database/migrations"
-	app.db = SetupDB(migrationPath)
+	app.db = SetupDB(migrationPath, app.Config.DatabaseURL)
 	app.scheduler = SetupCron(app.db)
-	app.sdbClient = SetupSpiceDB()
+	app.sdbClient = SetupSpiceDB(app.Config)
 	return &app
 }
 
-func (app *TrieForms) Run() {
+func (app *Informd) Run() {
 	ctx := context.Background()
 
 	defer app.CloseDB()
@@ -46,37 +51,37 @@ func (app *TrieForms) Run() {
 	app.run()
 }
 
-func (app *TrieForms) CloseDB() {
+func (app *Informd) CloseDB() {
 	app.db.Close()
 }
 
-func (app *TrieForms) CloseRedis() {
+func (app *Informd) CloseRedis() {
 	if err := app.redis.Close(); err != nil {
-		telemetry.Log().Error("error closing redis connection", zap.Error(err))
+		errx.Must(err, "error closing redis connection")
 	}
 }
 
-func (app *TrieForms) StartTracer(ctx context.Context) func(context.Context) error {
+func (app *Informd) StartTracer(ctx context.Context) func(context.Context) error {
 	shutdown, err := telemetry.InitTracer(ctx)
 	if err != nil {
-		telemetry.Log().Fatal("error starting tracer", zap.Error(err))
+		errx.Must(err, "error starting tracer")
 	}
 	return shutdown
 }
 
-func (app *TrieForms) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
+func (app *Informd) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
 	if err := shutdown(ctx); err != nil {
-		telemetry.Log().Error("error shutting down tracer", zap.Error(err))
+		errx.Must(err, "error shutting down tracer")
 	}
 }
 
-func (app *TrieForms) StopScheduler() {
+func (app *Informd) StopScheduler() {
 	err := app.scheduler.StopJobs()
 	if err != nil {
-		telemetry.Log().Error("error stopping scheduler jobs", zap.Error(err))
+		errx.Must(err, "error stopping scheduler jobs")
 	}
 	err = app.scheduler.Shutdown()
 	if err != nil {
-		telemetry.Log().Error("error shutting down scheduler", zap.Error(err))
+		errx.Must(err, "error shutting down scheduler")
 	}
 }

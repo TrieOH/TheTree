@@ -1,10 +1,10 @@
 package authz
 
 import (
-	"TrieForms/internal/shared/contracts"
+	"Informd/internal/shared/contracts"
 	"context"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 )
 
 const ProjectContextKey contextKey = "project"

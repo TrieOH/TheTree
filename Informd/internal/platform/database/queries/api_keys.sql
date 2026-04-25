@@ -1,6 +1,6 @@
 -- name: CreateAPIKey :one
-INSERT INTO api_keys (id, owner_id, scope_id, project_id, name, key_hash, key_prefix)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO api_keys (id, owner_id, project_id, name, key_hash, key_prefix)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetAPIKeyByPrefix :many

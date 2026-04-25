@@ -1,31 +1,38 @@
 package app
 
 import (
-	"TrieForms/internal/features/forms"
-	"TrieForms/internal/features/keys"
-	"TrieForms/internal/features/projects"
-	"TrieForms/internal/interfaces/http/middleware"
-	"TrieForms/internal/interfaces/http/router"
-	"TrieForms/internal/interfaces/http/system"
-	"TrieForms/internal/platform/database"
-	"TrieForms/internal/platform/database/sqlc"
-	"TrieForms/internal/platform/queue"
-	"TrieForms/internal/platform/telemetry"
-	"TrieForms/internal/shared/ports"
+	"Informd/internal/features/forms"
+	"Informd/internal/features/keys"
+	"Informd/internal/features/projects"
+	"Informd/internal/platform/database"
+	"Informd/internal/platform/database/sqlc"
+	"Informd/internal/platform/queue"
+	"Informd/internal/platform/telemetry"
+	"Informd/internal/shared/authz"
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/errx"
+	"Informd/internal/shared/ports"
+	"Informd/internal/shared/utils"
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/MintzyG/FastUtilitiesNet/middlewares"
+	idx "github.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
-	"github.com/spf13/viper"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type runtime struct {
-	middlewares middlewares
-	handlers    *router.HTTPDeps
+	middlewares mws
+	handlers    *Deps
 	commands    commands
 	queries     queries
 	repos       repos
@@ -54,8 +61,19 @@ type repos struct {
 	forms    ports.FormsRepo
 }
 
-type middlewares struct {
-	authMW *middleware.AuthMiddleware
+type mws struct {
+	logger    func(http.Handler) http.Handler
+	requestID func(http.Handler) http.Handler
+	bodySize  func(http.Handler) http.Handler
+	metrics   func(http.Handler) http.Handler
+	cors      func(http.Handler) http.Handler
+	realIP    func(http.Handler) http.Handler
+	recover   func(http.Handler) http.Handler
+	timeout   func(http.Handler) http.Handler
+	ratelimit func(http.Handler) http.Handler
+	jwt       func(http.Handler) http.Handler
+	apiKey    func(http.Handler) http.Handler
+	anyAuth   func(http.Handler) http.Handler
 }
 
 type asynqDeps struct {
@@ -65,12 +83,15 @@ type asynqDeps struct {
 	server    *asynq.Server
 }
 
-func (app *TrieForms) run() runtime {
+func (app *Informd) run() runtime {
 	var rt runtime
+	rt.logger = telemetry.NewLogger(telemetry.LogConfig{
+		Level:       "info",
+		Development: false,
+	})
 	rt.repoQueries = sqlc.New(app.db)
-	rt.txRunner = database.NewPGXTxRunner(app.db)
-	rt.tracer = otel.Tracer(string(telemetry.TrieFormsTracer))
-	rt.logger = telemetry.Log()
+	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
+	rt.tracer = otel.Tracer(string(telemetry.InformdTracer))
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.asynq = app.startAsynq()
@@ -78,31 +99,42 @@ func (app *TrieForms) run() runtime {
 	rt.commands = app.startCommands(rt)
 	rt.queries = app.startQueries(rt)
 	rt.handlers = app.startHandlers(rt)
-	mux := router.CreateRouter(rt.handlers)
-	port := viper.GetString("PORT")
-	log.Printf("TrieForms listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	mux := CreateRouter(rt.handlers)
+	log.Printf("Informd listening on :%s", app.Config.Port)
+	log.Fatal(http.ListenAndServe(":"+app.Config.Port, mux))
 	return rt
 }
 
-func (app *TrieForms) startHandlers(rt runtime) *router.HTTPDeps {
-	var handlers router.HTTPDeps
+func (app *Informd) startHandlers(rt runtime) *Deps {
+	var handlers Deps
 	handlers.AsynqmonHandler = asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
 		RedisConnOpt: asynq.RedisClientOpt{
-			Addr:     viper.GetString("REDIS_ADDR"),
-			Password: viper.GetString("REDIS_PASSWORD"),
-			DB:       viper.GetInt("REDIS_DB"),
+			Addr:     app.Config.RedisAddr,
+			Password: app.Config.RedisPassword,
+			DB:       app.Config.RedisDB,
 		},
 	})
-	handlers.SystemHandler = system.NewHandler()
 	handlers.ProjectsHandler = projects.NewProjectHandler(rt.commands.projects, rt.queries.projects)
 	handlers.ApiKeysHandler = keys.NewApiKeysHandler(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewFormsHandler(rt.commands.forms, rt.queries.forms)
+
+	handlers.BodySize = rt.middlewares.bodySize
+	handlers.RequestID = rt.middlewares.requestID
+	handlers.Logger = rt.middlewares.logger
+	handlers.Metrics = rt.middlewares.metrics
+	handlers.CORS = rt.middlewares.cors
+	handlers.RealIP = rt.middlewares.realIP
+	handlers.Recover = rt.middlewares.recover
+	handlers.Timeout = rt.middlewares.timeout
+	handlers.RateLimit = rt.middlewares.ratelimit
+	handlers.Jwt = rt.middlewares.jwt
+	handlers.ApiKey = rt.middlewares.apiKey
+	handlers.AnyAuth = rt.middlewares.anyAuth
 	return &handlers
 }
 
-func (app *TrieForms) startCommands(rt runtime) commands {
+func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
 	cmd.projects = projects.NewProjectCommandService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	cmd.apiKeys = keys.NewApiKeyCommandService(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
@@ -110,7 +142,7 @@ func (app *TrieForms) startCommands(rt runtime) commands {
 	return cmd
 }
 
-func (app *TrieForms) startQueries(rt runtime) queries {
+func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.projects = projects.NewQueryService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewApiKeyQueryService(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
@@ -118,7 +150,7 @@ func (app *TrieForms) startQueries(rt runtime) queries {
 	return q
 }
 
-func (app *TrieForms) startRepos(rt runtime) repos {
+func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.projects = projects.NewProjectRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = keys.NewApiKeyRepo(rt.repoQueries, rt.logger, rt.tracer)
@@ -126,29 +158,96 @@ func (app *TrieForms) startRepos(rt runtime) repos {
 	return r
 }
 
-func (app *TrieForms) startMiddlewares(rt runtime) middlewares {
-	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(app.idxClient, rt.repos.apiKeys, rt.repos.projects, rt.tracer)
+func (app *Informd) startMiddlewares(rt runtime) mws {
+	var mw mws
+
+	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
+		return app.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
+	}
+
+	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
+		return authz.WithSubject(ctx, &authz.UserSubject{
+			ID:    claims.Sub.ID,
+			Email: claims.Sub.Email,
+		}), nil
+	}
+
+	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+		if len(rawKey) < 11 {
+			return ctx, errors.New("invalid api key format")
+		}
+		prefix := rawKey[:11]
+
+		candidates, err := rt.repos.apiKeys.GetByPrefix(ctx, prefix)
+		if err != nil || len(candidates) == 0 {
+			return ctx, errors.New("invalid api key")
+		}
+
+		var matched *contracts.APIKey
+		for _, candidate := range candidates {
+			if bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)) == nil {
+				matched = &candidate
+				break
+			}
+		}
+		if matched == nil {
+			return ctx, errors.New("invalid api key")
+		}
+
+		project, err := rt.repos.projects.GetByID(ctx, matched.ProjectID)
+		if err != nil {
+			return ctx, errors.New("workspace not found")
+		}
+
+		return authz.WithProject(ctx, project), nil
+	}
+
+	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+	mw.jwt = authMW.JWT()
+	mw.apiKey = authMW.APIKey()
+	mw.anyAuth = authMW.AnyAuth()
+	mw.bodySize = middlewares.MaxBodySize(1 << 20)
+	mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
+	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
+	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
+	if err != nil {
+		errx.Must(err, "Failed to create collectors")
+	}
+	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	mw.cors = middlewares.CORS(middlewares.CORSConfig{
+		AllowedOrigins:   utils.SplitAndCleanCSV(app.Config.CorsAllowedOrigins),
+		AllowCredentials: true,
+	})
+	mw.realIP = middlewares.RealIP()
+	mw.recover = middlewares.Recover(rt.logger)
+	mw.timeout = middlewares.Timeout(60 * time.Second)
+	mw.ratelimit = middlewares.RateLimit(middlewares.RateLimitConfig{RPS: 400, Burst: 20,
+		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
+	})
 	return mw
 }
 
-func (app *TrieForms) startAsynq() asynqDeps {
+func (app *Informd) startAsynq() asynqDeps {
 	var err error
 	var deps asynqDeps
-	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{})
+	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{
+		RedisAddr:     app.Config.RedisAddr,
+		RedisPassword: app.Config.RedisPassword,
+		RedisDB:       app.Config.RedisDB,
+	})
 	if err != nil {
-		telemetry.Log().Fatal("failed to init Asynq", zap.Error(err))
+		errx.Must(err, "failed to init Asynq")
 	}
 	return deps
 }
 
-func (app *TrieForms) stopAsynq(deps asynqDeps) {
+func (app *Informd) stopAsynq(deps asynqDeps) {
 	if err := deps.inspector.Close(); err != nil {
-		telemetry.Log().Error("error closing the asynq inspector", zap.Error(err))
+		errx.Must(err, "error closing the asynq inspector")
 	}
 	deps.scheduler.Shutdown()
 	deps.server.Shutdown()
 	if err := deps.client.Close(); err != nil {
-		telemetry.Log().Error("error closing the asynq client", zap.Error(err))
+		errx.Must(err, "error closing the asynq client")
 	}
 }

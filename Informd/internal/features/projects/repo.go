@@ -1,11 +1,11 @@
 package projects
 
 import (
-	"TrieForms/internal/platform/database"
-	"TrieForms/internal/platform/database/sqlc"
-	"TrieForms/internal/shared/contracts"
-	"TrieForms/internal/shared/errx"
-	"TrieForms/internal/shared/ports"
+	"Informd/internal/platform/database"
+	"Informd/internal/platform/database/sqlc"
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/errx"
+	"Informd/internal/shared/ports"
 	"context"
 
 	"github.com/google/uuid"
@@ -41,7 +41,6 @@ func mapProjectFromDB(src *sqlc.Project) *contracts.Project {
 	return &contracts.Project{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
-		ScopeID:   src.ScopeID,
 		Name:      src.Name,
 		CreatedAt: src.CreatedAt,
 		UpdatedAt: src.UpdatedAt,
@@ -53,7 +52,6 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*cont
 	defer span.End()
 
 	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
-		ScopeID: toCreate.ScopeID,
 		ID:      toCreate.ID,
 		OwnerID: toCreate.OwnerID,
 		Name:    toCreate.Name,

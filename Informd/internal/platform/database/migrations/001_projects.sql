@@ -2,7 +2,6 @@
 CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     owner_id UUID NOT NULL,
-    scope_id UUID NOT NULL,
     name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -11,15 +11,9 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
-	"github.com/spf13/viper"
 )
 
-func WaitForDB(timeout time.Duration) (*pgxpool.Pool, error) {
-	dsn := viper.GetString("DATABASE_URL")
-	if dsn == "" {
-		log.Fatal("Couldn't get DATABASE_URL variable")
-	}
-
+func WaitForDB(timeout time.Duration, dsn string) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -77,16 +71,11 @@ func RunMigrations(pool *pgxpool.Pool, mPath string) error {
 	return nil
 }
 
-func WaitForRedis(timeout time.Duration) (*redis.Client, error) {
-	addr := viper.GetString("REDIS_ADDR")
-	if addr == "" {
-		log.Fatal("REDIS_ADDR variable not set")
-	}
-
+func WaitForRedis(timeout time.Duration, addr, password string, db int) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addr,
-		Password: viper.GetString("REDIS_PASSWORD"),
-		DB:       viper.GetInt("REDIS_DB"),
+		Password: password,
+		DB:       db,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

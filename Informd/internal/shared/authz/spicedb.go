@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"

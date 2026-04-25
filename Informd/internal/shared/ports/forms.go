@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"TrieForms/internal/shared/contracts"
+	"Informd/internal/shared/contracts"
 	"context"
 
 	"github.com/google/uuid"
