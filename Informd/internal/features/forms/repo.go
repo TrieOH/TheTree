@@ -6,6 +6,7 @@ import (
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
+	"Informd/internal/shared/xslices"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,8 +38,12 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapForm(src *sqlc.Form) *contracts.Form {
-	return &contracts.Form{
+func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "FormsRepo."+op)
+}
+
+func mapForm(src sqlc.Form) contracts.Form {
+	return contracts.Form{
 		ID:        src.ID,
 		ProjectID: src.ProjectID,
 		OwnerID:   src.OwnerID,
@@ -54,9 +59,8 @@ func mapForm(src *sqlc.Form) *contracts.Form {
 }
 
 func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contracts.Form, error) {
-	ctx, span := repo.tracer.Start(ctx, "FormsRepo.Create")
+	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
-
 	sqlcForm, err := repo.queries(ctx).CreateForm(ctx, sqlc.CreateFormParams{
 		ID:        toCreate.ID,
 		ProjectID: toCreate.ProjectID,
@@ -67,22 +71,15 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}
-
-	return mapForm(&sqlcForm), nil
+	return new(mapForm(sqlcForm)), nil
 }
 
 func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.Form, error) {
-	ctx, span := repo.tracer.Start(ctx, "FormsRepo.ListByProject")
+	ctx, span := repo.span(ctx, "ListByProject")
 	defer span.End()
-
 	sqlcForm, err := repo.queries(ctx).ListFormsByProject(ctx, projectID)
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}
-
-	out := make([]contracts.Form, 0, len(sqlcForm))
-	for _, form := range sqlcForm {
-		out = append(out, *mapForm(&form))
-	}
-	return out, nil
+	return xslices.MapSlice(sqlcForm, mapForm), nil
 }

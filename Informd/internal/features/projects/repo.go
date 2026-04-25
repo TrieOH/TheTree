@@ -6,6 +6,7 @@ import (
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
+	"Informd/internal/shared/xslices"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,8 +38,12 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapProject(src *sqlc.Project) *contracts.Project {
-	return &contracts.Project{
+func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "ProjectsRepo."+op)
+}
+
+func mapProject(src sqlc.Project) contracts.Project {
+	return contracts.Project{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
 		Name:      src.Name,
@@ -48,7 +53,7 @@ func mapProject(src *sqlc.Project) *contracts.Project {
 }
 
 func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.Create")
+	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
 
 	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
@@ -59,23 +64,21 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*cont
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
-
-	return mapProject(&sqlcProject), nil
+	return new(mapProject(sqlcProject)), nil
 }
 
 func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.GetByID")
+	ctx, span := repo.span(ctx, "GetByID")
 	defer span.End()
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByID(ctx, id)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
-
-	return mapProject(&sqlcProject), nil
+	return new(mapProject(sqlcProject)), nil
 }
 func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.GetByName")
+	ctx, span := repo.span(ctx, "GetByName")
 	defer span.End()
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByName(ctx, sqlc.GetProjectByNameParams{
@@ -85,28 +88,21 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
-
-	return mapProject(&sqlcProject), nil
+	return new(mapProject(sqlcProject)), nil
 }
 
 func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.List")
+	ctx, span := repo.span(ctx, "List")
 	defer span.End()
-
 	sqlcProjects, err := repo.queries(ctx).ListProjectsByOwner(ctx, ownerID)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
-
-	out := make([]contracts.Project, 0, len(sqlcProjects))
-	for _, project := range sqlcProjects {
-		out = append(out, *mapProject(&project))
-	}
-	return out, nil
+	return xslices.MapSlice(sqlcProjects, mapProject), nil
 }
 
 func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Project, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.ListByIDs")
+	ctx, span := repo.span(ctx, "ListByIDs")
 	defer span.End()
 
 	uuids := make([]uuid.UUID, 0, len(ids))
@@ -122,10 +118,5 @@ func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Proj
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
-
-	out := make([]contracts.Project, 0, len(sqlcProjects))
-	for _, project := range sqlcProjects {
-		out = append(out, *mapProject(&project))
-	}
-	return out, nil
+	return xslices.MapSlice(sqlcProjects, mapProject), nil
 }
