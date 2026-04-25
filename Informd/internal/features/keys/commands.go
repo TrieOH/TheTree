@@ -17,7 +17,7 @@ import (
 
 type CommandService struct {
 	apiKeys  ports.ApiKeysRepo
-	projects ports.ProjectsRepo
+	projects ports.NamespaceRepo
 	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
@@ -25,7 +25,7 @@ type CommandService struct {
 
 func NewCommands(
 	apiKeys ports.ApiKeysRepo,
-	projects ports.ProjectsRepo,
+	projects ports.NamespaceRepo,
 	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -39,7 +39,7 @@ func NewCommands(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, keyName string, projectID uuid.UUID) (rawKey string, ak *contracts.APIKey, err error) {
+func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey string, ak *contracts.APIKey, err error) {
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
 	defer span.End()
 
@@ -49,16 +49,10 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	var project *contracts.Project
-	project, err = s.projects.GetByID(ctx, projectID)
-	if err != nil {
-		return "", nil, err
-	}
-
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_key"),
-		authz.Resource("project", project.ID.String()),
+		authz.Resource("platform", "global"),
 	); err != nil {
 		return "", nil, err
 	}
@@ -75,7 +69,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string, projectID u
 		return "", nil, err
 	}
 
-	apiKey, err := contracts.NewAPIKey(project.ID, sub.ID, keyName, string(hash), prefix)
+	apiKey, err := contracts.NewAPIKey(sub.ID, keyName, string(hash), prefix)
 	if err != nil {
 		return "", nil, err
 	}

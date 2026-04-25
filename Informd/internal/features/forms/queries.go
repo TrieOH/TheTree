@@ -13,30 +13,30 @@ import (
 )
 
 type QueryService struct {
-	forms    ports.FormsRepo
-	projects ports.ProjectsRepo
-	az       *v1.Client
-	tx       database.TxRunner
-	tracer   trace.Tracer
+	forms      ports.FormsRepo
+	namespaces ports.NamespaceRepo
+	az         *v1.Client
+	tx         database.TxRunner
+	tracer     trace.Tracer
 }
 
 func NewQueries(
 	forms ports.FormsRepo,
-	projects ports.ProjectsRepo,
+	namespaces ports.NamespaceRepo,
 	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
-		forms:    forms,
-		projects: projects,
-		az:       az,
-		tx:       tx,
-		tracer:   tracer,
+		forms:      forms,
+		namespaces: namespaces,
+		az:         az,
+		tx:         tx,
+		tracer:     tracer,
 	}
 }
 
-func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (forms []contracts.Form, err error) {
+func (s *QueryService) List(ctx context.Context, namespaceID *uuid.UUID) (forms []contracts.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.List")
 	defer span.End()
 
@@ -46,15 +46,32 @@ func (s *QueryService) List(ctx context.Context, projectID uuid.UUID) (forms []c
 		return nil, err
 	}
 
+	if namespaceID == nil {
+		if err = authz.Require(ctx, s.az,
+			authz.Subject("user", sub.ID),
+			authz.Permission("list_forms"),
+			authz.Resource("user", sub.ID.String()),
+		); err != nil {
+			return nil, err
+		}
+
+		forms, err = s.forms.List(ctx, sub.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return forms, nil
+	}
+
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("list_forms"),
-		authz.Resource("project", projectID.String()),
+		authz.Resource("namespace", namespaceID.String()),
 	); err != nil {
 		return nil, err
 	}
 
-	forms, err = s.forms.ListByProject(ctx, projectID)
+	forms, err = s.forms.ListByNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}

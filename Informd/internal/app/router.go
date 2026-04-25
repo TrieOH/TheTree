@@ -3,7 +3,7 @@ package app
 import (
 	"Informd/internal/features/forms"
 	"Informd/internal/features/keys"
-	"Informd/internal/features/projects"
+	"Informd/internal/features/namespaces"
 	_ "Informd/internal/shared/contracts"
 	"net/http"
 
@@ -16,7 +16,7 @@ import (
 )
 
 type Deps struct {
-	ProjectsHandler *projects.Handler
+	ProjectsHandler *namespaces.Handler
 	ApiKeysHandler  *keys.Handler
 	FormsHandler    *forms.Handler
 	AsynqmonHandler http.Handler
@@ -92,7 +92,7 @@ func CreateRouter(deps *Deps) http.Handler {
 	r.Handle("/metrics", promhttp.Handler())
 	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 
-	projects.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
+	namespaces.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
 	keys.RegisterRoutes(r, deps.ApiKeysHandler, deps.Jwt)
 	forms.RegisterRoutes(r, deps.FormsHandler, deps.Jwt)
 

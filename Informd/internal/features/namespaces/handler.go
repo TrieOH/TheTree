@@ -1,4 +1,4 @@
-package projects
+package namespaces
 
 import (
 	"net/http"
@@ -32,65 +32,65 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Get("/projects", h.List)
-		r.Post("/projects", h.Create)
+		r.Get("/namespaces", h.List)
+		r.Post("/namespaces", h.Create)
 	})
 }
 
-type CreateProjectRequest struct {
+type CreateNamespaceRequest struct {
 	Name string `json:"name"`
 }
 
 // Create godoc
-// @Summary Create a project
-// @Description Creates a new project for the authenticated user
-// @Tags projects
+// @Summary Create a namespace
+// @Description Creates a new namespace for the authenticated user
+// @Tags namespaces
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param request body CreateProjectRequest true "Project details"
-// @Success 201 {object} contracts.Project "Project created successfully"
+// @Param request body CreateNamespaceRequest true "Project details"
+// @Success 201 {object} contracts.Namespace "Namespace created successfully"
 // @Failure 400 {object} contracts.ErrorResponse
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects [post]
+// @Router /namespaces [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 
-	var payload CreateProjectRequest
+	var payload CreateNamespaceRequest
 	if err := bind.Body(req).Bind(&payload); err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	project, err := h.commands.Create(r.Context(), payload.Name)
+	namespace, err := h.commands.Create(r.Context(), payload.Name)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	fun.Created().WithData(project).Send(w)
+	fun.Created().WithData(namespace).Send(w)
 }
 
 // List godoc
-// @Summary List projects
-// @Description Lists all projects owned by the authenticated user
-// @Tags projects
+// @Summary List namespaces
+// @Description Lists all namespaces owned by the authenticated user
+// @Tags namespaces
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Success 200 {array} contracts.Project "Projects retrieved successfully"
+// @Success 200 {array} contracts.Namespace "Namespaces retrieved successfully"
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects [get]
+// @Router /namespaces [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	projects, err := h.queries.List(r.Context())
+	namespaces, err := h.queries.List(r.Context())
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	fun.OK().WithData(projects).Send(w)
+	fun.OK().WithData(namespaces).Send(w)
 }

@@ -3,7 +3,7 @@ package app
 import (
 	"Informd/internal/features/forms"
 	"Informd/internal/features/keys"
-	"Informd/internal/features/projects"
+	"Informd/internal/features/namespaces"
 	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
 	"Informd/internal/platform/queue"
@@ -44,21 +44,21 @@ type runtime struct {
 }
 
 type commands struct {
-	projects *projects.CommandService
-	apiKeys  *keys.CommandService
-	forms    *forms.CommandService
+	namespaces *namespaces.CommandService
+	apiKeys    *keys.CommandService
+	forms      *forms.CommandService
 }
 
 type queries struct {
-	projects *projects.QueryService
-	apiKeys  *keys.QueryService
-	forms    *forms.QueryService
+	namespaces *namespaces.QueryService
+	apiKeys    *keys.QueryService
+	forms      *forms.QueryService
 }
 
 type repos struct {
-	projects ports.ProjectsRepo
-	apiKeys  ports.ApiKeysRepo
-	forms    ports.FormsRepo
+	namespaces ports.NamespaceRepo
+	apiKeys    ports.ApiKeysRepo
+	forms      ports.FormsRepo
 }
 
 type mws struct {
@@ -115,7 +115,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 			DB:       app.Config.RedisDB,
 		},
 	})
-	handlers.ProjectsHandler = projects.NewHandler(rt.commands.projects, rt.queries.projects)
+	handlers.ProjectsHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.ApiKeysHandler = keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewHandler(rt.commands.forms, rt.queries.forms)
 
@@ -137,23 +137,23 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 
 func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
-	cmd.projects = projects.NewCommands(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return cmd
 }
 
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
-	q.projects = projects.NewQueries(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }
 
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
-	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
@@ -194,13 +194,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 		if matched == nil {
 			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
-
-		project, err := rt.repos.projects.GetByID(ctx, matched.ProjectID)
-		if err != nil {
-			return ctx, fun.ErrUnauthorized("workspace not found")
-		}
-
-		return authz.WithProject(ctx, project), nil
+		return authz.WithSubject(ctx, &authz.UserSubject{ID: matched.OwnerID}), nil
 	}
 
 	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)

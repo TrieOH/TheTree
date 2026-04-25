@@ -1,4 +1,4 @@
-package projects
+package namespaces
 
 import (
 	"Informd/internal/platform/database"
@@ -12,28 +12,28 @@ import (
 )
 
 type QueryService struct {
-	projects ports.ProjectsRepo
-	az       *v1.Client
-	tx       database.TxRunner
-	tracer   trace.Tracer
+	namespaces ports.NamespaceRepo
+	az         *v1.Client
+	tx         database.TxRunner
+	tracer     trace.Tracer
 }
 
 func NewQueries(
-	projects ports.ProjectsRepo,
+	namespaces ports.NamespaceRepo,
 	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
-		projects: projects,
-		az:       az,
-		tx:       tx,
-		tracer:   tracer,
+		namespaces: namespaces,
+		az:         az,
+		tx:         tx,
+		tracer:     tracer,
 	}
 }
 
-func (s *QueryService) List(ctx context.Context) (ws []contracts.Project, err error) {
-	ctx, span := s.tracer.Start(ctx, "ProjectService.List")
+func (s *QueryService) List(ctx context.Context) (ws []contracts.Namespace, err error) {
+	ctx, span := s.tracer.Start(ctx, "NamespaceService.List")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -45,15 +45,15 @@ func (s *QueryService) List(ctx context.Context) (ws []contracts.Project, err er
 	if ids, err = authz.Lookup(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("view"),
-		authz.ResourceType("project"),
+		authz.ResourceType("namespace"),
 	); err != nil {
 		return nil, err
 	}
 
-	var projects []contracts.Project
-	if projects, err = s.projects.ListByIDs(ctx, ids); err != nil {
+	var namespaces []contracts.Namespace
+	if namespaces, err = s.namespaces.ListByIDs(ctx, ids); err != nil {
 		return nil, err
 	}
 
-	return projects, nil
+	return namespaces, nil
 }

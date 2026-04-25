@@ -44,17 +44,16 @@ func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.S
 
 func mapForm(src sqlc.Form) contracts.Form {
 	return contracts.Form{
-		ID:        src.ID,
-		ProjectID: src.ProjectID,
-		OwnerID:   src.OwnerID,
-		Title:     src.Title,
-		Status:    contracts.FormStatus(src.Status),
-		//CurrentVersionID: src.CurrentVersionID,
-		CreatedAt:  src.CreatedAt,
-		UpdatedAt:  src.UpdatedAt,
-		OpenedAt:   src.OpenedAt,
-		ClosedAt:   src.ClosedAt,
-		ArchivedAt: src.ArchivedAt,
+		ID:          src.ID,
+		NamespaceID: src.NamespaceID,
+		OwnerID:     src.OwnerID,
+		Name:        src.Name,
+		Status:      contracts.FormStatus(src.Status),
+		OpenedAt:    src.OpenedAt,
+		ClosedAt:    src.ClosedAt,
+		ArchivedAt:  src.ArchivedAt,
+		CreatedAt:   src.CreatedAt,
+		UpdatedAt:   src.UpdatedAt,
 	}
 }
 
@@ -62,11 +61,10 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).CreateForm(ctx, sqlc.CreateFormParams{
-		ID:        toCreate.ID,
-		ProjectID: toCreate.ProjectID,
-		OwnerID:   toCreate.OwnerID,
-		Title:     toCreate.Title,
-		Status:    string(toCreate.Status),
+		NamespaceID: toCreate.NamespaceID,
+		OwnerID:     toCreate.OwnerID,
+		Name:        toCreate.Name,
+		Status:      string(toCreate.Status),
 	})
 	if err != nil {
 		return nil, errx.DB(err, "form")
@@ -74,10 +72,20 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 	return new(mapForm(sqlcForm)), nil
 }
 
-func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.Form, error) {
+func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form, error) {
+	ctx, span := repo.span(ctx, "List")
+	defer span.End()
+	sqlcForm, err := repo.queries(ctx).ListFormsByUser(ctx, ownerID)
+	if err != nil {
+		return nil, errx.DB(err, "form")
+	}
+	return xslices.MapSlice(sqlcForm, mapForm), nil
+}
+
+func (repo *repo) ListByNamespace(ctx context.Context, namespaceID *uuid.UUID) ([]contracts.Form, error) {
 	ctx, span := repo.span(ctx, "ListByProject")
 	defer span.End()
-	sqlcForm, err := repo.queries(ctx).ListFormsByProject(ctx, projectID)
+	sqlcForm, err := repo.queries(ctx).ListFormsByNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}

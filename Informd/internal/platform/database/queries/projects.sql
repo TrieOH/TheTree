@@ -1,26 +1,26 @@
--- name: CreateProject :one
-INSERT INTO projects (id, owner_id, name)
-VALUES ($1, $2, $3)
+-- name: CreateNamespace :one
+INSERT INTO namespaces (owner_id, name)
+VALUES ($1, $2)
     RETURNING *;
 
--- name: GetProjectByID :one
+-- name: GetNamespaceByID :one
 SELECT *
-FROM projects
+FROM namespaces
 WHERE id = $1;
 
--- name: GetProjectByName :one
+-- name: GetNamespaceByName :one
 SELECT *
-FROM projects
+FROM namespaces
 WHERE owner_id = $1 AND name = $2;
 
--- name: ListProjectsByOwner :many
+-- name: ListNamespaceByOwner :many
 SELECT *
-FROM projects
+FROM namespaces
 WHERE owner_id = $1
 ORDER BY created_at DESC;
 
--- name: ListProjectsByIDs :many
+-- name: ListNamespaceByIDs :many
 SELECT *
-FROM projects
+FROM namespaces
 WHERE id = ANY($1::uuid[])
 ORDER BY created_at DESC;

@@ -1,9 +1,14 @@
 -- name: CreateForm :one
-INSERT INTO forms (id, project_id, owner_id, title, status)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO forms (namespace_id, owner_id, name, status)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
--- name: ListFormsByProject :many
+-- name: ListFormsByUser :many
 SELECT * FROM forms
-WHERE project_id = $1
+WHERE owner_id = $1 AND namespace_id IS NULL
+ORDER BY created_at DESC;
+
+-- name: ListFormsByNamespace :many
+SELECT * FROM forms
+WHERE namespace_id = $1
 ORDER BY created_at DESC;

@@ -1,4 +1,4 @@
-package projects
+package namespaces
 
 import (
 	"Informd/internal/platform/database"
@@ -12,14 +12,14 @@ import (
 )
 
 type CommandService struct {
-	projects ports.ProjectsRepo
+	projects ports.NamespaceRepo
 	az       *v1.Client
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
 func NewCommands(
-	projects ports.ProjectsRepo,
+	projects ports.NamespaceRepo,
 	az *v1.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -32,8 +32,8 @@ func NewCommands(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts.Project, err error) {
-	ctx, span := s.tracer.Start(ctx, "ProjectService.Create")
+func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts.Namespace, err error) {
+	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -42,21 +42,21 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts
 		return nil, err
 	}
 
-	var project *contracts.Project
-	project, err = contracts.NewProject(sub.ID, name)
+	var project *contracts.Namespace
+	project, err = contracts.NewNamespace(sub.ID, name)
 	if err != nil {
 		return nil, err
 	}
 
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
-		authz.Permission("create_project"),
+		authz.Permission("create_namespace"),
 		authz.Resource("platform", "global"),
 	); err != nil {
 		return nil, err
 	}
 
-	var created *contracts.Project
+	var created *contracts.Namespace
 	created, err = s.projects.Create(ctx, *project)
 	if err != nil {
 		return nil, err

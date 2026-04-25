@@ -32,8 +32,10 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Get("/projects/{project_id}/forms", h.List)
-		r.Post("/projects/{project_id}/forms", h.Create)
+		r.Get("/forms", h.List)
+		r.Post("/forms", h.Create)
+		r.Get("/namespaces/{namespace_id}/forms", h.ListFromWorkspace)
+		r.Post("/namespaces/{namespace_id}/forms", h.CreateInWorkspace)
 	})
 }
 
@@ -43,24 +45,57 @@ type CreateFormRequest struct {
 
 // Create godoc
 // @Summary Create a form
-// @Description Creates a form in the given project.
+// @Description Creates a form not namespaced.
 // @Tags forms
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param project_id path string true "Project ID"
 // @Param request body CreateFormRequest true "Form title"
 // @Success 201 {object} contracts.Form "Form created successfully"
 // @Failure 400 {object} contracts.ErrorResponse
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects/{project_id}/forms [post]
+// @Router /forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 
-	projectID, err := req.Path("project_id").UUID()
+	var payload CreateFormRequest
+	if err := bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	form, err := h.commands.Create(r.Context(), payload.Title, nil)
+	if err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	fun.Created().WithData(form).Send(w)
+}
+
+// CreateInWorkspace godoc
+// @Summary Create a form
+// @Description Creates a form in the given namespace.
+// @Tags forms
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param namespace_id path string true "Namespace ID"
+// @Param request body CreateFormRequest true "Form title"
+// @Success 201 {object} contracts.Form "Form created successfully"
+// @Failure 400 {object} contracts.ErrorResponse
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
+// @Router /namespaces/{namespace_id}/forms [post]
+func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+
+	namespaceID, err := req.Path("namespace_id").UUID()
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
@@ -72,7 +107,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form, err := h.commands.Create(r.Context(), payload.Title, projectID)
+	form, err := h.commands.Create(r.Context(), payload.Title, &namespaceID)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
@@ -82,28 +117,51 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // List godoc
-// @Summary List Forms
-// @Description Lists all Forms for the given project
+// @Summary Lists forms
+// @Description Lists all forms not namespaced
 // @Tags forms
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param project_id path string true "Project ID"
 // @Success 200 {array} contracts.Form "Forms retrieved successfully"
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects/{project_id}/forms [get]
+// @Router /forms [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	req := fun.From(r)
-	projectID, err := req.Path("project_id").UUID()
+	forms, err := h.queries.List(r.Context(), nil)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	forms, err := h.queries.List(r.Context(), projectID)
+	fun.OK().WithData(forms).Send(w)
+}
+
+// ListFromWorkspace godoc
+// @Summary Lists forms
+// @Description Lists all Forms for the given namespace
+// @Tags forms
+// @Accept json
+// @Produce json
+// @Param Cookie header string true "Cookie: access_token=xxx"
+// @Security Cookie
+// @Param namespace_id path string true "Namespace ID"
+// @Success 200 {array} contracts.Form "Forms retrieved successfully"
+// @Failure 401 {object} contracts.ErrorResponse
+// @Failure 404 {object} contracts.ErrorResponse
+// @Failure 500 {object} contracts.ErrorResponse
+// @Router /namespaces/{namespace_id}/forms [get]
+func (h *Handler) ListFromWorkspace(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+	namespaceID, err := req.Path("namespace_id").UUID()
+	if err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	forms, err := h.queries.List(r.Context(), &namespaceID)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return

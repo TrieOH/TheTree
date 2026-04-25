@@ -1,4 +1,4 @@
-package projects
+package namespaces
 
 import (
 	"Informd/internal/platform/database"
@@ -21,9 +21,9 @@ type repo struct {
 	tracer trace.Tracer
 }
 
-var _ ports.ProjectsRepo = (*repo)(nil)
+var _ ports.NamespaceRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectsRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.NamespaceRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -42,8 +42,8 @@ func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.S
 	return repo.tracer.Start(ctx, "ProjectsRepo."+op)
 }
 
-func mapProject(src sqlc.Project) contracts.Project {
-	return contracts.Project{
+func mapProject(src sqlc.Namespace) contracts.Namespace {
+	return contracts.Namespace{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
 		Name:      src.Name,
@@ -52,12 +52,11 @@ func mapProject(src sqlc.Project) contracts.Project {
 	}
 }
 
-func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error) {
+func (repo *repo) Create(ctx context.Context, toCreate contracts.Namespace) (*contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
-		ID:      toCreate.ID,
+	sqlcProject, err := repo.queries(ctx).CreateNamespace(ctx, sqlc.CreateNamespaceParams{
 		OwnerID: toCreate.OwnerID,
 		Name:    toCreate.Name,
 	})
@@ -67,21 +66,21 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*cont
 	return new(mapProject(sqlcProject)), nil
 }
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project, error) {
+func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "GetByID")
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).GetProjectByID(ctx, id)
+	sqlcProject, err := repo.queries(ctx).GetNamespaceByID(ctx, id)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
 	return new(mapProject(sqlcProject)), nil
 }
-func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Project, error) {
+func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "GetByName")
 	defer span.End()
 
-	sqlcProject, err := repo.queries(ctx).GetProjectByName(ctx, sqlc.GetProjectByNameParams{
+	sqlcProject, err := repo.queries(ctx).GetNamespaceByName(ctx, sqlc.GetNamespaceByNameParams{
 		OwnerID: ownerID,
 		Name:    name,
 	})
@@ -91,30 +90,21 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 	return new(mapProject(sqlcProject)), nil
 }
 
-func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
+func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "List")
 	defer span.End()
-	sqlcProjects, err := repo.queries(ctx).ListProjectsByOwner(ctx, ownerID)
+	sqlcProjects, err := repo.queries(ctx).ListNamespaceByOwner(ctx, ownerID)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}
 	return xslices.MapSlice(sqlcProjects, mapProject), nil
 }
 
-func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Project, error) {
+func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "ListByIDs")
 	defer span.End()
-
-	uuids := make([]uuid.UUID, 0, len(ids))
-	for _, id := range ids {
-		parsed, err := uuid.Parse(id)
-		if err != nil {
-			continue
-		}
-		uuids = append(uuids, parsed)
-	}
-
-	sqlcProjects, err := repo.queries(ctx).ListProjectsByIDs(ctx, uuids)
+	uuids := xslices.FilterMap(ids, uuid.Parse)
+	sqlcProjects, err := repo.queries(ctx).ListNamespaceByIDs(ctx, uuids)
 	if err != nil {
 		return nil, errx.DB(err, "project")
 	}

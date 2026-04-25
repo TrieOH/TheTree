@@ -1,6 +1,8 @@
 package keys
 
 import (
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/xslices"
 	"net/http"
 	"time"
 
@@ -34,9 +36,9 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Get("/projects/{project_id}/keys", h.List)
-		r.Post("/projects/{project_id}/keys", h.Create)
-		r.Delete("/projects/{project_id}/keys", h.Revoke)
+		r.Get("/api-keys", h.List)
+		r.Post("/api-keys", h.Create)
+		r.Delete("/api-keys/{id}", h.Revoke)
 	})
 }
 
@@ -72,23 +74,16 @@ type CreateAPIKeyResponse struct {
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects/{project_id}/keys [post]
+// @Router /api-keys [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
-	projectID, err := req.Path("project_id").UUID()
-	if err != nil {
-		fun.Error(err).Send(w)
-		return
-	}
-
 	var payload CreateAPIKeyRequest
-	if err = bind.Body(req).Bind(&payload); err != nil {
+	if err := bind.Body(req).Bind(&payload); err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	rawKey, apiKey, err := h.commands.Create(r.Context(), payload.Name, projectID)
+	rawKey, apiKey, err := h.commands.Create(r.Context(), payload.Name)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
@@ -119,32 +114,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects/{project_id}/keys [get]
+// @Router /api-keys [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	req := fun.From(r)
-
-	projectID, err := req.Path("project_id").UUID()
+	keys, err := h.queries.List(r.Context())
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	keys, err := h.queries.List(r.Context(), projectID)
-	if err != nil {
-		fun.Error(err).Send(w)
-		return
-	}
-
-	out := make([]APIKeyResponse, 0, len(keys))
-	for _, k := range keys {
-		out = append(out, APIKeyResponse{
+	out := xslices.MapSlice(keys, func(k contracts.APIKey) APIKeyResponse {
+		return APIKeyResponse{
 			ID:        k.ID,
 			Name:      k.Name,
 			Prefix:    k.KeyPrefix,
 			CreatedAt: k.CreatedAt,
 			RevokedAt: k.RevokedAt,
-		})
-	}
+		}
+	})
 
 	fun.OK().WithData(out).Send(w)
 }
@@ -164,7 +150,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /projects/{project_id}/keys/{id} [delete]
+// @Router /api-keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 
@@ -174,7 +160,7 @@ func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.commands.RevokeAPIKey(r.Context(), keyID); err != nil {
+	if err = h.commands.RevokeAPIKey(r.Context(), keyID); err != nil {
 		fun.Error(err).Send(w)
 		return
 	}

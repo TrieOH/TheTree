@@ -13,30 +13,30 @@ import (
 )
 
 type CommandService struct {
-	forms    ports.FormsRepo
-	projects ports.ProjectsRepo
-	az       *authzed.Client
-	tx       database.TxRunner
-	tracer   trace.Tracer
+	forms      ports.FormsRepo
+	namespaces ports.NamespaceRepo
+	az         *authzed.Client
+	tx         database.TxRunner
+	tracer     trace.Tracer
 }
 
 func NewCommands(
 	forms ports.FormsRepo,
-	projects ports.ProjectsRepo,
+	namespaces ports.NamespaceRepo,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
-		forms:    forms,
-		projects: projects,
-		az:       az,
-		tx:       tx,
-		tracer:   tracer,
+		forms:      forms,
+		namespaces: namespaces,
+		az:         az,
+		tx:         tx,
+		tracer:     tracer,
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, title string, projectID uuid.UUID) (created *contracts.Form, err error) {
+func (s *CommandService) Create(ctx context.Context, title string, namespaceID *uuid.UUID) (created *contracts.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 
@@ -46,8 +46,31 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 		return nil, err
 	}
 
-	var project *contracts.Project
-	project, err = s.projects.GetByID(ctx, projectID)
+	if namespaceID == nil {
+		if err = authz.Require(ctx, s.az,
+			authz.Subject("user", sub.ID),
+			authz.Permission("create_form"),
+			authz.Resource("user", sub.ID.String()),
+		); err != nil {
+			return nil, err
+		}
+
+		var form *contracts.Form
+		form, err = contracts.NewForm(namespaceID, sub.ID, title)
+		if err != nil {
+			return nil, err
+		}
+
+		created, err = s.forms.Create(ctx, *form)
+		if err != nil {
+			return nil, err
+		}
+
+		return created, nil
+	}
+
+	var namespace *contracts.Namespace
+	namespace, err = s.namespaces.GetByID(ctx, *namespaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,13 +78,13 @@ func (s *CommandService) Create(ctx context.Context, title string, projectID uui
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_form"),
-		authz.Resource("project", project.ID.String()),
+		authz.Resource("namespace", namespace.ID.String()),
 	); err != nil {
 		return nil, err
 	}
 
 	var form *contracts.Form
-	form, err = contracts.NewForm(project.ID, sub.ID, title)
+	form, err = contracts.NewForm(&namespace.ID, sub.ID, title)
 	if err != nil {
 		return nil, err
 	}

@@ -46,7 +46,6 @@ func mapApiKey(src sqlc.ApiKey) contracts.APIKey {
 	return contracts.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
-		ProjectID: src.ProjectID,
 		Name:      src.Name,
 		KeyHash:   src.KeyHash,
 		KeyPrefix: src.KeyPrefix,
@@ -59,9 +58,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
 	sqlcApiKey, err := repo.queries(ctx).CreateAPIKey(ctx, sqlc.CreateAPIKeyParams{
-		ID:        toCreate.ID,
 		OwnerID:   toCreate.OwnerID,
-		ProjectID: toCreate.ProjectID,
 		Name:      toCreate.Name,
 		KeyHash:   toCreate.KeyHash,
 		KeyPrefix: toCreate.KeyPrefix,
@@ -82,10 +79,10 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.A
 	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
 }
 
-func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.APIKey, error) {
+func (repo *repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]contracts.APIKey, error) {
 	ctx, span := repo.span(ctx, "ListByProject")
 	defer span.End()
-	sqlcApiKeys, err := repo.queries(ctx).ListAPIKeysByProject(ctx, projectID)
+	sqlcApiKeys, err := repo.queries(ctx).ListAPIKeys(ctx, ownerID)
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}

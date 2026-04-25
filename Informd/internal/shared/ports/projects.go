@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type ProjectsRepo interface {
-	Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project, error)
-	GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Project, error)
-	List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error)
-	ListByIDs(ctx context.Context, ids []string) ([]contracts.Project, error)
+type NamespaceRepo interface {
+	Create(ctx context.Context, toCreate contracts.Namespace) (*contracts.Namespace, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Namespace, error)
+	GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Namespace, error)
+	List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Namespace, error)
+	ListByIDs(ctx context.Context, ids []string) ([]contracts.Namespace, error)
 }
