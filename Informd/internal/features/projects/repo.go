@@ -22,7 +22,7 @@ type repo struct {
 
 var _ ports.ProjectsRepo = (*repo)(nil)
 
-func NewProjectRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectsRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectsRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -37,7 +37,7 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapProjectFromDB(src *sqlc.Project) *contracts.Project {
+func mapProject(src *sqlc.Project) *contracts.Project {
 	return &contracts.Project{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -60,7 +60,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*cont
 		return nil, errx.DB(err, "project")
 	}
 
-	return mapProjectFromDB(&sqlcProject), nil
+	return mapProject(&sqlcProject), nil
 }
 
 func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project, error) {
@@ -72,7 +72,7 @@ func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project
 		return nil, errx.DB(err, "project")
 	}
 
-	return mapProjectFromDB(&sqlcProject), nil
+	return mapProject(&sqlcProject), nil
 }
 func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProjectsRepo.GetByName")
@@ -86,7 +86,7 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 		return nil, errx.DB(err, "project")
 	}
 
-	return mapProjectFromDB(&sqlcProject), nil
+	return mapProject(&sqlcProject), nil
 }
 
 func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
@@ -100,7 +100,7 @@ func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Proj
 
 	out := make([]contracts.Project, 0, len(sqlcProjects))
 	for _, project := range sqlcProjects {
-		out = append(out, *mapProjectFromDB(&project))
+		out = append(out, *mapProject(&project))
 	}
 	return out, nil
 }
@@ -125,7 +125,7 @@ func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Proj
 
 	out := make([]contracts.Project, 0, len(sqlcProjects))
 	for _, project := range sqlcProjects {
-		out = append(out, *mapProjectFromDB(&project))
+		out = append(out, *mapProject(&project))
 	}
 	return out, nil
 }

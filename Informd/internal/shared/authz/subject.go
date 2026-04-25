@@ -25,22 +25,22 @@ type UserSubject struct {
 func GetSubjectFromToken(token *jwt.Token) (*UserSubject, error) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fun.NewError("invalid token claims").BadRequest()
+		return nil, fun.ErrBadRequest("invalid token claims")
 	}
 
 	subInterface, exists := claims["sub"]
 	if !exists {
-		return nil, fun.NewError("sub claims not found").NotFound()
+		return nil, fun.ErrNotFound("sub claims not found")
 	}
 
 	subBytes, err := json.Marshal(subInterface)
 	if err != nil {
-		return nil, fun.NewError("sub marshal failed").WithErr(err).Internal()
+		return nil, fun.Err("sub marshal failed").WithErr(err).Internal()
 	}
 
 	var userSubject UserSubject
 	if err = json.Unmarshal(subBytes, &userSubject); err != nil {
-		return nil, fun.NewError("sub unmarshal failed").WithErr(err).Internal()
+		return nil, fun.Err("sub unmarshal failed").WithErr(err).Internal()
 	}
 
 	return &userSubject, nil
@@ -57,12 +57,12 @@ func WithSubject(ctx context.Context, subject *UserSubject) context.Context {
 func RequireSubject(ctx context.Context) (*UserSubject, error) {
 	val := ctx.Value(UserContextKey)
 	if val == nil {
-		return nil, fun.NewError("subject not found in context").NotFound()
+		return nil, fun.ErrNotFound("subject not found in context")
 	}
 
 	u, ok := val.(*UserSubject)
 	if !ok {
-		return nil, fun.NewErrorf("invalid subject type, was: %T", val).Internal()
+		return nil, fun.Errf("invalid subject type, was: %T", val).Internal()
 	}
 
 	return u, nil

@@ -20,7 +20,7 @@ type QueryService struct {
 	tracer   trace.Tracer
 }
 
-func NewFormQueryService(
+func NewQueries(
 	forms ports.FormsRepo,
 	projects ports.ProjectsRepo,
 	az *v1.Client,

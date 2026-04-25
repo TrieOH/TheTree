@@ -7,6 +7,7 @@ import (
 	_ "Informd/internal/shared/contracts"
 	"net/http"
 
+	"github.com/MintzyG/FastUtilitiesNet/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -32,6 +33,8 @@ type Deps struct {
 	Jwt       func(http.Handler) http.Handler
 	ApiKey    func(http.Handler) http.Handler
 	AnyAuth   func(http.Handler) http.Handler
+
+	AppName string
 }
 
 // CreateRouter godoc
@@ -92,6 +95,8 @@ func CreateRouter(deps *Deps) http.Handler {
 	projects.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
 	keys.RegisterRoutes(r, deps.ApiKeysHandler, deps.Jwt)
 	forms.RegisterRoutes(r, deps.FormsHandler, deps.Jwt)
+
+	r.Get("/health", handlers.Health(deps.AppName).Handle)
 
 	return otelhttp.NewHandler(r, "http.server")
 }

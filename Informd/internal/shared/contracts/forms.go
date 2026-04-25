@@ -33,7 +33,7 @@ type Form struct {
 func NewForm(projectID, ownerID uuid.UUID, title string) (*Form, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fun.NewErrorf("error generating uuid for form: %s", err.Error()).Internal()
+		return nil, fun.Errf("error generating uuid for form: %s", err.Error()).Internal()
 	}
 
 	f := &Form{

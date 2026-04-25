@@ -2,7 +2,6 @@ package authz
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 
@@ -27,7 +26,7 @@ func parseRel(s string) (*pb.Relationship, error) {
 	hashIdx := strings.Index(s, "#")
 	atIdx := strings.Index(s, "@")
 	if hashIdx < 0 || atIdx < 0 || atIdx < hashIdx {
-		return nil, fmt.Errorf("invalid rel %q: expected resource:id#relation@subject:id", s)
+		return nil, fun.Errf("invalid rel %q: expected resource:id#relation@subject:id", s).Internal()
 	}
 
 	resParts := strings.SplitN(s[:hashIdx], ":", 2)
@@ -35,7 +34,7 @@ func parseRel(s string) (*pb.Relationship, error) {
 	relation := s[hashIdx+1 : atIdx]
 
 	if len(resParts) != 2 || len(subParts) != 2 || relation == "" {
-		return nil, fmt.Errorf("invalid rel %q: malformed segments", s)
+		return nil, fun.Errf("invalid rel %q: malformed segments", s).Internal()
 	}
 
 	return &pb.Relationship{
@@ -79,7 +78,7 @@ func Can(ctx context.Context, client *v1.Client, subject, permission, resource s
 		Subject:    &pb.SubjectReference{Object: &pb.ObjectReference{ObjectType: subType, ObjectId: subID}},
 	})
 	if err != nil {
-		return false, fmt.Errorf("authz check: %w", err)
+		return false, fun.Errf("authz check: %w", err).Internal()
 	}
 	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION, nil
 }
@@ -90,7 +89,7 @@ func Require(ctx context.Context, client *v1.Client, subject, permission, resour
 		return err
 	}
 	if !allowed {
-		return fun.NewError("insufficient permissions").Forbidden()
+		return fun.ErrForbidden("insufficient permissions")
 	}
 	return nil
 }
@@ -146,7 +145,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("authz lookup: %w", err)
+		return nil, fun.Errf("authz lookup: %w", err).Internal()
 	}
 
 	var ids []string
@@ -156,7 +155,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("authz lookup stream: %w", err)
+			return nil, fun.Errf("authz lookup stream: %w", err).Internal()
 		}
 		ids = append(ids, resp.ResourceObjectId)
 	}
@@ -173,7 +172,7 @@ func Expand(ctx context.Context, client *v1.Client, permission, resource string)
 		Permission: permission,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("authz expand: %w", err)
+		return nil, fun.Errf("authz expand: %w", err).Internal()
 	}
 
 	var subjects []string

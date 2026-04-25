@@ -22,7 +22,7 @@ type repo struct {
 
 var _ ports.FormsRepo = (*repo)(nil)
 
-func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -37,7 +37,7 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapFormFromDB(src *sqlc.Form) *contracts.Form {
+func mapForm(src *sqlc.Form) *contracts.Form {
 	return &contracts.Form{
 		ID:        src.ID,
 		ProjectID: src.ProjectID,
@@ -68,7 +68,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 		return nil, errx.DB(err, "form")
 	}
 
-	return mapFormFromDB(&sqlcForm), nil
+	return mapForm(&sqlcForm), nil
 }
 
 func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.Form, error) {
@@ -82,7 +82,7 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]con
 
 	out := make([]contracts.Form, 0, len(sqlcForm))
 	for _, form := range sqlcForm {
-		out = append(out, *mapFormFromDB(&form))
+		out = append(out, *mapForm(&form))
 	}
 	return out, nil
 }

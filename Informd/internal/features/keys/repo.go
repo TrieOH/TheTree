@@ -22,7 +22,7 @@ type repo struct {
 
 var _ ports.ApiKeysRepo = (*repo)(nil)
 
-func NewApiKeyRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeysRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeysRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -37,7 +37,7 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapApiKeyFromDB(src *sqlc.ApiKey) *contracts.APIKey {
+func mapApiKey(src *sqlc.ApiKey) *contracts.APIKey {
 	return &contracts.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -66,7 +66,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 		return nil, errx.DB(err, "api key")
 	}
 
-	return mapApiKeyFromDB(&sqlcApiKey), nil
+	return mapApiKey(&sqlcApiKey), nil
 }
 
 func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.APIKey, error) {
@@ -80,7 +80,7 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.A
 
 	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
-		out = append(out, *mapApiKeyFromDB(&key))
+		out = append(out, *mapApiKey(&key))
 	}
 	return out, nil
 }
@@ -96,7 +96,7 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]con
 
 	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
-		out = append(out, *mapApiKeyFromDB(&key))
+		out = append(out, *mapApiKey(&key))
 	}
 	return out, nil
 }
@@ -113,5 +113,5 @@ func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.
 		return nil, errx.DB(err, "api key")
 	}
 
-	return mapApiKeyFromDB(&sqlcApiKey), nil
+	return mapApiKey(&sqlcApiKey), nil
 }

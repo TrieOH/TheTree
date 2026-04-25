@@ -3,7 +3,6 @@ package errx
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/jackc/pgx/v5"
@@ -41,7 +40,7 @@ func ValidateConstraintRegistry(ctx context.Context, db *pgxpool.Pool) error {
 	}
 
 	if len(missing) > 0 {
-		return fmt.Errorf("constraints missing from registry: %v", missing)
+		return fun.Errf("constraints missing from registry: %v", missing).Internal()
 	}
 	return nil
 }
@@ -68,12 +67,12 @@ var constraintRegistry = map[string]string{
 
 func DB(err error, resource string) error {
 	if errors.Is(err, pgx.ErrNoRows) {
-		return fun.NewError(resource + " not found").NotFound()
+		return fun.ErrNotFound(resource + " not found")
 	}
 
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
-		return fun.NewError(err.Error()).Internal()
+		return fun.ErrInternal(err.Error())
 	}
 
 	constraintMessage, hasCustom := constraintRegistry[pgErr.ConstraintName]
@@ -83,20 +82,20 @@ func DB(err error, resource string) error {
 		if hasCustom {
 			msg = constraintMessage
 		}
-		return fun.NewError(msg).Conflict()
+		return fun.ErrConflict(msg)
 	case "23503": // foreign_key_violation
 		msg := resource + ": " + pgErr.Error()
 		if hasCustom {
 			msg = constraintMessage
 		}
-		return fun.NewError(msg).BadRequest()
+		return fun.ErrBadRequest(msg)
 	case "23514": // check_violation
 		msg := resource + ": Validation failed"
 		if hasCustom {
 			msg = constraintMessage
 		}
-		return fun.NewError(msg).Validation()
+		return fun.ErrValidation(msg)
 	default:
-		return fun.NewError(pgErr.Error()).Internal()
+		return fun.ErrInternal(pgErr.Error())
 	}
 }

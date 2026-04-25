@@ -18,7 +18,7 @@ type Project struct {
 func NewProject(ownerID uuid.UUID, name string) (*Project, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fun.NewErrorf("error generating uuid for project: %s", err.Error()).Internal()
+		return nil, fun.Errf("error generating uuid for project: %s", err.Error()).Internal()
 	}
 
 	p := &Project{

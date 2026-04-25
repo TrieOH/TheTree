@@ -14,11 +14,11 @@ import (
 	"Informd/internal/shared/ports"
 	"Informd/internal/shared/utils"
 	"context"
-	"errors"
 	"log"
 	"net/http"
 	"time"
 
+	fun "github.com/MintzyG/FastUtilitiesNet"
 	"github.com/MintzyG/FastUtilitiesNet/middlewares"
 	idx "github.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/hibiken/asynq"
@@ -115,9 +115,9 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 			DB:       app.Config.RedisDB,
 		},
 	})
-	handlers.ProjectsHandler = projects.NewProjectHandler(rt.commands.projects, rt.queries.projects)
-	handlers.ApiKeysHandler = keys.NewApiKeysHandler(rt.commands.apiKeys, rt.queries.apiKeys)
-	handlers.FormsHandler = forms.NewFormsHandler(rt.commands.forms, rt.queries.forms)
+	handlers.ProjectsHandler = projects.NewHandler(rt.commands.projects, rt.queries.projects)
+	handlers.ApiKeysHandler = keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
+	handlers.FormsHandler = forms.NewHandler(rt.commands.forms, rt.queries.forms)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -131,30 +131,31 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	handlers.Jwt = rt.middlewares.jwt
 	handlers.ApiKey = rt.middlewares.apiKey
 	handlers.AnyAuth = rt.middlewares.anyAuth
+	handlers.AppName = app.Config.AppName
 	return &handlers
 }
 
 func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
-	cmd.projects = projects.NewProjectCommandService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.apiKeys = keys.NewApiKeyCommandService(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewFormCommandService(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.projects = projects.NewCommands(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	return cmd
 }
 
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
-	q.projects = projects.NewQueryService(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	q.apiKeys = keys.NewApiKeyQueryService(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = forms.NewFormQueryService(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	q.projects = projects.NewQueries(rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.projects, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }
 
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
-	r.projects = projects.NewProjectRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = keys.NewApiKeyRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
@@ -174,13 +175,13 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
 		if len(rawKey) < 11 {
-			return ctx, errors.New("invalid api key format")
+			return ctx, fun.ErrUnauthorized("invalid api key format")
 		}
 		prefix := rawKey[:11]
 
 		candidates, err := rt.repos.apiKeys.GetByPrefix(ctx, prefix)
 		if err != nil || len(candidates) == 0 {
-			return ctx, errors.New("invalid api key")
+			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
 
 		var matched *contracts.APIKey
@@ -191,12 +192,12 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 			}
 		}
 		if matched == nil {
-			return ctx, errors.New("invalid api key")
+			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
 
 		project, err := rt.repos.projects.GetByID(ctx, matched.ProjectID)
 		if err != nil {
-			return ctx, errors.New("workspace not found")
+			return ctx, fun.ErrUnauthorized("workspace not found")
 		}
 
 		return authz.WithProject(ctx, project), nil

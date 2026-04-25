@@ -9,11 +9,11 @@ import (
 
 type APIKey struct {
 	ID        uuid.UUID  `json:"id"`
-	OwnerID   uuid.UUID  `json:"owner_id" validate:"required"`
+	OwnerID   uuid.UUID  `json:"owner_id"   validate:"required"`
 	ProjectID uuid.UUID  `json:"project_id" validate:"required"`
-	Name      string     `json:"name" validate:"required"`
-	KeyHash   string     `json:"-" validate:"required"`
-	KeyPrefix string     `json:"prefix" validate:"required"`
+	Name      string     `json:"name"       validate:"required"`
+	KeyHash   string     `json:"-"          validate:"required"`
+	KeyPrefix string     `json:"prefix"     validate:"required"`
 	CreatedAt time.Time  `json:"created_at"`
 	RevokedAt *time.Time `json:"revoked_at"`
 }
@@ -21,7 +21,7 @@ type APIKey struct {
 func NewAPIKey(projectID, userID uuid.UUID, name, keyHash, keyPrefix string) (*APIKey, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return nil, fun.NewErrorf("error generating uuid for api key: %s", err.Error()).Internal()
+		return nil, fun.Errf("error generating uuid for api key: %s", err.Error()).Internal()
 	}
 
 	ak := &APIKey{
