@@ -1,10 +1,9 @@
 package contracts
 
 import (
-	"TrieForms/internal/shared/validation"
 	"time"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/google/uuid"
 )
 
@@ -19,10 +18,9 @@ const (
 
 type Form struct {
 	ID               uuid.UUID  `json:"id"`
-	ProjectID        uuid.UUID  `json:"project_id"`
-	OwnerID          uuid.UUID  `json:"owner_id"`
-	ScopeID          uuid.UUID  `json:"scope_id"`
-	Title            string     `json:"title"`
+	ProjectID        uuid.UUID  `json:"project_id"        validate:"required"`
+	OwnerID          uuid.UUID  `json:"owner_id"          validate:"required"`
+	Title            string     `json:"title"             validate:"required"`
 	Status           FormStatus `json:"status"`
 	CurrentVersionID *uuid.UUID `json:"current_version_id"`
 	CreatedAt        time.Time  `json:"created_at"`
@@ -46,20 +44,8 @@ func NewForm(projectID, ownerID uuid.UUID, title string) (*Form, error) {
 		Status:    FormStatusDraft,
 	}
 
-	if err = f.validate(); err != nil {
+	if err = validate.Struct(f); err != nil {
 		return nil, err
 	}
 	return f, nil
-}
-
-func (f *Form) validate() error {
-	return validation.Run(
-		validation.RequireUUID("form", "owner_id", f.OwnerID),
-		validation.RequireUUID("form", "project_id", f.ProjectID),
-		validation.RequireString("form", "title", f.Title),
-	)
-}
-
-func (f *Form) AddScope(scopeID uuid.UUID) {
-	f.ScopeID = scopeID
 }

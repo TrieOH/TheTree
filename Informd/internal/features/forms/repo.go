@@ -1,11 +1,11 @@
 package forms
 
 import (
-	"TrieForms/internal/platform/database"
-	"TrieForms/internal/platform/database/sqlc"
-	"TrieForms/internal/shared/contracts"
-	"TrieForms/internal/shared/errx"
-	"TrieForms/internal/shared/ports"
+	"Informd/internal/platform/database"
+	"Informd/internal/platform/database/sqlc"
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/errx"
+	"Informd/internal/shared/ports"
 	"context"
 
 	"github.com/google/uuid"
@@ -42,7 +42,6 @@ func mapFormFromDB(src *sqlc.Form) *contracts.Form {
 		ID:        src.ID,
 		ProjectID: src.ProjectID,
 		OwnerID:   src.OwnerID,
-		ScopeID:   src.ScopeID,
 		Title:     src.Title,
 		Status:    contracts.FormStatus(src.Status),
 		//CurrentVersionID: src.CurrentVersionID,
@@ -62,7 +61,6 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 		ID:        toCreate.ID,
 		ProjectID: toCreate.ProjectID,
 		OwnerID:   toCreate.OwnerID,
-		ScopeID:   toCreate.ScopeID,
 		Title:     toCreate.Title,
 		Status:    string(toCreate.Status),
 	})

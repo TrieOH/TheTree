@@ -1,12 +1,13 @@
 package projects
 
 import (
-	"TrieForms/internal/shared/validation"
 	"net/http"
 
-	_ "TrieForms/internal/shared/contracts"
+	_ "Informd/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
+	"github.com/MintzyG/FastUtilitiesNet/bind"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -22,6 +23,18 @@ func NewProjectHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/projects", h.List)
+		r.Post("/projects", h.Create)
+	})
 }
 
 type CreateProjectRequest struct {
@@ -43,19 +56,21 @@ type CreateProjectRequest struct {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var req CreateProjectRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.Error(err).Send(w)
+	req := fun.From(r)
+
+	var payload CreateProjectRequest
+	if err := bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
 		return
 	}
 
-	project, err := h.commands.Create(r.Context(), req.Name)
+	project, err := h.commands.Create(r.Context(), payload.Name)
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(project).Send(w)
+	fun.Created().WithData(project).Send(w)
 }
 
 // List godoc
@@ -73,9 +88,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := h.queries.List(r.Context())
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(projects).Send(w)
+	fun.OK().WithData(projects).Send(w)
 }

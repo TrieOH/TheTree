@@ -1,8 +1,8 @@
 package main
 
 import (
-	_ "TrieForms/docs"
-	"TrieForms/internal/app"
+	_ "Informd/docs"
+	"Informd/internal/app"
 )
 
 func main() {

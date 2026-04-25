@@ -1,12 +1,13 @@
 package forms
 
 import (
-	"TrieForms/internal/shared/validation"
 	"net/http"
 
-	_ "TrieForms/internal/shared/contracts"
+	_ "Informd/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
+	"github.com/MintzyG/FastUtilitiesNet/bind"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -22,6 +23,18 @@ func NewFormsHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/projects/{project_id}/forms", h.List)
+		r.Post("/projects/{project_id}/forms", h.Create)
+	})
 }
 
 type CreateFormRequest struct {
@@ -45,25 +58,27 @@ type CreateFormRequest struct {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs == nil {
-		rs.Send(w)
-		return
-	}
+	req := fun.From(r)
 
-	var req CreateFormRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.Error(err).Send(w)
-		return
-	}
-
-	form, err := h.commands.Create(r.Context(), req.Title, projectID)
+	projectID, err := req.Path("project_id").UUID()
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(form).Send(w)
+	var payload CreateFormRequest
+	if err = bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	form, err := h.commands.Create(r.Context(), payload.Title, projectID)
+	if err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	fun.Created().WithData(form).Send(w)
 }
 
 // List godoc
@@ -81,17 +96,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/forms [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs == nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if err != nil {
+		fun.Error(err).Send(w)
 		return
 	}
 
 	forms, err := h.queries.List(r.Context(), projectID)
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(forms).Send(w)
+	fun.OK().WithData(forms).Send(w)
 }

@@ -4,7 +4,6 @@ CREATE TABLE forms (
     project_id UUID NOT NULL REFERENCES projects(id)
         ON DELETE CASCADE,
     owner_id UUID NOT NULL,
-    scope_id UUID NOT NULL,
     title TEXT NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'draft',
     --current_version_id UUID REFERENCES versions(id),

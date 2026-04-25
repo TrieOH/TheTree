@@ -3,7 +3,7 @@ package errx
 import (
 	"errors"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )

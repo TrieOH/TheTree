@@ -1,11 +1,11 @@
 package keys
 
 import (
-	"TrieForms/internal/platform/database"
-	"TrieForms/internal/platform/database/sqlc"
-	"TrieForms/internal/shared/contracts"
-	"TrieForms/internal/shared/errx"
-	"TrieForms/internal/shared/ports"
+	"Informd/internal/platform/database"
+	"Informd/internal/platform/database/sqlc"
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/errx"
+	"Informd/internal/shared/ports"
 	"context"
 
 	"github.com/google/uuid"
@@ -41,7 +41,6 @@ func mapApiKeyFromDB(src *sqlc.ApiKey) *contracts.APIKey {
 	return &contracts.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
-		ScopeID:   src.ScopeID,
 		ProjectID: src.ProjectID,
 		Name:      src.Name,
 		KeyHash:   src.KeyHash,
@@ -58,7 +57,6 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 	sqlcApiKey, err := repo.queries(ctx).CreateAPIKey(ctx, sqlc.CreateAPIKeyParams{
 		ID:        toCreate.ID,
 		OwnerID:   toCreate.OwnerID,
-		ScopeID:   toCreate.ScopeID,
 		ProjectID: toCreate.ProjectID,
 		Name:      toCreate.Name,
 		KeyHash:   toCreate.KeyHash,

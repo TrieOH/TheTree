@@ -12,7 +12,7 @@ import (
 )
 
 func InitTracer(ctx context.Context) (func(context.Context) error, error) {
-	exp, err := otlptracegrpc.New(
+	exporter, err := otlptracegrpc.New(
 		ctx,
 
 		otlptracegrpc.WithEndpoint("otel-collector:4317"),
@@ -25,7 +25,7 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 	res, err := resource.New(
 		ctx,
 		resource.WithAttributes(
-			semconv.ServiceName("trie_forms"),
+			semconv.ServiceName("informd"),
 			semconv.ServiceVersion("dev"),
 		),
 	)
@@ -34,7 +34,7 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exp),
+		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 	)
 
@@ -47,5 +47,5 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 type TracerName string
 
 const (
-	TrieFormsTracer TracerName = "trie_forms"
+	InformdTracer TracerName = "informd"
 )

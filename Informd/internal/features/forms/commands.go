@@ -1,10 +1,10 @@
 package forms
 
 import (
-	"TrieForms/internal/platform/database"
-	"TrieForms/internal/shared/authz"
-	"TrieForms/internal/shared/contracts"
-	"TrieForms/internal/shared/ports"
+	"Informd/internal/platform/database"
+	"Informd/internal/shared/authz"
+	"Informd/internal/shared/contracts"
+	"Informd/internal/shared/ports"
 	"context"
 
 	"github.com/authzed/authzed-go/v1"

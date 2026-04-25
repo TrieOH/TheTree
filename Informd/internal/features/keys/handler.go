@@ -1,13 +1,14 @@
 package keys
 
 import (
-	"TrieForms/internal/shared/validation"
 	"net/http"
 	"time"
 
-	_ "TrieForms/internal/shared/contracts"
+	_ "Informd/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
+	"github.com/MintzyG/FastUtilitiesNet/bind"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -24,6 +25,19 @@ func NewApiKeysHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/projects/{project_id}/keys", h.List)
+		r.Post("/projects/{project_id}/keys", h.Create)
+		r.Delete("/projects/{project_id}/keys", h.Revoke)
+	})
 }
 
 type CreateAPIKeyRequest struct {
@@ -60,25 +74,27 @@ type CreateAPIKeyResponse struct {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs == nil {
-		rs.Send(w)
-		return
-	}
+	req := fun.From(r)
 
-	var req CreateAPIKeyRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.Error(err).Send(w)
-		return
-	}
-
-	rawKey, apiKey, err := h.commands.Create(r.Context(), req.Name, projectID)
+	projectID, err := req.Path("project_id").UUID()
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(CreateAPIKeyResponse{
+	var payload CreateAPIKeyRequest
+	if err = bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	rawKey, apiKey, err := h.commands.Create(r.Context(), payload.Name, projectID)
+	if err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	fun.Created().WithData(CreateAPIKeyResponse{
 		APIKeyResponse: APIKeyResponse{
 			ID:        apiKey.ID,
 			Name:      apiKey.Name,
@@ -105,15 +121,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs == nil {
-		rs.Send(w)
+	req := fun.From(r)
+
+	projectID, err := req.Path("project_id").UUID()
+	if err != nil {
+		fun.Error(err).Send(w)
 		return
 	}
 
 	keys, err := h.queries.List(r.Context(), projectID)
 	if err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -128,7 +146,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // Revoke godoc
@@ -148,16 +166,18 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /projects/{project_id}/keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
-	keyID, rs := validation.GetUUID(r, "id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+
+	keyID, err := req.Path("id").UUID()
+	if err != nil {
+		fun.Error(err).Send(w)
 		return
 	}
 
 	if err := h.commands.RevokeAPIKey(r.Context(), keyID); err != nil {
-		resp.Error(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("key revoked").Send(w)
+	fun.OK("key revoked").Send(w)
 }

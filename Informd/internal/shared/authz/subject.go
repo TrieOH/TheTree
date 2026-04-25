@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )

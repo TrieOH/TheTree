@@ -1,21 +1,19 @@
 package contracts
 
 import (
-	"TrieForms/internal/shared/validation"
 	"time"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/google/uuid"
 )
 
 type APIKey struct {
 	ID        uuid.UUID  `json:"id"`
-	OwnerID   uuid.UUID  `json:"owner_id"`
-	ScopeID   uuid.UUID  `json:"scope_id"`
-	ProjectID uuid.UUID  `json:"project_id"`
-	Name      string     `json:"name"`
-	KeyHash   string     `json:"-"`      // bcrypt hash, never returned
-	KeyPrefix string     `json:"prefix"` // first 8 chars for display e.g. "tf_live_"
+	OwnerID   uuid.UUID  `json:"owner_id" validate:"required"`
+	ProjectID uuid.UUID  `json:"project_id" validate:"required"`
+	Name      string     `json:"name" validate:"required"`
+	KeyHash   string     `json:"-" validate:"required"`
+	KeyPrefix string     `json:"prefix" validate:"required"`
 	CreatedAt time.Time  `json:"created_at"`
 	RevokedAt *time.Time `json:"revoked_at"`
 }
@@ -36,23 +34,9 @@ func NewAPIKey(projectID, userID uuid.UUID, name, keyHash, keyPrefix string) (*A
 		CreatedAt: time.Now(),
 	}
 
-	if err := ak.validate(); err != nil {
+	if err = validate.Struct(ak); err != nil {
 		return nil, err
 	}
 
 	return ak, nil
-}
-
-func (k *APIKey) validate() error {
-	return validation.Run(
-		validation.RequireUUID("api_key", "owner_id", k.OwnerID),
-		validation.RequireUUID("api_key", "project_id", k.ProjectID),
-		validation.RequireString("api_key", "name", k.Name),
-		validation.RequireString("api_key", "key_hash", k.KeyHash),
-		validation.RequireString("api_key", "key_prefix", k.KeyPrefix),
-	)
-}
-
-func (k *APIKey) AddScope(scopeID uuid.UUID) {
-	k.ScopeID = scopeID
 }

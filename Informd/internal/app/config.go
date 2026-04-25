@@ -1,35 +1,26 @@
 package app
 
 import (
-	"TrieForms/internal/shared/validation"
-	"log"
-	"strings"
-
-	"github.com/spf13/viper"
+	"github.com/caarlos0/env/v11"
+	"github.com/google/uuid"
 )
 
-func LoadEnv() {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	if err := validation.LoadProxyConfig(); err != nil {
-		log.Fatalf("LoadProxyConfig failed: %v", err.Error())
-	}
-	if viper.GetString("IDENTITY_X_URL") == "" {
-		log.Fatal("IDENTITY_X_URL must be set")
-	}
-	if viper.GetString("IDENTITY_X_API_KEY") == "" {
-		log.Fatal("IDENTITY_X_API_KEY must be set")
-	}
-	if viper.GetString("IDENTITY_X_PROJECT_ID") == "" {
-		log.Fatal("IDENTITY_X_PROJECT_ID must be set")
-	}
-	if viper.GetString("SPICEDB_ADDR") == "" {
-		log.Fatal("SPICEDB_ADDR must be set")
-	}
-	if viper.GetString("SPICEDB_TOKEN") == "" {
-		log.Fatal("SPICEDB_TOKEN must be set")
-	}
-	if viper.GetString("PORT") == "" {
-		log.Fatal("PORT must be set")
-	}
+type Config struct {
+	IdxURL             string    `env:"IDENTITY_X_URL,required"`
+	IdxAPIKey          string    `env:"IDENTITY_X_API_KEY,required"`
+	IdxProjectID       uuid.UUID `env:"IDENTITY_X_PROJECT_ID,required"`
+	SpiceDBAddr        string    `env:"SPICEDB_ADDR,required"`
+	SpiceDBToken       string    `env:"SPICEDB_TOKEN,required"`
+	DatabaseURL        string    `env:"DATABASE_URL,required"`
+	Port               string    `env:"PORT,required"`
+	RedisAddr          string    `env:"REDIS_ADDR,required"`
+	RedisPassword      string    `env:"REDIS_PASSWORD,required"`
+	RedisDB            int       `env:"REDIS_DB,required"`
+	AppName            string    `env:"APP_NAME,required"`
+	CorsAllowedOrigins string    `env:"CORS_ALLOWED_ORIGINS,required"`
+}
+
+func LoadConfig() (Config, error) {
+	var cfg Config
+	return cfg, env.Parse(&cfg)
 }

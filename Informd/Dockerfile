@@ -1,6 +1,6 @@
 FROM ghcr.io/trieoh/go-tools:latest AS tools
 
-FROM golang:1.26 AS builder
+FROM golang:1.26.2 AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .
 
 RUN sqlc generate
-RUN swag init -g internal/interfaces/http/router/router.go -o docs --parseInternal --parseDependency --parseGoList
+RUN swag init -g internal/app/router.go -o docs --parseInternal --parseDependency --parseGoList
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux go build -o informd ./cmd/informd/
@@ -31,4 +31,3 @@ COPY --from=builder /app/schema.zed ./schema.zed
 EXPOSE 8080
 
 CMD ["./informd"]
-

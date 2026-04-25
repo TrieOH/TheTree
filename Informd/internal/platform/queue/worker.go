@@ -5,13 +5,16 @@ import (
 	"log"
 
 	"github.com/hibiken/asynq"
-	"github.com/spf13/viper"
 )
 
-type Deps struct{}
+type Deps struct {
+	RedisAddr     string
+	RedisPassword string
+	RedisDB       int
+}
 
 func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, *asynq.Inspector, error) {
-	redisOpt := asynq.RedisClientOpt{Addr: viper.GetString("REDIS_ADDR"), Password: viper.GetString("REDIS_PASSWORD"), DB: viper.GetInt("REDIS_DB")}
+	redisOpt := asynq.RedisClientOpt{Addr: deps.RedisAddr, Password: deps.RedisPassword, DB: deps.RedisDB}
 
 	// Client for enqueueing tasks
 	client := asynq.NewClient(redisOpt)
