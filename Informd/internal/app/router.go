@@ -94,7 +94,7 @@ func CreateRouter(deps *Deps) http.Handler {
 
 	namespaces.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
 	keys.RegisterRoutes(r, deps.ApiKeysHandler, deps.Jwt)
-	forms.RegisterRoutes(r, deps.FormsHandler, deps.Jwt)
+	forms.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
 
 	r.Get("/health", handlers.Health(deps.AppName).Handle)
 

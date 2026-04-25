@@ -14,6 +14,7 @@ import (
 
 type CommandService struct {
 	forms      ports.FormsRepo
+	steps      ports.StepRepo
 	namespaces ports.NamespaceRepo
 	az         *authzed.Client
 	tx         database.TxRunner
@@ -22,6 +23,7 @@ type CommandService struct {
 
 func NewCommands(
 	forms ports.FormsRepo,
+	steps ports.StepRepo,
 	namespaces ports.NamespaceRepo,
 	az *authzed.Client,
 	tx database.TxRunner,
@@ -29,6 +31,7 @@ func NewCommands(
 ) *CommandService {
 	return &CommandService{
 		forms:      forms,
+		steps:      steps,
 		namespaces: namespaces,
 		az:         az,
 		tx:         tx,
@@ -90,6 +93,38 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 	}
 
 	created, err = s.forms.Create(ctx, *form)
+	if err != nil {
+		return nil, err
+	}
+
+	return created, nil
+}
+
+func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, payload CreateStepRequest) (created *contracts.Step, err error) {
+	ctx, span := s.tracer.Start(ctx, "FormService.Create")
+	defer span.End()
+
+	var sub *authz.UserSubject
+	sub, err = authz.RequireSubject(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("edit"),
+		authz.Resource("forms", formID.String()),
+	); err != nil {
+		return nil, err
+	}
+
+	var step *contracts.Step
+	step, err = contracts.NewStep(formID, payload.Title, payload.Description, payload.PositionHint)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err = s.steps.Create(ctx, *step)
 	if err != nil {
 		return nil, err
 	}

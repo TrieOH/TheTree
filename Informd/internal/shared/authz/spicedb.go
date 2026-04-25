@@ -78,7 +78,7 @@ func Can(ctx context.Context, client *v1.Client, subject, permission, resource s
 		Subject:    &pb.SubjectReference{Object: &pb.ObjectReference{ObjectType: subType, ObjectId: subID}},
 	})
 	if err != nil {
-		return false, fun.Errf("authz check: %w", err).Internal()
+		return false, fun.Errf("authz check: %v", err).Internal()
 	}
 	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION, nil
 }
@@ -145,7 +145,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 		},
 	})
 	if err != nil {
-		return nil, fun.Errf("authz lookup: %w", err).Internal()
+		return nil, fun.Errf("authz lookup: %v", err).Internal()
 	}
 
 	var ids []string
@@ -155,7 +155,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 			break
 		}
 		if err != nil {
-			return nil, fun.Errf("authz lookup stream: %w", err).Internal()
+			return nil, fun.Errf("authz lookup stream: %v", err).Internal()
 		}
 		ids = append(ids, resp.ResourceObjectId)
 	}
@@ -172,7 +172,7 @@ func Expand(ctx context.Context, client *v1.Client, permission, resource string)
 		Permission: permission,
 	})
 	if err != nil {
-		return nil, fun.Errf("authz expand: %w", err).Internal()
+		return nil, fun.Errf("authz expand: %v", err).Internal()
 	}
 
 	var subjects []string

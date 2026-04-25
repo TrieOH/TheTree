@@ -59,6 +59,7 @@ type repos struct {
 	namespaces ports.NamespaceRepo
 	apiKeys    ports.ApiKeysRepo
 	forms      ports.FormsRepo
+	steps      ports.StepRepo
 }
 
 type mws struct {
@@ -139,7 +140,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
 	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return cmd
 }
 
@@ -147,7 +148,7 @@ func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }
 
@@ -155,7 +156,8 @@ func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 

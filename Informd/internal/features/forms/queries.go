@@ -14,6 +14,7 @@ import (
 
 type QueryService struct {
 	forms      ports.FormsRepo
+	steps      ports.StepRepo
 	namespaces ports.NamespaceRepo
 	az         *v1.Client
 	tx         database.TxRunner
@@ -22,6 +23,7 @@ type QueryService struct {
 
 func NewQueries(
 	forms ports.FormsRepo,
+	steps ports.StepRepo,
 	namespaces ports.NamespaceRepo,
 	az *v1.Client,
 	tx database.TxRunner,
@@ -29,6 +31,7 @@ func NewQueries(
 ) *QueryService {
 	return &QueryService{
 		forms:      forms,
+		steps:      steps,
 		namespaces: namespaces,
 		az:         az,
 		tx:         tx,
@@ -77,4 +80,30 @@ func (s *QueryService) List(ctx context.Context, namespaceID *uuid.UUID) (forms 
 	}
 
 	return forms, nil
+}
+
+func (s *QueryService) ListSteps(ctx context.Context, formID uuid.UUID) (steps []contracts.Step, err error) {
+	ctx, span := s.tracer.Start(ctx, "FormService.ListSteps")
+	defer span.End()
+
+	var sub *authz.UserSubject
+	sub, err = authz.RequireSubject(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = authz.Require(ctx, s.az,
+		authz.Subject("user", sub.ID),
+		authz.Permission("view_steps"),
+		authz.Resource("form", formID.String()),
+	); err != nil {
+		return nil, err
+	}
+
+	steps, err = s.steps.List(ctx, formID)
+	if err != nil {
+		return nil, err
+	}
+
+	return steps, nil
 }

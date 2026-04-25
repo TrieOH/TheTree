@@ -29,7 +29,8 @@ CREATE TABLE steps (
     form_id UUID NOT NULL REFERENCES forms(id)
         ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    description TEXT
+    description TEXT,
+    position_hint INT NOT NULL
 );
 
 CREATE INDEX idx_forms_owner_id ON forms (owner_id);

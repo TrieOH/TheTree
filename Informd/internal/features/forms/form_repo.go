@@ -15,30 +15,30 @@ import (
 	"go.uber.org/zap"
 )
 
-type repo struct {
+type formRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
-var _ ports.FormsRepo = (*repo)(nil)
+var _ ports.FormsRepo = (*formRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
-	return &repo{
+func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+	return &formRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
 	}
 }
 
-func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
+func (repo *formRepo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+func (repo *formRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
 	return repo.tracer.Start(ctx, "FormsRepo."+op)
 }
 
@@ -57,7 +57,7 @@ func mapForm(src sqlc.Form) contracts.Form {
 	}
 }
 
-func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contracts.Form, error) {
+func (repo *formRepo) Create(ctx context.Context, toCreate contracts.Form) (*contracts.Form, error) {
 	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).CreateForm(ctx, sqlc.CreateFormParams{
@@ -72,7 +72,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 	return new(mapForm(sqlcForm)), nil
 }
 
-func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form, error) {
+func (repo *formRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form, error) {
 	ctx, span := repo.span(ctx, "List")
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).ListFormsByUser(ctx, ownerID)
@@ -82,7 +82,7 @@ func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form
 	return xslices.MapSlice(sqlcForm, mapForm), nil
 }
 
-func (repo *repo) ListByNamespace(ctx context.Context, namespaceID *uuid.UUID) ([]contracts.Form, error) {
+func (repo *formRepo) ListByNamespace(ctx context.Context, namespaceID *uuid.UUID) ([]contracts.Form, error) {
 	ctx, span := repo.span(ctx, "ListByProject")
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).ListFormsByNamespace(ctx, namespaceID)
