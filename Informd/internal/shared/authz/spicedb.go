@@ -94,25 +94,19 @@ func Require(ctx context.Context, client *v1.Client, subject, permission, resour
 	return nil
 }
 
-// GrantRole vincula relations, com caveat opcional.
-// ex: GrantRole(ctx, client, "organization:abc#admin@user:xyz")
-// ex: GrantRole(ctx, client, "event:xyz#attendee@user:abc", authz.Caveat{Name: "within_time_range", ...})
-func GrantRole(ctx context.Context, client *v1.Client, rel string, relsAndCaveat ...any) error {
+// CreateRelation vincula relations, com caveat opcional.
+// ex: CreateRelation(ctx, client, "organization:abc#admin@user:xyz")
+// ex: CreateRelation(ctx, client, "event:xyz#attendee@user:abc", authz.Caveat{Name: "within_time_range", ...})
+func CreateRelation(ctx context.Context, client *v1.Client, rel string, relsAndCaveat ...any) error {
 	rels, caveat := splitArgs(rel, relsAndCaveat)
 	return write(ctx, client, pb.RelationshipUpdate_OPERATION_TOUCH, caveat, rels...)
 }
 
-// RevokeRole remove relations.
-func RevokeRole(ctx context.Context, client *v1.Client, rel string, rest ...any) error {
+// DeleteRelation remove relations.
+func DeleteRelation(ctx context.Context, client *v1.Client, rel string, rest ...any) error {
 	rels, caveat := splitArgs(rel, rest)
 	return write(ctx, client, pb.RelationshipUpdate_OPERATION_DELETE, caveat, rels...)
 }
-
-// GrantPerm é alias semântico de GrantRole.
-var GrantPerm = GrantRole
-
-// RevokePerm é alias semântico de RevokeRole.
-var RevokePerm = RevokeRole
 
 // splitArgs separa os strings de rel e o Caveat opcional dos args variádicos.
 func splitArgs(first string, rest []any) ([]string, *Caveat) {
