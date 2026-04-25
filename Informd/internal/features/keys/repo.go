@@ -6,6 +6,7 @@ import (
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
+	"Informd/internal/shared/xslices"
 	"context"
 
 	"github.com/google/uuid"
@@ -37,8 +38,12 @@ func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapApiKey(src *sqlc.ApiKey) *contracts.APIKey {
-	return &contracts.APIKey{
+func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "ApiKeyRepo."+op)
+}
+
+func mapApiKey(src sqlc.ApiKey) contracts.APIKey {
+	return contracts.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
 		ProjectID: src.ProjectID,
@@ -51,9 +56,8 @@ func mapApiKey(src *sqlc.ApiKey) *contracts.APIKey {
 }
 
 func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contracts.APIKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Create")
+	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
-
 	sqlcApiKey, err := repo.queries(ctx).CreateAPIKey(ctx, sqlc.CreateAPIKeyParams{
 		ID:        toCreate.ID,
 		OwnerID:   toCreate.OwnerID,
@@ -65,46 +69,32 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}
-
-	return mapApiKey(&sqlcApiKey), nil
+	return new(mapApiKey(sqlcApiKey)), nil
 }
 
 func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.APIKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Create")
+	ctx, span := repo.span(ctx, "GetByPrefix")
 	defer span.End()
-
 	sqlcApiKeys, err := repo.queries(ctx).GetAPIKeyByPrefix(ctx, prefix)
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}
-
-	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
-	for _, key := range sqlcApiKeys {
-		out = append(out, *mapApiKey(&key))
-	}
-	return out, nil
+	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
 }
 
 func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]contracts.APIKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.ListByProject")
+	ctx, span := repo.span(ctx, "ListByProject")
 	defer span.End()
-
 	sqlcApiKeys, err := repo.queries(ctx).ListAPIKeysByProject(ctx, projectID)
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}
-
-	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
-	for _, key := range sqlcApiKeys {
-		out = append(out, *mapApiKey(&key))
-	}
-	return out, nil
+	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
 }
 
 func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.APIKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Revoke")
+	ctx, span := repo.span(ctx, "Revoke")
 	defer span.End()
-
 	sqlcApiKey, err := repo.queries(ctx).RevokeAPIKey(ctx, sqlc.RevokeAPIKeyParams{
 		ID:      id,
 		OwnerID: userID,
@@ -112,6 +102,5 @@ func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}
-
-	return mapApiKey(&sqlcApiKey), nil
+	return new(mapApiKey(sqlcApiKey)), nil
 }
