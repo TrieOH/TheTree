@@ -57,7 +57,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Project) (*cont
 		Name:    toCreate.Name,
 	})
 	if err != nil {
-		return nil, errx.FromDB(err, "project")
+		return nil, errx.DB(err, "project")
 	}
 
 	return mapProjectFromDB(&sqlcProject), nil
@@ -69,7 +69,7 @@ func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Project
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByID(ctx, id)
 	if err != nil {
-		return nil, errx.FromDB(err, "project")
+		return nil, errx.DB(err, "project")
 	}
 
 	return mapProjectFromDB(&sqlcProject), nil
@@ -83,7 +83,7 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 		Name:    name,
 	})
 	if err != nil {
-		return nil, errx.FromDB(err, "project")
+		return nil, errx.DB(err, "project")
 	}
 
 	return mapProjectFromDB(&sqlcProject), nil
@@ -95,7 +95,7 @@ func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Proj
 
 	sqlcProjects, err := repo.queries(ctx).ListProjectsByOwner(ctx, ownerID)
 	if err != nil {
-		return nil, errx.FromDB(err, "project")
+		return nil, errx.DB(err, "project")
 	}
 
 	out := make([]contracts.Project, 0, len(sqlcProjects))
@@ -120,7 +120,7 @@ func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Proj
 
 	sqlcProjects, err := repo.queries(ctx).ListProjectsByIDs(ctx, uuids)
 	if err != nil {
-		return nil, errx.FromDB(err, "project")
+		return nil, errx.DB(err, "project")
 	}
 
 	out := make([]contracts.Project, 0, len(sqlcProjects))

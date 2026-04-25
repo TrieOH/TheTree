@@ -65,7 +65,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Form) (*contrac
 		Status:    string(toCreate.Status),
 	})
 	if err != nil {
-		return nil, errx.FromDB(err, "form")
+		return nil, errx.DB(err, "form")
 	}
 
 	return mapFormFromDB(&sqlcForm), nil
@@ -77,7 +77,7 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]con
 
 	sqlcForm, err := repo.queries(ctx).ListFormsByProject(ctx, projectID)
 	if err != nil {
-		return nil, errx.FromDB(err, "form")
+		return nil, errx.DB(err, "form")
 	}
 
 	out := make([]contracts.Form, 0, len(sqlcForm))

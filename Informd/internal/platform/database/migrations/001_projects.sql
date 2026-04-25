@@ -7,9 +7,9 @@ CREATE TABLE projects (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX idx_projects_owner_id_name ON projects (owner_id, name);
+CREATE UNIQUE INDEX uniq_idx_projects_owner_id_name ON projects (owner_id, name);
 CREATE INDEX idx_projects_owner_id ON projects (owner_id);
 -- +goose Down
 DROP INDEX IF EXISTS idx_projects_owner_id;
-DROP INDEX IF EXISTS idx_projects_owner_id_name;
+DROP INDEX IF EXISTS uniq_idx_projects_owner_id_name;
 DROP TABLE IF EXISTS projects;

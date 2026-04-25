@@ -63,7 +63,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 		KeyPrefix: toCreate.KeyPrefix,
 	})
 	if err != nil {
-		return nil, errx.FromDB(err, "api key")
+		return nil, errx.DB(err, "api key")
 	}
 
 	return mapApiKeyFromDB(&sqlcApiKey), nil
@@ -75,7 +75,7 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.A
 
 	sqlcApiKeys, err := repo.queries(ctx).GetAPIKeyByPrefix(ctx, prefix)
 	if err != nil {
-		return nil, errx.FromDB(err, "api key")
+		return nil, errx.DB(err, "api key")
 	}
 
 	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
@@ -91,7 +91,7 @@ func (repo *repo) ListByProject(ctx context.Context, projectID uuid.UUID) ([]con
 
 	sqlcApiKeys, err := repo.queries(ctx).ListAPIKeysByProject(ctx, projectID)
 	if err != nil {
-		return nil, errx.FromDB(err, "api key")
+		return nil, errx.DB(err, "api key")
 	}
 
 	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
@@ -110,7 +110,7 @@ func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.
 		OwnerID: userID,
 	})
 	if err != nil {
-		return nil, errx.FromDB(err, "api key")
+		return nil, errx.DB(err, "api key")
 	}
 
 	return mapApiKeyFromDB(&sqlcApiKey), nil

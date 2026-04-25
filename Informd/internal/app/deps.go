@@ -77,6 +77,9 @@ func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
 	if err = database.RunMigrations(db, migrationPath); err != nil {
 		errx.Must(err, "Failed migrations")
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	errx.Must(errx.ValidateConstraintRegistry(ctx, db), "unregistered constraints found")
 	return db
 }
 
