@@ -1,20 +1,26 @@
 import { Plus, FileText } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '#/shared/ui/shadcn/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/shared/ui/shadcn/card'
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '#/shared/ui/shadcn/card'
 import type { FormI } from '../model'
 import { Badge } from '#/shared/ui/shadcn/badge'
 
 interface FormListProps {
   forms: FormI[]
   openModal: () => void;
-  projectID: string;
+  namespaceID: string;
 }
 
 export function FormList({
   forms,
   openModal,
-  projectID,
+  namespaceID,
 }: FormListProps) {
 
   if (forms.length === 0) {
@@ -54,8 +60,8 @@ export function FormList({
         {forms.map((form) => (
           <Link
             key={form.id}
-            to="/admin/$project" // Update this later if there's a specific form route
-            params={{ project: projectID }}
+            to="/admin/$namespaceID"
+            params={{ namespaceID: namespaceID }}
             className="block group"
           >
             <Card className="rounded-none border border-border group-hover:border-primary group-hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] transition-all bg-card flex flex-col h-full group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 min-w-0 overflow-hidden">

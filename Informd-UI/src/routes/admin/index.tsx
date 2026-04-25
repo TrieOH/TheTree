@@ -1,7 +1,7 @@
-import { allProjectsQueryOptions, createProjectFn } from '#/features/projects/api';
-import { projectCreateSchema   } from '#/features/projects/model'
-import type {ProjectCreateI, ProjectI} from '#/features/projects/model';
-import { ProjectList } from '#/features/projects/ui/project-list'
+import { allNamespacesQueryOptions, createNamespaceFn } from '#/features/namespaces/api';
+import { namespaceCreateSchema   } from '#/features/namespaces/model'
+import type {NamespaceI, NamespaceCreateI } from '#/features/namespaces/model';
+import NamespaceList from '#/features/namespaces/ui/namespace-list'
 import FormModal from '#/widgets/modal/form-modal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -16,18 +16,18 @@ function RouteComponent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const queryClient = useQueryClient();
 
-  const { data: projects = [], isLoading } = useQuery(allProjectsQueryOptions())
+  const { data: namespaces = [], isLoading } = useQuery(allNamespacesQueryOptions())
 
-  const { mutate: createProject, isPending: isPendingCreate } = useMutation({
-    mutationFn: createProjectFn,
+  const { mutate: createNamespace, isPending: isPendingCreate } = useMutation({
+    mutationFn: createNamespaceFn,
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allProjectsQueryOptions().queryKey,
-          (old: ProjectI[] = []) => [...old, response.data],
+          allNamespacesQueryOptions().queryKey,
+          (old: NamespaceI[] = []) => [...old, response.data],
         )
         setIsCreateOpen(false)
-        toast.success('Project created successfully')
+        toast.success('Namespace created successfully')
       }
     },
   })
@@ -63,23 +63,23 @@ function RouteComponent() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <ProjectList 
+      <NamespaceList 
         openModal={() => setIsCreateOpen(true)}
-        projects={projects}
+        namespaces={namespaces}
       />
-      <FormModal<ProjectCreateI>
-        title="Create Project"
-        description="Give your project a name to identify it."
+      <FormModal<NamespaceCreateI>
+        title="Create Namespace"
+        description="Give your namespace a name to identify it."
         buttonTitle="Create Project"
-        schema={projectCreateSchema}
+        schema={namespaceCreateSchema}
         formId="create-project-form"
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSubmit={createProject}
+        onSubmit={createNamespace}
         fields={[
           {
             name: "name",
-            label: "e.g. My Team Project",
+            label: "e.g. My Team Namespace",
             type: "text",
           }
         ]}

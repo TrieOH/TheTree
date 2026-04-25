@@ -5,24 +5,24 @@ import {
 } from 'lucide-react'
 import { cn } from '#/shared/lib/utils'
 
-interface ProjectLayoutProps {
+interface NamespaceLayoutProps {
   children: React.ReactNode
 }
 
-export function ProjectLayout({ children }: ProjectLayoutProps) {
-  const { project } = useParams({ from: '/admin/$project' })
+export default function NamespaceLayout({ children }: NamespaceLayoutProps) {
+  const { namespaceID } = useParams({ from: '/admin/$namespaceID' })
 
   const navItems = [
     {
-      to: '/admin/$project',
-      params: { project },
+      to: '/admin/$namespaceID',
+      params: { namespaceID },
       icon: LayoutDashboard,
       label: 'Forms',
       exact: true
     },
     {
-      to: '/admin/$project/keys',
-      params: { project },
+      to: '/admin/$namespaceID/keys',
+      params: { namespaceID },
       icon: Key,
       label: 'API Keys',
       exact: true

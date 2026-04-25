@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminProjectRouteImport } from './routes/admin/$project'
-import { Route as AdminProjectIndexRouteImport } from './routes/admin/$project/index'
-import { Route as AdminProjectKeysRouteImport } from './routes/admin/$project/keys'
+import { Route as AdminNamespaceIDRouteImport } from './routes/admin/$namespaceID'
+import { Route as AdminNamespaceIDIndexRouteImport } from './routes/admin/$namespaceID/index'
+import { Route as AdminNamespaceIDKeysRouteImport } from './routes/admin/$namespaceID/keys'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -31,64 +31,64 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProjectRoute = AdminProjectRouteImport.update({
-  id: '/$project',
-  path: '/$project',
+const AdminNamespaceIDRoute = AdminNamespaceIDRouteImport.update({
+  id: '/$namespaceID',
+  path: '/$namespaceID',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminProjectIndexRoute = AdminProjectIndexRouteImport.update({
+const AdminNamespaceIDIndexRoute = AdminNamespaceIDIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminProjectRoute,
+  getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
-const AdminProjectKeysRoute = AdminProjectKeysRouteImport.update({
+const AdminNamespaceIDKeysRoute = AdminNamespaceIDKeysRouteImport.update({
   id: '/keys',
   path: '/keys',
-  getParentRoute: () => AdminProjectRoute,
+  getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/admin/$project': typeof AdminProjectRouteWithChildren
+  '/admin/$namespaceID': typeof AdminNamespaceIDRouteWithChildren
   '/admin/': typeof AdminIndexRoute
-  '/admin/$project/keys': typeof AdminProjectKeysRoute
-  '/admin/$project/': typeof AdminProjectIndexRoute
+  '/admin/$namespaceID/keys': typeof AdminNamespaceIDKeysRoute
+  '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminIndexRoute
-  '/admin/$project/keys': typeof AdminProjectKeysRoute
-  '/admin/$project': typeof AdminProjectIndexRoute
+  '/admin/$namespaceID/keys': typeof AdminNamespaceIDKeysRoute
+  '/admin/$namespaceID': typeof AdminNamespaceIDIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/admin/$project': typeof AdminProjectRouteWithChildren
+  '/admin/$namespaceID': typeof AdminNamespaceIDRouteWithChildren
   '/admin/': typeof AdminIndexRoute
-  '/admin/$project/keys': typeof AdminProjectKeysRoute
-  '/admin/$project/': typeof AdminProjectIndexRoute
+  '/admin/$namespaceID/keys': typeof AdminNamespaceIDKeysRoute
+  '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
-    | '/admin/$project'
+    | '/admin/$namespaceID'
     | '/admin/'
-    | '/admin/$project/keys'
-    | '/admin/$project/'
+    | '/admin/$namespaceID/keys'
+    | '/admin/$namespaceID/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/admin/$project/keys' | '/admin/$project'
+  to: '/' | '/admin' | '/admin/$namespaceID/keys' | '/admin/$namespaceID'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/admin/$project'
+    | '/admin/$namespaceID'
     | '/admin/'
-    | '/admin/$project/keys'
-    | '/admin/$project/'
+    | '/admin/$namespaceID/keys'
+    | '/admin/$namespaceID/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,51 +119,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/$project': {
-      id: '/admin/$project'
-      path: '/$project'
-      fullPath: '/admin/$project'
-      preLoaderRoute: typeof AdminProjectRouteImport
+    '/admin/$namespaceID': {
+      id: '/admin/$namespaceID'
+      path: '/$namespaceID'
+      fullPath: '/admin/$namespaceID'
+      preLoaderRoute: typeof AdminNamespaceIDRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/$project/': {
-      id: '/admin/$project/'
+    '/admin/$namespaceID/': {
+      id: '/admin/$namespaceID/'
       path: '/'
-      fullPath: '/admin/$project/'
-      preLoaderRoute: typeof AdminProjectIndexRouteImport
-      parentRoute: typeof AdminProjectRoute
+      fullPath: '/admin/$namespaceID/'
+      preLoaderRoute: typeof AdminNamespaceIDIndexRouteImport
+      parentRoute: typeof AdminNamespaceIDRoute
     }
-    '/admin/$project/keys': {
-      id: '/admin/$project/keys'
+    '/admin/$namespaceID/keys': {
+      id: '/admin/$namespaceID/keys'
       path: '/keys'
-      fullPath: '/admin/$project/keys'
-      preLoaderRoute: typeof AdminProjectKeysRouteImport
-      parentRoute: typeof AdminProjectRoute
+      fullPath: '/admin/$namespaceID/keys'
+      preLoaderRoute: typeof AdminNamespaceIDKeysRouteImport
+      parentRoute: typeof AdminNamespaceIDRoute
     }
   }
 }
 
-interface AdminProjectRouteChildren {
-  AdminProjectKeysRoute: typeof AdminProjectKeysRoute
-  AdminProjectIndexRoute: typeof AdminProjectIndexRoute
+interface AdminNamespaceIDRouteChildren {
+  AdminNamespaceIDKeysRoute: typeof AdminNamespaceIDKeysRoute
+  AdminNamespaceIDIndexRoute: typeof AdminNamespaceIDIndexRoute
 }
 
-const AdminProjectRouteChildren: AdminProjectRouteChildren = {
-  AdminProjectKeysRoute: AdminProjectKeysRoute,
-  AdminProjectIndexRoute: AdminProjectIndexRoute,
+const AdminNamespaceIDRouteChildren: AdminNamespaceIDRouteChildren = {
+  AdminNamespaceIDKeysRoute: AdminNamespaceIDKeysRoute,
+  AdminNamespaceIDIndexRoute: AdminNamespaceIDIndexRoute,
 }
 
-const AdminProjectRouteWithChildren = AdminProjectRoute._addFileChildren(
-  AdminProjectRouteChildren,
-)
+const AdminNamespaceIDRouteWithChildren =
+  AdminNamespaceIDRoute._addFileChildren(AdminNamespaceIDRouteChildren)
 
 interface AdminRouteChildren {
-  AdminProjectRoute: typeof AdminProjectRouteWithChildren
+  AdminNamespaceIDRoute: typeof AdminNamespaceIDRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminProjectRoute: AdminProjectRouteWithChildren,
+  AdminNamespaceIDRoute: AdminNamespaceIDRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

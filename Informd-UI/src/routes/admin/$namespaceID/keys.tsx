@@ -10,9 +10,13 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyList } from '#/features/keys/ui/key-list'
 import { ApiKeyCreatedModal } from '#/features/keys/ui/api-key-created-modal'
-import { allProjectApiKeysQueryOptions, createApiKeyOnProjectFn, revokeApiKeyOnProjectFn } from '#/features/keys/api'
+import { 
+  allNamespaceApiKeysQueryOptions, 
+  createApiKeyOnNamespaceFn, 
+  revokeApiKeyOnNamespaceFn 
+} from '#/features/keys/api'
 
-export const Route = createFileRoute('/admin/$project/keys')({
+export const Route = createFileRoute('/admin/$namespaceID/keys')({
   component: RouteComponent,
 })
 
@@ -22,16 +26,16 @@ function RouteComponent() {
   const [revokeKeyId, setRevokeKeyId] = useState<string | null>(null)
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<ApiKeyCreateResponseI | null>(null)
 
-  const { project: projectID } = Route.useParams()
+  const { namespaceID } = Route.useParams()
   const queryClient = useQueryClient();
-  const { data: keys = [], isLoading } = useQuery(allProjectApiKeysQueryOptions(projectID))
+  const { data: keys = [], isLoading } = useQuery(allNamespaceApiKeysQueryOptions(namespaceID))
 
   const { mutate: createApiKey, isPending: isPendingCreate } = useMutation({
-    mutationFn: (data: ApiKeyCreateI) => createApiKeyOnProjectFn(data, projectID),
+    mutationFn: (data: ApiKeyCreateI) => createApiKeyOnNamespaceFn(data, namespaceID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allProjectApiKeysQueryOptions(projectID).queryKey,
+          allNamespaceApiKeysQueryOptions(namespaceID).queryKey,
           (old: ApiKeyI[] = []) => [response.data, ...old],
         )
         setIsCreateOpen(false)
@@ -42,11 +46,11 @@ function RouteComponent() {
   })
 
   const { mutate: revokeApiKey } = useMutation({
-    mutationFn: (id: string) => revokeApiKeyOnProjectFn(id, projectID),
+    mutationFn: (id: string) => revokeApiKeyOnNamespaceFn(id, namespaceID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allProjectApiKeysQueryOptions(projectID).queryKey,
+          allNamespaceApiKeysQueryOptions(namespaceID).queryKey,
           (old: ApiKeyI[] = []) =>
             old.map((ws) =>
               ws.id === revokeKeyId
@@ -68,7 +72,7 @@ function RouteComponent() {
             API Keys
           </h2>
           <p className="text-muted-foreground text-sm uppercase tracking-wider font-bold opacity-70">
-            Programmatic access for your project.
+            Programmatic access for your namespace.
           </p>
         </div>
 

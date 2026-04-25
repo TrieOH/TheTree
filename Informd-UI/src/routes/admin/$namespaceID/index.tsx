@@ -1,4 +1,4 @@
-import { allProjectFormsQueryOptions, createFormOnProjectFn } from '#/features/forms/api'
+import { allNamespaceFormsQueryOptions, createFormOnNamespaceFn } from '#/features/forms/api'
 import { formCreateSchema } from '#/features/forms/model'
 import type { FormCreateI, FormI } from '#/features/forms/model'
 import { FormList } from '#/features/forms/ui/form-list'
@@ -8,23 +8,23 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-export const Route = createFileRoute('/admin/$project/')({
+export const Route = createFileRoute('/admin/$namespaceID/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { project: projectID } = Route.useParams()
+  const { namespaceID } = Route.useParams()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data: forms = [], isLoading } = useQuery(allProjectFormsQueryOptions(projectID))
+  const { data: forms = [], isLoading } = useQuery(allNamespaceFormsQueryOptions(namespaceID))
 
   const { mutate: createForm, isPending: isPendingCreate } = useMutation({
-    mutationFn: (data: FormCreateI) => createFormOnProjectFn(data, projectID),
+    mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(data, namespaceID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allProjectFormsQueryOptions(projectID).queryKey,
+          allNamespaceFormsQueryOptions(namespaceID).queryKey,
           (old: FormI[] = []) => [...old, response.data],
         )
         setIsCreateOpen(false)
@@ -67,7 +67,7 @@ function RouteComponent() {
       <FormList
         forms={forms}
         openModal={() => setIsCreateOpen(true)}
-        projectID={projectID}
+        namespaceID={namespaceID}
       />
       <FormModal<FormCreateI>
         title="Create Form"

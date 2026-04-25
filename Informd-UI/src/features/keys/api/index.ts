@@ -5,58 +5,58 @@ import { queryOptions } from "@tanstack/react-query";
 
 
 /**
- * Create a new API key for the specified project on the server.
+ * Create a new API key for the specified namespace on the server.
  * @param apiKeyData - The data for the new API key.
- * @param projectID - The project ID
+ * @param namespaceID - The namespace ID
  * @returns A promise that resolves to the API response containing the newly created API key.
  */
-export const createApiKeyOnProjectFn = createClientOnlyFn((
+export const createApiKeyOnNamespaceFn = createClientOnlyFn((
   apiKeyData: ApiKeyCreateI,
-  projectID: string
+  namespaceID: string
 ) => {
   return authFetcher.post<ApiKeyCreateResponseI>(
-    `/projects/${projectID}/keys`,
+    `/namespaces/${namespaceID}/keys`,
     apiKeyData
   );
 });
 
 
 /**
- * Fetches all API keys for the specified project from the server.
- * @param projectID - The project ID
+ * Fetches all API keys for the specified namespace from the server.
+ * @param namespaceID - The namespace ID
  * @returns A promise that resolves to an array of API key objects.
  */
-export const getAllProjectApiKeysFn = createClientOnlyFn(async (projectID: string) => {
+export const getAllNamespaceApiKeysFn = createClientOnlyFn(async (namespaceID: string) => {
   try {
-    return await tanstackQueryFetcher<ApiKeyI[]>(`/projects/${projectID}/keys`);
+    return await tanstackQueryFetcher<ApiKeyI[]>(`/namespaces/${namespaceID}/keys`);
   } catch {
     return [];
   }
 });
 
 /**
- * Query options for fetching all API keys for a specific project, using TanStack Query.
+ * Query options for fetching all API keys for a specific namespace, using TanStack Query.
  * @returns An object containing the query key and query function for fetching all API keys.
  */
-export const allProjectApiKeysQueryOptions = (projectID: string) => {
+export const allNamespaceApiKeysQueryOptions = (namespaceID: string) => {
   return queryOptions({
-    queryKey: ['projects', projectID, "keys"],
-    queryFn: () => getAllProjectApiKeysFn(projectID),
+    queryKey: ['namespaces', namespaceID, "keys"],
+    queryFn: () => getAllNamespaceApiKeysFn(namespaceID),
   })
 }
 
 
 /**
- * Revoke an API key for the specified project on the server.
+ * Revoke an API key for the specified namespace on the server.
  * @param apiKeyId - The ID of the API key to revoke.
- * @param projectID - The project ID
+ * @param namespaceID - The namespace ID
  * @returns A promise that resolves to the API response(void).
  */
-export const revokeApiKeyOnProjectFn = createClientOnlyFn((
+export const revokeApiKeyOnNamespaceFn = createClientOnlyFn((
   apiKeyId: string,
-  projectID: string
+  namespaceID: string
 ) => {
   return authFetcher.delete<void>(
-    `/projects/${projectID}/keys/${apiKeyId}`
+    `/namespaces/${namespaceID}/keys/${apiKeyId}`
   );
 });
