@@ -52,6 +52,7 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_namespace"),
 		authz.Resource("platform", "global"),
+		nil,
 	); err != nil {
 		return nil, err
 	}

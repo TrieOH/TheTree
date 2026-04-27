@@ -49,6 +49,7 @@ func (s *QueryService) List(ctx context.Context) (ak []contracts.APIKey, err err
 		authz.Subject("user", sub.ID),
 		authz.Permission("list_keys"),
 		authz.Resource("platform", "global"),
+		nil,
 	); err != nil {
 		return nil, err
 	}

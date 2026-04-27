@@ -53,6 +53,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_key"),
 		authz.Resource("platform", "global"),
+		nil,
 	); err != nil {
 		return "", nil, err
 	}
@@ -96,6 +97,7 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 		authz.Subject("user", sub.ID),
 		authz.Permission("revoke"),
 		authz.Resource("api_key", keyID.String()),
+		nil,
 	); err != nil {
 		return err
 	}
