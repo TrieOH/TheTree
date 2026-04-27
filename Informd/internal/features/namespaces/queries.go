@@ -8,6 +8,7 @@ import (
 	"context"
 
 	v1 "github.com/authzed/authzed-go/v1"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -32,28 +33,14 @@ func NewQueries(
 	}
 }
 
-func (s *QueryService) List(ctx context.Context) (ws []contracts.Namespace, err error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.List")
+func (s *QueryService) BulkGet(ctx context.Context, ids []uuid.UUID) (ns []contracts.Namespace, err error) {
+	ctx, span := s.tracer.Start(ctx, "NamespaceService.BulkGet")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	if sub, err = authz.RequireSubject(ctx); err != nil {
+	_, err = authz.RequireSubject(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	var ids []string
-	if ids, err = authz.Lookup(ctx, s.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("view"),
-		authz.ResourceType("namespace"),
-	); err != nil {
-		return nil, err
-	}
-
-	var namespaces []contracts.Namespace
-	if namespaces, err = s.namespaces.ListByIDs(ctx, ids); err != nil {
-		return nil, err
-	}
-
-	return namespaces, nil
+	return s.namespaces.BulkGet(ctx, ids)
 }

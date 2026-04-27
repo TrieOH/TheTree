@@ -83,7 +83,7 @@ func (repo *formRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.For
 }
 
 func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Form, error) {
-	ctx, span := repo.span(ctx, "List")
+	ctx, span := repo.span(ctx, "BulkGet")
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).BulkGetForms(ctx, ids)
 	if err != nil {

@@ -13,14 +13,7 @@ SELECT *
 FROM namespaces
 WHERE owner_id = $1 AND name = $2;
 
--- name: ListNamespaceByOwner :many
-SELECT *
-FROM namespaces
-WHERE owner_id = $1
-ORDER BY created_at DESC;
-
--- name: ListNamespaceByIDs :many
-SELECT *
-FROM namespaces
+-- name: BulkGetNamespaces :many
+SELECT * FROM namespaces
 WHERE id = ANY($1::uuid[])
 ORDER BY created_at DESC;

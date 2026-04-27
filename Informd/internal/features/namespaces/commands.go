@@ -32,7 +32,7 @@ func NewCommands(
 	}
 }
 
-func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts.Namespace, err error) {
+func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts.Namespace, err error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
 	defer span.End()
 
@@ -51,8 +51,8 @@ func (s *CommandService) Create(ctx context.Context, name string) (ws *contracts
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_namespace"),
-		authz.Resource("platform", "global"),
-		nil,
+		authz.Resource("user", sub.ID.String()),
+		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/MintzyG/FastUtilitiesNet/bind"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -32,8 +33,8 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Get("/namespaces", h.List)
 		r.Post("/namespaces", h.Create)
+		r.Post("/namespaces/bulk", h.BulkGet)
 	})
 }
 
@@ -73,24 +74,38 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	fun.Created().WithData(namespace).Send(w)
 }
 
-// List godoc
-// @Summary List namespaces
-// @Description Lists all namespaces owned by the authenticated user
-// @Tags namespaces
+type BulkGetRequest struct {
+	IDs []uuid.UUID `json:"ids" validate:"required"`
+}
+
+// BulkGet godoc
+// @Summary Bulk get namespaces
+// @Description Returns a list of namespaces by their IDs. IDs should be obtained via a SpiceDB lookup on the client side.
+// @Tags forms
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Success 200 {array} contracts.Namespace "Namespaces retrieved successfully"
+// @Param request body BulkGetRequest true "Namespace IDs"
+// @Success 200 {array} contracts.Form "Namespaces retrieved successfully"
+// @Failure 400 {object} contracts.ErrorResponse
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /namespaces [get]
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	namespaces, err := h.queries.List(r.Context())
+// @Router /namespaces/bulk [post]
+func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+
+	var payload BulkGetRequest
+	if err := bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	forms, err := h.queries.BulkGet(r.Context(), payload.IDs)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	fun.OK().WithData(namespaces).Send(w)
+	fun.OK().WithData(forms).Send(w)
 }

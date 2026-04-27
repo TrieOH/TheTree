@@ -42,7 +42,7 @@ func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.S
 	return repo.tracer.Start(ctx, "ProjectsRepo."+op)
 }
 
-func mapProject(src sqlc.Namespace) contracts.Namespace {
+func mapNamespace(src sqlc.Namespace) contracts.Namespace {
 	return contracts.Namespace{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -61,9 +61,9 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Namespace) (*co
 		Name:    toCreate.Name,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, errx.DB(err, "namespace")
 	}
-	return new(mapProject(sqlcProject)), nil
+	return new(mapNamespace(sqlcProject)), nil
 }
 
 func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Namespace, error) {
@@ -72,9 +72,9 @@ func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Namespa
 
 	sqlcProject, err := repo.queries(ctx).GetNamespaceByID(ctx, id)
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, errx.DB(err, "namespace")
 	}
-	return new(mapProject(sqlcProject)), nil
+	return new(mapNamespace(sqlcProject)), nil
 }
 func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID) (*contracts.Namespace, error) {
 	ctx, span := repo.span(ctx, "GetByName")
@@ -85,28 +85,17 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 		Name:    name,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, errx.DB(err, "namespace")
 	}
-	return new(mapProject(sqlcProject)), nil
+	return new(mapNamespace(sqlcProject)), nil
 }
 
-func (repo *repo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Namespace, error) {
-	ctx, span := repo.span(ctx, "List")
+func (repo *repo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Namespace, error) {
+	ctx, span := repo.span(ctx, "BulkGet")
 	defer span.End()
-	sqlcProjects, err := repo.queries(ctx).ListNamespaceByOwner(ctx, ownerID)
+	sqlcForm, err := repo.queries(ctx).BulkGetNamespaces(ctx, ids)
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, errx.DB(err, "namespace")
 	}
-	return xslices.MapSlice(sqlcProjects, mapProject), nil
-}
-
-func (repo *repo) ListByIDs(ctx context.Context, ids []string) ([]contracts.Namespace, error) {
-	ctx, span := repo.span(ctx, "ListByIDs")
-	defer span.End()
-	uuids := xslices.FilterMap(ids, uuid.Parse)
-	sqlcProjects, err := repo.queries(ctx).ListNamespaceByIDs(ctx, uuids)
-	if err != nil {
-		return nil, errx.DB(err, "project")
-	}
-	return xslices.MapSlice(sqlcProjects, mapProject), nil
+	return xslices.MapSlice(sqlcForm, mapNamespace), nil
 }
