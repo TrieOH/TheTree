@@ -54,6 +54,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 			authz.Subject("user", sub.ID),
 			authz.Permission("create_form"),
 			authz.Resource("user", sub.ID.String()),
+			map[string]any{"subject_id": sub.ID.String()},
 		); err != nil {
 			return nil, err
 		}
@@ -66,6 +67,12 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 
 		created, err = s.forms.Create(ctx, *form)
 		if err != nil {
+			return nil, err
+		}
+
+		if err = authz.CreateRelation(ctx, s.az,
+			"form:"+created.ID.String()+"#parent_user@user:"+sub.ID.String(),
+		); err != nil {
 			return nil, err
 		}
 
@@ -82,6 +89,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_form"),
 		authz.Resource("namespace", namespace.ID.String()),
+		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return nil, err
 	}
@@ -97,11 +105,17 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 		return nil, err
 	}
 
+	if err = authz.CreateRelation(ctx, s.az,
+		"form:"+created.ID.String()+"#parent_namespace@namespace:"+namespace.ID.String(),
+	); err != nil {
+		return nil, err
+	}
+
 	return created, nil
 }
 
 func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, payload CreateStepRequest) (created *contracts.Step, err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.Create")
+	ctx, span := s.tracer.Start(ctx, "FormService.CreateStep")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -110,10 +124,16 @@ func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, paylo
 		return nil, err
 	}
 
+	_, err = s.forms.GetByID(ctx, formID)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
 		authz.Permission("edit"),
 		authz.Resource("form", formID.String()),
+		nil,
 	); err != nil {
 		return nil, err
 	}

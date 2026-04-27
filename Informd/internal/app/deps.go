@@ -2,6 +2,7 @@ package app
 
 import (
 	"Informd/internal/platform/database"
+	"Informd/internal/shared/authz"
 	"Informd/internal/shared/errx"
 	"context"
 	"log"
@@ -106,6 +107,9 @@ func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 }
 
 func SetupSpiceDB(cfg Config) *authzed.Client {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	client, err := authzed.NewClient(
 		cfg.SpiceDBAddr,
 		grpcutil.WithInsecureBearerToken(cfg.SpiceDBToken),
@@ -120,15 +124,19 @@ func SetupSpiceDB(cfg Config) *authzed.Client {
 		errx.Must(err, "failed to read SpiceDB schema")
 	}
 
-	ctx := context.Background()
 	_, err = client.WriteSchema(ctx, &pb.WriteSchemaRequest{
 		Schema: string(schema),
 	})
 	if err != nil {
 		errx.Must(err, "failed to write SpiceDB schema")
 	}
-
 	log.Println("SpiceDB schema ensured")
+
+	if err = authz.CreateRelation(ctx, client, "platform:global#member@user:*"); err != nil {
+		errx.Must(err, "failed to create relation platform:global#member@user:*")
+	}
+	log.Println("SpiceDB ensured relation: platform:global#member@user:*")
+
 	return client
 }
 

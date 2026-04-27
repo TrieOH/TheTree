@@ -9,6 +9,6 @@ import (
 
 type FormsRepo interface {
 	Create(ctx context.Context, toCreate contracts.Form) (*contracts.Form, error)
-	List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form, error)
-	ListByNamespace(ctx context.Context, namespaceID *uuid.UUID) ([]contracts.Form, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Form, error)
+	BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Form, error)
 }

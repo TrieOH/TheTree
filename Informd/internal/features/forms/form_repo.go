@@ -72,20 +72,20 @@ func (repo *formRepo) Create(ctx context.Context, toCreate contracts.Form) (*con
 	return new(mapForm(sqlcForm)), nil
 }
 
-func (repo *formRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Form, error) {
-	ctx, span := repo.span(ctx, "List")
+func (repo *formRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Form, error) {
+	ctx, span := repo.span(ctx, "GetByID")
 	defer span.End()
-	sqlcForm, err := repo.queries(ctx).ListFormsByUser(ctx, ownerID)
+	sqlcForm, err := repo.queries(ctx).GetFormByID(ctx, id)
 	if err != nil {
-		return nil, errx.DB(err, "form")
+		return nil, err
 	}
-	return xslices.MapSlice(sqlcForm, mapForm), nil
+	return new(mapForm(sqlcForm)), nil
 }
 
-func (repo *formRepo) ListByNamespace(ctx context.Context, namespaceID *uuid.UUID) ([]contracts.Form, error) {
-	ctx, span := repo.span(ctx, "ListByProject")
+func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Form, error) {
+	ctx, span := repo.span(ctx, "List")
 	defer span.End()
-	sqlcForm, err := repo.queries(ctx).ListFormsByNamespace(ctx, namespaceID)
+	sqlcForm, err := repo.queries(ctx).BulkGetForms(ctx, ids)
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}

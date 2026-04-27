@@ -68,14 +68,20 @@ func write(ctx context.Context, client *v1.Client, op pb.RelationshipUpdate_Oper
 
 // Can checks "subject:id" has "permission" on "resource:id"
 // ex: Can(ctx, client, "user:abc", "edit", "event:xyz")
-func Can(ctx context.Context, client *v1.Client, subject, permission, resource string) (bool, error) {
+func Can(ctx context.Context, client *v1.Client, subject, permission, resource string, caveatCtx map[string]any) (bool, error) {
 	subType, subID, _ := strings.Cut(subject, ":")
 	resType, resID, _ := strings.Cut(resource, ":")
+
+	var pbCtx *structpb.Struct
+	if caveatCtx != nil {
+		pbCtx, _ = structpb.NewStruct(caveatCtx)
+	}
 
 	resp, err := client.CheckPermission(ctx, &pb.CheckPermissionRequest{
 		Resource:   &pb.ObjectReference{ObjectType: resType, ObjectId: resID},
 		Permission: permission,
 		Subject:    &pb.SubjectReference{Object: &pb.ObjectReference{ObjectType: subType, ObjectId: subID}},
+		Context:    pbCtx,
 	})
 	if err != nil {
 		return false, fun.Errf("authz check: %v", err).Internal()
@@ -83,8 +89,8 @@ func Can(ctx context.Context, client *v1.Client, subject, permission, resource s
 	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION, nil
 }
 
-func Require(ctx context.Context, client *v1.Client, subject, permission, resource string) error {
-	allowed, err := Can(ctx, client, subject, permission, resource)
+func Require(ctx context.Context, client *v1.Client, subject, permission, resource string, caveatCtx map[string]any) error {
+	allowed, err := Can(ctx, client, subject, permission, resource, caveatCtx)
 	if err != nil {
 		return err
 	}
@@ -126,8 +132,10 @@ func splitArgs(first string, rest []any) ([]string, *Caveat) {
 // Lookup retorna os IDs de recursos do tipo resourceType onde o subject tem a permission
 // ex: Lookup(ctx, client, "user:abc", "view", "project") -> ["uuid1", "uuid2"]
 func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourceType string) ([]string, error) {
-	subType, subID, _ := strings.Cut(subject, ":")
-
+	subType, subID, found := strings.Cut(subject, ":")
+	if !found {
+		return nil, fun.Errf("authz lookup: invalid subject format %q", subject).Internal()
+	}
 	stream, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
 		ResourceObjectType: resourceType,
 		Permission:         permission,

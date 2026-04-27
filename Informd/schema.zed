@@ -1,20 +1,23 @@
 definition platform {
-    relation client: user
+    relation client: user | user with is_self
     relation super_admin: user
 
     permission manage_clients = super_admin
+    permission manage_emails  = super_admin
+    permission self_manage    = client
 }
 
-caveat is_self(user_id string) {
-    request.subject_id == user_id
+caveat is_self(subject_id string, user_id string) {
+    subject_id == user_id
 }
 
 definition user {
     relation parent_platform: platform
 
-    permission create_api_key   = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
-    permission create_namespace = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
-    permission administrate     = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
+    permission create_api_key   = parent_platform->manage_clients + parent_platform->self_manage
+    permission create_namespace = parent_platform->manage_clients + parent_platform->self_manage
+    permission create_form      = parent_platform->manage_clients + parent_platform->self_manage
+    permission administrate     = parent_platform->manage_clients + parent_platform->self_manage
 }
 
 definition namespace {
@@ -34,7 +37,7 @@ definition namespace {
 definition email {
     relation parent_platform: platform
 
-    permission administrate = parent_platform->super_admin
+    permission administrate = parent_platform->manage_emails
 }
 
 definition form {
