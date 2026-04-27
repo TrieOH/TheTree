@@ -1,39 +1,71 @@
-definition user {}
-
 definition platform {
-    relation member: user
+    relation client: user
+    relation super_admin: user
 
-    permission create_project = member
-    permission list_projects = member
+    permission manage_clients = super_admin
 }
 
-definition project {
-    relation platform: platform
-    relation owner: user
-    relation member: user
+caveat is_self(user_id string) {
+    request.subject_id == user_id
+}
 
-    permission create_form = owner + member
-    permission create_key  = owner
-    permission list_forms  = owner + member
-    permission list_keys   = owner + member
-    permission edit        = owner
-    permission delete      = owner
+definition user {
+    relation parent_platform: platform
+
+    permission create_api_key   = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
+    permission create_namespace = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
+    permission administrate     = parent_platform->manage_clients + (parent_platform->client with is_self(user_id: resource.id))
+}
+
+definition namespace {
+    relation owner: user
+
+    relation member_viewer: user
+    relation member_editor: user
+    relation member_admin: user
+
+    permission view         = owner->administrate + member_admin + member_editor + member_viewer
+    permission edit         = owner->administrate + member_admin + member_editor
+    permission delete       = owner->administrate + member_admin
+    permission create_form  = owner->administrate + member_admin + member_editor
+    permission administrate = owner->administrate + member_admin
+}
+
+definition email {
+    relation parent_platform: platform
+
+    permission administrate = parent_platform->super_admin
 }
 
 definition form {
-    relation project: project
-    relation owner: user
+    relation parent_namespace: namespace
+    relation parent_user: user
 
-    permission view   = owner + project->member + project->owner
-    permission edit   = owner + project->owner
-    permission delete = owner + project->owner
+    relation viewer: user
+    relation editor: user
+    relation admin: user
+    relation responder: user | email
+
+    permission view   = parent_namespace->administrate + parent_user + admin + editor + viewer
+    permission edit   = parent_namespace->administrate + parent_user + admin + editor
+    permission delete = parent_namespace->administrate + parent_user + admin
+    permission answer = responder->administrate + responder
+
+    permission administrate = parent_namespace->administrate + admin
 }
 
-definition key {
-    relation project: project
-    relation owner: user
+definition answer {
+    relation parent_form: form
+    relation parent_user: user
 
-    permission view   = owner + project->owner
-    permission edit   = owner + project->owner
-    permission delete = owner + project->owner
+    permission view = parent_form->administrate + parent_form->edit + parent_user
+    permission delete = parent_form->administrate + parent_user
+}
+
+definition api_key {
+    relation parent_user: user
+
+    permission view   = parent_user->administrate
+    permission edit   = parent_user->administrate
+    permission delete = parent_user->administrate
 }
