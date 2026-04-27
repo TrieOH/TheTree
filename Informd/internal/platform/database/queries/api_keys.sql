@@ -8,10 +8,10 @@ SELECT *
 FROM api_keys
 WHERE key_prefix = $1 AND revoked_at IS NULL;
 
--- name: ListAPIKeys :many
+-- name: BulkGetAPIKeys :many
 SELECT *
 FROM api_keys
-WHERE owner_id = $1 AND (revoked_at IS NULL OR revoked_at >= now() - INTERVAL '30 days')
+WHERE id = ANY($1::uuid[]) AND (revoked_at IS NULL OR revoked_at >= now() - INTERVAL '30 days')
 ORDER BY created_at DESC;
 
 -- name: RevokeAPIKey :one

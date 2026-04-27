@@ -1,8 +1,6 @@
 package keys
 
 import (
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/xslices"
 	"net/http"
 	"time"
 
@@ -36,8 +34,8 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Get("/api-keys", h.List)
 		r.Post("/api-keys", h.Create)
+		r.Get("/api-keys/bulk", h.BulkGet)
 		r.Delete("/api-keys/{id}", h.Revoke)
 	})
 }
@@ -101,38 +99,40 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}).Send(w)
 }
 
-// List godoc
-// @Summary List API keys
-// @Description Lists all API keys for the given project (raw keys are never returned)
+type BulkGetRequest struct {
+	IDs []uuid.UUID `json:"ids" validate:"required"`
+}
+
+// BulkGet godoc
+// @Summary Bulk get api keys
+// @Description Returns a list of api keys by their IDs. IDs should be obtained via a SpiceDB lookup on the client side.
 // @Tags api_keys
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param project_id path string true "Project ID"
-// @Success 200 {array} APIKeyResponse "API keys retrieved successfully"
+// @Param request body BulkGetRequest true "APIKey IDs"
+// @Success 200 {array} contracts.Form "Forms retrieved successfully"
+// @Failure 400 {object} contracts.ErrorResponse
 // @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
-// @Router /api-keys [get]
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	keys, err := h.queries.List(r.Context())
+// @Router /api_keys/bulk [post]
+func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+
+	var payload BulkGetRequest
+	if err := bind.Body(req).Bind(&payload); err != nil {
+		fun.Error(err).Send(w)
+		return
+	}
+
+	forms, err := h.queries.BulkGet(r.Context(), payload.IDs)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return
 	}
 
-	out := xslices.MapSlice(keys, func(k contracts.APIKey) APIKeyResponse {
-		return APIKeyResponse{
-			ID:        k.ID,
-			Name:      k.Name,
-			Prefix:    k.KeyPrefix,
-			CreatedAt: k.CreatedAt,
-			RevokedAt: k.RevokedAt,
-		}
-	})
-
-	fun.OK().WithData(out).Send(w)
+	fun.OK().WithData(forms).Send(w)
 }
 
 // Revoke godoc

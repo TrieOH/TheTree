@@ -51,9 +51,9 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 
 	if err = authz.Require(ctx, s.az,
 		authz.Subject("user", sub.ID),
-		authz.Permission("create_key"),
-		authz.Resource("platform", "global"),
-		nil,
+		authz.Permission("create_api_key"),
+		authz.Resource("user", sub.ID.String()),
+		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return "", nil, err
 	}

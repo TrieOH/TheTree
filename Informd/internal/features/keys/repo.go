@@ -79,16 +79,6 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.A
 	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
 }
 
-func (repo *repo) ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]contracts.APIKey, error) {
-	ctx, span := repo.span(ctx, "ListByProject")
-	defer span.End()
-	sqlcApiKeys, err := repo.queries(ctx).ListAPIKeys(ctx, ownerID)
-	if err != nil {
-		return nil, errx.DB(err, "api key")
-	}
-	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
-}
-
 func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.APIKey, error) {
 	ctx, span := repo.span(ctx, "Revoke")
 	defer span.End()
@@ -100,4 +90,14 @@ func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.
 		return nil, errx.DB(err, "api key")
 	}
 	return new(mapApiKey(sqlcApiKey)), nil
+}
+
+func (repo *repo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.APIKey, error) {
+	ctx, span := repo.span(ctx, "BulkGet")
+	defer span.End()
+	sqlcKeys, err := repo.queries(ctx).BulkGetAPIKeys(ctx, ids)
+	if err != nil {
+		return nil, errx.DB(err, "api key")
+	}
+	return xslices.MapSlice(sqlcKeys, mapApiKey), nil
 }

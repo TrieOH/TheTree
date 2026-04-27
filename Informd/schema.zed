@@ -70,5 +70,5 @@ definition api_key {
 
     permission view   = parent_user->administrate
     permission edit   = parent_user->administrate
-    permission delete = parent_user->administrate
+    permission revoke = parent_user->administrate
 }
