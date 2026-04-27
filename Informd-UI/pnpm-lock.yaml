@@ -23,6 +23,9 @@ importers:
       '@soramux/node-fetch-sdk':
         specifier: ^0.1.5
         version: 0.1.5
+      '@soramux/node-perm-sdk':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.11(typescript@5.9.3)(zod@4.3.6)
@@ -1292,6 +1295,9 @@ packages:
 
   '@soramux/node-fetch-sdk@0.1.5':
     resolution: {integrity: sha512-Z0w8udYByx+MZsZmMkxDQ2wfwrQ92P4qN4wxealFDT9QcdVc/wLybnDeGNwpddz3KDByS9Cnqx82af+VN1G7CQ==}
+
+  '@soramux/node-perm-sdk@0.2.0':
+    resolution: {integrity: sha512-kWc6UnQivHmClu5qiATLRPr29096XEkLdtc1dT/fKgCF0pxbC7DGcH7ELFoaMau09kg5lGGw8IbJr9bM8fyYHg==}
 
   '@speed-highlight/core@1.2.15':
     resolution: {integrity: sha512-BMq1K3DsElxDWawkX6eLg9+CKJrTVGCBAWVuHXVUV2u0s2711qiChLSId6ikYPfxhdYocLNt3wWwSvDiTvFabw==}
@@ -4130,6 +4136,10 @@ snapshots:
       ua-parser-js: 2.0.9
 
   '@soramux/node-fetch-sdk@0.1.5': {}
+
+  '@soramux/node-perm-sdk@0.2.0':
+    dependencies:
+      '@soramux/node-fetch-sdk': 0.1.5
 
   '@speed-highlight/core@1.2.15': {}
 
