@@ -81,6 +81,12 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 		return "", nil, err
 	}
 
+	if err = authz.CreateRelation(ctx, s.az,
+		"api_key:"+created.ID.String()+"#parent_user@user:"+sub.ID.String(),
+	); err != nil {
+		return "", nil, err
+	}
+
 	return rawKey, created, nil
 }
 
@@ -103,6 +109,12 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 	}
 
 	if _, err := s.apiKeys.Revoke(ctx, keyID, sub.ID); err != nil {
+		return err
+	}
+
+	if err = authz.DeleteRelation(ctx, s.az,
+		"api_key:"+keyID.String()+"#parent_user@user:"+sub.ID.String(),
+	); err != nil {
 		return err
 	}
 

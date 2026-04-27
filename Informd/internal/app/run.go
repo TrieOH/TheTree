@@ -147,7 +147,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
-	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, app.sdbClient, rt.txRunner, rt.tracer)
 	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }

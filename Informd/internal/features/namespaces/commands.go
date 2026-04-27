@@ -63,5 +63,11 @@ func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts
 		return nil, err
 	}
 
+	if err = authz.CreateRelation(ctx, s.az,
+		"namespace:"+created.ID.String()+"#owner@user:"+sub.ID.String(),
+	); err != nil {
+		return nil, err
+	}
+
 	return created, nil
 }
