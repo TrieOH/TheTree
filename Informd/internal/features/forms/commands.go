@@ -7,7 +7,6 @@ import (
 	"Informd/internal/shared/ports"
 	"context"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -16,7 +15,7 @@ type CommandService struct {
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
 	namespaces ports.NamespaceRepo
-	az         *authzed.Client
+	perms      authz.Checker
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -25,7 +24,7 @@ func NewCommands(
 	forms ports.FormsRepo,
 	steps ports.StepRepo,
 	namespaces ports.NamespaceRepo,
-	az *authzed.Client,
+	perms authz.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -33,7 +32,7 @@ func NewCommands(
 		forms:      forms,
 		steps:      steps,
 		namespaces: namespaces,
-		az:         az,
+		perms:      perms,
 		tx:         tx,
 		tracer:     tracer,
 	}
@@ -50,7 +49,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 	}
 
 	if namespaceID == nil {
-		if err = authz.Require(ctx, s.az,
+		if err = s.perms.Require(ctx,
 			authz.Subject("user", sub.ID),
 			authz.Permission("create_form"),
 			authz.Resource("user", sub.ID.String()),
@@ -70,7 +69,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 			return nil, err
 		}
 
-		if err = authz.CreateRelation(ctx, s.az,
+		if err = s.perms.CreateRelation(ctx,
 			"form:"+created.ID.String()+"#parent_user@user:"+sub.ID.String(),
 		); err != nil {
 			return nil, err
@@ -85,7 +84,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, s.az,
+	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_form"),
 		authz.Resource("namespace", namespace.ID.String()),
@@ -105,7 +104,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 		return nil, err
 	}
 
-	if err = authz.CreateRelation(ctx, s.az,
+	if err = s.perms.CreateRelation(ctx,
 		"form:"+created.ID.String()+"#parent_namespace@namespace:"+namespace.ID.String(),
 	); err != nil {
 		return nil, err
@@ -129,7 +128,7 @@ func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, paylo
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, s.az,
+	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("edit"),
 		authz.Resource("form", formID.String()),

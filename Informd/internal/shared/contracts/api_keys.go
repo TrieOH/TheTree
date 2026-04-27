@@ -22,7 +22,6 @@ func NewAPIKey(userID uuid.UUID, name, keyHash, keyPrefix string) (*APIKey, erro
 		Name:      name,
 		KeyHash:   keyHash,
 		KeyPrefix: keyPrefix,
-		CreatedAt: time.Now(),
 	}
 	if err := validate.Struct(ak); err != nil {
 		return nil, err

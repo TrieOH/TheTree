@@ -2,8 +2,12 @@ node_modules/*
 node_modules
 internal/platform/database/sqlc/
 internal/platform/database/sqlc/*
+internal/shared/mocks/
+internal/shared/mocks/*
 docs/
 docs/*
 .env
 .idea/
 .idea
+.coverage/
+.coverage/*

@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
-	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
@@ -18,7 +17,7 @@ import (
 type CommandService struct {
 	apiKeys  ports.ApiKeysRepo
 	projects ports.NamespaceRepo
-	az       *v1.Client
+	perms    authz.Checker
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -26,14 +25,14 @@ type CommandService struct {
 func NewCommands(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.NamespaceRepo,
-	az *v1.Client,
+	perms authz.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		apiKeys:  apiKeys,
 		projects: projects,
-		az:       az,
+		perms:    perms,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -49,7 +48,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 		return "", nil, err
 	}
 
-	if err = authz.Require(ctx, s.az,
+	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_api_key"),
 		authz.Resource("user", sub.ID.String()),
@@ -81,7 +80,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 		return "", nil, err
 	}
 
-	if err = authz.CreateRelation(ctx, s.az,
+	if err = s.perms.CreateRelation(ctx,
 		"api_key:"+created.ID.String()+"#parent_user@user:"+sub.ID.String(),
 	); err != nil {
 		return "", nil, err
@@ -99,7 +98,7 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 		return err
 	}
 
-	if err = authz.Require(ctx, s.az,
+	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("revoke"),
 		authz.Resource("api_key", keyID.String()),
@@ -112,7 +111,7 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 		return err
 	}
 
-	if err = authz.DeleteRelation(ctx, s.az,
+	if err = s.perms.DeleteRelation(ctx,
 		"api_key:"+keyID.String()+"#parent_user@user:"+sub.ID.String(),
 	); err != nil {
 		return err

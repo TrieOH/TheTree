@@ -41,6 +41,7 @@ type runtime struct {
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	asynq       asynqDeps
+	perms       authz.Checker
 }
 
 type commands struct {
@@ -90,6 +91,7 @@ func (app *Informd) run() runtime {
 		Level:       "info",
 		Development: false,
 	})
+	rt.perms = authz.NewChecker(app.sdbClient)
 	rt.repoQueries = sqlc.New(app.db)
 	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
 	rt.tracer = otel.Tracer(string(telemetry.InformdTracer))
@@ -138,9 +140,9 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 
 func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
-	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	return cmd
 }
 

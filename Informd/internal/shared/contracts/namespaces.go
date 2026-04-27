@@ -16,10 +16,8 @@ type Namespace struct {
 
 func NewNamespace(ownerID uuid.UUID, name string) (*Namespace, error) {
 	p := &Namespace{
-		OwnerID:   ownerID,
-		Name:      name,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		OwnerID: ownerID,
+		Name:    name,
 	}
 	if err := validate.Struct(p); err != nil {
 		return nil, err

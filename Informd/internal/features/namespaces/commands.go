@@ -7,26 +7,25 @@ import (
 	"Informd/internal/shared/ports"
 	"context"
 
-	v1 "github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type CommandService struct {
 	projects ports.NamespaceRepo
-	az       *v1.Client
+	perms    authz.Checker
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
 func NewCommands(
 	projects ports.NamespaceRepo,
-	az *v1.Client,
+	perms authz.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
 	return &CommandService{
 		projects: projects,
-		az:       az,
+		perms:    perms,
 		tx:       tx,
 		tracer:   tracer,
 	}
@@ -48,7 +47,7 @@ func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, s.az,
+	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_namespace"),
 		authz.Resource("user", sub.ID.String()),
@@ -63,7 +62,7 @@ func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts
 		return nil, err
 	}
 
-	if err = authz.CreateRelation(ctx, s.az,
+	if err = s.perms.CreateRelation(ctx,
 		"namespace:"+created.ID.String()+"#owner@user:"+sub.ID.String(),
 	); err != nil {
 		return nil, err

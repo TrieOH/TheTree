@@ -17,9 +17,9 @@ const (
 
 type Form struct {
 	ID          uuid.UUID  `json:"id"`
-	NamespaceID *uuid.UUID `json:"namespace_id"      validate:"required"`
+	NamespaceID *uuid.UUID `json:"namespace_id"`
 	OwnerID     uuid.UUID  `json:"owner_id"          validate:"required"`
-	Name        string     `json:"name" validate:"required"`
+	Name        string     `json:"name"              validate:"required"`
 	Status      FormStatus `json:"status"`
 	OpenedAt    *time.Time `json:"opened_at"`
 	ClosedAt    *time.Time `json:"closed_at"`
@@ -28,9 +28,9 @@ type Form struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
-func NewForm(projectID *uuid.UUID, ownerID uuid.UUID, title string) (*Form, error) {
+func NewForm(namespaceID *uuid.UUID, ownerID uuid.UUID, title string) (*Form, error) {
 	f := &Form{
-		NamespaceID: projectID,
+		NamespaceID: namespaceID,
 		OwnerID:     ownerID,
 		Name:        title,
 		Status:      FormStatusDraft,
