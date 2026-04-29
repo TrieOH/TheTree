@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
-
+    ADMIN_USER_ID: z.string(),
     TRIEOH_AUTHZED_URL: z.string(),
     TRIEOH_AUTHZED_TOKEN: z.string(),
   },
@@ -28,6 +28,7 @@ export const env = createEnv({
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
+    ADMIN_USER_ID: process.env.ADMIN_USER_ID,
     TRIEOH_AUTHZED_URL: process.env.TRIEOH_AUTHZED_URL,
     TRIEOH_AUTHZED_TOKEN: process.env.TRIEOH_AUTHZED_TOKEN
   },

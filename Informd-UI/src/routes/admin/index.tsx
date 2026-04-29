@@ -25,7 +25,7 @@ function RouteComponent() {
   const [isPromoteOpen, setIsPromoteOpen] = useState(false)
   const queryClient = useQueryClient();
 
-  const { data: namespaces = [], isLoading } = useQuery(allNamespacesQueryOptions())
+  const { data: namespaces = [], isLoading } = useQuery(allNamespacesQueryOptions(userId))
 
   const { data: isAdmin = false } = useQuery({
     queryKey: ['user', userId, 'super_admin'],
@@ -38,7 +38,7 @@ function RouteComponent() {
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespacesQueryOptions().queryKey,
+          allNamespacesQueryOptions(userId).queryKey,
           (old: NamespaceI[] = []) => [...old, response.data],
         )
         setIsCreateOpen(false)
