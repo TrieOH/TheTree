@@ -82,8 +82,8 @@ function RouteComponent() {
         onSubmit={createForm}
         fields={[
           {
-            name: 'title',
-            label: 'Form Title',
+            name: 'name',
+            label: 'Form Name',
             type: 'text',
             placeholder: 'e.g. Contact Form',
           },

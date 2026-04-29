@@ -69,7 +69,7 @@ export function FormList({
                 <div className="grid grid-cols-[1fr_auto] items-start gap-2 min-w-0">
                   <div className="flex flex-col gap-1 min-w-0 overflow-hidden">
                     <CardTitle className="text-lg sm:text-xl font-black uppercase tracking-tighter leading-none mb-1 truncate">
-                      {form.title}
+                      {form.name}
                     </CardTitle>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[10px] font-mono text-muted-foreground/50 truncate">
