@@ -11,7 +11,6 @@ export interface NamespaceI {
   id: string;
   name: string;
   owner_id: string;
-  scope_id: string;
   created_at: string;
   updated_at: string;
 }
