@@ -24,7 +24,7 @@ export const promoteUserToClientFn = createServerFn({ method: 'POST' })
     if (!res.success) {
       return {
         success: false,
-        message: res.message ?? `Failed to promote user ${data.userId} to client`,
+        message: `Failed to promote user ${data.userId} to client`,
       }
     }
     return {

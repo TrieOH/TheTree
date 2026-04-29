@@ -16,7 +16,6 @@ const getNamespaceIds = createServerFn({ method: 'GET' })
     for await (const response of stream) {
       if(response.result) userIds.push(response.result.resourceObjectId)
     }
-    console.log(userIds)
     return userIds
   })
 
@@ -31,6 +30,7 @@ export const createNamespaceFn = createClientOnlyFn((namespaceData: NamespaceCre
 
 /**
  * Fetches all namespaces from the server.
+ * @param userId if the user that want to see the namespaces
  * @returns A promise that resolves to an array of namespaces objects.
  */
 export const getAllNamespacesFn = createClientOnlyFn(async (userId: string) => {

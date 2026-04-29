@@ -14,17 +14,19 @@ export const Route = createFileRoute('/admin/$namespaceID/')({
 
 function RouteComponent() {
   const { namespaceID } = Route.useParams()
+  const { auth } = Route.useRouteContext()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const queryClient = useQueryClient()
+  const userId = auth?.auth.profile()?.id || ''
 
-  const { data: forms = [], isLoading } = useQuery(allNamespaceFormsQueryOptions(namespaceID))
+  const { data: forms = [], isLoading } = useQuery(allNamespaceFormsQueryOptions(userId))
 
   const { mutate: createForm, isPending: isPendingCreate } = useMutation({
     mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(data, namespaceID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceFormsQueryOptions(namespaceID).queryKey,
+          allNamespaceFormsQueryOptions(userId).queryKey,
           (old: FormI[] = []) => [...old, response.data],
         )
         setIsCreateOpen(false)
