@@ -19,7 +19,7 @@ type Form struct {
 	ID          uuid.UUID  `json:"id"`
 	NamespaceID *uuid.UUID `json:"namespace_id"`
 	OwnerID     uuid.UUID  `json:"owner_id"          validate:"required"`
-	Name        string     `json:"name"              validate:"required"`
+	Name        string     `json:"name"              validate:"required"` // FIXME : Change to title
 	Status      FormStatus `json:"status"`
 	OpenedAt    *time.Time `json:"opened_at"`
 	ClosedAt    *time.Time `json:"closed_at"`

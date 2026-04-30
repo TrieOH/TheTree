@@ -1,10 +1,9 @@
 definition platform {
-    relation client: user | user with is_self
+    relation client: user
     relation super_admin: user
 
     permission manage_clients = super_admin
     permission manage_emails  = super_admin
-    permission self_manage    = client
 }
 
 caveat is_self(subject_id string, user_id string) {
@@ -13,25 +12,26 @@ caveat is_self(subject_id string, user_id string) {
 
 definition user {
     relation parent_platform: platform
+    relation self: user | user with is_self
 
-    permission create_api_key   = parent_platform->manage_clients + parent_platform->self_manage
-    permission create_namespace = parent_platform->manage_clients + parent_platform->self_manage
-    permission create_form      = parent_platform->manage_clients + parent_platform->self_manage
-    permission administrate     = parent_platform->manage_clients + parent_platform->self_manage
+    permission create_api_key   = parent_platform->manage_clients + self
+    permission create_namespace = parent_platform->manage_clients + self
+    permission create_form      = parent_platform->manage_clients + self
+    permission administrate     = parent_platform->manage_clients + self
 }
 
 definition namespace {
     relation owner: user
 
-    relation member_viewer: user
-    relation member_editor: user
-    relation member_admin: user
+    relation viewer: user
+    relation editor: user
+    relation admin: user
 
-    permission view         = owner->administrate + member_admin + member_editor + member_viewer
-    permission edit         = owner->administrate + member_admin + member_editor
-    permission delete       = owner->administrate + member_admin
-    permission create_form  = owner->administrate + member_admin + member_editor
-    permission administrate = owner->administrate + member_admin
+    permission view         = owner->administrate + admin + editor + viewer
+    permission edit         = owner->administrate + admin + editor
+    permission delete       = owner->administrate + admin
+    permission create_form  = owner->administrate + admin + editor
+    permission administrate = owner->administrate + admin
 }
 
 definition email {
@@ -48,18 +48,19 @@ definition form {
     relation editor: user
     relation admin: user
     relation responder: user | email
+    relation open: user:* | email:*
 
     permission view   = parent_namespace->administrate + parent_user + admin + editor + viewer
     permission edit   = parent_namespace->administrate + parent_user + admin + editor
     permission delete = parent_namespace->administrate + parent_user + admin
-    permission answer = responder->administrate + responder
+    permission answer = responder + open
 
     permission administrate = parent_namespace->administrate + admin
 }
 
 definition answer {
     relation parent_form: form
-    relation parent_user: user
+    relation parent_user: user | email
 
     permission view = parent_form->administrate + parent_form->edit + parent_user
     permission delete = parent_form->administrate + parent_user

@@ -97,7 +97,7 @@ services:
   informd-spicedb:
     container_name: informd-spicedb
     image: authzed/spicedb:latest
-    command: serve
+    command: serve --http-enabled true
     restart: unless-stopped
     ports:
       - "50051:50051"
