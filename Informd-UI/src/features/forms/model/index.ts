@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const formCreateSchema = z.object({
-  name: z.string({ error: "Title is required" })
+  title: z.string({ error: "Title is required" })
     .min(3, "Title must be at least 3 characters long"),
 });
 
