@@ -35,7 +35,7 @@ func RegisterRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
 		r.Post("/api-keys", h.Create)
-		r.Get("/api-keys/bulk", h.BulkGet)
+		r.Post("/api-keys/bulk", h.BulkGet)
 		r.Delete("/api-keys/{id}", h.Revoke)
 	})
 }

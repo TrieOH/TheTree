@@ -5,6 +5,7 @@ import (
 	"Informd/internal/shared/errx"
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -67,6 +69,9 @@ func SetupFUN(module string) {
 
 	v := SetupValidator()
 	bind.SetValidator(v)
+	fun.SetPathParamFunc(func(r *http.Request, key string) string {
+		return chi.URLParam(r, key)
+	})
 }
 
 func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
