@@ -1,4 +1,4 @@
-import { Key, Copy, Check, ShieldOff, Trash2 } from 'lucide-react'
+import { Key, Copy, Check, ShieldOff } from 'lucide-react'
 import { Button } from '#/shared/ui/shadcn/button'
 import { Card, CardContent } from '#/shared/ui/shadcn/card'
 import { Badge } from '#/shared/ui/shadcn/badge'
@@ -90,14 +90,6 @@ export function KeyList({ keys, isLoading, onRevoke }: KeyListProps) {
                 >
                   <ShieldOff className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                   <span className="hidden xs:inline">Revoke</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-none h-8 w-8 text-muted-foreground/30 cursor-not-allowed"
-                  disabled
-                >
-                  <Trash2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                 </Button>
               </div>
 

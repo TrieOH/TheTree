@@ -6,21 +6,15 @@ import { lookupResources } from "@soramux/node-perm-sdk";
 import { serverPerm } from "#/shared/lib/api/server-auth";
 
 const getFormsIds = createServerFn({ method: 'GET' })
-  .inputValidator((data:{ userId: string, namespaceId: string}) => data)
+  .inputValidator((userId: string) => userId)
   .handler(async ({ data }) => {
-        const request = lookupResources().subject("user", data.userId)
+    const request = lookupResources().subject("user", data)
       .permission("view").resourceType("form").build()
-    //  const request = lookupResources().subject("namespace", data.namespaceId)
-    //   .permission("view").resourceType("form")
-    //   .context({"user": data.userId})
-    //   .build()
     const userIds = [];
     const stream = serverPerm.lookupResources(request);
     for await (const response of stream) {
-      console.log(response)
-      if(response.result) userIds.push(response.result.resourceObjectId)
+      if (response.result) userIds.push(response.result.resourceObjectId)
     }
-  console.log(userIds)
     return userIds
   })
 
@@ -45,8 +39,11 @@ export const createFormOnNamespaceFn = createClientOnlyFn((
 export const getAllNamespaceFormsFn = createClientOnlyFn(async (
   namespaceId: string, userId: string
 ) => {
-  const ids = await getFormsIds({ data: {namespaceId, userId} })
-  const res = await authFetcher.post<FormI[]>('/forms/bulk', { ids });
+  const ids = await getFormsIds({ data: userId })
+  const res = await authFetcher.post<FormI[]>(
+    `/forms/bulk?filter_key=namespace_id&filter_op=equals&filter_order=asc&filter_value=${namespaceId}`,
+    { ids }
+  );
   return res.success ? res.data : []
 });
 

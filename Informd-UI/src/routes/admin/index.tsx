@@ -1,6 +1,6 @@
 import { allNamespacesQueryOptions, createNamespaceFn } from '#/features/namespaces/api';
-import { namespaceCreateSchema   } from '#/features/namespaces/model'
-import type {NamespaceI, NamespaceCreateI } from '#/features/namespaces/model';
+import { namespaceCreateSchema } from '#/features/namespaces/model'
+import type { NamespaceI, NamespaceCreateI } from '#/features/namespaces/model';
 import NamespaceList from '#/features/namespaces/ui/namespace-list'
 import FormModal from '#/widgets/modal/form-modal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '#/shared/ui/shadcn/button';
 import { UserPlus } from 'lucide-react';
-import { promoteToClientSchema  } from '#/features/permissions/model';
+import { promoteToClientSchema } from '#/features/permissions/model';
 import type { PromoteToClientI } from '#/features/permissions/model';
 import { checkSuperAdminPrivilegesFn, promoteUserToClientFn } from '#/features/permissions/api';
 
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/admin/')({
 function RouteComponent() {
   const { auth } = Route.useRouteContext()
   const userId = auth?.auth.profile()?.id || ''
-  
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isPromoteOpen, setIsPromoteOpen] = useState(false)
   const queryClient = useQueryClient();
@@ -45,14 +45,15 @@ function RouteComponent() {
         toast.success('Namespace created successfully')
       }
     },
+    onError: (error: Error) => toast.error(error.message)
   })
 
   const { mutate: promoteUser, isPending: isPendingPromote } = useMutation({
-    mutationFn: (data: Omit<PromoteToClientI, 'requesterId'>) => promoteUserToClientFn({ 
-      data: { 
-        userId: data.userId, 
+    mutationFn: (data: Omit<PromoteToClientI, 'requesterId'>) => promoteUserToClientFn({
+      data: {
+        userId: data.userId,
         requesterId: userId
-      } 
+      }
     }),
     onSuccess: (response) => {
       if (response.success) {
@@ -60,9 +61,7 @@ function RouteComponent() {
         setIsPromoteOpen(false)
       } else toast.warning(response.message)
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to promote user')
-    }
+    onError: (error: Error) => toast.error(error.message || 'Failed to promote user')
   })
 
   if (isLoading) {
@@ -93,9 +92,9 @@ function RouteComponent() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {isAdmin && (
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            className="rounded-sm gap-2" 
+          <Button
+            variant="outline"
+            className="rounded-sm gap-2"
             onClick={() => setIsPromoteOpen(true)}
           >
             <UserPlus className="w-4 h-4" />
@@ -104,7 +103,7 @@ function RouteComponent() {
         </div>
       )}
 
-      <NamespaceList 
+      <NamespaceList
         openModal={() => setIsCreateOpen(true)}
         namespaces={namespaces}
       />

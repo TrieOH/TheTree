@@ -10,10 +10,10 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyList } from '#/features/keys/ui/key-list'
 import { ApiKeyCreatedModal } from '#/features/keys/ui/api-key-created-modal'
-import { 
-  allNamespaceApiKeysQueryOptions, 
-  createApiKeyOnNamespaceFn, 
-  revokeApiKeyOnNamespaceFn 
+import {
+  allNamespaceApiKeysQueryOptions,
+  createApiKeyOnNamespaceFn,
+  revokeApiKeyOnNamespaceFn
 } from '#/features/keys/api'
 
 export const Route = createFileRoute('/admin/$namespaceID/keys')({
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/admin/$namespaceID/keys')({
 
 function RouteComponent() {
   const { auth } = Route.useRouteContext()
-  const { namespaceID } = Route.useParams()
+  // const { namespaceID } = Route.useParams()
   const queryClient = useQueryClient();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -43,28 +43,26 @@ function RouteComponent() {
         )
         setIsCreateOpen(false)
         setNewlyCreatedKey(response.data)
-        toast.success("API Key created successfully")
-      }
+        toast.success(response.message || "API Key created successfully")
+      } else toast.error(response.message || "Failed to revoke API key")
     },
+    onError: (error: Error) => toast.error(error.message)
   })
 
   const { mutate: revokeApiKey } = useMutation({
     mutationFn: (id: string) => revokeApiKeyOnNamespaceFn(id),
-    onSuccess: (response) => {
+    onSuccess: (response, id) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceApiKeysQueryOptions(namespaceID).queryKey,
+          allNamespaceApiKeysQueryOptions(userId).queryKey,
           (old: ApiKeyI[] = []) =>
-            old.map((ws) =>
-              ws.id === revokeKeyId
-                ? { ...ws, revoked_at: new Date().toISOString() }
-                : ws
-            )
+            old.filter((key) => key.id !== id)
         );
         setRevokeKeyId(null)
         toast.success(response.message)
-      }
+      } else toast.error(response.message)
     },
+    onError: (error: Error) => toast.error(error.message)
   })
 
   return (

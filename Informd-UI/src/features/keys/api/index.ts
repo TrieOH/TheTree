@@ -13,7 +13,7 @@ const getApiKeyIds = createServerFn({ method: 'GET' })
     const userIds = [];
     const stream = serverPerm.lookupResources(request);
     for await (const response of stream) {
-      if(response.result) userIds.push(response.result.resourceObjectId)
+      if (response.result) userIds.push(response.result.resourceObjectId)
     }
     return userIds
   })
@@ -57,7 +57,5 @@ export const allNamespaceApiKeysQueryOptions = (userId: string) => {
  * @returns A promise that resolves to the API response(void).
  */
 export const revokeApiKeyOnNamespaceFn = createClientOnlyFn((apiKeyId: string) => {
-  return authFetcher.delete<void>(
-    `api-keys/${apiKeyId}`
-  );
+  return authFetcher.delete<void>(`api-keys/${apiKeyId}`);
 });

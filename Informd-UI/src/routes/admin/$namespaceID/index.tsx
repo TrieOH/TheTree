@@ -35,6 +35,7 @@ function RouteComponent() {
         toast.success('Form created successfully')
       }
     },
+    onError: (error: Error) => toast.error(error.message)
   })
 
   if (isLoading) {
