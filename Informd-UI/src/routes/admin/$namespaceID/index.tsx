@@ -19,14 +19,16 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const userId = auth?.auth.profile()?.id || ''
 
-  const { data: forms = [], isLoading } = useQuery(allNamespaceFormsQueryOptions(userId))
+  const { data: forms = [], isLoading } = useQuery(
+    allNamespaceFormsQueryOptions(namespaceID, userId)
+  )
 
   const { mutate: createForm, isPending: isPendingCreate } = useMutation({
     mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(data, namespaceID),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceFormsQueryOptions(userId).queryKey,
+          allNamespaceFormsQueryOptions(namespaceID, userId).queryKey,
           (old: FormI[] = []) => [...old, response.data],
         )
         setIsCreateOpen(false)

@@ -22,20 +22,23 @@ export const Route = createFileRoute('/admin/$namespaceID/keys')({
 
 
 function RouteComponent() {
+  const { auth } = Route.useRouteContext()
+  const { namespaceID } = Route.useParams()
+  const queryClient = useQueryClient();
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [revokeKeyId, setRevokeKeyId] = useState<string | null>(null)
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<ApiKeyCreateResponseI | null>(null)
 
-  const { namespaceID } = Route.useParams()
-  const queryClient = useQueryClient();
-  const { data: keys = [], isLoading } = useQuery(allNamespaceApiKeysQueryOptions(namespaceID))
+  const userId = auth?.auth.profile()?.id || ''
+  const { data: keys = [], isLoading } = useQuery(allNamespaceApiKeysQueryOptions(userId))
 
   const { mutate: createApiKey, isPending: isPendingCreate } = useMutation({
-    mutationFn: (data: ApiKeyCreateI) => createApiKeyOnNamespaceFn(data, namespaceID),
+    mutationFn: (data: ApiKeyCreateI) => createApiKeyOnNamespaceFn(data),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceApiKeysQueryOptions(namespaceID).queryKey,
+          allNamespaceApiKeysQueryOptions(userId).queryKey,
           (old: ApiKeyI[] = []) => [response.data, ...old],
         )
         setIsCreateOpen(false)
@@ -46,7 +49,7 @@ function RouteComponent() {
   })
 
   const { mutate: revokeApiKey } = useMutation({
-    mutationFn: (id: string) => revokeApiKeyOnNamespaceFn(id, namespaceID),
+    mutationFn: (id: string) => revokeApiKeyOnNamespaceFn(id),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
