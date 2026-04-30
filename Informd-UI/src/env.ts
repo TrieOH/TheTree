@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
-    ADMIN_USER_ID: z.string(),
+    ADMIN_USER_ID: z.string().optional(),
     TRIEOH_AUTHZED_URL: z.string(),
     TRIEOH_AUTHZED_TOKEN: z.string(),
   },
