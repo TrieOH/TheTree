@@ -92,7 +92,9 @@ func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID, params contr
 	ctx, span := repo.span(ctx, "BulkGet")
 	defer span.End()
 
-	if params.FilterValue == "" {
+	isNullOp := params.FilterOp == "is_null" || params.FilterOp == "not_null"
+
+	if params.FilterValue == "" && !isNullOp {
 		sqlcForms, err := repo.queries(ctx).BulkGetForms(ctx, ids)
 		if err != nil {
 			return nil, errx.DB(err, "form")
@@ -140,12 +142,17 @@ func buildBulkGetQuery(ids []uuid.UUID, params contracts.BulkGetParams) (string,
 		order = "created_at ASC"
 	}
 
-	return sq.StatementBuilder.
+	q := sq.StatementBuilder.
 		PlaceholderFormat(sq.Dollar).
 		Select("id, owner_id, namespace_id, name, status, opened_at, closed_at, archived_at, created_at, updated_at").
 		From("forms").
-		Where(sq.Expr("id = ANY(?)", ids)).
-		Where(fmt.Sprintf("%s %s ?", col, op), params.FilterValue).
-		OrderBy(order).
-		ToSql()
+		Where(sq.Expr("id = ANY(?)", ids))
+
+	if params.FilterOp == "is_null" || params.FilterOp == "not_null" {
+		q = q.Where(fmt.Sprintf("%s %s", col, op)) // sem placeholder
+	} else {
+		q = q.Where(fmt.Sprintf("%s %s ?", col, op), params.FilterValue)
+	}
+
+	return q.OrderBy(order).ToSql()
 }

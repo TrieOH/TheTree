@@ -27,7 +27,9 @@ var AllowedFilterKeys = map[string]string{
 }
 
 var AllowedOps = map[string]string{
-	"eq":   "=",
-	"neq":  "!=",
-	"like": "LIKE",
+	"eq":       "=",
+	"neq":      "!=",
+	"like":     "LIKE",
+	"is_null":  "IS NULL",
+	"not_null": "IS NOT NULL",
 }

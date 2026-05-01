@@ -66,7 +66,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var payload CreateFormRequest
 	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+		fun.Error(err).Send(w) // funciona sem problema
 		return
 	}
 
@@ -106,13 +106,13 @@ func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	var payload CreateFormRequest
 	if err = bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+		fun.Error(err).Send(w) // 109
 		return
 	}
 
 	form, err := h.commands.Create(r.Context(), payload.Title, &namespaceID)
 	if err != nil {
-		fun.Error(err).Send(w)
+		fun.Error(err).Send(w) // 115
 		return
 	}
 
