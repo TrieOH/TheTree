@@ -19,43 +19,42 @@ const getApiKeyIds = createServerFn({ method: 'GET' })
   })
 
 /**
- * Create a new API key for the specified namespace on the server.
+ * Create a new API key for the current user on the server.
  * @param apiKeyData - The data for the new API key.
- * @param namespaceID - The namespace ID
  * @returns A promise that resolves to the API response containing the newly created API key.
  */
-export const createApiKeyOnNamespaceFn = createClientOnlyFn((apiKeyData: ApiKeyCreateI) => {
+export const createApiKeyFn = createClientOnlyFn((apiKeyData: ApiKeyCreateI) => {
   return authFetcher.post<ApiKeyCreateResponseI>('/api-keys', apiKeyData);
 });
 
 
 /**
- * Fetches all API keys for the specified namespace from the server.
- * @param userId if the user that want to see the namespace forms
+ * Fetches all API keys for the current user from the server.
+ * @param userId the user ID
  * @returns A promise that resolves to an array of API key objects.
  */
-export const getAllNamespaceApiKeysFn = createClientOnlyFn(async (userId: string) => {
+export const getAllUserApiKeysFn = createClientOnlyFn(async (userId: string) => {
   const ids = await getApiKeyIds({ data: userId })
   const res = await authFetcher.post<ApiKeyI[]>('/api-keys/bulk', { ids });
   return res.success ? res.data : []
 });
 
 /**
- * Query options for fetching all API keys for a specific namespace, using TanStack Query.
+ * Query options for fetching all API keys for the current user, using TanStack Query.
  * @returns An object containing the query key and query function for fetching all API keys.
  */
-export const allNamespaceApiKeysQueryOptions = (userId: string) => {
+export const allUserApiKeysQueryOptions = (userId: string) => {
   return queryOptions({
-    queryKey: ['namespaces', userId, "keys"],
-    queryFn: () => getAllNamespaceApiKeysFn(userId),
+    queryKey: ['users', userId, "keys"],
+    queryFn: () => getAllUserApiKeysFn(userId),
   })
 }
 
 /**
- * Revoke an API key for the specified namespace on the server.
+ * Revoke an API key for the current user on the server.
  * @param apiKeyId - The ID of the API key to revoke.
  * @returns A promise that resolves to the API response(void).
  */
-export const revokeApiKeyOnNamespaceFn = createClientOnlyFn((apiKeyId: string) => {
+export const revokeApiKeyFn = createClientOnlyFn((apiKeyId: string) => {
   return authFetcher.delete<void>(`api-keys/${apiKeyId}`);
 });

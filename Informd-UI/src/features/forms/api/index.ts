@@ -28,7 +28,18 @@ export const createFormOnNamespaceFn = createClientOnlyFn((
   formData: FormCreateI,
   namespaceID: string
 ) => {
-  return authFetcher.post<FormI>(`/forms?namespace_id=${namespaceID}`, formData);
+  return authFetcher.post<FormI>(`/namespaces/${namespaceID}/forms`, formData);
+});
+
+/**
+ * Create a new Form for the current user (personal form) on the server.
+ * @param formData - The data for the new form.
+ * @returns A promise that resolves to the API response containing the newly created Form.
+ */
+export const createFormOnUserFn = createClientOnlyFn((
+  formData: FormCreateI
+) => {
+  return authFetcher.post<FormI>(`/forms`, formData);
 });
 
 /**
@@ -40,11 +51,25 @@ export const getAllNamespaceFormsFn = createClientOnlyFn(async (
   namespaceId: string, userId: string
 ) => {
   const ids = await getFormsIds({ data: userId })
-  const res = await authFetcher.post<FormI[]>(
-    `/forms/bulk?filter_key=namespace_id&filter_op=equals&filter_order=asc&filter_value=${namespaceId}`,
+  const res = await authFetcher.post<FormI[] | null>(
+    `/forms/bulk?filter_key=namespace_id&filter_op=eq&filter_value=${namespaceId}`,
     { ids }
   );
-  return res.success ? res.data : []
+  return res.success ? (res.data ?? []) : []
+});
+
+/**
+ * Fetches all personal Forms for the current user from the server.
+ * @param userId the user ID
+ * @returns A promise that resolves to an array of Form objects.
+ */
+export const getAllUserFormsFn = createClientOnlyFn(async (userId: string) => {
+  const ids = await getFormsIds({ data: userId })
+  const res = await authFetcher.post<FormI[] | null>(
+    '/forms/bulk?filter_key=namespace_id&filter_op=is_null',
+    { ids }
+  );
+  return res.success ? (res.data ?? []) : []
 });
 
 /**
@@ -55,5 +80,16 @@ export const allNamespaceFormsQueryOptions = (namespaceId: string, userId: strin
   return queryOptions({
     queryKey: ['namespaces', namespaceId, "forms"],
     queryFn: () => getAllNamespaceFormsFn(namespaceId, userId),
+  })
+}
+
+/**
+ * Query options for fetching all personal Forms for the current user, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching all personal Forms.
+ */
+export const allUserFormsQueryOptions = (userId: string) => {
+  return queryOptions({
+    queryKey: ['users', userId, "forms"],
+    queryFn: () => getAllUserFormsFn(userId),
   })
 }

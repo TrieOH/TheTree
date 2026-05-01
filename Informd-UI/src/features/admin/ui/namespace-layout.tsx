@@ -1,6 +1,5 @@
 import { Link, useParams } from '@tanstack/react-router'
 import {
-  Key,
   LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '#/shared/lib/utils'
@@ -18,13 +17,6 @@ export default function NamespaceLayout({ children }: NamespaceLayoutProps) {
       params: { namespaceID },
       icon: LayoutDashboard,
       label: 'Forms',
-      exact: true
-    },
-    {
-      to: '/admin/$namespaceID/keys',
-      params: { namespaceID },
-      icon: Key,
-      label: 'API Keys',
       exact: true
     },
   ]

@@ -101,6 +101,7 @@
 
 body {
   margin: 0;
+  min-width: 320px;
   color: var(--color-foreground);
   font-family: var(--font-sans);
   background-color: var(--color-background);

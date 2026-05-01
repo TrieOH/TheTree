@@ -11,9 +11,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyList } from '#/features/keys/ui/key-list'
 import { ApiKeyCreatedModal } from '#/features/keys/ui/api-key-created-modal'
 import {
-  allNamespaceApiKeysQueryOptions,
-  createApiKeyOnNamespaceFn,
-  revokeApiKeyOnNamespaceFn
+  allUserApiKeysQueryOptions,
+  createApiKeyFn,
+  revokeApiKeyFn
 } from '#/features/keys/api'
 
 export const Route = createFileRoute('/admin/$namespaceID/keys')({
@@ -31,14 +31,14 @@ function RouteComponent() {
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<ApiKeyCreateResponseI | null>(null)
 
   const userId = auth?.auth.profile()?.id || ''
-  const { data: keys = [], isLoading } = useQuery(allNamespaceApiKeysQueryOptions(userId))
+  const { data: keys = [], isLoading } = useQuery(allUserApiKeysQueryOptions(userId))
 
   const { mutate: createApiKey, isPending: isPendingCreate } = useMutation({
-    mutationFn: (data: ApiKeyCreateI) => createApiKeyOnNamespaceFn(data),
+    mutationFn: (data: ApiKeyCreateI) => createApiKeyFn(data),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceApiKeysQueryOptions(userId).queryKey,
+          allUserApiKeysQueryOptions(userId).queryKey,
           (old: ApiKeyI[] = []) => [response.data, ...old],
         )
         setIsCreateOpen(false)
@@ -50,11 +50,11 @@ function RouteComponent() {
   })
 
   const { mutate: revokeApiKey } = useMutation({
-    mutationFn: (id: string) => revokeApiKeyOnNamespaceFn(id),
+    mutationFn: (id: string) => revokeApiKeyFn(id),
     onSuccess: (response, id) => {
       if (response.success) {
         queryClient.setQueryData(
-          allNamespaceApiKeysQueryOptions(userId).queryKey,
+          allUserApiKeysQueryOptions(userId).queryKey,
           (old: ApiKeyI[] = []) =>
             old.filter((key) => key.id !== id)
         );
