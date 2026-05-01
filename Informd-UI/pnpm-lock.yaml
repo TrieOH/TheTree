@@ -18,8 +18,8 @@ importers:
         specifier: ^1.7.0
         version: 1.8.2(@types/react@19.2.14)(posthog-js@1.364.2)(react@19.2.4)
       '@soramux/identityx-sdk-ts':
-        specifier: ^0.10.2
-        version: 0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: link:../NodeAuth
+        version: link:../NodeAuth
       '@soramux/node-fetch-sdk':
         specifier: ^0.1.5
         version: 0.1.5
@@ -1290,12 +1290,6 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/identityx-sdk-ts@0.10.2':
-    resolution: {integrity: sha512-QAWVdgnZ189ROgK2QHEubrwhNbfZe3AF4CLRTKeWqrpm9g9L5d58huuLLOmSFr5tTpzkmvo5zZKcT1+odVyedQ==}
-    peerDependencies:
-      react: ^19.2.0
-      react-dom: ^19.2.0
-
   '@soramux/node-fetch-sdk@0.1.5':
     resolution: {integrity: sha512-Z0w8udYByx+MZsZmMkxDQ2wfwrQ92P4qN4wxealFDT9QcdVc/wLybnDeGNwpddz3KDByS9Cnqx82af+VN1G7CQ==}
 
@@ -2100,9 +2094,6 @@ packages:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
 
-  detect-europe-js@0.1.2:
-    resolution: {integrity: sha512-lgdERlL3u0aUdHocoouzT10d9I89VVhk0qNRmll7mXdGfJT1/wqZ2ZLA4oJAjeACPY5fT1wsbq2AT+GkuInsow==}
-
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
@@ -2433,9 +2424,6 @@ packages:
 
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
-
-  is-standalone-pwa@0.1.1:
-    resolution: {integrity: sha512-9Cbovsa52vNQCjdXOzeQq5CnCbAcRk05aU62K20WO372NrTv0NxibLFCK6lQ4/iZEFdEA3p3t2VNOn8AJ53F5g==}
 
   isbot@5.1.36:
     resolution: {integrity: sha512-C/ZtXyJqDPZ7G7JPr06ApWyYoHjYexQbS6hPYD4WYCzpv2Qes6Z+CCEfTX4Owzf+1EJ933PoI2p+B9v7wpGZBQ==}
@@ -2769,11 +2757,6 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
 
-  react-icons@5.6.0:
-    resolution: {integrity: sha512-RH93p5ki6LfOiIt0UtDyNg/cee+HLVR6cHHtW3wALfo+eOHTp8RnU2kRkI6E+H19zMIs03DyxUG/GfZMOGvmiA==}
-    peerDependencies:
-      react: '*'
-
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
 
@@ -3002,13 +2985,6 @@ packages:
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
-    hasBin: true
-
-  ua-is-frozen@0.1.2:
-    resolution: {integrity: sha512-RwKDW2p3iyWn4UbaxpP2+VxwqXh0jpvdxsYpZ5j/MLLiQOfbsV5shpgQiw93+KMYQPcteeMQ289MaAFzs3G9pw==}
-
-  ua-parser-js@2.0.9:
-    resolution: {integrity: sha512-OsqGhxyo/wGdLSXMSJxuMGN6H4gDnKz6Fb3IBm4bxZFMnyy0sdf6MN96Ie8tC6z/btdO+Bsy8guxlvLdwT076w==}
     hasBin: true
 
   ufo@1.6.3:
@@ -4130,14 +4106,6 @@ snapshots:
     dependencies:
       solid-js: 1.9.12
 
-  '@soramux/identityx-sdk-ts@0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      '@soramux/node-fetch-sdk': 0.1.5
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      react-icons: 5.6.0(react@19.2.4)
-      ua-parser-js: 2.0.9
-
   '@soramux/node-fetch-sdk@0.1.5': {}
 
   '@soramux/node-perm-sdk@0.3.0':
@@ -5022,8 +4990,6 @@ snapshots:
 
   dequal@2.0.3: {}
 
-  detect-europe-js@0.1.2: {}
-
   detect-libc@2.1.2: {}
 
   diff@8.0.4: {}
@@ -5398,8 +5364,6 @@ snapshots:
 
   is-potential-custom-element-name@1.0.1: {}
 
-  is-standalone-pwa@0.1.1: {}
-
   isbot@5.1.36: {}
 
   isexe@2.0.0: {}
@@ -5710,10 +5674,6 @@ snapshots:
     dependencies:
       react: 19.2.4
 
-  react-icons@5.6.0(react@19.2.4):
-    dependencies:
-      react: 19.2.4
-
   react-is@17.0.2: {}
 
   react-refresh@0.18.0: {}
@@ -5942,14 +5902,6 @@ snapshots:
       - supports-color
 
   typescript@5.9.3: {}
-
-  ua-is-frozen@0.1.2: {}
-
-  ua-parser-js@2.0.9:
-    dependencies:
-      detect-europe-js: 0.1.2
-      is-standalone-pwa: 0.1.1
-      ua-is-frozen: 0.1.2
 
   ufo@1.6.3: {}
 
