@@ -8,24 +8,30 @@ import (
 	"Informd/internal/shared/ports"
 	"Informd/internal/shared/xslices"
 	"context"
+	"fmt"
+	"strings"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type formRepo struct {
 	q      *sqlc.Queries
+	db     *pgxpool.Pool
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.FormsRepo = (*formRepo)(nil)
 
-func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+func NewFormRepo(q *sqlc.Queries, db *pgxpool.Pool, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
 	return &formRepo{
 		q:      q,
+		db:     db,
 		log:    log,
 		tracer: tracer,
 	}
@@ -82,12 +88,64 @@ func (repo *formRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.For
 	return new(mapForm(sqlcForm)), nil
 }
 
-func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Form, error) {
+func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID, params contracts.BulkGetParams) ([]contracts.Form, error) {
 	ctx, span := repo.span(ctx, "BulkGet")
 	defer span.End()
-	sqlcForm, err := repo.queries(ctx).BulkGetForms(ctx, ids)
+
+	if params.FilterValue == "" {
+		sqlcForms, err := repo.queries(ctx).BulkGetForms(ctx, ids)
+		if err != nil {
+			return nil, errx.DB(err, "form")
+		}
+		return xslices.MapSlice(sqlcForms, mapForm), nil
+	}
+
+	query, args, err := buildBulkGetQuery(ids, params)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := repo.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}
-	return xslices.MapSlice(sqlcForm, mapForm), nil
+	defer rows.Close()
+
+	var forms []contracts.Form
+	for rows.Next() {
+		var f sqlc.Form
+		if err = rows.Scan(
+			&f.ID, &f.OwnerID, &f.NamespaceID, &f.Name,
+			&f.Status, &f.OpenedAt, &f.ClosedAt, &f.ArchivedAt,
+			&f.CreatedAt, &f.UpdatedAt,
+		); err != nil {
+			return nil, errx.DB(err, "form")
+		}
+		forms = append(forms, mapForm(f))
+	}
+	return forms, rows.Err()
+}
+
+func buildBulkGetQuery(ids []uuid.UUID, params contracts.BulkGetParams) (string, []any, error) {
+	col, ok := contracts.AllowedFilterKeys[params.FilterKey]
+	if !ok {
+		return "", nil, fmt.Errorf("invalid filter_key: %s", params.FilterKey)
+	}
+	op, ok := contracts.AllowedOps[params.FilterOp]
+	if !ok {
+		return "", nil, fmt.Errorf("invalid filter_op: %s", params.FilterOp)
+	}
+
+	order := "created_at DESC"
+	if strings.EqualFold(params.FilterOrder, "asc") {
+		order = "created_at ASC"
+	}
+
+	return sq.StatementBuilder.
+		PlaceholderFormat(sq.Dollar).
+		Select("id, owner_id, namespace_id, name, status, opened_at, closed_at, archived_at, created_at, updated_at").
+		From("forms").
+		Where(sq.Expr("id = ANY(?)", ids)).
+		Where(fmt.Sprintf("%s %s ?", col, op), params.FilterValue).
+		OrderBy(order).
+		ToSql()
 }

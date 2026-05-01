@@ -41,7 +41,7 @@ func RegisterRoutes(
 }
 
 type CreateAPIKeyRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 }
 
 type APIKeyResponse struct {

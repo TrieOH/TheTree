@@ -158,7 +158,7 @@ func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = forms.NewFormRepo(rt.repoQueries, app.db, rt.logger, rt.tracer)
 	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }

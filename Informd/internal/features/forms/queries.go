@@ -39,7 +39,7 @@ func NewQueries(
 	}
 }
 
-func (s *QueryService) BulkGet(ctx context.Context, ids []uuid.UUID) (forms []contracts.Form, err error) {
+func (s *QueryService) BulkGet(ctx context.Context, ids []uuid.UUID, params contracts.BulkGetParams) (forms []contracts.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.BulkGet")
 	defer span.End()
 
@@ -48,5 +48,5 @@ func (s *QueryService) BulkGet(ctx context.Context, ids []uuid.UUID) (forms []co
 		return nil, err
 	}
 
-	return s.forms.BulkGet(ctx, ids)
+	return s.forms.BulkGet(ctx, ids, params)
 }

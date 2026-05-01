@@ -1,12 +1,14 @@
 package forms
 
 import (
+	"Informd/internal/shared/contracts"
 	"net/http"
 
 	_ "Informd/internal/shared/contracts"
 
 	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/MintzyG/FastUtilitiesNet/bind"
+	"github.com/MintzyG/FastUtilitiesNet/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -34,7 +36,7 @@ func RegisterRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(anyAuth)
 		r.Post("/forms", h.Create)
-		r.Post("/forms/bulk", h.BulkGet)
+		r.With(middlewares.WithParams[contracts.BulkGetParams]()).Post("/forms/bulk", h.BulkGet)
 		r.Post("/namespaces/{namespace_id}/forms", h.CreateInWorkspace)
 		r.Post("/forms/{form_id}/steps", h.Create)
 	})
@@ -137,6 +139,7 @@ type BulkGetRequest struct {
 // @Router /forms/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
+	params := middlewares.QueryParams[contracts.BulkGetParams](r)
 
 	var payload BulkGetRequest
 	if err := bind.Body(req).Bind(&payload); err != nil {
@@ -144,7 +147,7 @@ func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forms, err := h.queries.BulkGet(r.Context(), payload.IDs)
+	forms, err := h.queries.BulkGet(r.Context(), payload.IDs, params)
 	if err != nil {
 		fun.Error(err).Send(w)
 		return

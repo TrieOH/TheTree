@@ -1,12 +1,14 @@
 package namespaces
 
 import (
+	"Informd/internal/shared/contracts"
 	"net/http"
 
 	_ "Informd/internal/shared/contracts"
 
 	"github.com/MintzyG/FastUtilitiesNet"
 	"github.com/MintzyG/FastUtilitiesNet/bind"
+	"github.com/MintzyG/FastUtilitiesNet/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -34,7 +36,7 @@ func RegisterRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
 		r.Post("/namespaces", h.Create)
-		r.Post("/namespaces/bulk", h.BulkGet)
+		r.With(middlewares.WithParams[contracts.BulkGetParams]()).Post("/namespaces/bulk", h.BulkGet)
 	})
 }
 

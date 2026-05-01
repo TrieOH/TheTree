@@ -304,3 +304,103 @@ func TestCreate_Namespace_CouldntCreateRelation(t *testing.T) {
 	_, err := d.svc.Create(ctx, "my form", namespaceID)
 	require.Error(t, err)
 }
+
+func TestCreateStep_Success(t *testing.T) {
+	d := newTestDeps(t)
+	userID := uuid.New()
+	formID := uuid.New()
+	ctx := ctxWithUser(userID)
+	expected := &contracts.Form{ID: formID, Name: "My Form", OwnerID: userID}
+
+	d.perms.EXPECT().
+		Require(mock.Anything,
+			authz.Subject("user", userID),
+			authz.Permission("create_form"),
+			authz.Resource("user", userID.String()),
+			map[string]any{"subject_id": userID.String()},
+		).Return(nil)
+
+	d.forms.EXPECT().
+		Create(mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	d.perms.EXPECT().
+		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_user@user:"+userID.String()).
+		Return(nil)
+
+	result, err := d.svc.Create(ctx, "My Form", nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+
+	payload := CreateStepRequest{
+		Title:        "Step 1",
+		Description:  new("Please fill me out"),
+		PositionHint: 1,
+	}
+
+	d.forms.EXPECT().
+		GetByID(mock.Anything, formID).
+		Return(expected, nil)
+
+	d.perms.EXPECT().
+		Require(mock.Anything,
+			authz.Subject("user", userID),
+			authz.Permission("edit"),
+			authz.Resource("user", userID.String()),
+			map[string]any{"form": formID.String()},
+		).Return(nil)
+
+	_, err = d.svc.CreateStep(ctx, result.ID, payload)
+	require.NoError(t, err)
+}
+
+func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
+	d := newTestDeps(t)
+	userID := uuid.New()
+	formID := uuid.New()
+	ctx := ctxWithUser(userID)
+	expected := &contracts.Form{ID: formID, Name: "My Form", OwnerID: userID}
+
+	d.perms.EXPECT().
+		Require(mock.Anything,
+			authz.Subject("user", userID),
+			authz.Permission("create_form"),
+			authz.Resource("user", userID.String()),
+			map[string]any{"subject_id": userID.String()},
+		).Return(nil)
+
+	d.forms.EXPECT().
+		Create(mock.Anything, mock.Anything).
+		Return(expected, nil)
+
+	d.perms.EXPECT().
+		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_user@user:"+userID.String()).
+		Return(nil)
+
+	result, err := d.svc.Create(ctx, "My Form", nil)
+
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+
+	payload := CreateStepRequest{
+		Title:        "Step 1",
+		Description:  new("Please fill me out"),
+		PositionHint: 1,
+	}
+
+	d.forms.EXPECT().
+		GetByID(mock.Anything, formID).
+		Return(expected, nil)
+
+	d.perms.EXPECT().
+		Require(mock.Anything,
+			authz.Subject("user", userID),
+			authz.Permission("edit"),
+			authz.Resource("form", formID.String()),
+			nil,
+		).Return(errGeneric)
+
+	_, err = d.svc.CreateStep(ctx, result.ID, payload)
+	require.Error(t, err)
+}
