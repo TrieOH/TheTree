@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
-	github.com/MintzyG/FastUtilitiesNet v0.9.4
+	github.com/MintzyG/FastUtilitiesNet v0.9.5
 	github.com/TrieOH/IdentityX-SDK-Go v0.7.1
 	github.com/authzed/authzed-go v1.9.0
 	github.com/authzed/grpcutil v0.0.0-20260105210157-e237581949c2
