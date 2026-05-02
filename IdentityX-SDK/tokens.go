@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/TrieOH/sdkkit"
+	"github.com/MintzyG/sdkkit"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )

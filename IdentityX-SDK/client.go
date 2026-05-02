@@ -3,7 +3,7 @@ package idx
 import (
 	"time"
 
-	"github.com/TrieOH/sdkkit"
+	"github.com/MintzyG/sdkkit"
 	"github.com/google/uuid"
 )
 
