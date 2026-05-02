@@ -9,7 +9,15 @@ import { validateProjectKey } from "../utils/env-validator";
 import type { Api } from "./api";
 import { env } from "./env";
 
-export const createAuthService = (apiInstance: Api) => ({
+export interface AuthCallbacks {
+  onLogin?: () => void;
+  onRegister?: () => void;
+  onVerify?: () => void;
+  onForgotPassword?: () => void;
+  onRefresh?: () => void;
+}
+
+export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) => ({
   login: async (email: string, password: string) => {
     if (env.PROJECT_ID) validateProjectKey();
     const url = `/auth/login${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
@@ -19,17 +27,22 @@ export const createAuthService = (apiInstance: Api) => ({
       { requiresAuth: false }
     );
 
-    if (res.success) saveAuthSession(res.data.access_token, res.data.refresh_token);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+      callbacks?.onLogin?.();
+    }
 
     return res;
   },
 
-  register: (email: string, password: string) => {
+  register: async (email: string, password: string) => {
     const options = { requiresAuth: false };
     const url = `/auth/register${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
     if (env.PROJECT_ID) validateProjectKey();
 
-    return apiInstance.post<void>(url, { email, password }, options);
+    const res = await apiInstance.post<void>(url, { email, password }, options);
+    if (res.success) callbacks?.onRegister?.();
+    return res;
   },
 
   logout: async (options?: { forceLogout?: boolean }) => {
@@ -46,7 +59,10 @@ export const createAuthService = (apiInstance: Api) => ({
       { skipRefresh: true }
     );
 
-    if (res.success) saveAuthSession(res.data.access_token, res.data.refresh_token);
+    if (res.success) {
+      saveAuthSession(res.data.access_token, res.data.refresh_token);
+      callbacks?.onRefresh?.();
+    }
 
     return res;
   },
@@ -72,15 +88,20 @@ export const createAuthService = (apiInstance: Api) => ({
 
   sendForgotPassword: async (email: string) => {
     const options = { requiresAuth: false };
-    if (env.PROJECT_ID) {
-      validateProjectKey();
-      return apiInstance.post<void>(
-        "/account/forgot-password",
-        { email, project_id: env.PROJECT_ID },
-        options
-      );
-    }
-    return apiInstance.post<void>("/account/forgot-password", { email }, options);
+    const res = await (async () => {
+      if (env.PROJECT_ID) {
+        validateProjectKey();
+        return apiInstance.post<void>(
+          "/account/forgot-password",
+          { email, project_id: env.PROJECT_ID },
+          options
+        );
+      }
+      return apiInstance.post<void>("/account/forgot-password", { email }, options);
+    })();
+
+    if (res.success) callbacks?.onForgotPassword?.();
+    return res;
   },
 
   resetPassword: async (token: string, new_password: string) => {
@@ -92,7 +113,9 @@ export const createAuthService = (apiInstance: Api) => ({
   },
 
   verifyEmail: async () => {
-    return apiInstance.get<void>("/account/verify", { requiresAuth: false });
+    const res = await apiInstance.get<void>("/account/verify", { requiresAuth: false });
+    if (res.success) callbacks?.onVerify?.();
+    return res;
   },
 
   resendVerifyEmail: async () => {

@@ -8,7 +8,7 @@ import {
   useSyncExternalStore
 } from "react";
 import { Api } from "../core/api";
-import { createAuthService } from "../core/services";
+import { createAuthService, type AuthCallbacks } from "../core/services";
 import {
   getTokenClaims,
   isRefreshSessionExpired,
@@ -37,6 +37,11 @@ export function AuthProvider({
   fallback,
   waitSession = true,
   clientConfig,
+  onLogin,
+  onForgotPassword,
+  onRegister,
+  onVerify,
+  onRefresh,
 }: {
   children: React.ReactNode;
   baseURL?: string;
@@ -48,7 +53,7 @@ export function AuthProvider({
   waitSession?: boolean;
   /** Extra config forwarded to the API client (e.g. timeout) */
   clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
-}) {
+} & AuthCallbacks) {
   const isRestoring = useRef(false);
 
   const { isAuthenticated, isInitializing } = useSyncExternalStore(
@@ -69,7 +74,8 @@ export function AuthProvider({
       isAuthenticated: !!claims.access_data,
       isInitializing: false,
     });
-  }, []);
+    onRefresh?.();
+  }, [onRefresh]);
 
   const apiInstance = useMemo(() => new Api(
     baseURL,
@@ -79,8 +85,14 @@ export function AuthProvider({
   ), [baseURL, onTokenRefreshed, clientConfig]);
 
   const auth = useMemo(
-    () => createAuthService(apiInstance),
-    [apiInstance],
+    () => createAuthService(apiInstance, {
+      onLogin,
+      onForgotPassword,
+      onRegister,
+      onVerify,
+      onRefresh,
+    }),
+    [apiInstance, onLogin, onForgotPassword, onRegister, onVerify, onRefresh],
   );
 
   useEffect(() => {
