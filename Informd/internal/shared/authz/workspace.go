@@ -4,7 +4,7 @@ import (
 	"Informd/internal/shared/contracts"
 	"context"
 
-	"github.com/MintzyG/FastUtilitiesNet"
+	"github.com/MintzyG/fun"
 )
 
 const ProjectContextKey contextKey = "project"

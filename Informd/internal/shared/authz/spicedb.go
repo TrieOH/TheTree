@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/MintzyG/FastUtilitiesNet"
+	"github.com/MintzyG/fun"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"

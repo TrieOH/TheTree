@@ -7,7 +7,7 @@ import (
 	_ "Informd/internal/shared/contracts"
 	"net/http"
 
-	"github.com/MintzyG/FastUtilitiesNet/handlers"
+	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

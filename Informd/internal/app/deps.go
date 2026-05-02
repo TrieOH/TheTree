@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MintzyG/FastUtilitiesNet"
-	"github.com/MintzyG/FastUtilitiesNet/bind"
-	"github.com/TrieOH/IdentityX-SDK-Go"
+	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"

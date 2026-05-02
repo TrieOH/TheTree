@@ -6,9 +6,9 @@ import (
 
 	_ "Informd/internal/shared/contracts"
 
-	"github.com/MintzyG/FastUtilitiesNet"
-	"github.com/MintzyG/FastUtilitiesNet/bind"
-	"github.com/MintzyG/FastUtilitiesNet/middlewares"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

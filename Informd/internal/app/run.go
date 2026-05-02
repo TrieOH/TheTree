@@ -18,9 +18,9 @@ import (
 	"net/http"
 	"time"
 
-	fun "github.com/MintzyG/FastUtilitiesNet"
-	"github.com/MintzyG/FastUtilitiesNet/middlewares"
-	idx "github.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/middlewares"
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
 	"github.com/prometheus/client_golang/prometheus"
