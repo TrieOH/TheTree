@@ -88,24 +88,21 @@ func IsNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	var e *APIError
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*APIError](err); ok {
 		return e.StatusCode == 404 || errors.Is(e, apiErr)
 	}
 	return false
 }
 
 func IsUnauthorized(err error) bool {
-	var e *APIError
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*APIError](err); ok {
 		return e.StatusCode == 401
 	}
 	return false
 }
 
 func IsConflict(err error) bool {
-	var e *APIError
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*APIError](err); ok {
 		return e.StatusCode == 409
 	}
 	return false
