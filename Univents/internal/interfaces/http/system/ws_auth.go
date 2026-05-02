@@ -6,7 +6,7 @@ import (
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
@@ -28,7 +28,7 @@ func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -48,11 +48,11 @@ func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString([]byte(secret))
 	if err != nil {
-		resp.InternalServerError("failed to sign token").Send(w)
+		fun.InternalServerError("failed to sign token").Send(w)
 		return
 	}
 
-	resp.OK("Token generated").WithData(map[string]string{
+	fun.OK("Token generated").WithData(map[string]string{
 		"token": signed,
 	}).Send(w)
 }

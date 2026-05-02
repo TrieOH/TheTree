@@ -8,9 +8,9 @@ import (
 	"univents/internal/platform/database"
 	"univents/internal/platform/telemetry"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/IdentityX-SDK-Go"
-	"github.com/TrieOH/Payssage-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
+	"github.com/MintzyG/fun"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -30,12 +30,12 @@ import (
 type SimpleLogger struct{}
 
 // Intercept is called for responses sent with a context
-func (l *SimpleLogger) Intercept(_ context.Context, rs *resp.Response, statusCode int) {
+func (l *SimpleLogger) Intercept(_ context.Context, rs *fun.Response, statusCode int) {
 	l.InterceptSimple(rs, statusCode)
 }
 
 // InterceptSimple is called for responses sent without a context
-func (l *SimpleLogger) InterceptSimple(rs *resp.Response, statusCode int) {
+func (l *SimpleLogger) InterceptSimple(rs *fun.Response, statusCode int) {
 	if statusCode == 500 {
 		telemetry.Log().Info("InternalServerError Response", zap.Any("response", rs))
 	}
@@ -47,7 +47,7 @@ func SetupFUN() {
 		module = "UniventsAPI"
 	}
 
-	resp.SetConfig(resp.Config{
+	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
 		MaxInterceptorAmount: 20,
@@ -56,7 +56,7 @@ func SetupFUN() {
 		DefaultModule:        module,
 	})
 
-	err := resp.AddInterceptor(&SimpleLogger{})
+	err := fun.AddInterceptor(&SimpleLogger{})
 	if err != nil {
 		log.Fatalf("Failed to add interceptor: %v", err)
 	}

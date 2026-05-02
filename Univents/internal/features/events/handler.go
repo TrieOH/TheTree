@@ -6,7 +6,7 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -55,7 +55,7 @@ type CreateEventRequest struct {
 func (handler *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	var req CreateEventRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -74,11 +74,11 @@ func (handler *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.commands.CreateEvent(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 type PatchEventRequest struct {
@@ -120,7 +120,7 @@ func (handler *Handler) PatchEvent(w http.ResponseWriter, r *http.Request) {
 
 	var req PatchEventRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -140,13 +140,13 @@ func (handler *Handler) PatchEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	out, warns, err := handler.commands.PatchEvent(ctx, in)
+	out, _, err := handler.commands.PatchEvent(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).AddTrace(warns).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // ListEvents godoc
@@ -163,11 +163,11 @@ func (handler *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.ListEvents(ctx)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // ListOwnEvents godoc
@@ -186,11 +186,11 @@ func (handler *Handler) ListOwnEvents(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.ListOwnEvents(ctx)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // PublishEvent godoc
@@ -218,11 +218,11 @@ func (handler *Handler) PublishEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.PublishEvent(ctx, eventID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }
 
 type ImageURLRequest struct {
@@ -255,18 +255,18 @@ func (handler *Handler) AddGalleryImage(w http.ResponseWriter, r *http.Request) 
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.AddGalleryImage(ctx, eventID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Image added to gallery").WithData(product).Send(w)
+	fun.OK("Image added to gallery").WithData(product).Send(w)
 }
 
 // RemoveGalleryImage godoc
@@ -295,18 +295,18 @@ func (handler *Handler) RemoveGalleryImage(w http.ResponseWriter, r *http.Reques
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.RemoveGalleryImage(ctx, eventID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Image removed from gallery").WithData(product).Send(w)
+	fun.OK("Image removed from gallery").WithData(product).Send(w)
 }
 
 // SetLogo godoc
@@ -335,18 +335,18 @@ func (handler *Handler) SetLogo(w http.ResponseWriter, r *http.Request) {
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.SetLogo(ctx, eventID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Logo set").WithData(product).Send(w)
+	fun.OK("Logo set").WithData(product).Send(w)
 }
 
 // UnsetLogo godoc
@@ -374,11 +374,11 @@ func (handler *Handler) UnsetLogo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product, err := handler.commands.UnsetLogo(ctx, eventID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Logo unset").WithData(product).Send(w)
+	fun.OK("Logo unset").WithData(product).Send(w)
 }
 
 // SetBanner godoc
@@ -407,18 +407,18 @@ func (handler *Handler) SetBanner(w http.ResponseWriter, r *http.Request) {
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.SetBanner(ctx, eventID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Banner set").WithData(product).Send(w)
+	fun.OK("Banner set").WithData(product).Send(w)
 }
 
 // UnsetBanner godoc
@@ -446,9 +446,9 @@ func (handler *Handler) UnsetBanner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product, err := handler.commands.UnsetBanner(ctx, eventID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Logo unset").WithData(product).Send(w)
+	fun.OK("Logo unset").WithData(product).Send(w)
 }

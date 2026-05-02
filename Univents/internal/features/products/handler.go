@@ -8,7 +8,7 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -60,7 +60,7 @@ type CreateProductRequest struct {
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateProductRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -87,11 +87,11 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.commands.Create(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // Publish godoc
@@ -121,11 +121,11 @@ func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.Publish(ctx, productID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }
 
 // List godoc
@@ -154,11 +154,11 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.List(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // ListAdmin godoc
@@ -187,11 +187,11 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.AdminList(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // StreamInventory godoc
@@ -224,7 +224,7 @@ func (handler *Handler) StreamInventory(w http.ResponseWriter, r *http.Request) 
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		resp.InternalServerError("streaming not supported").Send(w)
+		fun.InternalServerError("streaming not supported").Send(w)
 		return
 	}
 
@@ -236,7 +236,7 @@ func (handler *Handler) StreamInventory(w http.ResponseWriter, r *http.Request) 
 
 	updates, err := handler.queries.StreamInventory(ctx, editionID)
 	if err != nil {
-		resp.InternalServerError("failed to subscribe to inventory stream").Send(w)
+		fun.InternalServerError("failed to subscribe to inventory stream").Send(w)
 		return
 	}
 
@@ -295,11 +295,11 @@ func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	if err := handler.commands.Delete(ctx, productID); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Product deleted successfully").Send(w)
+	fun.OK("Product deleted successfully").Send(w)
 }
 
 // Restore godoc
@@ -329,11 +329,11 @@ func (handler *Handler) Restore(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	if err := handler.commands.Restore(ctx, productID); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Product restored successfully").Send(w)
+	fun.OK("Product restored successfully").Send(w)
 }
 
 type ImageURLRequest struct {
@@ -368,18 +368,18 @@ func (handler *Handler) AddGalleryImage(w http.ResponseWriter, r *http.Request) 
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.AddGalleryImage(ctx, productID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Image added to gallery").WithData(product).Send(w)
+	fun.OK("Image added to gallery").WithData(product).Send(w)
 }
 
 // RemoveGalleryImage godoc
@@ -410,18 +410,18 @@ func (handler *Handler) RemoveGalleryImage(w http.ResponseWriter, r *http.Reques
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.RemoveGalleryImage(ctx, productID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Image removed from gallery").WithData(product).Send(w)
+	fun.OK("Image removed from gallery").WithData(product).Send(w)
 }
 
 // SetThumbnail godoc
@@ -452,18 +452,18 @@ func (handler *Handler) SetThumbnail(w http.ResponseWriter, r *http.Request) {
 
 	var req ImageURLRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	product, err := handler.commands.SetThumbnail(ctx, productID, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Thumbnail set").WithData(product).Send(w)
+	fun.OK("Thumbnail set").WithData(product).Send(w)
 }
 
 // UnsetThumbnail godoc
@@ -493,9 +493,9 @@ func (handler *Handler) UnsetThumbnail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	product, err := handler.commands.UnsetThumbnail(ctx, productID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Thumbnail unset").WithData(product).Send(w)
+	fun.OK("Thumbnail unset").WithData(product).Send(w)
 }

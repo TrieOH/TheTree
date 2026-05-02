@@ -6,7 +6,7 @@ import (
 
 	_ "univents/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +35,7 @@ func (handler *UniventsHandler) Health(w http.ResponseWriter, _ *http.Request) {
 		Service: "univents-api",
 	}
 
-	resp.OK("ok").WithData(response).Send(w)
+	fun.OK("ok").WithData(response).Send(w)
 }
 
 // ProtectedHealth godoc
@@ -52,7 +52,7 @@ func (handler *UniventsHandler) Health(w http.ResponseWriter, _ *http.Request) {
 func (handler *UniventsHandler) ProtectedHealth(w http.ResponseWriter, r *http.Request) {
 	sub, err := authz.RequireSubject(r.Context())
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -62,5 +62,5 @@ func (handler *UniventsHandler) ProtectedHealth(w http.ResponseWriter, r *http.R
 		UserID:  sub.ID,
 	}
 
-	resp.OK("ok").WithData(response).Send(w)
+	fun.OK("ok").WithData(response).Send(w)
 }

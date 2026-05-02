@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"univents/internal/shared/errx"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 )
 
 func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
@@ -17,11 +17,11 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 
 			for _, p := range params {
 				if !q.Has(p) {
-					resp.BadRequest(errx.Invalid("request param").SetMessage("missing query param").Error()).WithModule("RequireQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("request param").SetMessage("missing query param").Error()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					resp.BadRequest(errx.Invalid("request param").SetMessage("missing query param value").Error()).WithModule("RequireQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("request param").SetMessage("missing query param value").Error()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -47,7 +47,7 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all query params are allowed
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					resp.BadRequest(errx.Invalid("request param").SetMessage("unknown query param").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("request param").SetMessage("unknown query param").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -55,11 +55,11 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all allowed params are present and non-empty
 			for _, p := range allowed {
 				if !q.Has(p) {
-					resp.BadRequest(errx.Invalid("request param").SetMessage("missing query param").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("request param").SetMessage("missing query param").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					resp.BadRequest(errx.Invalid("request param").SetMessage("missing query param value").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("request param").SetMessage("missing query param value").Error()).WithModule("RequireOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -97,7 +97,7 @@ func AllowOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					resp.BadRequest(errx.Invalid("query param").SetMessage("unknown query param").Error()).WithModule("AllowOnlyQueryParamsMW").Send(w)
+					fun.BadRequest(errx.Invalid("query param").SetMessage("unknown query param").Error()).WithModule("AllowOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}

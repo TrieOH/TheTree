@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
@@ -90,7 +90,7 @@ func Require(ctx context.Context, client *v1.Client, subject, permission, resour
 		return err
 	}
 	if !allowed {
-		return fun.NewError("insufficient permissions").Forbidden()
+		return fun.Err("insufficient permissions").Forbidden()
 	}
 	return nil
 }

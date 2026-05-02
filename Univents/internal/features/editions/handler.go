@@ -6,7 +6,7 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	fun "github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -69,7 +69,7 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateEditionRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -96,11 +96,11 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.commands.Create(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // List godoc
@@ -124,11 +124,11 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.ListEditions(ctx, eventID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // ListAdmin godoc
@@ -152,11 +152,11 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.ListEditionsAdmin(ctx, eventID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // Announce godoc
@@ -185,11 +185,11 @@ func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.Announce(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }
 
 // ConnectPaymentAccount godoc
@@ -225,36 +225,36 @@ func (handler *Handler) ConnectPaymentAccount(w http.ResponseWriter, r *http.Req
 
 	triePaymentsCredentialID := r.URL.Query().Get("credential_id")
 	if triePaymentsCredentialID == "" {
-		resp.BadRequest("missing credential_id").Send(w)
+		fun.BadRequest("missing credential_id").Send(w)
 		return
 	}
 
 	credID, err := uuid.Parse(triePaymentsCredentialID)
 	if err != nil {
-		resp.BadRequest("invalid credential_id: " + err.Error()).Send(w)
+		fun.BadRequest("invalid credential_id: " + err.Error()).Send(w)
 		return
 	}
 
 	provider := r.URL.Query().Get("provider")
 	if provider == "" {
-		resp.BadRequest("missing provider").Send(w)
+		fun.BadRequest("missing provider").Send(w)
 		return
 	}
 
 	publicKey := r.URL.Query().Get("public_key")
 	if publicKey == "" {
-		resp.BadRequest("missing public_key").Send(w)
+		fun.BadRequest("missing public_key").Send(w)
 		return
 	}
 
 	ctx := r.Context()
 	err = handler.commands.ConnectPayments(ctx, credID, editionID, provider, publicKey)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Payment account connected successfully").Send(w)
+	fun.OK("Payment account connected successfully").Send(w)
 }
 
 // DisconnectPaymentAccount godoc
@@ -289,9 +289,9 @@ func (handler *Handler) DisconnectPaymentAccount(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	err := handler.commands.DisconnectPayments(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }

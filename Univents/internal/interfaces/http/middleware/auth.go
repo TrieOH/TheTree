@@ -5,8 +5,8 @@ import (
 	"strings"
 	"univents/internal/shared/authz"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -42,19 +42,19 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				resp.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			_, tokenStr, found := strings.Cut(authHeader, "Bearer ")
 			if !found || tokenStr == "" {
-				resp.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			accessClaims, err := mw.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 			if err != nil {
-				resp.Unauthorized().WithMsg("invalid access token").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("invalid access token").WithModule("AuthMW").Send(w)
 				return
 			}
 

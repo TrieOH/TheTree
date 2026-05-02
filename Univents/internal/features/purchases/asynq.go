@@ -12,7 +12,7 @@ import (
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
-	"github.com/TrieOH/Payssage-SDK-Go"
+	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
 )

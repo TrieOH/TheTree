@@ -10,8 +10,8 @@ import (
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/Payssage-SDK-Go"
+	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
+	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
@@ -54,11 +54,11 @@ func (handler *Handler) ListUserPurchases(w http.ResponseWriter, r *http.Request
 
 	out, err := handler.queries.ListUserPurchases(ctx)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // ListPurchaseItems godoc
@@ -87,11 +87,11 @@ func (handler *Handler) ListPurchaseItems(w http.ResponseWriter, r *http.Request
 
 	out, err := handler.queries.ListPurchaseItems(ctx, purchaseID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // Purchase godoc
@@ -128,7 +128,7 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 
 	tokenStr := r.URL.Query().Get("token")
 	if tokenStr == "" {
-		resp.Unauthorized("missing token").Send(w)
+		fun.Unauthorized("missing token").Send(w)
 		return
 	}
 
@@ -139,13 +139,13 @@ func (handler *Handler) Purchase(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil || !token.Valid {
-		resp.Unauthorized("invalid token").Send(w)
+		fun.Unauthorized("invalid token").Send(w)
 		return
 	}
 
 	claims, ok := token.Claims.(*contracts.WSClaims)
 	if !ok {
-		resp.Unauthorized("invalid token claims").Send(w)
+		fun.Unauthorized("invalid token claims").Send(w)
 		return
 	}
 
@@ -197,13 +197,13 @@ func (handler *Handler) WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := payssage.VerifyWebhookSignature(r, viper.GetString("PAYSSAGE_WEBHOOK_SECRET"))
 	if err != nil {
 		log.Printf("[webhook] invalid signature: %v", err)
-		resp.BadRequest("invalid signature").Send(w)
+		fun.BadRequest("invalid signature").Send(w)
 		return
 	}
 	log.Printf("[webhook] received event=%s intent=%s", payload.Event, payload.IntentID)
 
 	// ACK immediately — processing is async
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

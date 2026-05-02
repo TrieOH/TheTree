@@ -6,7 +6,7 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 )
 
 type Handler struct {
@@ -58,7 +58,7 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateCheckpointRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -74,11 +74,11 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.commands.Create(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // List godoc
@@ -107,9 +107,9 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.List(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }

@@ -14,7 +14,7 @@ import (
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	"github.com/TrieOH/Payssage-SDK-Go"
+	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"

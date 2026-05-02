@@ -6,7 +6,7 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 )
 
 type Handler struct {
@@ -63,7 +63,7 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateActivityRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -84,11 +84,11 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.commands.Create(ctx, in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(out).Send(w)
+	fun.Created().WithData(out).Send(w)
 }
 
 // Publish godoc
@@ -118,11 +118,11 @@ func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.Publish(ctx, activityID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }
 
 // List godoc
@@ -151,11 +151,11 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.List(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // ListAdmin godoc
@@ -184,11 +184,11 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out, err := handler.queries.AdminList(ctx, editionID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // Register godoc
@@ -218,11 +218,11 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.Register(ctx, activityID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Registered Successfully").Send(w)
+	fun.OK("Registered Successfully").Send(w)
 }
 
 // Unregister godoc
@@ -252,11 +252,11 @@ func (handler *Handler) Unregister(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.Unregister(ctx, activityID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Unregistered Successfully").Send(w)
+	fun.OK("Unregistered Successfully").Send(w)
 }
 
 // MarkAttendance godoc
@@ -292,11 +292,11 @@ func (handler *Handler) MarkAttendance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	err := handler.commands.MarkAttendance(ctx, activityID, recordID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Marked Attendance Successfully").Send(w)
+	fun.OK("Marked Attendance Successfully").Send(w)
 }
 
 // ListRecords godoc
@@ -326,9 +326,9 @@ func (handler *Handler) ListRecords(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	records, err := handler.commands.ListRecords(ctx, activityID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(records).Send(w)
+	fun.OK().WithData(records).Send(w)
 }

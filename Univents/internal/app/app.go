@@ -5,8 +5,8 @@ import (
 	"time"
 	"univents/internal/platform/telemetry"
 
-	"github.com/TrieOH/IdentityX-SDK-Go"
-	"github.com/TrieOH/Payssage-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
