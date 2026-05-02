@@ -5,7 +5,7 @@ import {
   saveAuthSession,
   type AuthTokens
 } from "../utils/token-utils";
-import { validateApiKey, validateProjectKey } from "../utils/env-validator";
+import { validateProjectKey } from "../utils/env-validator";
 import type { Api } from "./api";
 import { env } from "./env";
 
