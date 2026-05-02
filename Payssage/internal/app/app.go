@@ -5,7 +5,7 @@ import (
 	"payssage/internal/platform/telemetry"
 	"time"
 
-	"github.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"

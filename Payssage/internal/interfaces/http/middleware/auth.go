@@ -7,8 +7,8 @@ import (
 	"payssage/internal/shared/ports"
 	"strings"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	idx "github.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
@@ -51,19 +51,19 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				resp.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			_, tokenStr, found := strings.Cut(authHeader, "Bearer ")
 			if !found || tokenStr == "" {
-				resp.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			accessClaims, err := mw.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 			if err != nil {
-				resp.Unauthorized().WithMsg("invalid access token").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("invalid access token").WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -93,20 +93,20 @@ func (mw *AuthMiddleware) APIKey() func(http.Handler) http.Handler {
 
 			rawKey := r.Header.Get("X-API-Key")
 			if rawKey == "" {
-				resp.Unauthorized("missing X-API-Key header").WithModule("AuthMW").Send(w)
+				fun.Unauthorized("missing X-API-Key header").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			// extract prefix (first 11 chars: "tp_" + 8 hex)
 			if len(rawKey) < 11 {
-				resp.Unauthorized("invalid api key format").WithModule("AuthMW").Send(w)
+				fun.Unauthorized("invalid api key format").WithModule("AuthMW").Send(w)
 				return
 			}
 			prefix := rawKey[:11]
 
 			candidates, err := mw.apiKeys.GetByPrefix(ctx, prefix)
 			if err != nil || len(candidates) == 0 {
-				resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+				fun.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -118,13 +118,13 @@ func (mw *AuthMiddleware) APIKey() func(http.Handler) http.Handler {
 				}
 			}
 			if matched == nil {
-				resp.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
+				fun.Unauthorized("invalid api key").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			workspace, err := mw.workspaces.GetByID(ctx, matched.WorkspaceID)
 			if err != nil {
-				resp.Unauthorized("workspace not found").WithModule("AuthMW").Send(w)
+				fun.Unauthorized("workspace not found").WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -151,7 +151,7 @@ func (mw *AuthMiddleware) AnyAuth() func(http.Handler) http.Handler {
 				return
 			}
 
-			resp.Unauthorized("missing credentials").WithModule("AuthMW").Send(w)
+			fun.Unauthorized("missing credentials").WithModule("AuthMW").Send(w)
 		})
 	}
 }

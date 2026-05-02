@@ -7,7 +7,7 @@ import (
 
 	_ "payssage/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -56,17 +56,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req CreateAPIKeyRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	rawKey, apiKey, err := h.commands.Create(r.Context(), workspaceName, req.Name)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(CreateAPIKeyResponse{
+	fun.Created().WithData(CreateAPIKeyResponse{
 		ApiKey: apiKey,
 		Key:    rawKey,
 	}).Send(w)
@@ -91,11 +91,11 @@ func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 
 	keys, err := h.queries.List(r.Context(), workspaceName)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(keys).Send(w)
+	fun.OK().WithData(keys).Send(w)
 }
 
 // RevokeAPIKey godoc
@@ -124,9 +124,9 @@ func (h *Handler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.commands.RevokeAPIKey(r.Context(), workspaceName, keyID); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("key revoked").Send(w)
+	fun.OK("key revoked").Send(w)
 }

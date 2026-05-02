@@ -10,7 +10,7 @@ import (
 
 	_ "payssage/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -66,17 +66,17 @@ func (h *Handler) RegisterWebhookEndpoint(w http.ResponseWriter, r *http.Request
 
 	var req RegisterWebhookEndpointRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	endpoint, err := h.commands.RegisterWebhookEndpoint(r.Context(), workspaceName, req.URL)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(WebhookEndpointResponse{
+	fun.Created().WithData(WebhookEndpointResponse{
 		ID:          endpoint.ID,
 		ScopeID:     endpoint.ScopeID,
 		WorkspaceID: endpoint.WorkspaceID,
@@ -113,11 +113,11 @@ func (h *Handler) DeleteWebhookEndpoint(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := h.commands.DeleteWebhookEndpoint(r.Context(), workspaceName, endpointID); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("endpoint deleted").Send(w)
+	fun.OK("endpoint deleted").Send(w)
 }
 
 type ProviderWebhookRequest struct {
@@ -153,13 +153,13 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 	case "mercadopago":
 		if r.URL.Query().Get("type") != "payment" {
 			telemetry.Log().Info("ignoring non-payment webhook", zap.String("type", r.URL.Query().Get("type")))
-			resp.OK("ignored").Send(w)
+			fun.OK("ignored").Send(w)
 			return
 		}
 
 		var req MercadoPagoWebhookRequest
 		if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
-			resp.BadRequest("invalid payload").Send(w)
+			fun.BadRequest("invalid payload").Send(w)
 			return
 		}
 
@@ -167,11 +167,11 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 
 		if req.Data.ID == "" {
 			log.Printf("[webhook] mercadopago ignoring ping with no data.id")
-			resp.OK("ignored").Send(w)
+			fun.OK("ignored").Send(w)
 			return
 		}
 
-		resp.OK("received").Send(w)
+		fun.OK("received").Send(w)
 
 		var rawPayload []byte
 		rawPayload, err = json.Marshal(req)
@@ -193,11 +193,11 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 	default:
 		var req ProviderWebhookRequest
 		if err = validation.ValidateInto(r, &req); err != nil {
-			resp.FromError(err).Send(w)
+			fun.Error(err).Send(w)
 			return
 		}
 
-		resp.OK("received").Send(w)
+		fun.OK("received").Send(w)
 
 		var rawPayload []byte
 		rawPayload, err = json.Marshal(req)
@@ -237,11 +237,11 @@ func (h *Handler) ListWebhookEndpoints(w http.ResponseWriter, r *http.Request) {
 
 	endpoints, err := h.queries.ListWebhookEndpoints(r.Context(), workspaceName)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(endpoints).Send(w)
+	fun.OK().WithData(endpoints).Send(w)
 }
 
 // ListWebhookDeliveries godoc
@@ -270,11 +270,11 @@ func (h *Handler) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request) 
 
 	deliveries, err := h.queries.ListWebhookDeliveries(r.Context(), workspaceName, endpointID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(deliveries).Send(w)
+	fun.OK().WithData(deliveries).Send(w)
 }
 
 // ListWebhookEvents godoc
@@ -296,9 +296,9 @@ func (h *Handler) ListWebhookEvents(w http.ResponseWriter, r *http.Request) {
 
 	events, err := h.queries.ListWebhookEvents(r.Context(), workspaceName)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(events).Send(w)
+	fun.OK().WithData(events).Send(w)
 }

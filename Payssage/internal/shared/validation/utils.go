@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -18,36 +18,36 @@ import (
 
 // FIXME make these errors go into either logs or spans
 
-func GetUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
+func GetUUID(r *http.Request, fieldName string) (uuid.UUID, *fun.Response) {
 	IDStr := chi.URLParam(r, fieldName)
 	if err := ValidateRule(IDStr, "required,uuid7", fieldName); err != nil {
-		return uuid.Nil, resp.FromError(err)
+		return uuid.Nil, fun.Error(err)
 	}
 
 	ID, err := ParseUUID(IDStr, fieldName)
 	if err != nil {
-		return uuid.Nil, resp.FromError(err)
+		return uuid.Nil, fun.Error(err)
 	}
 	return ID, nil
 }
 
-func GetNumber(r *http.Request, fieldName string) (int, *resp.Response) {
+func GetNumber(r *http.Request, fieldName string) (int, *fun.Response) {
 	numberStr := chi.URLParam(r, fieldName)
 	if numberStr == "" {
-		return 0, resp.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
+		return 0, fun.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
 	}
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return 0, resp.BadRequest(errx.Invalid("parameter").SetMessage("parse number error: " + err.Error()).Error())
+		return 0, fun.BadRequest(errx.Invalid("parameter").SetMessage("parse number error: " + err.Error()).Error())
 	}
 	return number, nil
 }
 
-func GetString(r *http.Request, fieldName string) (string, *resp.Response) {
+func GetString(r *http.Request, fieldName string) (string, *fun.Response) {
 	fieldStr := r.URL.Query().Get(fieldName)
 	if fieldStr == "" {
-		return "", resp.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
+		return "", fun.BadRequest(errx.Invalid("parameter").SetMessage(fieldName + " is required").Error())
 	}
 	return fieldStr, nil
 }

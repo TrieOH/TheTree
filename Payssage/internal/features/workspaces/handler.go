@@ -7,7 +7,7 @@ import (
 
 	_ "payssage/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -47,17 +47,17 @@ type CreateWorkspaceRequest struct {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateWorkspaceRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	workspace, err := h.commands.Create(r.Context(), req.Name)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(workspace).Send(w)
+	fun.Created().WithData(workspace).Send(w)
 }
 
 // DisableSandbox godoc
@@ -79,14 +79,14 @@ func (h *Handler) DisableSandbox(w http.ResponseWriter, r *http.Request) {
 	workspace, err := h.commands.DisableSandbox(r.Context(), name)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("workspace not found").Send(w)
+			fun.NotFound("workspace not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(workspace).Send(w)
+	fun.OK().WithData(workspace).Send(w)
 }
 
 // EnableSandbox godoc
@@ -108,14 +108,14 @@ func (h *Handler) EnableSandbox(w http.ResponseWriter, r *http.Request) {
 	workspace, err := h.commands.EnableSandbox(r.Context(), name)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("workspace not found").Send(w)
+			fun.NotFound("workspace not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(workspace).Send(w)
+	fun.OK().WithData(workspace).Send(w)
 }
 
 // List godoc
@@ -133,9 +133,9 @@ func (h *Handler) EnableSandbox(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	workspaces, err := h.queries.List(r.Context())
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(workspaces).Send(w)
+	fun.OK().WithData(workspaces).Send(w)
 }

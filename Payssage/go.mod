@@ -1,10 +1,10 @@
 module payssage
 
-go 1.26.1
+go 1.26.2
 
 require (
-	github.com/MintzyG/FastUtilitiesNet v0.6.5
-	github.com/TrieOH/IdentityX-SDK-Go v0.7.1
+	git.trieoh.com/TrieOH/IdentityX-SDK-Go v0.7.2
+	github.com/MintzyG/fun v0.9.7
 	github.com/authzed/authzed-go v1.8.0
 	github.com/authzed/grpcutil v0.0.0-20260105210157-e237581949c2
 	github.com/exaring/otelpgx v0.10.0
@@ -41,7 +41,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20251209175733-2a1774d88802.1 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/TrieOH/sdkkit v0.0.1 // indirect
+	github.com/MintzyG/sdkkit v0.0.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect

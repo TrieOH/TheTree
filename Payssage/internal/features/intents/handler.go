@@ -9,7 +9,7 @@ import (
 
 	_ "payssage/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -54,14 +54,14 @@ func (h *Handler) CancelIntent(w http.ResponseWriter, r *http.Request) {
 	intent, err := h.commands.CancelIntent(r.Context(), intentID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("intent not found").Send(w)
+			fun.NotFound("intent not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(intent).Send(w)
+	fun.OK().WithData(intent).Send(w)
 }
 
 type CancelPixRequest struct {
@@ -93,7 +93,7 @@ func (h *Handler) CancelPix(w http.ResponseWriter, r *http.Request) {
 
 	var req CancelPixRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -106,14 +106,14 @@ func (h *Handler) CancelPix(w http.ResponseWriter, r *http.Request) {
 	intent, err := h.commands.CancelPix(r.Context(), in)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("intent not found").Send(w)
+			fun.NotFound("intent not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("Pix canceled successfully").WithData(intent).Send(w)
+	fun.OK("Pix canceled successfully").WithData(intent).Send(w)
 }
 
 // GetByID godoc
@@ -140,11 +140,11 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	intent, err := h.queries.GetByID(r.Context(), intentID)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(intent).Send(w)
+	fun.OK().WithData(intent).Send(w)
 }
 
 type CreateIntentRequest struct {
@@ -179,7 +179,7 @@ type CreateIntentRequest struct {
 func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 	var req CreateIntentRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -200,11 +200,11 @@ func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 
 	intent, err := h.commands.InitiateCheckout(r.Context(), in)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.Created().WithData(intent).Send(w)
+	fun.Created().WithData(intent).Send(w)
 }
 
 // List godoc
@@ -224,7 +224,7 @@ func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	intents, err := h.queries.List(r.Context())
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		out = append(out, i)
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 // ListByWorkspace godoc
@@ -255,7 +255,7 @@ func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 
 	intents, err := h.queries.ListByWorkspace(r.Context(), workspaceName)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -264,7 +264,7 @@ func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 		out = append(out, i)
 	}
 
-	resp.OK().WithData(out).Send(w)
+	fun.OK().WithData(out).Send(w)
 }
 
 type PayIntentRequest struct {
@@ -296,23 +296,23 @@ func (h *Handler) Charge(w http.ResponseWriter, r *http.Request) {
 
 	var req PayIntentRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
 	intent, err := h.commands.Charge(r.Context(), intentID, req.SellerCredentialID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("intent not found").Send(w)
+			fun.NotFound("intent not found").Send(w)
 			return
 		}
 		if errx.IsKind(err, "invalid") {
-			resp.BadRequest(err.Error()).Send(w)
+			fun.BadRequest(err.Error()).Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(intent).Send(w)
+	fun.OK().WithData(intent).Send(w)
 }

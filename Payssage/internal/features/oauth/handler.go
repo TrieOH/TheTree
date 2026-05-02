@@ -8,7 +8,7 @@ import (
 
 	_ "payssage/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -47,17 +47,17 @@ func (h *Handler) CompleteOAuth(w http.ResponseWriter, r *http.Request) {
 	redirectURI := r.URL.Query().Get("redirect_uri")
 
 	if code == "" || state == "" {
-		resp.BadRequest("code and state are required").Send(w)
+		fun.BadRequest("code and state are required").Send(w)
 		return
 	}
 
 	finalURL, err := h.commands.CompleteOAuth(r.Context(), provider, state, code, redirectURI)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(map[string]string{
+	fun.OK().WithData(map[string]string{
 		"url": finalURL,
 	}).Send(w)
 }
@@ -95,7 +95,7 @@ func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 
 	var req ConnectSellerRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -107,11 +107,11 @@ func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		telemetry.Log().Info("Error connecting seller", zap.Error(err))
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(BeginOAuthResponse{
+	fun.OK().WithData(BeginOAuthResponse{
 		RedirectURL:      redirectURL,
 		FinalRedirectURL: finalRedirectURL,
 	}).Send(w)
@@ -135,16 +135,16 @@ func (h *Handler) DeleteMarketplaceConfig(w http.ResponseWriter, r *http.Request
 
 	credentialID, err := uuid.Parse(credentialIDStr)
 	if err != nil {
-		resp.BadRequest("invalid credential_id").Send(w)
+		fun.BadRequest("invalid credential_id").Send(w)
 		return
 	}
 
 	if err := h.commands.DeleteMarketplaceConfig(r.Context(), workspaceName, credentialID); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().Send(w)
+	fun.OK().Send(w)
 }
 
 // DisconnectProvider godoc
@@ -170,14 +170,14 @@ func (h *Handler) DisconnectProvider(w http.ResponseWriter, r *http.Request) {
 	_, err := h.commands.DisconnectCredential(r.Context(), credentialID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("credential not found").Send(w)
+			fun.NotFound("credential not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("disconnected successfully").Send(w)
+	fun.OK("disconnected successfully").Send(w)
 }
 
 // ListMarketplaceConfigs godoc
@@ -198,11 +198,11 @@ func (h *Handler) ListMarketplaceConfigs(w http.ResponseWriter, r *http.Request)
 
 	configs, err := h.queries.ListMarketplaceConfigs(r.Context(), workspaceName)
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(configs).Send(w)
+	fun.OK().WithData(configs).Send(w)
 }
 
 // RevokeProvider godoc
@@ -229,14 +229,14 @@ func (h *Handler) RevokeProvider(w http.ResponseWriter, r *http.Request) {
 	_, err := h.commands.RevokeCredential(r.Context(), workspaceName, credentialID)
 	if err != nil {
 		if errx.IsKind(err, "not_found") {
-			resp.NotFound("credential not found").Send(w)
+			fun.NotFound("credential not found").Send(w)
 			return
 		}
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK("revoked successfully").Send(w)
+	fun.OK("revoked successfully").Send(w)
 }
 
 type SetMarketplaceConfigRequest struct {
@@ -266,7 +266,7 @@ func (h *Handler) SetMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 
 	var req SetMarketplaceConfigRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -276,11 +276,11 @@ func (h *Handler) SetMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 		FeeBps:        req.FeeBps,
 	})
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(config).Send(w)
+	fun.OK().WithData(config).Send(w)
 }
 
 type SetupProviderRequest struct {
@@ -313,7 +313,7 @@ func (h *Handler) SetupProvider(w http.ResponseWriter, r *http.Request) {
 
 	var req SetupProviderRequest
 	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
@@ -326,11 +326,11 @@ func (h *Handler) SetupProvider(w http.ResponseWriter, r *http.Request) {
 		FinalRedirectURL:    req.FinalRedirectURL,
 	})
 	if err != nil {
-		resp.FromError(err).Send(w)
+		fun.Error(err).Send(w)
 		return
 	}
 
-	resp.OK().WithData(BeginOAuthResponse{
+	fun.OK().WithData(BeginOAuthResponse{
 		RedirectURL:      redirectURL,
 		FinalRedirectURL: finalRedirectURL,
 	}).Send(w)

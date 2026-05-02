@@ -7,8 +7,8 @@ import (
 	"payssage/internal/platform/database"
 	"time"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/TrieOH/IdentityX-SDK-Go"
+	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"github.com/MintzyG/fun"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
@@ -27,7 +27,7 @@ func SetupFUN() {
 		module = "PayssageAPI"
 	}
 
-	resp.SetConfig(resp.Config{
+	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
 		MaxInterceptorAmount: 20,
