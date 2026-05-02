@@ -1,12 +1,11 @@
 package api_keys
 
 import (
-	"IdentityX/internal/shared/validation"
 	"net/http"
 
 	_ "IdentityX/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	fun "github.com/MintzyG/fun"
 )
 
 type Handler struct {
@@ -27,27 +26,22 @@ func NewHandler(
 // @Produce json
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} object "API key rotated successfully"
+// @Success 200 {string} string ""
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
 // @Failure 404 {object} contracts.ErrorResponse "Project not found"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/api-keys/rotate [post]
 func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
 	apiKey, err := handler.apiKeys.Rotate(r.Context(), projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("API key rotated").
-		WithData(map[string]interface{}{"api_key": apiKey}).
-		Send(w)
+	fun.Respond(w, apiKey)
 }
 
 // RevokeApiKey godoc
@@ -58,23 +52,20 @@ func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} object "API key revoked successfully"
+// @Success 200
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
 // @Failure 404 {object} contracts.ErrorResponse "Project not found"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/api-keys [delete]
 func (handler *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	err := handler.apiKeys.Revoke(r.Context(), projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	err = handler.apiKeys.Revoke(r.Context(), projectID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("API key revoked").Send(w)
+	fun.OK().Send(w)
 }

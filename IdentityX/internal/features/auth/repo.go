@@ -8,7 +8,6 @@ import (
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -66,7 +65,7 @@ func (repo *userRepo) Register(ctx context.Context, email, password string, proj
 	})
 
 	if err != nil {
-		return nil, errx.FromDB(err, "user")
+		return nil, errx.DB(err, "user")
 	}
 
 	span.SetAttributes(
@@ -85,7 +84,7 @@ func (repo *userRepo) UpdateLastLogin(ctx context.Context, userID uuid.UUID) err
 
 	err := repo.queries(ctx).UpdateUserLastLogin(ctx, userID)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "user")
 	}
 
 	return nil
@@ -102,7 +101,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contr
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 
 	if err != nil {
-		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
+		return nil, errx.DB(err, "user")
 	}
 
 	span.SetAttributes(
@@ -123,7 +122,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectI
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("user").RecordCtx(ctx)
+		return nil, errx.DB(err, "user")
 	}
 
 	span.SetAttributes(
@@ -141,7 +140,7 @@ func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) 
 
 	sqlcUsers, err := repo.queries(ctx).ListUsersFromProject(ctx, &projectID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "user")
 	}
 
 	users := make([]contracts.User, 0, len(sqlcUsers))
@@ -162,7 +161,7 @@ func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID 
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "user")
 	}
 
 	return mapUserFromDB(&sqlcUser), nil

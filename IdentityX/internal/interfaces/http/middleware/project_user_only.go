@@ -2,11 +2,9 @@ package middleware
 
 import (
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/errx"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 )
 
 func ProjectUserOnly(next http.Handler) http.Handler {
@@ -14,25 +12,14 @@ func ProjectUserOnly(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx, span := MwTracer.Start(ctx, "ProjectUserOnly")
 		defer span.End()
-		var rs *resp.Response
 		principal, err := authz.RequirePrincipal(ctx)
 		if err != nil {
-			rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()).RecordCtx(ctx), "http")
-			if err != nil {
-				resp.InternalServerError().WithData(err).WithModule("ProjectUserOnlyMW").Send(w)
-				return
-			}
-			rs.WithModule("ProjectUserOnlyMW").Send(w)
+			fun.Error(err).WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 
 		if principal.ProjectID == nil {
-			rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthNotProjectUser).RecordCtx(ctx), "http")
-			if err != nil {
-				resp.InternalServerError().WithData(err).WithModule("ProjectUserOnlyMW").Send(w)
-				return
-			}
-			rs.WithModule("ProjectUserOnlyMW").Send(w)
+			fun.Forbidden("only project users can access this endpoint").WithModule("ProjectUserOnlyMW").Send(w)
 			return
 		}
 

@@ -2,12 +2,11 @@ package sessions
 
 import (
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/validation"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/golang-jwt/jwt/v5"
+	_ "IdentityX/internal/shared/contracts"
+
+	"github.com/MintzyG/fun"
 )
 
 type Handler struct {
@@ -38,19 +37,10 @@ func NewHandler(
 // @Router /sessions [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	sessions, err := handler.queries.List(r.Context())
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(sessions).
-		Send(w)
-}
-
-type MeResponse struct {
-	RefreshExpireDate *jwt.NumericDate       `json:"refresh_expire_date"`
-	AccessClaims      contracts.AccessClaims `json:"access"`
+	fun.Respond(w, sessions)
 }
 
 // RevokeByID godoc
@@ -68,20 +58,16 @@ type MeResponse struct {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
 func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	sessionID, rs := validation.GetUUID(r, "session_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	sessionID, err := req.Path("session_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	err := handler.commands.RevokeByID(ctx, sessionID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	err = handler.commands.RevokeByID(r.Context(), sessionID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("revoked session").Send(w)
+	fun.OK("revoked session").Send(w)
 }
 
 // RevokeOthers godoc
@@ -96,12 +82,10 @@ func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
 // @Router /sessions/others [delete]
 func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
 	err := handler.commands.RevokeOthers(r.Context())
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("revoked sessions").Send(w)
+	fun.OK("revoked sessions").Send(w)
 }
 
 // RevokeAll godoc
@@ -117,12 +101,10 @@ func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
 // @Router /sessions [delete]
 func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	err := handler.commands.RevokeAll(r.Context())
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("revoked sessions").Send(w)
+	fun.OK("revoked sessions").Send(w)
 }
 
 // Me godoc
@@ -137,13 +119,9 @@ func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions/me [get]
 func (handler *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	principal, err := authz.RequirePrincipal(ctx)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	principal, err := authz.RequirePrincipal(r.Context())
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().WithData(principal).Send(w)
+	fun.Respond(w, principal)
 }

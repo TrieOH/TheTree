@@ -4,11 +4,10 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -42,7 +41,7 @@ func (uc *QueryService) GetJWKS(ctx context.Context, projectID *uuid.UUID) (map[
 	keys, err := uc.keys.ListPublicKeys(ctx, projectID)
 	if err != nil {
 		telemetry.Log().Error("Failed listing public token keys", zap.Error(err), zap.Any("project_id", projectID))
-		return nil, fail.New(errx.SYSJWKSRetrievalFailed).With(err).RecordCtx(ctx)
+		return nil, fun.Err("JWKS retrieval failed").Internal()
 	}
 
 	jwkKeys := make([]any, 0, len(keys))

@@ -2,12 +2,10 @@ package middleware
 
 import (
 	"IdentityX/internal/platform/telemetry"
-	"IdentityX/internal/shared/errx"
 	"context"
 	"net/http"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -71,7 +69,6 @@ func RequestID(next http.Handler) http.Handler {
 		if reqID == "" {
 			uid, err := uuid.NewV7()
 			if err != nil {
-				_ = fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("middleware/RequestID").RecordCtx(ctx)
 				reqID = uuid.New().String() // V4
 			} else {
 				reqID = uid.String()

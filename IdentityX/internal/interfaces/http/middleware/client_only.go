@@ -1,12 +1,10 @@
 package middleware
 
 import (
-	authz2 "IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/authz"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -18,25 +16,14 @@ func ClientOnly() func(http.Handler) http.Handler {
 			ctx, span := MwTracer.Start(ctx, "ClientOnly")
 			trace.ContextWithSpan(ctx, span)
 			defer span.End()
-			var rs *resp.Response
-			principal, err := authz2.RequirePrincipal(ctx)
+			principal, err := authz.RequirePrincipal(ctx)
 			if err != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()).RecordCtx(ctx), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("ClientOnlyMW").Send(w)
-					return
-				}
-				rs.WithModule("ClientOnlyMW").Send(w)
+				fun.Error(err).WithModule("ClientOnlyMW").Send(w)
 				return
 			}
 
-			if principal.Method == authz2.AuthMethodSession && principal.ProjectID != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthNotClient).RecordCtx(ctx), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("ClientOnlyMW").Send(w)
-					return
-				}
-				rs.WithModule("ClientOnlyMW").Send(w)
+			if principal.Method == authz.AuthMethodSession && principal.ProjectID != nil {
+				fun.Forbidden("only clients can access this endpoint").WithModule("ClientOnlyMW").Send(w)
 				return
 			}
 

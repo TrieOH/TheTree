@@ -1,16 +1,14 @@
 package validation
 
 import (
-	"IdentityX/internal/shared/errx"
-
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
 func ParseUUID(id, fieldName string) (uuid.UUID, error) {
 	parsedID, err := uuid.Parse(id)
 	if err != nil {
-		return uuid.Nil, fail.New(errx.RequestParseUUIDError).WithArgs(fieldName).With(err)
+		return uuid.Nil, fun.Errf("invalid uuid in field (%s): %s", fieldName, err).BadRequest()
 	}
 	return parsedID, nil
 }

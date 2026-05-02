@@ -1,11 +1,9 @@
 package middleware
 
 import (
-	"IdentityX/internal/shared/errx"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 )
 
 func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
@@ -18,21 +16,11 @@ func RequireQueryParams(params ...string) func(http.Handler) http.Handler {
 
 			for _, p := range params {
 				if !q.Has(p) {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestMissingQueryParam).WithArgs(p).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("RequireQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("RequireQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("missing query parameter: %s", p).BadRequest()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestMissingQueryParamValue).WithArgs(p).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("RequireQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("RequireQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("missing query parameter value for: %s", p).BadRequest()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -58,12 +46,7 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all query params are allowed
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestUnknownQueryParam).WithArgs(param).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("unknown query parameter: %s", param).BadRequest()).WithModule("AllowOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -71,21 +54,11 @@ func RequireOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 			// check all allowed params are present and non-empty
 			for _, p := range allowed {
 				if !q.Has(p) {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestMissingQueryParam).WithArgs(p).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("missing query parameter: %s", p).BadRequest()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 				if q.Get(p) == "" {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestMissingQueryParamValue).WithArgs(p).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("RequireOnlyQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("RequireOnlyQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("missing query parameter value for: %s", p).BadRequest()).WithModule("RequireQueryParamsMW").Send(w)
 					return
 				}
 			}
@@ -123,12 +96,7 @@ func AllowOnlyQueryParams(allowed ...string) func(http.Handler) http.Handler {
 
 			for param := range q {
 				if _, ok := allowedSet[param]; !ok {
-					rs, err := fail.ToAs[*resp.Response](fail.New(errx.RequestUnknownQueryParam).WithArgs(param).RecordCtx(ctx), "http")
-					if err != nil {
-						resp.InternalServerError().WithData(err).WithModule("AllowOnlyQueryParamsMW").Send(w)
-						return
-					}
-					rs.WithModule("AllowOnlyQueryParamsMW").Send(w)
+					fun.Error(fun.Errf("unknown query parameter: %s", param).BadRequest()).WithModule("AllowOnlyQueryParamsMW").Send(w)
 					return
 				}
 			}

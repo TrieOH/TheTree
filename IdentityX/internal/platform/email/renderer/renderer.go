@@ -1,14 +1,13 @@
 package renderer
 
 import (
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"bytes"
 	"context"
 	"html/template"
 	texttemplate "text/template"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -54,9 +53,8 @@ func (mr *MailRenderer) Verification(ctx context.Context, data ports.Verificatio
 	})
 
 	if err != nil {
-		return ports.Email{}, fail.New(errx.SYSRenderingEmailFailed).With(err).WithArgs("verification")
+		return ports.Email{}, fun.ErrInternal("verification email rendering failed")
 	}
-
 	return ports.Email{
 		To:       data.Email,
 		Subject:  subject,
@@ -96,12 +94,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "text").RecordCtx(ctx)
+		return "", "", "", fun.Errf("%s %s template not found", key, "text").Internal()
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "html").RecordCtx(ctx)
+		return "", "", "", fun.Errf("%s %s template not found", key, "html").Internal()
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

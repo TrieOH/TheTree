@@ -1,12 +1,10 @@
 package middleware
 
 import (
-	authz2 "IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/authz"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -19,25 +17,14 @@ func NoApiKeys() func(http.Handler) http.Handler {
 			trace.ContextWithSpan(ctx, span)
 			defer span.End()
 
-			var rs *resp.Response
-			principal, err := authz2.RequirePrincipal(ctx)
+			principal, err := authz.RequirePrincipal(ctx)
 			if err != nil {
-				rs, err = fail.ToAs[*resp.Response](fail.AsFail(err).Trace(err.Error()).RecordCtx(ctx), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("NoApiKeysMW").Send(w)
-					return
-				}
-				rs.WithModule("NoApiKeysMW").Send(w)
+				fun.Error(err).WithModule("NoApiKeysMW").Send(w)
 				return
 			}
 
-			if principal.Method == authz2.AuthMethodApiKey {
-				rs, err = fail.ToAs[*resp.Response](fail.New(errx.AuthApiKeyNotAllowed).RecordCtx(ctx), "http")
-				if err != nil {
-					resp.InternalServerError().WithData(err).WithModule("NoApiKeysMW").Send(w)
-					return
-				}
-				rs.WithModule("NoApiKeysMW").Send(w)
+			if principal.Method == authz.AuthMethodApiKey {
+				fun.Error(fun.ErrBadRequest("api keys are not allowed for this endpoint")).WithModule("NoApiKeysMW").Send(w)
 				return
 			}
 

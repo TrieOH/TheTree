@@ -6,29 +6,30 @@ CREATE TABLE key_pair (
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
 
     key_type TEXT NOT NULL default 'goauth',
-    CHECK (key_type in ('goauth', 'project')),
+    CONSTRAINT chk_key_pair_key_type_valid CHECK (key_type IN ('goauth', 'project')),
 
     public_key TEXT NOT NULL,
     private_key BYTEA NOT NULL, -- envelope-encrypted, never plaintext
     algorithm TEXT NOT NULL DEFAULT 'Ed25519',
 
     usage TEXT NOT NULL DEFAULT 'sign',
-    CHECK (usage in ('sign', 'verify')),
+    CONSTRAINT chk_key_pair_usage_valid CHECK (usage IN ('sign', 'verify')),
 
     status TEXT NOT NULL DEFAULT 'active',
-    CHECK (status in ('active', 'rotated', 'revoked')),
+    CONSTRAINT chk_key_pair_status_valid CHECK (status IN ('active', 'rotated', 'revoked')),
 
     verify_expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
 
-    CHECK (
-        (key_type = 'goauth' AND project_id IS NULL)
+    CONSTRAINT chk_key_pair_type_project_consistency_check
+        CHECK (
+            (key_type = 'goauth' AND project_id IS NULL)
             OR
-        (key_type = 'project' AND project_id IS NOT NULL)
-    ),
+            (key_type = 'project' AND project_id IS NOT NULL)
+        ),
 
-    CHECK (
+    CONSTRAINT chk_key_pair_cant_sign_if_rotated CHECK (
         NOT (usage = 'sign' AND status = 'rotated')
     )
 );
@@ -57,7 +58,7 @@ CREATE INDEX idx_key_pair_goauth_jwks
       AND project_id IS NULL
       AND status IN ('active', 'rotated');
 
-CREATE UNIQUE INDEX uniq_goauth_single_active_signing_key
+CREATE UNIQUE INDEX one_identity_x_active_signing_key
     ON key_pair (key_type)
     WHERE
     key_type = 'goauth'
@@ -66,7 +67,7 @@ CREATE UNIQUE INDEX uniq_goauth_single_active_signing_key
   AND status = 'active';
 
 -- +goose Down
-DROP INDEX IF EXISTS uniq_goauth_single_active_signing_key;
+DROP INDEX IF EXISTS one_identity_x_active_signing_key;
 DROP INDEX IF EXISTS idx_key_pair_goauth_jwks;
 DROP INDEX IF EXISTS idx_key_pair_goauth_active_sign;
 DROP INDEX IF EXISTS idx_key_pair_project_jwks;

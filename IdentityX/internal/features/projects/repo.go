@@ -8,7 +8,7 @@ import (
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -67,7 +67,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project)
 		IsActive:    toCreate.IsActive,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "project")
 	}
 
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
@@ -90,7 +90,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
+		return nil, errx.DB(err, "project")
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -110,7 +110,7 @@ func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUI
 
 	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
+		return nil, errx.DB(err, "project")
 	}
 
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
@@ -134,7 +134,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 		ID:      projectID,
 	})
 	if err != nil {
-		return false, fail.From(err).RecordCtx(ctx)
+		return false, errx.DB(err, "project")
 	}
 
 	return isOwner, nil
@@ -150,7 +150,7 @@ func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contrac
 
 	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "project")
 	}
 
 	span.SetAttributes(attribute.Int("project.count", len(sqlcProjects)))
@@ -182,7 +182,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project,
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		return nil, fail.From(err).WithArgs("project").RecordCtx(ctx)
+		return nil, errx.DB(err, "project")
 	}
 
 	mapProjectFromDB(&toUpdate, &sqlcProject)
@@ -204,11 +204,11 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 	})
 
 	if err != nil {
-		return fail.From(err).WithArgs("project").RecordCtx(ctx)
+		return errx.DB(err, "project")
 	}
 
 	if affectedRows == 0 {
-		return fail.New(errx.ProjectNotFound)
+		return fun.ErrNotFound("project not found")
 	}
 
 	return nil

@@ -6,11 +6,12 @@ import (
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -31,31 +32,21 @@ type CommandService struct {
 	tx             database.TxRunner
 }
 
-func NewCommandService(
-	Users ports.UserRepository,
-	accounts ports.AccountRepository,
-	Sessions ports.SessionRepository,
-	Keys ports.KeysRepository,
-	TokenReuseList ports.TokenReuseListRepository,
-	renderer ports.EmailRenderer,
-	mailer ports.Mailer,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	tx database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		users:          Users,
-		accounts:       accounts,
-		sessions:       Sessions,
-		keys:           Keys,
-		tokenReuseList: TokenReuseList,
-		mailRenderer:   renderer,
-		mailSender:     mailer,
-		logger:         logger,
-		tracer:         tracer,
-		tx:             tx,
-	}
+func NewCommandService(deps feature_deps.AccountCommandDeps) *CommandService {
+	return errx.MustProvide(&CommandService{
+		users:          deps.Users,
+		accounts:       deps.Accounts,
+		sessions:       deps.Sessions,
+		keys:           deps.Keys,
+		tokenReuseList: deps.TokenReuseList,
+		mailRenderer:   deps.MailRenderer,
+		mailSender:     deps.MailSender,
+		logger:         deps.Logger,
+		tracer:         deps.Tracer,
+		tx:             deps.Tx,
+	})
 }
+
 func (uc *CommandService) Verify(ctx context.Context, token string) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Verify")
 	defer span.End()
@@ -81,9 +72,8 @@ func (uc *CommandService) Verify(ctx context.Context, token string) (err error) 
 	if err != nil {
 		return err
 	}
-
 	if claims.Sub.Subject != principal.UserID {
-		return fail.New(errx.TokenUserMismatch).WithArgs("verification").RecordCtx(ctx)
+		return fun.ErrUnauthorized("verification token user mismatch")
 	}
 
 	if principal.ProjectID != nil {
@@ -124,7 +114,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 			return err
 		}
 		if pu.IsVerified == true {
-			return fail.New(errx.AuthAlreadyVerified).RecordCtx(ctx)
+			return fun.ErrBadRequest("user already verified")
 		}
 	} else {
 		u, err = uc.users.GetUserByID(ctx, principal.UserID)
@@ -132,17 +122,17 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 			return err
 		}
 		if u.IsVerified == true {
-			return fail.New(errx.AuthAlreadyVerified).RecordCtx(ctx)
+			return fun.ErrBadRequest("user already verified")
 		}
 	}
 
 	if pu != nil {
 		if pu.IsVerified {
-			return fail.New(errx.AuthAlreadyVerified).RecordCtx(ctx)
+			return fun.ErrBadRequest("user already verified")
 		}
 	} else {
 		if u.IsVerified {
-			return fail.New(errx.AuthAlreadyVerified).RecordCtx(ctx)
+			return fun.ErrBadRequest("user already verified")
 		}
 	}
 
@@ -204,12 +194,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	return nil
 }
 
-type ForgotPasswordInput struct {
-	Email     string
-	ProjectID *uuid.UUID
-}
-
-func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordInput) (err error) {
+func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.ForgotPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.ForgotPassword")
 	defer span.End()
 	defer func() {
@@ -219,7 +204,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 	var u *contracts.User
 	u, err = uc.users.GetUserByEmail(ctx, in.Email, in.ProjectID)
 	if err != nil {
-		if errx.IsNotFound(err) {
+		if fun.Is(err, fun.CodeNotFound) {
 			return nil // silent success (no enumeration)
 		}
 		return err
@@ -270,12 +255,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in ForgotPasswordI
 	return nil
 }
 
-type ResetPasswordInput struct {
-	NewPassword string
-	Token       string
-}
-
-func (uc *CommandService) ResetPassword(ctx context.Context, in ResetPasswordInput) (err error) {
+func (uc *CommandService) ResetPassword(ctx context.Context, in contracts.ResetPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.ResetPassword")
 	defer span.End()
 	defer func() {
@@ -289,7 +269,7 @@ func (uc *CommandService) ResetPassword(ctx context.Context, in ResetPasswordInp
 	return err
 }
 
-func (uc *CommandService) resetPasswordInternal(ctx context.Context, in ResetPasswordInput) (err error) {
+func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contracts.ResetPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.resetPasswordInternal")
 	defer span.End()
 	defer func() {
@@ -310,7 +290,7 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in ResetPas
 	var jti uuid.UUID
 	jti, err = uuid.Parse(claims.ID)
 	if err != nil {
-		return fail.New(errx.RequestParseUUIDError).RecordCtx(ctx)
+		return fun.Errf("invalid jti in claims: %s", err).BadRequest()
 	}
 
 	var exists bool
@@ -320,17 +300,16 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in ResetPas
 	}
 	if exists {
 		// FIXME when the audit is implemented add this to the audit
-		return fail.New(errx.AuthTokenAlreadyUsed).RecordCtx(ctx)
+		return fun.ErrUnauthorized("token already used")
 	}
-
 	if len(in.NewPassword) > 72 {
-		return fail.New(errx.AuthInvalidPassword).RecordCtx(ctx)
+		return fun.ErrBadRequest("password length exceeds 72 bytes")
 	}
 
 	var hashedPassword []byte
 	hashedPassword, err = bcrypt.GenerateFromPassword([]byte(in.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return fail.New(errx.RequestInvalidPassword).With(err).RecordCtx(ctx)
+		return fun.Errf("invalid password: %s", err).BadRequest()
 	}
 
 	if claims.Sub.ProjectID == nil {

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -35,10 +35,10 @@ func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
 	return ed25519.Sign(priv, payload), nil
 }
 
-func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
+func VerifyKeyPair(projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
 	if projectID != nil {
 		if pair.ProjectID == nil || *pair.ProjectID != *projectID {
-			return fail.New(errx.KeysProjectKeyMismatch).RecordCtx(ctx)
+			return fun.ErrUnauthorized("project keys mismatch")
 		}
 	}
 
@@ -48,7 +48,7 @@ func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byt
 	}
 
 	if !ed25519.Verify(pub, payload, sig) {
-		return fail.New(errx.KeysInvalidSignature).RecordCtx(ctx)
+		return fun.ErrUnauthorized("invalid key signature")
 	}
 
 	return nil
@@ -323,7 +323,7 @@ func verifyToken[T jwt.Claims](
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
+		return claims, fun.Errf("invalid %s token alg, expected (%s) but got (%s)", tokenType, jwt.SigningMethodEdDSA.Alg(), alg).Unauthorized()
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
@@ -331,15 +331,14 @@ func verifyToken[T jwt.Claims](
 		if token.Method != nil {
 			methodAlg = token.Method.Alg()
 		}
-		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
+		return claims, fun.Errf("invalid %s token alg, expected (%s) but got (%s)", tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).Unauthorized()
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return claims, fail.New(errx.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fun.Errf("%s token missing kid", tokenType).Unauthorized()
 	}
-
-	payload, sig, err := splitJWT(ctx, tokenType, tokenStr)
+	payload, sig, err := splitJWT(tokenType, tokenStr)
 	if err != nil {
 		return claims, err
 	}
@@ -348,36 +347,27 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "goauth:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 2 {
-			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fun.Errf("invalid %s token kid", tokenType).Unauthorized()
 		}
-
-		if err := VerifyKeyPair(ctx, nil, payload, sig, pair); err != nil {
-			if fail.Is(err, errx.SQLNotFound) {
-				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
-			}
+		if err = VerifyKeyPair(nil, payload, sig, pair); err != nil {
 			return claims, err
 		}
 
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 3 {
-			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fun.Errf("invalid %s token kid", tokenType).Unauthorized()
 		}
-
 		projectID, err := validation.ParseUUID(parts[1], "project_id")
 		if err != nil {
 			return claims, err
 		}
-
-		if err := VerifyKeyPair(ctx, &projectID, payload, sig, pair); err != nil {
-			if fail.Is(err, errx.SQLNotFound) {
-				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
-			}
+		if err = VerifyKeyPair(&projectID, payload, sig, pair); err != nil {
 			return claims, err
 		}
 
 	default:
-		return claims, fail.New(errx.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fun.Errf("unknown %s token kid", tokenType).Unauthorized()
 	}
 
 	return claims, nil
@@ -389,18 +379,15 @@ func ParseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, er
 	return token, err
 }
 
-func splitJWT(ctx context.Context, tokenType, tokenStr string) (signingInput, sig []byte, err error) {
+func splitJWT(tokenType, tokenStr string) (signingInput, sig []byte, err error) {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
-		return nil, nil, fail.New(errx.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
+		return nil, nil, fun.Errf("invalid %s token format", tokenType).Unauthorized()
 	}
-
 	signingInput = []byte(parts[0] + "." + parts[1])
-
 	sig, err = base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return signingInput, sig, nil
 }

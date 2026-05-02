@@ -2,10 +2,9 @@ package database
 
 import (
 	"IdentityX/internal/platform/telemetry"
-	"IdentityX/internal/shared/errx"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -35,11 +34,11 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	fn func(ctx context.Context) error,
 ) (err error) {
 	if ctx == nil {
-		return fail.New(errx.SYSTransactionNilContext)
+		return fun.ErrInternal("cannot start transactions with a nil context")
 	}
 
 	if ctx.Value(TxKeyValue) != nil {
-		return fail.New(errx.DBNestedTransactionNotAllowed)
+		return fun.ErrInternal("nested transactions are not allowed")
 	}
 
 	pgxOpts := pgx.TxOptions{
@@ -50,7 +49,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 	var tx pgx.Tx
 	tx, err = r.pool.BeginTx(ctx, pgxOpts)
 	if err != nil {
-		return fail.New(errx.DBBeginTransactionFailed).With(err)
+		return fun.ErrInternal("could not begin transaction")
 	}
 
 	committed := false
@@ -64,7 +63,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 				}
 			}
 			telemetry.Log().Error("transaction function panicked", zap.Any("panic", p))
-			err = fail.New(errx.DBTransactionPanicked).AddMeta("panic", p)
+			err = fun.Err("transaction panicked").WithMeta("panic", p).Internal()
 		}
 	}()
 
@@ -83,7 +82,7 @@ func (r *PgxTxRunner) WithinTxWithOptions(
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			telemetry.Log().Error("error during tx rollback after commit failure", zap.Error(rbErr))
 		}
-		return fail.New(errx.DBTransactionCommitFailed).With(err)
+		return fun.ErrInternal("transaction commit failed")
 	}
 	committed = true
 	return nil

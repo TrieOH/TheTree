@@ -9,12 +9,12 @@ import (
 	"IdentityX/internal/features/sessions"
 	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/interfaces/http/router"
-	"IdentityX/internal/interfaces/http/system"
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/email"
 	"IdentityX/internal/platform/memory/redis"
 	"IdentityX/internal/platform/telemetry"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"log"
 	"net/http"
@@ -32,7 +32,7 @@ type runtime struct {
 	queries     queries
 	repos       repos
 	repoQueries *sqlc.Queries
-	txRunner    database.TxRunner
+	tx          database.TxRunner
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	renderer    ports.EmailRenderer
@@ -71,7 +71,7 @@ type middlewares struct {
 func (app *IdentityX) run() {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
-	rt.txRunner = database.NewPGTxRunner(app.db)
+	rt.tx = database.NewPGTxRunner(app.db)
 	rt.tracer = otel.Tracer(string(telemetry.IdentityXTracer))
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
@@ -88,7 +88,6 @@ func (app *IdentityX) run() {
 
 func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 	var h router.Handlers
-	h.System = system.NewHandler()
 	h.Users = auth.NewHandler(*rt.commands.auth, *rt.queries.auth)
 	h.Accounts = account.NewHandler(*rt.commands.accounts)
 	h.Projects = projects.NewHandler(*rt.commands.projects, *rt.queries.projects)
@@ -100,20 +99,67 @@ func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
 
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.apiKeys = api_keys.NewCommandService(r.apiKeys, r.projects, rt.logger, rt.tracer, rt.txRunner)
-	cmd.projects = projects.NewCommandService(r.projects, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.security = security.NewCommandService(r.sessions, r.projects, r.keys, r.apiKeys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.sessions = sessions.NewCommandService(r.sessions, r.keys, rt.logger, rt.tracer, rt.txRunner)
-	cmd.auth = auth.NewCommandService(r.users, r.sessions, r.projects, r.keys, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
-	cmd.accounts = account.NewCommandService(r.users, r.accounts, r.sessions, r.keys, r.tokenReuseList, rt.renderer, rt.mailer, rt.logger, rt.tracer, rt.txRunner)
+	cmd.apiKeys = api_keys.NewCommandService(feature_deps.ApiKeysCommandDeps{
+		ApiKeys: r.apiKeys,
+		Project: r.projects,
+		Logger:  rt.logger,
+		Tracer:  rt.tracer,
+		Tx:      rt.tx,
+	})
+	cmd.projects = projects.NewCommandService(feature_deps.ProjectCommandDeps{
+		Projects: r.projects,
+		Keys:     r.keys,
+		Logger:   rt.logger,
+		Tracer:   rt.tracer,
+		Tx:       rt.tx,
+	})
+	cmd.security = security.NewCommandService(feature_deps.SecurityCommandDeps{
+		Sessions: r.sessions,
+		Project:  r.projects,
+		Keys:     r.keys,
+		ApiKeys:  r.apiKeys,
+		Logger:   rt.logger,
+		Tracer:   rt.tracer,
+		Tx:       rt.tx,
+	})
+	cmd.sessions = sessions.NewCommandService(feature_deps.SessionCommandDeps{
+		Sessions: r.sessions,
+		Keys:     r.keys,
+		Logger:   rt.logger,
+		Tracer:   rt.tracer,
+		Tx:       rt.tx,
+	})
+	cmd.auth = auth.NewCommandService(feature_deps.AuthCommandDeps{
+		Users:    r.users,
+		Sessions: r.sessions,
+		Projects: r.projects,
+		Keys:     r.keys,
+		Renderer: rt.renderer,
+		Mailer:   rt.mailer,
+		Logger:   rt.logger,
+		Tracer:   rt.tracer,
+		Tx:       rt.tx,
+	})
+	cmd.accounts = account.NewCommandService(feature_deps.AccountCommandDeps{
+		Users:          r.users,
+		Accounts:       r.accounts,
+		Sessions:       r.sessions,
+		Keys:           r.keys,
+		TokenReuseList: r.tokenReuseList,
+		MailRenderer:   rt.renderer,
+		MailSender:     rt.mailer,
+		Logger:         rt.logger,
+		Tracer:         rt.tracer,
+		Tx:             rt.tx,
+	})
 	return cmd
 }
 
 func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var q queries
-	q.auth = auth.NewQueryService(r.keys, rt.logger, rt.tracer, rt.txRunner)
-	q.projects = projects.NewQueryService(r.projects, r.users, rt.logger, rt.tracer, rt.txRunner)
-	q.sessions = sessions.NewQueryService(r.sessions, rt.logger, rt.tracer, rt.txRunner)
+	q.auth = auth.NewQueryService(r.keys, rt.logger, rt.tracer, rt.tx)
+	q.projects = projects.NewQueryService(r.projects, r.users, rt.logger, rt.tracer, rt.tx)
+	q.sessions = sessions.NewQueryService(r.sessions, rt.logger, rt.tracer, rt.tx)
 	return q
 }
 

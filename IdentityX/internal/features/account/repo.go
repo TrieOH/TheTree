@@ -3,10 +3,10 @@ package account
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -47,7 +47,7 @@ func (repo *accountRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, er
 
 	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
 	if err != nil {
-		return false, fail.From(err).RecordCtx(ctx)
+		return false, errx.DB(err, "account")
 	}
 
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
@@ -68,7 +68,7 @@ func (repo *accountRepo) ResetPassword(ctx context.Context, userID uuid.UUID, pa
 		ID:           userID,
 	})
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "account")
 	}
 
 	return nil

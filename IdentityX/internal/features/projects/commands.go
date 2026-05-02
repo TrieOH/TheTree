@@ -6,13 +6,13 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/viper"
@@ -26,94 +26,74 @@ type CommandService struct {
 	keys     ports.KeysRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
-	txRunner database.TxRunner
+	tx       database.TxRunner
 }
 
-func NewCommandService(
-	projects ports.ProjectRepository,
-	keys ports.KeysRepository,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	txRunner database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		projects: projects,
-		keys:     keys,
-		logger:   logger,
-		tracer:   tracer,
-		txRunner: txRunner,
-	}
-}
-
-type ProjectServiceInput struct {
-	ProjectID   uuid.UUID
-	ProjectName string
-	Domain      string
-	Metadata    json.RawMessage
+func NewCommandService(deps feature_deps.ProjectCommandDeps) *CommandService {
+	return errx.MustProvide(&CommandService{
+		projects: deps.Projects,
+		keys:     deps.Keys,
+		logger:   deps.Logger,
+		tracer:   deps.Tracer,
+		tx:       deps.Tx,
+	})
 }
 
 // Create handles the business logic for creating a new project.
 // It requires a valid principal in the context, generates a new key pair for the project,
 // and then creates the project in the database.
-func (uc *CommandService) Create(ctx context.Context, in ProjectServiceInput) (project *contracts.Project, err error) {
+func (uc *CommandService) Create(ctx context.Context, in contracts.CreateProjectInput) (project *contracts.Project, err error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 	defer func() {
-		if span != nil {
-			span.SetAttributes(attribute.Bool("create.success", err == nil))
-		}
+		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
-	err = uc.txRunner.WithinTx(ctx, func(ctx context.Context) error {
+	err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
 		project, err = uc.createInternal(ctx, in)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	return
 }
 
-func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceInput) (*contracts.Project, error) {
+func (uc *CommandService) createInternal(ctx context.Context, in contracts.CreateProjectInput) (*contracts.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.createInternal")
 	defer span.End()
 
 	principal, err := authz.RequirePrincipalAndAnnotate(ctx, span)
 	if err != nil {
-		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, err
 	}
 
-	createdProject, err := uc.projects.Create(ctx, contracts.Project{
+	var createdProject *contracts.Project
+	if createdProject, err = uc.projects.Create(ctx, contracts.Project{
 		ProjectName: in.ProjectName,
 		Domain:      in.Domain,
 		OwnerID:     principal.UserID,
 		Metadata:    in.Metadata,
 		IsActive:    true,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
 	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
-		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fun.Errf("error generating project keys: %s", err).Internal()
 	}
 	defer zero(priv)
 
 	encryptedPriv, err := crypto.Encrypt(priv)
 	if err != nil {
-		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+		return nil, fun.Errf("error encrypting project keys: %s", err).Internal()
 	}
 
-	kid := fmt.Sprintf(
-		"project:%s:%s",
-		createdProject.ID.String(),
-		ulid.Make().String(),
-	)
+	kid := fmt.Sprintf("project:%s:%s", createdProject.ID.String(), ulid.Make().String())
 
 	expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
-	_, err = uc.keys.CreateKeyPair(ctx, contracts.Pair{
+	if _, err = uc.keys.CreateKeyPair(ctx, contracts.Pair{
 		KID:             kid,
 		ProjectID:       &createdProject.ID,
 		KeyType:         contracts.TypeProject,
@@ -124,9 +104,8 @@ func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceI
 		Status:          contracts.StatusActive,
 		ExpiresAt:       expiresAt,
 		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
-	})
-	if err != nil {
-		return nil, fail.New(errx.ProjectErrorGeneratingKeys).With(err).RecordCtx(ctx)
+	}); err != nil {
+		return nil, err
 	}
 
 	span.SetAttributes(
@@ -141,7 +120,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in ProjectServiceI
 // Update handles the business logic for updating a project.
 // It requires a valid principal in the context and that the principal is the owner of the project.
 // It retrieves the project, updates the fields, and then saves the changes to the database.
-func (uc *CommandService) Update(ctx context.Context, in ProjectServiceInput) (*contracts.Project, error) {
+func (uc *CommandService) Update(ctx context.Context, in contracts.UpdateProjectInput) (*contracts.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 

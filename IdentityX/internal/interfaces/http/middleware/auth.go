@@ -8,8 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -59,13 +58,13 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			// ⭐ Authorization header (Primary auth)
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				resp.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("missing access token").WithModule("AuthMW").Send(w)
 				return
 			}
 
 			_, tokenStr, found := strings.Cut(authHeader, "Bearer ")
 			if !found || tokenStr == "" {
-				resp.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
+				fun.Unauthorized().WithMsg("invalid authorization header").WithModule("AuthMW").Send(w)
 				return
 			}
 
@@ -84,12 +83,7 @@ func (mw *AuthMiddleware) handleAuth(
 ) {
 	principal, err := mw.authenticator.AuthenticateRequest(ctx, in)
 	if err != nil {
-		rs, convErr := fail.ToAs[*resp.Response](fail.AsFail(err), "http")
-		if convErr != nil {
-			resp.InternalServerError().WithModule("AuthMW").Send(w)
-			return
-		}
-		rs.WithModule("AuthMW").Send(w)
+		fun.Error(err).WithModule("AuthMW").Send(w)
 		return
 	}
 

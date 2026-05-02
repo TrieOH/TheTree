@@ -6,14 +6,20 @@ import (
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
 	"context"
+	"database/sql"
+	"errors"
 	"log"
+	"net/http"
+	"reflect"
+	"strings"
 	"time"
+	"unicode"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
-	"github.com/MintzyG/fail/v3/plugins/localization"
-	"github.com/MintzyG/fail/v3/plugins/tracing/otel"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,27 +28,55 @@ import (
 	"github.com/spf13/viper"
 )
 
-func SetupFail() {
-	fail.AllowInternalLogs(true)
-	fail.AllowStaticMutations(true, false)
-	fail.AllowRuntimePanics(true)
+func SetupValidator() *validator.Validate {
+	var v = validator.New()
+	if err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
+		vv := fl.Field().String()
 
-	if err := fail.RegisterTranslator(&errx.HTTPTranslator{}); err != nil {
-		log.Fatal(err)
+		u, err := uuid.Parse(vv)
+		if err != nil {
+			return false
+		}
+
+		return u.Version() == 7
+	}); err != nil {
+		errx.Must(err, "failed to register uuid7 validator")
 	}
 
-	fail.RegisterMapper(&errx.PGXMapper{})
+	// Custom password validation - requires uppercase, number, and symbol
+	if err := v.RegisterValidation("passwd", func(fl validator.FieldLevel) bool {
+		password := fl.Field().String()
+		var hasUpper, hasNumber, hasSymbol bool
 
-	fail.SetLocalizer(localization.New())
-	fail.SetDefaultLocale("en-US")
+		for _, c := range password {
+			switch {
+			case unicode.IsUpper(c):
+				hasUpper = true
+			case unicode.IsNumber(c):
+				hasNumber = true
+			case unicode.IsPunct(c) || unicode.IsSymbol(c):
+				hasSymbol = true
+			}
+		}
 
-	tracerPlugin := otel.New(
-		otel.WithTracerName("goauth-service"),
-		otel.WithMode(otel.RecordSmart),
-		otel.WithStackTrace(),
-		otel.WithAttributePrefix("goauth.error"),
-	)
-	fail.SetTracer(tracerPlugin)
+		return hasUpper && hasNumber && hasSymbol
+	}); err != nil {
+		errx.Must(err, "failed to register passwd validator")
+	}
+
+	// Use JSON field names for better API responses
+	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		if name == "" {
+			return fld.Name
+		}
+		return name
+	})
+
+	return v
 }
 
 func SetupFUN() {
@@ -51,14 +85,19 @@ func SetupFUN() {
 		module = "IdentityXAPI"
 	}
 
-	resp.SetConfig(resp.Config{
+	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
 		MaxInterceptorAmount: 20,
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
 		DefaultModule:        module,
-		ErrorHandler:         errx.ErrToResp,
+	})
+
+	v := SetupValidator()
+	bind.SetValidator(v)
+	fun.SetPathParamFunc(func(r *http.Request, key string) string {
+		return chi.URLParam(r, key)
 	})
 }
 
@@ -71,40 +110,41 @@ func SetupRedis(timeout time.Duration) *redis.Client {
 }
 
 func SetupDB(migrationPath string) *pgxpool.Pool {
-	var err error
 	db, err := database.WaitForDB(30 * time.Second)
 	if err != nil {
-		log.Fatalf("Failed to connect DB: %v", err)
+		errx.Must(err, "Failed to connect DB")
 	}
 	if err = database.RunMigrations(db, migrationPath); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	errx.Must(errx.ValidateConstraintRegistry(ctx, db), "unregistered constraints found")
 	return db
 }
 
 func SetupRuntimeEnv(db *pgxpool.Pool) {
-	queries := sqlc.New(db)
-
+	q := sqlc.New(db)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// First, rotate any expired keys to clear the way for new key creation
-	if err := queries.RotateExpiredKeys(ctx); err != nil {
+	if err := q.RotateExpiredKeys(ctx); err != nil {
 		log.Printf("Warning: failed to rotate expired signing keys: %v", err)
 	}
 
 	// Also run the full key rotation logic to create new keys for projects without active keys
-	if err := tryRotateGoAuthKeys(ctx, queries); err != nil {
+	if err := tryRotateGoAuthKeys(ctx, q); err != nil {
 		log.Printf("Warning: failed to rotate goauth keys: %v", err)
 	}
 
-	if err := tryRotateProjectKeys(ctx, queries); err != nil {
+	if err := tryRotateProjectKeys(ctx, q); err != nil {
 		log.Printf("Warning: failed to rotate project keys: %v", err)
 	}
 
-	_, err := queries.GetActiveSigningKey(ctx, nil)
+	_, err := q.GetActiveSigningKey(ctx, nil)
 	if err != nil {
-		if fail.Is(fail.From(err), errx.SQLNotFound) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			var pub string
 			var priv []byte
 			pub, priv, err = crypto.GenerateEd25519()
@@ -122,7 +162,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			kid := "goauth:" + ulid.Make().String()
 			expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
 
-			_, err = queries.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
+			_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 				Kid:             kid,
 				ProjectID:       nil,
 				KeyType:         "goauth",
@@ -135,13 +175,11 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 				VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
 			})
 
-			fe := fail.From(err)
-
-			if fe != nil {
-				if errx.IsUniqueViolation(fe) {
+			if err != nil {
+				if fun.Is(err, fun.CodeConflict) {
 					log.Println("GoAuth signing key already created by another instance")
 				} else {
-					log.Fatalf("failed to create GoAuth signing key: %v", fe.Error())
+					log.Fatalf("failed to create GoAuth signing key: %s", err)
 				}
 			} else {
 				log.Println("Created GoAuth signing key")
@@ -151,13 +189,11 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 		}
 	}
 
-	fe := fail.From(err)
-
-	if fe != nil {
-		if fail.Is(fe, errx.SCOPEOneGlobal) || errx.IsUniqueViolation(fe) {
+	if err != nil {
+		if fun.Is(err, fun.CodeConflict) {
 			log.Println("GoAuth Global scope already created by another instance")
 		} else {
-			log.Fatalf("Failed to create GoAuth Global scope: %v", fe.Error())
+			log.Fatalf("Failed to create GoAuth Global scope: %s", err)
 		}
 	} else {
 		log.Println("Created GoAuth Global scope")
@@ -167,11 +203,11 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 	key, err := q.GetActiveSigningKey(ctx, nil)
 	if err != nil {
-		if fail.Is(fail.From(err), errx.SQLNotFound) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			// defensive: no signing key → create
 			return createGoAuthKey(ctx, q)
 		}
-		return fail.From(err)
+		return errx.DB(err, "Signing Key")
 	}
 
 	if time.Until(key.ExpiresAt) > 24*time.Hour {
@@ -179,7 +215,7 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 	}
 
 	if err = q.RotateSigningKeys(ctx, nil); err != nil {
-		return fail.From(err)
+		return errx.DB(err, "Signing Key")
 	}
 
 	return createGoAuthKey(ctx, q)
@@ -216,29 +252,28 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	if err == nil {
 		return nil
 	}
-	fe := fail.From(err)
-	if errx.IsUniqueViolation(fe) {
+	if fun.Is(err, fun.CodeConflict) {
 		return nil
 	}
-	return fe
+	return err
 }
 
 func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 	projects, err := q.ListProjectsWithSigningKeys(ctx)
-	fe := fail.From(err)
-	if fe != nil {
-		return fe
+	err = errx.DB(err, "Signing Key")
+	if err != nil {
+		return err
 	}
 
 	for _, projectID := range projects {
 		var key sqlc.KeyPair
 		key, err = q.GetActiveSigningKey(ctx, projectID)
 		if err != nil {
-			if fail.Is(fail.From(err), errx.SQLNotFound) {
+			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 				_ = createProjectKey(ctx, q, *projectID)
 				continue
 			}
-			return fail.From(err)
+			return errx.DB(err, "project Keys")
 		}
 
 		if time.Until(key.ExpiresAt) > 24*time.Hour {
@@ -246,7 +281,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 		}
 
 		if err = q.RotateSigningKeys(ctx, projectID); err != nil {
-			return fail.From(err)
+			return errx.DB(err, "project Keys")
 		}
 
 		_ = createProjectKey(ctx, q, *projectID)
@@ -283,16 +318,14 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
 	})
 
+	// Rely on DB uniqueness for safety in concurrent rotations
 	if err == nil {
 		return nil
 	}
-
-	// Rely on DB uniqueness for safety in concurrent rotations
-	if errx.IsUniqueViolation(fail.From(err)) {
+	if fun.Is(err, fun.CodeConflict) {
 		return nil
 	}
-
-	return fail.From(err)
+	return errx.DB(err, "project Keys")
 }
 
 func queriesWithTx(ctx context.Context, q *sqlc.Queries) *sqlc.Queries {

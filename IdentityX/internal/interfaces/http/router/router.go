@@ -9,7 +9,6 @@ import (
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
 	"IdentityX/internal/interfaces/http/middleware"
-	"IdentityX/internal/interfaces/http/system"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,7 +28,6 @@ import (
 )
 
 type Handlers struct {
-	System   *system.Handler
 	ApiKeys  *api_keys.Handler
 	Users    *auth.Handler
 	Accounts *account.Handler

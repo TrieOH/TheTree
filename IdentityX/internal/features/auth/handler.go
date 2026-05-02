@@ -2,15 +2,13 @@ package auth
 
 import (
 	"IdentityX/internal/platform/telemetry"
+	"IdentityX/internal/shared/contracts"
 	_ "IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
-	"IdentityX/internal/shared/validation"
 	"encoding/json"
 	"net/http"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
-	"github.com/google/uuid"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
 	"go.uber.org/zap"
 )
 
@@ -29,11 +27,6 @@ func NewHandler(
 	}
 }
 
-type RegisterUserRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
-}
-
 // Register godoc
 // @Summary Register a new user
 // @Description Creates a new user in the system, optionally scoped to a project.
@@ -41,43 +34,23 @@ type RegisterUserRequest struct {
 // @Accept json
 // @Produce json
 // @Param project_id query string false "Project UUID to scope the registration"
-// @Param registerInfo body RegisterUserRequest true "User registration information"
+// @Param registerInfo body contracts.RegisterUserRequest true "User registration information"
 // @Success 201 {object} object "User registered successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/register [post]
 func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	var req RegisterUserRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+	req := fun.From(r)
+	projectID := req.Query("project_id").UUIDPtr()
+	var payload contracts.RegisterUserRequest
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
-	var projectID *uuid.UUID
-	if raw := r.URL.Query().Get("project_id"); raw != "" {
-		id, err := validation.ParseUUID(raw, "project_id")
-		if err != nil {
-			resp.FromError(err).Send(w)
-			return
-		}
-		projectID = &id
-	}
-
-	if err := handler.commands.Register(r.Context(), RegisterInput{
-		Email:     req.Email,
-		Password:  req.Password,
-		ProjectID: projectID,
-	}); err != nil {
-		resp.Error(err).Send(w)
+	err := handler.commands.Register(r.Context(), payload.ToInput(projectID))
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.Created("Registered user").Send(w)
-}
-
-type LoginUserRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password" validate:"required,max=72"`
+	fun.Created("Registered user").Send(w)
 }
 
 // Login godoc
@@ -87,45 +60,24 @@ type LoginUserRequest struct {
 // @Accept json
 // @Produce json
 // @Param project_id query string false "Project UUID to scope the login"
-// @Param loginInfo body LoginUserRequest true "User login information"
-// @Success 200 {object} object "Successful authentication"
+// @Param loginInfo body contracts.LoginUserRequest true "User login information"
+// @Success 200 {object} object "Access and Refresh tokens"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input provided"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid credentials"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/login [post]
 func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginUserRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+	req := fun.From(r)
+	projectID := req.Query("project_id").UUIDPtr()
+	var payload contracts.LoginUserRequest
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
-	var projectID *uuid.UUID
-	if raw := r.URL.Query().Get("project_id"); raw != "" {
-		id, err := validation.ParseUUID(raw, "project_id")
-		if err != nil {
-			resp.FromError(err).Send(w)
-			return
-		}
-		projectID = &id
-	}
-
-	tokens, err := handler.commands.Login(r.Context(), LoginInput{
-		Email:     req.Email,
-		Password:  req.Password,
-		Agent:     r.UserAgent(),
-		IP:        validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
-		ProjectID: projectID,
-	})
-	if err != nil {
-		resp.FromError(err).Send(w)
+	tokens, err := handler.commands.Login(r.Context(), payload.ToInput(projectID, r.UserAgent(), req.ClientIP()))
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("Logged in").WithData(map[string]any{
-		"access_token":  tokens.AccessTokenString,
-		"refresh_token": tokens.RefreshTokenString,
-	}).Send(w)
+	fun.Respond(w, tokens.ToResponse())
 }
 
 // Logout godoc
@@ -142,15 +94,11 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/logout [post]
 func (handler *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	err := handler.commands.Logout(ctx)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	err := handler.commands.Logout(r.Context())
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("Logged out").Send(w)
+	fun.OK("Logged out").Send(w)
 }
 
 // Refresh godoc
@@ -168,34 +116,16 @@ func (handler *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/refresh [post]
 func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
-	refreshTokenCookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		resp.Unauthorized("error getting refresh token").AddTrace(err).Send(w)
+	req := fun.From(r)
+	refreshTokenCookie, err := req.Cookie("refresh_token").StringRequired()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	if refreshTokenCookie.Value == "" {
-		resp.Unauthorized("missing refresh token value").Send(w)
+	tokens, err := handler.commands.Refresh(r.Context(), contracts.ToRefreshInput(refreshTokenCookie, r.UserAgent(), req.ClientIP()))
+	if fun.Bail(w, err) {
 		return
 	}
-
-	in := RefreshInput{
-		RefreshCookie: refreshTokenCookie,
-		Agent:         r.UserAgent(),
-		IP:            validation.ClientIPString(validation.GetClientIP(r, validation.HTTPProxyConfig)),
-	}
-
-	ctx := r.Context()
-	tokens, err := handler.commands.Refresh(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
-		return
-	}
-
-	resp.OK("Refreshed tokens").WithData(map[string]any{
-		"access_token":  tokens.AccessTokenString,
-		"refresh_token": tokens.RefreshTokenString,
-	}).Send(w)
+	fun.Respond(w, tokens.ToResponse())
 }
 
 // GetJWKS godoc
@@ -209,31 +139,16 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /.well-known/jwks.json [get]
 func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var projectID *uuid.UUID
-	if raw := r.URL.Query().Get("project_id"); raw != "" {
-		id, err := validation.ParseUUID(raw, "project_id")
-		if err != nil {
-			resp.FromError(err).Send(w)
-			return
-		}
-		projectID = &id
-	}
-
-	jwks, err := handler.queries.GetJWKS(ctx, projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	req := fun.From(r)
+	projectID := req.Query("project_id").UUIDPtr()
+	jwks, err := handler.queries.GetJWKS(r.Context(), projectID)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	data, err := json.Marshal(jwks)
-	if err != nil {
-		apiErr := fail.New(errx.SYSJWKSEncodingFailed).With(err).RecordCtx(ctx)
-		resp.FromError(apiErr).Send(w)
+	if fun.Bail(w, fun.ErrInternal("Error encoding JWKS")) {
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=7200")
 	w.WriteHeader(http.StatusOK)

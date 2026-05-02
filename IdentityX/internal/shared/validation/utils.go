@@ -1,60 +1,15 @@
 package validation
 
 import (
-	"IdentityX/internal/platform/telemetry"
-	"IdentityX/internal/shared/errx"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
-	"strconv"
 	"strings"
-	"time"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
-
-// FIXME make these errors go into either logs or spans
-
-func GetUUID(r *http.Request, fieldName string) (uuid.UUID, *resp.Response) {
-	IDStr := chi.URLParam(r, fieldName)
-	if err := ValidateRule(IDStr, "required,uuid7", fieldName); err != nil {
-		return uuid.Nil, resp.FromError(err)
-	}
-
-	ID, err := ParseUUID(IDStr, fieldName)
-	if err != nil {
-		return uuid.Nil, resp.FromError(err)
-	}
-	return ID, nil
-}
-
-func GetNumber(r *http.Request, fieldName string) (int, *resp.Response) {
-	numberStr := chi.URLParam(r, fieldName)
-	if numberStr == "" {
-		return 0, resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
-	}
-
-	number, err := strconv.Atoi(numberStr)
-	if err != nil {
-		return 0, resp.FromError(fail.New(errx.RequestParseNumberError).WithArgs(err.Error()))
-	}
-	return number, nil
-}
-
-func GetString(r *http.Request, fieldName string) (string, *resp.Response) {
-	fieldStr := r.URL.Query().Get(fieldName)
-	if fieldStr == "" {
-		return "", resp.FromError(fail.New(errx.RequestMissingParamError).WithArgs(fieldName))
-	}
-	return fieldStr, nil
-}
 
 func SetTrustProxyHeaders() {
 	HTTPProxyConfig.TrustProxyHeaders = viper.GetBool("TRUST_PROXY_HEADERS")
@@ -190,30 +145,4 @@ func parseXForwardedFor(xff string, trusted []netip.Prefix) (netip.Addr, bool) {
 	}
 
 	return netip.Addr{}, false
-}
-
-func CreateCookie(name, value, domain string, age time.Time) *http.Cookie {
-	telemetry.Log().Info("cookie domain", zap.String("domain", domain))
-	return &http.Cookie{
-		Name:     name,
-		Value:    value,
-		Path:     "/",
-		Domain:   domain,
-		MaxAge:   int(time.Until(age).Seconds()),
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
-}
-
-func DeleteCookie(name string) *http.Cookie {
-	return &http.Cookie{
-		Name:     name,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
 }

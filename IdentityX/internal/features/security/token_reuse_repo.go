@@ -3,11 +3,11 @@ package security
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
@@ -47,7 +47,7 @@ func (repo *tokenReuseListRepo) Append(ctx context.Context, jit, userID uuid.UUI
 		ExpiresAt: expiresAt,
 	})
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "token")
 	}
 
 	return nil
@@ -62,7 +62,7 @@ func (repo *tokenReuseListRepo) Exists(ctx context.Context, jit, userID uuid.UUI
 		UserID: userID,
 	})
 	if err != nil {
-		return false, fail.From(err).RecordCtx(ctx)
+		return false, errx.DB(err, "token")
 	}
 	return exists, nil
 }
@@ -73,7 +73,7 @@ func (repo *tokenReuseListRepo) ClearExpired(ctx context.Context) error {
 
 	err := repo.queries(ctx).DeleteExpiredTokenReuseListEntries(ctx)
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "token")
 	}
 	return nil
 }

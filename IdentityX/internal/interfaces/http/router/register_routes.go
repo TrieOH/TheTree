@@ -7,35 +7,29 @@ import (
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
 	"IdentityX/internal/interfaces/http/middleware"
-	"IdentityX/internal/interfaces/http/system"
 	"time"
 
+	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func registerRoutes(handlers Handlers, r *chi.Mux) *chi.Mux {
-	registerAuthRoutes(r, handlers.Users, &handlers.AuthMW)
-	registerAccountRoutes(r, handlers.Accounts, &handlers.AuthMW)
-	registerSessionRoutes(r, handlers.Sessions, &handlers.AuthMW)
-	registerProjectRoutes(r, handlers.Projects, &handlers.AuthMW)
-	registerApiKeyRoutes(r, handlers.ApiKeys, &handlers.AuthMW)
-	registerSystemRoutes(r, handlers.System, &handlers.AuthMW)
+func registerRoutes(deps Handlers, r *chi.Mux) *chi.Mux {
+	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+	r.Handle("/metrics", promhttp.Handler())
+
+	registerAuthRoutes(r, deps.Users, &deps.AuthMW)
+	registerAccountRoutes(r, deps.Accounts, &deps.AuthMW)
+	registerSessionRoutes(r, deps.Sessions, &deps.AuthMW)
+	registerProjectRoutes(r, deps.Projects, &deps.AuthMW)
+	registerApiKeyRoutes(r, deps.ApiKeys, &deps.AuthMW)
+
+	r.Get("/health", handlers.Health("IdentityX-API").Handle)
 
 	return r
-}
-
-func registerSystemRoutes(
-	r *chi.Mux,
-	h *system.Handler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Get("/health", h.Health)
-		r.With(authMW.Auth()).
-			Get("/protected/health", h.ProtectedHealth)
-	})
 }
 
 func registerApiKeyRoutes(

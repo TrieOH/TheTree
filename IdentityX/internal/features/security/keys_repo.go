@@ -8,7 +8,6 @@ import (
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -84,7 +83,7 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*c
 		VerifyExpiresAt: pair.VerifyExpiresAt,
 	})
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "key pair")
 	}
 
 	mapKeyPairFromDB(&pair, &row)
@@ -99,7 +98,7 @@ func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*contracts.Pa
 
 	row, err := repo.queries(ctx).GetKeyByKID(ctx, kid)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "key pair")
 	}
 
 	var pair contracts.Pair
@@ -118,7 +117,7 @@ func (repo *keyRepo) GetActiveSigningKey(ctx context.Context, projectID *uuid.UU
 
 	row, err := repo.queries(ctx).GetActiveSigningKey(ctx, projectID)
 	if err != nil {
-		return nil, errx.FromDB(err, "signing key")
+		return nil, errx.DB(err, "signing key")
 	}
 
 	var pair contracts.Pair
@@ -137,7 +136,7 @@ func (repo *keyRepo) GetActiveSigningKID(ctx context.Context, projectID *uuid.UU
 
 	kid, err := repo.queries(ctx).GetActiveSigningKID(ctx, projectID)
 	if err != nil {
-		return "", errx.FromDB(err, "signing kid")
+		return "", errx.DB(err, "signing kid")
 	}
 
 	return kid, nil
@@ -154,7 +153,7 @@ func (repo *keyRepo) ListPublicKeys(ctx context.Context, projectID *uuid.UUID) (
 
 	rows, err := repo.queries(ctx).ListPublicKeys(ctx, projectID)
 	if err != nil {
-		return nil, fail.From(err).RecordCtx(ctx)
+		return nil, errx.DB(err, "keys")
 	}
 
 	keys := make([]contracts.PublicKey, 0, len(rows))
@@ -177,7 +176,7 @@ func (repo *keyRepo) RotateSigningKeys(ctx context.Context, projectID *uuid.UUID
 	defer span.End()
 
 	if err := repo.queries(ctx).RotateSigningKeys(ctx, projectID); err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "keys")
 	}
 
 	return nil
@@ -190,7 +189,7 @@ func (repo *keyRepo) RevokeKeyByKID(ctx context.Context, kid string) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).RevokeKeyByKID(ctx, kid); err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "key")
 	}
 
 	return nil
@@ -201,7 +200,7 @@ func (repo *keyRepo) DeleteExpiredRevokedKeys(ctx context.Context) error {
 	defer span.End()
 
 	if err := repo.queries(ctx).DeleteExpiredRevokedKeys(ctx); err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "keys")
 	}
 
 	return nil

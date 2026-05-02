@@ -1,14 +1,13 @@
 package contracts
 
 import (
-	"IdentityX/internal/shared/errx"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -70,29 +69,20 @@ type PublicKey struct {
 func PublicKeyToJWK(k PublicKey) (map[string]any, error) {
 	block, _ := pem.Decode([]byte(k.PublicKey))
 	if block == nil {
-		return nil, fail.New(errx.SYSInvalidPublicKeyPEM).
-			WithArgs("failed to decode PEM block")
+		return nil, fun.Errf("public key PEM was nil").Internal()
 	}
-
 	pubAny, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, fail.New(errx.SYSPublicKeyParseFailed).
-			WithArgs(err.Error())
+		return nil, fun.Errf("failed to parse public key: %s", err).Internal()
 	}
-
 	pub, ok := pubAny.(ed25519.PublicKey)
 	if !ok {
-		return nil, fail.New(errx.SYSInvalidPublicKeyType).
-			WithArgs("expected Ed25519 public key")
+		return nil, fun.Errf("invalid public key type: %T", pubAny).Internal()
 	}
-
 	if len(pub) != ed25519.PublicKeySize {
-		return nil, fail.New(errx.SYSInvalidPublicKeyByteSize).
-			WithArgs("invalid Ed25519 key length")
+		return nil, fun.Errf("invalid public key size: %d", len(pub)).Internal()
 	}
-
 	x := base64.RawURLEncoding.EncodeToString(pub)
-
 	return map[string]any{
 		"kty": "OKP",
 		"crv": "Ed25519",

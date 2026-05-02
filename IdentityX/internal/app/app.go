@@ -21,7 +21,6 @@ func New() *IdentityX {
 	var app IdentityX
 
 	LoadEnv()
-	SetupFail()
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
 	migrationPath := "./internal/platform/database/migrations"
