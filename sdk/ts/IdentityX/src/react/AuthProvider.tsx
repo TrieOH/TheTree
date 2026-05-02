@@ -9,11 +9,16 @@ import {
 } from "react";
 import { Api } from "../core/api";
 import { createAuthService } from "../core/services";
-import { getTokenClaims, type AuthTokenClaims } from "../utils/token-utils";
+import {
+  getTokenClaims,
+  isRefreshSessionExpired,
+  type AuthTokenClaims
+} from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
 import { logger, type DefaultFetchClientConfig } from "@soramux/node-fetch-sdk";
+import { cookieStorage } from "../utils/storage-adapter";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -87,6 +92,13 @@ export function AuthProvider({
 
       if (getTokenClaims()) {
         authStore.set({ isAuthenticated: true, isInitializing: false });
+        return;
+      }
+
+      const hasRefreshToken = !!cookieStorage.get("refresh_token");
+      if (!hasRefreshToken || isRefreshSessionExpired()) {
+        authStore.reset();
+        authStore.set({ isInitializing: false });
         return;
       }
 

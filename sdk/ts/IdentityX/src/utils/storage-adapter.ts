@@ -14,6 +14,16 @@ export const browserStorage: StorageAdapter = {
   },
 };
 
+export const sessionBrowserStorage: StorageAdapter = {
+  getItem: (key) => (typeof window !== "undefined" ? sessionStorage.getItem(key) : null),
+  setItem: (key, value) => {
+    if (typeof window !== "undefined") sessionStorage.setItem(key, value);
+  },
+  removeItem: (key) => {
+    if (typeof window !== "undefined") sessionStorage.removeItem(key);
+  },
+};
+
 export interface CookieOptions {
   expires?: string;
   path?: string;

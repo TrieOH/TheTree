@@ -102,7 +102,25 @@ export function saveAuthSession(
 
 export function getTokenClaims(): AuthTokenClaims | null {
   if (memoryClaims) return memoryClaims;
-  return null;
+
+  const token = tokenStore.getAccessToken();
+  if (!token) return null;
+
+  const claims = decodeJwt<TokenClaims>(token);
+  if (!claims) return null;
+
+  // Check if token is expired
+  if (claims.exp * 1000 <= Date.now()) return null;
+
+  const refreshExpiryStr = browserStorage.getItem(REFRESH_EXPIRY_KEY);
+  if (!refreshExpiryStr) return null;
+
+  memoryClaims = {
+    access_data: claims,
+    refresh_expiry_date: parseInt(refreshExpiryStr, 10),
+  };
+
+  return memoryClaims;
 }
 
 function isExpiringSoon(key: string, thresholdSeconds: number): boolean {

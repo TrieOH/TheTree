@@ -1,11 +1,14 @@
-let _accessToken: string | null = null;
+import { sessionBrowserStorage } from "../utils/storage-adapter";
+
+const ACCESS_TOKEN_KEY = "trieoh_access_token";
 
 export const tokenStore = {
-  getAccessToken: () => _accessToken,
+  getAccessToken: () => sessionBrowserStorage.getItem(ACCESS_TOKEN_KEY),
   setAccessToken: (token: string | null) => {
-    _accessToken = token;
+    if (token) sessionBrowserStorage.setItem(ACCESS_TOKEN_KEY, token);
+    else sessionBrowserStorage.removeItem(ACCESS_TOKEN_KEY);
   },
   clear: () => {
-    _accessToken = null;
+    sessionBrowserStorage.removeItem(ACCESS_TOKEN_KEY);
   }
 };
