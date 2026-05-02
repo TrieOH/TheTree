@@ -9,7 +9,7 @@ import {
   type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
-import { logger, simpleFetch } from "@soramux/node-fetch-sdk";
+import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
 import { cookieStorage } from "../utils/storage-adapter";
 import { tokenStore } from "../store/token-store";
 

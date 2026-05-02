@@ -8,7 +8,7 @@ import {
   type DefaultFailureEnvelope,
   type FetchClient,
   type FetchClientOptions
-} from "@soramux/node-fetch-sdk";
+} from "@trieoh/envoy-fetch-ts";
 
 export type { DefaultFetchResult as ApiResponse };
 

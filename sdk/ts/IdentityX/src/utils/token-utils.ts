@@ -1,6 +1,6 @@
 import { authStore } from "../store/auth-store";
 import { tokenStore } from "../store/token-store";
-import { logger } from "@soramux/node-fetch-sdk";
+import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage, cookieStorage } from "./storage-adapter";
 
 export interface AuthTokens {
