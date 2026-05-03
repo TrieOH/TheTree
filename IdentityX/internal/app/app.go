@@ -2,6 +2,7 @@ package app
 
 import (
 	"IdentityX/internal/platform/telemetry"
+	"IdentityX/internal/shared/errx"
 	"context"
 	"time"
 
@@ -15,12 +16,17 @@ type IdentityX struct {
 	db        *pgxpool.Pool
 	redis     *redis.Client
 	scheduler gocron.Scheduler
+	cfg       Config
 }
 
 func New() *IdentityX {
 	var app IdentityX
 
-	LoadEnv()
+	cfg, err := LoadConfig()
+	if err != nil {
+		errx.Must(err, "error loading config")
+	}
+	app.cfg = cfg
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
 	migrationPath := "./internal/platform/database/migrations"

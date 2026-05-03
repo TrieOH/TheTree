@@ -6,6 +6,7 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/internal/shared/xslices"
 	"context"
 
 	"github.com/google/uuid"
@@ -28,6 +29,10 @@ func (repo *userRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
+func (repo *userRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "UserRepo."+op)
+}
+
 var _ ports.UserRepository = (*userRepo)(nil)
 
 func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepository {
@@ -38,8 +43,8 @@ func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepo
 	}
 }
 
-func mapUserFromDB(src *sqlc.User) *contracts.User {
-	return &contracts.User{
+func mapUserFromDB(src sqlc.User) contracts.User {
+	return contracts.User{
 		ID:           src.ID,
 		UserType:     contracts.UserType(src.UserType),
 		ProjectID:    src.ProjectID,
@@ -54,69 +59,53 @@ func mapUserFromDB(src *sqlc.User) *contracts.User {
 }
 
 func (repo *userRepo) Register(ctx context.Context, email, password string, projectID *uuid.UUID, userType contracts.UserType) (*contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.Register")
+	ctx, span := repo.span(ctx, "Register")
 	defer span.End()
-
 	sqlcUser, err := repo.queries(ctx).RegisterUser(ctx, sqlc.RegisterUserParams{
 		Email:        email,
 		PasswordHash: password,
 		ProjectID:    projectID,
 		UserType:     string(userType),
 	})
-
 	if err != nil {
 		return nil, errx.DB(err, "user")
 	}
-
 	span.SetAttributes(
 		attribute.String("user.id", sqlcUser.ID.String()),
 		attribute.String("user.type", sqlcUser.UserType),
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
-
-	usr := mapUserFromDB(&sqlcUser)
-	return usr, nil
+	return new(mapUserFromDB(sqlcUser)), nil
 }
 
 func (repo *userRepo) UpdateLastLogin(ctx context.Context, userID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.UpdateLastLogin")
+	ctx, span := repo.span(ctx, "UpdateLastLogin")
 	defer span.End()
-
 	err := repo.queries(ctx).UpdateUserLastLogin(ctx, userID)
 	if err != nil {
 		return errx.DB(err, "user")
 	}
-
 	return nil
 }
 
 func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByID",
-		trace.WithAttributes(
-			attribute.String("user.id", userID.String()),
-		),
-	)
+	ctx, span := repo.span(ctx, "GetUserByID")
+	span.SetAttributes(attribute.String("user.id", userID.String()))
 	defer span.End()
-
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
-
 	if err != nil {
 		return nil, errx.DB(err, "user")
 	}
-
 	span.SetAttributes(
 		attribute.String("user.type", sqlcUser.UserType),
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
-
-	usr := mapUserFromDB(&sqlcUser)
-	return usr, nil
+	return new(mapUserFromDB(sqlcUser)), nil
 }
 
 func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectID *uuid.UUID) (*contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByEmail")
+	ctx, span := repo.span(ctx, "GetUserByEmail")
 	defer span.End()
-
 	sqlcUser, err := repo.queries(ctx).GetUserByEmail(ctx, sqlc.GetUserByEmailParams{
 		Email:     email,
 		ProjectID: projectID,
@@ -124,38 +113,27 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectI
 	if err != nil {
 		return nil, errx.DB(err, "user")
 	}
-
 	span.SetAttributes(
 		attribute.String("user.id", sqlcUser.ID.String()),
 		attribute.String("user.type", sqlcUser.UserType),
 		attribute.Int64("user.created_at", sqlcUser.CreatedAt.Unix()),
 	)
-
-	return mapUserFromDB(&sqlcUser), nil
+	return new(mapUserFromDB(sqlcUser)), nil
 }
 
 func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.ResetPassword")
+	ctx, span := repo.span(ctx, "ResetPassword")
 	defer span.End()
-
 	sqlcUsers, err := repo.queries(ctx).ListUsersFromProject(ctx, &projectID)
 	if err != nil {
 		return nil, errx.DB(err, "user")
 	}
-
-	users := make([]contracts.User, 0, len(sqlcUsers))
-	for _, sqlcUser := range sqlcUsers {
-		user := mapUserFromDB(&sqlcUser)
-		users = append(users, *user)
-	}
-
-	return users, nil
+	return xslices.MapSlice(sqlcUsers, mapUserFromDB), nil
 }
 
 func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID uuid.UUID) (*contracts.User, error) {
-	ctx, span := repo.tracer.Start(ctx, "UserRepo.GetUserByIDFromProject")
+	ctx, span := repo.span(ctx, "GetUserByIDFromProject")
 	defer span.End()
-
 	sqlcUser, err := repo.queries(ctx).GetUserByIDFromProject(ctx, sqlc.GetUserByIDFromProjectParams{
 		ID:        userID,
 		ProjectID: &projectID,
@@ -163,6 +141,5 @@ func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID 
 	if err != nil {
 		return nil, errx.DB(err, "user")
 	}
-
-	return mapUserFromDB(&sqlcUser), nil
+	return new(mapUserFromDB(sqlcUser)), nil
 }

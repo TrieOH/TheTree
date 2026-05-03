@@ -3,8 +3,12 @@ package app
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/platform/security"
+	"IdentityX/internal/shared/authz"
+	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/ports"
 	"context"
 	"database/sql"
 	"errors"
@@ -17,6 +21,7 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/go-playground/validator/v10"
@@ -26,6 +31,8 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func SetupValidator() *validator.Validate {
@@ -355,4 +362,118 @@ func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 	go scheduler.Start()
 	log.Println("Started the cron scheduler")
 	return scheduler
+}
+
+func SetupAuthMiddlewares(
+	sessions ports.SessionRepository,
+	keys ports.KeysRepository,
+	apiKeys ports.ApiKeyRepository,
+	tracer trace.Tracer,
+	issuer string,
+) *middlewares.Middleware[*contracts.AccessClaims] {
+
+	keyFunc := func(ctx context.Context, tokenStr string) (*contracts.AccessClaims, error) {
+		ctx, span := tracer.Start(ctx, "Middleware.Auth.JWT")
+		defer span.End()
+
+		accessToken := &contracts.AccessClaims{}
+		_, err := security.ParseJWTUnverified[*contracts.AccessClaims](tokenStr, accessToken)
+		if err != nil {
+			return nil, err
+		}
+
+		if accessToken.Sub.ProjectID != nil {
+			span.SetAttributes(attribute.String("user.project_id", accessToken.Sub.ProjectID.String()))
+		}
+
+		keyPair, err := keys.GetActiveSigningKey(ctx, accessToken.Sub.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+
+		accessToken, err = security.VerifyAccessToken(tokenStr, keyPair)
+		if err != nil {
+			return nil, err
+		}
+
+		if accessToken.Sub.ProjectID != nil && accessToken.Issuer != accessToken.Sub.ProjectID.String() {
+			return nil, fun.ErrUnauthorized("access token has invalid issuer")
+		}
+		if accessToken.Issuer != issuer {
+			return nil, fun.ErrUnauthorized("access token has invalid issuer")
+		}
+
+		sess, err := sessions.GetByFamilyID(ctx, accessToken.Sub.FamilyID)
+		if err != nil {
+			if fun.Is(err, fun.CodeNotFound) {
+				return nil, fun.ErrUnauthorized("session not found or revoked")
+			}
+			return nil, err
+		}
+
+		if sess.SessionID != accessToken.Sub.SessionID {
+			return nil, fun.ErrUnauthorized("token/session mismatch")
+		}
+		if sess.RevokedAt != nil {
+			return nil, fun.ErrUnauthorized("session not found or revoked")
+		}
+
+		span.SetAttributes(
+			attribute.String("user.type", accessToken.Sub.UserType),
+			attribute.String("user.id", accessToken.Sub.ID.String()),
+			attribute.String("user.session_id", accessToken.Sub.SessionID.String()),
+		)
+
+		return accessToken, nil
+	}
+
+	jwtHook := func(ctx context.Context, claims *contracts.AccessClaims) (context.Context, error) {
+		principal, err := authz.NewPrincipal(claims)
+		if err != nil {
+			return ctx, err
+		}
+		return authz.WithPrincipal(ctx, principal), nil
+	}
+
+	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+		ctx, span := tracer.Start(ctx, "Middleware.Auth.APIKey")
+		defer span.End()
+
+		span.SetAttributes(attribute.String("auth.method", string(authz.AuthMethodApiKey)))
+
+		if !strings.HasPrefix(rawKey, "gk_") {
+			return ctx, fun.ErrUnauthorized("invalid api key shape")
+		}
+
+		parts := strings.SplitN(rawKey, "_", 3)
+		if len(parts) != 3 {
+			return ctx, fun.ErrUnauthorized("invalid api key shape")
+		}
+
+		projectID, err := uuid.Parse(parts[1])
+		if err != nil {
+			return ctx, fun.ErrUnauthorized("invalid api key shape")
+		}
+
+		keyData, err := apiKeys.GetByProjectID(ctx, projectID)
+		if err != nil {
+			if fun.Is(err, fun.CodeNotFound) {
+				return ctx, fun.ErrUnauthorized("invalid api key")
+			}
+			return ctx, err
+		}
+
+		if err = crypto.VerifyBcryptSecret(keyData.KeyHash, parts[2]); err != nil {
+			return ctx, fun.ErrUnauthorized("invalid api key")
+		}
+
+		return authz.WithPrincipal(ctx, &authz.Principal{
+			UserID:    keyData.ClientID,
+			ProjectID: &keyData.ProjectID,
+			SessionID: nil,
+			Method:    authz.AuthMethodApiKey,
+		}), nil
+	}
+
+	return middlewares.New[*contracts.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }

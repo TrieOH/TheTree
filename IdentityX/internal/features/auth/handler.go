@@ -6,9 +6,14 @@ import (
 	_ "IdentityX/internal/shared/contracts"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	"github.com/MintzyG/fun/middlewares"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +30,32 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+type ProjectIDParam struct {
+	ProjectID string `fun_query:"project_id"`
+}
+
+func RegisterAuthRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		if !viper.GetBool("DISABLE_RATE_LIMIT") {
+			r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
+		}
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.WithParams[ProjectIDParam](true))
+			r.Post("/auth/register", h.Register)
+			r.Post("/auth/login", h.Login)
+			r.Get("/.well-known/jwks.json", h.GetJWKS)
+		})
+
+		r.Post("/auth/refresh", h.Refresh)
+		r.With(jwt).Post("/auth/logout", h.Logout)
+	})
 }
 
 // Register godoc

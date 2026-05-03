@@ -38,23 +38,26 @@ func (repo *apiKeyRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapApiKeyFromDB(dst *contracts.ApiKey, src *sqlc.ApiKey) {
-	dst.ProjectID = src.ProjectID
-	dst.ClientID = src.ClientID
-	dst.KeyHash = src.KeyHash
-	dst.CreatedAt = src.CreatedAt
-	dst.UpdatedAt = src.UpdatedAt
+func (repo *apiKeyRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "ApiKeyRepo."+op)
+}
+
+func mapApiKeyFromDB(src sqlc.ApiKey) contracts.ApiKey {
+	return contracts.ApiKey{
+		ProjectID: src.ProjectID,
+		ClientID:  src.ClientID,
+		KeyHash:   src.KeyHash,
+		CreatedAt: src.CreatedAt,
+		UpdatedAt: src.UpdatedAt,
+	}
+
 }
 
 func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Upsert",
-		trace.WithAttributes(
-			attribute.String("project.id", key.ProjectID.String()),
-			attribute.String("client.id", key.ClientID.String()),
-		),
-	)
+	ctx, span := repo.span(ctx, "Upsert")
+	span.SetAttributes(attribute.String("project.id", key.ProjectID.String()))
+	span.SetAttributes(attribute.String("client.id", key.ClientID.String()))
 	defer span.End()
-
 	err := repo.queries(ctx).UpsertApiKey(ctx, sqlc.UpsertApiKeyParams{
 		ProjectID: key.ProjectID,
 		ClientID:  key.ClientID,
@@ -63,40 +66,27 @@ func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error 
 	if err != nil {
 		return errx.DB(err, "api key")
 	}
-
 	return nil
 }
 
 func (repo *apiKeyRepo) GetByProjectID(ctx context.Context, projectID uuid.UUID) (*contracts.ApiKey, error) {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.GetByProjectID",
-		trace.WithAttributes(
-			attribute.String("project.id", projectID.String()),
-		),
-	)
+	ctx, span := repo.span(ctx, "GetByProjectID")
+	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-
 	dbKey, err := repo.queries(ctx).GetApiKeyByProjectID(ctx, projectID)
 	if err != nil {
 		return nil, errx.DB(err, "api key")
 	}
-
-	var key contracts.ApiKey
-	mapApiKeyFromDB(&key, &dbKey)
-	return &key, nil
+	return new(mapApiKeyFromDB(dbKey)), nil
 }
 
 func (repo *apiKeyRepo) Delete(ctx context.Context, projectID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Delete",
-		trace.WithAttributes(
-			attribute.String("project.id", projectID.String()),
-		),
-	)
+	ctx, span := repo.span(ctx, "Delete")
+	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-
 	err := repo.queries(ctx).DeleteApiKey(ctx, projectID)
 	if err != nil {
 		return errx.DB(err, "api key")
 	}
-
 	return nil
 }

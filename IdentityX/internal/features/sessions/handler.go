@@ -7,6 +7,7 @@ import (
 	_ "IdentityX/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -22,6 +23,21 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/sessions", h.List)
+		r.Get("/sessions/me", h.Me)
+		r.Delete("/sessions/{session_id}", h.RevokeByID)
+		r.Delete("/sessions/others", h.RevokeOthers)
+		r.Delete("/sessions", h.RevokeAll)
+	})
 }
 
 // List godoc

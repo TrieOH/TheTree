@@ -1,13 +1,18 @@
 package account
 
 import (
+	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/shared/contracts"
 	"net/http"
+	"time"
 
 	_ "IdentityX/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	"github.com/MintzyG/fun/middlewares"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 )
 
 type Handler struct {
@@ -22,6 +27,30 @@ func NewHandler(
 	}
 }
 
+type TokenParam struct {
+	Token string `fun_query:"token,required"`
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
+		r.Use(middleware.NoApiKeys())
+
+		r.Post("/account/forgot-password", h.ForgotPassword)
+		r.With(jwt).Post("/account/verify/resend", h.ResendVerificationEmail)
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.WithParams[TokenParam](true))
+			r.Post("/account/reset-password", h.ResetPassword)
+			r.With(jwt).Post("/account/verify", h.Verify)
+		})
+	})
+}
+
 // Verify godoc
 // @Summary Verify user email
 // @Description Verifies a user's email address using a verification token.
@@ -34,12 +63,8 @@ func NewHandler(
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/verify [get]
 func (handler *Handler) Verify(w http.ResponseWriter, r *http.Request) {
-	req := fun.From(r)
-	token, err := req.Query("token").StringRequired()
-	if fun.Bail(w, err) {
-		return
-	}
-	err = handler.accounts.Verify(r.Context(), token)
+	token := middlewares.QueryParams[TokenParam](r).Token
+	err := handler.accounts.Verify(r.Context(), token)
 	if fun.Bail(w, err) {
 		return
 	}
@@ -104,15 +129,12 @@ func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // @Router /auth/reset-password [post]
 func (handler *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	token, err := req.Query("token").StringRequired()
-	if fun.Bail(w, err) {
-		return
-	}
+	token := middlewares.QueryParams[TokenParam](r).Token
 	var payload contracts.ResetPasswordRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = handler.accounts.ResetPassword(r.Context(), payload.ToInput(token))
+	err := handler.accounts.ResetPassword(r.Context(), payload.ToInput(token))
 	if fun.Bail(w, err) {
 		return
 	}

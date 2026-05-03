@@ -4,8 +4,6 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
-	"IdentityX/internal/shared/validation"
-	"context"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
@@ -92,12 +90,6 @@ func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
 	return pub, nil
 }
 
-func zero(b []byte) {
-	for i := range b {
-		b[i] = 0
-	}
-}
-
 func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
 	issuer := viper.GetString("ISSUER")
 	if in.User.ProjectID != nil {
@@ -146,39 +138,6 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
 			Issuer:    viper.GetString("ISSUER"),
 			ID:        in.RefreshJTI.String(),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	token.Header["kid"] = in.KID
-
-	payload, err := token.SigningString()
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(payload), nil
-}
-
-func NewProjectAccessToken(in contracts.NewProjectAccessTokenInput) ([]byte, error) {
-	claims := contracts.AccessClaims{
-		Sub: contracts.AccessSub{
-			ID:         in.User.ID,
-			UserType:   string(in.User.UserType),
-			ProjectID:  in.User.ProjectID,
-			Email:      in.User.Email,
-			SessionID:  in.SessionID,
-			UserAgent:  in.Agent,
-			UserIP:     in.IP,
-			IsVerified: in.User.IsVerified,
-			FamilyID:   in.FamilyID,
-			VerifiedAt: in.User.VerifiedAt,
-		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    in.User.ProjectID.String(),
-			ID:        in.AccessJTI,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -254,12 +213,10 @@ func AssembleJWT(payload []byte, sig []byte) string {
 }
 
 func VerifyAccessToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.AccessClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"access",
 		tokenStr,
@@ -268,12 +225,10 @@ func VerifyAccessToken(
 }
 
 func VerifyRefreshToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.RefreshClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"refresh",
 		tokenStr,
@@ -282,12 +237,10 @@ func VerifyRefreshToken(
 }
 
 func VerifyVerificationToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.VerificationClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"verification",
 		tokenStr,
@@ -296,12 +249,10 @@ func VerifyVerificationToken(
 }
 
 func VerifyResetPasswordToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.ResetPasswordClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"reset password",
 		tokenStr,
@@ -310,7 +261,6 @@ func VerifyResetPasswordToken(
 }
 
 func verifyToken[T jwt.Claims](
-	ctx context.Context,
 	pair *contracts.Pair,
 	tokenType string,
 	tokenStr string,
@@ -358,9 +308,10 @@ func verifyToken[T jwt.Claims](
 		if len(parts) < 3 {
 			return claims, fun.Errf("invalid %s token kid", tokenType).Unauthorized()
 		}
-		projectID, err := validation.ParseUUID(parts[1], "project_id")
+		var projectID uuid.UUID
+		projectID, err = uuid.Parse(parts[1])
 		if err != nil {
-			return claims, err
+			return claims, fun.Errf("invalid project kid project: %s", err).Unauthorized()
 		}
 		if err = VerifyKeyPair(&projectID, payload, sig, pair); err != nil {
 			return claims, err

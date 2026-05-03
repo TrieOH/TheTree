@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/shared/contracts"
 	"net/http"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -23,6 +25,22 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	anyAuth func(http.Handler) http.Handler,
+) {
+	r.With(anyAuth, middleware.ClientOnly()).Group(func(r chi.Router) {
+		r.Post("/projects", h.Create)
+		r.Get("/projects", h.List)
+		r.Get("/projects/{project_id}", h.GetByID)
+		r.Patch("/projects/{project_id}", h.Update)
+		r.Delete("/projects/{project_id}", h.Delete)
+		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
+		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
+	})
 }
 
 // Create godoc

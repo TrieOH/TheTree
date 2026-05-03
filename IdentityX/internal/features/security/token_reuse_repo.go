@@ -27,6 +27,10 @@ func (repo *tokenReuseListRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
+func (repo *tokenReuseListRepo) tokenSpan(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "TokenReuseListRepo."+op)
+}
+
 var _ ports.TokenReuseListRepository = (*tokenReuseListRepo)(nil)
 
 func NewTokenReuseRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.TokenReuseListRepository {
@@ -38,9 +42,8 @@ func NewTokenReuseRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) port
 }
 
 func (repo *tokenReuseListRepo) Append(ctx context.Context, jit, userID uuid.UUID, expiresAt time.Time) error {
-	ctx, span := repo.tracer.Start(ctx, "TokenReuseListRepo.Append")
+	ctx, span := repo.tokenSpan(ctx, "Append")
 	defer span.End()
-
 	err := repo.queries(ctx).TokenReuseListAppend(ctx, sqlc.TokenReuseListAppendParams{
 		Jit:       jit,
 		UserID:    userID,
@@ -49,14 +52,12 @@ func (repo *tokenReuseListRepo) Append(ctx context.Context, jit, userID uuid.UUI
 	if err != nil {
 		return errx.DB(err, "token")
 	}
-
 	return nil
 }
 
 func (repo *tokenReuseListRepo) Exists(ctx context.Context, jit, userID uuid.UUID) (bool, error) {
-	ctx, span := repo.tracer.Start(ctx, "TokenReuseListRepo.Exists")
+	ctx, span := repo.tokenSpan(ctx, "Exists")
 	defer span.End()
-
 	exists, err := repo.queries(ctx).TokenReuseListExists(ctx, sqlc.TokenReuseListExistsParams{
 		Jit:    jit,
 		UserID: userID,
@@ -68,9 +69,8 @@ func (repo *tokenReuseListRepo) Exists(ctx context.Context, jit, userID uuid.UUI
 }
 
 func (repo *tokenReuseListRepo) ClearExpired(ctx context.Context) error {
-	ctx, span := repo.tracer.Start(ctx, "TokenReuseListRepo.ClearExpired")
+	ctx, span := repo.tokenSpan(ctx, "ClearExpired")
 	defer span.End()
-
 	err := repo.queries(ctx).DeleteExpiredTokenReuseListEntries(ctx)
 	if err != nil {
 		return errx.DB(err, "token")

@@ -68,7 +68,7 @@ func (uc *CommandService) Verify(ctx context.Context, token string) (err error) 
 	}
 
 	var claims *contracts.VerificationClaims
-	claims, err = security.VerifyVerificationToken(ctx, token, pair)
+	claims, err = security.VerifyVerificationToken(token, pair)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contract
 	}
 
 	var claims *contracts.ResetPasswordClaims
-	claims, err = security.VerifyResetPasswordToken(ctx, in.Token, pair)
+	claims, err = security.VerifyResetPasswordToken(in.Token, pair)
 	if err != nil {
 		return err
 	}

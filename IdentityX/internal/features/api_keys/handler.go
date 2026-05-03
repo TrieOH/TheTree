@@ -1,11 +1,13 @@
 package api_keys
 
 import (
+	"IdentityX/internal/interfaces/http/middleware"
 	"net/http"
 
 	_ "IdentityX/internal/shared/contracts"
 
 	fun "github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -16,6 +18,19 @@ func NewHandler(
 	apiKeys CommandService,
 ) *Handler {
 	return &Handler{apiKeys: apiKeys}
+}
+
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Group(func(r chi.Router) {
+		r.Use(jwt)
+		r.Use(middleware.ClientOnly())
+		r.Post("/projects/{project_id}/api-keys/rotate", h.RotateApiKey)
+		r.Delete("/projects/{project_id}/api-keys", h.RevokeApiKey)
+	})
 }
 
 // RotateApiKey godoc

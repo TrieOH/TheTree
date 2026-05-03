@@ -7,18 +7,20 @@ import (
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/security"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/interfaces/http/middleware"
-	"IdentityX/internal/interfaces/http/router"
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/email"
-	"IdentityX/internal/platform/memory/redis"
 	"IdentityX/internal/platform/telemetry"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/internal/shared/utils"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/MintzyG/fun/middlewares"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -26,8 +28,8 @@ import (
 )
 
 type runtime struct {
-	middlewares middlewares
-	handlers    router.Handlers
+	middlewares mws
+	handlers    Handlers
 	commands    commands
 	queries     queries
 	repos       repos
@@ -45,7 +47,6 @@ type commands struct {
 	sessions *sessions.CommandService
 	projects *projects.CommandService
 	apiKeys  *api_keys.CommandService
-	security *security.CommandService
 }
 
 type queries struct {
@@ -64,8 +65,19 @@ type repos struct {
 	apiKeys        ports.ApiKeyRepository
 }
 
-type middlewares struct {
-	authMW *middleware.AuthMiddleware
+type mws struct {
+	logger    func(http.Handler) http.Handler
+	requestID func(http.Handler) http.Handler
+	bodySize  func(http.Handler) http.Handler
+	metrics   func(http.Handler) http.Handler
+	cors      func(http.Handler) http.Handler
+	realIP    func(http.Handler) http.Handler
+	recover   func(http.Handler) http.Handler
+	timeout   func(http.Handler) http.Handler
+	ratelimit func(http.Handler) http.Handler
+	jwt       func(http.Handler) http.Handler
+	apiKey    func(http.Handler) http.Handler
+	anyAuth   func(http.Handler) http.Handler
 }
 
 func (app *IdentityX) run() {
@@ -80,20 +92,32 @@ func (app *IdentityX) run() {
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.handlers = app.startHandlers(rt)
-	mux := router.CreateRouter(rt.handlers)
+	mux := CreateRouter(rt.handlers)
 	port := viper.GetString("PORT")
 	log.Printf("IdentityX listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func (app *IdentityX) startHandlers(rt runtime) router.Handlers {
-	var h router.Handlers
+func (app *IdentityX) startHandlers(rt runtime) Handlers {
+	var h Handlers
 	h.Users = auth.NewHandler(*rt.commands.auth, *rt.queries.auth)
 	h.Accounts = account.NewHandler(*rt.commands.accounts)
 	h.Projects = projects.NewHandler(*rt.commands.projects, *rt.queries.projects)
 	h.Sessions = sessions.NewHandler(*rt.commands.sessions, *rt.queries.sessions)
 	h.ApiKeys = api_keys.NewHandler(*rt.commands.apiKeys)
-	h.AuthMW = *rt.middlewares.authMW
+
+	h.BodySize = rt.middlewares.bodySize
+	h.RequestID = rt.middlewares.requestID
+	h.Logger = rt.middlewares.logger
+	h.Metrics = rt.middlewares.metrics
+	h.CORS = rt.middlewares.cors
+	h.RealIP = rt.middlewares.realIP
+	h.Recover = rt.middlewares.recover
+	h.Timeout = rt.middlewares.timeout
+	h.RateLimit = rt.middlewares.ratelimit
+	h.Jwt = rt.middlewares.jwt
+	h.ApiKey = rt.middlewares.apiKey
+	h.AnyAuth = rt.middlewares.anyAuth
 	return h
 }
 
@@ -109,15 +133,6 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	cmd.projects = projects.NewCommandService(feature_deps.ProjectCommandDeps{
 		Projects: r.projects,
 		Keys:     r.keys,
-		Logger:   rt.logger,
-		Tracer:   rt.tracer,
-		Tx:       rt.tx,
-	})
-	cmd.security = security.NewCommandService(feature_deps.SecurityCommandDeps{
-		Sessions: r.sessions,
-		Project:  r.projects,
-		Keys:     r.keys,
-		ApiKeys:  r.apiKeys,
 		Logger:   rt.logger,
 		Tracer:   rt.tracer,
 		Tx:       rt.tx,
@@ -175,8 +190,29 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	return r
 }
 
-func (app *IdentityX) startMiddlewares(rt runtime) middlewares {
-	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(*rt.commands.security, rt.tracer, redis.NewCache(app.redis), viper.GetString("ISSUER"))
+func (app *IdentityX) startMiddlewares(rt runtime) mws {
+	var mw mws
+	authMW := SetupAuthMiddlewares(rt.repos.sessions, rt.repos.keys, rt.repos.apiKeys, rt.tracer, app.cfg.Issuer)
+	mw.jwt = authMW.JWT()
+	mw.apiKey = authMW.APIKey()
+	mw.anyAuth = authMW.AnyAuth()
+	mw.bodySize = middlewares.MaxBodySize(1 << 20)
+	mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
+	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics"}, RequestIDHeader: "X-Request-ID"})
+	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
+	if err != nil {
+		errx.Must(err, "Failed to create collectors")
+	}
+	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	mw.cors = middlewares.CORS(middlewares.CORSConfig{
+		AllowedOrigins:   utils.SplitAndCleanCSV(app.cfg.CorsAllowedOrigins),
+		AllowCredentials: true,
+	})
+	mw.realIP = middlewares.RealIP()
+	mw.recover = middlewares.Recover(rt.logger)
+	mw.timeout = middlewares.Timeout(60 * time.Second)
+	mw.ratelimit = middlewares.RateLimit(middlewares.RateLimitConfig{RPS: 400, Burst: 20,
+		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
+	})
 	return mw
 }

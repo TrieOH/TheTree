@@ -17,16 +17,13 @@ func ClientOnly() func(http.Handler) http.Handler {
 			trace.ContextWithSpan(ctx, span)
 			defer span.End()
 			principal, err := authz.RequirePrincipal(ctx)
-			if err != nil {
-				fun.Error(err).WithModule("ClientOnlyMW").Send(w)
+			if fun.Bail(w, err) {
 				return
 			}
-
 			if principal.Method == authz.AuthMethodSession && principal.ProjectID != nil {
 				fun.Forbidden("only clients can access this endpoint").WithModule("ClientOnlyMW").Send(w)
 				return
 			}
-
 			next.ServeHTTP(w, r)
 		})
 	}
