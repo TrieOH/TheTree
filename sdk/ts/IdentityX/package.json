@@ -1,6 +1,6 @@
 {
   "name": "@trieoh/identityx-sdk-ts",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "type": "module",
   "description": "SDK to consume IdentityX",
   "exports": {
@@ -37,12 +37,13 @@
     "access": "public"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "10.3.5",
-    "@storybook/react-vite": "10.3.5",
+    "@storybook/addon-docs": "10.3.6",
+    "@storybook/react-vite": "10.3.6",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "storybook": "10.3.5",
+    "baseline-browser-mapping": "^2.10.25",
+    "storybook": "10.3.6",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
