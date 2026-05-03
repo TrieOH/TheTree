@@ -1,5 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { useAuth } from '@soramux/identityx-sdk-ts/react'
+import { useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { toast } from 'sonner'
 import { getContext } from '#/integrations/tanstack-query/root-provider'
 

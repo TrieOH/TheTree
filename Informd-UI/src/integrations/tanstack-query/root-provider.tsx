@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@soramux/identityx-sdk-ts'
-import type { DefaultFailureEnvelope } from "@soramux/node-fetch-sdk";
+import { ApiError } from '@trieoh/identityx-sdk-ts'
+import type { DefaultFailureEnvelope } from "@trieoh/envoy-fetch-ts";
 import type { ReactNode } from 'react'
 
 let context: { queryClient: QueryClient } | undefined
