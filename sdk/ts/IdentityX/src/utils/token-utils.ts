@@ -4,8 +4,11 @@ import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage, cookieStorage } from "./storage-adapter";
 
 export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
+  AccessTokenString: string;
+  RefreshTokenString: string;
+  AccessExpiresAt: string;
+  RefreshExpiresAt: string;
+  Domain: string;
 }
 
 export interface TokenClaims {
@@ -36,23 +39,27 @@ export interface AuthTokenClaims {
 let memoryClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
+const REFRESH_DOMAIN_KEY = "trieoh_refresh_domain";
 
-export function getCookieDomain() {
+export function getCookieDomain(returnedDomain?: string) {
   if (typeof window === "undefined") return null;
   const hostname = window.location.hostname;
-  if (hostname === 'localhost') return null;
-  if (hostname.endsWith('univents.com.br')) return 'univents.com.br';
-  if (hostname.endsWith('identityx.com.br')) return 'identityx.com.br';
 
-  const parts = hostname.split('.');
-  if (hostname.endsWith('trieoh.com') && parts.length >= 3) {
-    const appName = parts[parts.length - 3];
-    return `${appName}.trieoh.com`;
+  // Localhost should never have a domain set for cookies to avoid issues
+  if (hostname === 'localhost') return null;
+
+  if (returnedDomain) {
+    try {
+      let domain = returnedDomain;
+      if (domain.startsWith("http")) domain = new URL(domain).hostname;
+      return domain;
+    } catch {
+      return returnedDomain;
+    }
   }
 
   return hostname;
 }
-
 export function decodeJwt<T>(token: string): T | null {
   try {
     const payload = token.split(".")[1];
@@ -62,26 +69,31 @@ export function decodeJwt<T>(token: string): T | null {
   }
 }
 
-export function saveAuthSession(
-  access_token: string,
-  refresh_token: string,
-): void {
-  const claims = decodeJwt<TokenClaims>(access_token);
-  const refreshClaims = decodeJwt<{ exp: number }>(refresh_token);
+export function saveAuthSession(tokens: AuthTokens): void {
+  const {
+    AccessTokenString,
+    RefreshTokenString,
+    AccessExpiresAt,
+    RefreshExpiresAt,
+    Domain
+  } = tokens;
 
-  if (!claims || !refreshClaims) {
+  const claims = decodeJwt<TokenClaims>(AccessTokenString);
+
+  if (!claims) {
     logger.error("Failed to decode tokens");
     return;
   }
 
-  tokenStore.setAccessToken(access_token);
+  tokenStore.setAccessToken(AccessTokenString);
 
-  const refreshExpiry = refreshClaims.exp * 1000;
-  const accessExpiry = claims.exp * 1000;
+  const refreshExpiry = new Date(RefreshExpiresAt).getTime();
+  const accessExpiry = new Date(AccessExpiresAt).getTime();
+  const domain = getCookieDomain(Domain);
 
-  cookieStorage.set("refresh_token", refresh_token, {
+  cookieStorage.set("refresh_token", RefreshTokenString, {
     expires: new Date(refreshExpiry).toUTCString(),
-    domain: getCookieDomain()
+    domain
   });
 
   memoryClaims = {
@@ -91,6 +103,8 @@ export function saveAuthSession(
 
   browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
   browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
+  if (domain) browserStorage.setItem(REFRESH_DOMAIN_KEY, domain);
+  else browserStorage.removeItem(REFRESH_DOMAIN_KEY);
 
   authStore.set({
     isAuthenticated: true,
@@ -153,8 +167,9 @@ export function clearAuthTokens(): void {
   browserStorage.removeItem(ACCESS_EXPIRY_KEY);
   browserStorage.removeItem(REFRESH_EXPIRY_KEY);
 
-  const domain = getCookieDomain();
+  const domain = browserStorage.getItem(REFRESH_DOMAIN_KEY) || getCookieDomain();
   cookieStorage.remove("refresh_token", domain);
+  browserStorage.removeItem(REFRESH_DOMAIN_KEY);
 
   authStore.reset();
 

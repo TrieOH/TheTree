@@ -28,7 +28,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     );
 
     if (res.success) {
-      saveAuthSession(res.data.access_token, res.data.refresh_token);
+      saveAuthSession(res.data);
       callbacks?.onLogin?.();
     }
 
@@ -60,7 +60,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     );
 
     if (res.success) {
-      saveAuthSession(res.data.access_token, res.data.refresh_token);
+      saveAuthSession(res.data);
       callbacks?.onRefresh?.();
     }
 

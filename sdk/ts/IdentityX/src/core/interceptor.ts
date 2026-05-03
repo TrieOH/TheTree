@@ -56,8 +56,7 @@ export class AuthInterceptor {
           throw new Error(res.message || "Failed to refresh token");
         }
 
-        const { access_token, refresh_token } = res.data;
-        saveAuthSession(access_token, refresh_token);
+        saveAuthSession(res.data);
 
         const claims = getTokenClaims();
         if (claims) this.onTokenRefreshed?.(claims);
