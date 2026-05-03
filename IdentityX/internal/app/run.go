@@ -21,7 +21,6 @@ import (
 
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -87,13 +86,24 @@ func (app *IdentityX) run() {
 	rt.tracer = otel.Tracer(string(telemetry.IdentityXTracer))
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
-	rt.renderer, rt.mailer = email.NewMailPair(rt.logger, rt.tracer)
+	rt.renderer, rt.mailer = email.NewMailPair(
+		rt.logger,
+		rt.tracer,
+		app.cfg.AppUrl,
+		app.cfg.SmtpHost,
+		app.cfg.SmtpPort,
+		app.cfg.SmtpUser,
+		app.cfg.SmtpPass,
+		app.cfg.SmtpFrom,
+		app.cfg.SmtpTls,
+		app.cfg.SmtpStartTls,
+	)
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.handlers = app.startHandlers(rt)
-	mux := CreateRouter(rt.handlers)
-	port := viper.GetString("PORT")
+	mux := CreateRouter(rt.handlers, app.cfg.DebugMode, app.cfg.DisableRateLimit)
+	port := app.cfg.Port
 	log.Printf("IdentityX listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
@@ -131,11 +141,13 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 		Tx:      rt.tx,
 	})
 	cmd.projects = projects.NewCommandService(feature_deps.ProjectCommandDeps{
-		Projects: r.projects,
-		Keys:     r.keys,
-		Logger:   rt.logger,
-		Tracer:   rt.tracer,
-		Tx:       rt.tx,
+		KeyLifetime:   app.cfg.KeyLifetime,
+		EncryptionKey: app.encryptionKey,
+		Projects:      r.projects,
+		Keys:          r.keys,
+		Logger:        rt.logger,
+		Tracer:        rt.tracer,
+		Tx:            rt.tx,
 	})
 	cmd.sessions = sessions.NewCommandService(feature_deps.SessionCommandDeps{
 		Sessions: r.sessions,
@@ -145,17 +157,21 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 		Tx:       rt.tx,
 	})
 	cmd.auth = auth.NewCommandService(feature_deps.AuthCommandDeps{
-		Users:    r.users,
-		Sessions: r.sessions,
-		Projects: r.projects,
-		Keys:     r.keys,
-		Renderer: rt.renderer,
-		Mailer:   rt.mailer,
-		Logger:   rt.logger,
-		Tracer:   rt.tracer,
-		Tx:       rt.tx,
+		EncryptionKey: app.encryptionKey,
+		Issuer:        app.cfg.Issuer,
+		Users:         r.users,
+		Sessions:      r.sessions,
+		Projects:      r.projects,
+		Keys:          r.keys,
+		Renderer:      rt.renderer,
+		Mailer:        rt.mailer,
+		Logger:        rt.logger,
+		Tracer:        rt.tracer,
+		Tx:            rt.tx,
 	})
 	cmd.accounts = account.NewCommandService(feature_deps.AccountCommandDeps{
+		EncryptionKey:  app.encryptionKey,
+		Issuer:         app.cfg.Issuer,
 		Users:          r.users,
 		Accounts:       r.accounts,
 		Sessions:       r.sessions,

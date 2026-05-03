@@ -9,13 +9,15 @@ import (
 )
 
 type AuthCommandDeps struct {
-	Users    ports.UserRepository
-	Sessions ports.SessionRepository
-	Projects ports.ProjectRepository
-	Keys     ports.KeysRepository
-	Renderer ports.EmailRenderer
-	Mailer   ports.Mailer
-	Logger   *zap.Logger
-	Tracer   trace.Tracer
-	Tx       database.TxRunner
+	EncryptionKey []byte
+	Issuer        string
+	Users         ports.UserRepository
+	Sessions      ports.SessionRepository
+	Projects      ports.ProjectRepository
+	Keys          ports.KeysRepository
+	Renderer      ports.EmailRenderer
+	Mailer        ports.Mailer
+	Logger        *zap.Logger
+	Tracer        trace.Tracer
+	Tx            database.TxRunner
 }

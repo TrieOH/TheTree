@@ -9,10 +9,7 @@ import (
 
 func ProjectUserOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx, span := MwTracer.Start(ctx, "ProjectUserOnly")
-		defer span.End()
-		principal, err := authz.RequirePrincipal(ctx)
+		principal, err := authz.RequirePrincipal(r.Context())
 		if err != nil {
 			fun.Error(err).WithModule("ProjectUserOnlyMW").Send(w)
 			return

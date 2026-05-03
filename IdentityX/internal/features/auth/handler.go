@@ -13,7 +13,6 @@ import (
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -39,10 +38,11 @@ type ProjectIDParam struct {
 func RegisterAuthRoutes(
 	r *chi.Mux,
 	h *Handler,
+	disableRateLimit bool,
 	jwt func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		if !viper.GetBool("DISABLE_RATE_LIMIT") {
+		if disableRateLimit {
 			r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
 		}
 

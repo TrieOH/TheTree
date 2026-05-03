@@ -20,6 +20,8 @@ import (
 )
 
 type CommandService struct {
+	encryptionKey  []byte
+	issuer         string
 	users          ports.UserRepository
 	accounts       ports.AccountRepository
 	sessions       ports.SessionRepository
@@ -34,6 +36,8 @@ type CommandService struct {
 
 func NewCommandService(deps feature_deps.AccountCommandDeps) *CommandService {
 	return errx.MustProvide(&CommandService{
+		encryptionKey:  deps.EncryptionKey,
+		issuer:         deps.Issuer,
 		users:          deps.Users,
 		accounts:       deps.Accounts,
 		sessions:       deps.Sessions,
@@ -147,7 +151,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 		KID:       SigningKid,
 		Subject:   principal.UserID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
-	})
+	}, uc.issuer)
 	if err != nil {
 		return err
 	}
@@ -158,7 +162,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	}
 
 	var verificationSig []byte
-	verificationSig, err = security.SignKey(verificationPayload, pair)
+	verificationSig, err = security.SignKey(verificationPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return err
 	}
@@ -222,7 +226,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.Forgo
 		Subject:   u.ID,
 		ProjectID: in.ProjectID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
-	})
+	}, uc.issuer)
 	if err != nil {
 		return err
 	}
@@ -233,7 +237,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.Forgo
 	}
 
 	var resetSig []byte
-	resetSig, err = security.SignKey(resetPayload, pair)
+	resetSig, err = security.SignKey(resetPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return err
 	}

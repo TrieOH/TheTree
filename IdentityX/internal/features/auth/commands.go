@@ -24,28 +24,32 @@ import (
 )
 
 type CommandService struct {
-	users        ports.UserRepository
-	sessions     ports.SessionRepository
-	projects     ports.ProjectRepository
-	keys         ports.KeysRepository
-	mailRenderer ports.EmailRenderer
-	mailSender   ports.Mailer
-	logger       *zap.Logger
-	tracer       trace.Tracer
-	tx           database.TxRunner
+	encryptionKey []byte
+	issuer        string
+	users         ports.UserRepository
+	sessions      ports.SessionRepository
+	projects      ports.ProjectRepository
+	keys          ports.KeysRepository
+	mailRenderer  ports.EmailRenderer
+	mailSender    ports.Mailer
+	logger        *zap.Logger
+	tracer        trace.Tracer
+	tx            database.TxRunner
 }
 
 func NewCommandService(deps feature_deps.AuthCommandDeps) *CommandService {
 	return errx.MustProvide(&CommandService{
-		users:        deps.Users,
-		sessions:     deps.Sessions,
-		projects:     deps.Projects,
-		keys:         deps.Keys,
-		mailRenderer: deps.Renderer,
-		mailSender:   deps.Mailer,
-		logger:       deps.Logger,
-		tracer:       deps.Tracer,
-		tx:           deps.Tx,
+		encryptionKey: deps.EncryptionKey,
+		issuer:        deps.Issuer,
+		users:         deps.Users,
+		sessions:      deps.Sessions,
+		projects:      deps.Projects,
+		keys:          deps.Keys,
+		mailRenderer:  deps.Renderer,
+		mailSender:    deps.Mailer,
+		logger:        deps.Logger,
+		tracer:        deps.Tracer,
+		tx:            deps.Tx,
 	})
 }
 
@@ -121,7 +125,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 		KID:       kid,
 		Subject:   u.ID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
-	})
+	}, uc.issuer)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -132,7 +136,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 		return ports.Email{}, err
 	}
 
-	verificationSig, err := security.SignKey(verificationPayload, pair)
+	verificationSig, err := security.SignKey(verificationPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -231,12 +235,12 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 		SessionID: sess.SessionID,
 		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
 
-	accessSig, err := security.SignKey(accessPayload, pair)
+	accessSig, err := security.SignKey(accessPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -247,12 +251,12 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
 		FamilyID:   sess.FamilyID,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshSig, err := security.SignKey(refreshPayload, pair)
+	refreshSig, err := security.SignKey(refreshPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +444,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 
 	// sign := func(payload []byte) ([]byte, error) — abstracts the GoAuth vs Project signer
 	sign := func(payload []byte) ([]byte, error) {
-		return security.SignKey(payload, pair)
+		return security.SignKey(payload, pair, uc.encryptionKey)
 	}
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
@@ -450,7 +454,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 		KID: kid, User: *u, IP: in.IP, Agent: in.Agent,
 		AccessJTI: newAccessJTI.String(), SessionID: sess.SessionID,
 		FamilyID: sess.FamilyID, ExpiresAt: accessExpiresAt,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +467,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 	refreshPayload, err := security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID: kid, AccessJTI: newAccessJTI, RefreshJTI: newRefreshJTI,
 		ExpiresAt: refreshExp, FamilyID: sess.FamilyID,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}

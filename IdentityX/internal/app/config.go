@@ -13,17 +13,17 @@ type Config struct {
 	AppName               string        `env:"APP_NAME,required"`
 	SmtpHost              string        `env:"SMTP_HOST,required"`
 	SmtpPort              string        `env:"SMTP_PORT,required"`
-	SmtpUser              string        `env:"SMTP_USER,required"`
-	SmtpPass              string        `env:"SMTP_PASS,required"`
+	SmtpUser              string        `env:"SMTP_USERNAME,required"`
+	SmtpPass              string        `env:"SMTP_PASSWORD,required"`
 	SmtpFrom              string        `env:"SMTP_FROM,required"`
-	SmtpTls               string        `env:"SMTP_TLS,required"`
-	SmtpStartTls          string        `env:"SMTP_START_TLS,required"`
+	SmtpTls               bool          `env:"SMTP_TLS,required"`
+	SmtpStartTls          bool          `env:"SMTP_STARTTLS,required"`
 	CorsAllowedOrigins    string        `env:"CORS_ALLOWED_ORIGINS,required"`
 	Issuer                string        `env:"ISSUER,required"`
 	AppUrl                string        `env:"APP_URL,required"`
 	DisableRateLimit      bool          `env:"DISABLE_RATE_LIMIT,required"`
 	EncryptionKey         string        `env:"ENCRYPTION_KEY,required"`
-	RedisAddress          string        `env:"REDIS_ADDRESS,required"`
+	RedisAddress          string        `env:"REDIS_ADDR,required"`
 	RedisPassword         string        `env:"REDIS_PASSWORD,required"`
 	RedisDB               int           `env:"REDIS_DB,required"`
 	KeyLifetime           time.Duration `env:"IDENTITY_X_KEY_LIFETIME,required"`

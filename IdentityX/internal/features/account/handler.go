@@ -1,7 +1,6 @@
 package account
 
 import (
-	"IdentityX/internal/interfaces/http/middleware"
 	"IdentityX/internal/shared/contracts"
 	"net/http"
 	"time"
@@ -38,7 +37,6 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(httprate.Limit(5, 1*time.Minute, httprate.WithKeyFuncs(httprate.KeyByRealIP)))
-		r.Use(middleware.NoApiKeys())
 
 		r.Post("/account/forgot-password", h.ForgotPassword)
 		r.With(jwt).Post("/account/verify/resend", h.ResendVerificationEmail)

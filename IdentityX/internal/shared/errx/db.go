@@ -67,13 +67,16 @@ var constraintRegistry = map[string]string{
 }
 
 func DB(err error, resource string) error {
+	if err == nil {
+		return nil
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return fun.ErrNotFound(resource + " not found")
 	}
 
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) {
-		return fun.ErrInternal(err.Error())
+		return fun.ErrInternal(err.Error()) // 76
 	}
 
 	constraintMessage, hasCustom := constraintRegistry[pgErr.ConstraintName]

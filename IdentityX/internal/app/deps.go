@@ -11,6 +11,7 @@ import (
 	"IdentityX/internal/shared/ports"
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"log"
 	"net/http"
@@ -30,7 +31,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -87,18 +87,13 @@ func SetupValidator() *validator.Validate {
 }
 
 func SetupFUN() {
-	module := viper.GetString("MODULE")
-	if module == "" {
-		module = "IdentityXAPI"
-	}
-
 	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
 		MaxInterceptorAmount: 20,
 		DefaultContentType:   "application/json",
 		EnableSizeValidation: true,
-		DefaultModule:        module,
+		DefaultModule:        "IdentityX-API",
 	})
 
 	v := SetupValidator()
@@ -108,16 +103,16 @@ func SetupFUN() {
 	})
 }
 
-func SetupRedis(timeout time.Duration) *redis.Client {
-	rdb, err := database.WaitForRedis(timeout)
+func SetupRedis(timeout time.Duration, cfg Config) *redis.Client {
+	rdb, err := database.WaitForRedis(timeout, cfg.RedisAddress, cfg.RedisPassword, cfg.RedisDB)
 	if err != nil {
 		log.Fatalf("Failed to connect Redis: %v", err)
 	}
 	return rdb
 }
 
-func SetupDB(migrationPath string) *pgxpool.Pool {
-	db, err := database.WaitForDB(30 * time.Second)
+func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
+	db, err := database.WaitForDB(30*time.Second, dsn)
 	if err != nil {
 		errx.Must(err, "Failed to connect DB")
 	}
@@ -130,7 +125,7 @@ func SetupDB(migrationPath string) *pgxpool.Pool {
 	return db
 }
 
-func SetupRuntimeEnv(db *pgxpool.Pool) {
+func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Duration) {
 	q := sqlc.New(db)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -141,11 +136,11 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	}
 
 	// Also run the full key rotation logic to create new keys for projects without active keys
-	if err := tryRotateGoAuthKeys(ctx, q); err != nil {
+	if err := tryRotateGoAuthKeys(ctx, q, encryptionKey, keyLifetime); err != nil {
 		log.Printf("Warning: failed to rotate goauth keys: %v", err)
 	}
 
-	if err := tryRotateProjectKeys(ctx, q); err != nil {
+	if err := tryRotateProjectKeys(ctx, q, encryptionKey, keyLifetime); err != nil {
 		log.Printf("Warning: failed to rotate project keys: %v", err)
 	}
 
@@ -161,13 +156,13 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 			defer zero(priv)
 
 			var encryptedPriv []byte
-			encryptedPriv, err = crypto.Encrypt(priv)
+			encryptedPriv, err = crypto.Encrypt(priv, encryptionKey)
 			if err != nil {
 				log.Fatalf("failed to encrypt GoAuth key: %v", err)
 			}
 
 			kid := "goauth:" + ulid.Make().String()
-			expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
+			expiresAt := time.Now().Add(keyLifetime)
 
 			_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 				Kid:             kid,
@@ -179,7 +174,7 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 				Usage:           "sign",
 				Status:          "active",
 				ExpiresAt:       expiresAt,
-				VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
+				VerifyExpiresAt: expiresAt.Add(keyLifetime),
 			})
 
 			if err != nil {
@@ -207,12 +202,12 @@ func SetupRuntimeEnv(db *pgxpool.Pool) {
 	}
 }
 
-func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
+func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration) error {
 	key, err := q.GetActiveSigningKey(ctx, nil)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			// defensive: no signing key → create
-			return createGoAuthKey(ctx, q)
+			return createGoAuthKey(ctx, q, encryptionKey, keyLifetime)
 		}
 		return errx.DB(err, "Signing Key")
 	}
@@ -225,23 +220,23 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries) error {
 		return errx.DB(err, "Signing Key")
 	}
 
-	return createGoAuthKey(ctx, q)
+	return createGoAuthKey(ctx, q, encryptionKey, keyLifetime)
 }
 
-func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
+func createGoAuthKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration) error {
 	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv, encryptionKey)
 	if err != nil {
 		return err
 	}
 
 	kid := "goauth:" + ulid.Make().String()
-	expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
+	expiresAt := time.Now().Add(keyLifetime)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
@@ -253,7 +248,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 		Usage:           "sign",
 		Status:          "active",
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
+		VerifyExpiresAt: expiresAt.Add(keyLifetime),
 	})
 
 	if err == nil {
@@ -265,7 +260,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries) error {
 	return err
 }
 
-func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
+func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration) error {
 	projects, err := q.ListProjectsWithSigningKeys(ctx)
 	err = errx.DB(err, "Signing Key")
 	if err != nil {
@@ -277,7 +272,7 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 		key, err = q.GetActiveSigningKey(ctx, projectID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
-				_ = createProjectKey(ctx, q, *projectID)
+				_ = createProjectKey(ctx, q, *projectID, encryptionKey, keyLifetime)
 				continue
 			}
 			return errx.DB(err, "project Keys")
@@ -291,26 +286,26 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries) error {
 			return errx.DB(err, "project Keys")
 		}
 
-		_ = createProjectKey(ctx, q, *projectID)
+		_ = createProjectKey(ctx, q, *projectID, encryptionKey, keyLifetime)
 	}
 
 	return nil
 }
 
-func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID) error {
+func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID, encryptionKey []byte, keyLifetime time.Duration) error {
 	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv, encryptionKey)
 	if err != nil {
 		return err
 	}
 
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
-	expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
+	expiresAt := time.Now().Add(keyLifetime)
 
 	_, err = q.CreateKeyPair(ctx, sqlc.CreateKeyPairParams{
 		Kid:             kid,
@@ -322,7 +317,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID)
 		Usage:           "sign",
 		Status:          "active",
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
+		VerifyExpiresAt: expiresAt.Add(keyLifetime),
 	})
 
 	// Rely on DB uniqueness for safety in concurrent rotations
@@ -348,20 +343,35 @@ func zero(b []byte) {
 	}
 }
 
-func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
+func SetupCron(db *pgxpool.Pool, encryptionKey []byte, cfg Config) gocron.Scheduler {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
 	}
 
 	txRunner := database.NewPGTxRunner(db)
-	rotateKeysJob(db, scheduler, txRunner)
+	rotateKeysJob(db, scheduler, txRunner, cfg.RotateKeysJobDuration, encryptionKey, cfg.KeyLifetime)
 	sessionCleanupJob(db, scheduler, txRunner)
 	tokenReuseCleanupJob(db, scheduler)
 
 	go scheduler.Start()
 	log.Println("Started the cron scheduler")
 	return scheduler
+}
+
+func InitEncryption(keyStr string) []byte {
+	var err error
+	if keyStr == "" {
+		errx.Must(errors.New("ENCRYPTION_KEY is not set"), "error reading encryption key")
+	}
+	encryptionKey, err := hex.DecodeString(keyStr)
+	if err != nil {
+		errx.Must(err, "error decoding encryption key")
+	}
+	if len(encryptionKey) != 32 {
+		errx.Must(errors.New("encryption key size is not 32 bytes"), "Wrong key size")
+	}
+	return encryptionKey
 }
 
 func SetupAuthMiddlewares(

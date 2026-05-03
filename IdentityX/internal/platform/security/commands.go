@@ -16,11 +16,10 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 )
 
-func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
-	decrypted, err := crypto.Decrypt(pair.PrivateKey)
+func SignKey(payload []byte, pair *contracts.Pair, encryptionKey []byte) ([]byte, error) {
+	decrypted, err := crypto.Decrypt(pair.PrivateKey, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +89,7 @@ func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
 	return pub, nil
 }
 
-func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
-	issuer := viper.GetString("ISSUER")
+func NewAccessToken(in contracts.NewAccessTokenInput, issuer string) ([]byte, error) {
 	if in.User.ProjectID != nil {
 		issuer = in.User.ProjectID.String()
 	}
@@ -128,7 +126,7 @@ func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
 	return []byte(payload), nil
 }
 
-func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
+func NewRefreshToken(in contracts.NewRefreshTokenInput, issuer string) ([]byte, error) {
 	claims := contracts.RefreshClaims{
 		Sub: contracts.RefreshSub{
 			AccessJTI: in.AccessJTI,
@@ -136,7 +134,7 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			ID:        in.RefreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -153,7 +151,7 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 	return []byte(payload), nil
 }
 
-func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error) {
+func NewVerificationToken(in contracts.NewVerificationTokenInput, issuer string) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.VerificationClaims{
 		Sub: contracts.VerificationSub{
@@ -162,7 +160,7 @@ func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
 			Audience:  jwt.ClaimStrings{"email-verification"},
@@ -180,7 +178,7 @@ func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error
 	return []byte(payload), nil
 }
 
-func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
+func NewResetPasswordToken(in contracts.NewResetPasswordInput, issuer string) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.ResetPasswordClaims{
 		Sub: contracts.ResetPasswordSub{
@@ -190,7 +188,7 @@ func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
 			Audience:  jwt.ClaimStrings{"password-reset"},

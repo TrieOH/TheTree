@@ -6,7 +6,6 @@ import (
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/interfaces/http/middleware"
 	_ "IdentityX/internal/shared/contracts"
 	"fmt"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
@@ -70,7 +69,7 @@ type Handlers struct {
 // @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(deps Handlers) http.Handler {
+func CreateRouter(deps Handlers, debugMode, disableRateLimit bool) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(deps.RealIP)
@@ -84,9 +83,9 @@ func CreateRouter(deps Handlers) http.Handler {
 	r.Use(deps.CORS)
 
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-	r.Handle("/metrics", middleware.Handler())
+	r.Handle("/metrics", promhttp.Handler())
 
-	auth.RegisterAuthRoutes(r, deps.Users, deps.Jwt)
+	auth.RegisterAuthRoutes(r, deps.Users, disableRateLimit, deps.Jwt)
 	account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
 	sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
 	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth)
@@ -94,7 +93,7 @@ func CreateRouter(deps Handlers) http.Handler {
 
 	r.Get("/health", handlers.Health("IdentityX-API").Handle)
 
-	if viper.GetBool("DEBUG_MODE") {
+	if debugMode {
 		_ = chi.Walk(r, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 			fmt.Printf("[%s] %s\n", method, route)
 			return nil

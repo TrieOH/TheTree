@@ -13,26 +13,28 @@ import (
 )
 
 type IdentityX struct {
-	db        *pgxpool.Pool
-	redis     *redis.Client
-	scheduler gocron.Scheduler
-	cfg       Config
+	db            *pgxpool.Pool
+	redis         *redis.Client
+	scheduler     gocron.Scheduler
+	cfg           Config
+	encryptionKey []byte
 }
 
 func New() *IdentityX {
 	var app IdentityX
 
 	cfg, err := LoadConfig()
+	app.cfg = cfg
 	if err != nil {
 		errx.Must(err, "error loading config")
 	}
-	app.cfg = cfg
+	app.encryptionKey = InitEncryption(app.cfg.EncryptionKey)
 	SetupFUN()
-	app.redis = SetupRedis(15 * time.Second)
+	app.redis = SetupRedis(15*time.Second, app.cfg)
 	migrationPath := "./internal/platform/database/migrations"
-	app.db = SetupDB(migrationPath)
-	SetupRuntimeEnv(app.db)
-	app.scheduler = SetupCron(app.db)
+	app.db = SetupDB(migrationPath, app.cfg.DatabaseURL)
+	SetupRuntimeEnv(app.db, app.encryptionKey, app.cfg.KeyLifetime)
+	app.scheduler = SetupCron(app.db, app.encryptionKey, app.cfg)
 
 	return &app
 }

@@ -15,27 +15,30 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type CommandService struct {
-	projects ports.ProjectRepository
-	keys     ports.KeysRepository
-	logger   *zap.Logger
-	tracer   trace.Tracer
-	tx       database.TxRunner
+	encryptionKey []byte
+	keyLifetime   time.Duration
+	projects      ports.ProjectRepository
+	keys          ports.KeysRepository
+	logger        *zap.Logger
+	tracer        trace.Tracer
+	tx            database.TxRunner
 }
 
 func NewCommandService(deps feature_deps.ProjectCommandDeps) *CommandService {
 	return errx.MustProvide(&CommandService{
-		projects: deps.Projects,
-		keys:     deps.Keys,
-		logger:   deps.Logger,
-		tracer:   deps.Tracer,
-		tx:       deps.Tx,
+		keyLifetime:   deps.KeyLifetime,
+		encryptionKey: deps.EncryptionKey,
+		projects:      deps.Projects,
+		keys:          deps.Keys,
+		logger:        deps.Logger,
+		tracer:        deps.Tracer,
+		tx:            deps.Tx,
 	})
 }
 
@@ -85,14 +88,14 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 	}
 	defer zero(priv)
 
-	encryptedPriv, err := crypto.Encrypt(priv)
+	encryptedPriv, err := crypto.Encrypt(priv, uc.encryptionKey)
 	if err != nil {
 		return nil, fun.Errf("error encrypting project keys: %s", err).Internal()
 	}
 
 	kid := fmt.Sprintf("project:%s:%s", createdProject.ID.String(), ulid.Make().String())
 
-	expiresAt := time.Now().Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME"))
+	expiresAt := time.Now().Add(uc.keyLifetime)
 	if _, err = uc.keys.CreateKeyPair(ctx, contracts.Pair{
 		KID:             kid,
 		ProjectID:       &createdProject.ID,
@@ -103,7 +106,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 		Usage:           contracts.UsageSign,
 		Status:          contracts.StatusActive,
 		ExpiresAt:       expiresAt,
-		VerifyExpiresAt: expiresAt.Add(viper.GetDuration("IDENTITY_X_KEY_LIFETIME")),
+		VerifyExpiresAt: expiresAt.Add(uc.keyLifetime),
 	}); err != nil {
 		return nil, err
 	}

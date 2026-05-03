@@ -9,6 +9,8 @@ import (
 )
 
 type AccountCommandDeps struct {
+	EncryptionKey  []byte
+	Issuer         string
 	Users          ports.UserRepository
 	Accounts       ports.AccountRepository
 	Sessions       ports.SessionRepository
