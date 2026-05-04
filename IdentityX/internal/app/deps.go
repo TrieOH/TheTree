@@ -4,6 +4,7 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/security"
+	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
@@ -33,6 +34,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 func SetupValidator() *validator.Validate {
@@ -407,8 +409,10 @@ func SetupAuthMiddlewares(
 		}
 
 		if accessToken.Sub.ProjectID != nil && accessToken.Issuer != accessToken.Sub.ProjectID.String() {
+			telemetry.DLog().Info("Project ID issuer branch", zap.String("issuer", accessToken.Issuer), zap.Any("project_id", accessToken.Sub.ProjectID))
 			return nil, fun.ErrUnauthorized("access token has invalid issuer")
-		} else if accessToken.Issuer != issuer {
+		} else if accessToken.Sub.ProjectID == nil && accessToken.Issuer != issuer {
+			telemetry.DLog().Info("IDX native issuer branch", zap.String("passed issuer", issuer), zap.String("issuer", accessToken.Issuer), zap.Any("project_id", accessToken.Sub.ProjectID))
 			return nil, fun.ErrUnauthorized("access token has invalid issuer")
 		}
 
