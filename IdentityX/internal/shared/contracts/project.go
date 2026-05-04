@@ -21,9 +21,9 @@ type Project struct {
 }
 
 type CreateProjectInput struct {
-	ProjectName string
-	Domain      string
-	Metadata    json.RawMessage
+	ProjectName string          `json:"project_name"`
+	Domain      string          `json:"domain"`
+	Metadata    json.RawMessage `json:"metadata"`
 }
 
 type CreateProjectRequest struct {
@@ -41,10 +41,10 @@ func (r CreateProjectRequest) ToInput() CreateProjectInput {
 }
 
 type UpdateProjectInput struct {
-	ProjectID   uuid.UUID
-	ProjectName string
-	Domain      string
-	Metadata    json.RawMessage
+	ProjectID   uuid.UUID       `json:"project_id"`
+	ProjectName string          `json:"project_name"`
+	Domain      string          `json:"domain"`
+	Metadata    json.RawMessage `json:"metadata"`
 }
 
 type UpdateProjectRequest struct {

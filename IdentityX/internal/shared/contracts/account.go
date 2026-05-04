@@ -5,8 +5,8 @@ import (
 )
 
 type ForgotPasswordInput struct {
-	Email     string
-	ProjectID *uuid.UUID
+	Email     string     `json:"email"`
+	ProjectID *uuid.UUID `json:"project_id"`
 }
 
 type ForgotPasswordRequest struct {
@@ -22,8 +22,8 @@ func (r ForgotPasswordRequest) ToInput() ForgotPasswordInput {
 }
 
 type ResetPasswordInput struct {
-	NewPassword string
-	Token       string
+	NewPassword string `json:"new_password"`
+	Token       string `json:"token"`
 }
 
 type ResetPasswordRequest struct {

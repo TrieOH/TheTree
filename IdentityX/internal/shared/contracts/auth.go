@@ -57,9 +57,9 @@ type ResetPasswordClaims struct {
 }
 
 type RegisterInput struct {
-	Email     string
-	Password  string
-	ProjectID *uuid.UUID // nil = client
+	Email     string     `json:"email"`
+	Password  string     `json:"password"`
+	ProjectID *uuid.UUID `json:"project_id"` // nil = client
 }
 
 type RegisterUserRequest struct {
@@ -76,11 +76,11 @@ func (r RegisterUserRequest) ToInput(projectID *uuid.UUID) RegisterInput {
 }
 
 type LoginInput struct {
-	Email     string
-	Password  string
-	IP        string
-	Agent     string
-	ProjectID *uuid.UUID // nil = client
+	Email     string     `json:"email"`
+	Password  string     `json:"password"`
+	IP        string     `json:"ip"`
+	Agent     string     `json:"agent"`
+	ProjectID *uuid.UUID `json:"project_id"` // nil = client
 }
 
 type LoginUserRequest struct {
@@ -99,19 +99,19 @@ func (r LoginUserRequest) ToInput(projectID *uuid.UUID, agent, ip string) LoginI
 }
 
 type UserTokensOutput struct {
-	AccessTokenString  string
-	RefreshTokenString string
-	AccessExpiresAt    time.Time
-	RefreshExpiresAt   time.Time
-	Domain             string
+	AccessTokenString  string    `json:"access_token_string"`
+	RefreshTokenString string    `json:"refresh_token_string"`
+	AccessExpiresAt    time.Time `json:"access_expires_at"`
+	RefreshExpiresAt   time.Time `json:"refresh_expires_at"`
+	Domain             string    `json:"domain"`
 }
 
 type UserTokensResponse struct {
-	AccessTokenString  string
-	RefreshTokenString string
-	AccessExpiresAt    time.Time
-	RefreshExpiresAt   time.Time
-	Domain             string
+	AccessTokenString  string    `json:"access_token_string"`
+	RefreshTokenString string    `json:"refresh_token_string"`
+	AccessExpiresAt    time.Time `json:"access_expires_at"`
+	RefreshExpiresAt   time.Time `json:"refresh_expires_at"`
+	Domain             string    `json:"domain"`
 }
 
 func (r UserTokensOutput) ToResponse() UserTokensResponse {
@@ -125,9 +125,9 @@ func (r UserTokensOutput) ToResponse() UserTokensResponse {
 }
 
 type RefreshInput struct {
-	RefreshCookie string
-	Agent         string
-	IP            string
+	RefreshCookie string `json:"refresh_cookie"`
+	Agent         string `json:"agent"`
+	IP            string `json:"ip"`
 }
 
 func ToRefreshInput(refreshCookie, Agent, IP string) RefreshInput {
