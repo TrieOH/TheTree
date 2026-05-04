@@ -54,8 +54,8 @@ importers:
         specifier: ^0.1.5
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
-        specifier: ^0.11.2
-        version: 0.11.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^0.11.6
+        version: 0.11.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1657,8 +1657,8 @@ packages:
   '@trieoh/envoy-fetch-ts@0.1.5':
     resolution: {integrity: sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ==}
 
-  '@trieoh/identityx-sdk-ts@0.11.2':
-    resolution: {integrity: sha512-OQdg7nY49tmRRGSAPqUwvFY/Xucg6Zw5Hq0bvfIJWa9a0L8p0DMSGHVCmTf1ws9FpuMomudEsXAJywBD1WaaMQ==}
+  '@trieoh/identityx-sdk-ts@0.11.6':
+    resolution: {integrity: sha512-dbdj7tqRXgEhWc0uEqqTw5cNe84LbNM7Vg9PnvcqlPNKtES92oXKs/lAvJVk3Q4qD9LbxdhydTb2Vs0j6RStIw==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -4562,7 +4562,7 @@ snapshots:
 
   '@trieoh/envoy-fetch-ts@0.1.5': {}
 
-  '@trieoh/identityx-sdk-ts@0.11.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@trieoh/identityx-sdk-ts@0.11.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
       react: 19.2.4
