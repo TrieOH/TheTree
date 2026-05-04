@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	github.com/MintzyG/fun v0.10.6
 	github.com/MintzyG/fun/bind v0.1.1
-	github.com/MintzyG/fun/middlewares v0.1.0
+	github.com/MintzyG/fun/middlewares v0.1.1
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5
