@@ -45,9 +45,6 @@ export function getCookieDomain(returnedDomain?: string) {
   if (typeof window === "undefined") return null;
   const hostname = window.location.hostname;
 
-  // Localhost should never have a domain set for cookies to avoid issues
-  if (hostname === 'localhost') return null;
-
   if (returnedDomain) {
     try {
       let domain = returnedDomain;

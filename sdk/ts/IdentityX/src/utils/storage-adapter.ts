@@ -56,9 +56,11 @@ export const cookieStorage = {
       sameSite = secure ? "None" : "Lax",
     } = options;
 
+    const isLocalhost = window.location.hostname === "localhost";
+
     const cookieParts = [
       `${name}=${value}`,
-      domain ? `Domain=${domain}` : "",
+      domain && !isLocalhost ? `Domain=${domain}` : "",
       `Path=${path}`,
       `SameSite=${sameSite}`,
       secure ? "Secure" : "",
