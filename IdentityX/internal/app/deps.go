@@ -408,8 +408,7 @@ func SetupAuthMiddlewares(
 
 		if accessToken.Sub.ProjectID != nil && accessToken.Issuer != accessToken.Sub.ProjectID.String() {
 			return nil, fun.ErrUnauthorized("access token has invalid issuer")
-		}
-		if accessToken.Issuer != issuer {
+		} else if accessToken.Issuer != issuer {
 			return nil, fun.ErrUnauthorized("access token has invalid issuer")
 		}
 
