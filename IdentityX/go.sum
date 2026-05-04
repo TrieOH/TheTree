@@ -1,7 +1,7 @@
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
-github.com/MintzyG/fun v0.10.5 h1:o/ytIKP6kq9xValLI8kSIr/xe3u4HriNCKseLGjqza4=
-github.com/MintzyG/fun v0.10.5/go.mod h1:OpLKRWQgonKc4MUr6S/Lf+o5ZbfmtrHeU5xesP4egoQ=
+github.com/MintzyG/fun v0.10.6 h1:/JOM7vFwc1WAW40un7WKw+WUfc3AR3f+v1KuJBpe2X0=
+github.com/MintzyG/fun v0.10.6/go.mod h1:OpLKRWQgonKc4MUr6S/Lf+o5ZbfmtrHeU5xesP4egoQ=
 github.com/MintzyG/fun/bind v0.1.1 h1:atx3p02N/3T8WjWsQ9PcWxdHwu6SoYhFcMLslWt005c=
 github.com/MintzyG/fun/bind v0.1.1/go.mod h1:SZmKRoCA6qnOKPrPenLkdYBm+rLXx1BE4byKONdwG9o=
 github.com/MintzyG/fun/middlewares v0.1.0 h1:taDsOASrIYKBdF1rm+DwGwzEKv08vAqMgHHRdCJ0D28=
