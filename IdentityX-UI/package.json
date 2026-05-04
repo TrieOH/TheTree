@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
-    "@soramux/identityx-sdk-ts": "^0.10.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-devtools": "^0.7.0",
@@ -29,6 +28,7 @@
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/react-store": "^0.8.0",
     "@tanstack/router-plugin": "^1.132.0",
+    "@trieoh/identityx-sdk-ts": "^0.11.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

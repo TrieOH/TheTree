@@ -1,4 +1,4 @@
-import { ApiError } from '@soramux/identityx-sdk-ts';
+import { ApiError } from 'trieoh/identityx-sdk-ts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 export function getContext() {

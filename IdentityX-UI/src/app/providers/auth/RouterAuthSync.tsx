@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router"
-import { useAuth } from "@soramux/identityx-sdk-ts/react"
+import { useAuth } from "trieoh/identityx-sdk-ts/react"
 import { useLayoutEffect } from "react"
 
 export function AuthSynchronizer({ children }: { children: React.ReactNode }) {

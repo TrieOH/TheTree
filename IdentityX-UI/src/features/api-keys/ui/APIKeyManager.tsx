@@ -32,7 +32,7 @@ export default function APIKeyManager ({ publicKey}: PropsI) {
     const response = await rotateApiKey(publicKey);
     if(response.success) {
       setShowGenerateDialog(false);
-      setSecretKey(response.data.api_key);
+      setSecretKey(response.data);
       toast.success(response.message);
     }
   };

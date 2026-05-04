@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
-import { SignIn, SignUp } from '@soramux/identityx-sdk-ts/react'
+import { SignIn, SignUp } from 'trieoh/identityx-sdk-ts/react'
 import { motion } from "motion/react";
 import { useState } from 'react'
 import z from 'zod';

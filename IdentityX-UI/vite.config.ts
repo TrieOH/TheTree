@@ -82,7 +82,7 @@ const config = defineConfig({
           }
 
           // Internal SDK
-          if (id.includes('@soramux/identityx-sdk-ts')) return 'vendor-identityx'
+          if (id.includes('trieoh/identityx-sdk-ts')) return 'vendor-identityx'
 
           // Utils Network and Infra
           if (id.includes('@t3-oss/env-core'))  return 'vendor-infra'

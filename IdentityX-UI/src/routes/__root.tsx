@@ -4,7 +4,7 @@ import {
   HeadContent,
   Scripts,
 } from '@tanstack/react-router'
-import { AuthProvider, type useAuth } from '@soramux/identityx-sdk-ts/react'
+import { AuthProvider, type useAuth } from 'trieoh/identityx-sdk-ts/react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
 import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
