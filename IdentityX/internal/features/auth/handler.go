@@ -177,7 +177,7 @@ func (handler *Handler) GetJWKS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := json.Marshal(jwks)
-	if fun.Bail(w, fun.ErrInternal("Error encoding JWKS")) {
+	if fun.Bail(w, err) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

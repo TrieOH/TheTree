@@ -46,7 +46,8 @@ func (uc *QueryService) GetJWKS(ctx context.Context, projectID *uuid.UUID) (map[
 
 	jwkKeys := make([]any, 0, len(keys))
 	for _, k := range keys {
-		jwk, err := contracts.PublicKeyToJWK(k)
+		var jwk map[string]any
+		jwk, err = contracts.PublicKeyToJWK(k)
 		if err != nil {
 			return nil, err
 		}
