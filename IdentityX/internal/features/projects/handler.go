@@ -1,7 +1,7 @@
 package projects
 
 import (
-	"IdentityX/internal/interfaces/http/middleware"
+	"IdentityX/internal/platform/middlewares"
 	"IdentityX/internal/shared/contracts"
 	"net/http"
 
@@ -32,7 +32,7 @@ func RegisterRoutes(
 	h *Handler,
 	anyAuth func(http.Handler) http.Handler,
 ) {
-	r.With(anyAuth, middleware.ClientOnly()).Group(func(r chi.Router) {
+	r.With(anyAuth, middlewares.ClientOnly()).Group(func(r chi.Router) {
 		r.Post("/projects", h.Create)
 		r.Get("/projects", h.List)
 		r.Get("/projects/{project_id}", h.GetByID)

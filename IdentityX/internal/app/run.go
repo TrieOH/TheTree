@@ -14,7 +14,7 @@ import (
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/utils"
+	"IdentityX/internal/shared/xslices"
 	"log"
 	"net/http"
 	"time"
@@ -221,7 +221,7 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
-		AllowedOrigins:   utils.SplitAndCleanCSV(app.cfg.CorsAllowedOrigins),
+		AllowedOrigins:   xslices.SplitAndCleanCSV(app.cfg.CorsAllowedOrigins),
 		AllowCredentials: true,
 	})
 	mw.realIP = middlewares.RealIP()

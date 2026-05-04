@@ -18,12 +18,8 @@ type Handler struct {
 	accounts CommandService
 }
 
-func NewHandler(
-	accounts CommandService,
-) *Handler {
-	return &Handler{
-		accounts: accounts,
-	}
+func NewHandler(accounts CommandService) *Handler {
+	return &Handler{accounts: accounts}
 }
 
 type TokenParam struct {

@@ -8,7 +8,6 @@ import (
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/validation"
 	"context"
 	"errors"
 	"strings"
@@ -357,9 +356,12 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 	}
 
 	var oldJTI uuid.UUID
-	oldJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
+	oldJTI, err = uuid.Parse(refreshToken.ID)
 	if err != nil {
 		return nil, err
+	}
+	if oldJTI == uuid.Nil {
+		return nil, fun.ErrBadRequest("invalid refresh token ID")
 	}
 
 	var uid uuid.UUID

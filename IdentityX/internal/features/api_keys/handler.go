@@ -1,7 +1,7 @@
 package api_keys
 
 import (
-	"IdentityX/internal/interfaces/http/middleware"
+	"IdentityX/internal/platform/middlewares"
 	"net/http"
 
 	_ "IdentityX/internal/shared/contracts"
@@ -27,7 +27,7 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(jwt)
-		r.Use(middleware.ClientOnly())
+		r.Use(middlewares.ClientOnly())
 		r.Post("/projects/{project_id}/api-keys/rotate", h.RotateApiKey)
 		r.Delete("/projects/{project_id}/api-keys", h.RevokeApiKey)
 	})
