@@ -1,4 +1,4 @@
-import { createFetcher, createQueryFetcher } from "trieoh/identityx-sdk-ts";
+import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
 import { env } from "@/env";
 
 export const authFetcher = createFetcher(
