@@ -4,11 +4,11 @@ import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage, cookieStorage } from "./storage-adapter";
 
 export interface AuthTokens {
-  AccessTokenString: string;
-  RefreshTokenString: string;
-  AccessExpiresAt: string;
-  RefreshExpiresAt: string;
-  Domain: string;
+  access_token_string: string;
+  refresh_token_string: string;
+  access_expires_at: string;
+  refresh_expires_at: string;
+  domain: string;
 }
 
 export interface TokenClaims {
@@ -68,27 +68,26 @@ export function decodeJwt<T>(token: string): T | null {
 
 export function saveAuthSession(tokens: AuthTokens): void {
   const {
-    AccessTokenString,
-    RefreshTokenString,
-    AccessExpiresAt,
-    RefreshExpiresAt,
-    Domain
+    access_token_string,
+    refresh_token_string,
+    access_expires_at,
+    refresh_expires_at,
   } = tokens;
 
-  const claims = decodeJwt<TokenClaims>(AccessTokenString);
+  const claims = decodeJwt<TokenClaims>(access_token_string);
 
   if (!claims) {
     logger.error("Failed to decode tokens");
     return;
   }
 
-  tokenStore.setAccessToken(AccessTokenString);
+  tokenStore.setAccessToken(access_token_string);
 
-  const refreshExpiry = new Date(RefreshExpiresAt).getTime();
-  const accessExpiry = new Date(AccessExpiresAt).getTime();
-  const domain = getCookieDomain(Domain);
+  const refreshExpiry = new Date(refresh_expires_at).getTime();
+  const accessExpiry = new Date(access_expires_at).getTime();
+  const domain = getCookieDomain(tokens.domain);
 
-  cookieStorage.set("refresh_token", RefreshTokenString, {
+  cookieStorage.set("refresh_token", refresh_token_string, {
     expires: new Date(refreshExpiry).toUTCString(),
     domain
   });

@@ -125,12 +125,16 @@ export class AuthInterceptor {
     let response = await executeFetch();
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
-      logger.log("401 detected, attempting one-time retry after refresh...");
-      try {
-        await this.refreshToken();
-        response = await executeFetch();
-      } catch (e) {
-        logger.error("Retry failed after refresh error");
+      const isExpiring = isTokenExpiringSoon(30);
+
+      if (isExpiring) {
+        logger.log("401 detected and token is expiring/expired, attempting refresh...");
+        try {
+          await this.refreshToken();
+          response = await executeFetch();
+        } catch (e) {
+          logger.error("Retry failed after refresh error");
+        }
       }
     }
 
