@@ -1,7 +1,6 @@
 package senders
 
 import (
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"bytes"
 	"context"
@@ -11,7 +10,7 @@ import (
 	"net/smtp"
 	"net/textproto"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -58,7 +57,7 @@ func (s *SMTPSender) Send(ctx context.Context, email ports.Email) error {
 
 	// queue is full → backpressure
 	default:
-		return fail.New(errx.SYSServiceUnavailable).WithArgs("BaseSMTPSender")
+		return fun.ErrInternal("BaseSMTPSender is unavailable")
 	}
 }
 

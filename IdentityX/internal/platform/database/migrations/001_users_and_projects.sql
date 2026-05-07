@@ -17,9 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_projects_id
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     user_type TEXT NOT NULL DEFAULT 'client',
-    project_id UUID NULL REFERENCES projects(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+    project_id UUID NULL REFERENCES projects(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     last_login_at TIMESTAMPTZ,
@@ -28,7 +26,7 @@ CREATE TABLE users (
     is_verified BOOL NOT NULL DEFAULT False,
     verified_at TIMESTAMPTZ NULL,
 
-    CHECK (user_type in ('client', 'project'))
+    CONSTRAINT chk_valid_user_type CHECK (user_type in ('client', 'project'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_id
@@ -41,20 +39,19 @@ CREATE INDEX IF NOT EXISTS idx_users_user_type
     ON users(user_type);
 
 ALTER TABLE projects ADD COLUMN owner_id UUID NOT NULL REFERENCES users(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE;
+    ON DELETE CASCADE;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_global
+CREATE UNIQUE INDEX IF NOT EXISTS one_email_for_client
     ON users(email)
     WHERE project_id IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_per_project
+CREATE UNIQUE INDEX IF NOT EXISTS one_email_per_project
     ON users(project_id, email)
     WHERE project_id IS NOT NULL;
 
 -- +goose Down
-DROP INDEX IF EXISTS idx_users_email_per_project;
-DROP INDEX IF EXISTS idx_users_email_global;
+DROP INDEX IF EXISTS one_email_per_project;
+DROP INDEX IF EXISTS one_email_for_client;
 DROP INDEX IF EXISTS idx_users_user_type;
 DROP INDEX IF EXISTS idx_users_project_id;
 DROP INDEX IF EXISTS idx_users_id;

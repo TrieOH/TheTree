@@ -5,11 +5,12 @@ import (
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"errors"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -21,23 +22,17 @@ type CommandService struct {
 	keys     ports.KeysRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
-	txRunner database.TxRunner
+	tx       database.TxRunner
 }
 
-func NewCommandService(
-	sessions ports.SessionRepository,
-	keys ports.KeysRepository,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	txRunner database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		sessions: sessions,
-		keys:     keys,
-		logger:   logger,
-		tracer:   tracer,
-		txRunner: txRunner,
-	}
+func NewCommandService(deps feature_deps.SessionCommandDeps) *CommandService {
+	return errx.MustProvide(&CommandService{
+		sessions: deps.Sessions,
+		keys:     deps.Keys,
+		logger:   deps.Logger,
+		tracer:   deps.Tracer,
+		tx:       deps.Tx,
+	})
 }
 
 // RevokeByID handles the business logic for revoking a specific session for the authenticated user.
@@ -56,7 +51,7 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 	}
 
 	if *principal.SessionID == sessionID {
-		return fail.New(errx.SessionSelfRevokeForbidden).RecordCtx(ctx)
+		return fun.ErrForbidden("cannot revoke the currently active session")
 	}
 
 	var userType contracts.UserType
@@ -68,9 +63,10 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 
 	var sess *contracts.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, userType)
-	if fail.Is(err, errx.SQLNotFound) {
-		return fail.New(errx.SessionNotFound).RecordCtx(ctx)
-	} else if err != nil {
+	if fun.Is(err, fun.CodeNotFound) {
+		return fun.ErrUnauthorized("session not found or revoked")
+	}
+	if err != nil {
 		return err
 	}
 

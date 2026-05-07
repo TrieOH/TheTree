@@ -12,7 +12,6 @@ import (
 	"path"
 	texttemplate "text/template"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -25,7 +24,18 @@ type MailBundle struct {
 //go:embed renderer/templates/**
 var templatesFS embed.FS
 
-func NewMailPair(logger *zap.Logger, tracer trace.Tracer) (ports.EmailRenderer, ports.Mailer) {
+func NewMailPair(
+	logger *zap.Logger,
+	tracer trace.Tracer,
+	appUrl string,
+	smtpHost string,
+	smtpPort string,
+	smtpUsername string,
+	smtpPassword string,
+	smtpFrom string,
+	smtpTls bool,
+	smtpStartTLS bool,
+) (ports.EmailRenderer, ports.Mailer) {
 	htmlTmpls, textTmpls, err := loadTemplates("renderer/templates")
 	if err != nil {
 		log.Fatalf("failed to load base email templates: %s", err)
@@ -36,18 +46,19 @@ func NewMailPair(logger *zap.Logger, tracer trace.Tracer) (ports.EmailRenderer, 
 			logger,
 			tracer,
 			senders.SMTPConfig{
-				Host:     viper.GetString("SMTP_HOST"),
-				Port:     viper.GetString("SMTP_PORT"),
-				Username: viper.GetString("SMTP_USERNAME"),
-				Password: viper.GetString("SMTP_PASSWORD"),
-				From:     viper.GetString("SMTP_FROM"),
-				UseTLS:   viper.GetBool("SMTP_TLS"),
-				StartTLS: viper.GetBool("SMTP_STARTTLS"),
+				Host:     smtpHost,
+				Port:     smtpPort,
+				Username: smtpUsername,
+				Password: smtpPassword,
+				From:     smtpFrom,
+				UseTLS:   smtpTls,
+				StartTLS: smtpStartTLS,
 			},
 		),
 		Renderer: renderer.NewMailRenderer(
 			logger,
 			tracer,
+			appUrl,
 			htmlTmpls,
 			textTmpls,
 		),

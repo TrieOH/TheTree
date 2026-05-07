@@ -3,10 +3,10 @@ package account
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -37,39 +37,32 @@ func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.AccountR
 	}
 }
 
-func (repo *accountRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
-	ctx, span := repo.tracer.Start(ctx, "AccountsRepo.Verify",
-		trace.WithAttributes(
-			attribute.String("user.id", userID.String()),
-		),
-	)
-	defer span.End()
+func (repo *accountRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
+	return repo.tracer.Start(ctx, "AccountsRepo."+op)
+}
 
+func (repo *accountRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, error) {
+	ctx, span := repo.span(ctx, "Verify")
+	span.SetAttributes(attribute.String("user.id", userID.String()))
+	defer span.End()
 	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
 	if err != nil {
-		return false, fail.From(err).RecordCtx(ctx)
+		return false, errx.DB(err, "account")
 	}
-
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
-
 	return !wasVerified, nil
 }
 
 func (repo *accountRepo) ResetPassword(ctx context.Context, userID uuid.UUID, passwordHash []byte) error {
-	ctx, span := repo.tracer.Start(ctx, "AccountsRepo.ResetPassword",
-		trace.WithAttributes(
-			attribute.String("user.id", userID.String()),
-		),
-	)
+	ctx, span := repo.span(ctx, "ResetPassword")
+	span.SetAttributes(attribute.String("user.id", userID.String()))
 	defer span.End()
-
 	err := repo.queries(ctx).ResetUserPassword(ctx, sqlc.ResetUserPasswordParams{
 		PasswordHash: string(passwordHash),
 		ID:           userID,
 	})
 	if err != nil {
-		return fail.From(err).RecordCtx(ctx)
+		return errx.DB(err, "account")
 	}
-
 	return nil
 }

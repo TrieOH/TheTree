@@ -4,11 +4,10 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -53,7 +52,7 @@ func (uc *QueryService) GetByID(ctx context.Context, projectID uuid.UUID) (*cont
 	}
 
 	if principal.ProjectID != nil && *principal.ProjectID != projectID {
-		return nil, fail.New(errx.ProjectNotFound).RecordCtx(ctx)
+		return nil, fun.ErrNotFound("project not found")
 	}
 
 	proj, err := uc.projects.GetByIDExternal(ctx, projectID, principal.UserID)

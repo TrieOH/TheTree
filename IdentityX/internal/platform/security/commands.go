@@ -4,8 +4,6 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
-	"IdentityX/internal/shared/validation"
-	"context"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
@@ -15,14 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 )
 
-func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
-	decrypted, err := crypto.Decrypt(pair.PrivateKey)
+func SignKey(payload []byte, pair *contracts.Pair, encryptionKey []byte) ([]byte, error) {
+	decrypted, err := crypto.Decrypt(pair.PrivateKey, encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +32,10 @@ func SignKey(payload []byte, pair *contracts.Pair) ([]byte, error) {
 	return ed25519.Sign(priv, payload), nil
 }
 
-func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
+func VerifyKeyPair(projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
 	if projectID != nil {
 		if pair.ProjectID == nil || *pair.ProjectID != *projectID {
-			return fail.New(errx.KeysProjectKeyMismatch).RecordCtx(ctx)
+			return fun.ErrUnauthorized("project keys mismatch")
 		}
 	}
 
@@ -48,7 +45,7 @@ func VerifyKeyPair(ctx context.Context, projectID *uuid.UUID, payload, sig []byt
 	}
 
 	if !ed25519.Verify(pub, payload, sig) {
-		return fail.New(errx.KeysInvalidSignature).RecordCtx(ctx)
+		return fun.ErrUnauthorized("invalid key signature")
 	}
 
 	return nil
@@ -92,14 +89,7 @@ func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
 	return pub, nil
 }
 
-func zero(b []byte) {
-	for i := range b {
-		b[i] = 0
-	}
-}
-
-func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
-	issuer := viper.GetString("ISSUER")
+func NewAccessToken(in contracts.NewAccessTokenInput, issuer string) ([]byte, error) {
 	if in.User.ProjectID != nil {
 		issuer = in.User.ProjectID.String()
 	}
@@ -136,7 +126,7 @@ func NewAccessToken(in contracts.NewAccessTokenInput) ([]byte, error) {
 	return []byte(payload), nil
 }
 
-func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
+func NewRefreshToken(in contracts.NewRefreshTokenInput, issuer string) ([]byte, error) {
 	claims := contracts.RefreshClaims{
 		Sub: contracts.RefreshSub{
 			AccessJTI: in.AccessJTI,
@@ -144,7 +134,7 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			ID:        in.RefreshJTI.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -161,40 +151,7 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput) ([]byte, error) {
 	return []byte(payload), nil
 }
 
-func NewProjectAccessToken(in contracts.NewProjectAccessTokenInput) ([]byte, error) {
-	claims := contracts.AccessClaims{
-		Sub: contracts.AccessSub{
-			ID:         in.User.ID,
-			UserType:   string(in.User.UserType),
-			ProjectID:  in.User.ProjectID,
-			Email:      in.User.Email,
-			SessionID:  in.SessionID,
-			UserAgent:  in.Agent,
-			UserIP:     in.IP,
-			IsVerified: in.User.IsVerified,
-			FamilyID:   in.FamilyID,
-			VerifiedAt: in.User.VerifiedAt,
-		},
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    in.User.ProjectID.String(),
-			ID:        in.AccessJTI,
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
-	token.Header["kid"] = in.KID
-
-	payload, err := token.SigningString()
-	if err != nil {
-		return nil, err
-	}
-
-	return []byte(payload), nil
-}
-
-func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error) {
+func NewVerificationToken(in contracts.NewVerificationTokenInput, issuer string) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.VerificationClaims{
 		Sub: contracts.VerificationSub{
@@ -203,7 +160,7 @@ func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
 			Audience:  jwt.ClaimStrings{"email-verification"},
@@ -221,7 +178,7 @@ func NewVerificationToken(in contracts.NewVerificationTokenInput) ([]byte, error
 	return []byte(payload), nil
 }
 
-func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
+func NewResetPasswordToken(in contracts.NewResetPasswordInput, issuer string) ([]byte, error) {
 	now := time.Now()
 	claims := contracts.ResetPasswordClaims{
 		Sub: contracts.ResetPasswordSub{
@@ -231,7 +188,7 @@ func NewResetPasswordToken(in contracts.NewResetPasswordInput) ([]byte, error) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(in.ExpiresAt),
-			Issuer:    viper.GetString("ISSUER"),
+			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now.Add(-1 * time.Minute)),
 			Audience:  jwt.ClaimStrings{"password-reset"},
@@ -254,12 +211,10 @@ func AssembleJWT(payload []byte, sig []byte) string {
 }
 
 func VerifyAccessToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.AccessClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"access",
 		tokenStr,
@@ -268,12 +223,10 @@ func VerifyAccessToken(
 }
 
 func VerifyRefreshToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.RefreshClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"refresh",
 		tokenStr,
@@ -282,12 +235,10 @@ func VerifyRefreshToken(
 }
 
 func VerifyVerificationToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.VerificationClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"verification",
 		tokenStr,
@@ -296,12 +247,10 @@ func VerifyVerificationToken(
 }
 
 func VerifyResetPasswordToken(
-	ctx context.Context,
 	tokenStr string,
 	pair *contracts.Pair,
 ) (*contracts.ResetPasswordClaims, error) {
 	return verifyToken(
-		ctx,
 		pair,
 		"reset password",
 		tokenStr,
@@ -310,7 +259,6 @@ func VerifyResetPasswordToken(
 }
 
 func verifyToken[T jwt.Claims](
-	ctx context.Context,
 	pair *contracts.Pair,
 	tokenType string,
 	tokenStr string,
@@ -323,7 +271,7 @@ func verifyToken[T jwt.Claims](
 
 	alg, _ := token.Header["alg"].(string)
 	if alg != jwt.SigningMethodEdDSA.Alg() {
-		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), alg).RecordCtx(ctx)
+		return claims, fun.Errf("invalid %s token alg, expected (%s) but got (%s)", tokenType, jwt.SigningMethodEdDSA.Alg(), alg).Unauthorized()
 	}
 
 	if token.Method == nil || token.Method.Alg() != jwt.SigningMethodEdDSA.Alg() {
@@ -331,15 +279,14 @@ func verifyToken[T jwt.Claims](
 		if token.Method != nil {
 			methodAlg = token.Method.Alg()
 		}
-		return claims, fail.New(errx.TokenInvalidAlg).WithArgs(tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).RecordCtx(ctx)
+		return claims, fun.Errf("invalid %s token alg, expected (%s) but got (%s)", tokenType, jwt.SigningMethodEdDSA.Alg(), methodAlg).Unauthorized()
 	}
 
 	kid, ok := token.Header["kid"].(string)
 	if !ok || kid == "" {
-		return claims, fail.New(errx.TokenMissingKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fun.Errf("%s token missing kid", tokenType).Unauthorized()
 	}
-
-	payload, sig, err := splitJWT(ctx, tokenType, tokenStr)
+	payload, sig, err := splitJWT(tokenType, tokenStr)
 	if err != nil {
 		return claims, err
 	}
@@ -348,36 +295,28 @@ func verifyToken[T jwt.Claims](
 	case strings.HasPrefix(kid, "goauth:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 2 {
-			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fun.Errf("invalid %s token kid", tokenType).Unauthorized()
 		}
-
-		if err := VerifyKeyPair(ctx, nil, payload, sig, pair); err != nil {
-			if fail.Is(err, errx.SQLNotFound) {
-				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
-			}
+		if err = VerifyKeyPair(nil, payload, sig, pair); err != nil {
 			return claims, err
 		}
 
 	case strings.HasPrefix(kid, "project:"):
 		parts := strings.Split(kid, ":")
 		if len(parts) < 3 {
-			return claims, fail.New(errx.TokenInvalidKid).WithArgs(tokenType).RecordCtx(ctx)
+			return claims, fun.Errf("invalid %s token kid", tokenType).Unauthorized()
 		}
-
-		projectID, err := validation.ParseUUID(parts[1], "project_id")
+		var projectID uuid.UUID
+		projectID, err = uuid.Parse(parts[1])
 		if err != nil {
-			return claims, err
+			return claims, fun.Errf("invalid project kid project: %s", err).Unauthorized()
 		}
-
-		if err := VerifyKeyPair(ctx, &projectID, payload, sig, pair); err != nil {
-			if fail.Is(err, errx.SQLNotFound) {
-				return claims, fail.New(errx.TokenUntrusted).WithArgs(tokenType).RecordCtx(ctx)
-			}
+		if err = VerifyKeyPair(&projectID, payload, sig, pair); err != nil {
 			return claims, err
 		}
 
 	default:
-		return claims, fail.New(errx.TokenUnknownKid).WithArgs(tokenType).RecordCtx(ctx)
+		return claims, fun.Errf("unknown %s token kid", tokenType).Unauthorized()
 	}
 
 	return claims, nil
@@ -389,18 +328,15 @@ func ParseJWTUnverified[T jwt.Claims](tokenStr string, claims T) (*jwt.Token, er
 	return token, err
 }
 
-func splitJWT(ctx context.Context, tokenType, tokenStr string) (signingInput, sig []byte, err error) {
+func splitJWT(tokenType, tokenStr string) (signingInput, sig []byte, err error) {
 	parts := strings.Split(tokenStr, ".")
 	if len(parts) != 3 {
-		return nil, nil, fail.New(errx.TokenInvalidFormat).WithArgs(tokenType).RecordCtx(ctx)
+		return nil, nil, fun.Errf("invalid %s token format", tokenType).Unauthorized()
 	}
-
 	signingInput = []byte(parts[0] + "." + parts[1])
-
 	sig, err = base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return signingInput, sig, nil
 }

@@ -1,10 +1,9 @@
 package authz
 
 import (
-	"IdentityX/internal/shared/errx"
 	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -22,14 +21,12 @@ func WithPrincipal(ctx context.Context, p *Principal) context.Context {
 func RequirePrincipal(ctx context.Context) (*Principal, error) {
 	val := ctx.Value(principalKey)
 	if val == nil {
-		return nil, fail.New(errx.AuthPrincipalNotInContext).RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("missing principal in context")
 	}
-
 	p, ok := val.(*Principal)
 	if !ok {
-		return nil, fail.New(errx.AuthInvalidPrincipal).RecordCtx(ctx)
+		return nil, fun.Errf("invalid principal type: %T", val).Unauthorized()
 	}
-
 	return p, nil
 }
 
@@ -39,9 +36,7 @@ func RequirePrincipalAndAnnotate(ctx context.Context, span trace.Span) (*Princip
 	if err != nil {
 		return nil, err
 	}
-
 	AnnotatePrincipal(span, principal)
-
 	return principal, nil
 }
 
@@ -50,9 +45,7 @@ func AnnotatePrincipal(span trace.Span, principal *Principal) {
 	if span == nil || principal == nil {
 		return
 	}
-
 	span.SetAttributes(attribute.String("user.id", principal.UserID.String()))
-
 	if principal.ProjectID != nil {
 		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
 	}

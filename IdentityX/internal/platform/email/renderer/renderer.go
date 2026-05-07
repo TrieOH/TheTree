@@ -1,15 +1,13 @@
 package renderer
 
 import (
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"bytes"
 	"context"
 	"html/template"
 	texttemplate "text/template"
 
-	"github.com/MintzyG/fail/v3"
-	"github.com/spf13/viper"
+	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -17,6 +15,7 @@ import (
 type MailRenderer struct {
 	logs      *zap.Logger
 	tracer    trace.Tracer
+	appUrl    string
 	htmlTmpls map[string]*template.Template
 	textTmpls map[string]*texttemplate.Template
 }
@@ -26,12 +25,14 @@ var _ ports.EmailRenderer = (*MailRenderer)(nil)
 func NewMailRenderer(
 	logs *zap.Logger,
 	tracer trace.Tracer,
+	appUrl string,
 	htmlTmpls map[string]*template.Template,
 	textTmpls map[string]*texttemplate.Template,
 ) ports.EmailRenderer {
 	return &MailRenderer{
 		logs:      logs,
 		tracer:    tracer,
+		appUrl:    appUrl,
 		htmlTmpls: htmlTmpls,
 		textTmpls: textTmpls,
 	}
@@ -50,13 +51,12 @@ func (mr *MailRenderer) Verification(ctx context.Context, data ports.Verificatio
 	}{
 		UserID: data.UserID.String(),
 		Email:  data.Email,
-		Link:   template.URL(viper.GetString("APP_URL") + "/auth/verify?token=" + data.Token),
+		Link:   template.URL(mr.appUrl + "/auth/verify?token=" + data.Token),
 	})
 
 	if err != nil {
-		return ports.Email{}, fail.New(errx.SYSRenderingEmailFailed).With(err).WithArgs("verification")
+		return ports.Email{}, fun.ErrInternal("verification email rendering failed")
 	}
-
 	return ports.Email{
 		To:       data.Email,
 		Subject:  subject,
@@ -74,7 +74,7 @@ func (mr *MailRenderer) PasswordReset(ctx context.Context, data ports.PasswordRe
 	subject, textBody, htmlBody, err := mr.render(ctx, key, map[string]any{
 		"UserID": data.UserID,
 		"Email":  data.Email,
-		"Link":   template.URL(viper.GetString("APP_URL") + "/reset?token=" + data.Token),
+		"Link":   template.URL(mr.appUrl + "/reset?token=" + data.Token),
 	})
 
 	if err != nil {
@@ -96,12 +96,12 @@ func (mr *MailRenderer) render(
 ) (subject, textBody, htmlBody string, err error) {
 	textTmpl, ok := mr.textTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "text").RecordCtx(ctx)
+		return "", "", "", fun.Errf("%s %s template not found", key, "text").Internal()
 	}
 
 	htmlTmpl, ok := mr.htmlTmpls[key]
 	if !ok {
-		return "", "", "", fail.New(errx.EMAILTemplateNotFound).WithArgs(key, "html").RecordCtx(ctx)
+		return "", "", "", fun.Errf("%s %s template not found", key, "html").Internal()
 	}
 
 	var subjectBuf, textBuf, htmlBuf bytes.Buffer

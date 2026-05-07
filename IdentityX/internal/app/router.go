@@ -1,6 +1,4 @@
-//go:build !test
-
-package router
+package app
 
 import (
 	"IdentityX/internal/features/account"
@@ -8,34 +6,39 @@ import (
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/interfaces/http/middleware"
-	"IdentityX/internal/interfaces/http/system"
-	"fmt"
-	"log"
-	"net/http"
-	"strings"
-	"time"
-
 	_ "IdentityX/internal/shared/contracts"
+	"fmt"
+	"net/http"
 
+	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/go-chi/httprate"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Handlers struct {
-	System   *system.Handler
 	ApiKeys  *api_keys.Handler
 	Users    *auth.Handler
 	Accounts *account.Handler
 	Sessions *sessions.Handler
 	Projects *projects.Handler
-	AuthMW   middleware.AuthMiddleware
+
+	Logger    func(http.Handler) http.Handler
+	RequestID func(http.Handler) http.Handler
+	BodySize  func(http.Handler) http.Handler
+	Metrics   func(http.Handler) http.Handler
+	CORS      func(http.Handler) http.Handler
+	RealIP    func(http.Handler) http.Handler
+	Recover   func(http.Handler) http.Handler
+	Timeout   func(http.Handler) http.Handler
+	RateLimit func(http.Handler) http.Handler
+	Jwt       func(http.Handler) http.Handler
+	ApiKey    func(http.Handler) http.Handler
+	AnyAuth   func(http.Handler) http.Handler
+
+	AppName string
 }
 
 // CreateRouter godoc
@@ -66,34 +69,31 @@ type Handlers struct {
 // @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
 // @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
 // @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
-func CreateRouter(handlers Handlers) http.Handler {
+func CreateRouter(deps Handlers, debugMode, disableRateLimit bool) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(chimiddleware.Recoverer)
-	r.Use(chimiddleware.Timeout(60 * time.Second))
-
-	if !viper.GetBool("DISABLE_RATE_LIMIT") {
-		r.Use(httprate.Limit(
-			400,
-			1*time.Minute,
-			httprate.WithKeyFuncs(httprate.KeyByRealIP),
-		))
-	}
-
-	r.Use(middleware.MaxBodySize(1 << 20)) // 1 MB
-
-	r.Use(cors.Handler(GetCORSOptions()))
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.Logs)
-	r.Use(middleware.Metrics)
+	r.Use(deps.RealIP)
+	r.Use(deps.RequestID)
+	r.Use(deps.Logger)
+	r.Use(deps.Metrics)
+	r.Use(deps.Recover)
+	r.Use(deps.Timeout)
+	r.Use(deps.BodySize)
+	r.Use(deps.RateLimit)
+	r.Use(deps.CORS)
 
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-	r.Handle("/metrics", middleware.Handler())
+	r.Handle("/metrics", promhttp.Handler())
 
-	r = registerRoutes(handlers, r)
+	auth.RegisterAuthRoutes(r, deps.Users, disableRateLimit, deps.Jwt)
+	account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
+	sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
+	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth)
+	api_keys.RegisterRoutes(r, deps.ApiKeys, deps.Jwt)
 
-	if viper.GetBool("DEBUG_MODE") {
+	r.Get("/health", handlers.Health("IdentityX-API").Handle)
+
+	if debugMode {
 		_ = chi.Walk(r, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 			fmt.Printf("[%s] %s\n", method, route)
 			return nil
@@ -101,65 +101,4 @@ func CreateRouter(handlers Handlers) http.Handler {
 	}
 
 	return otelhttp.NewHandler(r, "http.server")
-}
-
-func splitAndCleanCSV(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-
-	for _, p := range parts {
-		if v := strings.TrimSpace(p); v != "" {
-			out = append(out, v)
-		}
-	}
-
-	if len(out) == 0 {
-		return nil
-	}
-
-	return out
-}
-
-// GetCORSOptions builds a safe cors.Options configuration from environment
-// variables, applying sensible defaults and preventing invalid empty values.
-func GetCORSOptions() cors.Options {
-	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
-	allowedMethods := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_METHODS"))
-	allowedHeaders := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_HEADERS"))
-
-	// Never default origins to "*"
-	if allowedOrigins == nil {
-		log.Fatalf("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
-	}
-
-	if allowedMethods == nil {
-		allowedMethods = []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		}
-	}
-
-	if allowedHeaders == nil {
-		allowedHeaders = []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-		}
-	}
-
-	return cors.Options{
-		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   allowedMethods,
-		AllowedHeaders:   allowedHeaders,
-		AllowCredentials: true,
-		MaxAge:           300,
-	}
 }

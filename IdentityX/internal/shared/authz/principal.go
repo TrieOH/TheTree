@@ -2,10 +2,8 @@ package authz
 
 import (
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
-	"context"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,14 +22,10 @@ type Principal struct {
 	Method    AuthMethod         `json:"-"`
 }
 
-func NewPrincipal(
-	ctx context.Context,
-	access *contracts.AccessClaims,
-) (*Principal, error) {
+func NewPrincipal(access *contracts.AccessClaims) (*Principal, error) {
 	if access == nil {
-		return nil, fail.New(errx.TokenMissingAccessClaims).RecordCtx(ctx)
+		return nil, fun.ErrUnprocessableEntity("missing access claims")
 	}
-
 	userType := contracts.UserTypeClient
 	if access.Sub.ProjectID != nil {
 		userType = contracts.UserTypeProject

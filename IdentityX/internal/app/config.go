@@ -1,50 +1,36 @@
 package app
 
 import (
-	http2 "IdentityX/internal/shared/validation"
-	"log"
-	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/caarlos0/env/v11"
 )
 
-func LoadEnv() {
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	if err := http2.LoadProxyConfig(); err != nil {
-		log.Fatalf("LoadProxyConfig failed: %v", err.Error())
-	}
-	if iss := viper.GetString("ISSUER"); iss == "" {
-		log.Fatalf("ISSUER environment variable not set.")
-	}
-	if smtpHost := viper.GetString("SMTP_HOST"); smtpHost == "" {
-		log.Fatalf("SMTP_HOST environment variable not set.")
-	}
-	if smtpPort := viper.GetString("SMTP_PORT"); smtpPort == "" {
-		log.Fatalf("SMTP_PORT environment variable not set.")
-	}
+type Config struct {
+	DatabaseURL           string        `env:"DATABASE_URL,required"`
+	Port                  string        `env:"PORT,required"`
+	DebugMode             bool          `env:"DEBUG_MODE"`
+	AppName               string        `env:"APP_NAME,required"`
+	SmtpHost              string        `env:"SMTP_HOST,required"`
+	SmtpPort              string        `env:"SMTP_PORT,required"`
+	SmtpUser              string        `env:"SMTP_USERNAME,required"`
+	SmtpPass              string        `env:"SMTP_PASSWORD,required"`
+	SmtpFrom              string        `env:"SMTP_FROM,required"`
+	SmtpTls               bool          `env:"SMTP_TLS,required"`
+	SmtpStartTls          bool          `env:"SMTP_STARTTLS,required"`
+	CorsAllowedOrigins    string        `env:"CORS_ALLOWED_ORIGINS,required"`
+	Issuer                string        `env:"ISSUER,required"`
+	AppUrl                string        `env:"APP_URL,required"`
+	DisableRateLimit      bool          `env:"DISABLE_RATE_LIMIT,required"`
+	EncryptionKey         string        `env:"ENCRYPTION_KEY,required"`
+	RedisAddress          string        `env:"REDIS_ADDR,required"`
+	RedisPassword         string        `env:"REDIS_PASSWORD,required"`
+	RedisDB               int           `env:"REDIS_DB,required"`
+	KeyLifetime           time.Duration `env:"IDENTITY_X_KEY_LIFETIME,required"`
+	RotateKeysJobDuration time.Duration `env:"ROTATE_KEYS_JOB_DURATION,required"`
+}
 
-	if keyDuration := viper.GetDuration("IDENTITY_X_KEY_LIFETIME"); keyDuration == time.Duration(0) {
-		log.Fatalf("IDENTITY_X_KEY_LIFETIME environment variable not set.")
-	}
-	if keyDuration := viper.GetDuration("ROTATE_KEYS_JOB_DURATION"); keyDuration == time.Duration(0) {
-		log.Fatalf("ROTATE_KEYS_JOB_DURATION environment variable not set.")
-	}
-
-	env := viper.GetString("ENV")
-	if env == "production" {
-		if smtpUsername := viper.GetString("SMTP_USERNAME"); smtpUsername == "" {
-			log.Fatalf("SMTP_USERNAME environment variable not set.")
-		}
-		if smtpPassword := viper.GetString("SMTP_PASSWORD"); smtpPassword == "" {
-			log.Fatalf("SMTP_PASSWORD environment variable not set.")
-		}
-	}
-	if smtpFrom := viper.GetString("SMTP_FROM"); smtpFrom == "" {
-		log.Fatalf("SMTP_FROM environment variable not set.")
-	}
-	if viper.GetString("PORT") == "" {
-		log.Fatalf("PORT environment variable not set.")
-	}
+func LoadConfig() (Config, error) {
+	var cfg Config
+	return cfg, env.Parse(&cfg)
 }

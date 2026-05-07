@@ -6,11 +6,12 @@ import (
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"fmt"
 
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -18,27 +19,21 @@ import (
 )
 
 type CommandService struct {
-	apiKeys  ports.ApiKeyRepository
-	project  ports.ProjectRepository
-	logger   *zap.Logger
-	tracer   trace.Tracer
-	txRunner database.TxRunner
+	apiKeys ports.ApiKeyRepository
+	project ports.ProjectRepository
+	logger  *zap.Logger
+	tracer  trace.Tracer
+	tx      database.TxRunner
 }
 
-func NewCommandService(
-	apiKeys ports.ApiKeyRepository,
-	project ports.ProjectRepository,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	txRunner database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		apiKeys:  apiKeys,
-		project:  project,
-		logger:   logger,
-		tracer:   tracer,
-		txRunner: txRunner,
-	}
+func NewCommandService(deps feature_deps.ApiKeysCommandDeps) *CommandService {
+	return errx.MustProvide(&CommandService{
+		apiKeys: deps.ApiKeys,
+		project: deps.Project,
+		logger:  deps.Logger,
+		tracer:  deps.Tracer,
+		tx:      deps.Tx,
+	})
 }
 
 func (uc *CommandService) Rotate(ctx context.Context, projectID uuid.UUID) (string, error) {
@@ -58,17 +53,17 @@ func (uc *CommandService) Rotate(ctx context.Context, projectID uuid.UUID) (stri
 		return "", err
 	}
 	if !isOwner {
-		return "", fail.New(errx.ProjectNotFound).RecordCtx(ctx)
+		return "", fun.ErrNotFound("project not found")
 	}
 
 	secret, err := crypto.GenerateRandomSecret(32)
 	if err != nil {
-		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fun.Errf("cryptographic error: %s", err).Internal()
 	}
 
 	hash, err := crypto.HashBcryptSecret(secret)
 	if err != nil {
-		return "", fail.New(errx.SYSCryptoError).With(err).RecordCtx(ctx)
+		return "", fun.Errf("cryptographic error: %s", err).Internal()
 	}
 
 	err = uc.apiKeys.Upsert(ctx, contracts.ApiKey{
@@ -99,7 +94,7 @@ func (uc *CommandService) Revoke(ctx context.Context, projectID uuid.UUID) error
 		return err
 	}
 	if !isOwner {
-		return fail.New(errx.ProjectNotFound).RecordCtx(ctx)
+		return fun.ErrNotFound("project not found")
 	}
 
 	return uc.apiKeys.Delete(ctx, projectID)

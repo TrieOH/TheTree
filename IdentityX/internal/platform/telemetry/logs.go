@@ -1,15 +1,16 @@
 package telemetry
 
 import (
-	"log"
+	"IdentityX/internal/shared/errx"
 	"sync"
 
 	"go.uber.org/zap"
 )
 
 var (
-	logger *zap.Logger
-	once   sync.Once
+	logger      *zap.Logger
+	debugLogger *zap.Logger
+	once        sync.Once
 )
 
 func Init() {
@@ -17,7 +18,11 @@ func Init() {
 		var err error
 		logger, err = zap.NewProduction()
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			errx.Must(err, "error starting production logger")
+		}
+		debugLogger, err = zap.NewDevelopment()
+		if err != nil {
+			errx.Must(err, "error starting development logger")
 		}
 	})
 }
@@ -27,4 +32,11 @@ func Log() *zap.Logger {
 		Init()
 	}
 	return logger
+}
+
+func DLog() *zap.Logger {
+	if debugLogger == nil {
+		Init()
+	}
+	return debugLogger
 }

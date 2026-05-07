@@ -10,23 +10,20 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
-func rotateKeysJob(db *pgxpool.Pool, scheduler gocron.Scheduler, txRunner database.TxRunner) {
+func rotateKeysJob(db *pgxpool.Pool, scheduler gocron.Scheduler, txRunner database.TxRunner, rotateJobDuration time.Duration, encryptionKey []byte, keyLifetime time.Duration) {
 	_, err := scheduler.NewJob(
-		gocron.DurationJob(
-			viper.GetDuration("ROTATE_KEYS_JOB_DURATION"),
-		),
+		gocron.DurationJob(rotateJobDuration),
 		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) {
 			if err := txRunner.WithinTx(ctx, func(txCtx context.Context) error {
 				q := sqlc.New(pool)
 				q = queriesWithTx(txCtx, q)
-				if err := tryRotateGoAuthKeys(txCtx, q); err != nil {
+				if err := tryRotateGoAuthKeys(txCtx, q, encryptionKey, keyLifetime); err != nil {
 					return err
 				}
-				if err := tryRotateProjectKeys(txCtx, q); err != nil {
+				if err := tryRotateProjectKeys(txCtx, q, encryptionKey, keyLifetime); err != nil {
 					return err
 				}
 				if err := q.RevokeExpiredRotatedKeys(txCtx); err != nil {

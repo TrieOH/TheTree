@@ -6,16 +6,14 @@ import (
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/errx"
+	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/validation"
 	"context"
 	"errors"
-	"net/http"
 	"strings"
 	"time"
 
-	fun "github.com/MintzyG/FastUtilitiesNet/response"
-	"github.com/MintzyG/fail/v3"
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -25,61 +23,39 @@ import (
 )
 
 type CommandService struct {
-	users        ports.UserRepository
-	sessions     ports.SessionRepository
-	projects     ports.ProjectRepository
-	keys         ports.KeysRepository
-	mailRenderer ports.EmailRenderer
-	mailSender   ports.Mailer
-	logger       *zap.Logger
-	tracer       trace.Tracer
-	tx           database.TxRunner
+	encryptionKey []byte
+	issuer        string
+	users         ports.UserRepository
+	sessions      ports.SessionRepository
+	projects      ports.ProjectRepository
+	keys          ports.KeysRepository
+	mailRenderer  ports.EmailRenderer
+	mailSender    ports.Mailer
+	logger        *zap.Logger
+	tracer        trace.Tracer
+	tx            database.TxRunner
 }
 
-func NewCommandService(
-	Users ports.UserRepository,
-	Sessions ports.SessionRepository,
-	Projects ports.ProjectRepository,
-	Keys ports.KeysRepository,
-	renderer ports.EmailRenderer,
-	mailer ports.Mailer,
-	logger *zap.Logger,
-	tracer trace.Tracer,
-	tx database.TxRunner,
-) *CommandService {
-	return &CommandService{
-		users:        Users,
-		sessions:     Sessions,
-		projects:     Projects,
-		keys:         Keys,
-		mailRenderer: renderer,
-		mailSender:   mailer,
-		logger:       logger,
-		tracer:       tracer,
-		tx:           tx,
-	}
-}
-
-type RegisterInput struct {
-	Email     string
-	Password  string
-	ProjectID *uuid.UUID // nil = client
-}
-
-type UserTokensOutput struct {
-	AccessTokenString  string
-	RefreshTokenString string
-
-	AccessExpiresAt  time.Time
-	RefreshExpiresAt time.Time
-
-	Domain string
+func NewCommandService(deps feature_deps.AuthCommandDeps) *CommandService {
+	return errx.MustProvide(&CommandService{
+		encryptionKey: deps.EncryptionKey,
+		issuer:        deps.Issuer,
+		users:         deps.Users,
+		sessions:      deps.Sessions,
+		projects:      deps.Projects,
+		keys:          deps.Keys,
+		mailRenderer:  deps.Renderer,
+		mailSender:    deps.Mailer,
+		logger:        deps.Logger,
+		tracer:        deps.Tracer,
+		tx:            deps.Tx,
+	})
 }
 
 // Register handles the business logic for creating a new user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
-func (uc *CommandService) Register(ctx context.Context, in RegisterInput) error {
+func (uc *CommandService) Register(ctx context.Context, in contracts.RegisterInput) error {
 	var err error
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -102,7 +78,7 @@ func (uc *CommandService) Register(ctx context.Context, in RegisterInput) error 
 	return uc.mailSender.Send(ctx, verificationEmail)
 }
 
-func (uc *CommandService) registerInternal(ctx context.Context, in RegisterInput) (ports.Email, error) {
+func (uc *CommandService) registerInternal(ctx context.Context, in contracts.RegisterInput) (ports.Email, error) {
 	var err error
 	var spanAttrs []attribute.KeyValue
 	if in.ProjectID != nil {
@@ -115,12 +91,12 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterInput
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	if len(in.Password) > 72 {
-		return ports.Email{}, fun.NewError("password can't be longer than 72 characters").BadRequest()
+		return ports.Email{}, fun.ErrBadRequest("password can't be longer than 72 characters")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return ports.Email{}, fun.NewError("invalid password").WithErr(err).BadRequest()
+		return ports.Email{}, fun.Errf("invalid password: %s", err).BadRequest()
 	}
 
 	userType := contracts.UserTypeClient
@@ -148,7 +124,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterInput
 		KID:       kid,
 		Subject:   u.ID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
-	})
+	}, uc.issuer)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -159,7 +135,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterInput
 		return ports.Email{}, err
 	}
 
-	verificationSig, err := security.SignKey(verificationPayload, pair)
+	verificationSig, err := security.SignKey(verificationPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return ports.Email{}, err
 	}
@@ -177,18 +153,10 @@ func (uc *CommandService) registerInternal(ctx context.Context, in RegisterInput
 	return verificationEmail, nil
 }
 
-type LoginInput struct {
-	Email     string
-	Password  string
-	IP        string
-	Agent     string
-	ProjectID *uuid.UUID // nil = client
-}
-
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
 // creates a new session and returns a new set of access and refresh tokens.
-func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *UserTokensOutput, err error) {
+func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (tokens *contracts.UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var spanAttrs []attribute.KeyValue
@@ -205,9 +173,10 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 	}()
 
 	u, err := uc.users.GetUserByEmail(ctx, in.Email, in.ProjectID)
-	if fail.Is(err, errx.SQLNotFound) {
-		return nil, fail.New(errx.AuthInvalidCredentials).RecordCtx(ctx)
-	} else if err != nil {
+	if fun.Is(err, fun.CodeNotFound) {
+		return nil, fun.ErrUnauthorized("invalid email or password")
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -218,7 +187,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 	)
 
 	if err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password)); err != nil {
-		return nil, fail.New(errx.AuthInvalidCredentials).Trace(err.Error()).RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("invalid email or password")
 	}
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
@@ -241,7 +210,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 
 	accessJTI, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("auth/login").RecordCtx(ctx)
+		return nil, fun.ErrInternal("error generating UUIDv7 at auth/login")
 	}
 
 	kid, err := uc.keys.GetActiveSigningKID(ctx, u.ProjectID)
@@ -265,12 +234,12 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 		SessionID: sess.SessionID,
 		FamilyID:  sess.FamilyID,
 		ExpiresAt: accessExpiresAt,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
 
-	accessSig, err := security.SignKey(accessPayload, pair)
+	accessSig, err := security.SignKey(accessPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -281,12 +250,12 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 		RefreshJTI: sess.TokenID,
 		ExpiresAt:  refreshExpiresAt,
 		FamilyID:   sess.FamilyID,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshSig, err := security.SignKey(refreshPayload, pair)
+	refreshSig, err := security.SignKey(refreshPayload, pair, uc.encryptionKey)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +269,7 @@ func (uc *CommandService) Login(ctx context.Context, in LoginInput) (tokens *Use
 		domain = project.Domain
 	}
 
-	return &UserTokensOutput{
+	return &contracts.UserTokensOutput{
 		AccessTokenString:  security.AssembleJWT(accessPayload, accessSig),
 		RefreshTokenString: security.AssembleJWT(refreshPayload, refreshSig),
 		AccessExpiresAt:    accessExpiresAt,
@@ -350,22 +319,16 @@ func (uc *CommandService) Logout(ctx context.Context) error {
 	return nil
 }
 
-type RefreshInput struct {
-	RefreshCookie *http.Cookie
-	Agent         string
-	IP            string
-}
-
 // Refresh handles the business logic for refreshing a user's tokens.
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
-func (uc *CommandService) Refresh(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
+func (uc *CommandService) Refresh(ctx context.Context, in contracts.RefreshInput) (*contracts.UserTokensOutput, error) {
 	txOptions := database.TxOptions{
 		Isolation: pgx.ReadCommitted,
 		ReadOnly:  pgx.ReadWrite,
 	}
 
-	var out *UserTokensOutput
+	var out *contracts.UserTokensOutput
 	err := uc.tx.WithinTxWithOptions(ctx, txOptions, func(ctx context.Context) error {
 		var err error
 		out, err = uc.refreshInternal(ctx, in)
@@ -375,7 +338,7 @@ func (uc *CommandService) Refresh(ctx context.Context, in RefreshInput) (*UserTo
 	return out, err
 }
 
-func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) (*UserTokensOutput, error) {
+func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.RefreshInput) (*contracts.UserTokensOutput, error) {
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Refresh")
 	defer span.End()
 
@@ -387,21 +350,24 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 	}()
 
 	refreshToken := &contracts.RefreshClaims{}
-	_, err = security.ParseJWTUnverified[*contracts.RefreshClaims](in.RefreshCookie.Value, refreshToken)
+	_, err = security.ParseJWTUnverified[*contracts.RefreshClaims](in.RefreshCookie, refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
 	var oldJTI uuid.UUID
-	oldJTI, err = validation.RequireRefreshJTI(&refreshToken.ID)
+	oldJTI, err = uuid.Parse(refreshToken.ID)
 	if err != nil {
 		return nil, err
+	}
+	if oldJTI == uuid.Nil {
+		return nil, fun.ErrBadRequest("invalid refresh token ID")
 	}
 
 	var uid uuid.UUID
 	uid, err = uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("auth/refreshInternal").RecordCtx(ctx)
+		return nil, fun.ErrInternal("error generating UUIDv7 at auth/refreshInternal")
 	}
 
 	var newRefreshJTI = uid
@@ -413,26 +379,26 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 	var sess *contracts.Session
 	sess, err = uc.sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
-		return nil, fail.New(errx.SessionNotFound).RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("session not found or revoked")
 	}
 
 	now := time.Now()
 	if sess.ExpiresAt.Before(now) || sess.RevokedAt != nil {
 		// FIXME Record suspicious behaviour on audit when it is implemented
-		return nil, fail.New(errx.SessionNotFound).RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("session not found or revoked")
 	}
 
 	// should revoke the session because of replay attacks
 	// FIXME Add suspicious behaviour to audit when it is implemented
 	if sess.TokenID != oldJTI {
 		_ = uc.sessions.MarkRevokedByFamilyID(ctx, sess.FamilyID)
-		return nil, fail.New(errx.TokenReuseIdentified).WithArgs("refresh").RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("refresh token reuse not allowed")
 	}
 
 	sess, err = uc.sessions.RotateToken(ctx, refreshToken.Sub.FamilyID, newRefreshJTI, oldJTI, refreshExp)
-	if fail.Is(err, errx.SQLNotFound) {
+	if fun.Is(err, fun.CodeNotFound) {
 		// sql.ErrNoRows → raced / reused / revoked
-		return nil, fail.New(errx.SessionNotFound).RecordCtx(ctx)
+		return nil, fun.ErrUnauthorized("session not found or revoked")
 	} else if err != nil {
 		return nil, err
 	}
@@ -450,7 +416,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 
 	newAccessJTI, err := uuid.NewV7()
 	if err != nil {
-		return nil, fail.New(errx.SYSUUIDV7GenerationError).With(err).WithArgs("auth/finishRefresh").RecordCtx(ctx)
+		return nil, fun.ErrInternal("error generating UUIDv7 at auth/refreshInternal")
 	}
 
 	var (
@@ -480,7 +446,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 
 	// sign := func(payload []byte) ([]byte, error) — abstracts the GoAuth vs Project signer
 	sign := func(payload []byte) ([]byte, error) {
-		return security.SignKey(payload, pair)
+		return security.SignKey(payload, pair, uc.encryptionKey)
 	}
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
@@ -490,7 +456,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 		KID: kid, User: *u, IP: in.IP, Agent: in.Agent,
 		AccessJTI: newAccessJTI.String(), SessionID: sess.SessionID,
 		FamilyID: sess.FamilyID, ExpiresAt: accessExpiresAt,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -503,7 +469,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 	refreshPayload, err := security.NewRefreshToken(contracts.NewRefreshTokenInput{
 		KID: kid, AccessJTI: newAccessJTI, RefreshJTI: newRefreshJTI,
 		ExpiresAt: refreshExp, FamilyID: sess.FamilyID,
-	})
+	}, uc.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +479,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in RefreshInput) 
 		return nil, err
 	}
 
-	return &UserTokensOutput{
+	return &contracts.UserTokensOutput{
 		AccessTokenString:  security.AssembleJWT(accessPayload, accessSig),
 		RefreshTokenString: security.AssembleJWT(refreshPayload, refreshSig),
 		AccessExpiresAt:    accessExpiresAt,

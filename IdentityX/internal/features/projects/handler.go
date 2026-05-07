@@ -1,13 +1,15 @@
 package projects
 
 import (
-	"IdentityX/internal/shared/validation"
-	"encoding/json"
+	"IdentityX/internal/platform/middlewares"
+	"IdentityX/internal/shared/contracts"
 	"net/http"
 
 	_ "IdentityX/internal/shared/contracts"
 
-	resp "github.com/MintzyG/FastUtilitiesNet/response"
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -25,10 +27,20 @@ func NewHandler(
 	}
 }
 
-type CreateProjectRequest struct {
-	ProjectName string          `json:"project_name" validate:"required,max=255"`
-	Domain      string          `json:"domain" validate:"required,url"`
-	Metadata    json.RawMessage `json:"metadata"`
+func RegisterRoutes(
+	r *chi.Mux,
+	h *Handler,
+	anyAuth func(http.Handler) http.Handler,
+) {
+	r.With(anyAuth, middlewares.ClientOnly()).Group(func(r chi.Router) {
+		r.Post("/projects", h.Create)
+		r.Get("/projects", h.List)
+		r.Get("/projects/{project_id}", h.GetByID)
+		r.Patch("/projects/{project_id}", h.Update)
+		r.Delete("/projects/{project_id}", h.Delete)
+		r.Get("/projects/{project_id}/users", h.ListProjectUsers)
+		r.Get("/projects/{project_id}/users/{user_id}", h.GetProjectUserByID)
+	})
 }
 
 // Create godoc
@@ -38,35 +50,24 @@ type CreateProjectRequest struct {
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body CreateProjectRequest true "Project creation information"
+// @Param projectInfo body contracts.CreateProjectRequest true "Project creation information"
 // @Success 201 {object} contracts.Project "Project created successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var req CreateProjectRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+	req := fun.From(r)
+	var payload contracts.CreateProjectRequest
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
-	in := ProjectServiceInput{
-		ProjectName: req.ProjectName,
-		Metadata:    req.Metadata,
-		Domain:      req.Domain,
-	}
-
 	ctx := r.Context()
-	res, err := handler.commands.Create(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	project, err := handler.commands.Create(ctx, payload.ToInput())
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.Created("Created project").
-		WithData(res).
-		Send(w)
+	fun.Respond(w, project)
 }
 
 // GetByID godoc
@@ -84,22 +85,16 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [get]
 func (handler *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	proj, err := handler.queries.GetByID(ctx, projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	project, err := handler.queries.GetByID(r.Context(), projectID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(proj).
-		Send(w)
+	fun.Respond(w, project)
 }
 
 // List godoc
@@ -115,20 +110,10 @@ func (handler *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Router /projects [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := handler.queries.List(r.Context())
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(projects).
-		Send(w)
-}
-
-type UpdateProjectRequest struct {
-	ProjectName string          `json:"project_name" validate:"max=255"`
-	Domain      string          `json:"domain" validate:"required,url"`
-	Metadata    json.RawMessage `json:"metadata"`
+	fun.Respond(w, projects)
 }
 
 // Update godoc
@@ -139,7 +124,7 @@ type UpdateProjectRequest struct {
 // @Produce json
 // @Param project_id path string true "ID of the project to update"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body UpdateProjectRequest true "Project update information"
+// @Param projectInfo body contracts.UpdateProjectRequest true "Project update information"
 // @Success 200 {object} contracts.Project "Project updated successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or missing project ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
@@ -147,35 +132,20 @@ type UpdateProjectRequest struct {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [patch]
 func (handler *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	var req UpdateProjectRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		resp.FromError(err).Send(w)
+	var payload contracts.UpdateProjectRequest
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
-	in := ProjectServiceInput{
-		ProjectID:   projectID,
-		ProjectName: req.ProjectName,
-		Domain:      req.Domain,
-		Metadata:    req.Metadata,
-	}
-
-	ctx := r.Context()
-	proj, err := handler.commands.Update(ctx, in)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	project, err := handler.commands.Update(r.Context(), payload.ToInput(projectID))
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(proj).
-		Send(w)
+	fun.Respond(w, project)
 }
 
 // Delete godoc
@@ -193,20 +163,16 @@ func (handler *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id} [delete]
 func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	err := handler.commands.Delete(ctx, projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	err = handler.commands.Delete(r.Context(), projectID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK("Deleted project").Send(w)
+	fun.OK("Deleted project").Send(w)
 }
 
 // ListProjectUsers godoc
@@ -224,21 +190,16 @@ func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/users [get]
 func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
 	users, err := handler.queries.ListUsers(r.Context(), projectID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(users).
-		Send(w)
+	fun.Respond(w, users)
 }
 
 // GetProjectUserByID godoc
@@ -257,25 +218,18 @@ func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects/{project_id}/users/{user_id} [get]
 func (handler *Handler) GetProjectUserByID(w http.ResponseWriter, r *http.Request) {
-	projectID, rs := validation.GetUUID(r, "project_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	projectID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	userID, rs := validation.GetUUID(r, "user_id")
-	if rs != nil {
-		rs.Send(w)
+	userID, err := req.Path("project_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
 	user, err := handler.queries.GetUser(r.Context(), projectID, userID)
-	if err != nil {
-		resp.FromError(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	resp.OK().
-		WithData(user).
-		Send(w)
+	fun.Respond(w, user)
 }
