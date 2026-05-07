@@ -76,18 +76,14 @@ type CreateAPIKeyResponse struct {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	var payload CreateAPIKeyRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	rawKey, apiKey, err := h.commands.Create(r.Context(), payload.Name)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(CreateAPIKeyResponse{
+	fun.Respond(w, CreateAPIKeyResponse{
 		APIKeyResponse: APIKeyResponse{
 			ID:        apiKey.ID,
 			Name:      apiKey.Name,
@@ -96,7 +92,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			RevokedAt: apiKey.RevokedAt,
 		},
 		Key: rawKey,
-	}).Send(w)
+	}, http.StatusCreated)
 }
 
 type BulkGetRequest struct {
@@ -119,20 +115,15 @@ type BulkGetRequest struct {
 // @Router /api_keys/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	var payload BulkGetRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	forms, err := h.queries.BulkGet(r.Context(), payload.IDs)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(forms).Send(w)
+	fun.Respond(w, forms)
 }
 
 // Revoke godoc
@@ -153,17 +144,13 @@ func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 // @Router /api-keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	keyID, err := req.Path("id").UUID()
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	if err = h.commands.RevokeAPIKey(r.Context(), keyID); err != nil {
-		fun.Error(err).Send(w)
+	err = h.commands.RevokeAPIKey(r.Context(), keyID)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	fun.OK("key revoked").Send(w)
 }

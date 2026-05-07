@@ -22,7 +22,7 @@ func ValidateConstraintRegistry(ctx context.Context, db *pgxpool.Pool) error {
 		SELECT indexname
 		FROM pg_indexes
 		WHERE schemaname = 'public'
-		AND tablename IN ('projects', 'api_keys', 'forms', 'versions', 'fields')
+		AND tablename IN ('namespaces', 'api_keys', 'forms', 'versions', 'fields')
 		AND indexname LIKE 'uniq_%' OR indexname LIKE 'one_%'
     `)
 	if err != nil {

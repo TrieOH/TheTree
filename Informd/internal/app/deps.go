@@ -30,9 +30,9 @@ import (
 func SetupValidator() *validator.Validate {
 	var v = validator.New()
 	if err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
-		v := fl.Field().String()
+		vv := fl.Field().String()
 
-		u, err := uuid.Parse(v)
+		u, err := uuid.Parse(vv)
 		if err != nil {
 			return false
 		}

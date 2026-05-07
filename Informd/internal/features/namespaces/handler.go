@@ -60,20 +60,15 @@ type CreateNamespaceRequest struct {
 // @Router /namespaces [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	var payload CreateNamespaceRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	namespace, err := h.commands.Create(r.Context(), payload.Name)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(namespace).Send(w)
+	fun.Respond(w, namespace, http.StatusCreated)
 }
 
 type BulkGetRequest struct {
@@ -96,18 +91,13 @@ type BulkGetRequest struct {
 // @Router /namespaces/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	var payload BulkGetRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	forms, err := h.queries.BulkGet(r.Context(), payload.IDs)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(forms).Send(w)
+	fun.Respond(w, forms)
 }

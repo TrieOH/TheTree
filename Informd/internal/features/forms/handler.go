@@ -63,20 +63,15 @@ type CreateFormRequest struct {
 // @Router /forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	var payload CreateFormRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w) // funciona sem problema
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	form, err := h.commands.Create(r.Context(), payload.Title, nil)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(form).Send(w)
+	fun.Respond(w, form, http.StatusCreated)
 }
 
 // CreateInWorkspace godoc
@@ -97,26 +92,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Router /namespaces/{namespace_id}/forms [post]
 func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	namespaceID, err := req.Path("namespace_id").UUID()
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	var payload CreateFormRequest
-	if err = bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w) // 109
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	form, err := h.commands.Create(r.Context(), payload.Title, &namespaceID)
-	if err != nil {
-		fun.Error(err).Send(w) // 115
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(form).Send(w)
+	fun.Respond(w, form, http.StatusCreated)
 }
 
 type BulkGetRequest struct {
@@ -140,20 +128,15 @@ type BulkGetRequest struct {
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	params := middlewares.QueryParams[contracts.BulkGetParams](r)
-
 	var payload BulkGetRequest
-	if err := bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	forms, err := h.queries.BulkGet(r.Context(), payload.IDs, params)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(forms).Send(w)
+	fun.Respond(w, forms)
 }
 
 type CreateStepRequest struct {
@@ -180,24 +163,17 @@ type CreateStepRequest struct {
 // @Router /forms/{form_id}/steps [post]
 func (h *Handler) CreateStep(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-
 	formID, err := req.Path("form_id").UUID()
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	var payload CreateStepRequest
-	if err = bind.Body(req).Bind(&payload); err != nil {
-		fun.Error(err).Send(w)
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
 	form, err := h.commands.CreateStep(r.Context(), formID, payload)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(form).Send(w)
+	fun.Respond(w, form, http.StatusCreated)
 }
