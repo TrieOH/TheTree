@@ -6,15 +6,15 @@ import {
   type AuthTokens
 } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
-import type { Api } from "./api";
+import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
 
 export interface AuthCallbacks {
-  onLogin?: () => void;
-  onRegister?: () => void;
-  onVerify?: () => void;
-  onForgotPassword?: () => void;
-  onRefresh?: () => void;
+  onLogin?: (res: ApiResponse<AuthTokens>) => void;
+  onRegister?: (res: ApiResponse<void>) => void;
+  onVerify?: (res: ApiResponse<void>) => void;
+  onForgotPassword?: (res: ApiResponse<void>) => void;
+  onRefresh?: (res?: ApiResponse<AuthTokens>) => void;
 }
 
 export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) => ({
@@ -29,7 +29,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
     if (res.success) {
       saveAuthSession(res.data);
-      callbacks?.onLogin?.();
+      callbacks?.onLogin?.(res);
     }
 
     return res;
@@ -41,7 +41,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     if (env.PROJECT_ID) validateProjectKey();
 
     const res = await apiInstance.post<void>(url, { email, password }, options);
-    if (res.success) callbacks?.onRegister?.();
+    if (res.success) callbacks?.onRegister?.(res);
     return res;
   },
 
@@ -61,7 +61,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
     if (res.success) {
       saveAuthSession(res.data);
-      callbacks?.onRefresh?.();
+      callbacks?.onRefresh?.(res);
     }
 
     return res;
@@ -100,7 +100,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
       return apiInstance.post<void>("/account/forgot-password", { email }, options);
     })();
 
-    if (res.success) callbacks?.onForgotPassword?.();
+    if (res.success) callbacks?.onForgotPassword?.(res);
     return res;
   },
 
@@ -113,8 +113,8 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
   },
 
   verifyEmail: async () => {
-    const res = await apiInstance.get<void>("/account/verify", { requiresAuth: false });
-    if (res.success) callbacks?.onVerify?.();
+    const res = await apiInstance.post<void>("/account/verify");
+    if (res.success) callbacks?.onVerify?.(res);
     return res;
   },
 
