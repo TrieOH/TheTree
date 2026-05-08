@@ -13,12 +13,12 @@ export default function CardAvatar({
   subText,
 }: CardAvatarProps) {
   return (
-    <div className="trieoh trieoh-avacard">
-      <div className="trieoh-avacard__container">
-        <GoPerson className="trieoh-avacard__content" size={70} />
+    <div className="font-inter flex flex-col items-center">
+      <div className="flex justify-center items-center p-2 bg-[oklch(0.8853_0_0/30%)] rounded-trieoh-full mb-[0.625rem]">
+        <GoPerson className="w-[64px] h-[64px] p-[0.625rem] bg-trieoh-neutral1 rounded-trieoh-full shadow-[0_0.25rem_1rem_rgba(0,0,0,0.25)]" size={70} />
       </div>
-      <h3 className="trieoh-avacard__title">{mainText}</h3>
-      <span className="trieoh-avacard__sub-title">{subText}</span>
+      <h3 className="text-center text-trieoh-xl font-medium m-0">{mainText}</h3>
+      <span className="text-center text-[0.875rem] font-light opacity-60">{subText}</span>
     </div>
   )
 }

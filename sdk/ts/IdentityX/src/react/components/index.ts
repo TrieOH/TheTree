@@ -1,5 +1,4 @@
-import "./variables.css";
-import "./components.css";
+import "./tailwind.css";
 
 import { SignIn } from "./SignIn/SignIn";
 import { SignUp } from "./SignUp/SignUp";

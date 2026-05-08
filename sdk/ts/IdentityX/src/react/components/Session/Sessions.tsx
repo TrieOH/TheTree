@@ -64,25 +64,24 @@ export function Sessions({
   }
 
   return (
-    <div className="trieoh trieoh-sessions">
-      <div className="trieoh-sessions__header">
-        <div>
-          <h3>Navegadores e Dispositivos</h3>
-          <p>Esses navegadores e dispositivos estão atualmente conectados à sua conta. Remova quaisquer dispositivos não autorizados.</p>
+    <div className="font-inter w-full min-w-[20rem] m-2 @container bg-trieoh-neutral1 text-trieoh-neutral2 p-[1.5rem_0.5rem] rounded-lg">
+      <div className="w-full flex flex-wrap items-center justify-center text-center gap-4 box-border px-[0.75rem] @[640px]:justify-between @[640px]:text-left @[640px]:gap-8">
+        <div className="flex-[0_1_auto] max-w-[25rem]">
+          <h3 className="font-semibold text-trieoh-2xl m-0 mb-1">Navegadores e Dispositivos</h3>
+          <p className="font-extralight text-trieoh-base m-0">Esses navegadores e dispositivos estão atualmente conectados à sua conta. Remova quaisquer dispositivos não autorizados.</p>
         </div>
         <button
           type="submit"
           onClick={handleRevokeSessions}
           disabled={loading}
-          className={
-            `trieoh trieoh-button trieoh-button--all-rounded 
-            ${loading ? "trieoh-button--loading" : ""}`
-          }
+          className={`font-inter w-full max-w-[14rem] p-[1rem_0] h-auto text-trieoh-base font-semibold outline-none bg-transparent relative overflow-hidden shrink-0 border-2 border-trieoh-neutral2 text-trieoh-neutral2 cursor-pointer transition-transform duration-500 rounded-[0.25rem] hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed disabled:!transform-none ${
+            loading ? "trieoh-button-loading" : ""
+          }`}
         >
           Revogar todas as sessões
         </button>
       </div>
-      <div className="trieoh-sessions__content">
+      <div className="mt-4">
         {sessions.length > 0 ? sessions.map(s => (
           <SessionCard
             key={s.session_id}
@@ -90,7 +89,7 @@ export function Sessions({
             is_current={auth.profile()?.session_id === s.session_id}
             onClick={handleRevokeASession}
           />
-        )) : <span className="trieoh-sessions__empty">Nenhuma Sessão Disponível</span>}
+        )) : <span className="block border-t border-[rgba(0,0,0,0.3)] p-[1.25rem_0.75rem] text-center font-semibold">Nenhuma Sessão Disponível</span>}
       </div>
     </div>
   )

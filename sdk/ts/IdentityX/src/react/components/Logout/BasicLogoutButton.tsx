@@ -33,9 +33,9 @@ export function BasicLogoutButton({
       onClick={handleLogout}
       type="button"
       disabled={loading}
-      className={"trieoh trieoh-button--logout"}
+      className="font-inter border-none bg-transparent cursor-pointer flex items-end gap-1 text-trieoh-base font-medium text-[oklch(0.628_0.2577_29.23)] transition-transform duration-200 hover:scale-[1.05] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:!transform-none"
     >
       <ImExit size={24} /> <span>Log out</span>
     </button>
   )
-}
+  }

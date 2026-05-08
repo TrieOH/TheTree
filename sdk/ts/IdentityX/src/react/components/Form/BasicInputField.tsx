@@ -44,15 +44,14 @@ export default function BasicInputField({
   const hasAnyFailing = rulesStatus.some(r => !r.passed);
 
   return (
-    <div className="trieoh trieoh-input">
-      <label htmlFor={name} className="trieoh-input__label">
+    <div className="font-inter relative w-full flex flex-col gap-1 text-trieoh-neutral2">
+      <label htmlFor={name} className="text-[1rem] font-semibold">
         {label}
       </label>
       <div 
-        className={
-          ((hasAnyFailing && submitted) ? "trieoh-input__container--error " : "")
-          + "trieoh-input__container"
-        }
+        className={`flex justify-between items-center px-[0.625rem] py-[0.0625rem] gap-[0.625rem] border-b-2 border-trieoh-neutral2 ${
+          (hasAnyFailing && submitted) ? "!border-[#e53935]" : ""
+        }`}
       >
         <input 
           type={isSecretVisible ? "text" : type} 
@@ -65,18 +64,18 @@ export default function BasicInputField({
           autoComplete={autoComplete}
           aria-invalid={hasAnyFailing && submitted}
           ref={inputRef}
-          className="trieoh-input__container-field" 
+          className="min-w-[10rem] flex-1 text-trieoh-base font-light text-trieoh-neutral2 appearance-none bg-transparent outline-none border-none !shadow-none py-[0.125rem]" 
         />
         {type === "password" && (
           isSecretVisible ?
             <RiEyeCloseLine 
-              className="trieoh-input__container-icon"
+              className="cursor-pointer shrink-0 select-none"
               size={24}
               onClick={() => setIsSecretVisible(false)} 
             />
           :
             <RiEyeLine 
-              className="trieoh-input__container-icon"
+              className="cursor-pointer shrink-0 select-none"
               size={24}
               onClick={() => setIsSecretVisible(true)} 
             />
@@ -84,12 +83,12 @@ export default function BasicInputField({
         }
       </div>
 
-      <div className="trieoh-input__hint">
+      <div className="text-[0.75rem] text-[#6b7280] transition-opacity duration-200 ease-in-out">
         {rulesStatus.map((r, i) => {
           const classes = [
-            "hint-part",
-            r.passed ? "passed" : "",
-            !r.passed && submitted ? "failed-on-submit" : "",
+            "transition-[color,text-decoration,opacity] duration-[120ms] ease opacity-95 m-[0.125rem]",
+            r.passed ? "line-through opacity-60 text-[#10b981]" : "",
+            !r.passed && submitted ? "text-[#e53935] font-semibold opacity-100" : "",
           ]
             .filter(Boolean)
             .join(" ");
@@ -100,7 +99,7 @@ export default function BasicInputField({
           );
         })}
       </div>
-      
+
     </div>
   )
 }
