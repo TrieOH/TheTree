@@ -6,6 +6,7 @@ import (
 	"univents/internal/shared/validation"
 
 	"github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -22,6 +23,20 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Route("/events/{event_id}/editions/{edition_id}/tickets", func(r chi.Router) {
+		r.Get("/", h.List)
+		r.Use(jwt)
+		r.Post("/", h.Create)
+		r.Post("/{ticket_id}/permissions", h.AddPermission)
+		r.Delete("/{ticket_id}/permissions/{permission_id}", h.RemovePermission)
+	})
 }
 
 type CreateTicketRequest struct {

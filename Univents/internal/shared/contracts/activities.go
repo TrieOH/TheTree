@@ -33,21 +33,20 @@ const (
 
 type Activity struct {
 	ID                uuid.UUID        `json:"id"`
-	ScopeID           uuid.UUID        `json:"scope_id"`
-	EditionID         uuid.UUID        `json:"edition_id"`
-	Title             string           `json:"title"`
+	EditionID         uuid.UUID        `json:"edition_id" validate:"required"`
+	Title             string           `json:"title"      validate:"required,min=3"`
 	Description       *string          `json:"description"`
-	Status            ActivityStatus   `json:"status"`
+	Status            ActivityStatus   `json:"status"     validate:"required,oneof=draft published ongoing completed canceled"`
 	Location          string           `json:"location"`
-	StartsAt          time.Time        `json:"starts_at"`
-	EndsAt            time.Time        `json:"ends_at"`
+	StartsAt          time.Time        `json:"starts_at"  validate:"required"`
+	EndsAt            time.Time        `json:"ends_at"    validate:"required"`
 	PresenterName     *string          `json:"presenter_name"`
 	TokenCost         int              `json:"token_cost"`
 	HasCapacity       bool             `json:"has_capacity"`
 	Capacity          int              `json:"capacity"`
 	RemainingCapacity int              `json:"remaining_capacity"`
-	Difficulty        *DifficultyLevel `json:"difficulty"`
-	CreatedBy         uuid.UUID        `json:"created_by"`
+	Difficulty        *DifficultyLevel `json:"difficulty" validate:"oneof=no_prerequisites beginner intermediate advanced expert"`
+	CreatedBy         uuid.UUID        `json:"created_by" validate:"required"`
 	CreatedAt         time.Time        `json:"created_at"`
 	UpdatedAt         time.Time        `json:"updated_at"`
 	DeletedAt         *time.Time       `json:"deleted_at"`
@@ -205,5 +204,34 @@ func NewAttendanceRecord(userID, activityID uuid.UUID) *AttendanceRecord {
 		ActivityID: activityID,
 		UserID:     userID,
 		Status:     AttendanceStatusRegistered,
+	}
+}
+
+type CreateActivityRequest struct {
+	Title         string           `json:"title" validate:"required,min=3"`
+	Description   *string          `json:"description"`
+	Location      string           `json:"location"`
+	StartsAt      time.Time        `json:"starts_at" validate:"required"`
+	EndsAt        time.Time        `json:"ends_at" validate:"required"`
+	PresenterName *string          `json:"presenter_name"`
+	TokenCost     int              `json:"token_cost" validate:"gte=0"`
+	HasCapacity   bool             `json:"has_capacity"`
+	Capacity      int              `json:"capacity" validate:"gte=0"`
+	Difficulty    *DifficultyLevel `json:"difficulty"`
+}
+
+func (r CreateActivityRequest) ToSpec(editionID uuid.UUID) CreateActivitySpec {
+	return CreateActivitySpec{
+		EditionID:     editionID,
+		Title:         r.Title,
+		Description:   r.Description,
+		Location:      r.Location,
+		StartsAt:      r.StartsAt,
+		EndsAt:        r.EndsAt,
+		PresenterName: r.PresenterName,
+		TokenCost:     r.TokenCost,
+		HasCapacity:   r.HasCapacity,
+		Capacity:      r.Capacity,
+		Difficulty:    r.Difficulty,
 	}
 }

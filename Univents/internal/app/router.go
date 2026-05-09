@@ -1,45 +1,53 @@
 //go:build !test
 
-package router
+package app
 
 import (
-	"log"
 	"net/http"
-	"strings"
-	"time"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
 	"univents/internal/features/products"
 	"univents/internal/features/purchases"
+	"univents/internal/features/security"
 	"univents/internal/features/tickets"
-	"univents/internal/interfaces/http/middleware"
-	"univents/internal/interfaces/http/system"
-
 	_ "univents/internal/shared/contracts"
 
+	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/go-chi/httprate"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type HTTPDeps struct {
-	Events          *events.Handler
-	Editions        *editions.Handler
-	Activities      *activities.Handler
-	Checkpoints     *checkpoints.Handler
-	Tickets         *tickets.Handler
-	Products        *products.Handler
-	Purchases       *purchases.Handler
-	System          *system.UniventsHandler
-	AuthMiddleware  *middleware.AuthMiddleware
+	Events      *events.Handler
+	Editions    *editions.Handler
+	Activities  *activities.Handler
+	Checkpoints *checkpoints.Handler
+	Tickets     *tickets.Handler
+	Products    *products.Handler
+	Purchases   *purchases.Handler
+	Security    *security.Handler
+
+	Logger    func(http.Handler) http.Handler
+	RequestID func(http.Handler) http.Handler
+	BodySize  func(http.Handler) http.Handler
+	Metrics   func(http.Handler) http.Handler
+	CORS      func(http.Handler) http.Handler
+	RealIP    func(http.Handler) http.Handler
+	Recover   func(http.Handler) http.Handler
+	Timeout   func(http.Handler) http.Handler
+	RateLimit func(http.Handler) http.Handler
+	Jwt       func(http.Handler) http.Handler
+	ApiKey    func(http.Handler) http.Handler
+	AnyAuth   func(http.Handler) http.Handler
+
 	AsynqmonHandler http.Handler
+
+	AppName string
 }
 
 // CreateRouter godoc
@@ -83,91 +91,31 @@ type HTTPDeps struct {
 func CreateRouter(deps *HTTPDeps) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(chimiddleware.Recoverer)
-	r.Use(chimiddleware.Timeout(60 * time.Second))
-
-	if !viper.GetBool("DISABLE_RATE_LIMIT") {
-		r.Use(httprate.Limit(
-			400,
-			1*time.Minute,
-			httprate.WithKeyFuncs(httprate.KeyByRealIP),
-		))
-	}
-
-	r.Use(middleware.MaxBodySize(1 << 20)) // 1 MB
-
-	r.Use(cors.Handler(GetCORSOptions()))
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.Logs)
-	r.Use(middleware.Metrics)
+	r.Use(deps.RealIP)
+	r.Use(deps.RequestID)
+	r.Use(deps.Logger)
+	r.Use(deps.Metrics)
+	r.Use(deps.Recover)
+	r.Use(deps.Timeout)
+	r.Use(deps.BodySize)
+	r.Use(deps.RateLimit)
+	r.Use(deps.CORS)
 
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-	r.Handle("/metrics", middleware.Handler())
+	r.Handle("/metrics", promhttp.Handler())
 
 	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 
-	registerRoutes(r, deps)
+	r.With(deps.Jwt).Get("/ws/token", deps.Security.WSAuth)
+	events.Routes(r, deps.Events, deps.Jwt)
+	editions.Routes(r, deps.Editions, deps.Jwt)
+	tickets.Routes(r, deps.Tickets, deps.Jwt)
+	activities.Routes(r, deps.Activities, deps.Jwt)
+	checkpoints.Routes(r, deps.Checkpoints, deps.Jwt)
+	products.Routes(r, deps.Products, deps.Jwt)
+	purchases.Routes(r, deps.Purchases, deps.Jwt)
+
+	r.Get("/health", handlers.Health(deps.AppName).Handle)
+
 	return otelhttp.NewHandler(r, "http.server")
-}
-
-func splitAndCleanCSV(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-
-	for _, p := range parts {
-		if v := strings.TrimSpace(p); v != "" {
-			out = append(out, v)
-		}
-	}
-
-	if len(out) == 0 {
-		return nil
-	}
-
-	return out
-}
-
-// GetCORSOptions builds a safe cors.Options configuration from environment
-// variables, applying sensible defaults and preventing invalid empty values.
-func GetCORSOptions() cors.Options {
-	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
-	allowedMethods := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_METHODS"))
-	allowedHeaders := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_HEADERS"))
-
-	// Never default origins to "*"
-	if allowedOrigins == nil {
-		log.Fatalf("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
-	}
-
-	if allowedMethods == nil {
-		allowedMethods = []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		}
-	}
-
-	if allowedHeaders == nil {
-		allowedHeaders = []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-		}
-	}
-
-	return cors.Options{
-		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   allowedMethods,
-		AllowedHeaders:   allowedHeaders,
-		AllowCredentials: true,
-		MaxAge:           300,
-	}
 }

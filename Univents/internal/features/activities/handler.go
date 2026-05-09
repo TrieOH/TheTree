@@ -2,11 +2,11 @@ package activities
 
 import (
 	"net/http"
-	"time"
 	"univents/internal/shared/contracts"
-	"univents/internal/shared/validation"
 
 	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -24,17 +24,24 @@ func NewHandler(
 	}
 }
 
-type CreateActivityRequest struct {
-	Title         string                     `json:"title" validate:"required,min=3"`
-	Description   *string                    `json:"description"`
-	Location      string                     `json:"location"`
-	StartsAt      time.Time                  `json:"starts_at" validate:"required"`
-	EndsAt        time.Time                  `json:"ends_at" validate:"required"`
-	PresenterName *string                    `json:"presenter_name"`
-	TokenCost     int                        `json:"token_cost" validate:"gte=0"`
-	HasCapacity   bool                       `json:"has_capacity"`
-	Capacity      int                        `json:"capacity" validate:"gte=0"`
-	Difficulty    *contracts.DifficultyLevel `json:"difficulty"`
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Route("/events/{event_id}/editions/{edition_id}/activities", func(r chi.Router) {
+		r.Get("/", h.List)
+		r.Use(jwt)
+		r.Post("/", h.Create)
+		r.Get("/admin", h.ListAdmin)
+		r.Route("/{event_id}", func(r chi.Router) {
+			r.Post("/publish", h.Publish)
+			r.Post("/register", h.Register)
+			r.Post("/unregister", h.Unregister)
+			r.Get("/records", h.ListRecords)
+			r.Post("/records/{record_id}", h.MarkAttendance)
+		})
+	})
 }
 
 // Create godoc
@@ -55,40 +62,20 @@ type CreateActivityRequest struct {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	editionID, rs := validation.GetUUID(r, "edition_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	editionID, err := req.Path("edition_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	var req CreateActivityRequest
-	if err := validation.ValidateInto(r, &req); err != nil {
-		fun.Error(err).Send(w)
+	var payload contracts.CreateActivityRequest
+	if bind.BailInto(w, req, &payload) {
 		return
 	}
-
-	in := contracts.CreateActivitySpec{
-		EditionID:     editionID,
-		Title:         req.Title,
-		Description:   req.Description,
-		Location:      req.Location,
-		StartsAt:      req.StartsAt,
-		EndsAt:        req.EndsAt,
-		PresenterName: req.PresenterName,
-		TokenCost:     req.TokenCost,
-		HasCapacity:   req.HasCapacity,
-		Capacity:      req.Capacity,
-		Difficulty:    req.Difficulty,
-	}
-
-	ctx := r.Context()
-	out, err := handler.commands.Create(ctx, in)
-	if err != nil {
-		fun.Error(err).Send(w)
+	activity, err := handler.commands.Create(r.Context(), payload.ToSpec(editionID))
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.Created().WithData(out).Send(w)
+	fun.Respond(w, activity, http.StatusCreated)
 }
 
 // Publish godoc
@@ -109,19 +96,12 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/publish [post]
 func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
-	activityID, rs := validation.GetUUID(r, "activity_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	err = handler.commands.Publish(r.Context(), activityID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	err := handler.commands.Publish(ctx, activityID)
-	if err != nil {
-		fun.Error(err).Send(w)
-		return
-	}
-
 	fun.OK().Send(w)
 }
 
@@ -142,20 +122,16 @@ func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
-	editionID, rs := validation.GetUUID(r, "edition_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	editionID, err := req.Path("edition_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	out, err := handler.queries.List(ctx, editionID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	activities, err := handler.queries.List(r.Context(), editionID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(out).Send(w)
+	fun.Respond(w, activities)
 }
 
 // ListAdmin godoc
@@ -175,20 +151,16 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/admin [get]
 func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
-	editionID, rs := validation.GetUUID(r, "edition_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	editionID, err := req.Path("edition_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	out, err := handler.queries.AdminList(ctx, editionID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	activities, err := handler.queries.AdminList(r.Context(), editionID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(out).Send(w)
+	fun.Respond(w, activities)
 }
 
 // Register godoc
@@ -209,19 +181,15 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/register [post]
 func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	activityID, rs := validation.GetUUID(r, "activity_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	err := handler.commands.Register(ctx, activityID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	err = handler.commands.Register(r.Context(), activityID)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	fun.OK("Registered Successfully").Send(w)
 }
 
@@ -243,19 +211,15 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/unregister [post]
 func (handler *Handler) Unregister(w http.ResponseWriter, r *http.Request) {
-	activityID, rs := validation.GetUUID(r, "activity_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	err := handler.commands.Unregister(ctx, activityID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	err = handler.commands.Unregister(r.Context(), activityID)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	fun.OK("Unregistered Successfully").Send(w)
 }
 
@@ -277,25 +241,19 @@ func (handler *Handler) Unregister(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/records/{record_id} [post]
 func (handler *Handler) MarkAttendance(w http.ResponseWriter, r *http.Request) {
-	activityID, rs := validation.GetUUID(r, "activity_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	recordID, rs := validation.GetUUID(r, "record_id")
-	if rs != nil {
-		rs.Send(w)
+	recordID, err := req.Path("record_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	err := handler.commands.MarkAttendance(ctx, activityID, recordID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	err = handler.commands.MarkAttendance(r.Context(), activityID, recordID)
+	if fun.Bail(w, err) {
 		return
 	}
-
 	fun.OK("Marked Attendance Successfully").Send(w)
 }
 
@@ -317,18 +275,14 @@ func (handler *Handler) MarkAttendance(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /events/{event_id}/editions/{edition_id}/activities/{activity_id}/records [post]
 func (handler *Handler) ListRecords(w http.ResponseWriter, r *http.Request) {
-	activityID, rs := validation.GetUUID(r, "activity_id")
-	if rs != nil {
-		rs.Send(w)
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
 		return
 	}
-
-	ctx := r.Context()
-	records, err := handler.commands.ListRecords(ctx, activityID)
-	if err != nil {
-		fun.Error(err).Send(w)
+	records, err := handler.commands.ListRecords(r.Context(), activityID)
+	if fun.Bail(w, err) {
 		return
 	}
-
-	fun.OK().WithData(records).Send(w)
+	fun.Respond(w, records)
 }

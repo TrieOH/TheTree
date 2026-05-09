@@ -2,7 +2,6 @@ package authz
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 
@@ -12,6 +11,23 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+type Checker interface {
+	Can(ctx context.Context, subject, permission, resource string, caveatCtx map[string]any) (bool, error)
+	Require(ctx context.Context, subject, permission, resource string, caveatCtx map[string]any) error
+	CreateRelation(ctx context.Context, rel string, rest ...any) error
+	DeleteRelation(ctx context.Context, rel string, rest ...any) error
+	Lookup(ctx context.Context, subject, permission, resourceType string) ([]string, error)
+	Expand(ctx context.Context, permission, resource string) ([]string, error)
+}
+
+type SpiceDBChecker struct {
+	client *v1.Client
+}
+
+func NewChecker(client *v1.Client) Checker {
+	return &SpiceDBChecker{client: client}
+}
 
 func Subject(kind string, id uuid.UUID) string { return kind + ":" + id.String() }
 func Resource(kind string, id string) string   { return kind + ":" + id }
@@ -27,7 +43,7 @@ func parseRel(s string) (*pb.Relationship, error) {
 	hashIdx := strings.Index(s, "#")
 	atIdx := strings.Index(s, "@")
 	if hashIdx < 0 || atIdx < 0 || atIdx < hashIdx {
-		return nil, fmt.Errorf("invalid rel %q: expected resource:id#relation@subject:id", s)
+		return nil, fun.Errf("invalid rel %q: expected resource:id#relation@subject:id", s).Internal()
 	}
 
 	resParts := strings.SplitN(s[:hashIdx], ":", 2)
@@ -35,7 +51,7 @@ func parseRel(s string) (*pb.Relationship, error) {
 	relation := s[hashIdx+1 : atIdx]
 
 	if len(resParts) != 2 || len(subParts) != 2 || relation == "" {
-		return nil, fmt.Errorf("invalid rel %q: malformed segments", s)
+		return nil, fun.Errf("invalid rel %q: malformed segments", s).Internal()
 	}
 
 	return &pb.Relationship{
@@ -69,51 +85,51 @@ func write(ctx context.Context, client *v1.Client, op pb.RelationshipUpdate_Oper
 
 // Can checks "subject:id" has "permission" on "resource:id"
 // ex: Can(ctx, client, "user:abc", "edit", "event:xyz")
-func Can(ctx context.Context, client *v1.Client, subject, permission, resource string) (bool, error) {
+func (checker *SpiceDBChecker) Can(ctx context.Context, subject, permission, resource string, caveatCtx map[string]any) (bool, error) {
 	subType, subID, _ := strings.Cut(subject, ":")
 	resType, resID, _ := strings.Cut(resource, ":")
 
-	resp, err := client.CheckPermission(ctx, &pb.CheckPermissionRequest{
+	var pbCtx *structpb.Struct
+	if caveatCtx != nil {
+		pbCtx, _ = structpb.NewStruct(caveatCtx)
+	}
+
+	resp, err := checker.client.CheckPermission(ctx, &pb.CheckPermissionRequest{
 		Resource:   &pb.ObjectReference{ObjectType: resType, ObjectId: resID},
 		Permission: permission,
 		Subject:    &pb.SubjectReference{Object: &pb.ObjectReference{ObjectType: subType, ObjectId: subID}},
+		Context:    pbCtx,
 	})
 	if err != nil {
-		return false, fmt.Errorf("authz check: %w", err)
+		return false, fun.Errf("authz check: %v", err).Internal()
 	}
 	return resp.Permissionship == pb.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION, nil
 }
 
-func Require(ctx context.Context, client *v1.Client, subject, permission, resource string) error {
-	allowed, err := Can(ctx, client, subject, permission, resource)
+func (checker *SpiceDBChecker) Require(ctx context.Context, subject, permission, resource string, caveatCtx map[string]any) error {
+	allowed, err := checker.Can(ctx, subject, permission, resource, caveatCtx)
 	if err != nil {
 		return err
 	}
 	if !allowed {
-		return fun.Err("insufficient permissions").Forbidden()
+		return fun.ErrForbidden("insufficient permissions")
 	}
 	return nil
 }
 
-// GrantRole vincula relations, com caveat opcional.
-// ex: GrantRole(ctx, client, "organization:abc#admin@user:xyz")
-// ex: GrantRole(ctx, client, "event:xyz#attendee@user:abc", authz.Caveat{Name: "within_time_range", ...})
-func GrantRole(ctx context.Context, client *v1.Client, rel string, relsAndCaveat ...any) error {
+// CreateRelation vincula relations, com caveat opcional.
+// ex: CreateRelation(ctx, client, "organization:abc#admin@user:xyz")
+// ex: CreateRelation(ctx, client, "event:xyz#attendee@user:abc", authz.Caveat{Name: "within_time_range", ...})
+func (checker *SpiceDBChecker) CreateRelation(ctx context.Context, rel string, relsAndCaveat ...any) error {
 	rels, caveat := splitArgs(rel, relsAndCaveat)
-	return write(ctx, client, pb.RelationshipUpdate_OPERATION_TOUCH, caveat, rels...)
+	return write(ctx, checker.client, pb.RelationshipUpdate_OPERATION_TOUCH, caveat, rels...)
 }
 
-// RevokeRole remove relations.
-func RevokeRole(ctx context.Context, client *v1.Client, rel string, rest ...any) error {
+// DeleteRelation remove relations.
+func (checker *SpiceDBChecker) DeleteRelation(ctx context.Context, rel string, rest ...any) error {
 	rels, caveat := splitArgs(rel, rest)
-	return write(ctx, client, pb.RelationshipUpdate_OPERATION_DELETE, caveat, rels...)
+	return write(ctx, checker.client, pb.RelationshipUpdate_OPERATION_DELETE, caveat, rels...)
 }
-
-// GrantPerm é alias semântico de GrantRole.
-var GrantPerm = GrantRole
-
-// RevokePerm é alias semântico de RevokeRole.
-var RevokePerm = RevokeRole
 
 // splitArgs separa os strings de rel e o Caveat opcional dos args variádicos.
 func splitArgs(first string, rest []any) ([]string, *Caveat) {
@@ -132,10 +148,12 @@ func splitArgs(first string, rest []any) ([]string, *Caveat) {
 
 // Lookup retorna os IDs de recursos do tipo resourceType onde o subject tem a permission
 // ex: Lookup(ctx, client, "user:abc", "view", "project") -> ["uuid1", "uuid2"]
-func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourceType string) ([]string, error) {
-	subType, subID, _ := strings.Cut(subject, ":")
-
-	stream, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
+func (checker *SpiceDBChecker) Lookup(ctx context.Context, subject, permission, resourceType string) ([]string, error) {
+	subType, subID, found := strings.Cut(subject, ":")
+	if !found {
+		return nil, fun.Errf("authz lookup: invalid subject format %q", subject).Internal()
+	}
+	stream, err := checker.client.LookupResources(ctx, &pb.LookupResourcesRequest{
 		ResourceObjectType: resourceType,
 		Permission:         permission,
 		Subject: &pb.SubjectReference{
@@ -146,7 +164,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("authz lookup: %w", err)
+		return nil, fun.Errf("authz lookup: %v", err).Internal()
 	}
 
 	var ids []string
@@ -156,7 +174,7 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("authz lookup stream: %w", err)
+			return nil, fun.Errf("authz lookup stream: %v", err).Internal()
 		}
 		ids = append(ids, resp.ResourceObjectId)
 	}
@@ -165,15 +183,15 @@ func Lookup(ctx context.Context, client *v1.Client, subject, permission, resourc
 
 // Expand retorna todos os subjects que têm a permission no resource
 // ex: Expand(ctx, client, "view", "project:abc") -> ["user:uuid1", "user:uuid2"]
-func Expand(ctx context.Context, client *v1.Client, permission, resource string) ([]string, error) {
+func (checker *SpiceDBChecker) Expand(ctx context.Context, permission, resource string) ([]string, error) {
 	resType, resID, _ := strings.Cut(resource, ":")
 
-	resp, err := client.ExpandPermissionTree(ctx, &pb.ExpandPermissionTreeRequest{
+	resp, err := checker.client.ExpandPermissionTree(ctx, &pb.ExpandPermissionTreeRequest{
 		Resource:   &pb.ObjectReference{ObjectType: resType, ObjectId: resID},
 		Permission: permission,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("authz expand: %w", err)
+		return nil, fun.Errf("authz expand: %v", err).Internal()
 	}
 
 	var subjects []string

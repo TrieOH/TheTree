@@ -2,9 +2,8 @@ package authz
 
 import (
 	"context"
-	"fmt"
-	"univents/internal/shared/errx"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -25,13 +24,11 @@ func WithSubject(ctx context.Context, subject *UserSubject) context.Context {
 func RequireSubject(ctx context.Context) (*UserSubject, error) {
 	val := ctx.Value(UserContextKey)
 	if val == nil {
-		return nil, errx.NotFound("subject").SetMessage("subject not found in context")
+		return nil, fun.ErrNotFound("subject not found in context")
 	}
-
 	u, ok := val.(*UserSubject)
 	if !ok {
-		return nil, errx.Invalid("subject").SetMessage(fmt.Sprintf("type was %T", val))
+		return nil, fun.Errf("type was %T", val).UnprocessableEntity()
 	}
-
 	return u, nil
 }

@@ -14,8 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// FIXME make these errors either go into spans or logs
-
 var validate = validator.New()
 
 func init() {

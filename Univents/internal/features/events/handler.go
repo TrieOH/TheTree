@@ -7,6 +7,7 @@ import (
 	"univents/internal/shared/validation"
 
 	"github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +24,29 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Route("/events", func(r chi.Router) {
+		r.Get("/", h.ListEvents)
+		r.Use(jwt)
+		r.Post("/", h.CreateEvent)
+		r.Get("/own", h.ListOwnEvents)
+		r.Route("/{event_id}", func(r chi.Router) {
+			r.Patch("/", h.PatchEvent)
+			r.Post("/publish", h.PublishEvent)
+			r.Post("/gallery", h.AddGalleryImage)
+			r.Delete("/gallery", h.RemoveGalleryImage)
+			r.Put("/logo", h.SetLogo)
+			r.Delete("/logo", h.UnsetLogo)
+			r.Put("/banner", h.SetBanner)
+			r.Delete("/banner", h.UnsetBanner)
+		})
+	})
 }
 
 type CreateEventRequest struct {
