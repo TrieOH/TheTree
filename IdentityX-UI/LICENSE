@@ -1,0 +1,47 @@
+TrieOH Source Available License v1 (TSAL-1)
+
+Copyright (c) 2026 TrieOH. All rights reserved.
+
+0. SCOPE AND RETROACTIVITY
+   This License governs all versions, builds, and releases of the software (the 
+   "Software") issued by TrieOH, including all versions released prior to the 
+   effective date of this License. By accessing, viewing, or studying any 
+   version of the Software, you agree to be bound by these terms.
+
+1. GRANT OF RIGHTS
+   You are granted a limited, non-exclusive, non-transferable right to
+   view and study the source code of this software for personal,
+   non-commercial, educational purposes only.
+
+2. RESTRICTIONS
+   You may NOT:
+   - Copy, distribute, or redistribute this software or any portion of it
+   - Fork, modify, or create derivative works
+   - Use this software or any portion of it in any product or service,
+     commercial or otherwise
+   - Self-host, deploy, or run this software for any purpose
+   - Sublicense or transfer any rights granted herein
+
+3. NO FORKING
+   Creating forks of this repository, whether public or private, is
+   explicitly prohibited. This prohibition applies to all existing and 
+   historical versions of the repository.
+
+4. LICENSE CHANGES AND VERSIONING
+   TrieOH reserves the right to change the terms of this license at any
+   time, for any version of this software (past, present, or future), 
+   without prior notice. This License supersedes any previous informal 
+   permissions or lack of licensing associated with earlier versions. 
+   Continued access to the source code constitutes acceptance of the
+   current license terms.
+
+5. NO WARRANTY
+   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+   TRIEOH SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE OR
+   INABILITY TO USE THIS SOFTWARE.
+
+6. TERMINATION
+   Any violation of these terms immediately and automatically terminates
+   all rights granted under this license.
+
+For commercial licensing inquiries: legal@trieoh.com
