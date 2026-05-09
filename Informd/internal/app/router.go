@@ -1,7 +1,7 @@
 package app
 
 import (
-	"Informd/internal/features/forms"
+	"Informd/internal/features/forms/handler"
 	"Informd/internal/features/keys"
 	"Informd/internal/features/namespaces"
 	_ "Informd/internal/shared/contracts"
@@ -18,7 +18,7 @@ import (
 type Deps struct {
 	ProjectsHandler *namespaces.Handler
 	ApiKeysHandler  *keys.Handler
-	FormsHandler    *forms.Handler
+	FormsHandler    *handler.Handler
 	AsynqmonHandler http.Handler
 
 	Logger    func(http.Handler) http.Handler
@@ -94,7 +94,7 @@ func CreateRouter(deps *Deps) http.Handler {
 
 	namespaces.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
 	keys.RegisterRoutes(r, deps.ApiKeysHandler, deps.Jwt)
-	forms.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
+	handler.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
 
 	r.Get("/health", handlers.Health(deps.AppName).Handle)
 

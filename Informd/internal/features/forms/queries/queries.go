@@ -1,4 +1,4 @@
-package forms
+package queries
 
 import (
 	"Informd/internal/platform/database"

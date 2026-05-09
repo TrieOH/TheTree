@@ -1,21 +1,24 @@
 package app
 
 import (
-	"Informd/internal/features/forms"
+	commands2 "Informd/internal/features/forms/commands"
+	"Informd/internal/features/forms/handler"
+	queries2 "Informd/internal/features/forms/queries"
+	"Informd/internal/features/forms/repo"
 	"Informd/internal/features/keys"
 	"Informd/internal/features/namespaces"
 	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/platform/queue"
 	"Informd/internal/platform/telemetry"
 	"Informd/internal/shared/authz"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
-	"Informd/internal/shared/utils"
+	"Informd/internal/shared/xslices"
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
@@ -47,13 +50,13 @@ type runtime struct {
 type commands struct {
 	namespaces *namespaces.CommandService
 	apiKeys    *keys.CommandService
-	forms      *forms.CommandService
+	forms      *commands2.CommandService
 }
 
 type queries struct {
 	namespaces *namespaces.QueryService
 	apiKeys    *keys.QueryService
-	forms      *forms.QueryService
+	forms      *queries2.QueryService
 }
 
 type repos struct {
@@ -97,8 +100,6 @@ func (app *Informd) run() runtime {
 	rt.tracer = otel.Tracer(string(telemetry.InformdTracer))
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
-	rt.asynq = app.startAsynq()
-	defer app.stopAsynq(rt.asynq)
 	rt.commands = app.startCommands(rt)
 	rt.queries = app.startQueries(rt)
 	rt.handlers = app.startHandlers(rt)
@@ -120,7 +121,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	})
 	handlers.ProjectsHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.ApiKeysHandler = keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
-	handlers.FormsHandler = forms.NewHandler(rt.commands.forms, rt.queries.forms)
+	handlers.FormsHandler = handler.NewHandler(rt.commands.forms, rt.queries.forms)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -142,7 +143,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
 	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.forms = commands2.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	return cmd
 }
 
@@ -150,7 +151,7 @@ func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = queries2.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }
 
@@ -158,8 +159,8 @@ func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = forms.NewFormRepo(rt.repoQueries, app.db, rt.logger, rt.tracer)
-	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = repo.NewFormRepo(rt.repoQueries, app.db, rt.logger, rt.tracer)
+	r.steps = repo.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
@@ -214,7 +215,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
-		AllowedOrigins:   utils.SplitAndCleanCSV(app.Config.CorsAllowedOrigins),
+		AllowedOrigins:   xslices.Clean(strings.Split(app.Config.CorsAllowedOrigins, ",")),
 		AllowCredentials: true,
 	})
 	mw.realIP = middlewares.RealIP()
@@ -224,29 +225,4 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
 	})
 	return mw
-}
-
-func (app *Informd) startAsynq() asynqDeps {
-	var err error
-	var deps asynqDeps
-	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{
-		RedisAddr:     app.Config.RedisAddr,
-		RedisPassword: app.Config.RedisPassword,
-		RedisDB:       app.Config.RedisDB,
-	})
-	if err != nil {
-		errx.Must(err, "failed to init Asynq")
-	}
-	return deps
-}
-
-func (app *Informd) stopAsynq(deps asynqDeps) {
-	if err := deps.inspector.Close(); err != nil {
-		errx.Must(err, "error closing the asynq inspector")
-	}
-	deps.scheduler.Shutdown()
-	deps.server.Shutdown()
-	if err := deps.client.Close(); err != nil {
-		errx.Must(err, "error closing the asynq client")
-	}
 }

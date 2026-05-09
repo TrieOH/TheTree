@@ -1,4 +1,4 @@
-package forms
+package commands
 
 import (
 	"Informd/internal/platform/database"
@@ -113,7 +113,7 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 	return created, nil
 }
 
-func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, payload CreateStepRequest) (created *contracts.Step, err error) {
+func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, payload contracts.CreateStepRequest) (created *contracts.Step, err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.CreateStep")
 	defer span.End()
 

@@ -1,6 +1,8 @@
-package forms
+package handler
 
 import (
+	"Informd/internal/features/forms/commands"
+	"Informd/internal/features/forms/queries"
 	"Informd/internal/shared/contracts"
 	"net/http"
 
@@ -10,17 +12,16 @@ import (
 	"github.com/MintzyG/fun/bind"
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type Handler struct {
-	commands *CommandService
-	queries  *QueryService
+	commands *commands.CommandService
+	queries  *queries.QueryService
 }
 
 func NewHandler(
-	commands *CommandService,
-	queries *QueryService,
+	commands *commands.CommandService,
+	queries *queries.QueryService,
 ) *Handler {
 	return &Handler{
 		commands: commands,
@@ -42,10 +43,6 @@ func RegisterRoutes(
 	})
 }
 
-type CreateFormRequest struct {
-	Title string `json:"title" validate:"required"`
-}
-
 // Create godoc
 // @Summary Create a form
 // @Description Creates a form not namespaced.
@@ -63,7 +60,7 @@ type CreateFormRequest struct {
 // @Router /forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	var payload CreateFormRequest
+	var payload contracts.CreateFormRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -96,7 +93,7 @@ func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload CreateFormRequest
+	var payload contracts.CreateFormRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -105,10 +102,6 @@ func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fun.Respond(w, form, http.StatusCreated)
-}
-
-type BulkGetRequest struct {
-	IDs []uuid.UUID `json:"ids" validate:"required"`
 }
 
 // BulkGet godoc
@@ -128,7 +121,7 @@ type BulkGetRequest struct {
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	params := middlewares.QueryParams[contracts.BulkGetParams](r)
-	var payload BulkGetRequest
+	var payload contracts.BulkGetRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -137,12 +130,6 @@ func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fun.Respond(w, forms)
-}
-
-type CreateStepRequest struct {
-	Title        string  `json:"title" validate:"required"`
-	Description  *string `json:"description"`
-	PositionHint int     `json:"position_hint" validate:"required"`
 }
 
 // CreateStep godoc
@@ -167,7 +154,7 @@ func (h *Handler) CreateStep(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload CreateStepRequest
+	var payload contracts.CreateStepRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}

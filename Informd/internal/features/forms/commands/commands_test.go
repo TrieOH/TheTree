@@ -1,4 +1,4 @@
-package forms
+package commands
 
 import (
 	"Informd/internal/shared/authz"
@@ -53,7 +53,7 @@ func TestCreate_NoNamespace_Success(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
 	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Name: "My Form", OwnerID: userID}
+	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
@@ -135,7 +135,7 @@ func TestCreate_NoNamespace_CouldntCreateRelation(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
 	ctx := ctxWithUser(userID)
-	created := &contracts.Form{ID: formID, Name: "my form", OwnerID: userID}
+	created := &contracts.Form{ID: formID, Title: "my form", OwnerID: userID}
 
 	d.perms.EXPECT().
 		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
@@ -160,7 +160,7 @@ func TestCreate_Namespace_Success(t *testing.T) {
 	ctx := ctxWithUser(userID)
 	namespaceID := new(uuid.New())
 	ns := &contracts.Namespace{ID: *namespaceID}
-	created := &contracts.Form{ID: formID, Name: "my form", NamespaceID: namespaceID, OwnerID: userID}
+	created := &contracts.Form{ID: formID, Title: "my form", NamespaceID: namespaceID, OwnerID: userID}
 
 	d.namespaces.EXPECT().
 		GetByID(mock.Anything, *namespaceID).
@@ -279,7 +279,7 @@ func TestCreate_Namespace_CouldntCreateRelation(t *testing.T) {
 	ctx := ctxWithUser(userID)
 	namespaceID := new(uuid.New())
 	ns := &contracts.Namespace{ID: *namespaceID}
-	created := &contracts.Form{ID: formID, Name: "my form", OwnerID: userID, NamespaceID: namespaceID}
+	created := &contracts.Form{ID: formID, Title: "my form", OwnerID: userID, NamespaceID: namespaceID}
 
 	d.namespaces.EXPECT().
 		GetByID(mock.Anything, *namespaceID).
@@ -310,7 +310,7 @@ func TestCreateStep_Success(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
 	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Name: "My Form", OwnerID: userID}
+	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
@@ -333,7 +333,7 @@ func TestCreateStep_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 
-	payload := CreateStepRequest{
+	payload := contracts.CreateStepRequest{
 		Title:        "Step 1",
 		Description:  new("Please fill me out"),
 		PositionHint: 1,
@@ -360,7 +360,7 @@ func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
 	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Name: "My Form", OwnerID: userID}
+	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
@@ -383,7 +383,7 @@ func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 
-	payload := CreateStepRequest{
+	payload := contracts.CreateStepRequest{
 		Title:        "Step 1",
 		Description:  new("Please fill me out"),
 		PositionHint: 1,

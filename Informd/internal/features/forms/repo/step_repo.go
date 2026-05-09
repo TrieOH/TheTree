@@ -1,4 +1,4 @@
-package forms
+package repo
 
 import (
 	"Informd/internal/platform/database"
@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -40,21 +39,10 @@ func mapStep(src sqlc.Step) contracts.Step {
 	}
 }
 
-func (repo *stepRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
-		return repo.q.WithTx(tx)
-	}
-	return repo.q
-}
-
-func (repo *stepRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
-	return repo.tracer.Start(ctx, "StepRepo."+op)
-}
-
 func (repo *stepRepo) Create(ctx context.Context, toCreate contracts.Step) (*contracts.Step, error) {
-	ctx, span := repo.span(ctx, "Create")
+	ctx, span := database.Span(ctx, repo.tracer, "Create")
 	defer span.End()
-	sqlcStep, err := repo.queries(ctx).CreateStep(ctx, sqlc.CreateStepParams{
+	sqlcStep, err := database.Queries(ctx, repo.q).CreateStep(ctx, sqlc.CreateStepParams{
 		FormID:       toCreate.FormID,
 		Title:        toCreate.Title,
 		Description:  toCreate.Description,
@@ -67,9 +55,9 @@ func (repo *stepRepo) Create(ctx context.Context, toCreate contracts.Step) (*con
 }
 
 func (repo *stepRepo) List(ctx context.Context, formID uuid.UUID) ([]contracts.Step, error) {
-	ctx, span := repo.span(ctx, "List")
+	ctx, span := database.Span(ctx, repo.tracer, "List")
 	defer span.End()
-	sqlcForm, err := repo.queries(ctx).ListStepsByFormID(ctx, formID)
+	sqlcForm, err := database.Queries(ctx, repo.q).ListStepsByFormID(ctx, formID)
 	if err != nil {
 		return nil, errx.DB(err, "form")
 	}
