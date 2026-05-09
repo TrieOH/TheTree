@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "target": "es2020",
+    "module": "esnext",
+    "declaration": true,
+    "declarationDir": "dist",
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "emitDeclarationOnly": false
+  },
+  "include": ["src", "global.d.ts", "env.d.ts"]
+}

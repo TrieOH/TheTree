@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+@theme {
+  --color-trieoh-primary: oklch(0.1139 0.0789 264.05);
+  --color-trieoh-secondary: oklch(0.7975 0.1018 262.7);
+  --color-trieoh-neutral1: oklch(0.9702 0 0);
+  --color-trieoh-neutral2: oklch(0.1944 0.0051 248.09);
+
+  --radius-trieoh-full: 50%;
+
+  --font-size-trieoh-sm: 0.75rem;
+  --font-size-trieoh-base: 0.875rem;
+  --font-size-trieoh-xl: 1.25rem;
+  --font-size-trieoh-2xl: 1.5rem;
+  --font-size-trieoh-3xl: 1.875rem;
+  --font-size-trieoh-6xl: 3.75rem;
+
+  --font-inter: "Inter", sans-serif;
+
+  @keyframes trieoh-shine {
+    0% { left: -150%; }
+    100% { left: 150%; }
+  }
+}
+
+@utility trieoh-button-loading {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 150%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      color-mix(in oklab, var(--trieoh-neutral2) 40%, white 15%) 40%,
+      transparent 80%
+    );
+    animation: trieoh-shine 1.5s infinite;
+  }
+}
