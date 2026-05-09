@@ -1,0 +1,121 @@
+package contracts
+
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+)
+
+type PurchaseStatus string
+
+const (
+	PurchaseStatusPending       PurchaseStatus = "pending"
+	PurchaseStatusCompleted     PurchaseStatus = "completed"
+	PurchaseStatusRefunded      PurchaseStatus = "refunded"
+	PurchaseStatusPartialRefund PurchaseStatus = "partial_refund"
+	PurchaseStatusCancelled     PurchaseStatus = "cancelled"
+)
+
+type Purchase struct {
+	ID              uuid.UUID        `json:"id"`
+	EditionID       uuid.UUID        `json:"edition_id"`
+	SessionID       *uuid.UUID       `json:"session_id"`
+	UserID          uuid.UUID        `json:"user_id"`
+	Status          PurchaseStatus   `json:"status"`
+	SubtotalCents   int              `json:"subtotal_cents"`
+	DiscountCents   int              `json:"discount_cents"`
+	TaxCents        int              `json:"tax_cents"`
+	TaxBreakdown    *json.RawMessage `json:"tax_breakdown"`
+	TotalCents      int              `json:"total_cents"`
+	PaymentProvider *string          `json:"payment_provider"`
+	PaymentID       *string          `json:"payment_id"`
+	FulfilledAt     *time.Time       `json:"fulfilled_at"`
+	FulfilmentNotes *string          `json:"fulfilment_notes"`
+	CreatedAt       time.Time        `json:"created_at"`
+	UpdatedAt       time.Time        `json:"updated_at"`
+	DeletedAt       *time.Time       `json:"deleted_at"`
+}
+
+type LineItem struct {
+	ID                  uuid.UUID  `json:"id"`
+	PurchaseID          uuid.UUID  `json:"purchase_id"`
+	ItemType            string     `json:"item_type"`
+	ItemID              uuid.UUID  `json:"item_id"`
+	Quantity            int        `json:"quantity"`
+	UnitPriceCents      int        `json:"unit_price_cents"`
+	TotalPriceCents     int        `json:"total_price_cents"`
+	AssignedToUserID    *uuid.UUID `json:"assigned_to_user_id"`
+	Fulfilled           bool       `json:"fulfilled"`
+	FulfilledAt         *time.Time `json:"fulfilled_at"`
+	RefundedQuantity    int        `json:"refunded_quantity"`
+	RefundedAmountCents int        `json:"refunded_amount_cents"`
+	CreatedAt           time.Time  `json:"created_at"`
+}
+
+type CreatePurchaseSpec struct {
+	EditionID       uuid.UUID        `json:"edition_id"`
+	SessionID       *uuid.UUID       `json:"session_id"`
+	UserID          uuid.UUID        `json:"user_id"`
+	SubtotalCents   int              `json:"subtotal_cents"`
+	TaxCents        int              `json:"tax_cents"`
+	TaxBreakdown    *json.RawMessage `json:"tax_breakdown"`
+	TotalCents      int              `json:"total_cents"`
+	PaymentProvider *string          `json:"payment_provider"`
+	PaymentID       *string          `json:"payment_id"`
+}
+
+func NewPurchase(spec CreatePurchaseSpec) *Purchase {
+	return &Purchase{
+		SessionID:       spec.SessionID,
+		EditionID:       spec.EditionID,
+		UserID:          spec.UserID,
+		Status:          PurchaseStatusPending,
+		SubtotalCents:   spec.SubtotalCents,
+		DiscountCents:   0,
+		TaxCents:        spec.TaxCents,
+		TaxBreakdown:    spec.TaxBreakdown,
+		TotalCents:      spec.TotalCents,
+		PaymentProvider: spec.PaymentProvider,
+		PaymentID:       spec.PaymentID,
+	}
+}
+
+// WSClaims represents the JWT payload
+type WSClaims struct {
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+	jwt.RegisteredClaims
+}
+
+type PurchaseStage string
+
+const (
+	StageAwaitingPartialConfirm PurchaseStage = "awaiting_partial_confirm"
+	StageAwaitingPayment        PurchaseStage = "awaiting_payment"
+	StageAwaitingWebhook        PurchaseStage = "awaiting_webhook"
+)
+
+type ReservedItem struct {
+	ProductID   uuid.UUID   `json:"product_id"`
+	Name        string      `json:"name"`
+	Quantity    int         `json:"quantity"`
+	PriceCents  int         `json:"price_cents"`
+	ProductType ProductType `json:"product_type"`
+	TicketID    *uuid.UUID  `json:"ticket_id,omitempty"`
+}
+
+type CheckoutSession struct {
+	SessionID  uuid.UUID      `json:"session_id"`
+	UserID     uuid.UUID      `json:"user_id"`
+	EditionID  uuid.UUID      `json:"edition_id"`
+	Stage      PurchaseStage  `json:"stage"`
+	ExpiresAt  time.Time      `json:"expires_at"`
+	Reserved   []ReservedItem `json:"reserved"`
+	TotalCents int            `json:"total_cents"`
+}
+
+func CheckoutSessionKey(userID, sessionID uuid.UUID) string {
+	return "checkout_session:" + userID.String() + ":" + sessionID.String()
+}
