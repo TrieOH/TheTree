@@ -1,4 +1,4 @@
-import { createDefaultFetchClient, type DefaultFetchResult } from "@soramux/node-fetch-sdk";
+import { createDefaultFetchClient, type DefaultFetchResult } from "@trieoh/envoy-fetch-ts";
 
 export type ApiResponse<T> = DefaultFetchResult<T>;
 

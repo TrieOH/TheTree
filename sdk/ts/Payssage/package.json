@@ -1,6 +1,6 @@
 {
-  "name": "@soramux/payssage-sdk-ts",
-  "version": "0.1.0",
+  "name": "@trieoh/payssage-sdk-ts",
+  "version": "0.1.1",
   "type": "module",
   "exports": {
     ".": {
@@ -21,6 +21,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@soramux/node-fetch-sdk": "^0.1.5"
+    "@trieoh/envoy-fetch-ts": "^0.1.5"
   }
 }

@@ -5,7 +5,7 @@
     "": {
       "name": "@soramux/payssage-sdk-ts",
       "dependencies": {
-        "@soramux/node-fetch-sdk": "^0.1.5",
+        "@trieoh/envoy-fetch-ts": "^0.1.5",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -125,7 +125,7 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.60.2", "", { "os": "win32", "cpu": "x64" }, "sha512-Nd/SgG27WoA9e+/TdK74KnHz852TLa94ovOYySo/yMPuTmpckK/jIF2jSwS3g7ELSKXK13/cVdmg1Z/DaCWKxA=="],
 
-    "@soramux/node-fetch-sdk": ["@soramux/node-fetch-sdk@0.1.5", "", {}, "sha512-Z0w8udYByx+MZsZmMkxDQ2wfwrQ92P4qN4wxealFDT9QcdVc/wLybnDeGNwpddz3KDByS9Cnqx82af+VN1G7CQ=="],
+    "@trieoh/envoy-fetch-ts": ["@trieoh/envoy-fetch-ts@0.1.5", "", {}, "sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ=="],
 
     "@types/bun": ["@types/bun@1.3.13", "", { "dependencies": { "bun-types": "1.3.13" } }, "sha512-9fqXWk5YIHGGnUau9TEi+qdlTYDAnOj+xLCmSTwXfAIqXr2x4tytJb43E9uCvt09zJURKXwAtkoH4nLQfzeTXw=="],
 
