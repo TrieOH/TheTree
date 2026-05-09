@@ -240,7 +240,7 @@ function RouteComponent() {
 
   const getErrorMessage = (err: unknown): string => {
     if (err instanceof Error) return err.message;
-    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+    if (typeof err === 'object' && err !== null && 'message' in err && typeof (err).message === 'string') {
       return (err as { message: string }).message;
     }
     return 'request failed';

@@ -24,7 +24,7 @@ export function EditionTabs({ activeTab, onTabChange, counts }: EditionTabsProps
         {tabs.map((tab) => (
           <button
             key={tab.value}
-            onClick={() => { onTabChange(tab.value as TabValue); }}
+            onClick={() => { onTabChange(tab.value); }}
             className={cn(
               "relative px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap",
               "hover:text-foreground focus-visible:outline-none",

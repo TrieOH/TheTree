@@ -254,9 +254,7 @@ const MobileNavItem = ({
   );
 };
 
-export const NavigationDock = memo(function NavigationDock({
-  className,
-}: NavigationDockProps) {
+export const NavigationDock = memo(function ({ className }: NavigationDockProps) {
   const { handleLogout, isAuthenticated } = useAuthActions();
   const location = useLocation();
   const navigate = useNavigate();

@@ -1,10 +1,7 @@
 import { AwsClient } from "aws4fetch";
 import type {
   StorageUploadRequest,
-  StorageUploadResponse,
-  StorageModerateRequest,
-  StorageModerateResponse,
-  StorageErrorResponse,
+  StorageModerateRequest
 } from "../model";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -48,11 +45,11 @@ export async function handleStorageUpload(request: Request, env: Env): Promise<R
     const { filename, contentType, size } = await request.json<StorageUploadRequest>();
 
     if (!ALLOWED_TYPES.includes(contentType)) {
-      return Response.json({ error: "Only PNG, JPEG, and WebP are allowed" } as StorageErrorResponse, { status: 400 });
+      return Response.json({ error: "Only PNG, JPEG, and WebP are allowed" }, { status: 400 });
     }
 
     if (size > MAX_SIZE) {
-      return Response.json({ error: "File exceeds 10MB limit" } as StorageErrorResponse, { status: 400 });
+      return Response.json({ error: "File exceeds 10MB limit" }, { status: 400 });
     }
 
     const aws = getAwsClient(env);
@@ -73,10 +70,10 @@ export async function handleStorageUpload(request: Request, env: Env): Promise<R
       uploadUrl: signed.url,
       key: filename,
       publicUrl,
-    } as StorageUploadResponse);
+    });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Upload failed" } as StorageErrorResponse,
+      { error: error instanceof Error ? error.message : "Upload failed" },
       { status: 500 }
     );
   }
@@ -90,13 +87,13 @@ export async function handleStorageModerate(request: Request, env: Env): Promise
     const isSafe = await moderateFile(key, env);
     if (!isSafe) {
       await deleteFile(key, env);
-      return Response.json({ approved: false } as StorageModerateResponse);
+      return Response.json({ approved: false });
     }
 
-    return Response.json({ approved: true } as StorageModerateResponse);
+    return Response.json({ approved: true });
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : "Moderation failed" } as StorageErrorResponse,
+      { error: error instanceof Error ? error.message : "Moderation failed" },
       { status: 500 }
     );
   }
@@ -121,7 +118,7 @@ async function moderateFile(key: string, env: Env): Promise<boolean> {
     max_tokens: 5,
   });
 
-  return (response as { description: string }).description.trim().toLowerCase().startsWith("safe");
+  return (response).description.trim().toLowerCase().startsWith("safe");
 }
 
 async function deleteFile(key: string, env: Env): Promise<void> {
