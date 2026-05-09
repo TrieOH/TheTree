@@ -1,0 +1,8 @@
+github.com/MintzyG/sdkkit v0.0.2 h1:TZx0L4Zr6MvNcOMPRJhXi5iO/LEGsslUMCSyhlgXMC8=
+github.com/MintzyG/sdkkit v0.0.2/go.mod h1:xJqKVfCeEOBvEMK0N3wtbo70eNeUjtBO1y8Becz/PRU=
+github.com/TrieOH/sdkkit v0.0.1 h1:YKefAUgBfBngS5r+mb3KmyqRW/a206tynVDoSL3kkMY=
+github.com/TrieOH/sdkkit v0.0.1/go.mod h1:8hBjKJ0vZigFi5sJVB/guDeTIhJEz+6tKDsKUPiuGtw=
+github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
+github.com/golang-jwt/jwt/v5 v5.3.1/go.mod h1:fxCRLWMO43lRc8nhHWY6LGqRcf+1gQWArsqaEUEa5bE=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
