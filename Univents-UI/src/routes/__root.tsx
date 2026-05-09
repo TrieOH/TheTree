@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { AuthProvider } from '@soramux/identityx-sdk-ts/react'
+import { AuthProvider } from '@trieoh/identityx-sdk-ts/react'
 
 import PostHogProvider from '../integrations/posthog/provider'
 
@@ -14,7 +14,7 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
-import type { useAuth } from '@soramux/identityx-sdk-ts/react';
+import type { useAuth } from '@trieoh/identityx-sdk-ts/react';
 
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ApiError } from '@soramux/identityx-sdk-ts'
+import { ApiError } from '@trieoh/identityx-sdk-ts'
 import type { DefaultFailureEnvelope } from "@soramux/node-fetch-sdk";
 import type { ReactNode } from 'react'
 

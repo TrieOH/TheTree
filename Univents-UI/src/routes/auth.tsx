@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useAuth } from '@soramux/identityx-sdk-ts/react'
+import { useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { useState } from 'react';
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from 'sonner';

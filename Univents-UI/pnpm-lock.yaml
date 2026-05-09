@@ -23,10 +23,7 @@ importers:
       '@posthog/react':
         specifier: ^1.7.0
         version: 1.8.1(@types/react@19.2.14)(posthog-js@1.356.0)(react@19.2.4)
-      '@soramux/identityx-sdk-ts':
-        specifier: ^0.10.2
-        version: 0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@soramux/node-fetch-sdk':
+      '@trieoh/identityx-sdk-ts
         specifier: ^0.1.5
         version: 0.1.5
       '@soramux/node-perm-sdk':
@@ -71,6 +68,9 @@ importers:
       '@tanstack/store':
         specifier: ^0.9.1
         version: 0.9.1
+      '@trieoh/identityx-sdk-ts':
+        specifier: ^0.11.7
+        version: 0.11.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
@@ -1346,16 +1346,10 @@ packages:
     peerDependencies:
       solid-js: ^1.6.12
 
-  '@soramux/identityx-sdk-ts@0.10.2':
-    resolution: {integrity: sha512-QAWVdgnZ189ROgK2QHEubrwhNbfZe3AF4CLRTKeWqrpm9g9L5d58huuLLOmSFr5tTpzkmvo5zZKcT1+odVyedQ==}
-    peerDependencies:
-      react: ^19.2.0
-      react-dom: ^19.2.0
-
   '@soramux/node-fetch-sdk@0.1.5':
     resolution: {integrity: sha512-Z0w8udYByx+MZsZmMkxDQ2wfwrQ92P4qN4wxealFDT9QcdVc/wLybnDeGNwpddz3KDByS9Cnqx82af+VN1G7CQ==}
 
-  '@soramux/node-perm-sdk@0.2.0':
+  '@trieoh/identityx-sdk-ts2.0':
     resolution: {integrity: sha512-kWc6UnQivHmClu5qiATLRPr29096XEkLdtc1dT/fKgCF0pxbC7DGcH7ELFoaMau09kg5lGGw8IbJr9bM8fyYHg==}
 
   '@soramux/payssage-sdk-ts@0.1.0':
@@ -1721,6 +1715,15 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  '@trieoh/envoy-fetch-ts@0.1.5':
+    resolution: {integrity: sha512-XzkmoMaxT+UkruB0MKoGIzvcePH7Bko9iu+aSdjYCERa2k6FffdN6zNn9kglZpwx5CqtqreDD4YZpOViOCcKKQ==}
+
+  '@trieoh/identityx-sdk-ts@0.11.7':
+    resolution: {integrity: sha512-BkCsovxWCtMwQ8WqFzWqhn4Xvr1MgrPwZXg8MRvFaIZ5dh3akeNIkuXv5+imPwXIPEqJ81eLJoqmoaTUKm6c8Q==}
+    peerDependencies:
+      react: ^19.2.0
+      react-dom: ^19.2.0
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -4469,14 +4472,6 @@ snapshots:
     dependencies:
       solid-js: 1.9.11
 
-  '@soramux/identityx-sdk-ts@0.10.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
-    dependencies:
-      '@soramux/node-fetch-sdk': 0.1.5
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-      react-icons: 5.6.0(react@19.2.4)
-      ua-parser-js: 2.0.9
-
   '@soramux/node-fetch-sdk@0.1.5': {}
 
   '@soramux/node-perm-sdk@0.2.0':
@@ -4486,7 +4481,7 @@ snapshots:
   '@soramux/payssage-sdk-ts@0.1.0':
     dependencies:
       '@soramux/node-fetch-sdk': 0.1.5
-
+@trieoh/identityx-sdk-ts
   '@speed-highlight/core@1.2.14': {}
 
   '@standard-schema/utils@0.3.0': {}
@@ -4925,6 +4920,16 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
+
+  '@trieoh/envoy-fetch-ts@0.1.5': {}
+
+  '@trieoh/identityx-sdk-ts@0.11.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-icons: 5.6.0(react@19.2.4)
+      ua-parser-js: 2.0.9
 
   '@tybys/wasm-util@0.10.1':
     dependencies:

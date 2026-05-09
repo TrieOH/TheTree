@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/only-throw-error */
 import { redirect } from '@tanstack/react-router';
 import type { AnySchema, ParsedLocation } from '@tanstack/react-router';
-import type { useAuth } from '@soramux/identityx-sdk-ts/react';
-// import type { BuilderMethods } from '@soramux/identityx-sdk-ts';
+import type { useAuth } from '@trieoh/identityx-sdk-ts/react';
+// import type { BuilderMethods } from '@trieoh/identityx-sdk-ts';
 // import { checkAdminPermissionFn } from '@/features/events/api';
 
 // type ReadyPermission = Pick<BuilderMethods<'object' | 'project' | 'action'>, 'user'>
