@@ -1,0 +1,81 @@
+services:
+  identity-x:
+    container_name: identity-x
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - internal
+      - univents-net
+    depends_on:
+      identity-x-database:
+        condition: service_started
+      identity-x-redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+
+      PORT: ${PORT:-8080}
+
+      DEBUG_MODE: ${DEBUG_MODE:-false}
+      APP_NAME: ${APP_NAME:-IdentityX-API}
+
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_TLS: ${SMTP_TLS}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
+      ISSUER: ${ISSUER:-IdentityX}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+
+      DISABLE_RATE_LIMIT: false
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-1d5be275ff0376f9311c564868f7f4ba550753e5e46ad9acfe48fee7fd2de1ba}
+
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      IDENTITY_X_KEY_LIFETIME: ${IDENTITY_X_KEY_LIFETIME:-168h}
+      ROTATE_KEYS_JOB_DURATION: ${ROTATE_KEYS_JOB_DURATION:-24h}
+
+  identity-x-database:
+    container_name: identity-x-database
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - database-data:/var/lib/postgresql
+    networks:
+      - internal
+
+  identity-x-redis:
+    container_name: identity-x-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --save "" --appendonly no
+    ports:
+      - "6379:6379"
+    networks:
+      - internal
+
+volumes:
+  database-data:
+
+networks:
+  internal:
+    driver: bridge
+  univents-net:
+    external: true
