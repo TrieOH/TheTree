@@ -1,6 +1,7 @@
 {
-  "name": "@soramux/identityx-sdk-ts",
-  "version": "0.10.2",
+  "name": "@trieoh/identityx-sdk-ts",
+  "version": "0.11.9",
+  "type": "module",
   "description": "SDK to consume IdentityX",
   "exports": {
     ".": {
@@ -30,15 +31,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TrieOH/NodeAuth.git"
+    "url": "https://git.trieoh.com/TrieOH/IdentityX-SDK-TS.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "10.3.5",
-    "@storybook/react-vite": "10.3.5",
+    "@storybook/addon-docs": "10.3.6",
+    "@storybook/react-vite": "10.3.6",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "storybook": "10.3.5",
+    "baseline-browser-mapping": "^2.10.25",
+    "postcss": "^8.5.14",
+    "storybook": "10.3.6",
+    "tailwindcss": "^4.3.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
@@ -47,7 +55,7 @@
     "react-dom": "^19.2.0"
   },
   "dependencies": {
-    "@soramux/node-fetch-sdk": "^0.1.5",
+    "@trieoh/envoy-fetch-ts": "^0.1.5",
     "react-icons": "^5.5.0",
     "ua-parser-js": "^2.0.7"
   }

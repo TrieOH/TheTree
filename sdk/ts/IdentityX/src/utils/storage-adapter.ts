@@ -14,6 +14,16 @@ export const browserStorage: StorageAdapter = {
   },
 };
 
+export const sessionBrowserStorage: StorageAdapter = {
+  getItem: (key) => (typeof window !== "undefined" ? sessionStorage.getItem(key) : null),
+  setItem: (key, value) => {
+    if (typeof window !== "undefined") sessionStorage.setItem(key, value);
+  },
+  removeItem: (key) => {
+    if (typeof window !== "undefined") sessionStorage.removeItem(key);
+  },
+};
+
 export interface CookieOptions {
   expires?: string;
   path?: string;
@@ -46,9 +56,11 @@ export const cookieStorage = {
       sameSite = secure ? "None" : "Lax",
     } = options;
 
+    const isLocalhost = window.location.hostname === "localhost";
+
     const cookieParts = [
       `${name}=${value}`,
-      domain ? `Domain=${domain}` : "",
+      domain && !isLocalhost ? `Domain=${domain}` : "",
       `Path=${path}`,
       `SameSite=${sameSite}`,
       secure ? "Secure" : "",

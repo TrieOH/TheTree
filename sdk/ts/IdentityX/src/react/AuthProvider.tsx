@@ -8,12 +8,17 @@ import {
   useSyncExternalStore
 } from "react";
 import { Api } from "../core/api";
-import { createAuthService } from "../core/services";
-import { getTokenClaims, type AuthTokenClaims } from "../utils/token-utils";
+import { createAuthService, type AuthCallbacks } from "../core/services";
+import {
+  getTokenClaims,
+  isRefreshSessionExpired,
+  type AuthTokenClaims
+} from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
-import { logger, type DefaultFetchClientConfig } from "@soramux/node-fetch-sdk";
+import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
+import { cookieStorage } from "../utils/storage-adapter";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -32,6 +37,11 @@ export function AuthProvider({
   fallback,
   waitSession = true,
   clientConfig,
+  onLogin,
+  onResetPassword,
+  onRegister,
+  onVerify,
+  onRefresh,
 }: {
   children: React.ReactNode;
   baseURL?: string;
@@ -43,7 +53,7 @@ export function AuthProvider({
   waitSession?: boolean;
   /** Extra config forwarded to the API client (e.g. timeout) */
   clientConfig?: Omit<DefaultFetchClientConfig, "adapter">;
-}) {
+} & AuthCallbacks) {
   const isRestoring = useRef(false);
 
   const { isAuthenticated, isInitializing } = useSyncExternalStore(
@@ -64,7 +74,8 @@ export function AuthProvider({
       isAuthenticated: !!claims.access_data,
       isInitializing: false,
     });
-  }, []);
+    onRefresh?.();
+  }, [onRefresh]);
 
   const apiInstance = useMemo(() => new Api(
     baseURL,
@@ -74,8 +85,14 @@ export function AuthProvider({
   ), [baseURL, onTokenRefreshed, clientConfig]);
 
   const auth = useMemo(
-    () => createAuthService(apiInstance),
-    [apiInstance],
+    () => createAuthService(apiInstance, {
+      onLogin,
+      onResetPassword,
+      onRegister,
+      onVerify,
+      onRefresh,
+    }),
+    [apiInstance, onLogin, onResetPassword, onRegister, onVerify, onRefresh],
   );
 
   useEffect(() => {
@@ -87,6 +104,13 @@ export function AuthProvider({
 
       if (getTokenClaims()) {
         authStore.set({ isAuthenticated: true, isInitializing: false });
+        return;
+      }
+
+      const hasRefreshToken = !!cookieStorage.get("refresh_token");
+      if (!hasRefreshToken || isRefreshSessionExpired()) {
+        authStore.reset();
+        authStore.set({ isInitializing: false });
         return;
       }
 

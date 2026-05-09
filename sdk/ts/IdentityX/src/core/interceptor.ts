@@ -9,7 +9,7 @@ import {
   type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
-import { logger, simpleFetch } from "@soramux/node-fetch-sdk";
+import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
 import { cookieStorage } from "../utils/storage-adapter";
 import { tokenStore } from "../store/token-store";
 
@@ -56,8 +56,7 @@ export class AuthInterceptor {
           throw new Error(res.message || "Failed to refresh token");
         }
 
-        const { access_token, refresh_token } = res.data;
-        saveAuthSession(access_token, refresh_token);
+        saveAuthSession(res.data);
 
         const claims = getTokenClaims();
         if (claims) this.onTokenRefreshed?.(claims);
@@ -126,12 +125,16 @@ export class AuthInterceptor {
     let response = await executeFetch();
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
-      logger.log("401 detected, attempting one-time retry after refresh...");
-      try {
-        await this.refreshToken();
-        response = await executeFetch();
-      } catch (e) {
-        logger.error("Retry failed after refresh error");
+      const isExpiring = isTokenExpiringSoon(30);
+
+      if (isExpiring) {
+        logger.log("401 detected and token is expiring/expired, attempting refresh...");
+        try {
+          await this.refreshToken();
+          response = await executeFetch();
+        } catch (e) {
+          logger.error("Retry failed after refresh error");
+        }
       }
     }
 
