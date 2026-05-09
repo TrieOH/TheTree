@@ -13,7 +13,7 @@ export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
   onRegister?: (res: ApiResponse<void>) => void;
   onVerify?: (res: ApiResponse<void>) => void;
-  onForgotPassword?: (res: ApiResponse<void>) => void;
+  onResetPassword?: (res: ApiResponse<void>) => void;
   onRefresh?: (res?: ApiResponse<AuthTokens>) => void;
 }
 
@@ -67,17 +67,11 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     return res;
   },
 
-  sessions: async () => {
-    return apiInstance.get<SessionI[]>("/sessions");
-  },
+  sessions: async () => apiInstance.get<SessionI[]>("/sessions"),
 
-  currentSession: async () => {
-    return apiInstance.get<CurrentSessionI>("/sessions/me");
-  },
+  currentSession: async () => apiInstance.get<CurrentSessionI>("/sessions/me"),
 
-  revokeASession: async (id: string) => {
-    return apiInstance.delete<void>(`/sessions/${id}`);
-  },
+  revokeASession: async (id: string) => apiInstance.delete<void>(`/sessions/${id}`),
 
   revokeSessions: async (revokeAll: boolean = false) => {
     const path = revokeAll ? "/sessions" : "/sessions/others"
@@ -88,39 +82,35 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
   sendForgotPassword: async (email: string) => {
     const options = { requiresAuth: false };
-    const res = await (async () => {
-      if (env.PROJECT_ID) {
-        validateProjectKey();
-        return apiInstance.post<void>(
-          "/account/forgot-password",
-          { email, project_id: env.PROJECT_ID },
-          options
-        );
-      }
-      return apiInstance.post<void>("/account/forgot-password", { email }, options);
-    })();
-
-    if (res.success) callbacks?.onForgotPassword?.(res);
-    return res;
+    if (env.PROJECT_ID) {
+      validateProjectKey();
+      return apiInstance.post<void>(
+        "/account/forgot-password",
+        { email, project_id: env.PROJECT_ID },
+        options
+      );
+    }
+    return apiInstance.post<void>("/account/forgot-password", { email }, options);
   },
 
   resetPassword: async (token: string, new_password: string) => {
-    return apiInstance.post<void>(
+    const res = await apiInstance.post<void>(
       `/account/reset-password?token=${token}`,
       { new_password },
       { requiresAuth: false }
     );
+    if (res.success) callbacks?.onResetPassword?.(res);
+    return res;
   },
 
-  verifyEmail: async () => {
-    const res = await apiInstance.post<void>("/account/verify");
+  verifyEmail: async (token: string) => {
+    const url = `/account/verify?token=${token}`;
+    const res = await apiInstance.post<void>(url);
     if (res.success) callbacks?.onVerify?.(res);
     return res;
   },
 
-  resendVerifyEmail: async () => {
-    return apiInstance.post<void>("/account/verify/resend");
-  },
+  resendVerifyEmail: async () => apiInstance.post<void>("/account/verify/resend"),
 
   health: async () => {
     return apiInstance.get<{ service: string; status: string }>("/health", {
