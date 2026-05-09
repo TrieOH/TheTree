@@ -2,10 +2,10 @@ package commands
 
 import (
 	"Informd/internal/platform/database"
-	"Informd/internal/shared/authz"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/ports"
 	"context"
+	authz2 "lib/authz"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -15,7 +15,7 @@ type CommandService struct {
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
 	namespaces ports.NamespaceRepo
-	perms      authz.Checker
+	perms      authz2.Checker
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -24,7 +24,7 @@ func NewCommands(
 	forms ports.FormsRepo,
 	steps ports.StepRepo,
 	namespaces ports.NamespaceRepo,
-	perms authz.Checker,
+	perms authz2.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -42,17 +42,17 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	var sub *authz2.UserSubject
+	sub, err = authz2.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if namespaceID == nil {
 		if err = s.perms.Require(ctx,
-			authz.Subject("user", sub.ID),
-			authz.Permission("create_form"),
-			authz.Resource("user", sub.ID.String()),
+			authz2.Subject("user", sub.ID),
+			authz2.Permission("create_form"),
+			authz2.Resource("user", sub.ID.String()),
 			map[string]any{"subject_id": sub.ID.String()},
 		); err != nil {
 			return nil, err
@@ -85,9 +85,9 @@ func (s *CommandService) Create(ctx context.Context, title string, namespaceID *
 	}
 
 	if err = s.perms.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_form"),
-		authz.Resource("namespace", namespace.ID.String()),
+		authz2.Subject("user", sub.ID),
+		authz2.Permission("create_form"),
+		authz2.Resource("namespace", namespace.ID.String()),
 		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return nil, err
@@ -117,8 +117,8 @@ func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, paylo
 	ctx, span := s.tracer.Start(ctx, "FormService.CreateStep")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	var sub *authz2.UserSubject
+	sub, err = authz2.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +129,9 @@ func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, paylo
 	}
 
 	if err = s.perms.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("form", formID.String()),
+		authz2.Subject("user", sub.ID),
+		authz2.Permission("edit"),
+		authz2.Resource("form", formID.String()),
 		nil,
 	); err != nil {
 		return nil, err

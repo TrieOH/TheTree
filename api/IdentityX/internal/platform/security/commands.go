@@ -2,14 +2,14 @@ package security
 
 import (
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/crypto"
-	"IdentityX/internal/shared/errx"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"lib/crypto"
+	"lib/errx"
 	"strings"
 	"time"
 

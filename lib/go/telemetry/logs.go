@@ -1,7 +1,7 @@
 package telemetry
 
 import (
-	"IdentityX/internal/shared/errx"
+	"lib/errx"
 	"sync"
 
 	"go.uber.org/zap"

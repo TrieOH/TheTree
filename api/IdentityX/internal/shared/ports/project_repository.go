@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"IdentityX/internal/shared/contracts"
+	"IdentityX/contracts"
 	"context"
 
 	"github.com/google/uuid"

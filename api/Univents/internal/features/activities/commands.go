@@ -3,7 +3,7 @@ package activities
 import (
 	"context"
 	"errors"
-	"univents/internal/platform/database"
+	"lib/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"

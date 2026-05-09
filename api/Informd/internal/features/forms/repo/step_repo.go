@@ -1,13 +1,13 @@
 package repo
 
 import (
-	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
-	"Informd/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/xslices"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"

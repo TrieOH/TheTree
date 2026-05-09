@@ -2,10 +2,10 @@ package auth
 
 import (
 	"IdentityX/internal/platform/database"
-	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

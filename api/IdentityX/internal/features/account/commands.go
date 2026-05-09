@@ -5,10 +5,10 @@ import (
 	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/errx"
 	"time"
 
 	"github.com/MintzyG/fun"

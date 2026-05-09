@@ -2,7 +2,7 @@ package tickets
 
 import (
 	"context"
-	"univents/internal/platform/database"
+	"lib/database"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 

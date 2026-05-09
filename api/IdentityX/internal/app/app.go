@@ -2,8 +2,9 @@ package app
 
 import (
 	"IdentityX/internal/platform/telemetry"
-	"IdentityX/internal/shared/errx"
 	"context"
+	"lib/errx"
+	telemetry2 "lib/telemetry"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
@@ -56,31 +57,31 @@ func (app *IdentityX) CloseDB() {
 
 func (app *IdentityX) CloseRedis() {
 	if err := app.redis.Close(); err != nil {
-		telemetry.Log().Error("error closing redis connection", zap.Error(err))
+		telemetry2.Log().Error("error closing redis connection", zap.Error(err))
 	}
 }
 
 func (app *IdentityX) StartTracer(ctx context.Context) func(context.Context) error {
 	shutdown, err := telemetry.InitTracer(ctx)
 	if err != nil {
-		telemetry.Log().Fatal("error starting tracer", zap.Error(err))
+		telemetry2.Log().Fatal("error starting tracer", zap.Error(err))
 	}
 	return shutdown
 }
 
 func (app *IdentityX) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
 	if err := shutdown(ctx); err != nil {
-		telemetry.Log().Error("error shutting down tracer", zap.Error(err))
+		telemetry2.Log().Error("error shutting down tracer", zap.Error(err))
 	}
 }
 
 func (app *IdentityX) StopScheduler() {
 	err := app.scheduler.StopJobs()
 	if err != nil {
-		telemetry.Log().Error("error stopping scheduler jobs", zap.Error(err))
+		telemetry2.Log().Error("error stopping scheduler jobs", zap.Error(err))
 	}
 	err = app.scheduler.Shutdown()
 	if err != nil {
-		telemetry.Log().Error("error shutting down scheduler", zap.Error(err))
+		telemetry2.Log().Error("error shutting down scheduler", zap.Error(err))
 	}
 }

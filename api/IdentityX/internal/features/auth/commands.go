@@ -5,11 +5,11 @@ import (
 	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"errors"
+	"lib/errx"
 	"strings"
 	"time"
 

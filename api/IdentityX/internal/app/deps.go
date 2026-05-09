@@ -4,16 +4,17 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/security"
-	"IdentityX/internal/platform/telemetry"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/crypto"
 	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	crypto2 "lib/crypto"
+	errx2 "lib/errx"
+	"lib/telemetry"
 	"log"
 	"net/http"
 	"reflect"
@@ -49,7 +50,7 @@ func SetupValidator() *validator.Validate {
 
 		return u.Version() == 7
 	}); err != nil {
-		errx.Must(err, "failed to register uuid7 validator")
+		errx2.Must(err, "failed to register uuid7 validator")
 	}
 
 	// Custom password validation - requires uppercase, number, and symbol
@@ -70,7 +71,7 @@ func SetupValidator() *validator.Validate {
 
 		return hasUpper && hasNumber && hasSymbol
 	}); err != nil {
-		errx.Must(err, "failed to register passwd validator")
+		errx2.Must(err, "failed to register passwd validator")
 	}
 
 	// Use JSON field names for better API responses
@@ -116,14 +117,14 @@ func SetupRedis(timeout time.Duration, cfg Config) *redis.Client {
 func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
 	db, err := database.WaitForDB(30*time.Second, dsn)
 	if err != nil {
-		errx.Must(err, "Failed to connect DB")
+		errx2.Must(err, "Failed to connect DB")
 	}
 	if err = database.RunMigrations(db, migrationPath); err != nil {
 		log.Fatalf("Failed migrations: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	errx.Must(errx.ValidateConstraintRegistry(ctx, db), "unregistered constraints found")
+	errx2.Must(errx.ValidateConstraintRegistry(ctx, db), "unregistered constraints found")
 	return db
 }
 
@@ -151,14 +152,14 @@ func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Du
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			var pub string
 			var priv []byte
-			pub, priv, err = crypto.GenerateEd25519()
+			pub, priv, err = crypto2.GenerateEd25519()
 			if err != nil {
 				log.Fatalf("failed to generate GoAuth key: %v", err)
 			}
 			defer zero(priv)
 
 			var encryptedPriv []byte
-			encryptedPriv, err = crypto.Encrypt(priv, encryptionKey)
+			encryptedPriv, err = crypto2.Encrypt(priv, encryptionKey)
 			if err != nil {
 				log.Fatalf("failed to encrypt GoAuth key: %v", err)
 			}
@@ -226,13 +227,13 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []b
 }
 
 func createGoAuthKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration) error {
-	pub, priv, err := crypto.GenerateEd25519()
+	pub, priv, err := crypto2.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto.Encrypt(priv, encryptionKey)
+	encryptedPriv, err := crypto2.Encrypt(priv, encryptionKey)
 	if err != nil {
 		return err
 	}
@@ -295,13 +296,13 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []
 }
 
 func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID, encryptionKey []byte, keyLifetime time.Duration) error {
-	pub, priv, err := crypto.GenerateEd25519()
+	pub, priv, err := crypto2.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
 		return err
 	}
 
-	encryptedPriv, err := crypto.Encrypt(priv, encryptionKey)
+	encryptedPriv, err := crypto2.Encrypt(priv, encryptionKey)
 	if err != nil {
 		return err
 	}
@@ -364,14 +365,14 @@ func SetupCron(db *pgxpool.Pool, encryptionKey []byte, cfg Config) gocron.Schedu
 func InitEncryption(keyStr string) []byte {
 	var err error
 	if keyStr == "" {
-		errx.Must(errors.New("ENCRYPTION_KEY is not set"), "error reading encryption key")
+		errx2.Must(errors.New("ENCRYPTION_KEY is not set"), "error reading encryption key")
 	}
 	encryptionKey, err := hex.DecodeString(keyStr)
 	if err != nil {
-		errx.Must(err, "error decoding encryption key")
+		errx2.Must(err, "error decoding encryption key")
 	}
 	if len(encryptionKey) != 32 {
-		errx.Must(errors.New("encryption key size is not 32 bytes"), "Wrong key size")
+		errx2.Must(errors.New("encryption key size is not 32 bytes"), "Wrong key size")
 	}
 	return encryptionKey
 }
@@ -476,7 +477,7 @@ func SetupAuthMiddlewares(
 			return ctx, err
 		}
 
-		if err = crypto.VerifyBcryptSecret(keyData.KeyHash, parts[2]); err != nil {
+		if err = crypto2.VerifyBcryptSecret(keyData.KeyHash, parts[2]); err != nil {
 			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
 

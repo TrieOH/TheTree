@@ -3,8 +3,8 @@ package app
 import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/platform/telemetry"
 	"context"
+	"lib/telemetry"
 	"log"
 	"time"
 

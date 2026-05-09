@@ -1,11 +1,11 @@
 package commands
 
 import (
-	"Informd/internal/shared/authz"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/mocks"
 	"context"
 	"errors"
+	authz2 "lib/authz"
 	"testing"
 
 	"github.com/google/uuid"
@@ -42,8 +42,8 @@ func newTestDeps(t *testing.T) testDeps {
 }
 
 func ctxWithUser(id uuid.UUID) context.Context {
-	sub := &authz.UserSubject{ID: id}
-	return authz.WithSubject(context.Background(), sub)
+	sub := &authz2.UserSubject{ID: id}
+	return authz2.WithSubject(context.Background(), sub)
 }
 
 var errGeneric = errors.New("something went wrong")
@@ -57,9 +57,9 @@ func TestCreate_NoNamespace_Success(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("user", userID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -168,9 +168,9 @@ func TestCreate_Namespace_Success(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("namespace", namespaceID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -234,9 +234,9 @@ func TestCreate_Namespace_BadFormInput(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("namespace", namespaceID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -258,9 +258,9 @@ func TestCreate_Namespace_DatabaseError(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("namespace", namespaceID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -287,9 +287,9 @@ func TestCreate_Namespace_CouldntCreateRelation(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("namespace", namespaceID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -314,9 +314,9 @@ func TestCreateStep_Success(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("user", userID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -345,9 +345,9 @@ func TestCreateStep_Success(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("edit"),
-			authz.Resource("user", userID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("edit"),
+			authz2.Resource("user", userID.String()),
 			map[string]any{"form": formID.String()},
 		).Return(nil)
 
@@ -364,9 +364,9 @@ func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("create_form"),
+			authz2.Resource("user", userID.String()),
 			map[string]any{"subject_id": userID.String()},
 		).Return(nil)
 
@@ -395,9 +395,9 @@ func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
 
 	d.perms.EXPECT().
 		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("edit"),
-			authz.Resource("form", formID.String()),
+			authz2.Subject("user", userID),
+			authz2.Permission("edit"),
+			authz2.Resource("form", formID.String()),
 			nil,
 		).Return(errGeneric)
 

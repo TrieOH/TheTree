@@ -4,11 +4,11 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"errors"
+	"lib/errx"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

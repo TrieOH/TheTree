@@ -4,6 +4,7 @@ package app
 
 import (
 	"net/http"
+	_ "univents/contracts"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"
 	"univents/internal/features/editions"
@@ -12,7 +13,6 @@ import (
 	"univents/internal/features/purchases"
 	"univents/internal/features/security"
 	"univents/internal/features/tickets"
-	_ "univents/internal/shared/contracts"
 
 	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"

@@ -2,10 +2,10 @@ package keys
 
 import (
 	"Informd/internal/platform/database"
-	"Informd/internal/shared/authz"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/ports"
 	"context"
+	"lib/authz"
 
 	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"

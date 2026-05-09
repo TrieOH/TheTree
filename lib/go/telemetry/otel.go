@@ -11,13 +11,13 @@ import (
 	"go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
-func InitTracer(ctx context.Context) (func(context.Context) error, error) {
+func InitTracer(ctx context.Context, appName string) (func(context.Context) error, error) {
 	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("otel-collector:4317"), otlptracegrpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := resource.New(ctx, resource.WithAttributes(semconv.ServiceName("informd"), semconv.ServiceVersion("dev")))
+	res, err := resource.New(ctx, resource.WithAttributes(semconv.ServiceName(appName), semconv.ServiceVersion("dev")))
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,3 @@ func InitTracer(ctx context.Context) (func(context.Context) error, error) {
 
 	return tp.Shutdown, nil
 }
-
-type TracerName string
-
-const InformdTracer TracerName = "informd"

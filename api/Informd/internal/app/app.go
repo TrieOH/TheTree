@@ -1,9 +1,9 @@
 package app
 
 import (
-	"Informd/internal/platform/telemetry"
 	"Informd/internal/shared/errx"
 	"context"
+	"lib/telemetry"
 	"time"
 
 	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"

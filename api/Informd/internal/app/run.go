@@ -10,12 +10,13 @@ import (
 	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
 	"Informd/internal/platform/telemetry"
-	"Informd/internal/shared/authz"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
-	"Informd/internal/shared/xslices"
 	"context"
+	authz2 "lib/authz"
+	database2 "lib/database"
+	"lib/xslices"
 	"log"
 	"net/http"
 	"strings"
@@ -44,7 +45,7 @@ type runtime struct {
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	asynq       asynqDeps
-	perms       authz.Checker
+	perms       authz2.Checker
 }
 
 type commands struct {
@@ -94,9 +95,9 @@ func (app *Informd) run() runtime {
 		Level:       "info",
 		Development: false,
 	})
-	rt.perms = authz.NewChecker(app.sdbClient)
+	rt.perms = authz2.NewChecker(app.sdbClient)
 	rt.repoQueries = sqlc.New(app.db)
-	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
+	rt.txRunner = database2.NewPGXTxRunner(app.db, rt.logger)
 	rt.tracer = otel.Tracer(string(telemetry.InformdTracer))
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
@@ -172,7 +173,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
-		return authz.WithSubject(ctx, &authz.UserSubject{
+		return authz2.WithSubject(ctx, &authz2.UserSubject{
 			ID:    claims.Sub.ID,
 			Email: claims.Sub.Email,
 		}), nil
@@ -199,7 +200,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 		if matched == nil {
 			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
-		return authz.WithSubject(ctx, &authz.UserSubject{ID: matched.OwnerID}), nil
+		return authz2.WithSubject(ctx, &authz2.UserSubject{ID: matched.OwnerID}), nil
 	}
 
 	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)

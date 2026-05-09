@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 	"encoding/json"
-	"payssage/internal/shared/contracts"
+	"payssage/contracts"
 	"time"
 
 	"github.com/google/uuid"

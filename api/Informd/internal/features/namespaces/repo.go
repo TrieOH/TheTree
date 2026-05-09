@@ -1,13 +1,13 @@
 package namespaces
 
 import (
-	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
 	"Informd/internal/shared/contracts"
 	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
-	"Informd/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/xslices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"

@@ -2,8 +2,12 @@ package app
 
 import (
 	"context"
+	"lib/authz"
+	database2 "lib/database"
+	"lib/xslices"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"
@@ -17,11 +21,9 @@ import (
 	"univents/internal/platform/database/sqlc"
 	"univents/internal/platform/queue"
 	"univents/internal/platform/telemetry"
-	"univents/internal/shared/authz"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
-	"univents/internal/shared/utils"
 
 	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/MintzyG/fun"
@@ -43,7 +45,7 @@ type runtime struct {
 	storeDeps   storeDeps
 	repos       repos
 	repoQueries *sqlc.Queries
-	txRunner    database.TxRunner
+	txRunner    database2.TxRunner
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	asynq       asynqDeps
@@ -249,7 +251,7 @@ func (app *Univents) startMiddlewares(rt runtime) mws {
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
-		AllowedOrigins:   utils.SplitAndCleanCSV(app.cfg.CorsAllowedOrigins),
+		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
 		AllowCredentials: true,
 	})
 	mw.realIP = middlewares.RealIP()

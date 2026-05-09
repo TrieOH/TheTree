@@ -2,7 +2,7 @@ package purchases
 
 import (
 	"context"
-	"univents/internal/platform/database"
+	"lib/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"

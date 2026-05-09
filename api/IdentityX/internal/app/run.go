@@ -10,13 +10,14 @@ import (
 	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/email"
-	"IdentityX/internal/platform/telemetry"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/xslices"
+	"lib/errx"
+	"lib/telemetry"
+	"lib/xslices"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MintzyG/fun/middlewares"
@@ -83,7 +84,7 @@ func (app *IdentityX) run() {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
 	rt.tx = database.NewPGTxRunner(app.db)
-	rt.tracer = otel.Tracer(string(telemetry.IdentityXTracer))
+	rt.tracer = otel.Tracer(app.cfg.AppName)
 	rt.logger = telemetry.Log()
 	rt.repos = app.startRepos(rt)
 	rt.renderer, rt.mailer = email.NewMailPair(
@@ -221,7 +222,7 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
-		AllowedOrigins:   xslices.SplitAndCleanCSV(app.cfg.CorsAllowedOrigins),
+		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
 		AllowCredentials: true,
 	})
 	mw.realIP = middlewares.RealIP()

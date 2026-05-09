@@ -1,9 +1,9 @@
 package app
 
 import (
-	"Informd/internal/platform/database"
 	"Informd/internal/shared/errx"
 	"context"
+	"lib/database"
 	"log"
 	"net/http"
 	"os"
