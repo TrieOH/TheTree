@@ -84,10 +84,10 @@ const config = defineConfig(() => {
 
             // Internal SDK
             if (
-              id.includes('@soramux/identityx-sdk-ts') ||
-              id.includes('@soramux/node-fetch-sdk')
+              id.includes('@trieoh/identityx-sdk-ts') ||
+              id.includes('@trieoh/envoy-fetch-ts')
             ) {
-              return 'vendor-soramux'
+              return 'vendor-trieoh'
             }
 
             // Utils Network and Infra

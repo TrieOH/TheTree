@@ -1,5 +1,5 @@
-import { createFetcher, createQueryFetcher } from "@soramux/identityx-sdk-ts";
-import { createDefaultFetchClient } from "@soramux/node-fetch-sdk";
+import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
+import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts";
 import { env } from "#/env";
 
 export const authFetcher = createFetcher(
