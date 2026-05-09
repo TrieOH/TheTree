@@ -1,7 +1,7 @@
 package authz
 
 import (
-	"IdentityX/internal/shared/contracts"
+	"IdentityX/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

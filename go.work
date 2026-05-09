@@ -5,6 +5,7 @@ use (
 	./api/Informd
 	./api/Payssage
 	./api/Univents
+	./lib/go
 	./sdk/go/IdentityX
 	./sdk/go/Payssage
 )
