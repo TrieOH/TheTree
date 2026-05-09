@@ -43,10 +43,10 @@ const ProjectsProjectIdConfigRoute = ProjectsProjectIdConfigRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthIndexRoute
-  '/projects': typeof ProjectsIndexRoute
+  '/auth/': typeof AuthIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/projects/$projectId/config': typeof ProjectsProjectIdConfigRoute
-  '/projects/$projectId': typeof ProjectsProjectIdIndexRoute
+  '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,10 +67,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
-    | '/projects'
+    | '/auth/'
+    | '/projects/'
     | '/projects/$projectId/config'
-    | '/projects/$projectId'
+    | '/projects/$projectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,21 +107,21 @@ declare module '@tanstack/react-router' {
     '/projects/': {
       id: '/projects/'
       path: '/projects'
-      fullPath: '/projects'
+      fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/': {
       id: '/auth/'
       path: '/auth'
-      fullPath: '/auth'
+      fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/$projectId/': {
       id: '/projects/$projectId/'
       path: '/projects/$projectId'
-      fullPath: '/projects/$projectId'
+      fullPath: '/projects/$projectId/'
       preLoaderRoute: typeof ProjectsProjectIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

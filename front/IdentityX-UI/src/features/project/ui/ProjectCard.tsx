@@ -10,14 +10,14 @@ interface PropsI {
 }
 
 export default function ProjectCard({ data }: PropsI) {
-  const navigate = useNavigate({ from: '/projects' })
+  const navigate = useNavigate({ from: '/projects/' })
 
   const handleProjectCardClick = () => {
     navigate({ to: '/projects/$projectId/config', params: { projectId: data.id } });
   };
 
   return (
-    <button 
+    <button
       type="button"
       className={cn(
         "relative min-w-78 bg-card p-5 text-card-foreground",
@@ -29,7 +29,7 @@ export default function ProjectCard({ data }: PropsI) {
     >
       {/* Top */}
       <div className="flex items-center gap-2.5 mb-5">
-        <span 
+        <span
           className={cn(
             "flex justify-center items-center w-11 h-11 rounded-sm",
             "bg-primary-foreground border border-primary font-bold text-2xl",
@@ -47,30 +47,30 @@ export default function ProjectCard({ data }: PropsI) {
       {/* Middle */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5 text-sm">
-          <Clock size={16}/>
+          <Clock size={16} />
           <span>Created at {formatDate(data.created_at)}</span>
         </div>
         <div className="flex items-center gap-1.5 text-sm">
-          <ClockFading size={16}/>
+          <ClockFading size={16} />
           <span>Updated at {formatDate(data.updated_at)}</span>
         </div>
       </div>
 
       {/* Bottom */}
-      <div 
+      <div
         className={cn(
           "flex opacity-0 justify-center gap-4 mt-4 text-muted-foreground",
           "group-hover:opacity-100 duration-300"
         )}
       >
-        <Edit 
+        <Edit
           className="hover:text-card-foreground duration-300"
           onClick={(e) => {
             e.stopPropagation();
             projectActions.openEdit(data);
           }}
         />
-        <Trash2 
+        <Trash2
           className="hover:text-card-foreground duration-300"
           onClick={(e) => {
             e.stopPropagation();
@@ -80,7 +80,7 @@ export default function ProjectCard({ data }: PropsI) {
       </div>
 
       {/* Active State */}
-      <div 
+      <div
         className={cn(
           "absolute w-3.5 h-3.5 rounded-full top-2 right-2",
           data.is_active ? "bg-green-300" : "bg-destructive"

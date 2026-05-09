@@ -3,17 +3,16 @@ import { projectStore } from "../store";
 import CrudForm from "@/shared/ui/form/CrudForm";
 import { formOptions } from "@tanstack/react-form";
 import type { FieldConfig } from "@/shared/ui/form/types";
-import { useCrudOperations } from "@/shared/lib/hooks/useCrudStore";
+import { useCrudOperations, useCrudStore } from "@/shared/lib/hooks/useCrudStore";
 import { projectCRUDSchema, type ProjectCRUD } from "../model/types";
 import { createProjectFn, patchProjectFn, deleteProjectFn } from "../api";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStore } from "@tanstack/react-store";
 import { getFieldError } from "@/shared/lib/utils";
 
 export function ProjectDialog() {
   const queryClient = useQueryClient();
-  const { formData, mode } = useStore(projectStore, (state) => state);
+  const { formData, mode } = useCrudStore(projectStore);
 
   const createProjectMutation = useMutation({
     mutationFn: createProjectFn,
@@ -71,16 +70,16 @@ export function ProjectDialog() {
   });
   const fields: FieldConfig[] = [
     {
-      name: "project_name", 
-      label: "Project Name", 
-      placeholder: "My Awesome Project", 
+      name: "project_name",
+      label: "Project Name",
+      placeholder: "My Awesome Project",
       autoComplete: "project_name",
       errors: getFieldError(projectCRUDSchema.shape.project_name)
     },
     {
-      name: "domain", 
-      label: "Domain", 
-      placeholder: "myawesome.website.com", 
+      name: "domain",
+      label: "Domain",
+      placeholder: "myawesome.website.com",
       autoComplete: "domain",
       errors: getFieldError(projectCRUDSchema.shape.domain)
     }
@@ -92,7 +91,7 @@ export function ProjectDialog() {
       onMount: projectCRUDSchema,
     }
   });
-  
+
   return (
     <CrudDialog
       formId="project-form"
@@ -100,7 +99,7 @@ export function ProjectDialog() {
       title="Project"
       onSubmit={() => handleSubmit(formData as ProjectCRUD)}
     >
-      <CrudForm 
+      <CrudForm
         formId="project-form"
         fields={fields}
         options={{

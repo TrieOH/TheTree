@@ -8,8 +8,8 @@ import {
 } from '@/shared/ui/shadcn/dialog';
 import { AlertTriangle } from 'lucide-react';
 import { ShadowButton } from '../buttons/ShadowButton';
-import { createCrudActions, type CrudStore } from '@/shared/lib/store/crudStore';
-import { useStore } from '@tanstack/react-store';
+import type { CrudStore } from '@/shared/lib/store/crudStore';
+import { useCrudStore } from '@/shared/lib/hooks/useCrudStore';
 import { cn } from '@/shared/lib/utils';
 
 interface CrudDialogProps<T extends { id: string }> {
@@ -17,7 +17,7 @@ interface CrudDialogProps<T extends { id: string }> {
   title: string;
   description?: string;
   children?: React.ReactNode;
-  onSubmit?: () => void; 
+  onSubmit?: () => void;
   formId: string;
 }
 
@@ -30,8 +30,7 @@ export function CrudDialog<T extends { id: string }>({
   formId
 }: CrudDialogProps<T>) {
 
-  const state = useStore(store);
-  const actions = createCrudActions(store);
+  const { mode, isOpen, isLoading, actions } = useCrudStore(store);
 
   const config = {
     create: {
@@ -51,14 +50,14 @@ export function CrudDialog<T extends { id: string }>({
     },
   };
 
-  if (!state.mode) return null;
-  const currentConfig = config[state.mode];
+  if (!mode) return null;
+  const currentConfig = config[mode];
 
   return (
-    <Dialog open={state.isOpen} onOpenChange={(open) => !open && actions.close()}>
-      <DialogContent 
+    <Dialog open={isOpen} onOpenChange={(open) => !open && actions.close()}>
+      <DialogContent
         className={cn(
-          state.mode === 'delete' ? 'max-w-md' : 'max-w-lg',
+          mode === 'delete' ? 'max-w-md' : 'max-w-lg',
           "min-w-[320px] w-11/12 max-h-11/12 overflow-y-auto"
         )}
       >
@@ -67,7 +66,7 @@ export function CrudDialog<T extends { id: string }>({
           <DialogDescription>{currentConfig.description}</DialogDescription>
         </DialogHeader>
 
-        {state.mode === 'delete' ? (
+        {mode === 'delete' ? (
           <div className="py-4">
             <div className="flex items-center gap-3 p-4 bg-destructive/10 rounded-lg text-destructive">
               <AlertTriangle className="h-5 w-5" />
@@ -78,16 +77,16 @@ export function CrudDialog<T extends { id: string }>({
           children
         )}
 
-        <DialogFooter showCloseButton closeButtonText='Cancel' isPerformingSubmit={state.isLoading}>
-          <ShadowButton 
-            type={state.mode === 'delete' ? "button" : "submit"}
-            variant={state.mode === 'delete' ? 'destructive' : "accent-solid" }
-            onClick={state.mode === 'delete' ? onSubmit : undefined}
-            formId={state.mode === 'delete' ? undefined : formId}
-            disabled={state.isLoading}
+        <DialogFooter showCloseButton closeButtonText='Cancel' isPerformingSubmit={isLoading}>
+          <ShadowButton
+            type={mode === 'delete' ? "button" : "submit"}
+            variant={mode === 'delete' ? 'destructive' : "accent-solid"}
+            onClick={mode === 'delete' ? onSubmit : undefined}
+            formId={mode === 'delete' ? undefined : formId}
+            disabled={isLoading}
             className='justify-center px-4 font-normal sm:font-light text-sm'
-            value={state.isLoading ? 'Submitting...' : currentConfig.submitLabel}
-          /> 
+            value={isLoading ? 'Submitting...' : currentConfig.submitLabel}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

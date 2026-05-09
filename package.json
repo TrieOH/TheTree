@@ -1,0 +1,32 @@
+{
+  "name": "thetree",
+  "private": true,
+  "scripts": {
+    "identityx": "pnpm -F identityx",
+    "informd": "pnpm -F informd",
+    "payssage": "pnpm -F payssage",
+    "spicedb": "pnpm -F spicedb-ui",
+    "univents": "pnpm -F univents",
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "check": "pnpm -r check",
+    "tsc": "pnpm -r tsc",
+    "deploy": "pnpm -r deploy",
+    "typegen": "pnpm -r cf-typegen",
+    "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lightningcss",
+      "@cloudflare/workerd-linux-64",
+      "workerd"
+    ]
+  }
+}

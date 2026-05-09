@@ -1,4 +1,4 @@
-import { Store } from '@tanstack/react-store';
+import { createStore, type Store } from '@tanstack/react-store';
 export type CrudMode = 'create' | 'edit' | 'delete' | null;
 
 export interface CrudState<T extends { id: string }> {
@@ -21,7 +21,7 @@ export interface CrudActions<T extends { id: string }> {
 export type CrudStore<T extends { id: string }> = Store<CrudState<T>>;
 
 export function createCrudStore<T extends { id: string }>() {
-  return new Store<CrudState<T>>({
+  return createStore<CrudState<T>>({
     mode: null,
     selectedItem: null,
     isLoading: false,

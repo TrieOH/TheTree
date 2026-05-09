@@ -13,6 +13,7 @@
     "lint": "eslint",
     "format": "prettier --check .",
     "check": "prettier --write . && eslint --fix",
+    "tsc": "tsc --noEmit",
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
@@ -64,11 +65,5 @@
     "vite": "^8.0.0",
     "vitest": "^3.0.5",
     "wrangler": "^4.70.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
   }
 }

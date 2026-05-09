@@ -1,4 +1,4 @@
-import { useStore } from '@tanstack/react-store';
+import { useStore, shallow } from '@tanstack/react-store';
 import { createCrudActions, type CrudStore, type CrudActions, type CrudState } from '../store/crudStore';
 
 interface UseCrudStoreReturn<T extends { id: string }> extends CrudState<T> {
@@ -8,7 +8,7 @@ interface UseCrudStoreReturn<T extends { id: string }> extends CrudState<T> {
 export function useCrudStore<T extends { id: string }>(
   store: CrudStore<T>
 ): UseCrudStoreReturn<T> {
-  const state = useStore(store);
+  const state = useStore(store, (state) => state, shallow);
   const actions = createCrudActions(store);
 
   return {
@@ -41,7 +41,7 @@ export function useCrudOperations<T extends { id: string }>(
     try {
       await operation();
       onSuccess?.();
-      if(autoClose || state.mode === "delete") actions.close();
+      if (autoClose || state.mode === "delete") actions.close();
     } catch (error) {
       onError?.(error as Error);
       console.error('CRUD Operation failed:', error);
@@ -55,10 +55,10 @@ export function useCrudOperations<T extends { id: string }>(
     const item = state.selectedItem;
     if (state.mode === "create" && onCreate) await executeOperation(() => onCreate(data));
 
-    if(!item) return;
+    if (!item) return;
 
     if (state.mode === "edit" && onUpdate) await executeOperation(() => onUpdate(item.id, data));
-    else if(state.mode === "delete" && onDelete) executeOperation(() => onDelete(item.id));
+    else if (state.mode === "delete" && onDelete) executeOperation(() => onDelete(item.id));
   };
 
   return {

@@ -1,1 +1,9 @@
 .idea
+node_modules
+dist
+.turbo
+.env
+.env.local
+.wrangler
+.pnpm-debug.log
+.vscode/*

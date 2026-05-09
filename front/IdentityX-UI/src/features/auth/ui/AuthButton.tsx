@@ -10,29 +10,29 @@ export default function AuthButton() {
     <>
       {auth?.isAuthenticated === false ?
         <>
-          <ShadowButton 
-            value="Authenticate" 
-            leftIcon={ <LogIn size={20}/> }
+          <ShadowButton
+            value="Authenticate"
+            leftIcon={<LogIn size={20} />}
             className="xs:flex hidden"
-            onClick={() => navigate({to: "/auth"})}
+            onClick={() => navigate({ to: "/auth" })}
           />
           <ShadowButton
-            leftIcon={ <LogIn size={16}/> }
-            className="xs:hidden flex"
-            onClick={() => navigate({to: "/auth"})}
+            leftIcon={<LogIn size={16} />}
+            className="xs:hidden! flex"
+            onClick={() => navigate({ to: "/auth" })}
           />
-        </> : 
+        </> :
         <>
-          <ShadowButton 
-            value="Dashboard" 
-            leftIcon={ <User size={20}/> }
+          <ShadowButton
+            value="Dashboard"
+            leftIcon={<User size={20} />}
             className="xs:flex hidden"
-            onClick={() => navigate({to: "/projects"})}
+            onClick={() => navigate({ to: "/projects" })}
           />
           <ShadowButton
-            leftIcon={ <User size={16}/> }
-            className="xs:hidden flex"
-            onClick={() => navigate({to: "/projects"})}
+            leftIcon={<User size={16} />}
+            className="xs:hidden! flex"
+            onClick={() => navigate({ to: "/projects" })}
           />
         </>
       }

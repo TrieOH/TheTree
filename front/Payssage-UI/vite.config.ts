@@ -29,7 +29,6 @@ const config = defineConfig(() => {
               id.includes('/react/') ||
               id.includes('/react-dom/') ||
               id.includes('/scheduler/') ||
-              id.includes('@tanstack/react-store') ||
               id.includes('@tanstack/store')
             ) {
               return 'vendor-react'
