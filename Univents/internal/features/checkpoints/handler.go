@@ -7,6 +7,7 @@ import (
 	"univents/internal/shared/validation"
 
 	"github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct {
@@ -22,6 +23,18 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Route("/events/{event_id}/editions/{edition_id}/checkpoints", func(r chi.Router) {
+		r.Use(jwt)
+		r.Post("/", h.Create)
+		r.Get("/", h.List)
+	})
 }
 
 type CreateCheckpointRequest struct {

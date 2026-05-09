@@ -5,13 +5,14 @@ go 1.26.2
 require (
 	git.trieoh.com/TrieOH/IdentityX-SDK-Go v0.7.2
 	git.trieoh.com/TrieOH/Payssage-SDK-Go v0.1.3
-	github.com/MintzyG/fun v0.9.7
+	github.com/MintzyG/fun v0.10.6
+	github.com/MintzyG/fun/bind v0.1.1
+	github.com/MintzyG/fun/middlewares v0.1.1
 	github.com/authzed/authzed-go v1.8.0
 	github.com/authzed/grpcutil v0.0.0-20260105210157-e237581949c2
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/exaring/otelpgx v0.10.0
 	github.com/go-chi/chi/v5 v5.2.5
-	github.com/go-chi/cors v1.2.2
-	github.com/go-chi/httprate v0.15.0
 	github.com/go-co-op/gocron/v2 v2.21.1
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -32,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )
@@ -95,6 +96,7 @@ require (
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/rs/cors v1.11.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect

@@ -7,6 +7,7 @@ import (
 	"univents/internal/shared/validation"
 
 	fun "github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +24,24 @@ func NewHandler(
 		commands: commands,
 		queries:  queries,
 	}
+}
+
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Route("/events/{event_id}/editions", func(r chi.Router) {
+		r.Get("/", h.List)
+		r.Use(jwt)
+		r.Post("/", h.Create)
+		r.Get("/admin", h.ListAdmin)
+		r.Route("/{edition_id}", func(r chi.Router) {
+			r.Post("/announce", h.Announce)
+			r.Post("/payments/connect", h.ConnectPaymentAccount)
+			r.Post("/payments/disconnect", h.DisconnectPaymentAccount)
+		})
+	})
 }
 
 type CreateEditionRequest struct {

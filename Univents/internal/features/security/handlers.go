@@ -1,15 +1,28 @@
-package system
+package security
 
 import (
 	"net/http"
 	"time"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
+	"univents/internal/shared/sockets"
 
 	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
+
+type Handler struct {
+	Registry *sockets.Registry
+}
+
+func NewHandler(
+	registry *sockets.Registry,
+) *Handler {
+	return &Handler{
+		Registry: registry,
+	}
+}
 
 // WSAuth godoc
 // @Summary Get WebSocket auth token
@@ -23,12 +36,11 @@ import (
 // @Failure 401 {object} contracts.ErrorResponse
 // @Failure 500 {object} contracts.ErrorResponse
 // @Router /ws/token [get]
-func (handler *UniventsHandler) WSAuth(w http.ResponseWriter, r *http.Request) {
+func (handler *Handler) WSAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		fun.Error(err).Send(w)
+	if fun.Bail(w, err) {
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 	"univents/internal/platform/telemetry"
+	"univents/internal/shared/errx"
 
 	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
 	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
@@ -23,11 +24,17 @@ type Univents struct {
 	payssage  *payssage.Client
 	minio     *minio.Client
 	sdbClient *authzed.Client
+
+	cfg Config
 }
 
 func New() *Univents {
 	var app Univents
-	LoadEnv()
+	cfg, err := LoadConfig()
+	if err != nil {
+		errx.Must(err, "failed to load config")
+	}
+	app.cfg = cfg
 	SetupFUN()
 	app.redis = SetupRedis(15 * time.Second)
 	app.idxClient = SetupIdentityX()

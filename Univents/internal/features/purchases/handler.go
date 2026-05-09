@@ -12,6 +12,7 @@ import (
 
 	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/MintzyG/fun"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/viper"
@@ -35,6 +36,20 @@ func NewHandler(
 		queries:  queries,
 		Registry: registry,
 	}
+}
+
+func Routes(
+	r *chi.Mux,
+	h *Handler,
+	jwt func(http.Handler) http.Handler,
+) {
+	r.Post("/webhooks/payments", h.WebhookHandler)
+	r.Get("/events/{event_id}/editions/{edition_id}/products/purchase", h.Purchase) // WS upgrade
+	r.Route("/purchases", func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/", h.ListUserPurchases)
+		r.Get("/{purchase_id}/items", h.ListPurchaseItems)
+	})
 }
 
 // ListUserPurchases godoc
