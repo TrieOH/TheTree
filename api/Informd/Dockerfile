@@ -8,26 +8,31 @@ COPY --from=tools /go/bin/sqlc /go/bin/sqlc
 COPY --from=tools /go/bin/goose /go/bin/goose
 COPY --from=tools /go/bin/swag /go/bin/swag
 
-COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY go.work go.work.sum ./
 
-COPY . .
+COPY lib/ ./lib/
+COPY sdk/go/ ./sdk/go/
+COPY api/ ./api/
+
+WORKDIR /app/api/Informd
+
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 RUN sqlc generate
 RUN swag init -g internal/app/router.go -o docs --parseInternal --parseDependency --parseGoList
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux go build -o informd ./cmd/informd/
+    CGO_ENABLED=0 GOOS=linux go build -o Informd ./cmd/informd/
 
 FROM alpine:3.20
 
 WORKDIR /app
 
-COPY --from=builder /app/informd .
+COPY --from=builder /app/api/Informd/Informd .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/internal/platform/database/migrations ./internal/platform/database/migrations
-COPY --from=builder /app/schema.zed ./schema.zed
+COPY --from=builder /app/api/Informd/internal/platform/database/migrations ./internal/platform/database/migrations
+COPY --from=builder /app/api/Informd/schema.zed ./schema.zed
 
 EXPOSE 8080
 
-CMD ["./informd"]
+CMD ["./Informd"]

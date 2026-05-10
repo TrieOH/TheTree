@@ -1,12 +1,10 @@
 package handler
 
 import (
+	"Informd/contracts"
 	"Informd/internal/features/forms/commands"
 	"Informd/internal/features/forms/queries"
-	"Informd/internal/shared/contracts"
 	"net/http"
-
-	_ "Informd/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -51,12 +49,12 @@ func RegisterRoutes(
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param request body CreateFormRequest true "Form title"
+// @Param request body contracts.CreateFormRequest true "Form title"
 // @Success 201 {object} contracts.Form "Form created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /forms [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -80,12 +78,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param namespace_id path string true "Namespace ID"
-// @Param request body CreateFormRequest true "Form title"
+// @Param request body contracts.CreateFormRequest true "Form title"
 // @Success 201 {object} contracts.Form "Form created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms [post]
 func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -112,11 +110,11 @@ func (h *Handler) CreateInWorkspace(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param request body BulkGetRequest true "Form IDs"
+// @Param request body contracts.BulkGetRequest true "Form IDs"
 // @Success 200 {array} contracts.Form "Forms retrieved successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /forms/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -140,13 +138,13 @@ func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Param request body CreateStepRequest true "Form title"
+// @Param request body contracts.CreateStepRequest true "Form title"
 // @Param form_id path string true "Form ID"
 // @Success 201 {object} contracts.Step "Form created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /forms/{form_id}/steps [post]
 func (h *Handler) CreateStep(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

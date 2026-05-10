@@ -4,7 +4,7 @@ import (
 	"IdentityX/internal/shared/authz"
 	"net/http"
 
-	_ "IdentityX/internal/shared/contracts"
+	_ "IdentityX/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	_ "Informd/internal/shared/contracts"
+	_ "Informd/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -68,10 +68,10 @@ type CreateAPIKeyResponse struct {
 // @Param project_id path string true "Project ID"
 // @Param request body CreateAPIKeyRequest true "API key details"
 // @Success 201 {object} CreateAPIKeyResponse "API key created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /api-keys [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -109,9 +109,9 @@ type BulkGetRequest struct {
 // @Security Cookie
 // @Param request body BulkGetRequest true "APIKey IDs"
 // @Success 200 {array} contracts.Form "Forms retrieved successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /api_keys/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -137,10 +137,10 @@ func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 // @Param project_id path string true "Project ID"
 // @Param id path string true "API key ID"
 // @Success 200 {object} object "Key revoked"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /api-keys/{id} [delete]
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

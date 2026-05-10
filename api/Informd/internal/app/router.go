@@ -1,10 +1,10 @@
 package app
 
 import (
+	_ "Informd/contracts"
 	"Informd/internal/features/forms/handler"
 	"Informd/internal/features/keys"
 	"Informd/internal/features/namespaces"
-	_ "Informd/internal/shared/contracts"
 	"net/http"
 
 	"github.com/MintzyG/fun/handlers"

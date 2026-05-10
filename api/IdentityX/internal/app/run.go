@@ -7,11 +7,11 @@ import (
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/security"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/email"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
+	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
@@ -83,9 +83,9 @@ type mws struct {
 func (app *IdentityX) run() {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
-	rt.tx = database.NewPGTxRunner(app.db)
-	rt.tracer = otel.Tracer(app.cfg.AppName)
 	rt.logger = telemetry.Log()
+	rt.tx = database.NewPGXTxRunner(app.db, rt.logger)
+	rt.tracer = otel.Tracer(app.cfg.AppName)
 	rt.repos = app.startRepos(rt)
 	rt.renderer, rt.mailer = email.NewMailPair(
 		rt.logger,
@@ -197,13 +197,13 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 
 func (app *IdentityX) startRepos(rt runtime) repos {
 	var r repos
-	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
 	return r
 }
 

@@ -1,14 +1,14 @@
 package auth
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"errors"
+	"lib/database"
 	"lib/errx"
 	"strings"
 	"time"

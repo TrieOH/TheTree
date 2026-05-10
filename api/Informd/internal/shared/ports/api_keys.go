@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"Informd/internal/shared/contracts"
+	"Informd/contracts"
 	"context"
 
 	"github.com/google/uuid"

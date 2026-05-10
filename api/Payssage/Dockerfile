@@ -8,27 +8,31 @@ COPY --from=tools /go/bin/sqlc /go/bin/sqlc
 COPY --from=tools /go/bin/goose /go/bin/goose
 COPY --from=tools /go/bin/swag /go/bin/swag
 
+COPY go.work go.work.sum ./
 
-COPY go.mod go.sum ./
+COPY lib/ ./lib/
+COPY sdk/go/ ./sdk/go/
+COPY api/ ./api/
+
+WORKDIR /app/api/Payssage
+
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
-
-COPY . .
 
 RUN sqlc generate
 RUN swag init -g internal/interfaces/http/router/router.go -o docs --parseInternal --parseDependency
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux go build -o payssage ./cmd/payssage/
+    CGO_ENABLED=0 GOOS=linux go build -o Payssage ./cmd/payssage/
 
 FROM alpine:3.20
 
 WORKDIR /app
 
-COPY --from=builder /app/payssage .
+COPY --from=builder /app/api/Payssage/Payssage .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/internal/platform/database/migrations ./internal/platform/database/migrations
-COPY --from=builder /app/schema.zed ./schema.zed
+COPY --from=builder /app/api/Payssage/internal/platform/database/migrations ./internal/platform/database/migrations
+COPY --from=builder /app/api/Payssage/schema.zed ./schema.zed
 
 EXPOSE 8080
 
-CMD ["./payssage"]
+CMD ["./Payssage"]

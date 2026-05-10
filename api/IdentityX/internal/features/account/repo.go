@@ -1,11 +1,11 @@
 package account
 
 import (
-	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
+	"lib/errx"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,6 +18,7 @@ type accountRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 func (repo *accountRepo) queries(ctx context.Context) *sqlc.Queries {
@@ -29,11 +30,12 @@ func (repo *accountRepo) queries(ctx context.Context) *sqlc.Queries {
 
 var _ ports.AccountRepository = (*accountRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.AccountRepository {
+func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.AccountRepository {
 	return &accountRepo{
 		q:      q,
 		log:    l,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -47,7 +49,7 @@ func (repo *accountRepo) Verify(ctx context.Context, userID uuid.UUID) (bool, er
 	defer span.End()
 	wasVerified, err := repo.queries(ctx).VerifyUser(ctx, userID)
 	if err != nil {
-		return false, errx.DB(err, "account")
+		return false, repo.dbe.DB(err, "account")
 	}
 	span.SetAttributes(attribute.Bool("user.was_already_verified", !wasVerified))
 	return !wasVerified, nil
@@ -62,7 +64,7 @@ func (repo *accountRepo) ResetPassword(ctx context.Context, userID uuid.UUID, pa
 		ID:           userID,
 	})
 	if err != nil {
-		return errx.DB(err, "account")
+		return repo.dbe.DB(err, "account")
 	}
 	return nil
 }

@@ -1,8 +1,8 @@
 package app
 
 import (
-	"Informd/internal/shared/errx"
 	"context"
+	"lib/errx"
 	"lib/telemetry"
 	"time"
 
@@ -19,8 +19,8 @@ type Informd struct {
 	scheduler gocron.Scheduler
 	idxClient *idx.Client
 	sdbClient *authzed.Client
-
-	Config Config
+	dbErr     *errx.DBHandler
+	Config    Config
 }
 
 func New() *Informd {
@@ -34,7 +34,8 @@ func New() *Informd {
 	app.redis = SetupRedis(15*time.Second, app.Config.RedisAddr, app.Config.RedisPassword, app.Config.RedisDB)
 	app.idxClient = SetupIdentityX(app.Config)
 	migrationPath := "./internal/platform/database/migrations"
-	app.db = SetupDB(migrationPath, app.Config.DatabaseURL)
+	app.dbErr = SetupDBErrorHandler()
+	app.db = SetupDB(migrationPath, app.Config.DatabaseURL, app.dbErr)
 	app.scheduler = SetupCron(app.db)
 	app.sdbClient = SetupSpiceDB(app.Config)
 	return &app
@@ -46,7 +47,7 @@ func (app *Informd) Run() {
 	defer app.CloseDB()
 	defer app.CloseRedis()
 	defer app.StopScheduler()
-	shutdown := app.StartTracer(ctx)
+	shutdown := app.StartTracer(ctx, app.Config.AppName)
 	defer app.ShutdownTracer(ctx, shutdown)
 	app.run()
 }
@@ -61,8 +62,8 @@ func (app *Informd) CloseRedis() {
 	}
 }
 
-func (app *Informd) StartTracer(ctx context.Context) func(context.Context) error {
-	shutdown, err := telemetry.InitTracer(ctx)
+func (app *Informd) StartTracer(ctx context.Context, appName string) func(context.Context) error {
+	shutdown, err := telemetry.InitTracer(ctx, appName)
 	if err != nil {
 		errx.Must(err, "error starting tracer")
 	}

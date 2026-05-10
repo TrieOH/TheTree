@@ -1,13 +1,13 @@
 package auth
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/errx"
+	"lib/xslices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -20,6 +20,7 @@ type userRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 func (repo *userRepo) queries(ctx context.Context) *sqlc.Queries {
@@ -35,11 +36,12 @@ func (repo *userRepo) span(ctx context.Context, op string) (context.Context, tra
 
 var _ ports.UserRepository = (*userRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepository {
+func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.UserRepository {
 	return &userRepo{
 		q:      q,
 		log:    l,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -68,7 +70,7 @@ func (repo *userRepo) Register(ctx context.Context, email, password string, proj
 		UserType:     string(userType),
 	})
 	if err != nil {
-		return nil, errx.DB(err, "user")
+		return nil, repo.dbe.DB(err, "user")
 	}
 	span.SetAttributes(
 		attribute.String("user.id", sqlcUser.ID.String()),
@@ -83,7 +85,7 @@ func (repo *userRepo) UpdateLastLogin(ctx context.Context, userID uuid.UUID) err
 	defer span.End()
 	err := repo.queries(ctx).UpdateUserLastLogin(ctx, userID)
 	if err != nil {
-		return errx.DB(err, "user")
+		return repo.dbe.DB(err, "user")
 	}
 	return nil
 }
@@ -94,7 +96,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contr
 	defer span.End()
 	sqlcUser, err := repo.queries(ctx).GetUserById(ctx, userID)
 	if err != nil {
-		return nil, errx.DB(err, "user")
+		return nil, repo.dbe.DB(err, "user")
 	}
 	span.SetAttributes(
 		attribute.String("user.type", sqlcUser.UserType),
@@ -111,7 +113,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectI
 		ProjectID: projectID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "user")
+		return nil, repo.dbe.DB(err, "user")
 	}
 	span.SetAttributes(
 		attribute.String("user.id", sqlcUser.ID.String()),
@@ -126,7 +128,7 @@ func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) 
 	defer span.End()
 	sqlcUsers, err := repo.queries(ctx).ListUsersFromProject(ctx, &projectID)
 	if err != nil {
-		return nil, errx.DB(err, "user")
+		return nil, repo.dbe.DB(err, "user")
 	}
 	return xslices.MapSlice(sqlcUsers, mapUserFromDB), nil
 }
@@ -139,7 +141,7 @@ func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID 
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "user")
+		return nil, repo.dbe.DB(err, "user")
 	}
 	return new(mapUserFromDB(sqlcUser)), nil
 }

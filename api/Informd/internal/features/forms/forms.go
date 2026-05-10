@@ -11,7 +11,7 @@ var NewFormRepo = repo.NewFormRepo
 var NewStepRepo = repo.NewStepRepo
 var NewCommands = commands.NewCommands
 var NewQueries = queries.NewQueries
-var NewHandlers = handler.NewHandler
+var NewHandler = handler.NewHandler
 
 type Commands = commands.CommandService
 type Queries = queries.QueryService

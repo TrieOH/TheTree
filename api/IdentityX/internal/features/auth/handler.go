@@ -1,8 +1,7 @@
 package auth
 
 import (
-	"IdentityX/internal/shared/contracts"
-	_ "IdentityX/internal/shared/contracts"
+	"IdentityX/contracts"
 	"encoding/json"
 	"lib/telemetry"
 	"net/http"

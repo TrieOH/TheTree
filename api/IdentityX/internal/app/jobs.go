@@ -1,9 +1,10 @@
 package app
 
 import (
-	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
 	"context"
+	"lib/database"
+	"lib/errx"
 	"lib/telemetry"
 	"log"
 	"time"
@@ -13,17 +14,17 @@ import (
 	"go.uber.org/zap"
 )
 
-func rotateKeysJob(db *pgxpool.Pool, scheduler gocron.Scheduler, txRunner database.TxRunner, rotateJobDuration time.Duration, encryptionKey []byte, keyLifetime time.Duration) {
+func rotateKeysJob(db *pgxpool.Pool, scheduler gocron.Scheduler, txRunner database.TxRunner, rotateJobDuration time.Duration, encryptionKey []byte, keyLifetime time.Duration, dbHandler *errx.DBHandler) {
 	_, err := scheduler.NewJob(
 		gocron.DurationJob(rotateJobDuration),
 		gocron.NewTask(func(ctx context.Context, pool *pgxpool.Pool) {
 			if err := txRunner.WithinTx(ctx, func(txCtx context.Context) error {
 				q := sqlc.New(pool)
 				q = queriesWithTx(txCtx, q)
-				if err := tryRotateGoAuthKeys(txCtx, q, encryptionKey, keyLifetime); err != nil {
+				if err := tryRotateGoAuthKeys(txCtx, q, encryptionKey, keyLifetime, dbHandler); err != nil {
 					return err
 				}
-				if err := tryRotateProjectKeys(txCtx, q, encryptionKey, keyLifetime); err != nil {
+				if err := tryRotateProjectKeys(txCtx, q, encryptionKey, keyLifetime, dbHandler); err != nil {
 					return err
 				}
 				if err := q.RevokeExpiredRotatedKeys(txCtx); err != nil {

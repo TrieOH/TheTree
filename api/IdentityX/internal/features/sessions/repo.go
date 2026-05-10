@@ -1,13 +1,13 @@
 package sessions
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/errx"
+	"lib/xslices"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +22,7 @@ type sessionRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 func (repo *sessionRepo) queries(ctx context.Context) *sqlc.Queries {
@@ -37,11 +38,12 @@ func (repo *sessionRepo) span(ctx context.Context, op string) (context.Context, 
 
 var _ ports.SessionRepository = (*sessionRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.SessionRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.SessionRepository {
 	return &sessionRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -75,7 +77,7 @@ func (repo *sessionRepo) Create(ctx context.Context, toCreate contracts.Session)
 		UserID:    toCreate.UserID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(attribute.String("session.user_type", sqlcSession.UserType))
 	if sqlcSession.ProjectID != nil {
@@ -97,7 +99,7 @@ func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*con
 	defer span.End()
 	sqlcSession, err := repo.queries(ctx).GetUserSessionByID(ctx, sessionID)
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(
 		attribute.String("session.token_id", sqlcSession.TokenID.String()),
@@ -115,7 +117,7 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 	defer span.End()
 	sqlcSession, err := repo.queries(ctx).GetUserSessionByTokenID(ctx, tokenID)
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(
 		attribute.String("session.session_id", sqlcSession.SessionID.String()),
@@ -133,7 +135,7 @@ func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) 
 	defer span.End()
 	sqlcSession, err := repo.queries(ctx).GetSessionByFamilyID(ctx, familyID)
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(attribute.String("session.session_id", sqlcSession.SessionID.String()))
 	if sqlcSession.ProjectID != nil {
@@ -152,7 +154,7 @@ func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID, userType co
 		UserID:   userID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(attribute.Int("sessions.count", len(sqlcSessions)))
 	return xslices.MapSlice(sqlcSessions, mapSessionFromDB), nil
@@ -175,7 +177,7 @@ func (repo *sessionRepo) Update(ctx context.Context, toUpdate contracts.Session,
 		TokenID:   toUpdate.TokenID,
 	})
 	if err != nil {
-		return errx.DB(err, "session")
+		return repo.dbe.DB(err, "session")
 	}
 	return nil
 }
@@ -193,7 +195,7 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, ne
 		FamilyID:   familyID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(
 		attribute.String("session.session_id", sqlcSession.SessionID.String()),
@@ -212,7 +214,7 @@ func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, 
 		UserID:    userID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "session")
+		return nil, repo.dbe.DB(err, "session")
 	}
 	return new(mapSessionFromDB(sqlcSession)), nil
 }
@@ -222,7 +224,7 @@ func (repo *sessionRepo) MarkRevokedByFamilyID(ctx context.Context, familyID uui
 	span.SetAttributes(attribute.String("family_id", familyID.String()))
 	defer span.End()
 	if err := repo.queries(ctx).RevokeSessionByFamilyID(ctx, familyID); err != nil {
-		return errx.DB(err, "session")
+		return repo.dbe.DB(err, "session")
 	}
 	return nil
 }
@@ -249,7 +251,7 @@ func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter contrac
 		})
 	}
 	if err != nil {
-		return 0, errx.DB(err, "session")
+		return 0, repo.dbe.DB(err, "session")
 	}
 	span.SetAttributes(attribute.Int("revoke.count", len(sqlcSessions)))
 	span.SetAttributes(attribute.String("revoke.type", revokeType))

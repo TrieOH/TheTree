@@ -2,8 +2,8 @@ services:
   identity-x:
     container_name: identity-x
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: api/IdentityX/Dockerfile
     ports:
       - "8080:8080"
     networks:

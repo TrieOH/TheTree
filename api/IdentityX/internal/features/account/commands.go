@@ -1,13 +1,13 @@
 package account
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/security"
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
 	"lib/errx"
 	"time"
 

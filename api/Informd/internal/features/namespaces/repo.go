@@ -1,12 +1,12 @@
 package namespaces
 
 import (
+	"Informd/contracts"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
 	"context"
 	"lib/database"
+	"lib/errx"
 	"lib/xslices"
 
 	"github.com/google/uuid"
@@ -19,15 +19,17 @@ type repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.NamespaceRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.NamespaceRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.NamespaceRepo {
 	return &repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -61,7 +63,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.Namespace) (*co
 		Name:    toCreate.Name,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "namespace")
+		return nil, repo.dbe.DB(err, "namespace")
 	}
 	return new(mapNamespace(sqlcProject)), nil
 }
@@ -72,7 +74,7 @@ func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Namespa
 
 	sqlcProject, err := repo.queries(ctx).GetNamespaceByID(ctx, id)
 	if err != nil {
-		return nil, errx.DB(err, "namespace")
+		return nil, repo.dbe.DB(err, "namespace")
 	}
 	return new(mapNamespace(sqlcProject)), nil
 }
@@ -85,7 +87,7 @@ func (repo *repo) GetByName(ctx context.Context, name string, ownerID uuid.UUID)
 		Name:    name,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "namespace")
+		return nil, repo.dbe.DB(err, "namespace")
 	}
 	return new(mapNamespace(sqlcProject)), nil
 }
@@ -95,7 +97,7 @@ func (repo *repo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.Nam
 	defer span.End()
 	sqlcForm, err := repo.queries(ctx).BulkGetNamespaces(ctx, ids)
 	if err != nil {
-		return nil, errx.DB(err, "namespace")
+		return nil, repo.dbe.DB(err, "namespace")
 	}
 	return xslices.MapSlice(sqlcForm, mapNamespace), nil
 }

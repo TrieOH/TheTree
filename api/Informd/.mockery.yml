@@ -28,7 +28,7 @@ packages:
       pkgname: mocks
       dir: internal/shared/mocks
       filename: ports.go
-  Informd/internal/shared/authz:
+  lib/authz:
     config:
       pkgname: mocks
       dir: internal/shared/mocks

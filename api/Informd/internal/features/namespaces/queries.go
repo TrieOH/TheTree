@@ -1,11 +1,11 @@
 package namespaces
 
 import (
-	"Informd/internal/platform/database"
-	"Informd/internal/shared/contracts"
+	"Informd/contracts"
 	"Informd/internal/shared/ports"
 	"context"
 	"lib/authz"
+	"lib/database"
 
 	v1 "github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"

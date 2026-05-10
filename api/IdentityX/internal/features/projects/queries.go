@@ -1,11 +1,11 @@
 package projects
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

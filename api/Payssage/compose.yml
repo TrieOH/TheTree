@@ -2,8 +2,8 @@ services:
   payssage:
     container_name: payssage
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: api/Payssage/Dockerfile
     ports:
       - "8082:8080"
     networks:

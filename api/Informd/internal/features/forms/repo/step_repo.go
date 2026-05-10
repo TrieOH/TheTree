@@ -1,12 +1,12 @@
 package repo
 
 import (
+	"Informd/contracts"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
 	"context"
 	"lib/database"
+	"lib/errx"
 	"lib/xslices"
 
 	"github.com/google/uuid"
@@ -18,15 +18,17 @@ type stepRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.StepRepo = (*stepRepo)(nil)
 
-func NewStepRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.StepRepo {
+func NewStepRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.StepRepo {
 	return &stepRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -49,7 +51,7 @@ func (repo *stepRepo) Create(ctx context.Context, toCreate contracts.Step) (*con
 		PositionHint: toCreate.PositionHint,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "form")
+		return nil, repo.dbe.DB(err, "form")
 	}
 	return new(mapStep(sqlcStep)), nil
 }
@@ -59,7 +61,7 @@ func (repo *stepRepo) List(ctx context.Context, formID uuid.UUID) ([]contracts.S
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).ListStepsByFormID(ctx, formID)
 	if err != nil {
-		return nil, errx.DB(err, "form")
+		return nil, repo.dbe.DB(err, "form")
 	}
 	return xslices.MapSlice(sqlcForm, mapStep), nil
 }

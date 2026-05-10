@@ -1,13 +1,13 @@
 package keys
 
 import (
-	"Informd/internal/platform/database"
-	"Informd/internal/shared/contracts"
+	"Informd/contracts"
 	"Informd/internal/shared/ports"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	authz2 "lib/authz"
+	"lib/authz"
+	"lib/database"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -17,7 +17,7 @@ import (
 type CommandService struct {
 	apiKeys  ports.ApiKeysRepo
 	projects ports.NamespaceRepo
-	perms    authz2.Checker
+	perms    authz.Checker
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
@@ -25,7 +25,7 @@ type CommandService struct {
 func NewCommands(
 	apiKeys ports.ApiKeysRepo,
 	projects ports.NamespaceRepo,
-	perms authz2.Checker,
+	perms authz.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -42,16 +42,16 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
 	defer span.End()
 
-	var sub *authz2.UserSubject
-	sub, err = authz2.RequireSubject(ctx)
+	var sub *authz.UserSubject
+	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
 		return "", nil, err
 	}
 
 	if err = s.perms.Require(ctx,
-		authz2.Subject("user", sub.ID),
-		authz2.Permission("create_api_key"),
-		authz2.Resource("user", sub.ID.String()),
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_api_key"),
+		authz.Resource("user", sub.ID.String()),
 		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return "", nil, err
@@ -93,15 +93,15 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Revoke")
 	defer span.End()
 
-	sub, err := authz2.RequireSubject(ctx)
+	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}
 
 	if err = s.perms.Require(ctx,
-		authz2.Subject("user", sub.ID),
-		authz2.Permission("revoke"),
-		authz2.Resource("api_key", keyID.String()),
+		authz.Subject("user", sub.ID),
+		authz.Permission("revoke"),
+		authz.Resource("api_key", keyID.String()),
 		nil,
 	); err != nil {
 		return err

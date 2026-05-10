@@ -1,12 +1,12 @@
 package keys
 
 import (
+	"Informd/contracts"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
 	"context"
 	"lib/database"
+	"lib/errx"
 	"lib/xslices"
 
 	"github.com/google/uuid"
@@ -19,15 +19,17 @@ type repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.ApiKeysRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeysRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ApiKeysRepo {
 	return &repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -64,7 +66,7 @@ func (repo *repo) Create(ctx context.Context, toCreate contracts.APIKey) (*contr
 		KeyPrefix: toCreate.KeyPrefix,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "api key")
+		return nil, repo.dbe.DB(err, "api key")
 	}
 	return new(mapApiKey(sqlcApiKey)), nil
 }
@@ -74,7 +76,7 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.A
 	defer span.End()
 	sqlcApiKeys, err := repo.queries(ctx).GetAPIKeyByPrefix(ctx, prefix)
 	if err != nil {
-		return nil, errx.DB(err, "api key")
+		return nil, repo.dbe.DB(err, "api key")
 	}
 	return xslices.MapSlice(sqlcApiKeys, mapApiKey), nil
 }
@@ -87,7 +89,7 @@ func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*contracts.
 		OwnerID: userID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "api key")
+		return nil, repo.dbe.DB(err, "api key")
 	}
 	return new(mapApiKey(sqlcApiKey)), nil
 }
@@ -97,7 +99,7 @@ func (repo *repo) BulkGet(ctx context.Context, ids []uuid.UUID) ([]contracts.API
 	defer span.End()
 	sqlcKeys, err := repo.queries(ctx).BulkGetAPIKeys(ctx, ids)
 	if err != nil {
-		return nil, errx.DB(err, "api key")
+		return nil, repo.dbe.DB(err, "api key")
 	}
 	return xslices.MapSlice(sqlcKeys, mapApiKey), nil
 }

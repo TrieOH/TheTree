@@ -2,7 +2,7 @@ package ports
 
 import (
 	"context"
-	"payssage/internal/shared/contracts"
+	"payssage/contracts"
 
 	"github.com/google/uuid"
 )

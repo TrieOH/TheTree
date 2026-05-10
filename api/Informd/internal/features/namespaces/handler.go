@@ -1,10 +1,8 @@
 package namespaces
 
 import (
-	"Informd/internal/shared/contracts"
+	"Informd/contracts"
 	"net/http"
-
-	_ "Informd/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -54,9 +52,9 @@ type CreateNamespaceRequest struct {
 // @Security Cookie
 // @Param request body CreateNamespaceRequest true "Project details"
 // @Success 201 {object} contracts.Namespace "Namespace created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /namespaces [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -85,9 +83,9 @@ type BulkGetRequest struct {
 // @Security Cookie
 // @Param request body BulkGetRequest true "Namespace IDs"
 // @Success 200 {array} contracts.Form "Namespaces retrieved successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /namespaces/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

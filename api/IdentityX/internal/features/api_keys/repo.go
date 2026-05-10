@@ -1,12 +1,12 @@
 package api_keys
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
+	"lib/errx"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -19,15 +19,17 @@ type apiKeyRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.ApiKeyRepository = (*apiKeyRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKeyRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ApiKeyRepository {
 	return &apiKeyRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -64,7 +66,7 @@ func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error 
 		KeyHash:   key.KeyHash,
 	})
 	if err != nil {
-		return errx.DB(err, "api key")
+		return repo.dbe.DB(err, "api key")
 	}
 	return nil
 }
@@ -75,7 +77,7 @@ func (repo *apiKeyRepo) GetByProjectID(ctx context.Context, projectID uuid.UUID)
 	defer span.End()
 	dbKey, err := repo.queries(ctx).GetApiKeyByProjectID(ctx, projectID)
 	if err != nil {
-		return nil, errx.DB(err, "api key")
+		return nil, repo.dbe.DB(err, "api key")
 	}
 	return new(mapApiKeyFromDB(dbKey)), nil
 }
@@ -86,7 +88,7 @@ func (repo *apiKeyRepo) Delete(ctx context.Context, projectID uuid.UUID) error {
 	defer span.End()
 	err := repo.queries(ctx).DeleteApiKey(ctx, projectID)
 	if err != nil {
-		return errx.DB(err, "api key")
+		return repo.dbe.DB(err, "api key")
 	}
 	return nil
 }

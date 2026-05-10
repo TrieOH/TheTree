@@ -1,11 +1,11 @@
 package sessions
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

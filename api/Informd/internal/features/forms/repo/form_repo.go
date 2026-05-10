@@ -1,35 +1,34 @@
 package repo
 
 import (
+	"Informd/contracts"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
 	"context"
 	"lib/database"
+	"lib/errx"
 	"lib/xslices"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type formRepo struct {
 	q      *sqlc.Queries
-	db     *pgxpool.Pool
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.FormsRepo = (*formRepo)(nil)
 
-func NewFormRepo(q *sqlc.Queries, db *pgxpool.Pool, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
+func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.FormsRepo {
 	return &formRepo{
 		q:      q,
-		db:     db,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -58,7 +57,7 @@ func (repo *formRepo) Create(ctx context.Context, toCreate contracts.Form) (*con
 		Status:      string(toCreate.Status),
 	})
 	if err != nil {
-		return nil, errx.DB(err, "form")
+		return nil, repo.dbe.DB(err, "form")
 	}
 	return new(mapForm(sqlcForm)), nil
 }
@@ -78,7 +77,7 @@ func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID, params contr
 	defer span.End()
 	sqlcForms, err := database.Queries(ctx, repo.q).BulkGetForms(ctx, ids)
 	if err != nil {
-		return nil, errx.DB(err, "form")
+		return nil, repo.dbe.DB(err, "form")
 	}
 	forms := xslices.MapSlice(sqlcForms, mapForm)
 	forms, err = contracts.FilterForms(forms, params)

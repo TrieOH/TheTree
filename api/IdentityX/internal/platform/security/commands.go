@@ -1,7 +1,7 @@
 package security
 
 import (
-	"IdentityX/internal/shared/contracts"
+	"IdentityX/contracts"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"

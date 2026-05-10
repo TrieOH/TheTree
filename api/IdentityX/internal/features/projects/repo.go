@@ -1,13 +1,13 @@
 package projects
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/errx"
+	"lib/xslices"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -21,15 +21,17 @@ type projectRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.ProjectRepository = (*projectRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ProjectRepository {
 	return &projectRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -70,7 +72,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project)
 		IsActive:    toCreate.IsActive,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, repo.dbe.DB(err, "project")
 	}
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
 	return new(mapProjectFromDB(sqlcProject)), nil
@@ -86,7 +88,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, repo.dbe.DB(err, "project")
 	}
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
 	return new(mapProjectFromDB(sqlcProject)), nil
@@ -98,7 +100,7 @@ func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUI
 	defer span.End()
 	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, repo.dbe.DB(err, "project")
 	}
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
 	return new(mapProjectFromDB(sqlcProject)), nil
@@ -114,7 +116,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 		ID:      projectID,
 	})
 	if err != nil {
-		return false, errx.DB(err, "project")
+		return false, repo.dbe.DB(err, "project")
 	}
 	return isOwner, nil
 }
@@ -125,7 +127,7 @@ func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contrac
 	defer span.End()
 	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, repo.dbe.DB(err, "project")
 	}
 	span.SetAttributes(attribute.Int("project.count", len(sqlcProjects)))
 	return xslices.MapSlice(sqlcProjects, mapProjectFromDB), nil
@@ -144,7 +146,7 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project,
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "project")
+		return nil, repo.dbe.DB(err, "project")
 	}
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
@@ -159,7 +161,7 @@ func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUI
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return errx.DB(err, "project")
+		return repo.dbe.DB(err, "project")
 	}
 	if affectedRows == 0 {
 		return fun.ErrNotFound("project not found")

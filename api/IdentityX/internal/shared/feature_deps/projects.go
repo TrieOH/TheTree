@@ -1,8 +1,8 @@
 package feature_deps
 
 import (
-	"IdentityX/internal/platform/database"
 	"IdentityX/internal/shared/ports"
+	"lib/database"
 	"time"
 
 	"go.opentelemetry.io/otel/trace"

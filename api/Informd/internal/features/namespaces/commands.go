@@ -1,25 +1,25 @@
 package namespaces
 
 import (
-	"Informd/internal/platform/database"
-	"Informd/internal/shared/contracts"
+	"Informd/contracts"
 	"Informd/internal/shared/ports"
 	"context"
-	authz2 "lib/authz"
+	"lib/authz"
+	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
 )
 
 type CommandService struct {
 	projects ports.NamespaceRepo
-	perms    authz2.Checker
+	perms    authz.Checker
 	tx       database.TxRunner
 	tracer   trace.Tracer
 }
 
 func NewCommands(
 	projects ports.NamespaceRepo,
-	perms authz2.Checker,
+	perms authz.Checker,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *CommandService {
@@ -35,8 +35,8 @@ func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
 	defer span.End()
 
-	var sub *authz2.UserSubject
-	sub, err = authz2.RequireSubject(ctx)
+	var sub *authz.UserSubject
+	sub, err = authz.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +48,9 @@ func (s *CommandService) Create(ctx context.Context, name string) (ns *contracts
 	}
 
 	if err = s.perms.Require(ctx,
-		authz2.Subject("user", sub.ID),
-		authz2.Permission("create_namespace"),
-		authz2.Resource("user", sub.ID.String()),
+		authz.Subject("user", sub.ID),
+		authz.Permission("create_namespace"),
+		authz.Resource("user", sub.ID.String()),
 		map[string]any{"subject_id": sub.ID.String()},
 	); err != nil {
 		return nil, err

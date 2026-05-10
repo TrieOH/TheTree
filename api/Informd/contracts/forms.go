@@ -1,8 +1,8 @@
 package contracts
 
 import (
-	"Informd/internal/shared/utils"
 	"fmt"
+	"lib/utils"
 	"slices"
 	"strings"
 	"time"

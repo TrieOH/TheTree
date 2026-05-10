@@ -2,7 +2,6 @@ package app
 
 import (
 	"log"
-	"payssage/internal/shared/validation"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -11,9 +10,6 @@ import (
 func LoadEnv() {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	if err := validation.LoadProxyConfig(); err != nil {
-		log.Fatalf("LoadProxyConfig failed: %v", err.Error())
-	}
 
 	if viper.GetString("IDENTITY_X_URL") == "" {
 		log.Fatal("IDENTITY_X_URL must be set")

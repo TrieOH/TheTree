@@ -1,11 +1,11 @@
 package security
 
 import (
-	"IdentityX/internal/platform/database"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
+	"lib/errx"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,6 +18,7 @@ type tokenReuseListRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 func (repo *tokenReuseListRepo) queries(ctx context.Context) *sqlc.Queries {
@@ -33,11 +34,12 @@ func (repo *tokenReuseListRepo) tokenSpan(ctx context.Context, op string) (conte
 
 var _ ports.TokenReuseListRepository = (*tokenReuseListRepo)(nil)
 
-func NewTokenReuseRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.TokenReuseListRepository {
+func NewTokenReuseRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.TokenReuseListRepository {
 	return &tokenReuseListRepo{
 		q:      q,
 		log:    l,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -50,7 +52,7 @@ func (repo *tokenReuseListRepo) Append(ctx context.Context, jit, userID uuid.UUI
 		ExpiresAt: expiresAt,
 	})
 	if err != nil {
-		return errx.DB(err, "token")
+		return repo.dbe.DB(err, "token")
 	}
 	return nil
 }
@@ -63,7 +65,7 @@ func (repo *tokenReuseListRepo) Exists(ctx context.Context, jit, userID uuid.UUI
 		UserID: userID,
 	})
 	if err != nil {
-		return false, errx.DB(err, "token")
+		return false, repo.dbe.DB(err, "token")
 	}
 	return exists, nil
 }
@@ -73,7 +75,7 @@ func (repo *tokenReuseListRepo) ClearExpired(ctx context.Context) error {
 	defer span.End()
 	err := repo.queries(ctx).DeleteExpiredTokenReuseListEntries(ctx)
 	if err != nil {
-		return errx.DB(err, "token")
+		return repo.dbe.DB(err, "token")
 	}
 	return nil
 }

@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"IdentityX/internal/platform/database"
-	"IdentityX/internal/shared/contracts"
+	"IdentityX/contracts"
 	"IdentityX/internal/shared/ports"
 	"context"
+	"lib/database"
 	"lib/telemetry"
 
 	"github.com/MintzyG/fun"

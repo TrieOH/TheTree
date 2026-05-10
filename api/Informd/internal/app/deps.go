@@ -1,9 +1,9 @@
 package app
 
 import (
-	"Informd/internal/shared/errx"
 	"context"
 	"lib/database"
+	"lib/errx"
 	"log"
 	"net/http"
 	"os"
@@ -74,7 +74,33 @@ func SetupFUN(module string) {
 	})
 }
 
-func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
+func SetupDBErrorHandler() *errx.DBHandler {
+	dbErr := errx.NewDBHandler(
+		errx.ConstraintRegistry{
+			// forms
+			"chk_forms_valid_status":       "status must be one of: draft, open, closed, archived",
+			"chk_forms_valid_status_state": "opened_at, closed_at or archived_at must be set when status is open, closed or archived",
+			"uniq_form_name_per_namespace": "a form with this name already exists in this namespace",
+			"uniq_name_per_user":           "an API key with this name already exists",
+
+			// fields
+			"chk_fields_type":             "field type must be one of: string, email, int, float, bool, select",
+			"chk_fields_key_format":       "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores",
+			"chk_fields_select_behaviour": "select fields must have a behaviour of checkbox or radio",
+			"chk_fields_select_options":   "select fields must have a non-empty options array",
+			"chk_select_type":             "select_type must be one of: string, email, int, float, bool, select",
+			"uniq_key_per_step":           "a field with this key already exists in this step",
+
+			// namespaces
+			"uniq_namespace_name_per_user": "a namespace with this name already exists",
+		},
+		[]string{"namespaces", "api_keys", "forms", "versions", "fields"},
+	)
+
+	return dbErr
+}
+
+func SetupDB(migrationPath, dsn string, dbHandler *errx.DBHandler) *pgxpool.Pool {
 	db, err := database.WaitForDB(30*time.Second, dsn)
 	if err != nil {
 		errx.Must(err, "Failed to connect DB")
@@ -84,7 +110,7 @@ func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	errx.Must(errx.ValidateConstraintRegistry(ctx, db), "unregistered constraints found")
+	errx.Must(dbHandler.Validate(ctx, db), "unregistered constraints found")
 	return db
 }
 

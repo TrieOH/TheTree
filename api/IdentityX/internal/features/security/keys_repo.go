@@ -1,13 +1,13 @@
 package security
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/shared/contracts"
-	"IdentityX/internal/shared/errx"
 	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/xslices"
 	"context"
+	"lib/database"
+	"lib/errx"
+	"lib/xslices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -20,15 +20,17 @@ type keyRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
+	dbe    *errx.DBHandler
 }
 
 var _ ports.KeysRepository = (*keyRepo)(nil)
 
-func NewKeysRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.KeysRepository {
+func NewKeysRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.KeysRepository {
 	return &keyRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
+		dbe:    dbe,
 	}
 }
 
@@ -88,7 +90,7 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*c
 		VerifyExpiresAt: pair.VerifyExpiresAt,
 	})
 	if err != nil {
-		return nil, errx.DB(err, "key pair")
+		return nil, repo.dbe.DB(err, "key pair")
 	}
 	return new(mapKeyPairFromDB(row)), nil
 }
@@ -99,7 +101,7 @@ func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*contracts.Pa
 	defer span.End()
 	row, err := repo.queries(ctx).GetKeyByKID(ctx, kid)
 	if err != nil {
-		return nil, errx.DB(err, "key pair")
+		return nil, repo.dbe.DB(err, "key pair")
 	}
 	return new(mapKeyPairFromDB(row)), nil
 }
@@ -112,7 +114,7 @@ func (repo *keyRepo) GetActiveSigningKey(ctx context.Context, projectID *uuid.UU
 	defer span.End()
 	row, err := repo.queries(ctx).GetActiveSigningKey(ctx, projectID)
 	if err != nil {
-		return nil, errx.DB(err, "signing key")
+		return nil, repo.dbe.DB(err, "signing key")
 	}
 	return new(mapKeyPairFromDB(row)), nil
 }
@@ -125,7 +127,7 @@ func (repo *keyRepo) GetActiveSigningKID(ctx context.Context, projectID *uuid.UU
 	}
 	kid, err := repo.queries(ctx).GetActiveSigningKID(ctx, projectID)
 	if err != nil {
-		return "", errx.DB(err, "signing kid")
+		return "", repo.dbe.DB(err, "signing kid")
 	}
 	return kid, nil
 }
@@ -138,7 +140,7 @@ func (repo *keyRepo) ListPublicKeys(ctx context.Context, projectID *uuid.UUID) (
 	}
 	rows, err := repo.queries(ctx).ListPublicKeys(ctx, projectID)
 	if err != nil {
-		return nil, errx.DB(err, "keys")
+		return nil, repo.dbe.DB(err, "keys")
 	}
 	return xslices.MapSlice(rows, mapPublicKeyFromDB), nil
 }
@@ -150,7 +152,7 @@ func (repo *keyRepo) RotateSigningKeys(ctx context.Context, projectID *uuid.UUID
 		span.SetAttributes(attribute.String("project.id", projectID.String()))
 	}
 	if err := repo.queries(ctx).RotateSigningKeys(ctx, projectID); err != nil {
-		return errx.DB(err, "keys")
+		return repo.dbe.DB(err, "keys")
 	}
 	return nil
 }
@@ -160,7 +162,7 @@ func (repo *keyRepo) RevokeKeyByKID(ctx context.Context, kid string) error {
 	span.SetAttributes(attribute.String("key.kid", kid))
 	defer span.End()
 	if err := repo.queries(ctx).RevokeKeyByKID(ctx, kid); err != nil {
-		return errx.DB(err, "key")
+		return repo.dbe.DB(err, "key")
 	}
 	return nil
 }
@@ -169,7 +171,7 @@ func (repo *keyRepo) DeleteExpiredRevokedKeys(ctx context.Context) error {
 	ctx, span := repo.keySpan(ctx, "DeleteExpiredRevokedKeys")
 	defer span.End()
 	if err := repo.queries(ctx).DeleteExpiredRevokedKeys(ctx); err != nil {
-		return errx.DB(err, "keys")
+		return repo.dbe.DB(err, "keys")
 	}
 	return nil
 }

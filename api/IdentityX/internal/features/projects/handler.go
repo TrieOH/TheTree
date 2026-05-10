@@ -1,11 +1,9 @@
 package projects
 
 import (
+	"IdentityX/contracts"
 	"IdentityX/internal/platform/middlewares"
-	"IdentityX/internal/shared/contracts"
 	"net/http"
-
-	_ "IdentityX/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

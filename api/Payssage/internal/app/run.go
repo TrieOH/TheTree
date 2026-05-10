@@ -1,6 +1,8 @@
 package app
 
 import (
+	"lib/database"
+	"lib/telemetry"
 	"log"
 	"net/http"
 	"payssage/internal/features/api_keys"
@@ -11,11 +13,9 @@ import (
 	"payssage/internal/interfaces/http/middleware"
 	"payssage/internal/interfaces/http/router"
 	"payssage/internal/interfaces/http/system"
-	"payssage/internal/platform/database"
 	"payssage/internal/platform/database/sqlc"
 	"payssage/internal/platform/providers"
 	"payssage/internal/platform/queue"
-	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/ports"
 
 	"github.com/hibiken/asynq"
@@ -87,9 +87,9 @@ type asynqDeps struct {
 func (app *Payssage) run() {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
-	rt.txRunner = database.NewPGXTxRunner(app.db)
-	rt.tracer = otel.Tracer(string(telemetry.PayssageTracer))
 	rt.logger = telemetry.Log()
+	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
+	rt.tracer = otel.Tracer("Payssage")
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.asynq = app.startAsynq(rt)

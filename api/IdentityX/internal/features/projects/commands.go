@@ -1,14 +1,14 @@
 package projects
 
 import (
-	"IdentityX/internal/platform/database"
+	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/contracts"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"fmt"
-	crypto2 "lib/crypto"
+	"lib/crypto"
+	"lib/database"
 	"lib/errx"
 	"time"
 
@@ -82,13 +82,13 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 		return nil, err
 	}
 
-	pub, priv, err := crypto2.GenerateEd25519()
+	pub, priv, err := crypto.GenerateEd25519()
 	if err != nil {
 		return nil, fun.Errf("error generating project keys: %s", err).Internal()
 	}
 	defer zero(priv)
 
-	encryptedPriv, err := crypto2.Encrypt(priv, uc.encryptionKey)
+	encryptedPriv, err := crypto.Encrypt(priv, uc.encryptionKey)
 	if err != nil {
 		return nil, fun.Errf("error encrypting project keys: %s", err).Internal()
 	}

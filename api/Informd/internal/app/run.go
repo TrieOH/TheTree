@@ -1,21 +1,17 @@
 package app
 
 import (
-	commands2 "Informd/internal/features/forms/commands"
-	"Informd/internal/features/forms/handler"
-	queries2 "Informd/internal/features/forms/queries"
-	"Informd/internal/features/forms/repo"
+	"Informd/contracts"
+	"Informd/internal/features/forms"
 	"Informd/internal/features/keys"
 	"Informd/internal/features/namespaces"
-	"Informd/internal/platform/database"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/platform/telemetry"
-	"Informd/internal/shared/contracts"
-	"Informd/internal/shared/errx"
 	"Informd/internal/shared/ports"
 	"context"
-	authz2 "lib/authz"
-	database2 "lib/database"
+	"lib/authz"
+	"lib/database"
+	"lib/errx"
+	"lib/telemetry"
 	"lib/xslices"
 	"log"
 	"net/http"
@@ -45,19 +41,19 @@ type runtime struct {
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	asynq       asynqDeps
-	perms       authz2.Checker
+	perms       authz.Checker
 }
 
 type commands struct {
 	namespaces *namespaces.CommandService
 	apiKeys    *keys.CommandService
-	forms      *commands2.CommandService
+	forms      *forms.Commands
 }
 
 type queries struct {
 	namespaces *namespaces.QueryService
 	apiKeys    *keys.QueryService
-	forms      *queries2.QueryService
+	forms      *forms.Queries
 }
 
 type repos struct {
@@ -91,14 +87,11 @@ type asynqDeps struct {
 
 func (app *Informd) run() runtime {
 	var rt runtime
-	rt.logger = telemetry.NewLogger(telemetry.LogConfig{
-		Level:       "info",
-		Development: false,
-	})
-	rt.perms = authz2.NewChecker(app.sdbClient)
+	rt.logger = telemetry.Log()
+	rt.perms = authz.NewChecker(app.sdbClient)
 	rt.repoQueries = sqlc.New(app.db)
-	rt.txRunner = database2.NewPGXTxRunner(app.db, rt.logger)
-	rt.tracer = otel.Tracer(string(telemetry.InformdTracer))
+	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
+	rt.tracer = otel.Tracer(app.Config.AppName)
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
 	rt.commands = app.startCommands(rt)
@@ -122,7 +115,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	})
 	handlers.ProjectsHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.ApiKeysHandler = keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
-	handlers.FormsHandler = handler.NewHandler(rt.commands.forms, rt.queries.forms)
+	handlers.FormsHandler = forms.NewHandler(rt.commands.forms, rt.queries.forms)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -144,7 +137,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
 	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
-	cmd.forms = commands2.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	return cmd
 }
 
@@ -152,16 +145,16 @@ func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = queries2.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
 	return q
 }
 
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
-	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = repo.NewFormRepo(rt.repoQueries, app.db, rt.logger, rt.tracer)
-	r.steps = repo.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
 	return r
 }
 
@@ -173,7 +166,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
-		return authz2.WithSubject(ctx, &authz2.UserSubject{
+		return authz.WithSubject(ctx, &authz.UserSubject{
 			ID:    claims.Sub.ID,
 			Email: claims.Sub.Email,
 		}), nil
@@ -200,7 +193,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 		if matched == nil {
 			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
-		return authz2.WithSubject(ctx, &authz2.UserSubject{ID: matched.OwnerID}), nil
+		return authz.WithSubject(ctx, &authz.UserSubject{ID: matched.OwnerID}), nil
 	}
 
 	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)

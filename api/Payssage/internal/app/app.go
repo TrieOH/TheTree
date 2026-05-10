@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"payssage/internal/platform/telemetry"
+	"lib/telemetry"
 	"time"
 
 	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
@@ -10,6 +10,7 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -25,10 +26,10 @@ func New() *Payssage {
 	var app Payssage
 	LoadEnv()
 	SetupFUN()
-	app.redis = SetupRedis(15 * time.Second)
+	app.redis = SetupRedis(15*time.Second, viper.GetString("REDIS_ADDR"), viper.GetString("REDIS_PASSWORD"), viper.GetInt("REDIS_DB"))
 	app.ga = SetupIdentityX()
 	migrationPath := "./internal/platform/database/migrations"
-	app.db = SetupDB(migrationPath)
+	app.db = SetupDB(migrationPath, viper.GetString("DATABASE_URL"))
 	app.scheduler = SetupCron(app.db)
 	app.sdb = SetupSpiceDB()
 	return &app
@@ -56,7 +57,7 @@ func (app *Payssage) CloseRedis() {
 }
 
 func (app *Payssage) StartTracer(ctx context.Context) func(context.Context) error {
-	shutdown, err := telemetry.InitTracer(ctx)
+	shutdown, err := telemetry.InitTracer(ctx, "Payssage")
 	if err != nil {
 		telemetry.Log().Fatal("error starting tracer", zap.Error(err))
 	}

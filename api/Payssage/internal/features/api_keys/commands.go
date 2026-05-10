@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"lib/authz"
+	"lib/database"
+	"payssage/contracts"
 	"payssage/internal/shared/ports"
 
 	"github.com/authzed/authzed-go/v1"
@@ -18,6 +18,7 @@ import (
 type CommandService struct {
 	apiKeys    ports.ApiKeysRepo
 	workspaces ports.WorkspaceRepo
+	checker    authz.Checker
 	az         *authzed.Client
 	tx         database.TxRunner
 	tracer     trace.Tracer
@@ -26,6 +27,7 @@ type CommandService struct {
 func NewCommandService(
 	apiKeys ports.ApiKeysRepo,
 	workspaces ports.WorkspaceRepo,
+	checker authz.Checker,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -33,6 +35,7 @@ func NewCommandService(
 	return &CommandService{
 		apiKeys:    apiKeys,
 		workspaces: workspaces,
+		checker:    checker,
 		az:         az,
 		tx:         tx,
 		tracer:     tracer,
@@ -54,10 +57,11 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 		return "", nil, err
 	}
 
-	if err = authz.Require(ctx, uc.az,
+	if err = uc.checker.Require(ctx,
 		authz.Subject("user", sub.ID),
 		authz.Permission("create_api_keys"),
 		authz.Resource("workspace", workspace.ID.String()),
+		nil,
 	); err != nil {
 		return "", nil, err
 	}

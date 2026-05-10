@@ -2,9 +2,9 @@ package app
 
 import (
 	"context"
+	"lib/database"
 	"log"
 	"os"
-	"payssage/internal/platform/database"
 	"time"
 
 	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
@@ -37,9 +37,9 @@ func SetupFUN() {
 	})
 }
 
-func SetupDB(migrationPath string) *pgxpool.Pool {
+func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
 	var err error
-	db, err := database.WaitForDB(30 * time.Second)
+	db, err := database.WaitForDB(30*time.Second, dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
@@ -49,8 +49,8 @@ func SetupDB(migrationPath string) *pgxpool.Pool {
 	return db
 }
 
-func SetupRedis(timeout time.Duration) *redis.Client {
-	rdb, err := database.WaitForRedis(timeout)
+func SetupRedis(timeout time.Duration, addr, pass string, db int) *redis.Client {
+	rdb, err := database.WaitForRedis(timeout, addr, pass, db)
 	if err != nil {
 		log.Fatalf("Failed to connect Redis: %v", err)
 	}

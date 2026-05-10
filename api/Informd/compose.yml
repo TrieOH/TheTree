@@ -2,8 +2,8 @@ services:
   informd:
     container_name: informd
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: api/Informd/Dockerfile
     ports:
       - "8084:8080"
     networks:

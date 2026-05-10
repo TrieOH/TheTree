@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"lib/authz"
 	"net/http"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"payssage/contracts"
 	"payssage/internal/shared/ports"
 	"strings"
 
