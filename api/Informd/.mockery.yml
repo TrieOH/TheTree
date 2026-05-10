@@ -22,16 +22,16 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  Informd/internal/shared/ports:
+  Informd/ports:
     config:
       all: true
       pkgname: mocks
-      dir: internal/shared/mocks
+      dir: mocks
       filename: ports.go
   lib/authz:
     config:
       pkgname: mocks
-      dir: internal/shared/mocks
+      dir: mocks
       filename: authz.go
     interfaces:
       Checker:

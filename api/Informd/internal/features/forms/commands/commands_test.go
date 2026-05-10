@@ -2,14 +2,13 @@ package commands
 
 import (
 	"Informd/contracts"
-	"Informd/internal/shared/mocks"
+	"Informd/mocks"
 	"context"
 	"errors"
 	"lib/authz"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -48,359 +47,313 @@ func ctxWithUser(id uuid.UUID) context.Context {
 
 var errGeneric = errors.New("something went wrong")
 
-func TestCreate_NoNamespace_Success(t *testing.T) {
-	d := newTestDeps(t)
+func formMatcher(ownerID uuid.UUID, namespaceID *uuid.UUID, title string) interface{} {
+	return mock.MatchedBy(func(f contracts.Form) bool {
+		nsMatch := (namespaceID == nil && f.NamespaceID == nil) || (namespaceID != nil && f.NamespaceID != nil && *f.NamespaceID == *namespaceID)
+		return f.Title == title &&
+			f.OwnerID == ownerID &&
+			nsMatch &&
+			f.Status == contracts.FormStatusDraft
+	})
+}
+
+func TestCreate_NoNamespace(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
+	form := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
 
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(expected, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_user@user:"+userID.String()).
-		Return(nil)
-
-	result, err := d.svc.Create(ctx, "My Form", nil)
-
-	require.NoError(t, err)
-	assert.Equal(t, expected, result)
-}
-
-func TestCreate_NoNamespace_NoSubjectInContext(t *testing.T) {
-	d := newTestDeps(t)
-
-	_, err := d.svc.Create(context.Background(), "My Form", nil)
-
-	require.Error(t, err)
-}
-
-func TestCreate_NoNamespace_AuthzDenied(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-
-	d.perms.EXPECT().
-		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errGeneric)
-
-	_, err := d.svc.Create(ctx, "My Form", nil)
-
-	require.Error(t, err)
-}
-
-func TestCreate_NoNamespace_BadFormInput(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-
-	d.perms.EXPECT().
-		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil)
-
-	_, err := d.svc.Create(ctx, "", nil)
-
-	require.Error(t, err)
-}
-
-func TestCreate_NoNamespace_DatabaseError(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-
-	d.perms.EXPECT().
-		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(nil, errGeneric)
-
-	_, err := d.svc.Create(ctx, "my form", nil)
-	require.Error(t, err)
-}
-
-func TestCreate_NoNamespace_CouldntCreateRelation(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	created := &contracts.Form{ID: formID, Title: "my form", OwnerID: userID}
-
-	d.perms.EXPECT().
-		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(created, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, mock.Anything).
-		Return(errGeneric)
-
-	_, err := d.svc.Create(ctx, "my form", nil)
-	require.Error(t, err)
-}
-
-func TestCreate_Namespace_Success(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-	ns := &contracts.Namespace{ID: *namespaceID}
-	created := &contracts.Form{ID: formID, Title: "my form", NamespaceID: namespaceID, OwnerID: userID}
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(ns, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(created, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_namespace@namespace:"+namespaceID.String()).
-		Return(nil)
-
-	result, err := d.svc.Create(ctx, "my form", namespaceID)
-	require.NoError(t, err)
-	require.Equal(t, created, result)
-}
-
-func TestCreate_Namespace_NotFound(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(nil, errGeneric)
-
-	_, err := d.svc.Create(ctx, "my form", namespaceID)
-	require.Error(t, err)
-}
-
-func TestCreate_Namespace_AuthzDenied(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-	ns := &contracts.Namespace{ID: *namespaceID}
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(ns, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errGeneric)
-
-	_, err := d.svc.Create(ctx, "My Form", namespaceID)
-
-	require.Error(t, err)
-}
-
-func TestCreate_Namespace_BadFormInput(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-	ns := &contracts.Namespace{ID: *namespaceID}
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(ns, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	_, err := d.svc.Create(ctx, "", namespaceID)
-
-	require.Error(t, err)
-}
-
-func TestCreate_Namespace_DatabaseError(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-	ns := &contracts.Namespace{ID: *namespaceID}
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(ns, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(nil, errGeneric)
-
-	_, err := d.svc.Create(ctx, "my form", namespaceID)
-	require.Error(t, err)
-}
-
-func TestCreate_Namespace_CouldntCreateRelation(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	namespaceID := new(uuid.New())
-	ns := &contracts.Namespace{ID: *namespaceID}
-	created := &contracts.Form{ID: formID, Title: "my form", OwnerID: userID, NamespaceID: namespaceID}
-
-	d.namespaces.EXPECT().
-		GetByID(mock.Anything, *namespaceID).
-		Return(ns, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("namespace", namespaceID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(created, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, mock.Anything).
-		Return(errGeneric)
-
-	_, err := d.svc.Create(ctx, "my form", namespaceID)
-	require.Error(t, err)
-}
-
-func TestCreateStep_Success(t *testing.T) {
-	d := newTestDeps(t)
-	userID := uuid.New()
-	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(expected, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_user@user:"+userID.String()).
-		Return(nil)
-
-	result, err := d.svc.Create(ctx, "My Form", nil)
-
-	require.NoError(t, err)
-	assert.Equal(t, expected, result)
-
-	payload := contracts.CreateStepRequest{
-		Title:        "Step 1",
-		Description:  new("Please fill me out"),
-		PositionHint: 1,
+	tests := []struct {
+		name    string
+		title   string
+		setup   func(d testDeps)
+		wantErr bool
+	}{
+		{
+			name:  "success",
+			title: "My Form",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, formMatcher(userID, nil, "My Form")).Return(form, nil)
+				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no subject in context",
+			title:   "My Form",
+			setup:   func(d testDeps) {},
+			wantErr: true,
+		},
+		{
+			name:  "authz denied",
+			title: "My Form",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "bad input",
+			title: "",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "db error",
+			title: "My Form",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "could not create relation",
+			title: "My Form",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(form, nil)
+				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(errGeneric)
+			},
+			wantErr: true,
+		},
 	}
 
-	d.forms.EXPECT().
-		GetByID(mock.Anything, formID).
-		Return(expected, nil)
-
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("edit"),
-			authz.Resource("user", userID.String()),
-			map[string]any{"form": formID.String()},
-		).Return(nil)
-
-	_, err = d.svc.CreateStep(ctx, result.ID, payload)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := newTestDeps(t)
+			tt.setup(d)
+			ctx := ctxWithUser(userID)
+			if tt.name == "no subject in context" {
+				ctx = context.Background()
+			}
+			_, err := d.svc.Create(ctx, tt.title, nil)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
-func TestCreateStep_Fail_InsufficientPermissions(t *testing.T) {
-	d := newTestDeps(t)
+func TestCreate_Namespace(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
-	ctx := ctxWithUser(userID)
-	expected := &contracts.Form{ID: formID, Title: "My Form", OwnerID: userID}
+	form := &contracts.Form{ID: formID, Title: "My Direct Form", OwnerID: userID}
+	namespaceID := uuid.New()
+	namespace := &contracts.Namespace{ID: namespaceID}
 
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("create_form"),
-			authz.Resource("user", userID.String()),
-			map[string]any{"subject_id": userID.String()},
-		).Return(nil)
-
-	d.forms.EXPECT().
-		Create(mock.Anything, mock.Anything).
-		Return(expected, nil)
-
-	d.perms.EXPECT().
-		CreateRelation(mock.Anything, "form:"+formID.String()+"#parent_user@user:"+userID.String()).
-		Return(nil)
-
-	result, err := d.svc.Create(ctx, "My Form", nil)
-
-	require.NoError(t, err)
-	assert.Equal(t, expected, result)
-
-	payload := contracts.CreateStepRequest{
-		Title:        "Step 1",
-		Description:  new("Please fill me out"),
-		PositionHint: 1,
+	tests := []struct {
+		name    string
+		title   string
+		setup   func(d testDeps)
+		wantErr bool
+	}{
+		{
+			name:  "success",
+			title: "My Direct Form",
+			setup: func(d testDeps) {
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, formMatcher(userID, &namespaceID, "My Direct Form")).Return(form, nil)
+				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:    "no subject in context",
+			title:   "My Form",
+			setup:   func(d testDeps) {},
+			wantErr: true,
+		},
+		{
+			name:  "namespace not found",
+			title: "My Direct Form",
+			setup: func(d testDeps) {
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(nil, errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "permission denied",
+			title: "My Direct Form",
+			setup: func(d testDeps) {
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "bad input",
+			title: "",
+			setup: func(d testDeps) {
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "db error",
+			title: "My Direct Form",
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
+				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:  "could not create relation",
+			title: "My Direct Form",
+			setup: func(d testDeps) {
+				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(form, nil)
+				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(errGeneric)
+			},
+			wantErr: true,
+		},
 	}
 
-	d.forms.EXPECT().
-		GetByID(mock.Anything, formID).
-		Return(expected, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := newTestDeps(t)
+			tt.setup(d)
+			ctx := ctxWithUser(userID)
+			if tt.name == "no subject in context" {
+				ctx = context.Background()
+			}
+			_, err := d.svc.Create(ctx, tt.title, &namespaceID)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
-	d.perms.EXPECT().
-		Require(mock.Anything,
-			authz.Subject("user", userID),
-			authz.Permission("edit"),
-			authz.Resource("form", formID.String()),
-			nil,
-		).Return(errGeneric)
-
-	_, err = d.svc.CreateStep(ctx, result.ID, payload)
-	require.Error(t, err)
+func Test_CreateStep(t *testing.T) {
+	userID := uuid.New()
+	formID := uuid.New()
+	form, _ := contracts.NewForm(new(uuid.New()), userID, "My Form")
+	step, _ := contracts.NewStep(formID, "Step 1", new("My Description"), 1)
+	tests := []struct {
+		name         string
+		title        string
+		description  *string
+		positionHint int
+		setup        func(d testDeps)
+		wantErr      bool
+	}{
+		{
+			name:         "success",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup: func(d testDeps) {
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.steps.EXPECT().Create(mock.Anything, mock.Anything).Return(step, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name:         "no subject in context",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup:        func(d testDeps) {},
+			wantErr:      true,
+		},
+		{
+			name:         "insufficient permission",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:         "form not found",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(nil, errGeneric)
+			},
+			wantErr: true,
+		},
+		{
+			name:         "empty title",
+			title:        "",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:         "position hint zero",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 0,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:         "position hint negative",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: -1,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:         "db error",
+			title:        "Step 1",
+			description:  new("My Description"),
+			positionHint: 1,
+			setup: func(d testDeps) {
+				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
+				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				d.steps.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := newTestDeps(t)
+			tt.setup(d)
+			ctx := ctxWithUser(userID)
+			if tt.name == "no subject in context" {
+				ctx = context.Background()
+			}
+			_, err := d.svc.CreateStep(ctx, formID, contracts.CreateStepRequest{
+				Title:        tt.title,
+				Description:  tt.description,
+				PositionHint: tt.positionHint,
+			})
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

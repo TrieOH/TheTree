@@ -3,7 +3,7 @@ package keys
 import (
 	"Informd/contracts"
 	"Informd/internal/platform/database/sqlc"
-	"Informd/internal/shared/ports"
+	"Informd/ports"
 	"context"
 	"lib/database"
 	"lib/errx"
