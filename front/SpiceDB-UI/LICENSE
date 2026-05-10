@@ -1,38 +1,160 @@
-TrieOH Source Available License v1 (TSAL-1)
-
+TrieOH Source Available License v1.2 (TSAL-1.2)
 Copyright (c) 2026 TrieOH. All rights reserved.
 
+CONFLICT RESOLUTION
+In the event of any conflict or inconsistency between this License and its
+Portuguese translation (LICENSE.pt-BR), the Portuguese version shall prevail
+for all legal purposes within Brazil. Outside of Brazil, this English version
+shall prevail.
+
+0. DEFINITIONS
+
+"Software" means the source code, documentation, configuration files, and all
+associated materials made available by TrieOH under this License.
+
+"Run Locally" means executing the Software on a personal machine solely for
+the purpose of studying or evaluating it, with no production or service use.
+
+"Commercial Use" means any use of the Software, in whole or in part, in
+connection with a product, service, or activity intended to generate revenue
+or provide value to third parties.
+
+"Contribution" means any bug report, patch, suggestion, or other submission
+made to TrieOH through the official contribution channel.
+
+"Official Contribution Channel" means the GitHub mirror repository at
+https://github.com/trieoh, where issues and pull requests are accepted as
+the public interface for community contributions.
+
 1. GRANT OF RIGHTS
-   You are granted a limited, non-exclusive, non-transferable right to
-   view and study the source code of this software for personal,
-   non-commercial, educational purposes only.
+
+Subject to the terms of this License, TrieOH grants you a limited,
+non-exclusive, non-transferable, revocable right to:
+
+  a) View and study the source code for personal, non-commercial,
+     educational purposes;
+
+  b) Run Locally for the sole purpose of personal evaluation or study; and
+
+  c) Reference and cite the Software's architecture, design decisions, or
+     technical approaches in articles, blog posts, academic papers,
+     presentations, interviews, or portfolios, subject to the attribution
+     requirements in Section 3.
 
 2. RESTRICTIONS
-   You may NOT:
-   - Copy, distribute, or redistribute this software or any portion of it
-   - Fork, modify, or create derivative works
-   - Use this software or any portion of it in any product or service,
-     commercial or otherwise
-   - Self-host, deploy, or run this software for any purpose
-   - Sublicense or transfer any rights granted herein
 
-3. NO FORKING
-   Creating forks of this repository, whether public or private, is
-   explicitly prohibited.
+You may NOT, without prior written authorization from TrieOH:
 
-4. LICENSE CHANGES
-   TrieOH reserves the right to change the terms of this license at any
-   time, for any version of this software, without prior notice.
-   Continued access to the source code constitutes acceptance of the
-   current license terms.
+  a) Copy, distribute, publish, or otherwise make this Software available
+     to third parties;
 
-5. NO WARRANTY
-   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-   TRIEOH SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE OR
-   INABILITY TO USE THIS SOFTWARE.
+  b) Modify, adapt, translate, or create derivative works based on the
+     Software;
 
-6. TERMINATION
-   Any violation of these terms immediately and automatically terminates
-   all rights granted under this license.
+  c) Use the Software, in whole or in part, in any product or service,
+     whether commercial or non-commercial, accessible to third parties;
 
-For commercial licensing inquiries: legal@trieoh.com
+  d) Deploy, host, or operate the Software in any production or
+     staging environment;
+
+  e) Sublicense, sell, rent, lease, or transfer any rights granted
+     herein;
+
+  f) Remove or alter any copyright notices, license notices, or
+     proprietary legends in the Software; or
+
+  g) Use the Software as a reference, blueprint, or guide to develop,
+     design, or implement functionally equivalent software, whether
+     through direct copying or independent reimplementation intended to
+     replicate the Software's functionality or architecture
+     ("clean-room circumvention").
+
+3. ATTRIBUTION
+
+Any public reference to the Software — including but not limited to blog
+posts, academic papers, presentations, social media posts, interviews, or
+portfolio entries — must:
+
+  a) Clearly identify TrieOH as the author and copyright holder of the
+     Software;
+
+  b) Include a visible link to https://trieoh.com; and
+
+  c) Where a specific TrieOH product is mentioned, include a link to that
+     product's page on the TrieOH website or, if no dedicated page exists,
+     to https://trieoh.com.
+
+Attribution must not imply endorsement by or affiliation with TrieOH unless
+expressly authorized in writing.
+
+4. CONTRIBUTIONS
+
+TrieOH welcomes community contributions through its Official Contribution
+Channel. By submitting a Contribution, you agree that:
+
+  a) You irrevocably assign to TrieOH all intellectual property rights in
+     your Contribution, including copyright, to the maximum extent
+     permitted by applicable law;
+
+  b) You represent that you have the right to make such assignment and that
+     your Contribution does not infringe any third-party rights;
+
+  c) TrieOH is under no obligation to review, accept, merge, or act upon
+     any Contribution; and
+
+  d) The Official Contribution Channel (GitHub) serves as the public
+     interface for submitting issues and pull requests. TrieOH may apply
+     accepted contributions to its canonical repository independently,
+     without merging directly through the GitHub mirror.
+
+5. NO FORKING
+
+Creating copies or forks of this repository — whether public, private, or
+otherwise — is explicitly prohibited, except as strictly necessary for the
+limited local evaluation permitted under Section 1(b). Any such local copy
+must be deleted upon conclusion of your evaluation or upon termination of
+this License.
+
+6. LICENSE CHANGES
+
+TrieOH reserves the right to modify the terms of this License at any time.
+Changes to this License will apply to:
+
+  a) All new versions and releases of the Software published after the
+     effective date of the modified License; and
+
+  b) Existing versions of the Software, provided that TrieOH gives at
+     least 30 (thirty) days' prior written notice via the official
+     TrieOH repository or website.
+
+Prior versions of the Software downloaded or accessed before the effective
+date of a change remain governed by the License version in effect at the
+time of access, unless you expressly agree to the updated terms.
+
+7. COMMERCIAL LICENSING
+
+For commercial use, integration, OEM, or any other use not expressly
+permitted by this License, please contact: legal@trieoh.com
+
+8. NO WARRANTY
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+TRIEOH BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+9. TERMINATION
+
+Your rights under this License terminate automatically and immediately upon
+any violation of its terms. Upon termination, you must cease all use of the
+Software and destroy any copies in your possession. Sections 7, 8, and 9
+survive termination.
+
+10. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with the laws
+of Brazil. Any disputes arising out of or in connection with this License
+shall be subject to the exclusive jurisdiction of the courts of the State
+of Rio de Janeiro, Brazil.
