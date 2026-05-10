@@ -2,7 +2,7 @@ package keys
 
 import (
 	"Informd/contracts"
-	"Informd/internal/shared/ports"
+	"Informd/ports"
 	"context"
 	"lib/authz"
 	"lib/database"
