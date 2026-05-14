@@ -1,0 +1,93 @@
+# =============================================================
+# 🔐 SNIPPETS
+# =============================================================
+
+(admin_auth) {
+	basicauth {
+		TrieOH {$ADMIN_PASSWORD_HASH}
+	}
+}
+
+(api_routes) {
+	handle /health {
+		respond "ok" 200
+	}
+
+	handle_path /admin/grafana* {
+		import admin_auth
+		reverse_proxy localhost:3001
+	}
+
+	handle /admin/dozzle* {
+		import admin_auth
+		reverse_proxy dozzle:8080
+	}
+
+	handle_path /identityx/* {
+		reverse_proxy identity-x:8080
+	}
+
+	handle_path /informd/* {
+		reverse_proxy informd:8080
+	}
+
+	handle_path /univents/* {
+		reverse_proxy univents:8080
+	}
+
+	handle_path /payssage/* {
+		reverse_proxy payssage:8080
+	}
+}
+
+# =============================================================
+# 🗄️ STORAGE (RustFS — host)
+# =============================================================
+
+:9000 {
+	reverse_proxy rustfs:9000
+}
+
+:9001 {
+	reverse_proxy rustfs:9001
+}
+
+# =============================================================
+# 🌐 API GATEWAY
+# =============================================================
+
+:80 {
+	import api_routes
+}
+
+# =============================================================
+# 🎟️ UNIVENTS
+# =============================================================
+
+:8081 {
+	reverse_proxy univents:8080
+}
+
+# =============================================================
+# 💳 PAYSSAGE
+# =============================================================
+
+:8082 {
+	reverse_proxy payssage:8080
+}
+
+# =============================================================
+# 🔐 IDENTITY-X
+# =============================================================
+
+:8083 {
+	reverse_proxy identity-x:8080
+}
+
+# =============================================================
+# 📢 INFORMD
+# =============================================================
+
+:8084 {
+	reverse_proxy informd:8080
+}

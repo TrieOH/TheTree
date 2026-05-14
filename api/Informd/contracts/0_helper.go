@@ -7,9 +7,9 @@ import (
 var validate = validator.New()
 
 type BulkGetParams struct {
-	FilterKey   string `fun_query:"filter_key,required"`
-	FilterOp    string `fun_query:"filter_op,required"`
-	FilterValue string `fun_query:"filter_value,required"`
+	FilterKey   string `fun_query:"filter_key"`
+	FilterOp    string `fun_query:"filter_op"`
+	FilterValue string `fun_query:"filter_value"`
 	FilterOrder string `fun_query:"filter_order,default=desc"`
 }
 

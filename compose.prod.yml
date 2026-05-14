@@ -1,0 +1,82 @@
+# =============================================================
+# compose.prod.yml  (override)
+#
+# Pulls versioned images from GHCR. Caddy with TLS via
+# Cloudflare origin certs + Let's Encrypt for mail domains.
+# Postgres is internal only (no port exposure).
+#
+# Usage:
+#   docker compose \
+#     -f compose.base.yml \
+#     -f compose.app.yml \
+#     -f compose.infra.yml \
+#     -f compose.prod.yml \
+#     --profile infra \
+#     up -d
+#
+# Or via just: just prod up
+# =============================================================
+
+services:
+
+  # -----------------
+  # 🌐 CADDY (prod)
+  # -----------------
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/caddy/certs:/etc/caddy/certs:ro
+    environment:
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+    depends_on:
+      identity-x:
+        condition: service_healthy
+      payssage:
+        condition: service_healthy
+      informd:
+        condition: service_healthy
+      univents:
+        condition: service_healthy
+      forgejo:
+        condition: service_healthy
+
+  # -----------------
+  # 🔐 IDENTITY-X
+  # -----------------
+  identity-x:
+    image: ghcr.io/trieoh/identity-x:${IDENTITY_X_TAG}
+
+  # -----------------
+  # 💳 PAYSSAGE
+  # -----------------
+  payssage:
+    image: ghcr.io/trieoh/payssage:${PAYSSAGE_TAG}
+
+  # -----------------
+  # 📢 INFORMD
+  # -----------------
+  informd:
+    image: ghcr.io/trieoh/informd:${INFORMD_TAG}
+
+  # -----------------
+  # 🎟️ UNIVENTS
+  # -----------------
+  univents:
+    image: ghcr.io/trieoh/univents:${UNIVENTS_TAG}
+
+volumes:
+  caddy_data:
+  caddy_config:

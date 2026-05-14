@@ -1,4 +1,4 @@
-definition platform {
+definition informd/platform {
     relation client: user
     relation super_admin: user
 
@@ -15,7 +15,41 @@ definition user {
     relation self: user | user with is_self
 
     permission create_api_key   = parent_platform->manage_clients + self
+    permission create_namespace = parent_platform->manage_clients + self = super_admin
+}
+
+caveat is_self(subject_id string, user_id string) {
+    subject_id == user_id
+}
+
+definition user {
+    relation parent_platform: platform
+    relation self: user | user with is_self
+
+    permission create_api_key   = parent_platform->manage_clients + self
     permission create_namespace = parent_platform->manage_clients + self
+    permission create_form      = parent_platform->manage_clients + self
+    permission administrate     = parent_platform->manage_clients + self
+}
+
+definition namespace {
+    relation owner: user
+
+    relation viewer: user
+    relation editor: user
+    relation admin: user
+
+    permission view         = owner->administrate + admin + editor + viewer
+    permission edit         = owner->administrate + admin + editor
+    permission delete       = owner->administrate + admin
+    permission create_form  = owner->administrate + admin + editor
+    permission administrate = owner->administrate + admin
+}
+
+definition email {
+    relation parent_platform: platform
+
+    permission administrate = parent_platform->manage_emai
     permission create_form      = parent_platform->manage_clients + self
     permission administrate     = parent_platform->manage_clients + self
 }

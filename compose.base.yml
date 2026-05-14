@@ -1,0 +1,46 @@
+# =============================================================
+# compose.base.yml
+#
+# Shared foundation: network + single Postgres instance with
+# one database per service. All other compose files extend this.
+#
+# Usage (never run alone):
+#   docker compose -f compose.base.yml -f compose.app.yml ...
+# =============================================================
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_ROOT_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: postgres
+      # Passed through so init-databases.sh can create per-service users
+      IDENTITY_X_POSTGRES_USER: ${IDENTITY_X_POSTGRES_USER}
+      IDENTITY_X_POSTGRES_PASSWORD: ${IDENTITY_X_POSTGRES_PASSWORD}
+      PAYSSAGE_POSTGRES_USER: ${PAYSSAGE_POSTGRES_USER}
+      PAYSSAGE_POSTGRES_PASSWORD: ${PAYSSAGE_POSTGRES_PASSWORD}
+      INFORMD_POSTGRES_USER: ${INFORMD_POSTGRES_USER}
+      INFORMD_POSTGRES_PASSWORD: ${INFORMD_POSTGRES_PASSWORD}
+      UNIVENTS_POSTGRES_USER: ${UNIVENTS_POSTGRES_USER}
+      UNIVENTS_POSTGRES_PASSWORD: ${UNIVENTS_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ROOT_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:

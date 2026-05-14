@@ -12,7 +12,7 @@ import (
 )
 
 func InitTracer(ctx context.Context, appName string) (func(context.Context) error, error) {
-	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("otel-collector:4317"), otlptracegrpc.WithInsecure())
+	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("jaeger:4317"), otlptracegrpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

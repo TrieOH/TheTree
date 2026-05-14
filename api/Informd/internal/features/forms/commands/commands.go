@@ -130,8 +130,8 @@ func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, paylo
 
 	if err = s.perms.Require(ctx,
 		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
 		authz.Resource("form", formID.String()),
+		authz.Permission("edit"),
 		nil,
 	); err != nil {
 		return nil, err

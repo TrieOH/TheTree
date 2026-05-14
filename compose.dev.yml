@@ -1,0 +1,94 @@
+# =============================================================
+# compose.dev.yml  (override)
+#
+# Builds service images from local source. Exposes ports for
+# direct access. Uses Caddyfile.dev (plain HTTP on :80 + raw
+# service ports). Postgres port exposed for local tooling.
+#
+# Usage:
+#   docker compose \
+#     -f compose.base.yml \
+#     -f compose.app.yml \
+#     -f compose.dev.yml \
+#     up --build
+#
+# Or via just: just dev up
+# =============================================================
+
+services:
+
+  # Expose postgres for local psql / GUI tools
+  postgres:
+    ports:
+      - "5432:5432"
+
+  # -----------------
+  # 🌐 CADDY (dev)
+  # -----------------
+  caddy:
+    image: caddy:latest
+    container_name: caddy-dev
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8081:8081"
+      - "8082:8082"
+      - "8083:8083"
+      - "8084:8084"
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+    depends_on:
+      identity-x:
+        condition: service_healthy
+      payssage:
+        condition: service_healthy
+      informd:
+        condition: service_healthy
+      univents:
+        condition: service_healthy
+
+  # -----------------
+  # 🔐 IDENTITY-X
+  # -----------------
+  identity-x:
+    build:
+      context: ./api/IdentityX
+      dockerfile: Dockerfile
+
+  # -----------------
+  # 💳 PAYSSAGE
+  # -----------------
+  payssage:
+    build:
+      context: ./api/Payssage
+      dockerfile: Dockerfile
+
+  # -----------------
+  # 📢 INFORMD
+  # -----------------
+  informd:
+    build:
+      context: ./api/Informd
+      dockerfile: Dockerfile
+
+  # -----------------
+  # 🎟️ UNIVENTS
+  # -----------------
+  univents:
+    build:
+      context: ./api/Univents
+      dockerfile: Dockerfile
+
+volumes:
+  caddy_data:
+  caddy_config:
