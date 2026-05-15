@@ -6,63 +6,97 @@ default:
 ps:
     docker ps
 
-build service:
-    docker compose -f api/{{service}}/compose.yml build
+# =============================================================
+# 🛠️ GENERIC HELPERS
+# =============================================================
 
-build *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml build; \
-    done
+# Generate for a specific service
+gen DIR:
+    just api/{{DIR}}/gen
 
-run service:
-    docker compose -f api/{{service}}/compose.yml up --build
+# Test a specific service
+test DIR:
+    just api/{{DIR}}/test
 
-run *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml up --build; \
-    done
+# Test a specific service with coverage
+testf DIR:
+    just api/{{DIR}}/testf
 
-rund service:
-    docker compose -f api/{{service}}/compose.yml up -d --build
+# Start a service (no build)
+up SERVICE:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.dev.yml \
+      up {{SERVICE}}
 
-rund *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml up -d --build; \
-    done
+# Build a service image
+build SERVICE:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.dev.yml \
+      build {{SERVICE}}
 
-down service:
-    docker compose -f api/{{service}}/compose.yml down
+# Build and start a service
+bup SERVICE:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.dev.yml \
+      up --build {{SERVICE}}
 
-down *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml down; \
-    done
+monitor:
+    docker compose \
+      --env-file .tree.env \
+      -f compose.base.yml \
+      -f compose.infra.yml \
+      -f compose.dev.yml \
+      --profile monitor \
+      up beszel beszel-agent
 
-down-v service:
-    docker compose -f api/{{service}}/compose.yml down -v
+# =============================================================
+# 🧹 TEARDOWN
+# =============================================================
 
-down-v *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml down -v; \
-    done
+down-all:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.infra.yml \
+      -f compose.dev.yml \
+      down
 
-logs service:
-    docker compose -f api/{{service}}/compose.yml logs -f
+downv-all:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.infra.yml \
+      -f compose.dev.yml \
+      down -v
 
-logs *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml logs -f; \
-    done
+# =============================================================
+# 🔐 IDENTITY-X
+# =============================================================
 
-restart service:
-    docker compose -f api/{{service}}/compose.yml restart
+identityx:
+    just bup identity-x
 
-restart *services:
-    for s in {{services}}; do \
-        docker compose -f api/"$s"/compose.yml restart; \
-    done
+identityx-api:
+    just bup identity-x
 
-all *args:
-    for f in api/*/compose.yml; do \
-        docker compose -f "$f" {{args}}; \
-    done
+idx:
+    just bup identity-x
+
+idx-api:
+    just bup identity-x
+
+# =============================================================
+# 📢 INFORMD
+# =============================================================
+
+informd:
+    just bup informd
+
+informd-api:
+    just bup informd

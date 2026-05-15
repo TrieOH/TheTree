@@ -24,32 +24,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      identity-x-redis:
-        condition: service_started
-    environment:
-      DATABASE_URL: "postgres://${IDENTITY_X_POSTGRES_USER}:${IDENTITY_X_POSTGRES_PASSWORD}@postgres:5432/identityx?sslmode=disable"
-      PORT: 8080
-      REDIS_ADDR: ${IDENTITY_X_REDIS_ADDR}
-      REDIS_DB: ${IDENTITY_X_REDIS_DB}
-      REDIS_PASSWORD: ${IDENTITY_X_REDIS_PASSWORD}
-      CORS_ALLOWED_ORIGINS: ${IDENTITY_X_CORS_ALLOWED_ORIGINS}
-      CORS_ALLOWED_METHODS: ${IDENTITY_X_CORS_ALLOWED_METHODS}
-      CORS_ALLOWED_HEADERS: ${IDENTITY_X_CORS_ALLOWED_HEADERS}
-      ISSUER: ${IDENTITY_X_ISSUER}
-      TRUST_PROXY_HEADERS: ${IDENTITY_X_TRUST_PROXY_HEADERS}
-      TRUSTED_PROXIES: ${IDENTITY_X_TRUSTED_PROXIES}
-      APP_URL: ${IDENTITY_X_APP_URL}
-      DEBUG_MODE: ${IDENTITY_X_DEBUG_MODE}
-      SMTP_HOST: ${IDENTITY_X_SMTP_HOST}
-      SMTP_PORT: ${IDENTITY_X_SMTP_PORT}
-      SMTP_USERNAME: ${IDENTITY_X_SMTP_USERNAME}
-      SMTP_PASSWORD: ${IDENTITY_X_SMTP_PASSWORD}
-      SMTP_FROM: ${IDENTITY_X_SMTP_FROM}
-      SMTP_TLS: ${IDENTITY_X_SMTP_TLS}
-      SMTP_STARTTLS: ${IDENTITY_X_SMTP_STARTTLS}
-      ENCRYPTION_KEY: ${IDENTITY_X_ENCRYPTION_KEY}
-      IDENTITY_X_KEY_LIFETIME: ${IDENTITY_X_KEY_LIFETIME}
-      ROTATE_KEYS_JOB_DURATION: ${IDENTITY_X_ROTATE_KEYS_JOB_DURATION}
+    env_file:
+      - .tree.env
+      - .identityx.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -71,35 +48,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      payssage-redis:
-        condition: service_started
-      payssage-spicedb:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgres://${PAYSSAGE_POSTGRES_USER}:${PAYSSAGE_POSTGRES_PASSWORD}@postgres:5432/payssage?sslmode=disable"
-      PORT: 8080
-      REDIS_ADDR: ${PAYSSAGE_REDIS_ADDR}
-      REDIS_DB: ${PAYSSAGE_REDIS_DB}
-      REDIS_PASSWORD: ${PAYSSAGE_REDIS_PASSWORD}
-      REDIS_ASYNQ_DB: ${PAYSSAGE_REDIS_ASYNQ_DB}
-      SPICEDB_ADDR: ${PAYSSAGE_SPICEDB_ADDR}
-      SPICEDB_TOKEN: ${PAYSSAGE_SPICEDB_TOKEN}
-      CORS_ALLOWED_ORIGINS: ${PAYSSAGE_CORS_ALLOWED_ORIGINS}
-      CORS_ALLOWED_METHODS: ${PAYSSAGE_CORS_ALLOWED_METHODS}
-      CORS_ALLOWED_HEADERS: ${PAYSSAGE_CORS_ALLOWED_HEADERS}
-      TRUST_PROXY_HEADERS: ${PAYSSAGE_TRUST_PROXY_HEADERS}
-      TRUSTED_PROXIES: ${PAYSSAGE_TRUSTED_PROXIES}
-      TEST_MODE: ${PAYSSAGE_TEST_MODE}
-      IDENTITY_X_PROJECT_ID: ${PAYSSAGE_IDENTITY_X_PROJECT_ID}
-      IDENTITY_X_URL: ${PAYSSAGE_IDENTITY_X_URL}
-      IDENTITY_X_API_KEY: ${PAYSSAGE_IDENTITY_X_API_KEY}
-      MP_CLIENT_ID: ${PAYSSAGE_MP_CLIENT_ID}
-      MP_ACCESS_TOKEN: ${PAYSSAGE_MP_ACCESS_TOKEN}
-      MP_CLIENT_SECRET: ${PAYSSAGE_MP_CLIENT_SECRET}
-      MP_REDIRECT_URI: ${PAYSSAGE_MP_REDIRECT_URI}
-      MP_WEBHOOK_SECRET: ${PAYSSAGE_MP_WEBHOOK_SECRET}
-      MP_TEST_ACCESS_TOKEN: ${PAYSSAGE_MP_TEST_ACCESS_TOKEN}
-      MP_TEST_PUBLIC_KEY: ${PAYSSAGE_MP_TEST_PUBLIC_KEY}
+    env_file:
+      - payssage.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -121,27 +71,9 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      informd-redis:
-        condition: service_started
-      informd-spicedb:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgres://${INFORMD_POSTGRES_USER}:${INFORMD_POSTGRES_PASSWORD}@postgres:5432/informd?sslmode=disable"
-      PORT: 8080
-      REDIS_ADDR: ${INFORMD_REDIS_ADDR}
-      REDIS_DB: ${INFORMD_REDIS_DB}
-      REDIS_PASSWORD: ${INFORMD_REDIS_PASSWORD}
-      REDIS_ASYNQ_DB: ${INFORMD_REDIS_ASYNQ_DB}
-      SPICEDB_ADDR: ${INFORMD_SPICEDB_ADDR}
-      SPICEDB_TOKEN: ${INFORMD_SPICEDB_TOKEN}
-      CORS_ALLOWED_ORIGINS: ${INFORMD_CORS_ALLOWED_ORIGINS}
-      CORS_ALLOWED_METHODS: ${INFORMD_CORS_ALLOWED_METHODS}
-      CORS_ALLOWED_HEADERS: ${INFORMD_CORS_ALLOWED_HEADERS}
-      TRUST_PROXY_HEADERS: ${INFORMD_TRUST_PROXY_HEADERS}
-      TRUSTED_PROXIES: ${INFORMD_TRUSTED_PROXIES}
-      IDENTITY_X_PROJECT_ID: ${INFORMD_IDENTITY_X_PROJECT_ID}
-      IDENTITY_X_URL: ${INFORMD_IDENTITY_X_URL}
-      IDENTITY_X_API_KEY: ${INFORMD_IDENTITY_X_API_KEY}
+    env_file:
+      - .tree.env
+      - .informd.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -165,36 +97,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      univents-redis:
-        condition: service_started
-      univents-spicedb:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgres://${UNIVENTS_POSTGRES_USER}:${UNIVENTS_POSTGRES_PASSWORD}@postgres:5432/univents?sslmode=disable"
-      PORT: 8080
-      REDIS_ADDR: ${UNIVENTS_REDIS_ADDR}
-      REDIS_DB: ${UNIVENTS_REDIS_DB}
-      REDIS_PASSWORD: ${UNIVENTS_REDIS_PASSWORD}
-      REDIS_ASYNQ_DB: ${UNIVENTS_REDIS_ASYNQ_DB}
-      SPICEDB_ADDR: ${UNIVENTS_SPICEDB_ADDR}
-      SPICEDB_TOKEN: ${UNIVENTS_SPICEDB_TOKEN}
-      CORS_ALLOWED_ORIGINS: ${UNIVENTS_CORS_ALLOWED_ORIGINS}
-      CORS_ALLOWED_METHODS: ${UNIVENTS_CORS_ALLOWED_METHODS}
-      CORS_ALLOWED_HEADERS: ${UNIVENTS_CORS_ALLOWED_HEADERS}
-      TRUST_PROXY_HEADERS: ${UNIVENTS_TRUST_PROXY_HEADERS}
-      TRUSTED_PROXIES: ${UNIVENTS_TRUSTED_PROXIES}
-      WS_JWT_SECRET: ${UNIVENTS_WS_JWT_SECRET}
-      IDENTITY_X_PROJECT_ID: ${UNIVENTS_IDENTITY_X_PROJECT_ID}
-      IDENTITY_X_URL: ${UNIVENTS_IDENTITY_X_URL}
-      IDENTITY_X_API_KEY: ${UNIVENTS_IDENTITY_X_API_KEY}
-      PAYSSAGE_URL: ${UNIVENTS_PAYSSAGE_URL}
-      PAYSSAGE_PROVIDER: ${UNIVENTS_PAYSSAGE_PROVIDER}
-      PAYSSAGE_API_KEY: ${UNIVENTS_PAYSSAGE_API_KEY}
-      PAYSSAGE_WEBHOOK_SECRET: ${UNIVENTS_PAYSSAGE_WEBHOOK_SECRET}
-      OBJECT_STORAGE_ENDPOINT: ${UNIVENTS_OBJECT_STORAGE_ENDPOINT}
-      OBJECT_STORAGE_ACCESS_KEY: ${UNIVENTS_OBJECT_STORAGE_ACCESS_KEY}
-      OBJECT_STORAGE_SECRET_KEY: ${UNIVENTS_OBJECT_STORAGE_SECRET_KEY}
-      OBJECT_STORAGE_USE_SSL: ${UNIVENTS_OBJECT_STORAGE_USE_SSL}
+    env_file:
+      - univents.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s

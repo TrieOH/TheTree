@@ -1,0 +1,26 @@
+set shell := ["bash", "-cu"]
+
+# Generate all
+gen:
+    just gen-sqlc
+    just gen-swag
+    just gen-mocks
+
+gen-sqlc:
+    sqlc generate
+
+gen-swag:
+    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList
+
+gen-mocks:
+    mockery
+
+test:
+    gotestsum --format testdox --format-icons nerdfonts ./...
+
+testf:
+    mkdir -p generated/coverage
+    gotestsum --format testdox --format-icons nerdfonts \
+        -- -coverprofile=generated/coverage/coverage.out ./...
+    ~/go/bin/gcov2lcov -infile=generated/coverage/coverage.out -outfile=generated/coverage/coverage.lcov -use-absolute-source-path
+    genhtml generated/coverage/coverage.lcov -o generated/coverage/html

@@ -1,0 +1,125 @@
+services:
+  payssage:
+    container_name: payssage
+    build:
+      context: ../..
+      dockerfile: /Dockerfile
+    ports:
+      - "8082:8080"
+    networks:
+      - internal
+      - univents-net
+    depends_on:
+      payssage-database:
+        condition: service_started
+      payssage-redis:
+        condition: service_started
+      payssage-spicedb:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+
+      PORT: ${PORT:-8080}
+
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
+
+      DISABLE_RATE_LIMIT: false
+      TEST_MODE: ${TEST_MODE:-false}
+
+      REDIS_ADDR: ${REDIS_ADDR:-payssage-redis:6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      IDENTITY_X_URL: ${IDENTITY_X_URL:-http://identity-x:8080}
+      IDENTITY_X_API_KEY: ${IDENTITY_X_API_KEY}
+      IDENTITY_X_PROJECT_ID: ${IDENTITY_X_PROJECT_ID}
+
+      MP_CLIENT_ID: ${MP_CLIENT_ID}
+      MP_CLIENT_SECRET: ${MP_CLIENT_SECRET}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_REDIRECT_URI: ${MP_REDIRECT_URI}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
+
+      MP_TEST_ACCESS_TOKEN: ${MP_TEST_ACCESS_TOKEN}
+      MP_TEST_PUBLIC_KEY: ${MP_TEST_PUBLIC_KEY}
+
+      SPICEDB_ADDR: payssage-spicedb:50051
+      SPICEDB_TOKEN: ${SPICEDB_TOKEN}
+
+  payssage-database:
+    container_name: payssage-database
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5435:5432"
+    volumes:
+      - database-data:/var/lib/postgresql
+    networks:
+      - internal
+
+  payssage-redis:
+    container_name: payssage-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes --appendfsync everysec
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - internal
+
+  payssage-spicedb-migrate:
+    container_name: payssage-spicedb-migrate
+    image: authzed/spicedb:latest
+    command: migrate head
+    restart: on-failure
+    environment:
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      payssage-database:
+        condition: service_started
+    networks:
+      - internal
+
+  payssage-spicedb:
+    container_name: payssage-spicedb
+    image: authzed/spicedb:latest
+    command: serve
+    restart: unless-stopped
+    ports:
+      - "50053:50051"
+      - "8445:8443"
+    environment:
+      SPICEDB_GRPC_PRESHARED_KEY: ${SPICEDB_TOKEN}
+      SPICEDB_DATASTORE_ENGINE: postgres
+      SPICEDB_DATASTORE_CONN_URI: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      payssage-spicedb-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - internal
+
+volumes:
+  database-data:
+  redis-data:
+
+networks:
+  internal:
+    driver: bridge
+  univents-net:
+    external: true
+

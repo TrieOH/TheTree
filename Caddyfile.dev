@@ -3,9 +3,9 @@
 # =============================================================
 
 (admin_auth) {
-	basicauth {
-		TrieOH {$ADMIN_PASSWORD_HASH}
-	}
+    basicauth {
+        {$ADMIN_USER_NAME} {$ADMIN_PASSWORD_HASH}
+    }
 }
 
 (api_routes) {
@@ -13,15 +13,10 @@
 		respond "ok" 200
 	}
 
-	handle_path /admin/grafana* {
-		import admin_auth
-		reverse_proxy localhost:3001
-	}
-
-	handle /admin/dozzle* {
-		import admin_auth
-		reverse_proxy dozzle:8080
-	}
+    handle_path /admin/beszel* {
+        import admin_auth
+        reverse_proxy beszel:8090
+    }
 
 	handle_path /identityx/* {
 		reverse_proxy identity-x:8080

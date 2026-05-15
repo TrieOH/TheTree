@@ -13,26 +13,14 @@ services:
     image: postgres:18
     container_name: postgres
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_ROOT_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
-      POSTGRES_DB: postgres
-      # Passed through so init-databases.sh can create per-service users
-      IDENTITY_X_POSTGRES_USER: ${IDENTITY_X_POSTGRES_USER}
-      IDENTITY_X_POSTGRES_PASSWORD: ${IDENTITY_X_POSTGRES_PASSWORD}
-      PAYSSAGE_POSTGRES_USER: ${PAYSSAGE_POSTGRES_USER}
-      PAYSSAGE_POSTGRES_PASSWORD: ${PAYSSAGE_POSTGRES_PASSWORD}
-      INFORMD_POSTGRES_USER: ${INFORMD_POSTGRES_USER}
-      INFORMD_POSTGRES_PASSWORD: ${INFORMD_POSTGRES_PASSWORD}
-      UNIVENTS_POSTGRES_USER: ${UNIVENTS_POSTGRES_USER}
-      UNIVENTS_POSTGRES_PASSWORD: ${UNIVENTS_POSTGRES_PASSWORD}
+    env_file:
+      - .tree.env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - postgres_data:/var/lib/data
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ROOT_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U TheTreeRoot -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5

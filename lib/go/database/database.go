@@ -7,22 +7,38 @@ import (
 	"time"
 
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	"github.com/redis/go-redis/v9"
 )
 
-func WaitForDB(timeout time.Duration, dsn string) (*pgxpool.Pool, error) {
+func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	pool, err := tryConnect(ctx, cfg.DSN(), 5)
+	if err == nil {
+		return pool, nil
+	}
+	log.Printf("could not connect to own database after 5 attempts, trying to provision: %v\n", err)
+
+	if err = provisionDB(ctx, cfg); err != nil {
+		return nil, fmt.Errorf("failed to provision database: %w", err)
+	}
+
+	pool, err = tryConnect(ctx, cfg.DSN(), 5)
+	if err != nil {
+		return nil, fmt.Errorf("database still unreachable after provisioning: %w", err)
+	}
+	return pool, nil
+}
+
+func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse database URL: %w", err)
 	}
-
-	// Enable OpenTelemetry tracing
 	cfg.ConnConfig.Tracer = otelpgx.NewTracer()
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
@@ -30,73 +46,81 @@ func WaitForDB(timeout time.Duration, dsn string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to create connection pool: %w", err)
 	}
 
-	// Verify connection with retries
-	deadline := time.Now().Add(timeout)
-	attempt := 0
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		log.Printf("waiting for database... attempt %d/%d\n", attempt, maxAttempts)
 
-	for {
-		attempt++
-		log.Printf("waiting for database... attempt %d\n", attempt)
-
-		if err := pool.Ping(ctx); err == nil {
+		if err = pool.Ping(ctx); err == nil {
 			log.Printf("database connected on attempt %d\n", attempt)
 			return pool, nil
-		} else {
-			log.Printf("error pinging the database: %v\n", err)
 		}
 
-		if time.Now().After(deadline) {
+		log.Printf("ping failed: %v\n", err)
+
+		select {
+		case <-ctx.Done():
 			pool.Close()
-			return nil, fmt.Errorf("database connection timeout after %d attempts", attempt)
+			return nil, fmt.Errorf("context deadline exceeded after %d attempts", attempt)
+		case <-time.After(2 * time.Second):
 		}
-
-		time.Sleep(2 * time.Second)
 	}
+
+	pool.Close()
+	return nil, fmt.Errorf("failed to connect after %d attempts", maxAttempts)
+}
+
+func provisionDB(ctx context.Context, cfg Config) error {
+	conn, err := pgx.Connect(ctx, cfg.RootDSN())
+	if err != nil {
+		return fmt.Errorf("unable to connect to root postgres: %w", err)
+	}
+	defer conn.Close(ctx)
+
+	_, err = conn.Exec(ctx, fmt.Sprintf(
+		`DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '%s') THEN
+                CREATE ROLE "%s" LOGIN PASSWORD '%s';
+            END IF;
+        END $$;`,
+		cfg.User, cfg.User, cfg.Password,
+	))
+	if err != nil {
+		return fmt.Errorf("failed to create role: %w", err)
+	}
+	log.Printf("role %q ensured\n", cfg.User)
+
+	var exists bool
+	if err = conn.QueryRow(ctx,
+		`SELECT EXISTS(SELECT FROM pg_database WHERE datname = $1)`, cfg.Name,
+	).Scan(&exists); err != nil {
+		return fmt.Errorf("failed to check database existence: %w", err)
+	}
+
+	if !exists {
+		if _, err = conn.Exec(ctx, fmt.Sprintf(
+			`CREATE DATABASE "%s" OWNER "%s"`, cfg.Name, cfg.User,
+		)); err != nil {
+			return fmt.Errorf("failed to create database: %w", err)
+		}
+		log.Printf("database %q created\n", cfg.Name)
+	} else {
+		log.Printf("database %q already exists\n", cfg.Name)
+	}
+
+	return nil
 }
 
 // RunMigrations uses pgx/stdlib to provide *sql.DB compatibility for goose
 func RunMigrations(pool *pgxpool.Pool, mPath string) error {
-	// Convert pgx pool to *sql.DB for goose compatibility
 	db := stdlib.OpenDBFromPool(pool)
 	defer db.Close()
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return err
+		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
 	log.Println("Running migrations...")
 	if err := goose.Up(db, mPath); err != nil {
-		return err
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	log.Println("Migrations applied successfully")
 	return nil
-}
-
-func WaitForRedis(timeout time.Duration, addr, password string, db int) (*redis.Client, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-		DB:       db,
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	deadline := time.Now().Add(timeout)
-	attempt := 0
-
-	for {
-		attempt++
-		log.Printf("waiting for redis... attempt %d\n", attempt)
-
-		if err := rdb.Ping(ctx).Err(); err == nil {
-			log.Printf("redis connected on attempt %d\n", attempt)
-			return rdb, nil
-		}
-
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("redis connection timeout after %d attempts", attempt)
-		}
-
-		time.Sleep(1 * time.Second)
-	}
 }

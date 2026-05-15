@@ -1,0 +1,19 @@
+package forms
+
+import (
+	"Informd/models"
+	"context"
+	"lib/database"
+
+	"github.com/google/uuid"
+)
+
+func (repo *formRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Form, error) {
+	ctx, span := database.Span(ctx, repo.tracer, "GetByID")
+	defer span.End()
+	sqlcForm, err := database.Queries(ctx, repo.q).GetFormByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return new(mapForm(sqlcForm)), nil
+}

@@ -35,6 +35,7 @@ services:
       - "8082:8082"
       - "8083:8083"
       - "8084:8084"
+      - "8090:8090"
       - "9000:9000"
       - "9001:9001"
     volumes:
@@ -47,48 +48,60 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - internal
-    depends_on:
-      identity-x:
-        condition: service_healthy
-      payssage:
-        condition: service_healthy
-      informd:
-        condition: service_healthy
-      univents:
-        condition: service_healthy
+
+  # =============================================================
+  # 📊 BESZEL (system monitoring)
+  # =============================================================
+
+  beszel:
+    profiles: [monitor]
+    ports:
+      - "8090:8090"
 
   # -----------------
   # 🔐 IDENTITY-X
   # -----------------
   identity-x:
     build:
-      context: ./api/IdentityX
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/identityx/Dockerfile
 
   # -----------------
   # 💳 PAYSSAGE
   # -----------------
   payssage:
     build:
-      context: ./api/Payssage
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/payssage/Dockerfile
 
   # -----------------
   # 📢 INFORMD
   # -----------------
   informd:
     build:
-      context: ./api/Informd
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/informd/Dockerfile
 
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------
   univents:
     build:
-      context: ./api/Univents
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/univents/Dockerfile
+
+  # compose.dev.yml
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - internal
 
 volumes:
   caddy_data:
   caddy_config:
+  beszel_data:
