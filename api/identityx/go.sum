@@ -6,6 +6,7 @@ github.com/MintzyG/fun/bind v0.1.1 h1:atx3p02N/3T8WjWsQ9PcWxdHwu6SoYhFcMLslWt005
 github.com/MintzyG/fun/bind v0.1.1/go.mod h1:SZmKRoCA6qnOKPrPenLkdYBm+rLXx1BE4byKONdwG9o=
 github.com/MintzyG/fun/middlewares v0.1.1 h1:x3m/oxVP9bj3qULxXelJ4Vxh7mrCqXlQyylMjC2Bzb0=
 github.com/MintzyG/fun/middlewares v0.1.1/go.mod h1:l5qkpXCvcRBJgzqZze4S64WJPNOdvsxc73EPKOp6mRs=
+github.com/MintzyG/fun/middlewares v0.1.2/go.mod h1:l5qkpXCvcRBJgzqZze4S64WJPNOdvsxc73EPKOp6mRs=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/caarlos0/env/v11 v11.4.1 h1:fYwH0sWEsBSMPG7t4e/PEfTFzrWrpjyygXyUnWiSwEw=
@@ -110,6 +111,8 @@ github.com/prometheus/common v0.67.5 h1:pIgK94WWlQt1WLwAC5j2ynLaBRDiinoAb86HZHTU
 github.com/prometheus/common v0.67.5/go.mod h1:SjE/0MzDEEAyrdr5Gqc6G+sXI67maCxzaT3A2+HqjUw=
 github.com/prometheus/procfs v0.20.1 h1:XwbrGOIplXW/AU3YhIhLODXMJYyC1isLFfYCsTEycfc=
 github.com/prometheus/procfs v0.20.1/go.mod h1:o9EMBZGRyvDrSPH1RqdxhojkuXstoe4UlK79eF5TGGo=
+github.com/riandyrn/otelchi v0.12.3 h1:KW9gA+97d6mExk8vbh0FRwb2biUvpyYlc8YuxP1Oap0=
+github.com/riandyrn/otelchi v0.12.3/go.mod h1:weZZeUJURvtCcbWsdb7Y6F8KFZGedJlSrgUjq9VirV8=
 github.com/robfig/cron/v3 v3.0.1 h1:WdRxkvbJztn8LMz/QEvLN5sBU+xKpSqwwUO1Pjr4qDs=
 github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=

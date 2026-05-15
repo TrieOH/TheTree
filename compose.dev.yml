@@ -58,6 +58,32 @@ services:
     ports:
       - "8090:8090"
 
+  # =============================================================
+  # 📊 VICTORIA (metrics)
+  # =============================================================
+
+  victoria-metrics:
+    profiles: [monitor]
+    ports:
+      - "8428:8428"
+
+  victoria-logs:
+    profiles: [monitor]
+    ports:
+      - "9428:9428"
+
+  victoria-traces:
+    profiles: [monitor]
+    ports:
+      - "10428:10428"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+
+  grafana:
+    profiles: [ monitor ]
+    ports:
+      - "2999:3000"
+
   # -----------------
   # 🔐 IDENTITY-X
   # -----------------
@@ -65,7 +91,8 @@ services:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile
-
+    ports:
+      - "8080:8080"
   # -----------------
   # 💳 PAYSSAGE
   # -----------------
@@ -81,7 +108,8 @@ services:
     build:
       context: .
       dockerfile: api/informd/Dockerfile
-
+    ports:
+      - "8084:8084"
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------

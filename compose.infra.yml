@@ -43,8 +43,85 @@ services:
     environment:
       LISTEN: /beszel_socket/beszel.sock
       HUB_URL: http://localhost:8090
-      KEY: ${BESZEL_PUBLIC_KEY}
+      KEY: ${BESZEL_KEY}
       TOKEN: ${BESZEL_TOKEN}
+
+  # =============================================================
+  # 📊 VICTORIA METRICS (metrics)
+  # =============================================================
+
+  victoria-metrics:
+    profiles: [monitor]
+    image: victoriametrics/victoria-metrics:latest
+    container_name: victoria-metrics
+    restart: unless-stopped
+    command:
+      - --retentionPeriod=7d
+      - --httpListenAddr=:8428
+      - --promscrape.config=/etc/victoria-metrics/scrape.yml
+    volumes:
+      - victoria_metrics_data:/victoria-metrics-data
+      - ./infra/victoria-metrics/scrape.yml:/etc/victoria-metrics/scrape.yml:ro
+    networks:
+      - internal
+
+  # =============================================================
+  # 📝 VICTORIA LOGS (logs)
+  # =============================================================
+
+  victoria-logs:
+    profiles: [monitor]
+    image: victoriametrics/victoria-logs:latest
+    container_name: victoria-logs
+    restart: unless-stopped
+    command:
+      - --retentionPeriod=7d
+      - --httpListenAddr=:9428
+    volumes:
+      - victoria_logs_data:/victoria-logs-data
+    networks:
+      - internal
+
+  # =============================================================
+  # 🔍 VICTORIA TRACES (traces)
+  # =============================================================
+
+  victoria-traces:
+    profiles: [monitor]
+    image: victoriametrics/victoria-traces:latest
+    container_name: victoria-traces
+    restart: unless-stopped
+    command:
+      - --retentionPeriod=7d
+      - --httpListenAddr=:10428
+    volumes:
+      - victoria_traces_data:/victoria-traces-data
+    networks:
+      - internal
+
+  # =============================================================
+  # 📊 GRAFANA
+  # =============================================================
+
+  grafana:
+    profiles: [ monitor ]
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    env_file:
+      - .tree.env
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_INSTALL_PLUGINS: victoriametrics-metrics-datasource,victoriametrics-logs-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    networks:
+      - internal
+    depends_on:
+      - victoria-metrics
+      - victoria-logs
+      - victoria-traces
 
   # =============================================================
   # 📂 RUSTFS (S3-compatible storage)
@@ -167,6 +244,10 @@ services:
       - buildkit-cache:/var/cache/buildkit
 
 volumes:
+  grafana_data:
+  victoria_metrics_data:
+  victoria_logs_data:
+  victoria_traces_data:
   beszel_data:
   beszel_agent_data:
   beszel_socket:

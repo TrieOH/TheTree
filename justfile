@@ -53,7 +53,7 @@ monitor:
       -f compose.infra.yml \
       -f compose.dev.yml \
       --profile monitor \
-      up beszel beszel-agent
+      up beszel beszel-agent victoria-metrics victoria-logs victoria-traces grafana
 
 # =============================================================
 # 🧹 TEARDOWN

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -12,7 +12,9 @@ import (
 )
 
 func InitTracer(ctx context.Context, appName string) (func(context.Context) error, error) {
-	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint("jaeger:4317"), otlptracegrpc.WithInsecure())
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpointURL("http://victoria-traces:10428/insert/opentelemetry/v1/traces"),
+	)
 	if err != nil {
 		return nil, err
 	}

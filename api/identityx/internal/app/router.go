@@ -14,8 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/riandyrn/otelchi"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Handlers struct {
@@ -72,6 +72,13 @@ type Handlers struct {
 func CreateRouter(deps Handlers, debugMode, disableRateLimit bool) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(otelchi.Middleware(deps.AppName,
+		otelchi.WithChiRoutes(r),
+		otelchi.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/health" && r.URL.Path != "/metrics"
+		}),
+	))
+
 	r.Use(deps.RealIP)
 	r.Use(deps.RequestID)
 	r.Use(deps.Logger)
@@ -100,9 +107,5 @@ func CreateRouter(deps Handlers, debugMode, disableRateLimit bool) http.Handler 
 		})
 	}
 
-	return otelhttp.NewHandler(r, "http.server",
-		otelhttp.WithFilter(func(r *http.Request) bool {
-			return r.URL.Path != "/health"
-		}),
-	)
+	return r
 }

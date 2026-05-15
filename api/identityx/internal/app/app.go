@@ -41,9 +41,8 @@ func (app *IdentityX) Run() {
 	ctx := context.Background()
 
 	defer app.CloseDB()
-	defer app.StopScheduler()
 	shutdown := app.StartTracer(ctx, app.cfg.AppName)
-	app.ShutdownTracer(ctx, shutdown)
+	defer app.ShutdownTracer(ctx, shutdown)
 	app.run()
 }
 
@@ -62,16 +61,5 @@ func (app *IdentityX) StartTracer(ctx context.Context, appName string) func(cont
 func (app *IdentityX) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
 	if err := shutdown(ctx); err != nil {
 		telemetry.Log().Error("error shutting down tracer", zap.Error(err))
-	}
-}
-
-func (app *IdentityX) StopScheduler() {
-	err := app.scheduler.StopJobs()
-	if err != nil {
-		telemetry.Log().Error("error stopping scheduler jobs", zap.Error(err))
-	}
-	err = app.scheduler.Shutdown()
-	if err != nil {
-		telemetry.Log().Error("error shutting down scheduler", zap.Error(err))
 	}
 }
