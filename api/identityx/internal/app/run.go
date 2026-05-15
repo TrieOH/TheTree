@@ -215,7 +215,7 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	mw.anyAuth = authMW.AnyAuth()
 	mw.bodySize = middlewares.MaxBodySize(1 << 20)
 	mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics"}, RequestIDHeader: "X-Request-ID"})
+	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Must(err, "Failed to create collectors")
