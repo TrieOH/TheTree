@@ -49,7 +49,7 @@ type Deps struct {
 // @contact.email support@trieoh.com
 // @license.name TSAL License
 // @license.url https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/Informd/LICENSE
-// @host https://informd.trieoh.com
+// @host informd.trieoh.com
 // @BasePath /
 // @schemes http https
 // @tag.name forms

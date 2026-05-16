@@ -55,7 +55,7 @@ type Handlers struct {
 // @contact.email trieoh@trieoh.com
 // @license.name MIT License
 // @license.url https://github.com/TrieOH/GoAuth/blob/main/LICENSE
-// @host localhost:8080
+// @host identityx.com.br
 // @BasePath /
 // @schemes http https
 // @tag.name auth
