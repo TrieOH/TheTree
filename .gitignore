@@ -35,6 +35,6 @@ dist
 **/generated/
 **/coverage/
 **/mocks/
-**/docs/
+api/**/docs/
 !/docs/
 **/sqlc/

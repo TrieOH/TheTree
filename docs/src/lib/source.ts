@@ -2,20 +2,25 @@ import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docs } from 'collections/server';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
-import {openapiPlugin, openapiSource} from "fumadocs-openapi/server";
-import {openapi} from "@/lib/openapi";
+import { openapiPlugin, openapiSource } from "fumadocs-openapi/server";
+import { inputs, openapi } from "@/lib/openapi";
+
+const openapiFiles =
+  inputs.length > 0
+    ? await openapiSource(openapi, {
+      baseDir: 'api',
+    })
+    : { files: [] };
 
 export const source = loader(
-    {
-      source: docs.toFumadocsSource(),
-      openapi: await openapiSource(openapi, {
-        baseDir: 'api',
-      }),
-    },
-    {
-      baseUrl: docsRoute,
-      plugins: [lucideIconsPlugin(), openapiPlugin()],
-    },
+  {
+    source: docs.toFumadocsSource(),
+    openapi: openapiFiles,
+  },
+  {
+    baseUrl: docsRoute,
+    plugins: [lucideIconsPlugin(), openapiPlugin()],
+  },
 );
 
 export function getPageImage(slugs: string[]) {

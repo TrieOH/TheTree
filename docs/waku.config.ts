@@ -8,7 +8,13 @@ export default defineConfig({
       tsconfigPaths: true,
       external: ['@takumi-rs/image-response'],
     },
-
+    optimizeDeps: {
+      include: ['ajv/dist/2020.js', 'xml-js', 'xml-js/lib/js2xml.js'],
+    },
+    ssr: {
+      noExternal: ['fumadocs-openapi'],
+      external: ['xml-js'],
+    },
     plugins: [tailwindcss(), mdx()],
   },
 });
