@@ -1,0 +1,486 @@
+{
+  "title": "TrieOH — Payssage",
+  "uid": "trieoh-payssage",
+  "tags": [
+    "trieoh",
+    "payssage"
+  ],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_VM",
+        "type": "datasource",
+        "pluginId": "victoriametrics-metrics-datasource",
+        "hide": 2
+      },
+      {
+        "name": "DS_VL",
+        "type": "datasource",
+        "pluginId": "victoriametrics-logs-datasource",
+        "hide": 2
+      },
+      {
+        "name": "DS_TRACES",
+        "type": "datasource",
+        "pluginId": "jaeger",
+        "hide": 2
+      },
+      {
+        "name": "route",
+        "type": "query",
+        "datasource": {
+          "type": "victoriametrics-metrics-datasource",
+          "uid": "${DS_VM}"
+        },
+        "query": "label_values(http_requests_total{job=\"payssage\"}, route)",
+        "label": "Route",
+        "hide": 0,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "title": "Requests (1h)",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"payssage\"}[1h]))",
+          "legendFormat": "total"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "title": "Error Rate",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"payssage\", status=~\"5..\"}[1h])) / sum(increase(http_requests_total{job=\"payssage\"}[1h])) * 100",
+          "legendFormat": "%"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "title": "P99 Latency",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"payssage\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.3
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "title": "Avg Latency",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_sum{job=\"payssage\"}[5m]) / rate(http_request_duration_seconds_count{job=\"payssage\"}[5m])",
+          "legendFormat": "avg"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "title": "Requests/sec by Route",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"payssage\", route=~\"$route\"}[1m])) by (route, method)",
+          "legendFormat": "{{method}} {{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "title": "Status Codes",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"payssage\"}[1m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "2xx"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "4.."
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "5.."
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "title": "Latency Percentiles",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"payssage\", route=~\"$route\"}[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"payssage\", route=~\"$route\"}[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"payssage\", route=~\"$route\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "title": "Latency Heatmap",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VM}"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_bucket{job=\"payssage\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "color": {
+          "mode": "scheme",
+          "scheme": "Turbo"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "traces",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "title": "Recent Traces",
+      "datasource": {
+        "type": "jaeger",
+        "uid": "${DS_TRACES}"
+      },
+      "targets": [
+        {
+          "service": "payssage",
+          "operation": "",
+          "limit": 20,
+          "queryType": "search"
+        }
+      ],
+      "options": {
+        "frameType": "data"
+      }
+    },
+    {
+      "id": 10,
+      "type": "logs",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "title": "Logs",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${DS_VL}"
+      },
+      "targets": [
+        {
+          "expr": "{service=\"payssage\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      }
+    },
+    {
+      "id": 11,
+      "type": "logs",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "title": "Errors & Warnings",
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "${DS_VL}"
+      },
+      "targets": [
+        {
+          "expr": "{service=\"payssage\", level=~\"error|warn\"}",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

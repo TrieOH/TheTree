@@ -1,7 +1,7 @@
 package keys
 
 import (
-	sqlc2 "Informd/internal/database/sqlc"
+	"Informd/internal/database/sqlc"
 	"Informd/models"
 	"Informd/ports"
 	"context"
@@ -16,7 +16,7 @@ import (
 )
 
 type repo struct {
-	q      *sqlc2.Queries
+	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 	dbe    *errx.DBHandler
@@ -24,7 +24,7 @@ type repo struct {
 
 var _ ports.ApiKeysRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ApiKeysRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ApiKeysRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -33,7 +33,7 @@ func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.D
 	}
 }
 
-func (repo *repo) queries(ctx context.Context) *sqlc2.Queries {
+func (repo *repo) queries(ctx context.Context) *sqlc.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
@@ -44,7 +44,7 @@ func (repo *repo) span(ctx context.Context, op string) (context.Context, trace.S
 	return repo.tracer.Start(ctx, "ApiKeyRepo."+op)
 }
 
-func mapApiKey(src sqlc2.ApiKey) models.APIKey {
+func mapApiKey(src sqlc.ApiKey) models.APIKey {
 	return models.APIKey{
 		ID:        src.ID,
 		OwnerID:   src.OwnerID,
@@ -59,7 +59,7 @@ func mapApiKey(src sqlc2.ApiKey) models.APIKey {
 func (repo *repo) Create(ctx context.Context, toCreate models.APIKey) (*models.APIKey, error) {
 	ctx, span := repo.span(ctx, "Create")
 	defer span.End()
-	sqlcApiKey, err := repo.queries(ctx).CreateAPIKey(ctx, sqlc2.CreateAPIKeyParams{
+	sqlcApiKey, err := repo.queries(ctx).CreateAPIKey(ctx, sqlc.CreateAPIKeyParams{
 		OwnerID:   toCreate.OwnerID,
 		Name:      toCreate.Name,
 		KeyHash:   toCreate.KeyHash,
@@ -84,7 +84,7 @@ func (repo *repo) GetByPrefix(ctx context.Context, prefix string) ([]models.APIK
 func (repo *repo) Revoke(ctx context.Context, id, userID uuid.UUID) (*models.APIKey, error) {
 	ctx, span := repo.span(ctx, "Revoke")
 	defer span.End()
-	sqlcApiKey, err := repo.queries(ctx).RevokeAPIKey(ctx, sqlc2.RevokeAPIKeyParams{
+	sqlcApiKey, err := repo.queries(ctx).RevokeAPIKey(ctx, sqlc.RevokeAPIKeyParams{
 		ID:      id,
 		OwnerID: userID,
 	})

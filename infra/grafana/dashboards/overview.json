@@ -1,0 +1,88 @@
+{
+  "title": "TrieOH — Overview",
+  "uid": "trieoh-overview",
+  "tags": ["trieoh"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "title": "Total Requests (all services)",
+      "type": "stat",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "sum(increase(http_requests_total[1h]))", "legendFormat": "requests" }],
+      "options": { "colorMode": "background", "graphMode": "area" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "id": 2, "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "title": "Error Rate (5xx)",
+      "type": "stat",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "sum(increase(http_requests_total{status=~\"5..\"}[1h])) / sum(increase(http_requests_total[1h])) * 100", "legendFormat": "%" }],
+      "options": { "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }] } } }
+    },
+    {
+      "id": 3, "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "title": "P99 Latency (all services)",
+      "type": "stat",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }],
+      "options": { "colorMode": "background" },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 1 }] } } }
+    },
+    {
+      "id": 4, "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "title": "Active Services",
+      "type": "stat",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "count(up{job=~\"identity-x|informd|payssage|univents\"} == 1)", "legendFormat": "up" }],
+      "options": { "colorMode": "background" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 2 }, { "color": "green", "value": 4 }] } } }
+    },
+    {
+      "id": 5, "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "title": "Requests/sec per Service",
+      "type": "timeseries",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "sum(rate(http_requests_total[1m])) by (job)", "legendFormat": "{{job}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } }
+    },
+    {
+      "id": 6, "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "title": "P50 / P95 / P99 Latency per Service",
+      "type": "timeseries",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))", "legendFormat": "p50 {{job}}" },
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))", "legendFormat": "p95 {{job}}" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))", "legendFormat": "p99 {{job}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 7, "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "title": "Status Codes per Service",
+      "type": "timeseries",
+      "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
+      "targets": [{ "expr": "sum(rate(http_requests_total[1m])) by (job, status)", "legendFormat": "{{job}} {{status}}" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 8, "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "title": "Errors & Warnings (all services)",
+      "type": "logs",
+      "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VL}" },
+      "targets": [{ "expr": "{service=~\"identity-x|informd|payssage|univents\", level=~\"error|warn\"}", "legendFormat": "" }],
+      "options": { "dedupStrategy": "none", "enableLogDetails": true, "sortOrder": "Descending" }
+    }
+  ],
+  "templating": {
+    "list": [
+      { "name": "DS_VM", "type": "datasource", "pluginId": "victoriametrics-metrics-datasource", "hide": 2 },
+      { "name": "DS_VL", "type": "datasource", "pluginId": "victoriametrics-logs-datasource", "hide": 2 }
+    ]
+  }
+}

@@ -10,7 +10,7 @@ import (
 )
 
 func (repo *stepRepo) List(ctx context.Context, formID uuid.UUID) ([]models.Step, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "List")
+	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.List")
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).ListStepsByFormID(ctx, formID)
 	if err != nil {

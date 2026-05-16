@@ -100,11 +100,29 @@ services:
       - internal
 
   # =============================================================
+  # 📝 VECTOR (logs collector)
+  # =============================================================
+
+  vector:
+    profiles: [ monitor ]
+    image: timberio/vector:latest-alpine
+    container_name: vector
+    restart: unless-stopped
+    volumes:
+      - ./infra/vector/vector.toml:/etc/vector/vector.toml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal
+    depends_on:
+      - victoria-logs
+
+
+  # =============================================================
   # 📊 GRAFANA
   # =============================================================
 
   grafana:
-    profiles: [ monitor ]
+    profiles: [monitor]
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
@@ -116,6 +134,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./infra/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
     networks:
       - internal
     depends_on:

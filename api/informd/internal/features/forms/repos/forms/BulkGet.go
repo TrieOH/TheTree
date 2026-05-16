@@ -10,7 +10,7 @@ import (
 )
 
 func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID, params models.BulkGetParams) ([]models.Form, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "BulkGet")
+	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.BulkGet")
 	defer span.End()
 	sqlcForms, err := database.Queries(ctx, repo.q).BulkGetForms(ctx, ids)
 	if err != nil {
