@@ -1,5 +1,3 @@
-# infra/vector/vector.toml
-# Coleta stdout/stderr dos containers TrieOH e envia pro VictoriaLogs
 [sources.docker]
 type = "docker_logs"
 include_containers = ["identity-x", "informd", "payssage", "univents"]
@@ -11,8 +9,6 @@ inputs = ["docker"]
 source = '''
   .service = .container_name
   .level = "info"
-
-  # tenta parsear JSON (zap logger)
   parsed, err = parse_json(.message)
   if err == null {
     if exists(parsed.level) { .level = parsed.level }
@@ -28,11 +24,12 @@ endpoints = ["http://victoria-logs:9428/insert/elasticsearch/"]
 mode = "bulk"
 api_version = "v8"
 
-[sinks.victoria_logs.encoding]
-codec = "json"
-
 [sinks.victoria_logs.bulk]
 index = "logs"
 
 [sinks.victoria_logs.query]
 _stream_fields = "service,level"
+
+[api]
+enabled = true
+address = "0.0.0.0:8686"

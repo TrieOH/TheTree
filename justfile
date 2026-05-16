@@ -7,145 +7,78 @@ ps:
     docker ps
 
 # =============================================================
-# 🛠️ GENERIC HELPERS
+# 🛠️ COMPOSE HELPERS
 # =============================================================
 
-# Generate for a specific service
-gen DIR:
-    just api/{{DIR}}/gen
-
-# Test a specific service
-test DIR:
-    just api/{{DIR}}/test
-
-# Test a specific service with coverage
-testf DIR:
-    just api/{{DIR}}/testf
-
-# Start a service (no build)
-up SERVICE:
+_compose +ARGS:
     docker compose \
       -f compose.base.yml \
       -f compose.app.yml \
+      -f compose.obs.yml \
       -f compose.dev.yml \
-      up {{SERVICE}} caddy
+      {{ARGS}}
 
-# Build a service image
-build SERVICE:
+# Boot the observability stack detached
+obs:
     docker compose \
       -f compose.base.yml \
-      -f compose.app.yml \
+      -f compose.obs.yml \
       -f compose.dev.yml \
-      build {{SERVICE}}
+      up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
 
-# Build and start a service
-bup SERVICE:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.dev.yml \
-      up --build {{SERVICE}} caddy
+# =============================================================
+# 🚀 DEV — back + front together
+# =============================================================
+# No args = everything. Or specify any mix of service names.
+# Examples:
+#   just dev                        → all back + all front
+#   just dev univents               → univents back + front
+#   just dev payssage informd       → those two, back + front
 
-monitor:
-    docker compose \
-      --env-file .tree.env \
-      -f compose.base.yml \
-      -f compose.infra.yml \
-      -f compose.dev.yml \
-      --profile monitor \
-      up beszel beszel-agent victoria-metrics victoria-logs victoria-traces grafana
+dev +SERVICES="identityx informd payssage univents":
+    just obs
+    just api {{SERVICES}} &
+    just front {{SERVICES}} &
+    wait
 
-# Frontend (dev, build, deploy)
-front CMD DIR:
-    cd front/{{DIR}} && pnpm {{CMD}}
+# =============================================================
+# 🖥️ API — backend only
+# =============================================================
+# No args = all. Or specify services.
+# Examples:
+#   just api                  → all backend services
+#   just api univents         → univents only
 
-# Frontend dev server
-f-dev DIR:
-    just front dev {{DIR}}
+api +SERVICES="identityx informd payssage univents":
+    just obs
+    just _compose up --build {{SERVICES}}
 
-# Frontend build
-f-build DIR:
-    just front build {{DIR}}
+# =============================================================
+# 🎨 FRONT — frontend only
+# =============================================================
+# No args = all. Or specify services.
+# Examples:
+#   just front                → all frontends
+#   just front univents       → univents only
 
-# Frontend deploy (include build and deploy)
-f-deploy DIR:
-    just front deploy {{DIR}}
+front +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    for svc in {{SERVICES}}; do
+      (cd front/$svc && pnpm dev) &
+    done
+    wait
 
 # =============================================================
 # 🧹 TEARDOWN
 # =============================================================
 
-down-all:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.infra.yml \
-      -f compose.dev.yml \
-      down
+# Stop services. No args stops everything, or pass specific services.
+down +SERVICES="":
+    just _compose down {{SERVICES}}
 
-downv-all:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.infra.yml \
-      -f compose.dev.yml \
-      down -v
-
-# =============================================================
-# 🔐 IDENTITY-X
-# =============================================================
-
-identityx:
-    just bup identity-x
-
-identityx-api:
-    just bup identity-x
-
-identityx-ui:
-    just f-dev IdentityX-UI
-
-idx:
-    just bup identity-x
-
-idx-api:
-    just bup identity-x
-
-idx-ui:
-    just f-dev IdentityX-UI
-
-# =============================================================
-# 📢 INFORMD
-# =============================================================
-
-informd:
-    just bup informd
-
-informd-api:
-    just bup informd
-
-informd-ui:
-    just f-dev Informd-UI
-
-# =============================================================
-# 💰 PAYSSAGE
-# =============================================================
-
-payssage-ui:
-    just f-dev Payssage-UI
-
-# =============================================================
-# 🌶️ SPICEDB
-# =============================================================
-
-spicedb-ui:
-    just f-dev SpiceDB-UI
-
-# =============================================================
-# 🎫 UNIVENTS
-# =============================================================
-
-univents-ui:
-    just f-dev Univents-UI
+# Stop and remove volumes.
+downv +SERVICES="":
+    just _compose down -v {{SERVICES}}
 
 # =============================================================
 # 🛠️ GO TOOLS

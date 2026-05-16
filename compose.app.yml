@@ -3,7 +3,7 @@
 #
 # All TrieOH application services: Identity-X, Payssage,
 # Informd, Univents — each with their own Redis.
-# Postgres comes from compose.base.yml.
+# Postgres and Caddy come from compose.base.yml.
 #
 # Usage:
 #   docker compose -f compose.base.yml -f compose.app.yml \
@@ -22,6 +22,8 @@ services:
     networks:
       - internal
     depends_on:
+      caddy:
+        condition: service_healthy
       postgres:
         condition: service_healthy
     env_file:
@@ -44,6 +46,8 @@ services:
     networks:
       - internal
     depends_on:
+      caddy:
+        condition: service_healthy
       identity-x:
         condition: service_healthy
       postgres:
@@ -67,6 +71,8 @@ services:
     networks:
       - internal
     depends_on:
+      caddy:
+        condition: service_healthy
       identity-x:
         condition: service_healthy
       postgres:
@@ -91,6 +97,8 @@ services:
     networks:
       - internal
     depends_on:
+      caddy:
+        condition: service_healthy
       identity-x:
         condition: service_healthy
       payssage:

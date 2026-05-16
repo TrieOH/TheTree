@@ -17,23 +17,16 @@ func WaitForDB(timeout time.Duration, cfg Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	pool, err := tryConnect(ctx, cfg.DSN(), 5)
-	if err == nil {
-		return pool, nil
-	}
-	log.Printf("could not connect to own database after 5 attempts, trying to provision: %v\n", err)
-
-	if err = provisionDB(ctx, cfg); err != nil {
+	if err := provisionDB(ctx, cfg); err != nil {
 		return nil, fmt.Errorf("failed to provision database: %w", err)
 	}
 
-	pool, err = tryConnect(ctx, cfg.DSN(), 5)
+	pool, err := tryConnect(ctx, cfg.DSN(), 5)
 	if err != nil {
-		return nil, fmt.Errorf("database still unreachable after provisioning: %w", err)
+		return nil, fmt.Errorf("database unreachable after provisioning: %w", err)
 	}
 	return pool, nil
 }
-
 func tryConnect(ctx context.Context, dsn string, maxAttempts int) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {

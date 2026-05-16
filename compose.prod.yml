@@ -11,10 +11,10 @@
 #     -f compose.app.yml \
 #     -f compose.infra.yml \
 #     -f compose.prod.yml \
-#     --profile infra \
+#     --profile monitor \
 #     up -d
 #
-# Or via just: just prod up
+# Or via just: just prod
 # =============================================================
 
 services:
@@ -23,9 +23,6 @@ services:
   # 🌐 CADDY (prod)
   # -----------------
   caddy:
-    image: caddy:latest
-    container_name: caddy
-    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -35,23 +32,6 @@ services:
       - caddy_config:/config
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /etc/caddy/certs:/etc/caddy/certs:ro
-    environment:
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - internal
-    depends_on:
-      identity-x:
-        condition: service_healthy
-      payssage:
-        condition: service_healthy
-      informd:
-        condition: service_healthy
-      univents:
-        condition: service_healthy
-      forgejo:
-        condition: service_healthy
 
   # -----------------
   # 🔐 IDENTITY-X

@@ -2,22 +2,25 @@
 # compose.dev.yml  (override)
 #
 # Builds service images from local source. Exposes ports for
-# direct access. Uses Caddyfile.dev (plain HTTP on :80 + raw
-# service ports). Postgres port exposed for local tooling.
+# direct access via Caddy only — no service exposes ports
+# directly. Postgres port exposed for local tooling.
 #
 # Usage:
 #   docker compose \
 #     -f compose.base.yml \
 #     -f compose.app.yml \
+#     -f compose.infra.yml \
 #     -f compose.dev.yml \
 #     up --build
 #
-# Or via just: just dev up
+# Or via just: just dev
 # =============================================================
 
 services:
 
-  # Expose postgres for local psql / GUI tools
+  # -----------------
+  # 🗄️ POSTGRES
+  # -----------------
   postgres:
     ports:
       - "5432:5432"
@@ -26,61 +29,25 @@ services:
   # 🌐 CADDY (dev)
   # -----------------
   caddy:
-    image: caddy:latest
     container_name: caddy-dev
-    restart: unless-stopped
     ports:
-      - "80:80"
-      - "8081:8081"
-      - "8082:8082"
-      - "8083:8083"
-      - "8084:8084"
-      - "8090:8090"
-      - "9000:9000"
-      - "9001:9001"
+      - "80:80"        # API gateway
+      - "8080:8080"    # identity-x
+      - "8081:8081"    # univents
+      - "8082:8082"    # payssage
+      - "8083:8083"    # informd
+      - "8090:8090"    # beszel
+      - "9000:9000"    # rustfs API
+      - "9001:9001"    # rustfs console
+      - "3000:3000"    # grafana
+      - "8025:8025"    # mailpit
+      - "8428:8428"    # victoria-metrics
+      - "9428:9428"    # victoria-logs
+      - "10428:10428"  # victoria-traces
     volumes:
       - ./Caddyfile.dev:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-    environment:
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - internal
-
-  # =============================================================
-  # 📊 BESZEL (system monitoring)
-  # =============================================================
-
-  beszel:
-    profiles: [monitor]
-
-  # =============================================================
-  # 📊 VICTORIA (metrics)
-  # =============================================================
-
-  victoria-metrics:
-    profiles: [monitor]
-    ports:
-      - "8428:8428"
-
-  victoria-logs:
-    profiles: [monitor]
-    ports:
-      - "9428:9428"
-
-  victoria-traces:
-    profiles: [monitor]
-    ports:
-      - "10428:10428"  # UI
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
-
-  grafana:
-    profiles: [monitor]
-    ports:
-      - "2999:3000"
 
   # -----------------
   # 🔐 IDENTITY-X
@@ -105,6 +72,7 @@ services:
     build:
       context: .
       dockerfile: api/informd/Dockerfile
+
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------
@@ -113,14 +81,13 @@ services:
       context: .
       dockerfile: api/univents/Dockerfile
 
-  # compose.dev.yml
+  # -----------------
+  # 📧 MAILPIT
+  # -----------------
   mailpit:
     image: axllent/mailpit:latest
     container_name: mailpit
     restart: unless-stopped
-    ports:
-      - "8025:8025"  # web UI
-      - "1025:1025"  # SMTP
     networks:
       - internal
 
