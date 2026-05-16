@@ -55,6 +55,22 @@ monitor:
       --profile monitor \
       up beszel beszel-agent victoria-metrics victoria-logs victoria-traces grafana
 
+# Frontend (dev, build, deploy)
+front CMD DIR:
+    cd front/{{DIR}} && pnpm {{CMD}}
+
+# Frontend dev server
+f-dev DIR:
+    just front dev {{DIR}}
+
+# Frontend build
+f-build DIR:
+    just front build {{DIR}}
+
+# Frontend deploy (include build and deploy)
+f-deploy DIR:
+    just front deploy {{DIR}}
+
 # =============================================================
 # 🧹 TEARDOWN
 # =============================================================
@@ -85,11 +101,17 @@ identityx:
 identityx-api:
     just bup identity-x
 
+identityx-ui:
+    just f-dev IdentityX-UI
+
 idx:
     just bup identity-x
 
 idx-api:
     just bup identity-x
+
+idx-ui:
+    just f-dev IdentityX-UI
 
 # =============================================================
 # 📢 INFORMD
@@ -100,3 +122,27 @@ informd:
 
 informd-api:
     just bup informd
+
+informd-ui:
+    just f-dev Informd-UI
+
+# =============================================================
+# 💰 PAYSSAGE
+# =============================================================
+
+payssage-ui:
+    just f-dev Payssage-UI
+
+# =============================================================
+# 🌶️ SPICEDB
+# =============================================================
+
+spicedb-ui:
+    just f-dev SpiceDB-UI
+
+# =============================================================
+# 🎫 UNIVENTS
+# =============================================================
+
+univents-ui:
+    just f-dev Univents-UI
