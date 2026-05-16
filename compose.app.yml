@@ -56,7 +56,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - payssage.env
+      - .payssage.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s
@@ -114,7 +114,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - univents.env
+      - .univents.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 10s

@@ -18,7 +18,6 @@
 # =============================================================
 
 services:
-
   # -----------------
   # 🌐 CADDY (server)
   # -----------------
@@ -45,8 +44,6 @@ services:
     image: r.xmox.nl/mox:latest
     container_name: mox
     restart: unless-stopped
-    env_file:
-      - .mox.env
     networks:
       - internal
     ports:
