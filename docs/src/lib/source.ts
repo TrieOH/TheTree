@@ -2,15 +2,21 @@ import { loader } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { docs } from 'collections/server';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
-import { openapiPlugin, openapiSource } from "fumadocs-openapi/server";
-import { inputs, openapi } from "@/lib/openapi";
+import { openapiPlugin, openapiSource, createOpenAPI } from "fumadocs-openapi/server";
+import { inputs } from "@/lib/openapi";
 
-const openapiFiles =
-  inputs.length > 0
-    ? await openapiSource(openapi, {
-      baseDir: 'api',
-    })
-    : { files: [] };
+const openapiFiles = {
+  files: (
+    await Promise.all(
+      inputs.map((input) =>
+        openapiSource(createOpenAPI({ input: [input.url] }), {
+          baseDir: `${input.name}/api`,
+        }),
+      ),
+    )
+  ).flatMap((res) => res.files),
+};
+
 
 export const source = loader(
   {
