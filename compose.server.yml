@@ -1,16 +1,15 @@
 # =============================================================
-# compose.infra.yml
+# compose.server.yml
 #
-# Optional infrastructure services: storage, mail, git forge.
-# Activate individually via Docker profiles or by including
-# this file alongside the others.
+# Server-only infrastructure: mail and git forge.
+# Activate individually via Docker profiles.
 #
 # Profiles:
-#   infra   → rustfs
-#   email   → mox
-#   git     → forgejo, forgejo-runner, forgejo-dind
+#   email → mox
+#   git   → forgejo, forgejo-runner, forgejo-dind
 #
 # Observability services live in compose.obs.yml.
+# Object storage (rustfs) lives in compose.base.yml.
 #
 # No service exposes ports directly — all HTTP traffic is
 # routed through Caddy. Exception: mox SMTP/IMAP ports (25,
@@ -20,28 +19,19 @@
 
 services:
 
-  # =============================================================
-  # 📂 RUSTFS (S3-compatible storage)
-  # =============================================================
-
-  rustfs:
-    profiles: [infra]
-    image: rustfs/rustfs:latest
-    container_name: rustfs
-    restart: unless-stopped
-    environment:
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+  # -----------------
+  # 🌐 CADDY (server)
+  # -----------------
+  caddy:
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - rustfs_data:/data
-      - rustfs_logs:/logs
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health && wget -qO- http://localhost:9001/rustfs/console/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/caddy/certs:/etc/caddy/certs:ro
 
   # =============================================================
   # 📧 MOX (mail server)
@@ -55,8 +45,8 @@ services:
     image: r.xmox.nl/mox:latest
     container_name: mox
     restart: unless-stopped
-    environment:
-      - MOX_DOCKER=yes
+    env_file:
+      - .mox.env
     networks:
       - internal
     ports:
@@ -70,6 +60,12 @@ services:
       - ./mox_mailserver/certs:/mox/certs
       - /etc/letsencrypt:/etc/letsencrypt:ro
     command: mox -config /mox/config/mox.conf serve
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/admin/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   # =============================================================
   # 🔧 FORGEJO (git forge)
@@ -83,19 +79,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      - USER_UID=1000
-      - USER_GID=1000
-      - FORGEJO__database__DB_TYPE=postgres
-      - FORGEJO__database__HOST=postgres:5432
-      - FORGEJO__database__NAME=${FORGEJO_POSTGRES_DB}
-      - FORGEJO__database__USER=${FORGEJO_POSTGRES_USER}
-      - FORGEJO__database__PASSWD=${FORGEJO_POSTGRES_PASSWORD}
-      - FORGEJO__server__DOMAIN=${FORGEJO_DOMAIN}
-      - FORGEJO__server__ROOT_URL=https://${FORGEJO_DOMAIN}
-      - FORGEJO__server__SSH_DOMAIN=${FORGEJO_DOMAIN}
-      - FORGEJO__server__SSH_PORT=2222
-      - FORGEJO__server__HTTP_PORT=3000
+    env_file:
+      - .forgejo.env
     networks:
       - internal
     volumes:
@@ -139,10 +124,16 @@ services:
     volumes:
       - forgejo-dind-data:/var/lib/docker
       - buildkit-cache:/var/cache/buildkit
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:2375/info || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
-  rustfs_data:
-  rustfs_logs:
+  caddy_data:
+  caddy_config:
   forgejo-data:
   forgejo-runner-data:
   forgejo-dind-data:

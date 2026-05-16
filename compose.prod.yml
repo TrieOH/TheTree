@@ -18,7 +18,6 @@
 # =============================================================
 
 services:
-
   # -----------------
   # 🌐 CADDY (prod)
   # -----------------
@@ -38,24 +37,32 @@ services:
   # -----------------
   identity-x:
     image: ghcr.io/trieoh/identity-x:${IDENTITY_X_TAG}
+    env_file:
+      - .tree.env
 
   # -----------------
   # 💳 PAYSSAGE
   # -----------------
   payssage:
     image: ghcr.io/trieoh/payssage:${PAYSSAGE_TAG}
+    env_file:
+      - .tree.env
 
   # -----------------
   # 📢 INFORMD
   # -----------------
   informd:
     image: ghcr.io/trieoh/informd:${INFORMD_TAG}
+    env_file:
+      - .tree.env
 
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------
   univents:
     image: ghcr.io/trieoh/univents:${UNIVENTS_TAG}
+    env_file:
+      - .tree.env
 
 volumes:
   caddy_data:

@@ -1,9 +1,10 @@
 # =============================================================
 # compose.base.yml
 #
-# Shared foundation: network, single Postgres instance, and
-# Caddy reverse proxy. Dev/prod overrides supply the Caddyfile,
-# ports, and TLS config. All other compose files extend this.
+# Shared foundation: network, single Postgres instance,
+# Caddy reverse proxy, and RustFS object storage.
+# Dev/prod overrides supply the Caddyfile, ports, and TLS
+# config. All other compose files extend this.
 #
 # Usage (never run alone):
 #   docker compose -f compose.base.yml -f compose.app.yml ...
@@ -53,6 +54,30 @@ services:
       retries: 5
       start_period: 5s
 
+  # =============================================================
+  # 📂 RUSTFS (S3-compatible object storage)
+  # =============================================================
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
+    restart: unless-stopped
+    depends_on:
+      caddy:
+        condition: service_healthy
+    env_file:
+      - .tree.env
+    volumes:
+      - rustfs_data:/data
+      - rustfs_logs:/logs
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health && wget -qO- http://localhost:9001/rustfs/console/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 networks:
   internal:
     driver: bridge
@@ -61,3 +86,5 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  rustfs_data:
+  rustfs_logs:

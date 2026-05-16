@@ -7,6 +7,24 @@ ps:
     docker ps
 
 # =============================================================
+# 🚀 PROD
+# =============================================================
+
+prod +SERVICES="":
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.obs.yml \
+      -f compose.prod.yml \
+      pull {{SERVICES}}
+    docker compose \
+      -f compose.base.yml \
+      -f compose.app.yml \
+      -f compose.obs.yml \
+      -f compose.prod.yml \
+      up -d {{SERVICES}}
+
+# =============================================================
 # 🛠️ COMPOSE HELPERS
 # =============================================================
 
@@ -88,3 +106,27 @@ downv +SERVICES="":
 build-tools:
     docker build -f infra/docker/tools.Dockerfile -t git.trieoh.com/trieoh/go-tools:latest .
     docker push git.trieoh.com/trieoh/go-tools:latest
+
+# =============================================================
+# 📧 EMAIL
+# =============================================================
+
+email:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.prod.yml \
+      -f compose.server.yml \
+      --profile email \
+      up -d
+
+# =============================================================
+# 🔧 GIT
+# =============================================================
+
+git:
+    docker compose \
+      -f compose.base.yml \
+      -f compose.prod.yml \
+      -f compose.server.yml \
+      --profile git \
+      up -d

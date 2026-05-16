@@ -26,6 +26,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      rustfs:
+        condition: service_healthy
     env_file:
       - .tree.env
       - .identityx.env
@@ -53,6 +55,7 @@ services:
       postgres:
         condition: service_healthy
     env_file:
+      - .tree.env
       - payssage.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
@@ -76,6 +79,8 @@ services:
       identity-x:
         condition: service_healthy
       postgres:
+        condition: service_healthy
+      rustfs:
         condition: service_healthy
     env_file:
       - .tree.env
@@ -105,7 +110,10 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      rustfs:
+        condition: service_healthy
     env_file:
+      - .tree.env
       - univents.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]

@@ -13,30 +13,30 @@
 }
 
 (api_routes) {
-        handle /health {
-                respond "ok" 200
-        }
+    handle /health {
+        respond "ok" 200
+    }
 
-        handle_path /admin/beszel* {
-            import admin_auth
-            reverse_proxy beszel:8090
-        }
+    handle_path /admin/beszel* {
+        import admin_auth
+        reverse_proxy beszel:8090
+    }
 
-        handle_path /identityx/* {
-                reverse_proxy identity-x:8080
-        }
+    handle_path /identityx/* {
+        reverse_proxy identity-x:8080
+    }
 
-        handle_path /informd/* {
-                reverse_proxy informd:8080
-        }
+    handle_path /informd/* {
+        reverse_proxy informd:8080
+    }
 
-        handle_path /univents/* {
-                reverse_proxy univents:8080
-        }
+    handle_path /univents/* {
+        reverse_proxy univents:8080
+    }
 
-        handle_path /payssage/* {
-                reverse_proxy payssage:8080
-        }
+    handle_path /payssage/* {
+        reverse_proxy payssage:8080
+    }
 }
 
 # =============================================================
@@ -44,9 +44,9 @@
 # =============================================================
 
 api.trieoh.com {
-        import tls_trieoh
-        log
-        import api_routes
+    import tls_trieoh
+    log
+    import api_routes
 }
 
 # =============================================================
@@ -54,8 +54,8 @@ api.trieoh.com {
 # =============================================================
 
 api.identityx.com.br {
-        reverse_proxy identity-x:8080
-        log
+    reverse_proxy identity-x:8080
+    log
 }
 
 # =============================================================
@@ -63,8 +63,8 @@ api.identityx.com.br {
 # =============================================================
 
 api.univents.com.br {
-        reverse_proxy univents:8080
-        log
+    reverse_proxy univents:8080
+    log
 }
 
 # =============================================================
@@ -72,8 +72,8 @@ api.univents.com.br {
 # =============================================================
 
 api.payssage.trieoh.com {
-        reverse_proxy payssage:8080
-        log
+    reverse_proxy payssage:8080
+    log
 }
 
 # =============================================================
@@ -81,8 +81,8 @@ api.payssage.trieoh.com {
 # =============================================================
 
 api.informd.trieoh.com {
-        reverse_proxy informd:8080
-        log
+    reverse_proxy informd:8080
+    log
 }
 
 # =============================================================
@@ -93,8 +93,8 @@ auth.univents.com.br,
 auth.payssage.trieoh.com,
 auth.identityx.com.br,
 auth.informd.trieoh.com {
-        reverse_proxy identity-x:8080
-        log
+    reverse_proxy identity-x:8080
+    log
 }
 
 # =============================================================
@@ -102,10 +102,10 @@ auth.informd.trieoh.com {
 # =============================================================
 
 beszel.trieoh.com {
-        import tls_trieoh
-        import admin_auth
-        log
-        reverse_proxy beszel:8090
+    import tls_trieoh
+    import admin_auth
+    log
+    reverse_proxy beszel:8090
 }
 
 # =============================================================
@@ -113,13 +113,13 @@ beszel.trieoh.com {
 # =============================================================
 
 api.storage.trieoh.cloud {
-        log
-        reverse_proxy rustfs:9000
+    log
+    reverse_proxy rustfs:9000
 }
 
 console.storage.trieoh.cloud {
-        log
-        reverse_proxy rustfs:9001
+    log
+    reverse_proxy rustfs:9001
 }
 
 # =============================================================
@@ -127,10 +127,10 @@ console.storage.trieoh.cloud {
 # =============================================================
 
 grafana.trieoh.com {
-        import tls_trieoh
-        import admin_auth
-        log
-        reverse_proxy grafana:3000
+    import tls_trieoh
+    import admin_auth
+    log
+    reverse_proxy grafana:3000
 }
 
 # =============================================================
@@ -138,10 +138,10 @@ grafana.trieoh.com {
 # =============================================================
 
 metrics.trieoh.com {
-        import tls_trieoh
-        import admin_auth
-        log
-        reverse_proxy victoria-metrics:8428
+    import tls_trieoh
+    import admin_auth
+    log
+    reverse_proxy victoria-metrics:8428
 }
 
 # =============================================================
@@ -149,10 +149,10 @@ metrics.trieoh.com {
 # =============================================================
 
 logs.trieoh.com {
-        import tls_trieoh
-        import admin_auth
-        log
-        reverse_proxy victoria-logs:9428
+    import tls_trieoh
+    import admin_auth
+    log
+    reverse_proxy victoria-logs:9428
 }
 
 # =============================================================
@@ -160,10 +160,10 @@ logs.trieoh.com {
 # =============================================================
 
 traces.trieoh.com {
-        import tls_trieoh
-        import admin_auth
-        log
-        reverse_proxy victoria-traces:10428
+    import tls_trieoh
+    import admin_auth
+    log
+    reverse_proxy victoria-traces:10428
 }
 
 # =============================================================
@@ -178,9 +178,9 @@ traces.trieoh.com {
 # =============================================================
 
 git.trieoh.com {
-        import tls_trieoh
-        log
-        reverse_proxy forgejo:3000
+    import tls_trieoh
+    log
+    reverse_proxy forgejo:3000
 }
 
 # =============================================================
@@ -188,46 +188,46 @@ git.trieoh.com {
 # =============================================================
 
 http://mail.trieoh.com {
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy/acme
-        }
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy/acme
+    }
 }
 
 mail.trieoh.com {
-        tls /etc/letsencrypt/live/mail.trieoh.com/fullchain.pem /etc/letsencrypt/live/mail.trieoh.com/privkey.pem
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy
-        }
-        reverse_proxy mox:8083
+    tls /etc/letsencrypt/live/mail.trieoh.com/fullchain.pem /etc/letsencrypt/live/mail.trieoh.com/privkey.pem
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy
+    }
+    reverse_proxy mox:8083
 }
 
 http://mta-sts.trieoh.com {
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy/acme
-        }
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy/acme
+    }
 }
 
 mta-sts.trieoh.com {
-        tls /etc/letsencrypt/live/mta-sts.trieoh.com/fullchain.pem /etc/letsencrypt/live/mta-sts.trieoh.com/privkey.pem
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy
-        }
-        reverse_proxy mox:81
-        log
+    tls /etc/letsencrypt/live/mta-sts.trieoh.com/fullchain.pem /etc/letsencrypt/live/mta-sts.trieoh.com/privkey.pem
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy
+    }
+    reverse_proxy mox:81
+    log
 }
 
 http://autoconfig.trieoh.com {
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy/acme
-        }
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy/acme
+    }
 }
 
 autoconfig.trieoh.com {
-        tls /etc/letsencrypt/live/mta-sts.trieoh.com/fullchain.pem /etc/letsencrypt/live/mta-sts.trieoh.com/privkey.pem
-        handle /.well-known/acme-challenge/* {
-                root * /var/lib/caddy
-                file_server
-        }
-        reverse_proxy mox:81
-        log
+    tls /etc/letsencrypt/live/mta-sts.trieoh.com/fullchain.pem /etc/letsencrypt/live/mta-sts.trieoh.com/privkey.pem
+    handle /.well-known/acme-challenge/* {
+        root * /var/lib/caddy
+        file_server
+    }
+    reverse_proxy mox:81
+    log
 }

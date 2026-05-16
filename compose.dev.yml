@@ -56,6 +56,9 @@ services:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile
+    depends_on:
+      mailpit:
+        condition: service_healthy
 
   # -----------------
   # 💳 PAYSSAGE
@@ -90,6 +93,15 @@ services:
     restart: unless-stopped
     networks:
       - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8025/livez || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   caddy_data:
