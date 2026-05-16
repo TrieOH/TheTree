@@ -1,4 +1,4 @@
-FROM ghcr.io/trieoh/go-tools:latest AS tools
+FROM git.trieoh.com/trieoh/go-tools:latest AS tools
 
 FROM golang:1.26.2 AS builder
 

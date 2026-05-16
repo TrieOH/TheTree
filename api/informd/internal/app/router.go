@@ -9,11 +9,13 @@ import (
 
 	_ "Informd/generated/docs"
 
+	"github.com/MintzyG/fun"
+	_ "github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
@@ -38,33 +40,27 @@ type Deps struct {
 	AppName string
 }
 
-// CreateRouter godoc
-// CreateRouter creates a new Chi router and registers all the routes.
-// @title Forms API
+// @title Informd
 // @version 0.0.1
 // @description API for managing forms.
-// @termsOfService https://github.com/Univents/Univents/blob/main/LICENSE
-// @contact.name Univents Team
-// @contact.url https://github.com/Univents
-// @contact.email support@univents.io
-// @license.name MIT License
-// @license.url https://github.com/Univents/Univents/blob/main/LICENSE
-// @host localhost:8080
+// @termsOfService https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/Informd/LICENSE
+// @contact.name TrieOH
+// @contact.url https://trieoh.com
+// @contact.email support@trieoh.com
+// @license.name TSAL License
+// @license.url https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/Informd/LICENSE
+// @host https://informd.trieoh.com
 // @BasePath /
 // @schemes http https
-// @tag.name auth
-// @tag.description "Operations related to user authentication and authorization"
-// @tag.name events
-// @tag.description "Operations related to event management"
-// @tag.name editions
-// @tag.description "Operations related to edition management"
-// @tag.name tickets
-// @tag.description "Operations related to ticket management"
-// @tag.name system
-// @tag.description "System operations"
+// @tag.name forms
+// @tag.description "Operations related to form creation"
+// @tag.name api_keys
+// @tag.description "Operations related to api keys"
+// @tag.name namespaces
+// @tag.description "Operations related to namespaces"
 // @produce json
 // @consumes json
-// @response 200 {object} object "Standard success response"
+// @response 200 {object} fun.Response "Standard success response"
 // @response 400 {object} fun.Response "Standard error response for bad requests"
 // @response 401 {object} fun.Response "Standard error response for unauthorized requests"
 // @response 403 {object} fun.Response "Standard error response for forbidden requests"
@@ -72,10 +68,14 @@ type Deps struct {
 // @response 413 {object} fun.Response "Standard error response for payload too large 1MB"
 // @response 429 {object} fun.Response "Standard error response for too many requests"
 // @response 500 {object} fun.Response "Standard error response for internal server errors"
-// @securityDefinitions.apikey Cookie
+// @securityDefinitions.apikey BearerAuth
 // @in header
-// @name Cookie
-// @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
+// @name Authorization
+// @description Type "Bearer" followed by a space and the access token
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-KEY
+// @description API key for service-to-service authentication
 func CreateRouter(deps *Deps) http.Handler {
 	r := chi.NewRouter()
 
@@ -89,7 +89,15 @@ func CreateRouter(deps *Deps) http.Handler {
 	r.Use(deps.RateLimit)
 	r.Use(deps.CORS)
 
-	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		doc, err := swag.ReadDoc()
+		if fun.Bail(w, err) {
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(doc))
+	})
+
 	r.Handle("/metrics", promhttp.Handler())
 
 	namespaces.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)

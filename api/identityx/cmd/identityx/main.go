@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "IdentityX/docs"
 	"IdentityX/internal/app"
 )
 

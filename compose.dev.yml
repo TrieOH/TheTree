@@ -55,8 +55,6 @@ services:
 
   beszel:
     profiles: [monitor]
-    ports:
-      - "8090:8090"
 
   # =============================================================
   # 📊 VICTORIA (metrics)
@@ -91,8 +89,7 @@ services:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile
-    ports:
-      - "8080:8080"
+
   # -----------------
   # 💳 PAYSSAGE
   # -----------------
@@ -108,8 +105,6 @@ services:
     build:
       context: .
       dockerfile: api/informd/Dockerfile
-    ports:
-      - "8084:8084"
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------

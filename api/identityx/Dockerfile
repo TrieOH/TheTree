@@ -1,4 +1,4 @@
-FROM ghcr.io/trieoh/go-tools:latest AS tools
+FROM git.trieoh.com/trieoh/go-tools:latest AS tools
 FROM golang:1.26.2 AS builder
 
 WORKDIR /app
@@ -17,7 +17,11 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
     go mod download
 RUN sqlc generate
-RUN swag init -g internal/app/router.go -o docs --parseInternal --parseDependency
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
+    --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
+    cd /app && echo 'package identityx' > doc.go && \
+    cd /app/api/identityx && \
+    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
     CGO_ENABLED=0 GOOS=linux go build -o identityx ./cmd/identityx
@@ -29,6 +33,7 @@ WORKDIR /app
 COPY --from=builder /app/api/identityx/identityx .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/api/identityx/internal/platform/database/migrations ./internal/platform/database/migrations
+COPY --from=builder /app/api/identityx/generated/docs ./generated/docs
 
 EXPOSE 8080
 

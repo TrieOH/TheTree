@@ -28,7 +28,7 @@ up SERVICE:
       -f compose.base.yml \
       -f compose.app.yml \
       -f compose.dev.yml \
-      up {{SERVICE}}
+      up {{SERVICE}} caddy
 
 # Build a service image
 build SERVICE:
@@ -44,7 +44,7 @@ bup SERVICE:
       -f compose.base.yml \
       -f compose.app.yml \
       -f compose.dev.yml \
-      up --build {{SERVICE}}
+      up --build {{SERVICE}} caddy
 
 monitor:
     docker compose \
@@ -146,3 +146,12 @@ spicedb-ui:
 
 univents-ui:
     just f-dev Univents-UI
+
+# =============================================================
+# 🛠️ GO TOOLS
+# =============================================================
+
+# Build and push go-tools image to Forgejo
+build-tools:
+    docker build -f infra/docker/tools.Dockerfile -t git.trieoh.com/trieoh/go-tools:latest .
+    docker push git.trieoh.com/trieoh/go-tools:latest

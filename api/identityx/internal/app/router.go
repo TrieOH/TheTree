@@ -10,12 +10,15 @@ import (
 	"fmt"
 	"net/http"
 
+	_ "IdentityX/generated/docs"
+
+	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/riandyrn/otelchi"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag/v2"
 )
 
 type Handlers struct {
@@ -89,7 +92,15 @@ func CreateRouter(deps Handlers, debugMode, disableRateLimit bool) http.Handler 
 	r.Use(deps.RateLimit)
 	r.Use(deps.CORS)
 
-	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		doc, err := swag.ReadDoc()
+		if fun.Bail(w, err) {
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(doc))
+	})
+
 	r.Handle("/metrics", promhttp.Handler())
 
 	auth.RegisterAuthRoutes(r, deps.Users, disableRateLimit, deps.Jwt)
