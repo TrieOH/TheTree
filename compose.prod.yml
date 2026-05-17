@@ -36,7 +36,7 @@ services:
   # 🔐 IDENTITY-X
   # -----------------
   identityx:
-    image: ghcr.io/trieoh/identityx:${IDENTITY_X_TAG}
+    image: git.trieoh.com/trieoh/identityx:${IDENTITY_X_TAG}
     env_file:
       - .tree.env
 
@@ -44,7 +44,7 @@ services:
   # 💳 PAYSSAGE
   # -----------------
   payssage:
-    image: ghcr.io/trieoh/payssage:${PAYSSAGE_TAG}
+    image: git.trieoh.com/trieoh/payssage:${PAYSSAGE_TAG}
     env_file:
       - .tree.env
 
@@ -52,7 +52,7 @@ services:
   # 📢 INFORMD
   # -----------------
   informd:
-    image: ghcr.io/trieoh/informd:${INFORMD_TAG}
+    image: git.trieoh.com/trieoh/informd:${INFORMD_TAG}
     env_file:
       - .tree.env
 
@@ -60,7 +60,7 @@ services:
   # 🎟️ UNIVENTS
   # -----------------
   univents:
-    image: ghcr.io/trieoh/univents:${UNIVENTS_TAG}
+    image: git.trieoh.com/trieoh/univents:${UNIVENTS_TAG}
     env_file:
       - .tree.env
 

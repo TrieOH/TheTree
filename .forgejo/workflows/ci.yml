@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      identityx: ${{ steps.filter.outputs.identityx }}
+      informd: ${{ steps.filter.outputs.informd }}
+      payssage: ${{ steps.filter.outputs.payssage }}
+      univents: ${{ steps.filter.outputs.univents }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: https://github.com/dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            identityx:
+              - 'api/identityx/**'
+              - 'lib/go/**'
+            informd:
+              - 'api/informd/**'
+              - 'lib/go/**'
+            payssage:
+              - 'api/payssage/**'
+              - 'lib/go/**'
+            univents:
+              - 'api/univents/**'
+              - 'lib/go/**'
+
+  lint:
+    needs: changes
+    runs-on: ubuntu-latest
+    container:
+      image: git.trieoh.com/trieoh/go-tools:latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: cd api/identityx && gofmt -l . && go vet ./...
+      - if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: cd api/informd && gofmt -l . && go vet ./...
+      - if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: cd api/payssage && gofmt -l . && go vet ./...
+      - if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: cd api/univents && gofmt -l . && go vet ./...
+
+  build:
+    needs: changes
+    runs-on: ubuntu-latest
+    container:
+      image: git.trieoh.com/trieoh/go-tools:latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: cd api/identityx && go build ./...
+      - if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: cd api/informd && go build ./...
+      - if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: cd api/payssage && go build ./...
+      - if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: cd api/univents && go build ./...
+
+  test:
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    container:
+      image: git.trieoh.com/trieoh/go-tools:latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: just test identityx
+      - if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: just test informd
+      - if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: just test payssage
+      - if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: just test univents
