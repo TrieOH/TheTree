@@ -17,11 +17,6 @@
         respond "ok" 200
     }
 
-    handle_path /admin/beszel* {
-        import tls_trieoh
-        reverse_proxy beszel:8090
-    }
-
     handle_path /identityx/* {
         reverse_proxy identityx:8080
     }
