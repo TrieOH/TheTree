@@ -1,6 +1,8 @@
 package app
 
 import (
+	"lib/database"
+	"lib/errx"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -19,6 +21,9 @@ type Config struct {
 	PostgresDB       string `env:"IDX_POSTGRES_DB,required"`
 	PostgresUser     string `env:"IDX_POSTGRES_USER,required"`
 	PostgresPassword string `env:"IDX_POSTGRES_PASSWORD,required"`
+
+	// Migration
+	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/database/migrations"`
 
 	// Postgres (root — from .tree.env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
@@ -47,7 +52,28 @@ type Config struct {
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 }
 
-func LoadConfig() (Config, error) {
+func (cfg Config) ToDBConfig() database.Config {
+	return database.Config{
+		Host:          cfg.PostgresHost,
+		Port:          cfg.PostgresPort,
+		DB:            cfg.PostgresDB,
+		User:          cfg.PostgresUser,
+		Password:      cfg.PostgresPassword,
+		SSLMode:       "disable",
+		RootUser:      cfg.RootPostgresUser,
+		RootPassword:  cfg.RootPostgresPassword,
+		RootDB:        cfg.RootPostgresDB,
+		RootHost:      "postgres",
+		RootPort:      "5432",
+		MigrationPath: cfg.MigrationPath,
+	}
+}
+
+func LoadConfig() Config {
 	var cfg Config
-	return cfg, env.Parse(&cfg)
+	err := env.Parse(&cfg)
+	if err != nil {
+		errx.Exit(err, "error loading config")
+	}
+	return cfg
 }

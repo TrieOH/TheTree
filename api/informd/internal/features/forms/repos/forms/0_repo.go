@@ -4,7 +4,7 @@ import (
 	"Informd/internal/database/sqlc"
 	"Informd/models"
 	"Informd/ports"
-	"lib/errx"
+	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -14,17 +14,17 @@ type formRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
-	dbe    *errx.DBHandler
+	dbe    database.ErrorHandler
 }
 
 var _ ports.FormsRepo = (*formRepo)(nil)
 
-func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.FormsRepo {
+func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
 	return &formRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
-		dbe:    dbe,
+		dbe:    database.NewErrorHandler("form"),
 	}
 }
 

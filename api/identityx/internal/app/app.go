@@ -2,12 +2,11 @@ package app
 
 import (
 	"context"
-	"lib/errx"
+	"lib/database"
 	"lib/telemetry"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 type IdentityX struct {
@@ -15,51 +14,25 @@ type IdentityX struct {
 	scheduler     gocron.Scheduler
 	cfg           Config
 	encryptionKey []byte
-	dbErr         *errx.DBHandler
 }
 
-func New() *IdentityX {
-	var app IdentityX
+var app IdentityX
 
-	cfg, err := LoadConfig()
-	app.cfg = cfg
-	if err != nil {
-		errx.Must(err, "error loading config")
-	}
-	app.encryptionKey = InitEncryption(app.cfg.EncryptionKey)
-	SetupFUN()
-	migrationPath := "./internal/platform/database/migrations"
-	app.dbErr = SetupDBErrorHandler()
-	app.db = SetupDB(migrationPath, app.cfg, app.dbErr)
-	SetupRuntimeEnv(app.db, app.encryptionKey, app.cfg.KeyLifetime, app.dbErr)
-	app.scheduler = SetupCron(app.db, app.encryptionKey, app.cfg, app.dbErr)
-
-	return &app
-}
-
-func (app *IdentityX) Run() {
+func Start() {
 	ctx := context.Background()
+	SetupConstraintMessages()
+	app.cfg = LoadConfig()
+	app.encryptionKey = InitEncryption()
+	SetupFUN()
 
-	defer app.CloseDB()
-	shutdown := app.StartTracer(ctx, app.cfg.AppName)
-	defer app.ShutdownTracer(ctx, shutdown)
+	app.db = database.SetupDB(app.cfg.ToDBConfig())
+	defer database.CloseDB(app.db)
+
+	SetupRuntimeEnv(app.db, app.encryptionKey)
+	app.scheduler = SetupCron(app.encryptionKey, app.db, app.cfg)
+
+	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
+	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
+
 	app.run()
-}
-
-func (app *IdentityX) CloseDB() {
-	app.db.Close()
-}
-
-func (app *IdentityX) StartTracer(ctx context.Context, appName string) func(context.Context) error {
-	shutdown, err := telemetry.InitTracer(ctx, appName)
-	if err != nil {
-		telemetry.Log().Fatal("error starting tracer", zap.Error(err))
-	}
-	return shutdown
-}
-
-func (app *IdentityX) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
-	if err := shutdown(ctx); err != nil {
-		telemetry.Log().Error("error shutting down tracer", zap.Error(err))
-	}
 }

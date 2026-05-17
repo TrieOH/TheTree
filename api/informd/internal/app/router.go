@@ -40,6 +40,7 @@ type Deps struct {
 	AppName string
 }
 
+// CreateRouter
 // @title Informd
 // @version 0.0.1
 // @description API for managing forms.

@@ -18,11 +18,11 @@ func Init() {
 		var err error
 		logger, err = zap.NewProduction()
 		if err != nil {
-			errx.Must(err, "error starting production logger")
+			errx.Exit(err, "error starting production logger")
 		}
 		debugLogger, err = zap.NewDevelopment()
 		if err != nil {
-			errx.Must(err, "error starting development logger")
+			errx.Exit(err, "error starting development logger")
 		}
 	})
 }

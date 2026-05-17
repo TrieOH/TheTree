@@ -32,7 +32,7 @@ func SetupValidator() *validator.Validate {
 
 		return u.Version() == 7
 	}); err != nil {
-		errx.Must(err, "failed to register uuid7 validator")
+		errx.Exit(err, "failed to register uuid7 validator")
 	}
 
 	// Use JSON field names for better API responses
@@ -67,63 +67,35 @@ func SetupFUN(module string) {
 	})
 }
 
-func SetupDBErrorHandler() *errx.DBHandler {
-	dbErr := errx.NewDBHandler(
-		errx.ConstraintRegistry{
-			// forms
-			"chk_forms_valid_status":       "status must be one of: draft, open, closed, archived",
-			"chk_forms_valid_status_state": "opened_at, closed_at or archived_at must be set when status is open, closed or archived",
-			"uniq_form_name_per_namespace": "a form with this name already exists in this namespace",
-			"uniq_name_per_user":           "an API key with this name already exists",
+func SetupConstraintMessages() {
+	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+		// forms
+		"chk_forms_valid_status":       "status must be one of: draft, open, closed, archived",
+		"chk_forms_valid_status_state": "opened_at, closed_at or archived_at must be set when status is open, closed or archived",
+		"uniq_form_name_per_namespace": "a form with this name already exists in this namespace",
+		"uniq_name_per_user":           "an API key with this name already exists",
 
-			// fields
-			"chk_fields_type":             "field type must be one of: string, email, int, float, bool, select",
-			"chk_fields_key_format":       "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores",
-			"chk_fields_select_behaviour": "select fields must have a behaviour of checkbox or radio",
-			"chk_fields_select_options":   "select fields must have a non-empty options array",
-			"chk_select_type":             "select_type must be one of: string, email, int, float, bool, select",
-			"uniq_key_per_step":           "a field with this key already exists in this step",
+		// fields
+		"chk_fields_type":             "field type must be one of: string, email, int, float, bool, select",
+		"chk_fields_key_format":       "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores",
+		"chk_fields_select_behaviour": "select fields must have a behaviour of checkbox or radio",
+		"chk_fields_select_options":   "select fields must have a non-empty options array",
+		"chk_select_type":             "select_type must be one of: string, email, int, float, bool, select",
+		"uniq_key_per_step":           "a field with this key already exists in this step",
 
-			// namespaces
-			"uniq_namespace_name_per_user":    "a namespace with this name already exists",
-			"chk_valid_namespace_member_role": "invalid namespace member role",
+		// namespaces
+		"uniq_namespace_name_per_user":    "a namespace with this name already exists",
+		"chk_valid_namespace_member_role": "invalid namespace member role",
 
-			// responders
-			"uniq_responder_email_on_system": "a responder with this email already exists on this system",
-		},
-		[]string{"namespaces", "api_keys", "forms", "versions", "fields"},
-	)
-
-	return dbErr
-}
-
-func SetupDB(migrationPath string, cfg Config, dbHandler *errx.DBHandler) *pgxpool.Pool {
-	db, err := database.WaitForDB(30*time.Second, database.Config{
-		Host:         cfg.PostgresHost,
-		Port:         cfg.PostgresPort,
-		Name:         cfg.PostgresDB,
-		User:         cfg.PostgresUser,
-		Password:     cfg.PostgresPassword,
-		RootUser:     cfg.RootPostgresUser,
-		RootPassword: cfg.RootPostgresPassword,
-		RootDB:       cfg.RootPostgresDB,
+		// responders
+		"uniq_responder_email_on_system": "a responder with this email already exists on this system",
 	})
-	if err != nil {
-		errx.Must(err, "Failed to connect DB")
-	}
-	if err = database.RunMigrations(db, migrationPath); err != nil {
-		errx.Must(err, "Failed migrations")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	errx.Must(dbHandler.Validate(ctx, db), "unregistered constraints found")
-	return db
 }
 
 func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
-		errx.Must(err, "Failed to create Scheduler")
+		errx.Exit(err, "Failed to create Scheduler")
 	}
 
 	//_ = database.NewPGXTxRunner(db)
@@ -142,14 +114,14 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		Debug:     true,
 	})
 	if err != nil {
-		errx.Must(err, "error creating identity_x client")
+		errx.Exit(err, "error creating identity_x client")
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_, err = client.Tokens.GetJWKS(ctx, true)
 		if err != nil {
-			errx.Must(err, "error fetching initial JWKS")
+			errx.Exit(err, "error fetching initial JWKS")
 		}
 	}()
 	return client

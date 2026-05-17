@@ -4,7 +4,7 @@ import (
 	"Informd/internal/database/sqlc"
 	"Informd/models"
 	"Informd/ports"
-	"lib/errx"
+	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -14,17 +14,17 @@ type stepRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
-	dbe    *errx.DBHandler
+	dbe    database.ErrorHandler
 }
 
 var _ ports.StepRepo = (*stepRepo)(nil)
 
-func NewStepRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.StepRepo {
+func NewStepRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.StepRepo {
 	return &stepRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
-		dbe:    dbe,
+		dbe:    database.NewErrorHandler("step"),
 	}
 }
 

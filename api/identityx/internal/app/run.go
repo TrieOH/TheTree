@@ -1,13 +1,13 @@
 package app
 
 import (
+	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/security"
 	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/platform/database/sqlc"
 	"IdentityX/internal/platform/email"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
@@ -197,13 +197,13 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 
 func (app *IdentityX) startRepos(rt runtime) repos {
 	var r repos
-	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
@@ -218,7 +218,7 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
-		errx.Must(err, "Failed to create collectors")
+		errx.Exit(err, "Failed to create collectors")
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{

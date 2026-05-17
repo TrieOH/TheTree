@@ -38,7 +38,7 @@
       "title": "Active Services",
       "type": "stat",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "count(up{job=~\"identity-x|informd|payssage|univents\"} == 1)", "legendFormat": "up" }],
+      "targets": [{ "expr": "count(up{job=~\"identityx|informd|payssage|univents\"} == 1)", "legendFormat": "up" }],
       "options": { "colorMode": "background" },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 2 }, { "color": "green", "value": 4 }] } } }
     },
@@ -75,7 +75,7 @@
       "title": "Errors & Warnings (all services)",
       "type": "logs",
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VL}" },
-      "targets": [{ "expr": "{service=~\"identity-x|informd|payssage|univents\", level=~\"error|warn\"}", "legendFormat": "" }],
+      "targets": [{ "expr": "{service=~\"identityx|informd|payssage|univents\", level=~\"error|warn\"}", "legendFormat": "" }],
       "options": { "dedupStrategy": "none", "enableLogDetails": true, "sortOrder": "Descending" }
     }
   ],

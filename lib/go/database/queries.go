@@ -15,7 +15,6 @@ func Queries[T TxQueries[T]](ctx context.Context, q T) T {
 	if tx, ok := ctx.Value(TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return q.WithTx(tx)
 	}
-
 	return q
 }
 

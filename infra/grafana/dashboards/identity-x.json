@@ -1,9 +1,9 @@
 {
   "title": "TrieOH — IdentityX",
-  "uid": "trieoh-identity-x",
+  "uid": "trieoh-identityx",
   "tags": [
     "trieoh",
-    "identity-x"
+    "identityx"
   ],
   "timezone": "browser",
   "refresh": "30s",
@@ -38,7 +38,7 @@
           "type": "victoriametrics-metrics-datasource",
           "uid": "${DS_VM}"
         },
-        "query": "label_values(http_requests_total{job=\"identity-x\"}, route)",
+        "query": "label_values(http_requests_total{job=\"identityx\"}, route)",
         "label": "Route",
         "hide": 0,
         "multi": true,
@@ -67,7 +67,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(http_requests_total{job=\"identity-x\"}[1h]))",
+          "expr": "sum(increase(http_requests_total{job=\"identityx\"}[1h]))",
           "legendFormat": "total"
         }
       ],
@@ -107,7 +107,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(http_requests_total{job=\"identity-x\", status=~\"5..\"}[1h])) / sum(increase(http_requests_total{job=\"identity-x\"}[1h])) * 100",
+          "expr": "sum(increase(http_requests_total{job=\"identityx\", status=~\"5..\"}[1h])) / sum(increase(http_requests_total{job=\"identityx\"}[1h])) * 100",
           "legendFormat": "%"
         }
       ],
@@ -155,7 +155,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"identity-x\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"identityx\"}[5m])) by (le))",
           "legendFormat": "p99"
         }
       ],
@@ -203,7 +203,7 @@
       },
       "targets": [
         {
-          "expr": "rate(http_request_duration_seconds_sum{job=\"identity-x\"}[5m]) / rate(http_request_duration_seconds_count{job=\"identity-x\"}[5m])",
+          "expr": "rate(http_request_duration_seconds_sum{job=\"identityx\"}[5m]) / rate(http_request_duration_seconds_count{job=\"identityx\"}[5m])",
           "legendFormat": "avg"
         }
       ],
@@ -251,7 +251,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"identity-x\", route=~\"$route\"}[1m])) by (route, method)",
+          "expr": "sum(rate(http_requests_total{job=\"identityx\", route=~\"$route\"}[1m])) by (route, method)",
           "legendFormat": "{{method}} {{route}}"
         }
       ],
@@ -280,7 +280,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"identity-x\"}[1m])) by (status)",
+          "expr": "sum(rate(http_requests_total{job=\"identityx\"}[1m])) by (status)",
           "legendFormat": "{{status}}"
         }
       ],
@@ -353,15 +353,15 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"identity-x\", route=~\"$route\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"identityx\", route=~\"$route\"}[5m])) by (le))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"identity-x\", route=~\"$route\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"identityx\", route=~\"$route\"}[5m])) by (le))",
           "legendFormat": "p95"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"identity-x\", route=~\"$route\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"identityx\", route=~\"$route\"}[5m])) by (le))",
           "legendFormat": "p99"
         }
       ],
@@ -390,7 +390,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_request_duration_seconds_bucket{job=\"identity-x\"}[5m])) by (le)",
+          "expr": "sum(rate(http_request_duration_seconds_bucket{job=\"identityx\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -419,7 +419,7 @@
       },
       "targets": [
         {
-          "service": "identity-x",
+          "service": "identityx",
           "operation": "",
           "limit": 20,
           "queryType": "search"
@@ -445,7 +445,7 @@
       },
       "targets": [
         {
-          "expr": "{service=\"identity-x\"}",
+          "expr": "{service=\"identityx\"}",
           "legendFormat": ""
         }
       ],
@@ -472,7 +472,7 @@
       },
       "targets": [
         {
-          "expr": "{service=\"identity-x\", level=~\"error|warn\"}",
+          "expr": "{service=\"identityx\", level=~\"error|warn\"}",
           "legendFormat": ""
         }
       ],

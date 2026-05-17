@@ -133,10 +133,10 @@ func (app *Informd) startQueries(rt runtime) queries {
 
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
-	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
-	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer, app.dbErr)
+	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
@@ -187,7 +187,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
-		errx.Must(err, "Failed to create collectors")
+		errx.Exit(err, "Failed to create collectors")
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{

@@ -2,16 +2,14 @@ package projects
 
 import (
 	"IdentityX/contracts"
-	"IdentityX/internal/platform/database/sqlc"
+	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
 	"context"
 	"lib/database"
-	"lib/errx"
 	"lib/xslices"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -21,29 +19,18 @@ type projectRepo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger // reserved for future use
 	tracer trace.Tracer
-	dbe    *errx.DBHandler
+	dbe    database.ErrorHandler
 }
 
 var _ ports.ProjectRepository = (*projectRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer, dbe *errx.DBHandler) ports.ProjectRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProjectRepository {
 	return &projectRepo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
-		dbe:    dbe,
+		dbe:    database.NewErrorHandler("project"),
 	}
-}
-
-func (repo *projectRepo) queries(ctx context.Context) *sqlc.Queries {
-	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
-		return repo.q.WithTx(tx)
-	}
-	return repo.q
-}
-
-func (repo *projectRepo) span(ctx context.Context, op string) (context.Context, trace.Span) {
-	return repo.tracer.Start(ctx, "ProjectRepo."+op)
 }
 
 func mapProjectFromDB(src sqlc.Project) contracts.Project {
@@ -60,11 +47,11 @@ func mapProjectFromDB(src sqlc.Project) contracts.Project {
 }
 
 func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error) {
-	ctx, span := repo.span(ctx, "Create")
+	ctx, span := repo.tracer.Start(ctx, "Create")
 	span.SetAttributes(attribute.String("project.owner_id", toCreate.OwnerID.String()))
 	span.SetAttributes(attribute.String("project.name", toCreate.ProjectName))
 	defer span.End()
-	sqlcProject, err := repo.queries(ctx).CreateProject(ctx, sqlc.CreateProjectParams{
+	sqlcProject, err := database.Queries(ctx, repo.q).CreateProject(ctx, sqlc.CreateProjectParams{
 		ProjectName: toCreate.ProjectName,
 		Domain:      toCreate.Domain,
 		OwnerID:     toCreate.OwnerID,
@@ -72,73 +59,73 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project)
 		IsActive:    toCreate.IsActive,
 	})
 	if err != nil {
-		return nil, repo.dbe.DB(err, "project")
+		return nil, repo.dbe(err)
 	}
 	span.SetAttributes(attribute.String("project.id", sqlcProject.ID.String()))
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
 func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID uuid.UUID) (*contracts.Project, error) {
-	ctx, span := repo.span(ctx, "GetByIDExternal")
+	ctx, span := repo.tracer.Start(ctx, "GetByIDExternal")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-	sqlcProject, err := repo.queries(ctx).GetProjectByIDExternal(ctx, sqlc.GetProjectByIDExternalParams{
+	sqlcProject, err := database.Queries(ctx, repo.q).GetProjectByIDExternal(ctx, sqlc.GetProjectByIDExternalParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return nil, repo.dbe.DB(err, "project")
+		return nil, repo.dbe(err)
 	}
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
 func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUID) (*contracts.Project, error) {
-	ctx, span := repo.span(ctx, "GetByIDInternal")
+	ctx, span := repo.tracer.Start(ctx, "GetByIDInternal")
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-	sqlcProject, err := repo.queries(ctx).GetProjectByIDInternal(ctx, projectID)
+	sqlcProject, err := database.Queries(ctx, repo.q).GetProjectByIDInternal(ctx, projectID)
 	if err != nil {
-		return nil, repo.dbe.DB(err, "project")
+		return nil, repo.dbe(err)
 	}
 	span.SetAttributes(attribute.String("project.name", sqlcProject.ProjectName))
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
 func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.UUID) (bool, error) {
-	ctx, span := repo.span(ctx, "IsOwnerOf")
+	ctx, span := repo.tracer.Start(ctx, "IsOwnerOf")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-	isOwner, err := repo.queries(ctx).IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
+	isOwner, err := database.Queries(ctx, repo.q).IsOwnerOf(ctx, sqlc.IsOwnerOfParams{
 		OwnerID: ownerID,
 		ID:      projectID,
 	})
 	if err != nil {
-		return false, repo.dbe.DB(err, "project")
+		return false, repo.dbe(err)
 	}
 	return isOwner, nil
 }
 
 func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
-	ctx, span := repo.span(ctx, "List")
+	ctx, span := repo.tracer.Start(ctx, "List")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	defer span.End()
-	sqlcProjects, err := repo.queries(ctx).ListProjects(ctx, ownerID)
+	sqlcProjects, err := database.Queries(ctx, repo.q).ListProjects(ctx, ownerID)
 	if err != nil {
-		return nil, repo.dbe.DB(err, "project")
+		return nil, repo.dbe(err)
 	}
 	span.SetAttributes(attribute.Int("project.count", len(sqlcProjects)))
 	return xslices.MapSlice(sqlcProjects, mapProjectFromDB), nil
 }
 
 func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project, ownerID uuid.UUID) (*contracts.Project, error) {
-	ctx, span := repo.span(ctx, "Update")
+	ctx, span := repo.tracer.Start(ctx, "Update")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", toUpdate.ID.String()))
 	defer span.End()
-	sqlcProject, err := repo.queries(ctx).UpdateProject(ctx, sqlc.UpdateProjectParams{
+	sqlcProject, err := database.Queries(ctx, repo.q).UpdateProject(ctx, sqlc.UpdateProjectParams{
 		ID:          toUpdate.ID,
 		OwnerID:     ownerID,
 		ProjectName: toUpdate.ProjectName,
@@ -146,22 +133,22 @@ func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project,
 		Metadata:    toUpdate.Metadata,
 	})
 	if err != nil {
-		return nil, repo.dbe.DB(err, "project")
+		return nil, repo.dbe(err)
 	}
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
 func (repo *projectRepo) Delete(ctx context.Context, projectID, ownerID uuid.UUID) error {
-	ctx, span := repo.span(ctx, "Delete")
+	ctx, span := repo.tracer.Start(ctx, "Delete")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
-	affectedRows, err := repo.queries(ctx).DeleteProject(ctx, sqlc.DeleteProjectParams{
+	affectedRows, err := database.Queries(ctx, repo.q).DeleteProject(ctx, sqlc.DeleteProjectParams{
 		ID:      projectID,
 		OwnerID: ownerID,
 	})
 	if err != nil {
-		return repo.dbe.DB(err, "project")
+		return repo.dbe(err)
 	}
 	if affectedRows == 0 {
 		return fun.ErrNotFound("project not found")

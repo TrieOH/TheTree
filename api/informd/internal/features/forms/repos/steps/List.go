@@ -10,11 +10,11 @@ import (
 )
 
 func (repo *stepRepo) List(ctx context.Context, formID uuid.UUID) ([]models.Step, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.List")
+	ctx, span := repo.tracer.Start(ctx, "FormRepo.List")
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).ListStepsByFormID(ctx, formID)
 	if err != nil {
-		return nil, repo.dbe.DB(err, "form")
+		return nil, repo.dbe(err)
 	}
 	return xslices.MapSlice(sqlcForm, mapStep), nil
 }

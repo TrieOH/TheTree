@@ -2,10 +2,10 @@ package app
 
 import (
 	"IdentityX/contracts"
-	"IdentityX/internal/platform/database/sqlc"
-	"IdentityX/internal/platform/security"
+	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/internal/shared/security"
 	"context"
 	"database/sql"
 	"encoding/hex"
@@ -16,6 +16,7 @@ import (
 	"lib/telemetry"
 	"log"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -48,7 +49,7 @@ func SetupValidator() *validator.Validate {
 
 		return u.Version() == 7
 	}); err != nil {
-		errx.Must(err, "failed to register uuid7 validator")
+		errx.Exit(err, "failed to register uuid7 validator")
 	}
 
 	// Custom password validation - requires uppercase, number, and symbol
@@ -69,7 +70,7 @@ func SetupValidator() *validator.Validate {
 
 		return hasUpper && hasNumber && hasSymbol
 	}); err != nil {
-		errx.Must(err, "failed to register passwd validator")
+		errx.Exit(err, "failed to register passwd validator")
 	}
 
 	// Use JSON field names for better API responses
@@ -104,57 +105,29 @@ func SetupFUN() {
 	})
 }
 
-func SetupDBErrorHandler() *errx.DBHandler {
-	dbErr := errx.NewDBHandler(
-		errx.ConstraintRegistry{
-			"chk_valid_user_type":   "user type must be one of: client, project",
-			"one_email_for_client":  "an account with this email already exists",
-			"one_email_per_project": "an account with this email already exists in this project",
+func SetupConstraintMessages() {
+	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+		"chk_valid_user_type":   "user type must be one of: client, project",
+		"one_email_for_client":  "an account with this email already exists",
+		"one_email_per_project": "an account with this email already exists in this project",
 
-			// sessions
-			"chk_session_valid_user_type":           "session user type must be one of: client, project",
-			"chk_session_not_revoked_before_issued": "a session cannot be revoked before it was issued",
-			"sessions_token_id_key":                 "a session with this token ID already exists",
+		// sessions
+		"chk_session_valid_user_type":           "session user type must be one of: client, project",
+		"chk_session_not_revoked_before_issued": "a session cannot be revoked before it was issued",
+		"sessions_token_id_key":                 "a session with this token ID already exists",
 
-			// key_pair
-			"chk_key_pair_key_type_valid":                 "key type must be one of: goauth, project",
-			"chk_key_pair_usage_valid":                    "key usage must be one of: sign, verify",
-			"chk_key_pair_status_valid":                   "key status must be one of: active, rotated, revoked",
-			"chk_key_pair_type_project_consistency_check": "goauth keys must not have a project, project keys must have a project",
-			"chk_key_pair_cant_sign_if_rotated":           "a rotated key pair cannot be used for signing",
-			"key_pair_kid_key":                            "a key pair with this kid already exists",
-			"one_identity_x_active_signing_key":           "there can only be one active goauth signing key",
-		},
-		[]string{"users", "sessions", "projects", "key_pair", "api_keys", "token_reuse_list"},
-	)
-
-	return dbErr
-}
-
-func SetupDB(migrationPath string, cfg Config, dbHandler *errx.DBHandler) *pgxpool.Pool {
-	db, err := database.WaitForDB(30*time.Second, database.Config{
-		Host:         cfg.PostgresHost,
-		Port:         cfg.PostgresPort,
-		Name:         cfg.PostgresDB,
-		User:         cfg.PostgresUser,
-		Password:     cfg.PostgresPassword,
-		RootUser:     cfg.RootPostgresUser,
-		RootPassword: cfg.RootPostgresPassword,
-		RootDB:       cfg.RootPostgresDB,
+		// key_pair
+		"chk_key_pair_key_type_valid":                 "key type must be one of: goauth, project",
+		"chk_key_pair_usage_valid":                    "key usage must be one of: sign, verify",
+		"chk_key_pair_status_valid":                   "key status must be one of: active, rotated, revoked",
+		"chk_key_pair_type_project_consistency_check": "goauth keys must not have a project, project keys must have a project",
+		"chk_key_pair_cant_sign_if_rotated":           "a rotated key pair cannot be used for signing",
+		"key_pair_kid_key":                            "a key pair with this kid already exists",
+		"one_identity_x_active_signing_key":           "there can only be one active goauth signing key",
 	})
-	if err != nil {
-		errx.Must(err, "Failed to connect DB")
-	}
-	if err = database.RunMigrations(db, migrationPath); err != nil {
-		log.Fatalf("Failed migrations: %v", err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	errx.Must(dbHandler.Validate(ctx, db), "unregistered constraints found")
-	return db
 }
 
-func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Duration, dbHandler *errx.DBHandler) {
+func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte) {
 	q := sqlc.New(db)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -165,11 +138,11 @@ func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Du
 	}
 
 	// Also run the full key rotation logic to create new keys for projects without active keys
-	if err := tryRotateGoAuthKeys(ctx, q, encryptionKey, keyLifetime, dbHandler); err != nil {
+	if err := tryRotateIDXKeys(ctx, q, encryptionKey); err != nil {
 		log.Printf("Warning: failed to rotate goauth keys: %v", err)
 	}
 
-	if err := tryRotateProjectKeys(ctx, q, encryptionKey, keyLifetime, dbHandler); err != nil {
+	if err := tryRotateProjectKeys(ctx, q, encryptionKey); err != nil {
 		log.Printf("Warning: failed to rotate project keys: %v", err)
 	}
 
@@ -189,6 +162,8 @@ func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Du
 			if err != nil {
 				log.Fatalf("failed to encrypt GoAuth key: %v", err)
 			}
+
+			keyLifetime := errx.MustEnv("IDENTITY_X_KEY_LIFETIME", time.ParseDuration)
 
 			kid := "goauth:" + ulid.Make().String()
 			expiresAt := time.Now().Add(keyLifetime)
@@ -231,14 +206,15 @@ func SetupRuntimeEnv(db *pgxpool.Pool, encryptionKey []byte, keyLifetime time.Du
 	}
 }
 
-func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration, dbHandler *errx.DBHandler) error {
+func tryRotateIDXKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte) error {
+	dbe := database.NewErrorHandler("idx key")
 	key, err := q.GetActiveSigningKey(ctx, nil)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
 			// defensive: no signing key → create
-			return createGoAuthKey(ctx, q, encryptionKey, keyLifetime)
+			return createIDXKey(ctx, q, encryptionKey)
 		}
-		return dbHandler.DB(err, "Signing Key")
+		return dbe(err)
 	}
 
 	if time.Until(key.ExpiresAt) > 24*time.Hour {
@@ -246,13 +222,13 @@ func tryRotateGoAuthKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []b
 	}
 
 	if err = q.RotateSigningKeys(ctx, nil); err != nil {
-		return dbHandler.DB(err, "Signing Key")
+		return dbe(err)
 	}
 
-	return createGoAuthKey(ctx, q, encryptionKey, keyLifetime)
+	return createIDXKey(ctx, q, encryptionKey)
 }
 
-func createGoAuthKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration) error {
+func createIDXKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte) error {
 	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
@@ -264,6 +240,7 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte,
 		return err
 	}
 
+	keyLifetime := errx.MustEnv("IDENTITY_X_KEY_LIFETIME", time.ParseDuration)
 	kid := "goauth:" + ulid.Make().String()
 	expiresAt := time.Now().Add(keyLifetime)
 
@@ -289,9 +266,10 @@ func createGoAuthKey(ctx context.Context, q *sqlc.Queries, encryptionKey []byte,
 	return err
 }
 
-func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte, keyLifetime time.Duration, dbHandler *errx.DBHandler) error {
+func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []byte) error {
+	dbe := database.NewErrorHandler("project key")
 	projects, err := q.ListProjectsWithSigningKeys(ctx)
-	err = dbHandler.DB(err, "Signing Key")
+	err = dbe(err)
 	if err != nil {
 		return err
 	}
@@ -301,10 +279,10 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []
 		key, err = q.GetActiveSigningKey(ctx, projectID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows) {
-				_ = createProjectKey(ctx, q, *projectID, encryptionKey, keyLifetime, dbHandler)
+				_ = createProjectKey(ctx, q, *projectID, encryptionKey)
 				continue
 			}
-			return dbHandler.DB(err, "project Keys")
+			return dbe(err)
 		}
 
 		if time.Until(key.ExpiresAt) > 24*time.Hour {
@@ -312,16 +290,17 @@ func tryRotateProjectKeys(ctx context.Context, q *sqlc.Queries, encryptionKey []
 		}
 
 		if err = q.RotateSigningKeys(ctx, projectID); err != nil {
-			return dbHandler.DB(err, "project Keys")
+			return dbe(err)
 		}
 
-		_ = createProjectKey(ctx, q, *projectID, encryptionKey, keyLifetime, dbHandler)
+		_ = createProjectKey(ctx, q, *projectID, encryptionKey)
 	}
 
 	return nil
 }
 
-func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID, encryptionKey []byte, keyLifetime time.Duration, dbHandler *errx.DBHandler) error {
+func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID, encryptionKey []byte) error {
+	dbe := database.NewErrorHandler("project key")
 	pub, priv, err := crypto.GenerateEd25519()
 	defer zero(priv)
 	if err != nil {
@@ -333,6 +312,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID,
 		return err
 	}
 
+	keyLifetime := errx.MustEnv("IDENTITY_X_KEY_LIFETIME", time.ParseDuration)
 	kid := "project:" + projectID.String() + ":" + ulid.Make().String()
 	expiresAt := time.Now().Add(keyLifetime)
 
@@ -356,7 +336,7 @@ func createProjectKey(ctx context.Context, q *sqlc.Queries, projectID uuid.UUID,
 	if fun.Is(err, fun.CodeConflict) {
 		return nil
 	}
-	return dbHandler.DB(err, "project Keys")
+	return dbe(err)
 }
 
 func queriesWithTx(ctx context.Context, q *sqlc.Queries) *sqlc.Queries {
@@ -372,14 +352,14 @@ func zero(b []byte) {
 	}
 }
 
-func SetupCron(db *pgxpool.Pool, encryptionKey []byte, cfg Config, dbHandler *errx.DBHandler) gocron.Scheduler {
+func SetupCron(encryptionKey []byte, db *pgxpool.Pool, cfg Config) gocron.Scheduler {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
 		log.Fatalf("Failed to create scheduler: %v", err)
 	}
 
 	txRunner := database.NewPGXTxRunner(db, telemetry.Log())
-	rotateKeysJob(db, scheduler, txRunner, cfg.RotateKeysJobDuration, encryptionKey, cfg.KeyLifetime, dbHandler)
+	rotateKeysJob(db, scheduler, txRunner, encryptionKey)
 	sessionCleanupJob(db, scheduler, txRunner)
 	tokenReuseCleanupJob(db, scheduler)
 
@@ -388,17 +368,13 @@ func SetupCron(db *pgxpool.Pool, encryptionKey []byte, cfg Config, dbHandler *er
 	return scheduler
 }
 
-func InitEncryption(keyStr string) []byte {
-	var err error
-	if keyStr == "" {
-		errx.Must(errors.New("ENCRYPTION_KEY is not set"), "error reading encryption key")
-	}
-	encryptionKey, err := hex.DecodeString(keyStr)
+func InitEncryption() []byte {
+	encryptionKey, err := hex.DecodeString(os.Getenv("ENCRYPTION_KEY"))
 	if err != nil {
-		errx.Must(err, "error decoding encryption key")
+		errx.Exit(err, "error decoding encryption key")
 	}
 	if len(encryptionKey) != 32 {
-		errx.Must(errors.New("encryption key size is not 32 bytes"), "Wrong key size")
+		errx.Exit(errors.New("encryption key size is not 32 bytes"), "Wrong key size")
 	}
 	return encryptionKey
 }

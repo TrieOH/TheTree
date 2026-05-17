@@ -14,7 +14,7 @@ func (repo *formRepo) BulkGet(ctx context.Context, ids []uuid.UUID, params model
 	defer span.End()
 	sqlcForms, err := database.Queries(ctx, repo.q).BulkGetForms(ctx, ids)
 	if err != nil {
-		return nil, repo.dbe.DB(err, "form")
+		return nil, repo.dbe(err)
 	}
 	forms := xslices.MapSlice(sqlcForms, mapForm)
 	forms, err = models.FilterForms(forms, params)

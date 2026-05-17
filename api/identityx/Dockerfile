@@ -32,7 +32,7 @@ WORKDIR /app
 
 COPY --from=builder /app/api/identityx/identityx .
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
-COPY --from=builder /app/api/identityx/internal/platform/database/migrations ./internal/platform/database/migrations
+COPY --from=builder /app/api/identityx/internal/database/migrations ./internal/database/migrations
 COPY --from=builder /app/api/identityx/generated/docs ./generated/docs
 
 EXPOSE 8080

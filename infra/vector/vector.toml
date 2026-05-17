@@ -1,6 +1,6 @@
 [sources.docker]
 type = "docker_logs"
-include_containers = ["identity-x", "informd", "payssage", "univents"]
+include_containers = ["identityx", "informd", "payssage", "univents"]
 include_labels = []
 
 [transforms.parse]

@@ -1,14 +1,23 @@
 package database
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"lib/errx"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type Config struct {
 	Host     string
 	Port     string
-	Name     string
+	DB       string
 	User     string
 	Password string
 	SSLMode  string
+
+	MigrationPath string
 
 	RootUser     string
 	RootPassword string
@@ -24,7 +33,7 @@ func (c Config) DSN() string {
 	}
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.User, c.Password, c.Host, c.port(), c.Name, ssl,
+		c.User, c.Password, c.Host, c.port(), c.DB, ssl,
 	)
 }
 
@@ -52,4 +61,18 @@ func (c Config) port() string {
 		return "5432"
 	}
 	return c.Port
+}
+
+func SetupDB(cfg Config) *pgxpool.Pool {
+	db, err := WaitForDB(30*time.Second, cfg)
+	if err != nil {
+		errx.Exit(err, "Failed to connect DB")
+	}
+	if err = RunMigrations(db, cfg.MigrationPath); err != nil {
+		errx.Exit(err, "Failed migrations")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	validateConstraints(ctx, db)
+	return db
 }

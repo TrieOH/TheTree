@@ -16,8 +16,8 @@ services:
   # 🔐 IDENTITY-X
   # =============================================================
 
-  identity-x:
-    container_name: identity-x
+  identityx:
+    container_name: identityx
     restart: unless-stopped
     networks:
       - internal
@@ -50,7 +50,7 @@ services:
     depends_on:
       caddy:
         condition: service_healthy
-      identity-x:
+      identityx:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -76,7 +76,7 @@ services:
     depends_on:
       caddy:
         condition: service_healthy
-      identity-x:
+      identityx:
         condition: service_healthy
       postgres:
         condition: service_healthy
@@ -104,7 +104,7 @@ services:
     depends_on:
       caddy:
         condition: service_healthy
-      identity-x:
+      identityx:
         condition: service_healthy
       payssage:
         condition: service_healthy

@@ -17,7 +17,7 @@ func (repo *formRepo) Create(ctx context.Context, toCreate models.Form) (*models
 		Status:      string(toCreate.Status),
 	})
 	if err != nil {
-		return nil, repo.dbe.DB(err, "form")
+		return nil, repo.dbe(err)
 	}
 	return new(mapForm(sqlcForm)), nil
 }

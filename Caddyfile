@@ -23,7 +23,7 @@
     }
 
     handle_path /identityx/* {
-        reverse_proxy identity-x:8080
+        reverse_proxy identityx:8080
     }
 
     handle_path /informd/* {
@@ -54,7 +54,7 @@ api.trieoh.com {
 # =============================================================
 
 api.identityx.com.br {
-    reverse_proxy identity-x:8080
+    reverse_proxy identityx:8080
     log
 }
 
@@ -86,14 +86,14 @@ api.informd.trieoh.com {
 }
 
 # =============================================================
-# 🔑 AUTH ALIASES (all → identity-x)
+# 🔑 AUTH ALIASES (all → identityx)
 # =============================================================
 
 auth.univents.com.br,
 auth.payssage.trieoh.com,
 auth.identityx.com.br,
 auth.informd.trieoh.com {
-    reverse_proxy identity-x:8080
+    reverse_proxy identityx:8080
     log
 }
 

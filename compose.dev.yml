@@ -32,7 +32,7 @@ services:
     container_name: caddy-dev
     ports:
       - "80:80"        # API gateway
-      - "8080:8080"    # identity-x
+      - "8080:8080"    # identityx
       - "8081:8081"    # univents
       - "8082:8082"    # payssage
       - "8083:8083"    # informd
@@ -52,7 +52,7 @@ services:
   # -----------------
   # 🔐 IDENTITY-X
   # -----------------
-  identity-x:
+  identityx:
     build:
       context: .
       dockerfile: api/identityx/Dockerfile

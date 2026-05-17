@@ -35,8 +35,8 @@ services:
   # -----------------
   # 🔐 IDENTITY-X
   # -----------------
-  identity-x:
-    image: ghcr.io/trieoh/identity-x:${IDENTITY_X_TAG}
+  identityx:
+    image: ghcr.io/trieoh/identityx:${IDENTITY_X_TAG}
     env_file:
       - .tree.env
 

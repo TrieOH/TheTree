@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"lib/errx"
+	"lib/database"
 	"lib/telemetry"
 
 	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"
@@ -18,56 +18,27 @@ type Informd struct {
 	scheduler gocron.Scheduler
 	idxClient *idx.Client
 	sdbClient *authzed.Client
-	dbErr     *errx.DBHandler
 	Config    Config
 }
 
-func New() *Informd {
-	var app Informd
-	var err error
-	app.Config, err = LoadConfig()
-	if err != nil {
-		errx.Must(err, "failed to load config")
-	}
-	SetupFUN(app.Config.AppName)
-	app.idxClient = SetupIdentityX(app.Config)
-	migrationPath := "./internal/database/migrations"
-	app.dbErr = SetupDBErrorHandler()
-	app.db = SetupDB(migrationPath, app.Config, app.dbErr)
-	app.scheduler = SetupCron(app.db)
-	return &app
-}
+var app Informd
 
-func (app *Informd) Run() {
+func Start() {
 	ctx := context.Background()
+	SetupConstraintMessages()
 
-	defer app.CloseDB()
-	defer app.CloseRedis()
-	shutdown := app.StartTracer(ctx, app.Config.AppName)
-	defer app.ShutdownTracer(ctx, shutdown)
+	app.Config = LoadConfig()
+
+	SetupFUN(app.Config.AppName)
+
+	app.idxClient = SetupIdentityX(app.Config)
+
+	app.db = database.SetupDB(app.Config.ToDBConfig())
+	defer database.CloseDB(app.db)
+	app.scheduler = SetupCron(app.db)
+
+	shutdown := telemetry.InitTracer(ctx, app.Config.AppName)
+	defer telemetry.ShutdownTracer(ctx, shutdown, app.Config.AppName)
+
 	app.run()
-}
-
-func (app *Informd) CloseDB() {
-	app.db.Close()
-}
-
-func (app *Informd) CloseRedis() {
-	if err := app.redis.Close(); err != nil {
-		errx.Must(err, "error closing redis connection")
-	}
-}
-
-func (app *Informd) StartTracer(ctx context.Context, appName string) func(context.Context) error {
-	shutdown, err := telemetry.InitTracer(ctx, appName)
-	if err != nil {
-		errx.Must(err, "error starting tracer")
-	}
-	return shutdown
-}
-
-func (app *Informd) ShutdownTracer(ctx context.Context, shutdown func(context.Context) error) {
-	if err := shutdown(ctx); err != nil {
-		errx.Must(err, "error shutting down tracer")
-	}
 }

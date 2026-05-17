@@ -16,7 +16,7 @@
       "id": 1, "type": "stat", "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "title": "Services Up",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "count(up{job=~\"identity-x|informd|payssage|univents\"} == 1)", "legendFormat": "up" }],
+      "targets": [{ "expr": "count(up{job=~\"identityx|informd|payssage|univents\"} == 1)", "legendFormat": "up" }],
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 2 }, { "color": "green", "value": 4 }] } } },
       "options": { "colorMode": "background" }
     },
@@ -41,7 +41,7 @@
       "id": 10, "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "title": "Service Uptime",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "up{job=~\"identity-x|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
+      "targets": [{ "expr": "up{job=~\"identityx|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
       "fieldConfig": { "defaults": { "min": 0, "max": 1, "custom": { "lineWidth": 2 } } }
     },
     {
@@ -56,21 +56,21 @@
       "id": 20, "type": "timeseries", "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
       "title": "Go Goroutines per Service",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "go_goroutines{job=~\"identity-x|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
+      "targets": [{ "expr": "go_goroutines{job=~\"identityx|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } }
     },
     {
       "id": 21, "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "title": "Go Heap Alloc per Service",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "go_memstats_heap_alloc_bytes{job=~\"identity-x|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
+      "targets": [{ "expr": "go_memstats_heap_alloc_bytes{job=~\"identityx|informd|payssage|univents\"}", "legendFormat": "{{job}}" }],
       "fieldConfig": { "defaults": { "unit": "bytes" } }
     },
     {
       "id": 22, "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "title": "GC Pause Duration",
       "datasource": { "type": "victoriametrics-metrics-datasource", "uid": "${DS_VM}" },
-      "targets": [{ "expr": "rate(go_gc_duration_seconds_sum{job=~\"identity-x|informd|payssage|univents\"}[5m])", "legendFormat": "{{job}}" }],
+      "targets": [{ "expr": "rate(go_gc_duration_seconds_sum{job=~\"identityx|informd|payssage|univents\"}[5m])", "legendFormat": "{{job}}" }],
       "fieldConfig": { "defaults": { "unit": "s" } }
     },
 
@@ -78,7 +78,7 @@
       "id": 30, "type": "logs", "gridPos": { "h": 10, "w": 24, "x": 0, "y": 28 },
       "title": "All Service Errors",
       "datasource": { "type": "victoriametrics-logs-datasource", "uid": "${DS_VL}" },
-      "targets": [{ "expr": "{service=~\"identity-x|informd|payssage|univents\", level=\"error\"}", "legendFormat": "" }],
+      "targets": [{ "expr": "{service=~\"identityx|informd|payssage|univents\", level=\"error\"}", "legendFormat": "" }],
       "options": { "dedupStrategy": "none", "enableLogDetails": true, "sortOrder": "Descending" }
     }
   ]

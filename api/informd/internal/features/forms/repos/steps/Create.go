@@ -8,7 +8,7 @@ import (
 )
 
 func (repo *stepRepo) Create(ctx context.Context, toCreate models.Step) (*models.Step, error) {
-	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.Create")
+	ctx, span := repo.tracer.Start(ctx, "StepRepo.Create")
 	defer span.End()
 	sqlcStep, err := database.Queries(ctx, repo.q).CreateStep(ctx, sqlc.CreateStepParams{
 		FormID:       toCreate.FormID,
@@ -17,7 +17,7 @@ func (repo *stepRepo) Create(ctx context.Context, toCreate models.Step) (*models
 		PositionHint: toCreate.PositionHint,
 	})
 	if err != nil {
-		return nil, repo.dbe.DB(err, "form")
+		return nil, repo.dbe(err)
 	}
 	return new(mapStep(sqlcStep)), nil
 }

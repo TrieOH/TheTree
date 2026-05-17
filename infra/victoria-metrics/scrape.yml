@@ -3,9 +3,9 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: identity-x
+  - job_name: identityx
     static_configs:
-      - targets: ["identity-x:8080"]
+      - targets: ["identityx:8080"]
 
   - job_name: informd
     static_configs:
