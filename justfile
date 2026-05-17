@@ -117,7 +117,7 @@ email:
       -f compose.prod.yml \
       -f compose.server.yml \
       --profile email \
-      up -d
+      up -d mox
 
 # =============================================================
 # 🔧 GIT
