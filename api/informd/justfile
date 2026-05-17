@@ -19,6 +19,7 @@ test:
     gotestsum --format testdox --format-icons nerdfonts ./...
 
 testf:
+    mockery
     mkdir -p generated/coverage
     gotestsum --format testdox --format-icons nerdfonts \
         -- -coverprofile=generated/coverage/coverage.out ./...
