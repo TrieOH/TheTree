@@ -37,6 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
+      - uses: https://code.forgejo.org/actions/setup-go@v5
+        with:
+          go-version: '1.26'
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
         run: cd api/identityx && gofmt -l . && go vet ./...
       - if: ${{ needs.changes.outputs.informd == 'true' }}
@@ -64,8 +67,14 @@ jobs:
     needs: [changes, build]
     runs-on: ubuntu-latest
     steps:
-      - run: apt-get install -y just
       - uses: https://code.forgejo.org/actions/checkout@v4
+      - uses: https://code.forgejo.org/actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - run: |
+          apt-get install -y just lcov
+          go install gotest.tools/gotestsum@latest
+          go install github.com/jandelgado/gcov2lcov@latest
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
         run: just test identityx
       - if: ${{ needs.changes.outputs.informd == 'true' }}
