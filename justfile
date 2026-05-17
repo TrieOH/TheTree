@@ -129,4 +129,4 @@ git:
       -f compose.prod.yml \
       -f compose.server.yml \
       --profile git \
-      up -d
+      up -d forgejo forgejo-runner forgejo-dind

@@ -46,6 +46,9 @@ services:
     restart: unless-stopped
     networks:
       - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
     ports:
       - "25:25"    # SMTP
       - "465:465"  # SMTPS
@@ -75,6 +78,8 @@ services:
     restart: unless-stopped
     depends_on:
       postgres:
+        condition: service_healthy
+      caddy:
         condition: service_healthy
     env_file:
       - .forgejo.env
