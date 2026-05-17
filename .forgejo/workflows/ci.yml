@@ -35,8 +35,6 @@ jobs:
   lint:
     needs: changes
     runs-on: ubuntu-latest
-    container:
-      image: git.trieoh.com/trieoh/go-tools:latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
@@ -51,25 +49,22 @@ jobs:
   build:
     needs: changes
     runs-on: ubuntu-latest
-    container:
-      image: git.trieoh.com/trieoh/go-tools:latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
-        run: cd api/identityx && go build ./...
+        run: docker build -f api/identityx/Dockerfile .
       - if: ${{ needs.changes.outputs.informd == 'true' }}
-        run: cd api/informd && go build ./...
+        run: docker build -f api/informd/Dockerfile .
       - if: ${{ needs.changes.outputs.payssage == 'true' }}
-        run: cd api/payssage && go build ./...
+        run: docker build -f api/payssage/Dockerfile .
       - if: ${{ needs.changes.outputs.univents == 'true' }}
-        run: cd api/univents && go build ./...
+        run: docker build -f api/univents/Dockerfile .
 
   test:
     needs: [changes, build]
     runs-on: ubuntu-latest
-    container:
-      image: git.trieoh.com/trieoh/go-tools:latest
     steps:
+      - run: apt-get install -y just
       - uses: https://code.forgejo.org/actions/checkout@v4
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
         run: just test identityx
