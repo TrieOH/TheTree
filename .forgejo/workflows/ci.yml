@@ -15,7 +15,7 @@ jobs:
       univents: ${{ steps.filter.outputs.univents }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
-      - uses: https://forgejo.elab.coop/pierre-louis/dorny-paths-filter@v3
+      - uses: https://github.com/dorny/paths-filter@v3
         id: filter
         with:
           filters: |
