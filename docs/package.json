@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@takumi-rs/image-response": "^1.1.2",
+    "ajv": "^8.20.0",
     "fumadocs-core": "16.8.11",
     "fumadocs-mdx": "15.0.5",
     "fumadocs-openapi": "^10.8.3",
@@ -23,7 +24,8 @@
     "react-server-dom-webpack": "^19.2.6",
     "shiki": "^4.0.2",
     "tailwind-merge": "^3.6.0",
-    "waku": "1.0.0-alpha.10"
+    "waku": "1.0.0-alpha.10",
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
