@@ -1,0 +1,46 @@
+name: Build & Publish
+
+on:
+  push:
+    tags:
+      - '*/v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Parse tag
+        id: tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          SVC="${TAG%%/*}"
+          VERSION="${TAG##*/}"
+
+          if [[ "$SVC" == *-ui ]] || [[ "$SVC" == *sdk* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "svc=$SVC" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Login to registry
+        if: ${{ steps.tag.outputs.skip == 'false' }}
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_USER: ${{ secrets.FORGEJO_USER }}
+        run: printenv FORGEJO_TOKEN | docker login git.trieoh.com -u "$FORGEJO_USER" --password-stdin
+
+      - name: Build & push
+        if: ${{ steps.tag.outputs.skip == 'false' }}
+        run: |
+          docker build \
+            -f api/${{ steps.tag.outputs.svc }}/Dockerfile \
+            -t git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }} \
+            -t git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:latest \
+            .
+          docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }}
+          docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:latest

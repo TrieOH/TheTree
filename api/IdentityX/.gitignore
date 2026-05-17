@@ -1,8 +1,0 @@
-node_modules/
-internal/platform/database/sqlc/
-internal/platform/database/sqlc/*
-docs/
-docs/*
-.env
-.idea/
-.idea

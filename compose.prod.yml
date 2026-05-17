@@ -1,0 +1,69 @@
+# =============================================================
+# compose.prod.yml  (override)
+#
+# Pulls versioned images from GHCR. Caddy with TLS via
+# Cloudflare origin certs + Let's Encrypt for mail domains.
+# Postgres is internal only (no port exposure).
+#
+# Usage:
+#   docker compose \
+#     -f compose.base.yml \
+#     -f compose.app.yml \
+#     -f compose.infra.yml \
+#     -f compose.prod.yml \
+#     --profile monitor \
+#     up -d
+#
+# Or via just: just prod
+# =============================================================
+
+services:
+  # -----------------
+  # 🌐 CADDY (prod)
+  # -----------------
+  caddy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/caddy/certs:/etc/caddy/certs:ro
+
+  # -----------------
+  # 🔐 IDENTITY-X
+  # -----------------
+  identityx:
+    image: git.trieoh.com/trieoh/identityx:${IDENTITY_X_TAG}
+    env_file:
+      - .tree.env
+
+  # -----------------
+  # 💳 PAYSSAGE
+  # -----------------
+  payssage:
+    image: git.trieoh.com/trieoh/payssage:${PAYSSAGE_TAG}
+    env_file:
+      - .tree.env
+
+  # -----------------
+  # 📢 INFORMD
+  # -----------------
+  informd:
+    image: git.trieoh.com/trieoh/informd:${INFORMD_TAG}
+    env_file:
+      - .tree.env
+
+  # -----------------
+  # 🎟️ UNIVENTS
+  # -----------------
+  univents:
+    image: git.trieoh.com/trieoh/univents:${UNIVENTS_TAG}
+    env_file:
+      - .tree.env
+
+volumes:
+  caddy_data:
+  caddy_config:

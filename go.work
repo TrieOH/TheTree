@@ -3,10 +3,10 @@ go 1.26.2
 replace google.golang.org/genproto => google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4
 
 use (
-	./api/IdentityX
-	./api/Informd
-	./api/Payssage
-	./api/Univents
+	./api/identityx
+	./api/informd
+	./api/payssage
+	./api/univents
 	./lib/go
 	./sdk/go/IdentityX
 	./sdk/go/Payssage

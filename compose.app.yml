@@ -1,0 +1,128 @@
+# =============================================================
+# compose.app.yml
+#
+# All TrieOH application services: Identity-X, Payssage,
+# Informd, Univents — each with their own Redis.
+# Postgres and Caddy come from compose.base.yml.
+#
+# Usage:
+#   docker compose -f compose.base.yml -f compose.app.yml \
+#     -f compose.dev.yml up
+# =============================================================
+
+services:
+
+  # =============================================================
+  # 🔐 IDENTITY-X
+  # =============================================================
+
+  identityx:
+    container_name: identityx
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    env_file:
+      - .tree.env
+      - .identityx.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =============================================================
+  # 💳 PAYSSAGE
+  # =============================================================
+
+  payssage:
+    container_name: payssage
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+      identityx:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .tree.env
+      - .payssage.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =============================================================
+  # 📢 INFORMD
+  # =============================================================
+
+  informd:
+    container_name: informd
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+      identityx:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    env_file:
+      - .tree.env
+      - .informd.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =============================================================
+  # 🎟️ UNIVENTS
+  # =============================================================
+
+  univents:
+    container_name: univents
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+      identityx:
+        condition: service_healthy
+      payssage:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    env_file:
+      - .tree.env
+      - .univents.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  payssage-redis:
+  informd-redis:
+  univents-redis:

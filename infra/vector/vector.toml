@@ -1,0 +1,35 @@
+[sources.docker]
+type = "docker_logs"
+include_containers = ["identityx", "informd", "payssage", "univents"]
+include_labels = []
+
+[transforms.parse]
+type = "remap"
+inputs = ["docker"]
+source = '''
+  .service = .container_name
+  .level = "info"
+  parsed, err = parse_json(.message)
+  if err == null {
+    if exists(parsed.level) { .level = parsed.level }
+    if exists(parsed.msg)   { .message = parsed.msg }
+    if exists(parsed.ts)    { .timestamp = parsed.ts }
+  }
+'''
+
+[sinks.victoria_logs]
+type = "elasticsearch"
+inputs = ["parse"]
+endpoints = ["http://victoria-logs:9428/insert/elasticsearch/"]
+mode = "bulk"
+api_version = "v8"
+
+[sinks.victoria_logs.bulk]
+index = "logs"
+
+[sinks.victoria_logs.query]
+_stream_fields = "service,level"
+
+[api]
+enabled = true
+address = "0.0.0.0:8686"

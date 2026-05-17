@@ -1,0 +1,109 @@
+# =============================================================
+# compose.dev.yml  (override)
+#
+# Builds service images from local source. Exposes ports for
+# direct access via Caddy only — no service exposes ports
+# directly. Postgres port exposed for local tooling.
+#
+# Usage:
+#   docker compose \
+#     -f compose.base.yml \
+#     -f compose.app.yml \
+#     -f compose.infra.yml \
+#     -f compose.dev.yml \
+#     up --build
+#
+# Or via just: just dev
+# =============================================================
+
+services:
+
+  # -----------------
+  # 🗄️ POSTGRES
+  # -----------------
+  postgres:
+    ports:
+      - "5432:5432"
+
+  # -----------------
+  # 🌐 CADDY (dev)
+  # -----------------
+  caddy:
+    container_name: caddy-dev
+    ports:
+      - "80:80"        # API gateway
+      - "8080:8080"    # identityx
+      - "8081:8081"    # univents
+      - "8082:8082"    # payssage
+      - "8083:8083"    # informd
+      - "8090:8090"    # beszel
+      - "9000:9000"    # rustfs API
+      - "9001:9001"    # rustfs console
+      - "3000:3000"    # grafana
+      - "8025:8025"    # mailpit
+      - "8428:8428"    # victoria-metrics
+      - "9428:9428"    # victoria-logs
+      - "10428:10428"  # victoria-traces
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # -----------------
+  # 🔐 IDENTITY-X
+  # -----------------
+  identityx:
+    build:
+      context: .
+      dockerfile: api/identityx/Dockerfile
+    depends_on:
+      mailpit:
+        condition: service_healthy
+
+  # -----------------
+  # 💳 PAYSSAGE
+  # -----------------
+  payssage:
+    build:
+      context: .
+      dockerfile: api/payssage/Dockerfile
+
+  # -----------------
+  # 📢 INFORMD
+  # -----------------
+  informd:
+    build:
+      context: .
+      dockerfile: api/informd/Dockerfile
+
+  # -----------------
+  # 🎟️ UNIVENTS
+  # -----------------
+  univents:
+    build:
+      context: .
+      dockerfile: api/univents/Dockerfile
+
+  # -----------------
+  # 📧 MAILPIT
+  # -----------------
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8025/livez || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  caddy_data:
+  caddy_config:
+  beszel_data:

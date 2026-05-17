@@ -15,10 +15,9 @@ func Queries[T TxQueries[T]](ctx context.Context, q T) T {
 	if tx, ok := ctx.Value(TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return q.WithTx(tx)
 	}
-
 	return q
 }
 
 func Span(ctx context.Context, tracer trace.Tracer, op string) (context.Context, trace.Span) {
-	return tracer.Start(ctx, "FormsRepo."+op)
+	return tracer.Start(ctx, op)
 }
