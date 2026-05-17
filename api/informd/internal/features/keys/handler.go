@@ -112,7 +112,7 @@ type BulkGetRequest struct {
 // @Failure 400 {object} fun.Response
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response
-// @Router /api_keys/bulk [post]
+// @Router /api-keys/bulk [post]
 func (h *Handler) BulkGet(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	var payload BulkGetRequest
