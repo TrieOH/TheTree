@@ -55,8 +55,11 @@ jobs:
   build:
     needs: changes
     runs-on: ubuntu-latest
+    env:
+      DOCKER_HOST: tcp://forgejo-dind:2375
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
+      - run: apt-get install -y docker.io
       - if: ${{ needs.changes.outputs.identityx == 'true' }}
         run: docker build -f api/identityx/Dockerfile .
       - if: ${{ needs.changes.outputs.informd == 'true' }}
