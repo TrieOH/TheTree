@@ -17,11 +17,6 @@
         respond "ok" 200
     }
 
-    handle_path /admin/beszel* {
-        import admin_auth
-        reverse_proxy beszel:8090
-    }
-
     handle_path /identityx/* {
         reverse_proxy identityx:8080
     }
@@ -103,7 +98,6 @@ auth.informd.trieoh.com {
 
 beszel.trieoh.com {
     import tls_trieoh
-    import admin_auth
     log
     reverse_proxy beszel:8090
 }
@@ -128,7 +122,6 @@ console.storage.trieoh.cloud {
 
 grafana.trieoh.com {
     import tls_trieoh
-    import admin_auth
     log
     reverse_proxy grafana:3000
 }

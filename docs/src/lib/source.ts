@@ -11,12 +11,13 @@ const openapiFiles = {
       inputs.map((input) =>
         openapiSource(createOpenAPI({ input: [input.url] }), {
           baseDir: `${input.name}/api`,
+          groupBy: "tag",
+          meta: { folderStyle: "folder" },
         }),
       ),
     )
   ).flatMap((res) => res.files),
 };
-
 
 export const source = loader(
   {
