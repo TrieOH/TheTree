@@ -42,14 +42,14 @@ type runtime struct {
 }
 
 type commands struct {
-	namespaces *namespaces.CommandService
-	apiKeys    *keys.CommandService
+	namespaces *namespaces.Commands
+	apiKeys    *keys.Commands
 	forms      *forms.Commands
 }
 
 type queries struct {
-	namespaces *namespaces.QueryService
-	apiKeys    *keys.QueryService
+	namespaces *namespaces.Queries
+	apiKeys    *keys.Queries
 	forms      *forms.Queries
 }
 
@@ -96,8 +96,8 @@ func (app *Informd) run() runtime {
 func (app *Informd) startHandlers(rt runtime) *Deps {
 	var handlers Deps
 	handlers.ProjectsHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
-	handlers.ApiKeysHandler = keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
-	handlers.FormsHandler = forms.NewHandler(rt.commands.forms, rt.queries.forms)
+	handlers.ApiKeysHandler = keys.NewHandlers(rt.commands.apiKeys, rt.queries.apiKeys)
+	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -134,7 +134,7 @@ func (app *Informd) startQueries(rt runtime) queries {
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.apiKeys = keys.NewRepos(rt.repoQueries, rt.logger, rt.tracer)
 	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r

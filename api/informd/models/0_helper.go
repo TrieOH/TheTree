@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 )
 
 var validate = validator.New()
@@ -32,4 +33,8 @@ var AllowedOps = map[string]string{
 	"like":     "LIKE",
 	"is_null":  "IS NULL",
 	"not_null": "IS NOT NULL",
+}
+
+type BulkGetRequest struct {
+	IDs []uuid.UUID `json:"ids" validate:"required"`
 }

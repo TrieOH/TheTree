@@ -99,6 +99,16 @@ downv +SERVICES="":
     just _compose down -v {{SERVICES}}
 
 # =============================================================
+# 🔧 GENERATE
+# =============================================================
+
+generate +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    for svc in {{SERVICES}}; do
+      (cd api/$svc && tygo generate)
+    done
+
+# =============================================================
 # 🛠️ GO TOOLS
 # =============================================================
 

@@ -28,3 +28,30 @@ func NewAPIKey(userID uuid.UUID, name, keyHash, keyPrefix string) (*APIKey, erro
 	}
 	return ak, nil
 }
+
+type CreateAPIKeyRequest struct {
+	Name string `json:"name" validate:"required"`
+}
+
+type APIKeyResponse struct {
+	ID        uuid.UUID  `json:"id"`
+	Name      string     `json:"name"`
+	Prefix    string     `json:"prefix"`
+	CreatedAt time.Time  `json:"created_at"`
+	RevokedAt *time.Time `json:"revoked_at"`
+}
+
+type CreateAPIKeyResponse struct {
+	APIKeyResponse
+	Key string `json:"key"` // only returned once
+}
+
+func (ak *APIKey) ToResponse() APIKeyResponse {
+	return APIKeyResponse{
+		ID:        ak.ID,
+		Name:      ak.Name,
+		Prefix:    ak.KeyPrefix,
+		CreatedAt: ak.CreatedAt,
+		RevokedAt: ak.RevokedAt,
+	}
+}

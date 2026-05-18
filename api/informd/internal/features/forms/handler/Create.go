@@ -23,7 +23,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /forms [post]
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	var payload models.CreateFormRequest
 	if bind.BailInto(w, req, &payload) {

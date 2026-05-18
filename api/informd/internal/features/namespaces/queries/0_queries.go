@@ -1,14 +1,10 @@
-package namespaces
+package queries
 
 import (
-	"Informd/models"
 	"Informd/ports"
-	"context"
-	"lib/authz"
 	"lib/database"
 
 	v1 "github.com/authzed/authzed-go/v1"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -31,16 +27,4 @@ func NewQueries(
 		tx:         tx,
 		tracer:     tracer,
 	}
-}
-
-func (s *QueryService) BulkGet(ctx context.Context, ids []uuid.UUID) (ns []models.Namespace, err error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.BulkGet")
-	defer span.End()
-
-	_, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.namespaces.BulkGet(ctx, ids)
 }
