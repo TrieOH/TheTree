@@ -1,11 +1,26 @@
 import { createOpenAPI } from 'fumadocs-openapi/server';
 
-export const services = [
-  { name: 'identityx', url: 'http://localhost:8080/swagger/doc.json' },
-  { name: 'univents', url: 'http://localhost:8081/swagger/doc.json' },
-  { name: 'payssage', url: 'http://localhost:8082/swagger/doc.json' },
-  { name: 'informd', url: 'http://localhost:8083/swagger/doc.json' },
-];
+function parseServicesEnv() {
+  const raw = process.env.OPENAPI_SERVICES;
+
+  if (!raw) return [];
+
+  return raw.split(',').map((entry) => {
+    const [name, url] = entry.split('|');
+
+    if (!name || !url) return null;
+
+    return {
+      name: name.trim(),
+      url: url.trim(),
+    };
+  }).filter((service): service is {
+    name: string;
+    url: string;
+  } => service !== null);
+}
+
+export const services = parseServicesEnv();
 
 async function resolveAvailableInputs() {
   const results = await Promise.allSettled(
