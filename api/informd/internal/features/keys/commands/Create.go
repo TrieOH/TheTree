@@ -1,42 +1,14 @@
-package keys
+package commands
 
 import (
 	"Informd/models"
-	"Informd/ports"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"lib/authz"
-	"lib/database"
 
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type CommandService struct {
-	apiKeys  ports.ApiKeysRepo
-	projects ports.NamespaceRepo
-	perms    authz.Checker
-	tx       database.TxRunner
-	tracer   trace.Tracer
-}
-
-func NewCommands(
-	apiKeys ports.ApiKeysRepo,
-	projects ports.NamespaceRepo,
-	perms authz.Checker,
-	tx database.TxRunner,
-	tracer trace.Tracer,
-) *CommandService {
-	return &CommandService{
-		apiKeys:  apiKeys,
-		projects: projects,
-		perms:    perms,
-		tx:       tx,
-		tracer:   tracer,
-	}
-}
 
 func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey string, ak *models.APIKey, err error) {
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
@@ -58,7 +30,7 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 	}
 
 	rawBytes := make([]byte, 32)
-	if _, err := rand.Read(rawBytes); err != nil {
+	if _, err = rand.Read(rawBytes); err != nil {
 		return "", nil, err
 	}
 	rawKey = "tf_" + hex.EncodeToString(rawBytes)
@@ -87,35 +59,4 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 	}
 
 	return rawKey, created, nil
-}
-
-func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) error {
-	ctx, span := s.tracer.Start(ctx, "ApiKeys.Revoke")
-	defer span.End()
-
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
-	if err = s.perms.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Permission("revoke"),
-		authz.Resource("api_key", keyID.String()),
-		nil,
-	); err != nil {
-		return err
-	}
-
-	if _, err := s.apiKeys.Revoke(ctx, keyID, sub.ID); err != nil {
-		return err
-	}
-
-	if err = s.perms.DeleteRelation(ctx,
-		"api_key:"+keyID.String()+"#parent_user@user:"+sub.ID.String(),
-	); err != nil {
-		return err
-	}
-
-	return nil
 }

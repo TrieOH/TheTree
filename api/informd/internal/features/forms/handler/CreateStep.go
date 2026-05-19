@@ -24,7 +24,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /forms/{form_id}/steps [post]
-func (h *Handler) CreateStep(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CreateStep(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	formID, err := req.Path("form_id").UUID()
 	if fun.Bail(w, err) {

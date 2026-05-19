@@ -1,0 +1,6 @@
+packages:
+  - path: "Informd/models"
+    output_path: "../../lib/ts/informd/models/generated.ts"
+    type_mappings:
+      uuid.UUID: "string"
+      time.Time: "string"

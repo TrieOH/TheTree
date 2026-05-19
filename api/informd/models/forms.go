@@ -49,10 +49,6 @@ type CreateFormRequest struct {
 	Title string `json:"title" validate:"required"`
 }
 
-type BulkGetRequest struct {
-	IDs []uuid.UUID `json:"ids" validate:"required"`
-}
-
 type CreateStepRequest struct {
 	Title        string  `json:"title" validate:"required"`
 	Description  *string `json:"description"`

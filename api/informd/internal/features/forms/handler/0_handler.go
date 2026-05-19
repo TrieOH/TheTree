@@ -10,16 +10,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct {
+type Handlers struct {
 	commands *commands.CommandService
 	queries  *queries.QueryService
 }
 
-func NewHandler(
+func NewHandlers(
 	commands *commands.CommandService,
 	queries *queries.QueryService,
-) *Handler {
-	return &Handler{
+) *Handlers {
+	return &Handlers{
 		commands: commands,
 		queries:  queries,
 	}
@@ -27,7 +27,7 @@ func NewHandler(
 
 func RegisterRoutes(
 	r *chi.Mux,
-	h *Handler,
+	h *Handlers,
 	anyAuth func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {

@@ -24,7 +24,7 @@ import (
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms [post]
-func (h *Handler) CreateInNamespace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CreateInNamespace(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
 	if fun.Bail(w, err) {
