@@ -9,7 +9,9 @@
     "start": "waku start",
     "types:check": "fumadocs-mdx && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "deploy": "npm run build && wrangler pages deploy",
+    "preview": "npm run build && wrangler pages dev dist/public"
   },
   "dependencies": {
     "@takumi-rs/image-response": "^1.1.2",
@@ -36,6 +38,7 @@
     "oxlint": "^1.63.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.92.0"
   }
 }
