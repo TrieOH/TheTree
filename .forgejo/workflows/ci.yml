@@ -1,10 +1,8 @@
 name: CI
-
 on:
   pull_request:
     branches:
       - main
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -13,6 +11,7 @@ jobs:
       informd: ${{ steps.filter.outputs.informd }}
       payssage: ${{ steps.filter.outputs.payssage }}
       univents: ${{ steps.filter.outputs.univents }}
+      any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.univents == 'true' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
       - uses: https://github.com/dorny/paths-filter@v3
@@ -31,9 +30,9 @@ jobs:
             univents:
               - 'api/univents/**'
               - 'lib/go/**'
-
   format:
     needs: changes
+    if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
@@ -51,9 +50,9 @@ jobs:
           git add -A
           git diff --staged --quiet || git commit -m "style: gofmt"
           git push
-
   build:
     needs: changes
+    if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
@@ -66,9 +65,9 @@ jobs:
         run: docker build -f api/payssage/Dockerfile .
       - if: ${{ needs.changes.outputs.univents == 'true' }}
         run: docker build -f api/univents/Dockerfile .
-
   test:
     needs: [changes, build]
+    if: ${{ needs.changes.outputs.any == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
