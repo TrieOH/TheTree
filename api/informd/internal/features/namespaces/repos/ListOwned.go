@@ -10,7 +10,7 @@ import (
 )
 
 func (repo *repo) ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Namespace, error) {
-	ctx, span := repo.tracer.Start(ctx, "BulkGet")
+	ctx, span := repo.tracer.Start(ctx, "ListOwned")
 	defer span.End()
 	sqlcNamespaces, err := database.Queries(ctx, repo.q).ListOwnedNamespaces(ctx, userID)
 	if err != nil {

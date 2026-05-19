@@ -10,5 +10,10 @@ import (
 type FormsRepo interface {
 	Create(ctx context.Context, toCreate models.Form) (*models.Form, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Form, error)
-	BulkGet(ctx context.Context, ids []uuid.UUID, params models.BulkGetParams) ([]models.Form, error)
+	GetMember(ctx context.Context, userID, formID uuid.UUID) (*models.FormMember, error)
+	AddMember(ctx context.Context, toCreate models.FormMember) error
+	RemoveMember(ctx context.Context, userID, formID uuid.UUID) error
+	ListMine(ctx context.Context, userID uuid.UUID) ([]models.Form, error)
+	ListFromNamespace(ctx context.Context, namespaceID uuid.UUID) ([]models.Form, error)
+	ListDirectMembers(ctx context.Context, formID uuid.UUID) ([]models.FormMember, error)
 }

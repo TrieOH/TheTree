@@ -31,7 +31,7 @@ func (s *CommandService) RemoveMember(ctx context.Context, payload models.Remove
 			return err
 		}
 		if member.Role != models.NamespaceMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permission")
+			return fun.ErrForbidden("insufficient permissions")
 		}
 	}
 

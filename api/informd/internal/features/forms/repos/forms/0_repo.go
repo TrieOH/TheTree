@@ -10,17 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type formRepo struct {
+type repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.FormsRepo = (*formRepo)(nil)
+var _ ports.FormsRepo = (*repo)(nil)
 
 func NewFormRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.FormsRepo {
-	return &formRepo{
+	return &repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
@@ -40,5 +40,15 @@ func mapForm(src sqlc.Form) models.Form {
 		ArchivedAt:  src.ArchivedAt,
 		CreatedAt:   src.CreatedAt,
 		UpdatedAt:   src.UpdatedAt,
+	}
+}
+
+func mapFormMember(src sqlc.FormMember) models.FormMember {
+	return models.FormMember{
+		UserID:  src.UserID,
+		FormID:  src.FormID,
+		Role:    models.FormMemberRole(src.Role),
+		AddedAt: src.AddedAt,
+		AddedBy: src.AddedBy,
 	}
 }

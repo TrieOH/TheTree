@@ -1,10 +1,6 @@
 package models
 
 import (
-	"fmt"
-	"lib/utils"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,78 +51,54 @@ type CreateStepRequest struct {
 	PositionHint int     `json:"position_hint" validate:"required"`
 }
 
-func FilterForms(forms []Form, params BulkGetParams) ([]Form, error) {
-	if params.FilterKey == "" || params.FilterOp == "" {
-		return forms, nil
-	}
-	key, ok := AllowedFilterKeys[params.FilterKey]
-	if !ok {
-		return nil, fmt.Errorf("invalid filter_key: %s", params.FilterKey)
-	}
+type FormMemberRole string
 
-	op, ok := AllowedOps[params.FilterOp]
-	if !ok {
-		return nil, fmt.Errorf("invalid filter_op: %s", params.FilterOp)
-	}
+const (
+	FormMemberRoleViewer FormMemberRole = "viewer"
+	FormMemberRoleEditor FormMemberRole = "editor"
+	FormMemberRoleAdmin  FormMemberRole = "admin"
+	FormMemberRoleOwner  FormMemberRole = "owner"
+)
 
-	out := make([]Form, 0, len(forms))
-
-	for _, form := range forms {
-		if matchesFormFilter(form, key, op, params.FilterValue) {
-			out = append(out, form)
-		}
-	}
-
-	return out, nil
+type FormMember struct {
+	UserID  uuid.UUID      `json:"user_id"`
+	FormID  uuid.UUID      `json:"form_id"`
+	Role    FormMemberRole `json:"role"`
+	AddedAt time.Time      `json:"added_at"`
+	AddedBy uuid.UUID      `json:"added_by"`
 }
 
-func matchesFormFilter(
-	form Form,
-	key string,
-	op string,
-	value string,
-) bool {
-	var field any
+type AddFormMemberRequest struct {
+	UserID uuid.UUID      `json:"user_id"`
+	Role   FormMemberRole `json:"role"`
+}
 
-	switch key {
-	case "status":
-		field = form.Status
-	case "name":
-		field = form.Title
-	case "opened_at":
-		field = form.OpenedAt
-	case "closed_at":
-		field = form.ClosedAt
-	case "archived_at":
-		field = form.ArchivedAt
-	default:
-		return false
-	}
-
-	switch op {
-	case "=":
-		return fmt.Sprint(field) == value
-	case "!=":
-		return fmt.Sprint(field) != value
-	case "is_null":
-		return utils.IsNil(field)
-	case "not_null":
-		return !utils.IsNil(field)
-	case "contains":
-		return strings.Contains(strings.ToLower(fmt.Sprint(field)), strings.ToLower(value))
-	default:
-		return false
+func (r AddFormMemberRequest) ToInput(formID uuid.UUID) AddFormMemberInput {
+	return AddFormMemberInput{
+		UserID: r.UserID,
+		FormID: formID,
+		Role:   r.Role,
 	}
 }
 
-func SortForms(forms []Form, params BulkGetParams) {
-	desc := !strings.EqualFold(params.FilterOrder, "asc")
+type AddFormMemberInput struct {
+	UserID uuid.UUID      `json:"user_id"`
+	FormID uuid.UUID      `json:"form_id"`
+	Role   FormMemberRole `json:"role"`
+}
 
-	slices.SortFunc(forms, func(a, b Form) int {
-		if desc {
-			return b.CreatedAt.Compare(a.CreatedAt)
-		}
+type RemoveFormMemberRequest struct {
+	UserID uuid.UUID `json:"user_id"`
+}
 
-		return a.CreatedAt.Compare(b.CreatedAt)
-	})
+func (r RemoveFormMemberRequest) ToInput(formID uuid.UUID) RemoveFormMemberInput {
+	return RemoveFormMemberInput{
+		UserID: r.UserID,
+		FormID: formID,
+	}
+}
+
+type RemoveFormMemberInput struct {
+	UserID uuid.UUID `json:"user_id"`
+	FormID uuid.UUID `json:"form_id"`
 }

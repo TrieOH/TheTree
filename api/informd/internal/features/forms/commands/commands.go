@@ -1,13 +1,10 @@
 package commands
 
 import (
-	"Informd/models"
 	"Informd/ports"
-	"context"
 	"lib/authz"
 	"lib/database"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -36,117 +33,4 @@ func NewCommands(
 		tx:         tx,
 		tracer:     tracer,
 	}
-}
-
-func (s *CommandService) Create(ctx context.Context, title string, namespaceID *uuid.UUID) (created *models.Form, err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.Create")
-	defer span.End()
-
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if namespaceID == nil {
-		if err = s.perms.Require(ctx,
-			authz.Subject("user", sub.ID),
-			authz.Permission("create_form"),
-			authz.Resource("user", sub.ID.String()),
-			map[string]any{"subject_id": sub.ID.String()},
-		); err != nil {
-			return nil, err
-		}
-
-		var form *models.Form
-		form, err = models.NewForm(namespaceID, sub.ID, title)
-		if err != nil {
-			return nil, err
-		}
-
-		created, err = s.forms.Create(ctx, *form)
-		if err != nil {
-			return nil, err
-		}
-
-		if err = s.perms.CreateRelation(ctx,
-			"form:"+created.ID.String()+"#parent_user@user:"+sub.ID.String(),
-		); err != nil {
-			return nil, err
-		}
-
-		return created, nil
-	}
-
-	var namespace *models.Namespace
-	namespace, err = s.namespaces.GetByID(ctx, *namespaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = s.perms.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_form"),
-		authz.Resource("namespace", namespace.ID.String()),
-		map[string]any{"subject_id": sub.ID.String()},
-	); err != nil {
-		return nil, err
-	}
-
-	var form *models.Form
-	form, err = models.NewForm(&namespace.ID, sub.ID, title)
-	if err != nil {
-		return nil, err
-	}
-
-	created, err = s.forms.Create(ctx, *form)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = s.perms.CreateRelation(ctx,
-		"form:"+created.ID.String()+"#parent_namespace@namespace:"+namespace.ID.String(),
-	); err != nil {
-		return nil, err
-	}
-
-	return created, nil
-}
-
-func (s *CommandService) CreateStep(ctx context.Context, formID uuid.UUID, payload models.CreateStepRequest) (created *models.Step, err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.CreateStep")
-	defer span.End()
-
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = s.forms.GetByID(ctx, formID)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = s.perms.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Resource("form", formID.String()),
-		authz.Permission("edit"),
-		nil,
-	); err != nil {
-		return nil, err
-	}
-
-	var step *models.Step
-	step, err = models.NewStep(formID, payload.Title, payload.Description, payload.PositionHint)
-	if err != nil {
-		return nil, err
-	}
-
-	created, err = s.steps.Create(ctx, *step)
-	if err != nil {
-		return nil, err
-	}
-
-	return created, nil
 }

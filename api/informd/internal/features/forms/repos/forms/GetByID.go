@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *formRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Form, error) {
+func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Form, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "FormRepo.GetByID")
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).GetFormByID(ctx, id)
