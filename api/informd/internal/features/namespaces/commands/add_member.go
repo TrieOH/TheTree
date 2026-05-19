@@ -10,7 +10,7 @@ import (
 )
 
 func (s *CommandService) AddMember(ctx context.Context, payload models.AddNamespaceMemberInput) (err error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
+	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddMember")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -20,7 +20,7 @@ func (s *CommandService) AddMember(ctx context.Context, payload models.AddNamesp
 	}
 
 	if sub.ID == payload.UserID {
-		return fun.ErrBadRequest("users can't add themselves too namespaces")
+		return fun.ErrBadRequest("users can't add themselves to namespaces")
 	}
 
 	var namespace *models.Namespace
@@ -40,7 +40,7 @@ func (s *CommandService) AddMember(ctx context.Context, payload models.AddNamesp
 			return err
 		}
 		if member.Role != models.NamespaceMemberRoleAdmin {
-			return fun.ErrForbidden("insufficient permission")
+			return fun.ErrForbidden("insufficient permissions")
 		}
 	}
 

@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"Informd/models"
@@ -8,23 +8,22 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-// CreateInNamespace godoc
+// CreateForm godoc
 // @Summary Create a form
-// @Description Creates a form in the given namespace.
-// @Tags forms
+// @Description Creates a namespaced form.
+// @Tags namespaces
+// @ID namespaces_createform
 // @Accept json
 // @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param namespace_id path string true "Namespace ID"
+// @Security BearerAuth
 // @Param request body models.CreateFormRequest true "Form title"
-// @Success 201 {object} models.Form "Form created successfully"
+// @Success 201 {object} fun.Response{data=models.Form} "Form created successfully"
 // @Failure 400 {object} fun.Response
 // @Failure 401 {object} fun.Response
 // @Failure 404 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces/{namespace_id}/forms [post]
-func (h *Handlers) CreateInNamespace(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) CreateForm(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	namespaceID, err := req.Path("namespace_id").UUID()
 	if fun.Bail(w, err) {
@@ -34,7 +33,7 @@ func (h *Handlers) CreateInNamespace(w http.ResponseWriter, r *http.Request) {
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	form, err := h.commands.Create(r.Context(), payload.Title, &namespaceID)
+	form, err := h.formsCommands.Create(r.Context(), payload.Title, &namespaceID)
 	if fun.Bail(w, err) {
 		return
 	}

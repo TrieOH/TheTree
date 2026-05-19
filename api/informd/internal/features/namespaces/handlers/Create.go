@@ -22,7 +22,7 @@ import (
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Router /namespaces [post]
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	var payload models.CreateNamespaceRequest
 	if bind.BailInto(w, req, &payload) {

@@ -57,10 +57,6 @@ func formMatcher(ownerID uuid.UUID, namespaceID *uuid.UUID, title string) interf
 	})
 }
 
-func expectRequire(d testDeps, err error) {
-	d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(err)
-}
-
 func TestCreate_NoNamespace(t *testing.T) {
 	userID := uuid.New()
 	formID := uuid.New()
@@ -76,9 +72,7 @@ func TestCreate_NoNamespace(t *testing.T) {
 			name:  "success",
 			title: "My Form",
 			setup: func(d testDeps) {
-				expectRequire(d, nil)
 				d.forms.EXPECT().Create(mock.Anything, formMatcher(userID, nil, "My Form")).Return(form, nil)
-				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -89,26 +83,21 @@ func TestCreate_NoNamespace(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:  "authz denied",
-			title: "My Form",
-			setup: func(d testDeps) {
-				expectRequire(d, errGeneric)
-			},
+			name:    "authz denied",
+			title:   "My Form",
+			setup:   func(d testDeps) {},
 			wantErr: true,
 		},
 		{
-			name:  "bad input",
-			title: "",
-			setup: func(d testDeps) {
-				expectRequire(d, nil)
-			},
+			name:    "bad input",
+			title:   "",
+			setup:   func(d testDeps) {},
 			wantErr: true,
 		},
 		{
 			name:  "db error",
 			title: "My Form",
 			setup: func(d testDeps) {
-				expectRequire(d, nil)
 				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
 			},
 			wantErr: true,
@@ -117,9 +106,7 @@ func TestCreate_NoNamespace(t *testing.T) {
 			name:  "could not create relation",
 			title: "My Form",
 			setup: func(d testDeps) {
-				expectRequire(d, nil)
 				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(form, nil)
-				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(errGeneric)
 			},
 			wantErr: true,
 		},
@@ -158,12 +145,15 @@ func TestCreate_Namespace(t *testing.T) {
 	}{
 		{
 			name:  "success",
-			title: "My Direct Form",
+			title: "My Namespaced Form",
 			setup: func(d testDeps) {
 				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-				d.forms.EXPECT().Create(mock.Anything, formMatcher(userID, &namespaceID, "My Direct Form")).Return(form, nil)
-				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(nil)
+				d.forms.EXPECT().Create(mock.Anything, models.Form{
+					NamespaceID: nil,
+					OwnerID:     userID,
+					Title:       "My Namespaced Form",
+					Status:      models.FormStatusDraft,
+				}).Return(form, nil)
 			},
 			wantErr: false,
 		},
@@ -186,7 +176,6 @@ func TestCreate_Namespace(t *testing.T) {
 			title: "My Direct Form",
 			setup: func(d testDeps) {
 				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errGeneric)
 			},
 			wantErr: true,
 		},
@@ -195,7 +184,6 @@ func TestCreate_Namespace(t *testing.T) {
 			title: "",
 			setup: func(d testDeps) {
 				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			wantErr: true,
 		},
@@ -203,7 +191,6 @@ func TestCreate_Namespace(t *testing.T) {
 			name:  "db error",
 			title: "My Direct Form",
 			setup: func(d testDeps) {
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
 				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
 			},
@@ -214,9 +201,7 @@ func TestCreate_Namespace(t *testing.T) {
 			title: "My Direct Form",
 			setup: func(d testDeps) {
 				d.namespaces.EXPECT().GetByID(mock.Anything, namespaceID).Return(namespace, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				d.forms.EXPECT().Create(mock.Anything, mock.Anything).Return(form, nil)
-				d.perms.EXPECT().CreateRelation(mock.Anything, mock.Anything).Return(errGeneric)
 			},
 			wantErr: true,
 		},
@@ -259,7 +244,6 @@ func Test_CreateStep(t *testing.T) {
 			description:  new("My Description"),
 			positionHint: 1,
 			setup: func(d testDeps) {
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
 				d.steps.EXPECT().Create(mock.Anything, mock.Anything).Return(step, nil)
 			},
@@ -280,7 +264,6 @@ func Test_CreateStep(t *testing.T) {
 			positionHint: 1,
 			setup: func(d testDeps) {
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errGeneric)
 			},
 			wantErr: true,
 		},
@@ -301,7 +284,6 @@ func Test_CreateStep(t *testing.T) {
 			positionHint: 1,
 			setup: func(d testDeps) {
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			wantErr: true,
 		},
@@ -312,7 +294,6 @@ func Test_CreateStep(t *testing.T) {
 			positionHint: 0,
 			setup: func(d testDeps) {
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			wantErr: true,
 		},
@@ -323,7 +304,6 @@ func Test_CreateStep(t *testing.T) {
 			positionHint: -1,
 			setup: func(d testDeps) {
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			wantErr: true,
 		},
@@ -334,7 +314,6 @@ func Test_CreateStep(t *testing.T) {
 			positionHint: 1,
 			setup: func(d testDeps) {
 				d.forms.EXPECT().GetByID(mock.Anything, formID).Return(form, nil)
-				d.perms.EXPECT().Require(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				d.steps.EXPECT().Create(mock.Anything, mock.Anything).Return(nil, errGeneric)
 			},
 			wantErr: true,

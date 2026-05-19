@@ -15,4 +15,4 @@ var RegisterRoutes = handlers.RegisterRoutes
 
 type Commands = commands.CommandService
 type Queries = queries.QueryService
-type Handlers = handlers.Handler
+type Handlers = handlers.Handlers

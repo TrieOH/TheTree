@@ -9,30 +9,30 @@ import (
 )
 
 // AddMember godoc
-// @Summary Add a namespace member
-// @Description Lets you add a member to the namespace as a viewer, editor or admin
-// @Tags namespaces
-// @ID namespaces_addmember
+// @Summary Add a form member
+// @Description Lets you add a member to the form as a viewer, editor or admin
+// @Tags forms
+// @ID forms_addmember
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body models.AddNamespaceMemberRequest true "Member details"
+// @Param request body models.AddFormMemberRequest true "Member details"
 // @Success 201 {object} fun.Response
 // @Failure 400 {object} fun.Response
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response
-// @Router /namespaces/{namespace_id}/members [post]
+// @Router /forms/{form_id}/members [post]
 func (h *Handlers) AddMember(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	namespaceID, err := req.Path("namespace_id").UUID()
+	formID, err := req.Path("form_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload models.AddNamespaceMemberRequest
+	var payload models.AddFormMemberRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	err = h.commands.AddMember(r.Context(), payload.ToInput(namespaceID))
+	err = h.commands.AddMember(r.Context(), payload.ToInput(formID))
 	if fun.Bail(w, err) {
 		return
 	}

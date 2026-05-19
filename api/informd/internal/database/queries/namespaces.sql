@@ -13,11 +13,6 @@ SELECT *
 FROM namespaces
 WHERE owner_id = $1 AND name = $2;
 
--- name: BulkGetNamespaces :many
-SELECT * FROM namespaces
-WHERE id = ANY($1::uuid[])
-ORDER BY created_at DESC;
-
 -- name: AddNamespaceMember :exec
 INSERT INTO namespace_members (user_id, namespace_id, role, added_at, added_by)
 VALUES ($1, $2, $3, $4, $5);

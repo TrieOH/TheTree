@@ -1,12 +1,10 @@
-package handler
+package handlers
 
 import (
 	"Informd/internal/features/forms/commands"
 	"Informd/internal/features/forms/queries"
-	"Informd/models"
 	"net/http"
 
-	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -33,8 +31,9 @@ func RegisterRoutes(
 	r.Group(func(r chi.Router) {
 		r.Use(anyAuth)
 		r.Post("/forms", h.Create)
-		r.With(middlewares.WithParams[models.BulkGetParams]()).Post("/forms/bulk", h.BulkGet)
-		r.Post("/namespaces/{namespace_id}/forms", h.CreateInNamespace)
-		r.Post("/forms/{form_id}/steps", h.Create)
+		r.Get("/forms", h.ListMine)
+		r.Get("/forms/{form_id}/members", h.ListMembers)
+		r.Post("/forms/{form_id}/members", h.AddMember)
+		r.Delete("/forms/{form_id}/members", h.RemoveMember)
 	})
 }

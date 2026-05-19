@@ -1,33 +1,35 @@
 package handlers
 
 import (
+	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces/commands"
 	"Informd/internal/features/namespaces/queries"
-	"Informd/models"
 	"net/http"
 
-	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct {
-	commands *commands.CommandService
-	queries  *queries.QueryService
+type Handlers struct {
+	commands      *commands.CommandService
+	queries       *queries.QueryService
+	formsCommands *forms.Commands
 }
 
 func NewHandler(
 	commands *commands.CommandService,
 	queries *queries.QueryService,
-) *Handler {
-	return &Handler{
-		commands: commands,
-		queries:  queries,
+	formsCommands *forms.Commands,
+) *Handlers {
+	return &Handlers{
+		commands:      commands,
+		queries:       queries,
+		formsCommands: formsCommands,
 	}
 }
 
 func RegisterRoutes(
 	r *chi.Mux,
-	h *Handler,
+	h *Handlers,
 	jwt func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
@@ -37,6 +39,7 @@ func RegisterRoutes(
 		r.Get("/namespaces/{namespace_id}/members", h.ListMembers)
 		r.Post("/namespaces/{namespace_id}/members", h.AddMember)
 		r.Delete("/namespaces/{namespace_id}/members", h.RemoveMember)
-		r.With(middlewares.WithParams[models.BulkGetParams]()).Post("/namespaces/bulk", h.BulkGet)
+		r.Post("/namespaces/{namespace_id}/forms", h.CreateForm)
+		r.Get("/namespaces/{namespace_id}/forms", h.ListForms)
 	})
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (repo *repo) ListMembers(ctx context.Context, namespaceID uuid.UUID) ([]models.NamespaceMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "BulkGet")
+	ctx, span := repo.tracer.Start(ctx, "ListMembers")
 	defer span.End()
 	sqlcMembers, err := database.Queries(ctx, repo.q).ListNamespaceMembers(ctx, namespaceID)
 	if err != nil {

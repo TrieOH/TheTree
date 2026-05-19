@@ -20,9 +20,9 @@ import (
 )
 
 type Deps struct {
-	ProjectsHandler *namespaces.Handlers
-	ApiKeysHandler  *keys.Handlers
-	FormsHandler    *forms.Handlers
+	NamespacesHandler *namespaces.Handlers
+	ApiKeysHandler    *keys.Handlers
+	FormsHandler      *forms.Handlers
 
 	Logger    func(http.Handler) http.Handler
 	RequestID func(http.Handler) http.Handler
@@ -103,7 +103,7 @@ func CreateRouter(deps *Deps) http.Handler {
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	namespaces.RegisterRoutes(r, deps.ProjectsHandler, deps.Jwt)
+	namespaces.RegisterRoutes(r, deps.NamespacesHandler, deps.Jwt)
 	keys.RegisterRoutes(r, deps.ApiKeysHandler, deps.Jwt)
 	forms.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
 

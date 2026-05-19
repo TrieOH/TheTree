@@ -95,7 +95,7 @@ func (app *Informd) run() runtime {
 
 func (app *Informd) startHandlers(rt runtime) *Deps {
 	var handlers Deps
-	handlers.ProjectsHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
+	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces, rt.commands.forms)
 	handlers.ApiKeysHandler = keys.NewHandlers(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
 
@@ -125,9 +125,9 @@ func (app *Informd) startCommands(rt runtime) commands {
 
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
-	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
 	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, app.sdbClient, rt.txRunner, rt.tracer)
-	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, app.sdbClient, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return q
 }
 
