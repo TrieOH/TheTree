@@ -109,6 +109,23 @@ generate +SERVICES="identityx informd payssage univents":
     done
 
 # =============================================================
+# 🛠️ TESTS
+# =============================================================
+
+# Run tests for all or specific services.
+# Examples:
+#   just test                  → all services
+#   just test univents         → univents only
+#   just test informd payssage → those two
+
+test +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    for svc in {{SERVICES}}; do
+      echo "🧪 testing $svc..."
+      (cd api/$svc && just test)
+    done
+
+# =============================================================
 # 🛠️ GO TOOLS
 # =============================================================
 

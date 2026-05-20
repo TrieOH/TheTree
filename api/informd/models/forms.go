@@ -81,10 +81,26 @@ func (r AddFormMemberRequest) ToInput(formID uuid.UUID) AddFormMemberInput {
 	}
 }
 
+func (r AddFormMemberRequest) ToNamespaceInput(namespaceID, formID uuid.UUID) AddNamespaceFormMemberInput {
+	return AddNamespaceFormMemberInput{
+		UserID:      r.UserID,
+		NamespaceID: namespaceID,
+		FormID:      formID,
+		Role:        r.Role,
+	}
+}
+
 type AddFormMemberInput struct {
 	UserID uuid.UUID      `json:"user_id"`
 	FormID uuid.UUID      `json:"form_id"`
 	Role   FormMemberRole `json:"role"`
+}
+
+type AddNamespaceFormMemberInput struct {
+	UserID      uuid.UUID      `json:"user_id"`
+	NamespaceID uuid.UUID      `json:"namespace_id"`
+	FormID      uuid.UUID      `json:"form_id"`
+	Role        FormMemberRole `json:"role"`
 }
 
 type RemoveFormMemberRequest struct {
@@ -98,7 +114,21 @@ func (r RemoveFormMemberRequest) ToInput(formID uuid.UUID) RemoveFormMemberInput
 	}
 }
 
+func (r RemoveFormMemberRequest) ToNamespaceInput(namespaceID, formID uuid.UUID) RemoveNamespaceFormMemberInput {
+	return RemoveNamespaceFormMemberInput{
+		UserID:      r.UserID,
+		NamespaceID: namespaceID,
+		FormID:      formID,
+	}
+}
+
 type RemoveFormMemberInput struct {
 	UserID uuid.UUID `json:"user_id"`
 	FormID uuid.UUID `json:"form_id"`
+}
+
+type RemoveNamespaceFormMemberInput struct {
+	UserID      uuid.UUID `json:"user_id"`
+	NamespaceID uuid.UUID `json:"namespace_id"`
+	FormID      uuid.UUID `json:"form_id"`
 }

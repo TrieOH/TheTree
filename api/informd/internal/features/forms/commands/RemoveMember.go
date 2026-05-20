@@ -27,50 +27,28 @@ func (s *CommandService) RemoveMember(ctx context.Context, payload models.Remove
 		return err
 	}
 
-	var namespace *models.Namespace
-	if form.NamespaceID != nil {
-		if namespace, err = s.namespaces.GetByID(ctx, *form.NamespaceID); err != nil {
+	if payload.UserID == form.OwnerID {
+		return fun.ErrBadRequest("cannot remove owner of the form")
+	}
+	if sub.ID != form.OwnerID {
+		member, err := s.forms.GetMember(ctx, sub.ID, form.ID)
+		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
-		}
-		if payload.UserID == namespace.OwnerID {
-			return fun.ErrBadRequest("cannot remove owner of the namespace from form")
-		}
-		if sub.ID != namespace.OwnerID {
-			if err = s.isFormAdmin(ctx, sub.ID, form.NamespaceID, payload.FormID); err != nil {
-				return err
-			}
-		}
-		_, err = s.namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-		if err == nil {
-			return fun.ErrBadRequest("cannot remove namespace member from a namespace form")
-		}
-		if fun.Is(err, fun.CodeNotFound) {
-			_, err = s.forms.GetMember(ctx, payload.UserID, payload.FormID)
-			if fun.Is(err, fun.CodeNotFound) {
-				return fun.ErrBadRequest("user already removed from form")
-			}
-			if err != nil {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-	} else {
-		if payload.UserID == form.OwnerID {
-			return fun.ErrBadRequest("cannot remove owner of the form")
-		}
-		if sub.ID != form.OwnerID {
-			if err = s.isFormAdmin(ctx, sub.ID, form.NamespaceID, payload.FormID); err != nil {
-				return err
-			}
-		}
-		_, err = s.forms.GetMember(ctx, payload.UserID, payload.FormID)
-		if fun.Is(err, fun.CodeNotFound) {
-			return fun.ErrBadRequest("user already removed from form")
 		}
 		if err != nil {
-			return err
+			return fun.ErrForbidden("insufficient permissions")
 		}
+		if member.Role != models.FormMemberRoleAdmin {
+			return fun.ErrForbidden("insufficient permissions")
+		}
+	}
+
+	_, err = s.forms.GetMember(ctx, payload.UserID, form.ID)
+	if !fun.Is(err, fun.CodeNotFound) {
+		return err
+	}
+	if err != nil {
+		return fun.ErrBadRequest("user is not a member of the form")
 	}
 
 	return s.forms.RemoveMember(ctx, payload.UserID, payload.FormID)

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces/commands"
 	"Informd/internal/features/namespaces/queries"
 	"net/http"
@@ -10,20 +9,17 @@ import (
 )
 
 type Handlers struct {
-	commands      *commands.CommandService
-	queries       *queries.QueryService
-	formsCommands *forms.Commands
+	commands *commands.CommandService
+	queries  *queries.QueryService
 }
 
 func NewHandler(
 	commands *commands.CommandService,
 	queries *queries.QueryService,
-	formsCommands *forms.Commands,
 ) *Handlers {
 	return &Handlers{
-		commands:      commands,
-		queries:       queries,
-		formsCommands: formsCommands,
+		commands: commands,
+		queries:  queries,
 	}
 }
 
@@ -41,5 +37,8 @@ func RegisterRoutes(
 		r.Delete("/namespaces/{namespace_id}/members", h.RemoveMember)
 		r.Post("/namespaces/{namespace_id}/forms", h.CreateForm)
 		r.Get("/namespaces/{namespace_id}/forms", h.ListForms)
+		r.Get("/namespaces/{namespace_id}/forms/{form_id}/members", h.ListFormMembers)
+		r.Post("/namespaces/{namespace_id}/forms/{form_id}/members", h.AddFormMember)
+		r.Delete("/namespaces/{namespace_id}/forms/{form_id}/members", h.RemoveFormMember)
 	})
 }

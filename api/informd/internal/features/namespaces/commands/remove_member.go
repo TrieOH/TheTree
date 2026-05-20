@@ -8,35 +8,40 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (s *CommandService) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) (err error) {
+func (s *CommandService) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}
 
-	var namespace *models.Namespace
-	namespace, err = s.namespaces.GetByID(ctx, payload.NamespaceID)
+	namespace, err := s.namespaces.GetByID(ctx, payload.NamespaceID)
 	if err != nil {
 		return err
 	}
 
 	if sub.ID != namespace.OwnerID {
-		var member *models.NamespaceMember
-		member, err = s.namespaces.GetMember(ctx, sub.ID, payload.NamespaceID)
-		if err != nil {
+		member, err := s.namespaces.GetMember(ctx, sub.ID, payload.NamespaceID)
+		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
+		}
+		if err != nil {
+			return fun.ErrForbidden("insufficient permissions")
 		}
 		if member.Role != models.NamespaceMemberRoleAdmin {
 			return fun.ErrForbidden("insufficient permissions")
 		}
 	}
 
-	if err = s.namespaces.RemoveMember(ctx, payload.UserID, payload.NamespaceID); err != nil {
+	_, err = s.namespaces.GetMember(ctx, payload.UserID, namespace.ID)
+	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return err
 	}
-	return nil
+	if err != nil {
+		return fun.ErrBadRequest("user is not a member of the namespace")
+	}
+
+	return s.namespaces.RemoveMember(ctx, payload.UserID, payload.NamespaceID)
 }

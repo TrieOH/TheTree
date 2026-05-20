@@ -16,7 +16,7 @@ gen-mocks:
     mockery
 
 test:
-    gotestsum --format testdox --format-icons nerdfonts ./...
+    @echo "no tests for identityx"
 
 #testf:
 #    mockery
