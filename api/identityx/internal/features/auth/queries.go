@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/telemetry"
@@ -47,7 +47,7 @@ func (uc *QueryService) GetJWKS(ctx context.Context, projectID *uuid.UUID) (map[
 	jwkKeys := make([]any, 0, len(keys))
 	for _, k := range keys {
 		var jwk map[string]any
-		jwk, err = contracts.PublicKeyToJWK(k)
+		jwk, err = models.PublicKeyToJWK(k)
 		if err != nil {
 			return nil, err
 		}

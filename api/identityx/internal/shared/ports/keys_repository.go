@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 	"context"
 
 	"github.com/google/uuid"
@@ -10,21 +10,21 @@ import (
 type KeysRepository interface {
 	// --- Creation / Rotation ---
 
-	CreateKeyPair(ctx context.Context, pair contracts.Pair) (*contracts.Pair, error)
+	CreateKeyPair(ctx context.Context, pair models.Pair) (*models.Pair, error)
 	RotateSigningKeys(ctx context.Context, projectID *uuid.UUID) error
 
 	// --- Signing (hot path) ---
 
-	GetActiveSigningKey(ctx context.Context, projectID *uuid.UUID) (*contracts.Pair, error)
+	GetActiveSigningKey(ctx context.Context, projectID *uuid.UUID) (*models.Pair, error)
 	GetActiveSigningKID(ctx context.Context, projectID *uuid.UUID) (string, error)
 
 	// --- Verification ---
 
-	GetKeyByKID(ctx context.Context, kid string) (*contracts.Pair, error)
+	GetKeyByKID(ctx context.Context, kid string) (*models.Pair, error)
 
 	// --- Discovery (JWKS) ---
 
-	ListPublicKeys(ctx context.Context, projectID *uuid.UUID) ([]contracts.PublicKey, error)
+	ListPublicKeys(ctx context.Context, projectID *uuid.UUID) ([]models.PublicKey, error)
 
 	// --- Revocation / Cleanup ---
 

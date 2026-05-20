@@ -1,7 +1,7 @@
 package authz
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -15,20 +15,20 @@ const (
 )
 
 type Principal struct {
-	UserID    uuid.UUID          `json:"user_id"`
-	UserType  contracts.UserType `json:"user_type"`
-	ProjectID *uuid.UUID         `json:"project_id"`
-	SessionID *uuid.UUID         `json:"session_id"`
-	Method    AuthMethod         `json:"-"`
+	UserID    uuid.UUID       `json:"user_id"`
+	UserType  models.UserType `json:"user_type"`
+	ProjectID *uuid.UUID      `json:"project_id"`
+	SessionID *uuid.UUID      `json:"session_id"`
+	Method    AuthMethod      `json:"-"`
 }
 
-func NewPrincipal(access *contracts.AccessClaims) (*Principal, error) {
+func NewPrincipal(access *models.AccessClaims) (*Principal, error) {
 	if access == nil {
 		return nil, fun.ErrUnprocessableEntity("missing access claims")
 	}
-	userType := contracts.UserTypeClient
+	userType := models.UserTypeClient
 	if access.Sub.ProjectID != nil {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
 	return &Principal{

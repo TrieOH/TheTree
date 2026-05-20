@@ -4,7 +4,7 @@ import (
 	"IdentityX/internal/platform/middlewares"
 	"net/http"
 
-	_ "IdentityX/contracts"
+	_ "IdentityX/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"

@@ -1,9 +1,9 @@
 package security
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/xslices"
@@ -32,34 +32,34 @@ func NewKeysRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Ke
 	}
 }
 
-func mapKeyPairFromDB(src sqlc.KeyPair) contracts.Pair {
-	return contracts.Pair{
+func mapKeyPairFromDB(src sqlc.KeyPair) models.Pair {
+	return models.Pair{
 		ID:              src.ID,
 		KID:             src.Kid,
 		ProjectID:       src.ProjectID,
-		KeyType:         contracts.KeyType(src.KeyType),
-		Algorithm:       contracts.Algorithm(src.Algorithm),
+		KeyType:         models.KeyType(src.KeyType),
+		Algorithm:       models.Algorithm(src.Algorithm),
 		PublicKey:       src.PublicKey,
 		PrivateKey:      src.PrivateKey,
-		Usage:           contracts.Usage(src.Usage),
-		Status:          contracts.Status(src.Status),
+		Usage:           models.Usage(src.Usage),
+		Status:          models.Status(src.Status),
 		CreatedAt:       src.CreatedAt,
 		ExpiresAt:       src.ExpiresAt,
 		VerifyExpiresAt: src.VerifyExpiresAt,
 	}
 }
 
-func mapPublicKeyFromDB(src sqlc.ListPublicKeysRow) contracts.PublicKey {
-	return contracts.PublicKey{
+func mapPublicKeyFromDB(src sqlc.ListPublicKeysRow) models.PublicKey {
+	return models.PublicKey{
 		KID:       src.Kid,
-		Algorithm: contracts.Algorithm(src.Algorithm),
+		Algorithm: models.Algorithm(src.Algorithm),
 		PublicKey: src.PublicKey,
 		CreatedAt: src.CreatedAt,
 		ExpiresAt: src.ExpiresAt,
 	}
 }
 
-func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*contracts.Pair, error) {
+func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair models.Pair) (*models.Pair, error) {
 	ctx, span := repo.tracer.Start(ctx, "CreateKey")
 	span.SetAttributes(attribute.String("key.kid", pair.KID))
 	span.SetAttributes(attribute.String("key.type", string(pair.KeyType)))
@@ -82,7 +82,7 @@ func (repo *keyRepo) CreateKeyPair(ctx context.Context, pair contracts.Pair) (*c
 	return new(mapKeyPairFromDB(row)), nil
 }
 
-func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*contracts.Pair, error) {
+func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*models.Pair, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetKeyByKID")
 	span.SetAttributes(attribute.String("key.kid", kid))
 	defer span.End()
@@ -93,7 +93,7 @@ func (repo *keyRepo) GetKeyByKID(ctx context.Context, kid string) (*contracts.Pa
 	return new(mapKeyPairFromDB(row)), nil
 }
 
-func (repo *keyRepo) GetActiveSigningKey(ctx context.Context, projectID *uuid.UUID) (*contracts.Pair, error) {
+func (repo *keyRepo) GetActiveSigningKey(ctx context.Context, projectID *uuid.UUID) (*models.Pair, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetActiveSigningKey")
 	if projectID != nil {
 		span.SetAttributes(attribute.String("project.id", projectID.String()))
@@ -119,7 +119,7 @@ func (repo *keyRepo) GetActiveSigningKID(ctx context.Context, projectID *uuid.UU
 	return kid, nil
 }
 
-func (repo *keyRepo) ListPublicKeys(ctx context.Context, projectID *uuid.UUID) ([]contracts.PublicKey, error) {
+func (repo *keyRepo) ListPublicKeys(ctx context.Context, projectID *uuid.UUID) ([]models.PublicKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ListPublicKeys")
 	defer span.End()
 	if projectID != nil {

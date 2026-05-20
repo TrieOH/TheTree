@@ -1,10 +1,10 @@
 package projects
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"fmt"
 	"lib/crypto"
@@ -45,7 +45,7 @@ func NewCommandService(deps feature_deps.ProjectCommandDeps) *CommandService {
 // Create handles the business logic for creating a new project.
 // It requires a valid principal in the context, generates a new key pair for the project,
 // and then creates the project in the database.
-func (uc *CommandService) Create(ctx context.Context, in contracts.CreateProjectInput) (project *contracts.Project, err error) {
+func (uc *CommandService) Create(ctx context.Context, in models.CreateProjectInput) (project *models.Project, err error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.Create")
 	defer span.End()
 	defer func() {
@@ -62,7 +62,7 @@ func (uc *CommandService) Create(ctx context.Context, in contracts.CreateProject
 	return
 }
 
-func (uc *CommandService) createInternal(ctx context.Context, in contracts.CreateProjectInput) (*contracts.Project, error) {
+func (uc *CommandService) createInternal(ctx context.Context, in models.CreateProjectInput) (*models.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.createInternal")
 	defer span.End()
 
@@ -71,8 +71,8 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 		return nil, err
 	}
 
-	var createdProject *contracts.Project
-	if createdProject, err = uc.projects.Create(ctx, contracts.Project{
+	var createdProject *models.Project
+	if createdProject, err = uc.projects.Create(ctx, models.Project{
 		ProjectName: in.ProjectName,
 		Domain:      in.Domain,
 		OwnerID:     principal.UserID,
@@ -96,15 +96,15 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 	kid := fmt.Sprintf("project:%s:%s", createdProject.ID.String(), ulid.Make().String())
 
 	expiresAt := time.Now().Add(uc.keyLifetime)
-	if _, err = uc.keys.CreateKeyPair(ctx, contracts.Pair{
+	if _, err = uc.keys.CreateKeyPair(ctx, models.Pair{
 		KID:             kid,
 		ProjectID:       &createdProject.ID,
-		KeyType:         contracts.TypeProject,
-		Algorithm:       contracts.AlgEdDSA,
+		KeyType:         models.TypeProject,
+		Algorithm:       models.AlgEdDSA,
 		PublicKey:       pub,
 		PrivateKey:      encryptedPriv,
-		Usage:           contracts.UsageSign,
-		Status:          contracts.StatusActive,
+		Usage:           models.UsageSign,
+		Status:          models.StatusActive,
 		ExpiresAt:       expiresAt,
 		VerifyExpiresAt: expiresAt.Add(uc.keyLifetime),
 	}); err != nil {
@@ -123,7 +123,7 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 // Update handles the business logic for updating a project.
 // It requires a valid principal in the context and that the principal is the owner of the project.
 // It retrieves the project, updates the fields, and then saves the changes to the database.
-func (uc *CommandService) Update(ctx context.Context, in contracts.UpdateProjectInput) (*contracts.Project, error) {
+func (uc *CommandService) Update(ctx context.Context, in models.UpdateProjectInput) (*models.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.Update")
 	defer span.End()
 
@@ -148,7 +148,7 @@ func (uc *CommandService) Update(ctx context.Context, in contracts.UpdateProject
 		newProject.Domain = in.Domain
 	}
 
-	updatedProject, err := uc.projects.Update(ctx, contracts.Project{
+	updatedProject, err := uc.projects.Update(ctx, models.Project{
 		ID:          newProject.ID,
 		ProjectName: newProject.ProjectName,
 		Domain:      newProject.Domain,

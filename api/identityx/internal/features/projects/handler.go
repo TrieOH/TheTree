@@ -1,8 +1,8 @@
 package projects
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/platform/middlewares"
+	"IdentityX/models"
 	"net/http"
 
 	"github.com/MintzyG/fun"
@@ -48,15 +48,15 @@ func RegisterRoutes(
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body contracts.CreateProjectRequest true "Project creation information"
-// @Success 201 {object} contracts.Project "Project created successfully"
+// @Param projectInfo body models.CreateProjectRequest true "Project creation information"
+// @Success 201 {object} models.Project "Project created successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	var payload contracts.CreateProjectRequest
+	var payload models.CreateProjectRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -76,7 +76,7 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project to retrieve"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} contracts.Project "Project details"
+// @Success 200 {object} models.Project "Project details"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
@@ -102,7 +102,7 @@ func (handler *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} contracts.Project "List of user projects"
+// @Success 200 {array} models.Project "List of user projects"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /projects [get]
@@ -122,8 +122,8 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project to update"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body contracts.UpdateProjectRequest true "Project update information"
-// @Success 200 {object} contracts.Project "Project updated successfully"
+// @Param projectInfo body models.UpdateProjectRequest true "Project update information"
+// @Success 200 {object} models.Project "Project updated successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or missing project ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
@@ -135,7 +135,7 @@ func (handler *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload contracts.UpdateProjectRequest
+	var payload models.UpdateProjectRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -181,7 +181,7 @@ func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} contracts.User "List of project users"
+// @Success 200 {array} models.User "List of project users"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
@@ -209,7 +209,7 @@ func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request)
 // @Param project_id path string true "ID of the project"
 // @Param user_id path string true "ID of the user"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} contracts.User "Project user details"
+// @Success 200 {object} models.User "Project user details"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project or user ID"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 404 {object} contracts.ErrorResponse "Not Found: User or project not found"

@@ -4,7 +4,7 @@ import (
 	"IdentityX/internal/shared/authz"
 	"net/http"
 
-	_ "IdentityX/contracts"
+	_ "IdentityX/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -47,7 +47,7 @@ func RegisterRoutes(
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} contracts.Session "List of active user sessions"
+// @Success 200 {array} models.Session "List of active user sessions"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /sessions [get]

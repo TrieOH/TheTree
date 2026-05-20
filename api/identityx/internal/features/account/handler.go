@@ -1,7 +1,7 @@
 package account
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 	"net/http"
 	"time"
 
@@ -88,14 +88,14 @@ func (handler *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.R
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param forgotInfo body contracts.ForgotPasswordRequest true "User email and optional project ID"
+// @Param forgotInfo body models.ForgotPasswordRequest true "User email and optional project ID"
 // @Success 200 {string} string "Forgot password email sent"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
 // @Router /auth/forgot-password [post]
 func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	var payload contracts.ForgotPasswordRequest
+	var payload models.ForgotPasswordRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -113,7 +113,7 @@ func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param token query string true "Reset password token"
-// @Param resetInfo body contracts.ResetPasswordRequest true "New password information"
+// @Param resetInfo body models.ResetPasswordRequest true "New password information"
 // @Success 200 {string} string "Password reset successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or token"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid or expired token"
@@ -122,7 +122,7 @@ func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (handler *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	token := middlewares.QueryParams[TokenParam](r).Token
-	var payload contracts.ResetPasswordRequest
+	var payload models.ResetPasswordRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}

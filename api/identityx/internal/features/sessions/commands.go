@@ -1,10 +1,10 @@
 package sessions
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"errors"
 	"lib/database"
@@ -54,14 +54,14 @@ func (uc *CommandService) RevokeByID(ctx context.Context, sessionID uuid.UUID) e
 		return fun.ErrForbidden("cannot revoke the currently active session")
 	}
 
-	var userType contracts.UserType
+	var userType models.UserType
 	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
+		userType = models.UserTypeClient
 	} else {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
-	var sess *contracts.Session
+	var sess *models.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, sessionID, userType)
 	if fun.Is(err, fun.CodeNotFound) {
 		return fun.ErrUnauthorized("session not found or revoked")
@@ -99,14 +99,14 @@ func (uc *CommandService) RevokeOthers(ctx context.Context) error {
 		span.SetAttributes(attribute.String("user.project_id", principal.ProjectID.String()))
 	}
 
-	var userType contracts.UserType
+	var userType models.UserType
 	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
+		userType = models.UserTypeClient
 	} else {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
-	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
+	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, models.Filter{
 		UserType:  userType,
 		UserID:    principal.UserID,
 		ExcludeID: principal.SessionID,
@@ -129,14 +129,14 @@ func (uc *CommandService) RevokeAll(ctx context.Context) error {
 		return err
 	}
 
-	var userType contracts.UserType
+	var userType models.UserType
 	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
+		userType = models.UserTypeClient
 	} else {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
-	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
+	revokedCount, err := uc.sessions.MarkRevokedByFilter(ctx, models.Filter{
 		UserType: userType,
 		UserID:   principal.UserID,
 	})

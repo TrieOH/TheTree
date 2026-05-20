@@ -1,11 +1,11 @@
 package account
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/security"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/errx"
@@ -71,7 +71,7 @@ func (uc *CommandService) Verify(ctx context.Context, token string) (err error) 
 		return err
 	}
 
-	var claims *contracts.VerificationClaims
+	var claims *models.VerificationClaims
 	claims, err = security.VerifyVerificationToken(token, pair)
 	if err != nil {
 		return err
@@ -110,8 +110,8 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 		return err
 	}
 
-	var u *contracts.User
-	var pu *contracts.User
+	var u *models.User
+	var pu *models.User
 	if principal.ProjectID != nil {
 		pu, err = uc.users.GetUserByID(ctx, principal.UserID)
 		if err != nil {
@@ -147,7 +147,7 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	}
 
 	var verificationPayload []byte
-	verificationPayload, err = security.NewVerificationToken(contracts.NewVerificationTokenInput{
+	verificationPayload, err = security.NewVerificationToken(models.NewVerificationTokenInput{
 		KID:       SigningKid,
 		Subject:   principal.UserID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
@@ -198,14 +198,14 @@ func (uc *CommandService) ResendVerificationEmail(ctx context.Context) (err erro
 	return nil
 }
 
-func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.ForgotPasswordInput) (err error) {
+func (uc *CommandService) ForgotPassword(ctx context.Context, in models.ForgotPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.ForgotPassword")
 	defer span.End()
 	defer func() {
 		span.SetAttributes(attribute.Bool("forgot_password.success", err == nil))
 	}()
 
-	var u *contracts.User
+	var u *models.User
 	u, err = uc.users.GetUserByEmail(ctx, in.Email, in.ProjectID)
 	if err != nil {
 		if fun.Is(err, fun.CodeNotFound) {
@@ -221,7 +221,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.Forgo
 	}
 
 	var resetPayload []byte
-	resetPayload, err = security.NewResetPasswordToken(contracts.NewResetPasswordInput{
+	resetPayload, err = security.NewResetPasswordToken(models.NewResetPasswordInput{
 		KID:       SigningKid,
 		Subject:   u.ID,
 		ProjectID: in.ProjectID,
@@ -259,7 +259,7 @@ func (uc *CommandService) ForgotPassword(ctx context.Context, in contracts.Forgo
 	return nil
 }
 
-func (uc *CommandService) ResetPassword(ctx context.Context, in contracts.ResetPasswordInput) (err error) {
+func (uc *CommandService) ResetPassword(ctx context.Context, in models.ResetPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.ResetPassword")
 	defer span.End()
 	defer func() {
@@ -273,7 +273,7 @@ func (uc *CommandService) ResetPassword(ctx context.Context, in contracts.ResetP
 	return err
 }
 
-func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contracts.ResetPasswordInput) (err error) {
+func (uc *CommandService) resetPasswordInternal(ctx context.Context, in models.ResetPasswordInput) (err error) {
 	ctx, span := uc.tracer.Start(ctx, "AccountService.resetPasswordInternal")
 	defer span.End()
 	defer func() {
@@ -285,7 +285,7 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contract
 		return err
 	}
 
-	var claims *contracts.ResetPasswordClaims
+	var claims *models.ResetPasswordClaims
 	claims, err = security.VerifyResetPasswordToken(in.Token, pair)
 	if err != nil {
 		return err
@@ -321,9 +321,9 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contract
 		if err != nil {
 			return err
 		}
-		_, err = uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
+		_, err = uc.sessions.MarkRevokedByFilter(ctx, models.Filter{
 			UserID:   claims.Sub.Subject,
-			UserType: contracts.UserTypeClient,
+			UserType: models.UserTypeClient,
 		})
 		if err != nil {
 			return err
@@ -333,9 +333,9 @@ func (uc *CommandService) resetPasswordInternal(ctx context.Context, in contract
 		if err != nil {
 			return err
 		}
-		_, err = uc.sessions.MarkRevokedByFilter(ctx, contracts.Filter{
+		_, err = uc.sessions.MarkRevokedByFilter(ctx, models.Filter{
 			UserID:   claims.Sub.Subject,
-			UserType: contracts.UserTypeProject,
+			UserType: models.UserTypeProject,
 		})
 		if err != nil {
 			return err

@@ -1,10 +1,10 @@
 package api_keys
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"fmt"
 	"lib/crypto"
@@ -66,7 +66,7 @@ func (uc *CommandService) Rotate(ctx context.Context, projectID uuid.UUID) (stri
 		return "", fun.Errf("cryptographic error: %s", err).Internal()
 	}
 
-	err = uc.apiKeys.Upsert(ctx, contracts.ApiKey{
+	err = uc.apiKeys.Upsert(ctx, models.ApiKey{
 		ProjectID: projectID,
 		ClientID:  principal.UserID,
 		KeyHash:   hash,

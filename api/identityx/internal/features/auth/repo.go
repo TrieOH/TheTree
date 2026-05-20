@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/xslices"
@@ -32,10 +32,10 @@ func NewRepo(q *sqlc.Queries, l *zap.Logger, tracer trace.Tracer) ports.UserRepo
 	}
 }
 
-func mapUserFromDB(src sqlc.User) contracts.User {
-	return contracts.User{
+func mapUserFromDB(src sqlc.User) models.User {
+	return models.User{
 		ID:           src.ID,
-		UserType:     contracts.UserType(src.UserType),
+		UserType:     models.UserType(src.UserType),
 		ProjectID:    src.ProjectID,
 		Email:        src.Email,
 		PasswordHash: src.PasswordHash,
@@ -47,7 +47,7 @@ func mapUserFromDB(src sqlc.User) contracts.User {
 	}
 }
 
-func (repo *userRepo) Register(ctx context.Context, email, password string, projectID *uuid.UUID, userType contracts.UserType) (*contracts.User, error) {
+func (repo *userRepo) Register(ctx context.Context, email, password string, projectID *uuid.UUID, userType models.UserType) (*models.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "Register")
 	defer span.End()
 	sqlcUser, err := database.Queries(ctx, repo.q).RegisterUser(ctx, sqlc.RegisterUserParams{
@@ -77,7 +77,7 @@ func (repo *userRepo) UpdateLastLogin(ctx context.Context, userID uuid.UUID) err
 	return nil
 }
 
-func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contracts.User, error) {
+func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetUserByID")
 	span.SetAttributes(attribute.String("user.id", userID.String()))
 	defer span.End()
@@ -92,7 +92,7 @@ func (repo *userRepo) GetUserByID(ctx context.Context, userID uuid.UUID) (*contr
 	return new(mapUserFromDB(sqlcUser)), nil
 }
 
-func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectID *uuid.UUID) (*contracts.User, error) {
+func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectID *uuid.UUID) (*models.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetUserByEmail")
 	defer span.End()
 	sqlcUser, err := database.Queries(ctx, repo.q).GetUserByEmail(ctx, sqlc.GetUserByEmailParams{
@@ -110,7 +110,7 @@ func (repo *userRepo) GetUserByEmail(ctx context.Context, email string, projectI
 	return new(mapUserFromDB(sqlcUser)), nil
 }
 
-func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {
+func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) ([]models.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "ResetPassword")
 	defer span.End()
 	sqlcUsers, err := database.Queries(ctx, repo.q).ListUsersFromProject(ctx, &projectID)
@@ -120,7 +120,7 @@ func (repo *userRepo) ListFromProject(ctx context.Context, projectID uuid.UUID) 
 	return xslices.MapSlice(sqlcUsers, mapUserFromDB), nil
 }
 
-func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID uuid.UUID) (*contracts.User, error) {
+func (repo *userRepo) GetByIDFromProject(ctx context.Context, userID, projectID uuid.UUID) (*models.User, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetUserByIDFromProject")
 	defer span.End()
 	sqlcUser, err := database.Queries(ctx, repo.q).GetUserByIDFromProject(ctx, sqlc.GetUserByIDFromProjectParams{

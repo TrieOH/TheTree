@@ -1,9 +1,9 @@
 package projects
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/xslices"
@@ -33,8 +33,8 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Projec
 	}
 }
 
-func mapProjectFromDB(src sqlc.Project) contracts.Project {
-	return contracts.Project{
+func mapProjectFromDB(src sqlc.Project) models.Project {
+	return models.Project{
 		ID:          src.ID,
 		ProjectName: src.ProjectName,
 		Domain:      src.Domain,
@@ -46,7 +46,7 @@ func mapProjectFromDB(src sqlc.Project) contracts.Project {
 	}
 }
 
-func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project) (*contracts.Project, error) {
+func (repo *projectRepo) Create(ctx context.Context, toCreate models.Project) (*models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "Create")
 	span.SetAttributes(attribute.String("project.owner_id", toCreate.OwnerID.String()))
 	span.SetAttributes(attribute.String("project.name", toCreate.ProjectName))
@@ -65,7 +65,7 @@ func (repo *projectRepo) Create(ctx context.Context, toCreate contracts.Project)
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
-func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID uuid.UUID) (*contracts.Project, error) {
+func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID uuid.UUID) (*models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByIDExternal")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
@@ -81,7 +81,7 @@ func (repo *projectRepo) GetByIDExternal(ctx context.Context, projectID, ownerID
 	return new(mapProjectFromDB(sqlcProject)), nil
 }
 
-func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUID) (*contracts.Project, error) {
+func (repo *projectRepo) GetByIDInternal(ctx context.Context, projectID uuid.UUID) (*models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByIDInternal")
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()
@@ -108,7 +108,7 @@ func (repo *projectRepo) IsOwnerOf(ctx context.Context, projectID, ownerID uuid.
 	return isOwner, nil
 }
 
-func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contracts.Project, error) {
+func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "List")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	defer span.End()
@@ -120,7 +120,7 @@ func (repo *projectRepo) List(ctx context.Context, ownerID uuid.UUID) ([]contrac
 	return xslices.MapSlice(sqlcProjects, mapProjectFromDB), nil
 }
 
-func (repo *projectRepo) Update(ctx context.Context, toUpdate contracts.Project, ownerID uuid.UUID) (*contracts.Project, error) {
+func (repo *projectRepo) Update(ctx context.Context, toUpdate models.Project, ownerID uuid.UUID) (*models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "Update")
 	span.SetAttributes(attribute.String("project.owner_id", ownerID.String()))
 	span.SetAttributes(attribute.String("project.id", toUpdate.ID.String()))

@@ -1,9 +1,9 @@
 package sessions
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 	"lib/xslices"
@@ -34,12 +34,12 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Sessio
 	}
 }
 
-func mapSessionFromDB(src sqlc.Session) contracts.Session {
-	return contracts.Session{
+func mapSessionFromDB(src sqlc.Session) models.Session {
+	return models.Session{
 		SessionID: src.SessionID,
 		ProjectID: src.ProjectID,
 		UserID:    src.UserID,
-		UserType:  contracts.UserType(src.UserType),
+		UserType:  models.UserType(src.UserType),
 		FamilyID:  src.FamilyID,
 		TokenID:   src.TokenID,
 		IssuedAt:  src.IssuedAt,
@@ -52,7 +52,7 @@ func mapSessionFromDB(src sqlc.Session) contracts.Session {
 	}
 }
 
-func (repo *sessionRepo) Create(ctx context.Context, toCreate contracts.Session) (*contracts.Session, error) {
+func (repo *sessionRepo) Create(ctx context.Context, toCreate models.Session) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "Create")
 	defer span.End()
 	sqlcSession, err := database.Queries(ctx, repo.q).CreateUserSession(ctx, sqlc.CreateUserSessionParams{
@@ -80,7 +80,7 @@ func (repo *sessionRepo) Create(ctx context.Context, toCreate contracts.Session)
 	return &created, nil
 }
 
-func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*contracts.Session, error) {
+func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByID")
 	span.SetAttributes(attribute.String("session_id", sessionID.String()))
 	defer span.End()
@@ -98,7 +98,7 @@ func (repo *sessionRepo) GetByID(ctx context.Context, sessionID uuid.UUID) (*con
 	return new(mapSessionFromDB(sqlcSession)), nil
 }
 
-func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*contracts.Session, error) {
+func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByTokenID")
 	span.SetAttributes(attribute.String("token_id", tokenID.String()))
 	defer span.End()
@@ -116,7 +116,7 @@ func (repo *sessionRepo) GetByTokenID(ctx context.Context, tokenID uuid.UUID) (*
 	return new(mapSessionFromDB(sqlcSession)), nil
 }
 
-func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) (*contracts.Session, error) {
+func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByFamilyID")
 	span.SetAttributes(attribute.String("session.family_id", familyID.String()))
 	defer span.End()
@@ -131,7 +131,7 @@ func (repo *sessionRepo) GetByFamilyID(ctx context.Context, familyID uuid.UUID) 
 	return new(mapSessionFromDB(sqlcSession)), nil
 }
 
-func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID, userType contracts.UserType) ([]contracts.Session, error) {
+func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID, userType models.UserType) ([]models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "List")
 	span.SetAttributes(attribute.String("entity_id", userID.String()))
 	span.SetAttributes(attribute.String("user_type", string(userType)))
@@ -147,7 +147,7 @@ func (repo *sessionRepo) List(ctx context.Context, userID uuid.UUID, userType co
 	return xslices.MapSlice(sqlcSessions, mapSessionFromDB), nil
 }
 
-func (repo *sessionRepo) Update(ctx context.Context, toUpdate contracts.Session, userID uuid.UUID, userType contracts.UserType) error {
+func (repo *sessionRepo) Update(ctx context.Context, toUpdate models.Session, userID uuid.UUID, userType models.UserType) error {
 	ctx, span := repo.tracer.Start(ctx, "Update")
 	span.SetAttributes(attribute.String("session.user_type", string(toUpdate.UserType)))
 	span.SetAttributes(attribute.String("session.token_id", toUpdate.TokenID.String()))
@@ -169,7 +169,7 @@ func (repo *sessionRepo) Update(ctx context.Context, toUpdate contracts.Session,
 	return nil
 }
 
-func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, newTokenID uuid.UUID, oldTokenID uuid.UUID, expiresAt time.Time) (*contracts.Session, error) {
+func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, newTokenID uuid.UUID, oldTokenID uuid.UUID, expiresAt time.Time) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "RotateToken")
 	span.SetAttributes(attribute.String("family_id", familyID.String()))
 	span.SetAttributes(attribute.String("new_token_id", newTokenID.String()))
@@ -190,7 +190,7 @@ func (repo *sessionRepo) RotateToken(ctx context.Context, familyID uuid.UUID, ne
 	return new(mapSessionFromDB(sqlcSession)), nil
 }
 
-func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, userType contracts.UserType) (*contracts.Session, error) {
+func (repo *sessionRepo) MarkRevokedByID(ctx context.Context, userID uuid.UUID, sessionID uuid.UUID, userType models.UserType) (*models.Session, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarkRevokedByID")
 	span.SetAttributes(attribute.String("session_id", sessionID.String()))
 	span.SetAttributes(attribute.String("user_id", userID.String()))
@@ -216,7 +216,7 @@ func (repo *sessionRepo) MarkRevokedByFamilyID(ctx context.Context, familyID uui
 	return nil
 }
 
-func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter contracts.Filter) (int, error) {
+func (repo *sessionRepo) MarkRevokedByFilter(ctx context.Context, filter models.Filter) (int, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarkRevokedByFilter")
 	span.SetAttributes(attribute.String("user_id", filter.UserID.String()))
 	defer span.End()

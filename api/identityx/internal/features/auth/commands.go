@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/security"
+	"IdentityX/models"
 	"context"
 	"errors"
 	"lib/database"
@@ -55,7 +55,7 @@ func NewCommandService(deps feature_deps.AuthCommandDeps) *CommandService {
 // Register handles the business logic for creating a new user.
 // It validates the input, hashes the password, and then attempts to create the user in the database.
 // It returns an error if the email is already in use or if there is a problem with the database.
-func (uc *CommandService) Register(ctx context.Context, in contracts.RegisterInput) error {
+func (uc *CommandService) Register(ctx context.Context, in models.RegisterInput) error {
 	var err error
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Register")
 	defer span.End()
@@ -78,7 +78,7 @@ func (uc *CommandService) Register(ctx context.Context, in contracts.RegisterInp
 	return uc.mailSender.Send(ctx, verificationEmail)
 }
 
-func (uc *CommandService) registerInternal(ctx context.Context, in contracts.RegisterInput) (ports.Email, error) {
+func (uc *CommandService) registerInternal(ctx context.Context, in models.RegisterInput) (ports.Email, error) {
 	var err error
 	var spanAttrs []attribute.KeyValue
 	if in.ProjectID != nil {
@@ -99,9 +99,9 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 		return ports.Email{}, fun.Errf("invalid password: %s", err).BadRequest()
 	}
 
-	userType := contracts.UserTypeClient
+	userType := models.UserTypeClient
 	if in.ProjectID != nil {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
 	u, err := uc.users.Register(ctx, in.Email, string(hashedPassword), in.ProjectID, userType)
@@ -120,7 +120,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 		return ports.Email{}, err
 	}
 
-	verificationPayload, err := security.NewVerificationToken(contracts.NewVerificationTokenInput{
+	verificationPayload, err := security.NewVerificationToken(models.NewVerificationTokenInput{
 		KID:       kid,
 		Subject:   u.ID,
 		ExpiresAt: time.Now().Add(15 * time.Minute),
@@ -129,7 +129,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 		return ports.Email{}, err
 	}
 
-	var pair *contracts.Pair
+	var pair *models.Pair
 	pair, err = uc.keys.GetActiveSigningKey(ctx, in.ProjectID)
 	if err != nil {
 		return ports.Email{}, err
@@ -156,7 +156,7 @@ func (uc *CommandService) registerInternal(ctx context.Context, in contracts.Reg
 // Login handles the business logic for logging in a user.
 // It finds the user by email, compares the password, and if successful,
 // creates a new session and returns a new set of access and refresh tokens.
-func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (tokens *contracts.UserTokensOutput, err error) {
+func (uc *CommandService) Login(ctx context.Context, in models.LoginInput) (tokens *models.UserTokensOutput, err error) {
 	in.Email = strings.TrimSpace(strings.ToLower(in.Email))
 
 	var spanAttrs []attribute.KeyValue
@@ -192,7 +192,7 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 
 	refreshExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
-	sess, err := uc.sessions.Create(ctx, contracts.Session{
+	sess, err := uc.sessions.Create(ctx, models.Session{
 		UserID:    u.ID,
 		ProjectID: u.ProjectID,
 		IssuedAt:  time.Now(),
@@ -225,7 +225,7 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 
-	accessPayload, err := security.NewAccessToken(contracts.NewAccessTokenInput{
+	accessPayload, err := security.NewAccessToken(models.NewAccessTokenInput{
 		KID:       kid,
 		User:      *u,
 		IP:        in.IP,
@@ -244,7 +244,7 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 		return nil, err
 	}
 
-	refreshPayload, err := security.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err := security.NewRefreshToken(models.NewRefreshTokenInput{
 		KID:        kid,
 		AccessJTI:  accessJTI,
 		RefreshJTI: sess.TokenID,
@@ -269,7 +269,7 @@ func (uc *CommandService) Login(ctx context.Context, in contracts.LoginInput) (t
 		domain = project.Domain
 	}
 
-	return &contracts.UserTokensOutput{
+	return &models.UserTokensOutput{
 		AccessTokenString:  security.AssembleJWT(accessPayload, accessSig),
 		RefreshTokenString: security.AssembleJWT(refreshPayload, refreshSig),
 		AccessExpiresAt:    accessExpiresAt,
@@ -301,14 +301,14 @@ func (uc *CommandService) Logout(ctx context.Context) error {
 		return errors.New("can't logout an api key, please revoke it instead")
 	}
 
-	var userType contracts.UserType
+	var userType models.UserType
 	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
+		userType = models.UserTypeClient
 	} else {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
-	var sess *contracts.Session
+	var sess *models.Session
 	sess, err = uc.sessions.MarkRevokedByID(ctx, principal.UserID, *principal.SessionID, userType)
 	if err != nil {
 		return err
@@ -322,13 +322,13 @@ func (uc *CommandService) Logout(ctx context.Context) error {
 // Refresh handles the business logic for refreshing a user's tokens.
 // It parses the refresh token, checks if it's revoked, and if not,
 // determines whether to refresh the tokens for a client or a project user.
-func (uc *CommandService) Refresh(ctx context.Context, in contracts.RefreshInput) (*contracts.UserTokensOutput, error) {
+func (uc *CommandService) Refresh(ctx context.Context, in models.RefreshInput) (*models.UserTokensOutput, error) {
 	txOptions := database.TxOptions{
 		Isolation: pgx.ReadCommitted,
 		ReadOnly:  pgx.ReadWrite,
 	}
 
-	var out *contracts.UserTokensOutput
+	var out *models.UserTokensOutput
 	err := uc.tx.WithinTxWithOptions(ctx, txOptions, func(ctx context.Context) error {
 		var err error
 		out, err = uc.refreshInternal(ctx, in)
@@ -338,7 +338,7 @@ func (uc *CommandService) Refresh(ctx context.Context, in contracts.RefreshInput
 	return out, err
 }
 
-func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.RefreshInput) (*contracts.UserTokensOutput, error) {
+func (uc *CommandService) refreshInternal(ctx context.Context, in models.RefreshInput) (*models.UserTokensOutput, error) {
 	ctx, span := uc.tracer.Start(ctx, "AuthService.Refresh")
 	defer span.End()
 
@@ -349,8 +349,8 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 		}
 	}()
 
-	refreshToken := &contracts.RefreshClaims{}
-	_, err = security.ParseJWTUnverified[*contracts.RefreshClaims](in.RefreshCookie, refreshToken)
+	refreshToken := &models.RefreshClaims{}
+	_, err = security.ParseJWTUnverified[*models.RefreshClaims](in.RefreshCookie, refreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 	span.SetAttributes(attribute.String("old_token.id", oldJTI.String()))
 	span.SetAttributes(attribute.String("new_token.id", newRefreshJTI.String()))
 
-	var sess *contracts.Session
+	var sess *models.Session
 	sess, err = uc.sessions.GetByFamilyID(ctx, refreshToken.Sub.FamilyID)
 	if err != nil {
 		return nil, fun.ErrUnauthorized("session not found or revoked")
@@ -421,7 +421,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 
 	var (
 		kid    string
-		pair   *contracts.Pair
+		pair   *models.Pair
 		domain string
 	)
 
@@ -452,7 +452,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 	accessExpiresAt := time.Now().Add(15 * time.Minute)
 
 	var accessPayload []byte
-	accessPayload, err = security.NewAccessToken(contracts.NewAccessTokenInput{
+	accessPayload, err = security.NewAccessToken(models.NewAccessTokenInput{
 		KID: kid, User: *u, IP: in.IP, Agent: in.Agent,
 		AccessJTI: newAccessJTI.String(), SessionID: sess.SessionID,
 		FamilyID: sess.FamilyID, ExpiresAt: accessExpiresAt,
@@ -466,7 +466,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 		return nil, err
 	}
 
-	refreshPayload, err := security.NewRefreshToken(contracts.NewRefreshTokenInput{
+	refreshPayload, err := security.NewRefreshToken(models.NewRefreshTokenInput{
 		KID: kid, AccessJTI: newAccessJTI, RefreshJTI: newRefreshJTI,
 		ExpiresAt: refreshExp, FamilyID: sess.FamilyID,
 	}, uc.issuer)
@@ -479,7 +479,7 @@ func (uc *CommandService) refreshInternal(ctx context.Context, in contracts.Refr
 		return nil, err
 	}
 
-	return &contracts.UserTokensOutput{
+	return &models.UserTokensOutput{
 		AccessTokenString:  security.AssembleJWT(accessPayload, accessSig),
 		RefreshTokenString: security.AssembleJWT(refreshPayload, refreshSig),
 		AccessExpiresAt:    accessExpiresAt,

@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 	"encoding/json"
 	"lib/telemetry"
 	"net/http"
@@ -64,7 +64,7 @@ func RegisterAuthRoutes(
 // @Accept json
 // @Produce json
 // @Param project_id query string false "Project UUID to scope the registration"
-// @Param registerInfo body contracts.RegisterUserRequest true "User registration information"
+// @Param registerInfo body models.RegisterUserRequest true "User registration information"
 // @Success 201 {object} object "User registered successfully"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
 // @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
@@ -72,7 +72,7 @@ func RegisterAuthRoutes(
 func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	projectID := req.Query("project_id").UUIDPtr()
-	var payload contracts.RegisterUserRequest
+	var payload models.RegisterUserRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -90,7 +90,7 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param project_id query string false "Project UUID to scope the login"
-// @Param loginInfo body contracts.LoginUserRequest true "User login information"
+// @Param loginInfo body models.LoginUserRequest true "User login information"
 // @Success 200 {object} object "Access and Refresh tokens"
 // @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input provided"
 // @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid credentials"
@@ -99,7 +99,7 @@ func (handler *Handler) Register(w http.ResponseWriter, r *http.Request) {
 func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	projectID := req.Query("project_id").UUIDPtr()
-	var payload contracts.LoginUserRequest
+	var payload models.LoginUserRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
@@ -151,7 +151,7 @@ func (handler *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	tokens, err := handler.commands.Refresh(r.Context(), contracts.ToRefreshInput(refreshTokenCookie, r.UserAgent(), req.ClientIP()))
+	tokens, err := handler.commands.Refresh(r.Context(), models.ToRefreshInput(refreshTokenCookie, r.UserAgent(), req.ClientIP()))
 	if fun.Bail(w, err) {
 		return
 	}

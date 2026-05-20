@@ -1,9 +1,9 @@
 package projects
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 
@@ -40,7 +40,7 @@ func NewQueryService(
 
 // GetByID handles the business logic for retrieving a project by its ID.
 // It requires a valid principal in the context and that the principal is the owner of the project.
-func (uc *QueryService) GetByID(ctx context.Context, projectID uuid.UUID) (*contracts.Project, error) {
+func (uc *QueryService) GetByID(ctx context.Context, projectID uuid.UUID) (*models.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.GetByID",
 		trace.WithAttributes(attribute.String("project.id", projectID.String())),
 	)
@@ -69,7 +69,7 @@ func (uc *QueryService) GetByID(ctx context.Context, projectID uuid.UUID) (*cont
 }
 
 // List handles the business logic for listing all projects for the authenticated user.
-func (uc *QueryService) List(ctx context.Context) ([]contracts.Project, error) {
+func (uc *QueryService) List(ctx context.Context) ([]models.Project, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.List")
 	defer span.End()
 
@@ -88,7 +88,7 @@ func (uc *QueryService) List(ctx context.Context) ([]contracts.Project, error) {
 	return projects, nil
 }
 
-func (uc *QueryService) ListUsers(ctx context.Context, projectID uuid.UUID) ([]contracts.User, error) {
+func (uc *QueryService) ListUsers(ctx context.Context, projectID uuid.UUID) ([]models.User, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.ListUsers",
 		trace.WithAttributes(attribute.String("project.id", projectID.String())),
 	)
@@ -104,7 +104,7 @@ func (uc *QueryService) ListUsers(ctx context.Context, projectID uuid.UUID) ([]c
 	return users, nil
 }
 
-func (uc *QueryService) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*contracts.User, error) {
+func (uc *QueryService) GetUser(ctx context.Context, projectID, userID uuid.UUID) (*models.User, error) {
 	ctx, span := uc.tracer.Start(ctx, "ProjectService.GetUser",
 		trace.WithAttributes(
 			attribute.String("project.id", projectID.String()),

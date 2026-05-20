@@ -1,11 +1,11 @@
 package app
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/security"
+	"IdentityX/models"
 	"context"
 	"database/sql"
 	"encoding/hex"
@@ -385,14 +385,14 @@ func SetupAuthMiddlewares(
 	apiKeys ports.ApiKeyRepository,
 	tracer trace.Tracer,
 	issuer string,
-) *middlewares.Middleware[*contracts.AccessClaims] {
+) *middlewares.Middleware[*models.AccessClaims] {
 
-	keyFunc := func(ctx context.Context, tokenStr string) (*contracts.AccessClaims, error) {
+	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		ctx, span := tracer.Start(ctx, "Middleware.Auth.JWT")
 		defer span.End()
 
-		accessToken := &contracts.AccessClaims{}
-		_, err := security.ParseJWTUnverified[*contracts.AccessClaims](tokenStr, accessToken)
+		accessToken := &models.AccessClaims{}
+		_, err := security.ParseJWTUnverified[*models.AccessClaims](tokenStr, accessToken)
 		if err != nil {
 			return nil, err
 		}
@@ -443,7 +443,7 @@ func SetupAuthMiddlewares(
 		return accessToken, nil
 	}
 
-	jwtHook := func(ctx context.Context, claims *contracts.AccessClaims) (context.Context, error) {
+	jwtHook := func(ctx context.Context, claims *models.AccessClaims) (context.Context, error) {
 		principal, err := authz.NewPrincipal(claims)
 		if err != nil {
 			return ctx, err
@@ -491,5 +491,5 @@ func SetupAuthMiddlewares(
 		}), nil
 	}
 
-	return middlewares.New[*contracts.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+	return middlewares.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }

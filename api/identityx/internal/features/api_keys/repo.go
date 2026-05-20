@@ -1,9 +1,9 @@
 package api_keys
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 
@@ -31,8 +31,8 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKey
 	}
 }
 
-func mapApiKeyFromDB(src sqlc.ApiKey) contracts.ApiKey {
-	return contracts.ApiKey{
+func mapApiKeyFromDB(src sqlc.ApiKey) models.ApiKey {
+	return models.ApiKey{
 		ProjectID: src.ProjectID,
 		ClientID:  src.ClientID,
 		KeyHash:   src.KeyHash,
@@ -42,7 +42,7 @@ func mapApiKeyFromDB(src sqlc.ApiKey) contracts.ApiKey {
 
 }
 
-func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error {
+func (repo *apiKeyRepo) Upsert(ctx context.Context, key models.ApiKey) error {
 	ctx, span := repo.tracer.Start(ctx, "Upsert")
 	span.SetAttributes(attribute.String("project.id", key.ProjectID.String()))
 	span.SetAttributes(attribute.String("client.id", key.ClientID.String()))
@@ -58,7 +58,7 @@ func (repo *apiKeyRepo) Upsert(ctx context.Context, key contracts.ApiKey) error 
 	return nil
 }
 
-func (repo *apiKeyRepo) GetByProjectID(ctx context.Context, projectID uuid.UUID) (*contracts.ApiKey, error) {
+func (repo *apiKeyRepo) GetByProjectID(ctx context.Context, projectID uuid.UUID) (*models.ApiKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetByProjectID")
 	span.SetAttributes(attribute.String("project.id", projectID.String()))
 	defer span.End()

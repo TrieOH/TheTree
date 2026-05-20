@@ -1,12 +1,12 @@
 package app
 
 import (
-	_ "IdentityX/contracts"
 	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/auth"
 	"IdentityX/internal/features/projects"
 	"IdentityX/internal/features/sessions"
+	_ "IdentityX/models"
 	"fmt"
 	"net/http"
 

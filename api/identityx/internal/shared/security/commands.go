@@ -1,7 +1,7 @@
 package security
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
@@ -18,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func SignKey(payload []byte, pair *contracts.Pair, encryptionKey []byte) ([]byte, error) {
+func SignKey(payload []byte, pair *models.Pair, encryptionKey []byte) ([]byte, error) {
 	decrypted, err := crypto.Decrypt(pair.PrivateKey, encryptionKey)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func SignKey(payload []byte, pair *contracts.Pair, encryptionKey []byte) ([]byte
 	return ed25519.Sign(priv, payload), nil
 }
 
-func VerifyKeyPair(projectID *uuid.UUID, payload, sig []byte, pair *contracts.Pair) error {
+func VerifyKeyPair(projectID *uuid.UUID, payload, sig []byte, pair *models.Pair) error {
 	if projectID != nil {
 		if pair.ProjectID == nil || *pair.ProjectID != *projectID {
 			return fun.ErrUnauthorized("project keys mismatch")
@@ -89,13 +89,13 @@ func parseEd25519Public(pemStr string) (ed25519.PublicKey, error) {
 	return pub, nil
 }
 
-func NewAccessToken(in contracts.NewAccessTokenInput, issuer string) ([]byte, error) {
+func NewAccessToken(in models.NewAccessTokenInput, issuer string) ([]byte, error) {
 	if in.User.ProjectID != nil {
 		issuer = in.User.ProjectID.String()
 	}
 
-	claims := contracts.AccessClaims{
-		Sub: contracts.AccessSub{
+	claims := models.AccessClaims{
+		Sub: models.AccessSub{
 			ID:         in.User.ID,
 			UserType:   string(in.User.UserType),
 			ProjectID:  in.User.ProjectID,
@@ -126,9 +126,9 @@ func NewAccessToken(in contracts.NewAccessTokenInput, issuer string) ([]byte, er
 	return []byte(payload), nil
 }
 
-func NewRefreshToken(in contracts.NewRefreshTokenInput, issuer string) ([]byte, error) {
-	claims := contracts.RefreshClaims{
-		Sub: contracts.RefreshSub{
+func NewRefreshToken(in models.NewRefreshTokenInput, issuer string) ([]byte, error) {
+	claims := models.RefreshClaims{
+		Sub: models.RefreshSub{
 			AccessJTI: in.AccessJTI,
 			FamilyID:  in.FamilyID,
 		},
@@ -151,10 +151,10 @@ func NewRefreshToken(in contracts.NewRefreshTokenInput, issuer string) ([]byte, 
 	return []byte(payload), nil
 }
 
-func NewVerificationToken(in contracts.NewVerificationTokenInput, issuer string) ([]byte, error) {
+func NewVerificationToken(in models.NewVerificationTokenInput, issuer string) ([]byte, error) {
 	now := time.Now()
-	claims := contracts.VerificationClaims{
-		Sub: contracts.VerificationSub{
+	claims := models.VerificationClaims{
+		Sub: models.VerificationSub{
 			Subject: in.Subject,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -178,10 +178,10 @@ func NewVerificationToken(in contracts.NewVerificationTokenInput, issuer string)
 	return []byte(payload), nil
 }
 
-func NewResetPasswordToken(in contracts.NewResetPasswordInput, issuer string) ([]byte, error) {
+func NewResetPasswordToken(in models.NewResetPasswordInput, issuer string) ([]byte, error) {
 	now := time.Now()
-	claims := contracts.ResetPasswordClaims{
-		Sub: contracts.ResetPasswordSub{
+	claims := models.ResetPasswordClaims{
+		Sub: models.ResetPasswordSub{
 			Subject:   in.Subject,
 			ProjectID: in.ProjectID,
 		},
@@ -212,54 +212,54 @@ func AssembleJWT(payload []byte, sig []byte) string {
 
 func VerifyAccessToken(
 	tokenStr string,
-	pair *contracts.Pair,
-) (*contracts.AccessClaims, error) {
+	pair *models.Pair,
+) (*models.AccessClaims, error) {
 	return verifyToken(
 		pair,
 		"access",
 		tokenStr,
-		&contracts.AccessClaims{},
+		&models.AccessClaims{},
 	)
 }
 
 func VerifyRefreshToken(
 	tokenStr string,
-	pair *contracts.Pair,
-) (*contracts.RefreshClaims, error) {
+	pair *models.Pair,
+) (*models.RefreshClaims, error) {
 	return verifyToken(
 		pair,
 		"refresh",
 		tokenStr,
-		&contracts.RefreshClaims{},
+		&models.RefreshClaims{},
 	)
 }
 
 func VerifyVerificationToken(
 	tokenStr string,
-	pair *contracts.Pair,
-) (*contracts.VerificationClaims, error) {
+	pair *models.Pair,
+) (*models.VerificationClaims, error) {
 	return verifyToken(
 		pair,
 		"verification",
 		tokenStr,
-		&contracts.VerificationClaims{},
+		&models.VerificationClaims{},
 	)
 }
 
 func VerifyResetPasswordToken(
 	tokenStr string,
-	pair *contracts.Pair,
-) (*contracts.ResetPasswordClaims, error) {
+	pair *models.Pair,
+) (*models.ResetPasswordClaims, error) {
 	return verifyToken(
 		pair,
 		"reset password",
 		tokenStr,
-		&contracts.ResetPasswordClaims{},
+		&models.ResetPasswordClaims{},
 	)
 }
 
 func verifyToken[T jwt.Claims](
-	pair *contracts.Pair,
+	pair *models.Pair,
 	tokenType string,
 	tokenStr string,
 	claims T,

@@ -1,14 +1,14 @@
 package ports
 
 import (
-	"IdentityX/contracts"
+	"IdentityX/models"
 	"context"
 
 	"github.com/google/uuid"
 )
 
 type ApiKeyRepository interface {
-	Upsert(ctx context.Context, key contracts.ApiKey) error
-	GetByProjectID(ctx context.Context, projectID uuid.UUID) (*contracts.ApiKey, error)
+	Upsert(ctx context.Context, key models.ApiKey) error
+	GetByProjectID(ctx context.Context, projectID uuid.UUID) (*models.ApiKey, error)
 	Delete(ctx context.Context, projectID uuid.UUID) error
 }

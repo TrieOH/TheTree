@@ -1,9 +1,9 @@
 package sessions
 
 import (
-	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/ports"
+	"IdentityX/models"
 	"context"
 	"lib/database"
 
@@ -34,7 +34,7 @@ func NewQueryService(
 }
 
 // List handles the business logic for listing all sessions for the authenticated user.
-func (uc *QueryService) List(ctx context.Context) ([]contracts.Session, error) {
+func (uc *QueryService) List(ctx context.Context) ([]models.Session, error) {
 	ctx, span := uc.tracer.Start(ctx, "SessionService.List")
 	defer span.End()
 
@@ -43,11 +43,11 @@ func (uc *QueryService) List(ctx context.Context) ([]contracts.Session, error) {
 		return nil, err
 	}
 
-	var userType contracts.UserType
+	var userType models.UserType
 	if principal.ProjectID == nil {
-		userType = contracts.UserTypeClient
+		userType = models.UserTypeClient
 	} else {
-		userType = contracts.UserTypeProject
+		userType = models.UserTypeProject
 	}
 
 	sessions, err := uc.sessions.List(ctx, principal.UserID, userType)
