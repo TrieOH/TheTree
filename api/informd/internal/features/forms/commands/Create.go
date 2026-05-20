@@ -4,53 +4,38 @@ import (
 	"Informd/models"
 	"context"
 	"lib/authz"
-
-	"github.com/MintzyG/fun"
-	"github.com/google/uuid"
+	"time"
 )
 
-// FIXME split this into two, namespaced and not this one should be only direct, namespaced should be handled by namespace feature
-
-func (s *CommandService) Create(ctx context.Context, title string, namespaceID *uuid.UUID) (created *models.Form, err error) {
+func (s *CommandService) Create(ctx context.Context, title string) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	sub, err := authz.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ownerID := sub.ID
-	var namespace *models.Namespace
-	if namespaceID != nil {
-		namespace, err = s.namespaces.GetByID(ctx, *namespaceID)
+	form, err := models.NewForm(nil, sub.ID, title)
+	if err != nil {
+		return nil, err
+	}
+
+	var created *models.Form
+	if err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		created, err = s.forms.Create(ctx, *form)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		var member *models.NamespaceMember
-		if sub.ID != namespace.OwnerID {
-			member, err = s.namespaces.GetMember(ctx, sub.ID, namespace.ID)
-			if err != nil {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-			if member.Role == models.NamespaceMemberRoleViewer {
-				return nil, fun.ErrForbidden("insufficient permissions")
-			}
-		}
-
-		ownerID = namespace.OwnerID
-	}
-
-	var form *models.Form
-	form, err = models.NewForm(namespaceID, ownerID, title)
-	if err != nil {
-		return nil, err
-	}
-
-	created, err = s.forms.Create(ctx, *form)
-	if err != nil {
+		return s.forms.AddMember(ctx, models.FormMember{
+			UserID:  sub.ID,
+			FormID:  created.ID,
+			Role:    models.FormMemberRoleOwner,
+			AddedAt: time.Now(),
+			AddedBy: sub.ID,
+		})
+	}); err != nil {
 		return nil, err
 	}
 

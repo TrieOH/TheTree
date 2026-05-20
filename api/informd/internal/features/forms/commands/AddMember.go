@@ -29,50 +29,28 @@ func (s *CommandService) AddMember(ctx context.Context, payload models.AddFormMe
 		return err
 	}
 
-	if form.NamespaceID != nil {
-		var namespace *models.Namespace
-		if namespace, err = s.namespaces.GetByID(ctx, *form.NamespaceID); err != nil {
+	if payload.UserID == form.OwnerID {
+		return fun.ErrBadRequest("owner of the form is already a member of the form")
+	}
+	if sub.ID != form.OwnerID {
+		member, err := s.forms.GetMember(ctx, sub.ID, form.ID)
+		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
 		}
-		if payload.UserID == namespace.OwnerID {
-			return fun.ErrBadRequest("owner of the namespace is already a member of the form")
+		if err != nil {
+			return fun.ErrForbidden("insufficient permissions")
 		}
-		if sub.ID != namespace.OwnerID {
-			if err = s.isFormAdmin(ctx, sub.ID, form.NamespaceID, payload.FormID); err != nil {
-				return err
-			}
+		if member.Role != models.FormMemberRoleAdmin {
+			return fun.ErrForbidden("insufficient permissions")
 		}
-		_, err = s.namespaces.GetMember(ctx, payload.UserID, namespace.ID)
-		if err == nil {
-			return fun.ErrBadRequest("namespace member is already a member of the form")
-		}
-		if fun.Is(err, fun.CodeNotFound) {
-			_, err = s.forms.GetMember(ctx, payload.UserID, payload.FormID)
-			if err == nil {
-				return fun.ErrBadRequest("member is already a member of the form")
-			}
-			if !fun.Is(err, fun.CodeNotFound) {
-				return err
-			}
-		} else if err != nil {
-			return err
-		}
-	} else {
-		if payload.UserID == form.OwnerID {
-			return fun.ErrBadRequest("owner of the form is already a member of the form")
-		}
-		if sub.ID != form.OwnerID {
-			if err = s.isFormAdmin(ctx, sub.ID, form.NamespaceID, payload.FormID); err != nil {
-				return err
-			}
-		}
-		_, err = s.forms.GetMember(ctx, payload.UserID, form.ID)
-		if err == nil {
-			return fun.ErrBadRequest("member is already a member of the form")
-		}
-		if !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
+	}
+
+	_, err = s.forms.GetMember(ctx, payload.UserID, form.ID)
+	if !fun.Is(err, fun.CodeNotFound) {
+		return err
+	}
+	if err == nil {
+		return fun.ErrBadRequest("user is already a member of the form")
 	}
 
 	newMember := models.FormMember{

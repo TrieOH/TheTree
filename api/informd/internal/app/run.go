@@ -95,7 +95,7 @@ func (app *Informd) run() runtime {
 
 func (app *Informd) startHandlers(rt runtime) *Deps {
 	var handlers Deps
-	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces, rt.commands.forms)
+	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.ApiKeysHandler = keys.NewHandlers(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
 
@@ -117,7 +117,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 
 func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
-	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
 	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
 	return cmd

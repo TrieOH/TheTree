@@ -36,15 +36,5 @@ func (s *QueryService) ListMembers(ctx context.Context, namespaceID uuid.UUID) (
 		return nil, err
 	}
 
-	ownerMember := models.NamespaceMember{
-		UserID:      namespace.OwnerID,
-		NamespaceID: namespace.ID,
-		Role:        models.NamespaceMemberRoleOwner,
-		AddedAt:     namespace.CreatedAt,
-		AddedBy:     namespace.OwnerID,
-	}
-
-	members = append(members, ownerMember)
-
 	return members, nil
 }
