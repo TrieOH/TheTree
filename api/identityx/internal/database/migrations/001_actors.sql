@@ -10,10 +10,10 @@ CREATE TABLE actors (
         auth_method IN ('password', 'google', 'github')
     ),
 
+    verified_at TIMESTAMPTZ,
+    password_hash TEXT,
     email TEXT NOT NULL,
     CONSTRAINT uniq_email_per_scope_per_method UNIQUE (LOWER(email), project_id, auth_method),
-
-    password_hash TEXT,
 
     type TEXT NOT NULL,
     CONSTRAINT chk_actors_type CHECK (type IN ('human', 'service', 'machine')),
