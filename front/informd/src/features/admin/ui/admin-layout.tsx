@@ -1,20 +1,20 @@
-import { Link } from '@tanstack/react-router'
-import {
-  LayoutDashboard,
-  LogOut,
-} from 'lucide-react'
-import { Button } from '#/shared/ui/shadcn/button'
-import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
-import { cn } from '#/shared/lib/utils'
-import { env } from '#/env'
+// import { Link } from '@tanstack/react-router'
+// import {
+//   LayoutDashboard,
+//   LogOut,
+// } from 'lucide-react'
+// import { Button } from '#/shared/ui/shadcn/button'
+// import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
+// import { cn } from '#/shared/lib/utils'
+// import { env } from '#/env'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { handleLogout } = useAuthActions()
+  // const { handleLogout } = useAuthActions()
 
   return (
-    <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/10">
+      {children}
+      {/* <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-8 lg:px-10">
           <div className="flex items-center gap-8">
             <Link to="/admin" className="flex items-center gap-2.5 group transition-all hover:opacity-80">
@@ -42,7 +42,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <span>Logout</span>
             </Button>
 
-            {/* Mobile Logout (Icon only) */}
             <Button
               variant="ghost"
               size="icon"
@@ -59,7 +58,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-      </div>
+      </div> */}
     </div>
   )
 }

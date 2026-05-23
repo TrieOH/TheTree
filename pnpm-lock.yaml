@@ -262,6 +262,9 @@ importers:
       '@trieoh/identityx-sdk-ts':
         specifier: ^0.11.7
         version: 0.11.9(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@trieoh/informd-models':
+        specifier: workspace:*
+        version: link:../../lib/ts/informd
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -836,6 +839,8 @@ importers:
       wrangler:
         specifier: ^4.73.0
         version: 4.90.0
+
+  lib/ts/informd: {}
 
   sdk/ts/IdentityX:
     dependencies:
