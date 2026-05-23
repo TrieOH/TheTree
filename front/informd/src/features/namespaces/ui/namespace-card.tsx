@@ -17,6 +17,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "#/shared/ui/shadcn/context-menu";
+import { Button } from "#/shared/ui/shadcn/button";
 
 interface PropsI {
   data: NamespaceI;
@@ -79,16 +80,21 @@ export function NamespaceCard({ data }: PropsI) {
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Ellipsis
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className={cn(
                     "text-muted-foreground hover:text-foreground/40",
                     "duration-150 cursor-pointer outline-0 select-none"
                   )}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                />
+                >
+                  <Ellipsis
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  />
+                </Button>
               }
             />
             <DropdownMenuContent align="end" className="w-56">
