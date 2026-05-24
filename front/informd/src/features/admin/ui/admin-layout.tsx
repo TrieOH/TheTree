@@ -35,7 +35,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="p-4 flex items-center justify-between h-16 border-b border-border/60">
           {!isCollapsed && (
-            <span className="text-xs font-black truncate uppercase tracking-[0.3em] text-primary">
+            <span className="text-xs font-bold truncate uppercase tracking-[0.3em] text-primary">
               Informd
             </span>
           )}
@@ -99,7 +99,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
           <button
             onClick={handleLogout}
-            className="mt-auto flex items-center gap-3 px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-colors relative group text-muted-foreground hover:text-destructive cursor-pointer"
+            className="mt-auto flex items-center gap-3 px-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors relative group text-muted-foreground hover:text-destructive cursor-pointer"
           >
             <LogOut
               className={cn(
@@ -139,7 +139,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 />
                 <span
                   className={cn(
-                    'text-[9px] font-black uppercase tracking-tighter transition-colors truncate',
+                    'text-[9px] font-bold uppercase tracking-tighter transition-colors truncate',
                     isActive
                       ? 'text-primary'
                       : 'text-muted-foreground group-hover:text-foreground',
@@ -163,7 +163,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           className="flex flex-col items-center gap-1 px-3 justify-center group cursor-pointer"
         >
           <LogOut className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
-          <span className="text-[9px] truncate font-medium uppercase tracking-tighter text-muted-foreground group-hover:text-destructive transition-colors">
+          <span className="text-[9px] truncate font-bold uppercase tracking-tighter text-muted-foreground group-hover:text-destructive transition-colors">
             Logout
           </span>
         </button>

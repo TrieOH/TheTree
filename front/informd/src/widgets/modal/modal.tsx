@@ -27,13 +27,13 @@ export function Modal({
 }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="rounded-none border-border sm:max-w-106.25">
+      <DialogContent className="rounded-sm border-border sm:max-w-106.25 gap-1">
         <DialogHeader>
-          <DialogTitle className="text-xl font-black uppercase tracking-tighter">
+          <DialogTitle className="text-lg font-bold">
             {title}
           </DialogTitle>
           {description && (
-            <DialogDescription className="text-xs font-bold uppercase tracking-widest opacity-70">
+            <DialogDescription className="text-sm text-muted-foreground">
               {description}
             </DialogDescription>
           )}
@@ -83,7 +83,7 @@ export function ConfirmModal({
           <Button
             variant="ghost"
             onClick={onClose}
-            className="rounded-none font-bold uppercase tracking-widest text-xs"
+            className="rounded-sm font-medium text-xs"
             disabled={isLoading}
           >
             Cancel
@@ -91,7 +91,7 @@ export function ConfirmModal({
           <Button
             variant={variant}
             onClick={onConfirm}
-            className="rounded-none font-black uppercase tracking-widest text-xs px-6"
+            className="rounded-sm font-bold text-xs px-6"
             disabled={isLoading}
           >
             {isLoading ? 'Processing...' : confirmText}

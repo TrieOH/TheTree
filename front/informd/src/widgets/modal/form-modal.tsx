@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Modal } from "./modal";
 import { cn } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
@@ -8,7 +8,7 @@ import { Button } from "#/shared/ui/shadcn/button";
 import { AlertCircle } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
 import type { ZodType } from "zod";
-import type { DefaultValues, FieldValues, Path } from "react-hook-form";
+import type { DefaultValues, FieldValues, Path, SubmitHandler } from "react-hook-form";
 
 
 export interface PropsI<T> {
@@ -21,7 +21,7 @@ export interface PropsI<T> {
   formId: string;
   defaultValues?: DefaultValues<T>;
   fields: FieldDefinition<T>[];
-  schema: ZodType<T>;
+  schema: ZodType<T, T>;
   disabled?: boolean;
 }
 
@@ -40,11 +40,11 @@ export default function FormModal<T extends FieldValues>({
 }: PropsI<T>) {
 
   const { register, handleSubmit, formState: { errors } } = useForm<T>({
-    resolver: standardSchemaResolver(schema),
+    resolver: zodResolver(schema),
     defaultValues: defaultValues,
   });
 
-  const handleFormSubmit = (data: T) => {
+  const handleFormSubmit: SubmitHandler<T> = (data) => {
     onSubmit(data);
   };
 
@@ -57,8 +57,7 @@ export default function FormModal<T extends FieldValues>({
         type={field.type}
         placeholder={field.placeholder}
         className={cn(
-          "rounded-none border-border focus-visible:ring-0 font-bold",
-          "focus-visible:border-primary transition-colors",
+          "rounded-md border-border",
           error && "border-destructive"
         )}
         {...register(fieldName)}
@@ -81,7 +80,7 @@ export default function FormModal<T extends FieldValues>({
             <div className="space-y-2" key={"t_" + field.name.toString()}>
               <Label
                 htmlFor={fieldName}
-                className="text-[10px] font-black uppercase tracking-[0.2em]"
+                className="text-xs font-semibold text-muted-foreground"
               >
                 {field.label}
               </Label>
@@ -102,7 +101,7 @@ export default function FormModal<T extends FieldValues>({
           <Button
             type="submit"
             disabled={disabled}
-            className="w-full rounded-none font-black uppercase tracking-widest transition-all h-12"
+            className="w-full rounded-sm font-bold transition-all h-10"
           >
             {buttonTitle}
           </Button>
