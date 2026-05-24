@@ -1,7 +1,7 @@
 import { cn } from "#/shared/lib/utils";
-import { Box, Ellipsis, ExternalLink, Trash2, User2 } from "lucide-react";
+import { Box, Ellipsis, ExternalLink, User2 } from "lucide-react";
 import type { NamespaceI } from "../model";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { timeAgo } from "#/shared/lib/helpers/date-utils";
 import {
   DropdownMenu,
@@ -23,24 +23,25 @@ interface PropsI {
   data: NamespaceI;
 }
 
-function MenuItems({ isContext = false }: { isContext?: boolean }) {
+function MenuItems({ isContext = false, data }: { isContext?: boolean; data: NamespaceI }) {
+  const navigate = useNavigate()
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
 
   return (
     <>
-      <Item>
+      <Item
+        onClick={() => navigate({ to: '/admin/$namespaceID', params: { namespaceID: data.id } })}
+      >
         <ExternalLink className="mr-2 size-4" />
         View Forms
       </Item>
-      <Item>
+      <Separator />
+      <Item
+        onClick={() => navigate({ to: '/admin/$namespaceID/members', params: { namespaceID: data.id } })}
+      >
         <User2 className="mr-2 size-4" />
         View Members
-      </Item>
-      <Separator />
-      <Item variant="destructive">
-        <Trash2 className="mr-2 size-4" />
-        Delete (Temp)
       </Item>
     </>
   );
@@ -57,7 +58,8 @@ export function NamespaceCard({ data }: PropsI) {
               "ring-1 ring-foreground/10 shadow-xs",
               "relative py-4 hover:ring-primary hover:shadow-primary duration-150"
             )}
-            to="/"
+            to="/admin/$namespaceID"
+            params={{ namespaceID: data.id }}
           />
         }
       >
@@ -87,24 +89,23 @@ export function NamespaceCard({ data }: PropsI) {
                     "text-muted-foreground hover:text-foreground/40",
                     "duration-150 cursor-pointer outline-0 select-none"
                   )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
-                  <Ellipsis
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  />
+                  <Ellipsis />
                 </Button>
               }
             />
             <DropdownMenuContent align="end" className="w-56">
-              <MenuItems />
+              <MenuItems data={data} />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56">
-        <MenuItems isContext />
+        <MenuItems isContext data={data} />
       </ContextMenuContent>
     </ContextMenu>
   );

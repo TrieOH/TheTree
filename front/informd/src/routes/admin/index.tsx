@@ -49,15 +49,13 @@ function RouteComponent() {
         })
         setIsCreateOpen(false)
         toast.success(response.message || "Namespace created successfully")
-      } else {
-        toast.error(response.message || "Failed to create namespace")
-      }
+      } else toast.error(response.message || "Failed to create namespace")
     },
     onError: (error: Error) => toast.error(error.message)
   })
 
   return (
-    <main className='flex flex-wrap gap-4 p-4'>
+    <main className='flex flex-wrap p-4'>
       <PaginatedContainer<NamespaceI>
         items={filteredNamespaces}
         className='w-full'
