@@ -1,9 +1,9 @@
 import {
   createContext,
   useContext,
-  useLayoutEffect,
-  type ReactNode,
+  useLayoutEffect
 } from 'react'
+import type { ReactNode } from 'react';
 
 interface LayoutContextValue {
   /** Replace the header slot content. Pass null to clear. */

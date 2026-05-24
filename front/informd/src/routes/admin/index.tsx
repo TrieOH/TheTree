@@ -1,5 +1,6 @@
 import { allNamespacesQueryOptions, createNamespaceFn } from '#/features/namespaces/api';
-import { namespaceCreateSchema, type NamespaceCreateI, type NamespaceI } from '#/features/namespaces/model';
+import { namespaceCreateSchema } from '#/features/namespaces/model';
+import type { NamespaceCreateI, NamespaceI } from '#/features/namespaces/model';
 import { NamespaceCard } from '#/features/namespaces/ui/namespace-card';
 import { PaginatedContainer } from '#/widgets/pagination/paginated-container-grid';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

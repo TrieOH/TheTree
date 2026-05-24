@@ -1,13 +1,10 @@
 import {
-  type AddNamespaceMemberRequest,
-  type CreateNamespaceRequest,
-  type Namespace,
-  type NamespaceMember,
   NamespaceMemberRoleAdmin,
   NamespaceMemberRoleEditor,
   NamespaceMemberRoleOwner,
   NamespaceMemberRoleViewer
 } from "@trieoh/informd-models";
+import type { AddNamespaceMemberRequest, CreateNamespaceRequest, Namespace, NamespaceMember } from "@trieoh/informd-models";
 import z from "zod";
 
 export const namespaceCreateSchema = z.object({
