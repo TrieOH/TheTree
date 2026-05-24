@@ -26,6 +26,8 @@ const NAMESPACE_FIELDS: FieldDefinition<NamespaceCreateI>[] = [
 ];
 
 function RouteComponent() {
+  const auth = Route.useRouteContext().auth?.auth
+  const user_id = auth?.profile()?.id || null
   const [filter, setFilter] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const queryClient = useQueryClient()
@@ -37,9 +39,20 @@ function RouteComponent() {
     ).values(),
   ]
 
-  const filteredNamespaces = uniqueNamespaces.filter((namespace) =>
-    namespace.name.toLowerCase().includes(filter.toLowerCase())
-  )
+  const namespacesWithOwnership = uniqueNamespaces.map((namespace) => ({
+    ...namespace,
+    ownership:
+      namespace.owner_id === user_id ? 'owner' : 'member',
+  }))
+
+  const filteredNamespaces = namespacesWithOwnership.filter((namespace) => {
+    const search = filter.toLowerCase()
+
+    return (
+      namespace.name.toLowerCase().includes(search) ||
+      namespace.ownership.includes(search)
+    )
+  })
 
   const { mutate: createNamespace, isPending: isCreating } = useMutation({
     mutationFn: (data: NamespaceCreateI) => createNamespaceFn(data),
@@ -57,17 +70,18 @@ function RouteComponent() {
 
   return (
     <main className='flex flex-wrap p-4'>
-      <PaginatedContainer<NamespaceI>
-        items={filteredNamespaces}
+      <PaginatedContainer<NamespaceI & { ownership: 'owner' | 'member' }>
+        items={filteredNamespaces as (NamespaceI & { ownership: 'owner' | 'member' })[]}
         className='w-full'
         layout='flex'
         pageSize={10}
         sortFields={[
           { key: "name", label: "Name" },
+          { key: "ownership", label: "Ownership" }
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
-        filterPlaceholder="Filter by name…"
+        filterPlaceholder="Filter by name, owner, member..."
         itemLabel="namespaces"
         headerActions={
           <Button

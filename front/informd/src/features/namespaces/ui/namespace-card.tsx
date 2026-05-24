@@ -20,10 +20,10 @@ import {
 import { Button } from "#/shared/ui/shadcn/button";
 
 interface PropsI {
-  data: NamespaceI;
+  data: NamespaceI & { ownership: 'owner' | 'member' };
 }
 
-function MenuItems({ isContext = false, data }: { isContext?: boolean; data: NamespaceI }) {
+function MenuItems({ isContext = false, data }: { isContext?: boolean; data: NamespaceI & { ownership: 'owner' | 'member' } }) {
   const navigate = useNavigate()
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
@@ -70,8 +70,8 @@ export function NamespaceCard({ data }: PropsI) {
         <hr className="border-muted-foreground/40 mt-2" />
         <div className="flex flex-col gap-1 px-4 mt-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Members</span>
-            <span>40 Members</span>
+            <span className="text-muted-foreground">Ownership</span>
+            <span>{data.ownership.charAt(0).toUpperCase() + data.ownership.slice(1)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Updated</span>
