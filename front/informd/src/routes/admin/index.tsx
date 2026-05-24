@@ -15,23 +15,6 @@ export const Route = createFileRoute('/admin/')({
   component: RouteComponent,
 })
 
-const MOCK_NAMESPACES: NamespaceI[] = [
-  {
-    id: '1',
-    name: 'Mock Namespace 1',
-    owner_id: 'owner-1',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Mock Namespace 2',
-    owner_id: 'owner-2',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
 const NAMESPACE_FIELDS: FieldDefinition<NamespaceCreateI>[] = [
   {
     name: 'name',
@@ -47,9 +30,13 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { data: namespaces = [] } = useQuery(allNamespacesQueryOptions())
 
-  const allNamespaces = [...MOCK_NAMESPACES, ...namespaces]
+  const uniqueNamespaces = [
+    ...new Map(
+      namespaces.map((namespace) => [namespace.id, namespace])
+    ).values(),
+  ]
 
-  const filteredNamespaces = allNamespaces.filter((namespace) =>
+  const filteredNamespaces = uniqueNamespaces.filter((namespace) =>
     namespace.name.toLowerCase().includes(filter.toLowerCase())
   )
 
