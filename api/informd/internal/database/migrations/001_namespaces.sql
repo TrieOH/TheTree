@@ -18,7 +18,7 @@ CREATE TABLE namespace_members (
 
     role VARCHAR(32) NOT NULL,
     CONSTRAINT chk_valid_namespace_member_role CHECK (
-        role in ('viewer', 'editor', 'admin')
+        role in ('viewer', 'editor', 'admin', 'owner')
     ),
 
     added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
