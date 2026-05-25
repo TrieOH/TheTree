@@ -11,7 +11,7 @@ import (
 func TestNewForm_Namespaced_HappyPath(t *testing.T) {
 	ownerID := uuid.New()
 	namespaceID := new(uuid.New())
-	f, err := NewForm(namespaceID, ownerID, "namespaced form")
+	f, err := NewForm(namespaceID, ownerID, ownerID, "namespaced form")
 	require.NoError(t, err)
 
 	require.NotNil(t, f)
@@ -28,7 +28,7 @@ func TestNewForm_Namespaced_HappyPath(t *testing.T) {
 
 func TestNewForm_Not_Namespaced_HappyPath(t *testing.T) {
 	ownerID := uuid.New()
-	f, err := NewForm(nil, ownerID, "not namespaced form")
+	f, err := NewForm(nil, ownerID, ownerID, "not namespaced form")
 	require.NoError(t, err)
 
 	require.NotNil(t, f)
@@ -86,7 +86,7 @@ func TestNewForm_ValidationErrors(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := NewForm(tc.namespaceID, tc.ownerID, tc.formName)
+			f, err := NewForm(tc.namespaceID, tc.ownerID, tc.ownerID, tc.formName)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, f)
