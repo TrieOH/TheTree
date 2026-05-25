@@ -1,6 +1,13 @@
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import type { MemberAddToNamespaceI, NamespaceCreateI, NamespaceI, NamespaceMemberI } from "../model";
+import type {
+  FormCreateOnNamespaceI,
+  FormI,
+  MemberAddToNamespaceI,
+  NamespaceCreateI,
+  NamespaceI,
+  NamespaceMemberI
+} from "../model";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
@@ -34,29 +41,6 @@ export const allNamespacesQueryOptions = () => {
 // Members
 
 /**
- * Fetches all namespace members from the server.
- * @param namespace_id - The ID of the namespace to fetch members for.
- * @returns A promise that resolves to an array of members objects.
- */
-export const getAllNamespacesMemberFn = createClientOnlyFn((
-  namespace_id: string
-) => {
-  return tanstackQueryFetcher<NamespaceMemberI[]>(`/namespaces/${namespace_id}/members`);
-});
-
-/**
- * Query options for fetching all Namespaces, using TanStack Query.
- * @param namespace_id - The ID of the namespace to fetch members for.
- * @returns An object containing the query key and query function for fetching all Namespaces.
- */
-export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
-  return queryOptions({
-    queryKey: ['namespaces', namespace_id, 'members'],
-    queryFn: () => getAllNamespacesMemberFn(namespace_id),
-  })
-}
-
-/**
  * Adds a new member to a namespace on the server.
  * @param namespace_id - The ID of the namespace to add the member to.
  * @param memberData - The data for the new member.
@@ -75,3 +59,61 @@ export const addMemberToNamespaceFn = createClientOnlyFn((namespace_id: string, 
 export const removeMemberFromNamespaceFn = createClientOnlyFn((namespace_id: string, user_id: string) => {
   return authFetcher.delete(`/namespaces/${namespace_id}/members`, { user_id });
 });
+
+/**
+ * Fetches all namespace members from the server.
+ * @param namespace_id - The ID of the namespace to fetch members for.
+ * @returns A promise that resolves to an array of members objects.
+ */
+export const getAllNamespacesMemberFn = createClientOnlyFn((
+  namespace_id: string
+) => {
+  return tanstackQueryFetcher<NamespaceMemberI[]>(`/namespaces/${namespace_id}/members`);
+});
+
+/**
+ * Query options for fetching all Members, using TanStack Query.
+ * @param namespace_id - The ID of the namespace to fetch members for.
+ * @returns An object containing the query key and query function for fetching all Members.
+ */
+export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
+  return queryOptions({
+    queryKey: ['namespaces', namespace_id, 'members'],
+    queryFn: () => getAllNamespacesMemberFn(namespace_id),
+  })
+}
+
+// Form
+
+/**
+ * Creates a new FormI on the server.
+ * @param namespace_id - The ID of the namespace to create the form in.
+ * @param formData - The data for the new form.
+ * @returns A promise that resolves to the API response containing the newly created form.
+ */
+export const createFormOnNamespaceFn = createClientOnlyFn((
+  namespace_id: string, formData: FormCreateOnNamespaceI
+) => {
+  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms`, formData);
+});
+
+/**
+ * Fetches all forms for a specific namespace from the server.
+ * @param namespace_id - The ID of the namespace to fetch forms for.
+ * @returns A promise that resolves to an array of form objects.
+ */
+export const getAllNamespacesFormsFn = createClientOnlyFn((namespace_id: string) => {
+  return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms`);
+});
+
+/**
+ * Query options for fetching all Forms, using TanStack Query.
+ * @param namespace_id - The ID of the namespace to fetch forms for.
+ * @returns An object containing the query key and query function for fetching all Forms.
+ */
+export const allNamespacesFormsQueryOptions = (namespace_id: string) => {
+  return queryOptions({
+    queryKey: ['namespaces', namespace_id, 'forms'],
+    queryFn: () => getAllNamespacesFormsFn(namespace_id),
+  })
+}
