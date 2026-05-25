@@ -69,7 +69,7 @@ function RouteComponent() {
   })
 
   return (
-    <main>
+    <div>
       <PaginatedContainer<FormI>
         items={filteredForms}
         className='w-full'
@@ -120,6 +120,6 @@ function RouteComponent() {
         ]}
         disabled={isCreating}
       />
-    </main>
+    </div>
   )
 }

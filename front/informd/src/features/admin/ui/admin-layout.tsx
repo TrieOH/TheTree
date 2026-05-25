@@ -3,7 +3,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid
+  FolderKanban
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
@@ -19,7 +19,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     {
       to: '/admin',
-      icon: LayoutGrid,
+      icon: FolderKanban,
       label: 'Namespaces',
       exact: true
     },
@@ -114,8 +114,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 w-full pb-24 lg:pb-0">
-        <Breadcrumb />
-        {children}
+        <div className="sticky top-0 z-10">
+          <Breadcrumb />
+        </div>
+        <main>{children}</main>
       </div>
 
       {/* Mobile Bottom Navigation */}

@@ -104,7 +104,7 @@ function RouteComponent() {
   })
 
   return (
-    <main>
+    <div>
       <PaginatedContainer<NamespaceMemberI>
         items={filteredMembers}
         className='w-full'
@@ -179,6 +179,6 @@ function RouteComponent() {
         }}
         isLoading={isRemoving}
       />
-    </main>
+    </div>
   )
 }

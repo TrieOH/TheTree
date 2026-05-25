@@ -69,7 +69,7 @@ function RouteComponent() {
   })
 
   return (
-    <main className='flex flex-wrap p-4'>
+    <div className='flex flex-wrap p-4'>
       <PaginatedContainer<NamespaceI & { ownership: 'owner' | 'member' }>
         items={filteredNamespaces as (NamespaceI & { ownership: 'owner' | 'member' })[]}
         className='w-full'
@@ -109,6 +109,6 @@ function RouteComponent() {
         onSubmit={createNamespace}
         disabled={isCreating}
       />
-    </main>
+    </div>
   )
 }
