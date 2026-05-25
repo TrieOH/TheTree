@@ -1,7 +1,7 @@
 import {
   createContext,
   useContext,
-  useLayoutEffect
+  useLayoutEffect,
 } from 'react'
 import type { ReactNode } from 'react';
 
@@ -35,6 +35,9 @@ export function useLayoutHeader(node: ReactNode) {
 
   useLayoutEffect(() => {
     setHeader(node)
-    return () => setHeader(null)
-  }, [])
+
+    return () => {
+      setHeader(null)
+    }
+  }, [node, setHeader])
 }
