@@ -35,7 +35,7 @@ func (s *CommandService) CreateForm(ctx context.Context, title string, namespace
 		}
 	}
 
-	form, err := models.NewForm(&namespaceID, sub.ID, title)
+	form, err := models.NewForm(&namespaceID, namespace.OwnerID, sub.ID, title)
 	if err != nil {
 		return nil, err
 	}
