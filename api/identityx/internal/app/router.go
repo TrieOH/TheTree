@@ -32,25 +32,26 @@ type RouterDeps struct {
 
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
-// @title GoAuth API
-// @version 0.17.10
-// @description This is the API for the GoAuth Identity Provider (IdP) service. It provides user authentication, authorization, and project management functionalities.
-// @termsOfService https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @title IdentityX API
+// @version 0.19.0-alpha
+// @description This is the API for the IdentityX, an Identity Provider (IdP) service. It provides user authentication, and project management functionalities.
+// @termsOfService https://git.trieoh.com/TrieOH/TheTree/blob/main/api/identityx/LICENSE
 // @contact.name TrieOH
 // @contact.url https://github.com/TrieOH
-// @contact.email trieoh@trieoh.com
-// @license.name MIT License
-// @license.url https://github.com/TrieOH/GoAuth/blob/main/LICENSE
+// @contact.email contact@trieoh.com
+// @license.name TSAL 1.2 License
+// @license.url https://git.trieoh.com/TrieOH/TheTree/blob/main/api/identityx/LICENSE
 // @host identityx.com.br
 // @BasePath /
 // @schemes http https
-// @tag.name auth
-// @tag.description "Operations related to user authentication and authorization"
+// @tag.name authn
+// @tag.description "Operations related to user authentication"
 // @tag.name projects
 // @tag.description "Operations related to project management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
+// @response 201 {object} fun.Response "Standard creation response"
 // @response 400 {object} fun.Response "Standard error response for bad requests"
 // @response 401 {object} fun.Response "Standard error response for unauthorized requests"
 // @response 403 {object} fun.Response "Standard error response for forbidden requests"
@@ -58,6 +59,7 @@ type RouterDeps struct {
 // @response 413 {object} fun.Response "Standard error response for payload too large 1MB"
 // @response 429 {object} fun.Response "Standard error response for too many requests"
 // @response 500 {object} fun.Response "Standard error response for internal server errors"
+// @response 503 {object} fun.Response "Standard error response for service unavailable"
 func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit bool) http.Handler {
 	r := chi.NewRouter()
 
