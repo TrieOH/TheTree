@@ -3,7 +3,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  FolderKanban
+  FolderKanban,
+  KeySquare
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
@@ -21,6 +22,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       to: '/admin',
       icon: FolderKanban,
       label: 'Namespaces',
+      exact: true
+    },
+    {
+      to: '/admin/keys',
+      icon: KeySquare,
+      label: 'API Keys',
       exact: true
     },
   ]
