@@ -51,8 +51,8 @@ func RegisterRoutes(
 // @Produce json
 // @Param token query string true "Verification Token"
 // @Success 200 {string} string "User verified successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing or invalid token"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Missing or invalid token"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /auth/verify [get]
 func (handler *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	token := middlewares.QueryParams[TokenParam](r).Token
@@ -71,8 +71,8 @@ func (handler *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string "Verification email resent successfully"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /auth/verify/resend [post]
 func (handler *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
 	err := handler.accounts.ResendVerificationEmail(r.Context())
@@ -88,10 +88,10 @@ func (handler *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.R
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param forgotInfo body models.ForgotPasswordRequest true "User email and optional project ID"
+// @Param forgotInfo body object true "User email and optional project ID"
 // @Success 200 {string} string "Forgot password email sent"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Invalid input"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /auth/forgot-password [post]
 func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -113,11 +113,11 @@ func (handler *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param token query string true "Reset password token"
-// @Param resetInfo body models.ResetPasswordRequest true "New password information"
+// @Param resetInfo body object true "New password information"
 // @Success 200 {string} string "Password reset successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or token"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: Invalid or expired token"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Invalid input or token"
+// @Failure 401 {object} fun.Response "Unauthorized: Invalid or expired token"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /auth/reset-password [post]
 func (handler *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

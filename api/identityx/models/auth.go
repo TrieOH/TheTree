@@ -9,17 +9,12 @@ import (
 )
 
 type AccessSub struct {
-	ID         uuid.UUID        `json:"id"`
-	Email      string           `json:"email"`
-	ProjectID  *uuid.UUID       `json:"project_id"`
-	UserType   string           `json:"user_type"`
-	Metadata   *json.RawMessage `json:"metadata"`
-	SessionID  uuid.UUID        `json:"session_id"`
-	UserAgent  string           `json:"user_agent"`
-	UserIP     string           `json:"user_ip"`
-	IsVerified bool             `json:"is_verified"`
-	FamilyID   uuid.UUID        `json:"family_id"`
-	VerifiedAt *time.Time       `json:"verified_at"`
+	ID           uuid.UUID       `json:"id"`
+	ProjectID    *uuid.UUID      `json:"project_id"`
+	Email        *string         `json:"email"`
+	Type         ActorType       `json:"type"`
+	Capabilities json.RawMessage `json:"capabilities"`
+	Metadata     json.RawMessage `json:"metadata"`
 }
 
 type AccessClaims struct {
@@ -29,7 +24,6 @@ type AccessClaims struct {
 
 type RefreshSub struct {
 	AccessJTI uuid.UUID `json:"access_jti"`
-	FamilyID  uuid.UUID `json:"family_id"`
 }
 
 type RefreshClaims struct {
@@ -56,54 +50,63 @@ type ResetPasswordClaims struct {
 	jwt.RegisteredClaims
 }
 
-type RegisterInput struct {
-	Email     string     `json:"email"`
-	Password  string     `json:"password"`
-	ProjectID *uuid.UUID `json:"project_id"` // nil = client
-}
-
-type RegisterUserRequest struct {
+type IDXRegisterRequest struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
 }
 
-func (r RegisterUserRequest) ToInput(projectID *uuid.UUID) RegisterInput {
-	return RegisterInput{
-		Email:     r.Email,
-		Password:  r.Password,
-		ProjectID: projectID,
+type IDXRegisterInput struct {
+	Email    string
+	Password string
+}
+
+func (r IDXRegisterRequest) ToInput() IDXRegisterInput {
+	return IDXRegisterInput{
+		Email:    r.Email,
+		Password: r.Password,
 	}
 }
 
-type LoginInput struct {
-	Email     string     `json:"email"`
-	Password  string     `json:"password"`
-	IP        string     `json:"ip"`
-	Agent     string     `json:"agent"`
-	ProjectID *uuid.UUID `json:"project_id"` // nil = client
+type IDXLoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,passwd,min=8"`
 }
 
-type LoginUserRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password" validate:"required,max=72"`
+type IDXLoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-func (r LoginUserRequest) ToInput(projectID *uuid.UUID, agent, ip string) LoginInput {
-	return LoginInput{
-		Email:     r.Email,
-		Password:  r.Password,
-		ProjectID: projectID,
-		Agent:     agent,
-		IP:        ip,
+func (r IDXLoginRequest) ToInput() IDXLoginInput {
+	return IDXLoginInput{
+		Email:    r.Email,
+		Password: r.Password,
 	}
+}
+
+type SetupInput struct {
+	Email    string
+	Password string
+}
+
+func (r IDXLoginRequest) ToSetupInput() SetupInput {
+	return SetupInput{
+		Email:    r.Email,
+		Password: r.Password,
+	}
+}
+
+type LogoutInput struct {
+	AccessToken  string
+	RefreshToken string
 }
 
 type UserTokensOutput struct {
-	AccessTokenString  string    `json:"access_token_string"`
-	RefreshTokenString string    `json:"refresh_token_string"`
-	AccessExpiresAt    time.Time `json:"access_expires_at"`
-	RefreshExpiresAt   time.Time `json:"refresh_expires_at"`
-	Domain             string    `json:"domain"`
+	AccessToken      string    `json:"access_token"`
+	RefreshToken     string    `json:"refresh_token"`
+	AccessExpiresAt  time.Time `json:"access_expires_at"`
+	RefreshExpiresAt time.Time `json:"refresh_expires_at"`
+	Domain           string    `json:"domain"`
 }
 
 type UserTokensResponse struct {
@@ -116,8 +119,8 @@ type UserTokensResponse struct {
 
 func (r UserTokensOutput) ToResponse() UserTokensResponse {
 	return UserTokensResponse{
-		AccessTokenString:  r.AccessTokenString,
-		RefreshTokenString: r.RefreshTokenString,
+		AccessTokenString:  r.AccessToken,
+		RefreshTokenString: r.RefreshToken,
 		AccessExpiresAt:    r.AccessExpiresAt,
 		RefreshExpiresAt:   r.RefreshExpiresAt,
 		Domain:             r.Domain,

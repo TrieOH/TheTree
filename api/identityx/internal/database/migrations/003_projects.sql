@@ -5,6 +5,9 @@ CREATE TABLE projects (
     organization_id UUID REFERENCES organizations(id)
         ON DELETE CASCADE,
 
+    owner_id UUID NOT NULL REFERENCES actors(id)
+        ON DELETE RESTRICT,
+
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
     CONSTRAINT uniq_projects_slug UNIQUE (slug),
@@ -55,15 +58,13 @@ CREATE TABLE project_members (
         role IN (
              'owner',
              'admin',
-             'developer',
-             'analyst',
-             'support'
+             'member'
         )
     ),
 
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_project_members_actor_id ON project_members (actor_id);

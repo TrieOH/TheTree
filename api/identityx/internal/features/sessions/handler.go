@@ -47,9 +47,9 @@ func RegisterRoutes(
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} models.Session "List of active user sessions"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Success 200 {array} object "List of active user sessions"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /sessions [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	sessions, err := handler.queries.List(r.Context())
@@ -68,10 +68,10 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Param session_id path string true "ID of the session to be invalidated"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} object "Session revoked successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid session ID or trying to revoke current session"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: Session not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Invalid session ID or trying to revoke current session"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: Session not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /sessions/{session_id} [delete]
 func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -93,8 +93,8 @@ func (handler *Handler) RevokeByID(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Success 200 {object} object "Other sessions revoked successfully"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /sessions/others [delete]
 func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
 	err := handler.commands.RevokeOthers(r.Context())
@@ -112,8 +112,8 @@ func (handler *Handler) RevokeOthers(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} object "All sessions revoked successfully"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /sessions [delete]
 func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 	err := handler.commands.RevokeAll(r.Context())
@@ -130,9 +130,9 @@ func (handler *Handler) RevokeAll(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} authz.Principal "Current session information"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Success 200 {object} object "Current session information"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /sessions/me [get]
 func (handler *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	principal, err := authz.RequirePrincipal(r.Context())

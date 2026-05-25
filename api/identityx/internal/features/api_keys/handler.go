@@ -42,9 +42,9 @@ func RegisterRoutes(
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {string} string ""
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
-// @Failure 404 {object} contracts.ErrorResponse "Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized"
+// @Failure 404 {object} fun.Response "Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id}/api-keys/rotate [post]
 func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -68,9 +68,9 @@ func (handler *Handler) RotateApiKey(w http.ResponseWriter, r *http.Request) {
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized"
-// @Failure 404 {object} contracts.ErrorResponse "Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized"
+// @Failure 404 {object} fun.Response "Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id}/api-keys [delete]
 func (handler *Handler) RevokeApiKey(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

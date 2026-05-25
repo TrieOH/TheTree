@@ -45,6 +45,10 @@ type Config struct {
 	KeyLifetime           time.Duration `env:"IDENTITY_X_KEY_LIFETIME,required"`
 	RotateKeysJobDuration time.Duration `env:"ROTATE_KEYS_JOB_DURATION,required"`
 
+	// Tokens
+	AccessTokenLifetime  time.Duration `env:"ACCESS_TOKEN_LIFETIME,required"`
+	RefreshTokenLifetime time.Duration `env:"REFRESH_TOKEN_LIFETIME,required"`
+
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
 

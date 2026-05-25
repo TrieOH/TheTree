@@ -48,11 +48,11 @@ func RegisterRoutes(
 // @Accept json
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body models.CreateProjectRequest true "Project creation information"
+// @Param projectInfo body object true "Project creation information"
 // @Success 201 {object} models.Project "Project created successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Invalid input"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -77,10 +77,10 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param project_id path string true "ID of the project to retrieve"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} models.Project "Project details"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Missing project ID"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id} [get]
 func (handler *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -103,8 +103,8 @@ func (handler *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {array} models.Project "List of user projects"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := handler.queries.List(r.Context())
@@ -122,12 +122,12 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project to update"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Param projectInfo body models.UpdateProjectRequest true "Project update information"
+// @Param projectInfo body object true "Project update information"
 // @Success 200 {object} models.Project "Project updated successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Invalid input or missing project ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Invalid input or missing project ID"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id} [patch]
 func (handler *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -155,10 +155,10 @@ func (handler *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // @Param project_id path string true "ID of the project to delete"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
 // @Success 200 {object} object "Project deleted successfully"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} fun.Response "Bad Request: Missing project ID"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id} [delete]
 func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -181,11 +181,11 @@ func (handler *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param project_id path string true "ID of the project"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {array} models.User "List of project users"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: Project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Success 200 {array} object "List of project users"
+// @Failure 400 {object} fun.Response "Bad Request: Missing project ID"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: Project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id}/users [get]
 func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
@@ -209,11 +209,11 @@ func (handler *Handler) ListProjectUsers(w http.ResponseWriter, r *http.Request)
 // @Param project_id path string true "ID of the project"
 // @Param user_id path string true "ID of the user"
 // @Param Cookie header string true "Cookie: access_token=xxx; refresh_token=yyy"
-// @Success 200 {object} models.User "Project user details"
-// @Failure 400 {object} contracts.ErrorResponse "Bad Request: Missing project or user ID"
-// @Failure 401 {object} contracts.ErrorResponse "Unauthorized: User not authenticated"
-// @Failure 404 {object} contracts.ErrorResponse "Not Found: User or project not found"
-// @Failure 500 {object} contracts.ErrorResponse "Internal Server Error"
+// @Success 200 {object} object "Project user details"
+// @Failure 400 {object} fun.Response "Bad Request: Missing project or user ID"
+// @Failure 401 {object} fun.Response "Unauthorized: User not authenticated"
+// @Failure 404 {object} fun.Response "Not Found: User or project not found"
+// @Failure 500 {object} fun.Response "Internal Server Error"
 // @Router /projects/{project_id}/users/{user_id} [get]
 func (handler *Handler) GetProjectUserByID(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)

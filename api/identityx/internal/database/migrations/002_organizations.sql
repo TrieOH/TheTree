@@ -2,6 +2,9 @@
 CREATE TABLE organizations (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
 
+    owner_id UUID NOT NULL REFERENCES actors(id)
+        ON DELETE RESTRICT,
+
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
 
@@ -29,7 +32,7 @@ CREATE TABLE org_members (
 
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_org_members_actor_id ON org_members (actor_id);

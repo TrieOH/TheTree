@@ -12,7 +12,7 @@ CREATE TABLE platform_roles (
         )
     ),
 
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
