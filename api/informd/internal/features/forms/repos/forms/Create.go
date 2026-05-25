@@ -12,6 +12,7 @@ func (repo *repo) Create(ctx context.Context, toCreate models.Form) (*models.For
 	defer span.End()
 	sqlcForm, err := database.Queries(ctx, repo.q).CreateForm(ctx, sqlc.CreateFormParams{
 		NamespaceID: toCreate.NamespaceID,
+		CreatedBy:   toCreate.CreatedBy,
 		OwnerID:     toCreate.OwnerID,
 		Name:        toCreate.Title,
 		Status:      string(toCreate.Status),

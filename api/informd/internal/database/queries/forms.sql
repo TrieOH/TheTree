@@ -1,6 +1,6 @@
 -- name: CreateForm :one
-INSERT INTO forms (namespace_id, owner_id, name, status)
-VALUES ($1, $2, $3, $4)
+INSERT INTO forms (namespace_id, created_by, owner_id, name, status)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetFormByID :one

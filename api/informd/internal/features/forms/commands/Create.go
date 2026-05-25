@@ -16,7 +16,7 @@ func (s *CommandService) Create(ctx context.Context, title string) (*models.Form
 		return nil, err
 	}
 
-	form, err := models.NewForm(nil, sub.ID, title)
+	form, err := models.NewForm(nil, sub.ID, sub.ID, title)
 	if err != nil {
 		return nil, err
 	}
