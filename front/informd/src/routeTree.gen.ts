@@ -18,6 +18,7 @@ import { Route as AdminFormIndexRouteImport } from './routes/admin/form/index'
 import { Route as AdminNamespaceIDIndexRouteImport } from './routes/admin/$namespaceID/index'
 import { Route as AdminFormFormIDRouteImport } from './routes/admin/form/$formID'
 import { Route as AdminNamespaceIDMembersRouteImport } from './routes/admin/$namespaceID/members'
+import { Route as AdminFormFormIDIndexRouteImport } from './routes/admin/form/$formID/index'
 import { Route as AdminFormFormIDMembersRouteImport } from './routes/admin/form/$formID/members'
 
 const AdminRoute = AdminRouteImport.update({
@@ -65,6 +66,11 @@ const AdminNamespaceIDMembersRoute = AdminNamespaceIDMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
+const AdminFormFormIDIndexRoute = AdminFormFormIDIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminFormFormIDRoute,
+} as any)
 const AdminFormFormIDMembersRoute = AdminFormFormIDMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -82,16 +88,17 @@ export interface FileRoutesByFullPath {
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID/': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/keys': typeof AdminKeysRoute
   '/admin': typeof AdminIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
-  '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID': typeof AdminNamespaceIDIndexRoute
   '/admin/form': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,6 +112,7 @@ export interface FileRoutesById {
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID/': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,16 +127,17 @@ export interface FileRouteTypes {
     | '/admin/$namespaceID/'
     | '/admin/form/'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin/keys'
     | '/admin'
     | '/admin/$namespaceID/members'
-    | '/admin/form/$formID'
     | '/admin/$namespaceID'
     | '/admin/form'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID'
   id:
     | '__root__'
     | '/'
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/admin/$namespaceID/'
     | '/admin/form/'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNamespaceIDMembersRouteImport
       parentRoute: typeof AdminNamespaceIDRoute
     }
+    '/admin/form/$formID/': {
+      id: '/admin/form/$formID/'
+      path: '/'
+      fullPath: '/admin/form/$formID/'
+      preLoaderRoute: typeof AdminFormFormIDIndexRouteImport
+      parentRoute: typeof AdminFormFormIDRoute
+    }
     '/admin/form/$formID/members': {
       id: '/admin/form/$formID/members'
       path: '/members'
@@ -238,10 +255,12 @@ const AdminNamespaceIDRouteWithChildren =
 
 interface AdminFormFormIDRouteChildren {
   AdminFormFormIDMembersRoute: typeof AdminFormFormIDMembersRoute
+  AdminFormFormIDIndexRoute: typeof AdminFormFormIDIndexRoute
 }
 
 const AdminFormFormIDRouteChildren: AdminFormFormIDRouteChildren = {
   AdminFormFormIDMembersRoute: AdminFormFormIDMembersRoute,
+  AdminFormFormIDIndexRoute: AdminFormFormIDIndexRoute,
 }
 
 const AdminFormFormIDRouteWithChildren = AdminFormFormIDRoute._addFileChildren(
