@@ -1,14 +1,13 @@
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type {
-  FormCreateOnNamespaceI,
-  FormI,
   MemberAddToNamespaceI,
   NamespaceCreateI,
   NamespaceI,
   NamespaceMemberI
 } from "../model";
 import { queryOptions } from "@tanstack/react-query";
+import type { FormCreateI, FormI } from "#/features/forms/model";
 
 /**
  * Creates a new NamespaceI on the server.
@@ -92,7 +91,7 @@ export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
  * @returns A promise that resolves to the API response containing the newly created form.
  */
 export const createFormOnNamespaceFn = createClientOnlyFn((
-  namespace_id: string, formData: FormCreateOnNamespaceI
+  namespace_id: string, formData: FormCreateI
 ) => {
   return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms`, formData);
 });

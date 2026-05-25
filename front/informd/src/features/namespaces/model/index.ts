@@ -6,13 +6,7 @@ import {
 } from "@trieoh/informd-models";
 import type {
   AddNamespaceMemberRequest,
-  CreateFormRequest,
   CreateNamespaceRequest,
-  Form,
-  FormStatusArchived,
-  FormStatusClosed,
-  FormStatusDraft,
-  FormStatusOpen,
   Namespace,
   NamespaceMember
 } from "@trieoh/informd-models";
@@ -51,20 +45,3 @@ export interface NamespaceMemberI
   extends Omit<NamespaceMember, "role"> {
   role: NamespaceMemberRoleI;
 }
-
-// Form
-
-export type FormStatusI =
-  | typeof FormStatusDraft
-  | typeof FormStatusOpen
-  | typeof FormStatusClosed
-  | typeof FormStatusArchived;
-
-export const formCreateOnNamespaceSchema = z.object({
-  title: z.string({ error: "Title is required" })
-    .min(3, "Title must be at least 3 characters long"),
-}) satisfies z.ZodType<CreateFormRequest>;
-
-export type FormCreateOnNamespaceI = CreateFormRequest;
-
-export type FormI = Form;

@@ -1,5 +1,6 @@
 import { allApiKeysQueryOptions, createApiKeyFn, revokeApiKeyFn } from '#/features/keys/api'
-import { apiKeyCreateSchema, type ApiKeyCreateI, type ApiKeyCreateResponseI, type ApiKeyI } from '#/features/keys/model'
+import { apiKeyCreateSchema } from '#/features/keys/model'
+import type { ApiKeyCreateI, ApiKeyCreateResponseI, ApiKeyI } from '#/features/keys/model';
 import { ApiKeyCreatedModal } from '#/features/keys/ui/api-key-created-modal'
 import { APIKeyCard } from '#/features/keys/ui/key-card'
 import type { FieldDefinition } from '#/shared/model/form-types'

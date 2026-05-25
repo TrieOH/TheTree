@@ -90,12 +90,12 @@ function RouteComponent() {
   })
 
   const { mutate: removeMemberFromNamespace, isPending: isRemoving } = useMutation({
-    mutationFn: (user_id: string) => removeMemberFromNamespaceFn(namespaceID, user_id),
-    onSuccess: (response, user_id) => {
+    mutationFn: (rm_user_id: string) => removeMemberFromNamespaceFn(namespaceID, rm_user_id),
+    onSuccess: (response, rm_user_id) => {
       if (response.success) {
         queryClient.setQueryData(
           allNamespacesMembersQueryOptions(namespaceID).queryKey,
-          (oldData: NamespaceMemberI[] = []) => oldData.filter(member => member.user_id !== user_id)
+          (oldData: NamespaceMemberI[] = []) => oldData.filter(member => member.user_id !== rm_user_id)
         )
         toast.success("Member removed successfully")
       } else toast.error(response.message || "Failed to remove member")

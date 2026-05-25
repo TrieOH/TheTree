@@ -1,21 +1,28 @@
+import type {
+  CreateFormRequest,
+  Form,
+  FormStatusArchived,
+  FormStatusClosed,
+  FormStatusDraft,
+  FormStatusOpen
+} from "@trieoh/informd-models";
 import z from "zod";
+
+export type FormStatusI =
+  | typeof FormStatusDraft
+  | typeof FormStatusOpen
+  | typeof FormStatusClosed
+  | typeof FormStatusArchived;
 
 export const formCreateSchema = z.object({
   title: z.string({ error: "Title is required" })
     .min(3, "Title must be at least 3 characters long"),
-});
+}) satisfies z.ZodType<CreateFormRequest>;
 
-export type FormCreateI = z.infer<typeof formCreateSchema>;
+export type FormCreateI = CreateFormRequest;
 
-export interface FormI {
-  id: string;
-  namespace_id: string | null;
-  owner_id: string;
-  name: string;
-  status: "draft" | "open" | "closed" | "archived";
-  created_at: string;
-  updated_at: string;
-  opened_at: string | null;
-  closed_at: string | null;
-  archived_at: string | null;
+// export type FormI = Form;
+export interface FormI
+  extends Omit<Form, "status"> {
+  status: FormStatusI;
 }

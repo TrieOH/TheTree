@@ -8,7 +8,7 @@ import z from "zod";
 export const apiKeyCreateSchema = z.object({
   name: z.string({ error: "Name is required" })
     .min(3, "Name must be at least 3 characters long"),
-}) satisfies z.ZodType<CreateAPIKeyRequest>;;
+}) satisfies z.ZodType<CreateAPIKeyRequest>;
 
 export type ApiKeyCreateI = CreateAPIKeyRequest;
 

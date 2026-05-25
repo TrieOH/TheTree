@@ -1,6 +1,7 @@
+import { formCreateSchema } from '#/features/forms/model'
+import type { FormCreateI, FormI } from '#/features/forms/model';
 import { FormCard } from '#/features/forms/ui/form-card'
 import { allNamespacesFormsQueryOptions, createFormOnNamespaceFn } from '#/features/namespaces/api'
-import { formCreateOnNamespaceSchema, type FormCreateOnNamespaceI, type FormI } from '#/features/namespaces/model'
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import { Button } from '#/shared/ui/shadcn/button'
 import FormModal from '#/widgets/modal/form-modal'
@@ -55,7 +56,7 @@ function RouteComponent() {
   })
 
   const { mutate: createForm, isPending: isCreating } = useMutation({
-    mutationFn: (data: FormCreateOnNamespaceI) => createFormOnNamespaceFn(namespaceID, data),
+    mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(namespaceID, data),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.setQueryData(allNamespacesFormsQueryOptions(namespaceID).queryKey, (oldData: FormI[] = []) => {
@@ -101,11 +102,11 @@ function RouteComponent() {
           )
         })}
       />
-      <FormModal<FormCreateOnNamespaceI>
+      <FormModal<FormCreateI>
         title="Create Form"
         description="Give your form a title to identify it."
         buttonTitle="Create Form"
-        schema={formCreateOnNamespaceSchema}
+        schema={formCreateSchema}
         formId="create-form-form"
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}

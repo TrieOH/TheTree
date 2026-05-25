@@ -26,7 +26,7 @@ import {
 } from "#/shared/ui/shadcn/context-menu";
 import { Button } from "#/shared/ui/shadcn/button";
 import { FormStatusArchived, FormStatusClosed, FormStatusOpen } from "@trieoh/informd-models";
-import type { FormI, FormStatusI } from "#/features/namespaces/model";
+import type { FormI, FormStatusI } from "../model";
 
 interface StatusMeta {
   /** Tailwind bg class for the card header area */
@@ -82,10 +82,8 @@ const STATUS_META: Record<string, StatusMeta> = {
   },
 };
 
-const DEFAULT_META: StatusMeta = STATUS_META["draft"];
-
 function getStatusMeta(status: FormStatusI): StatusMeta {
-  return STATUS_META[status] ?? DEFAULT_META;
+  return STATUS_META[status];
 }
 
 function StatusBadge({ status }: { status: FormStatusI }) {
