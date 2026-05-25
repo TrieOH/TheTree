@@ -1,5 +1,6 @@
 import { addMemberToFormFn, allFormsMembersQueryOptions, removeMemberFromFormFn } from '#/features/forms/api/member'
-import { memberAddToFormSchema, type FormMemberI, type MemberAddToFormI } from '#/features/forms/model/member'
+import { memberAddToFormSchema } from '#/features/forms/model/member'
+import type { FormMemberI, MemberAddToFormI } from '#/features/forms/model/member';
 import { MemberCard } from '#/features/forms/ui/member-card'
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import { Button } from '#/shared/ui/shadcn/button'
