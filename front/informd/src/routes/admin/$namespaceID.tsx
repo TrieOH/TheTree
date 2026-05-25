@@ -26,6 +26,7 @@ function NamespaceLayout() {
       to: '/admin/$namespaceID/members',
       params: { namespaceID },
       icon: Users2,
+      exact: true,
     },
   ]
 
@@ -35,7 +36,7 @@ function NamespaceLayout() {
 
         {/* Page Header Slot */}
         {/*
-          Rendered only when a child page calls useNamespaceHeader().
+          Rendered only when a child page calls useLayoutHeader().
           Sits between the tab bar and the page content.
         */}
         {headerSlot && (

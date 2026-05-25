@@ -25,7 +25,12 @@ import {
   ContextMenuTrigger,
 } from "#/shared/ui/shadcn/context-menu";
 import { Button } from "#/shared/ui/shadcn/button";
-import { FormStatusArchived, FormStatusClosed, FormStatusOpen } from "@trieoh/informd-models";
+import {
+  FormStatusArchived,
+  FormStatusClosed,
+  FormStatusDraft,
+  FormStatusOpen
+} from "@trieoh/informd-models";
 import type { FormI, FormStatusI } from "../model";
 
 interface StatusMeta {
@@ -51,16 +56,16 @@ const STATUS_META: Record<string, StatusMeta> = {
     Icon: LayoutList,
     badgeCn:
       "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300",
-    label: "Aberto",
+    label: "Open",
   },
-  draft: {
+  [FormStatusDraft]: {
     headerBg: "bg-muted/60",
     iconBg: "bg-muted",
     iconColor: "text-muted-foreground",
     Icon: FileText,
     badgeCn:
       "bg-secondary text-secondary-foreground",
-    label: "Rascunho",
+    label: "Draft",
   },
   [FormStatusClosed]: {
     headerBg: "bg-red-50 dark:bg-red-950/40",
@@ -69,7 +74,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     Icon: ClipboardCheck,
     badgeCn:
       "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300",
-    label: "Fechado",
+    label: "Closed",
   },
   [FormStatusArchived]: {
     headerBg: "bg-amber-50 dark:bg-amber-950/40",
@@ -78,7 +83,7 @@ const STATUS_META: Record<string, StatusMeta> = {
     Icon: Archive,
     badgeCn:
       "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-    label: "Arquivado",
+    label: "Archived",
   },
 };
 
@@ -149,7 +154,9 @@ export function FormCard({ data }: FormCardProps) {
               "transition-all duration-150",
               "hover:ring-primary hover:shadow-primary/20 hover:shadow-md"
             )}
-            to="/admin"
+            to="/admin/form/$formID"
+            params={{ formID: data.id }}
+            search={{ namespaceID: data.namespace_id || undefined }}
           />
         }
       >
