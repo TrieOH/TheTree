@@ -63,7 +63,7 @@ export const allNamespacesMembersQueryOptions = (namespace_id: string) => {
  * @returns A promise that resolves to the API response containing the newly created member.
  */
 export const addMemberToNamespaceFn = createClientOnlyFn((namespace_id: string, memberData: MemberAddToNamespaceI) => {
-  return authFetcher.post<NamespaceMemberI>(`/namespaces/${namespace_id}/members`, memberData);
+  return authFetcher.post(`/namespaces/${namespace_id}/members`, memberData);
 });
 
 /**
@@ -73,5 +73,5 @@ export const addMemberToNamespaceFn = createClientOnlyFn((namespace_id: string, 
  * @returns A promise that resolves to the API response confirming the removal of the member.
  */
 export const removeMemberFromNamespaceFn = createClientOnlyFn((namespace_id: string, user_id: string) => {
-  return authFetcher.delete(`/namespaces/${namespace_id}/members/`, { user_id });
+  return authFetcher.delete(`/namespaces/${namespace_id}/members`, { user_id });
 });
