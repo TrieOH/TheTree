@@ -18,6 +18,7 @@ import { Route as AdminFormIndexRouteImport } from './routes/admin/form/index'
 import { Route as AdminNamespaceIDIndexRouteImport } from './routes/admin/$namespaceID/index'
 import { Route as AdminFormFormIDRouteImport } from './routes/admin/form/$formID'
 import { Route as AdminNamespaceIDMembersRouteImport } from './routes/admin/$namespaceID/members'
+import { Route as AdminFormFormIDMembersRouteImport } from './routes/admin/form/$formID/members'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -64,6 +65,11 @@ const AdminNamespaceIDMembersRoute = AdminNamespaceIDMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
+const AdminFormFormIDMembersRoute = AdminFormFormIDMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AdminFormFormIDRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,18 +78,20 @@ export interface FileRoutesByFullPath {
   '/admin/keys': typeof AdminKeysRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
-  '/admin/form/$formID': typeof AdminFormFormIDRoute
+  '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
+  '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/keys': typeof AdminKeysRoute
   '/admin': typeof AdminIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
-  '/admin/form/$formID': typeof AdminFormFormIDRoute
+  '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID': typeof AdminNamespaceIDIndexRoute
   '/admin/form': typeof AdminFormIndexRoute
+  '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,9 +101,10 @@ export interface FileRoutesById {
   '/admin/keys': typeof AdminKeysRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
-  '/admin/form/$formID': typeof AdminFormFormIDRoute
+  '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
+  '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/admin/form/$formID'
     | '/admin/$namespaceID/'
     | '/admin/form/'
+    | '/admin/form/$formID/members'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/admin/form/$formID'
     | '/admin/$namespaceID'
     | '/admin/form'
+    | '/admin/form/$formID/members'
   id:
     | '__root__'
     | '/'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/admin/form/$formID'
     | '/admin/$namespaceID/'
     | '/admin/form/'
+    | '/admin/form/$formID/members'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -201,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNamespaceIDMembersRouteImport
       parentRoute: typeof AdminNamespaceIDRoute
     }
+    '/admin/form/$formID/members': {
+      id: '/admin/form/$formID/members'
+      path: '/members'
+      fullPath: '/admin/form/$formID/members'
+      preLoaderRoute: typeof AdminFormFormIDMembersRouteImport
+      parentRoute: typeof AdminFormFormIDRoute
+    }
   }
 }
 
@@ -217,11 +236,23 @@ const AdminNamespaceIDRouteChildren: AdminNamespaceIDRouteChildren = {
 const AdminNamespaceIDRouteWithChildren =
   AdminNamespaceIDRoute._addFileChildren(AdminNamespaceIDRouteChildren)
 
+interface AdminFormFormIDRouteChildren {
+  AdminFormFormIDMembersRoute: typeof AdminFormFormIDMembersRoute
+}
+
+const AdminFormFormIDRouteChildren: AdminFormFormIDRouteChildren = {
+  AdminFormFormIDMembersRoute: AdminFormFormIDMembersRoute,
+}
+
+const AdminFormFormIDRouteWithChildren = AdminFormFormIDRoute._addFileChildren(
+  AdminFormFormIDRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminNamespaceIDRoute: typeof AdminNamespaceIDRouteWithChildren
   AdminKeysRoute: typeof AdminKeysRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminFormFormIDRoute: typeof AdminFormFormIDRoute
+  AdminFormFormIDRoute: typeof AdminFormFormIDRouteWithChildren
   AdminFormIndexRoute: typeof AdminFormIndexRoute
 }
 
@@ -229,7 +260,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminNamespaceIDRoute: AdminNamespaceIDRouteWithChildren,
   AdminKeysRoute: AdminKeysRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminFormFormIDRoute: AdminFormFormIDRoute,
+  AdminFormFormIDRoute: AdminFormFormIDRouteWithChildren,
   AdminFormIndexRoute: AdminFormIndexRoute,
 }
 

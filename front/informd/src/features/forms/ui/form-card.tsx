@@ -119,13 +119,29 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
   return (
     <>
       {temp_id &&
-        <Item onClick={() => navigate({ to: '/admin/$namespaceID', params: { namespaceID: temp_id } })}>
+        <Item
+          onClick={() => {
+            navigate({
+              to: '/admin/form/$formID',
+              params: { formID: data.id },
+              search: { namespaceID: data.namespace_id || undefined }
+            })
+          }}
+        >
           <ExternalLink className="mr-2 size-4" />
           View Steps
         </Item>
       }
       <Separator />
-      <Item>
+      <Item
+        onClick={() => {
+          navigate({
+            to: '/admin/form/$formID/members',
+            params: { formID: data.id },
+            search: { namespaceID: data.namespace_id || undefined }
+          })
+        }}
+      >
         <User2 className="mr-2 size-4" />
         View Members
       </Item>

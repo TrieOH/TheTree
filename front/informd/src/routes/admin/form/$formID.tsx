@@ -1,4 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { LayoutContext } from '#/shared/lib/hooks/layout-context'
+import { cn } from '#/shared/lib/utils'
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { Users2, Workflow } from 'lucide-react'
+import { useState } from 'react'
 import z from 'zod'
 
 const formSearchSchema = z.object({
@@ -7,16 +11,92 @@ const formSearchSchema = z.object({
 
 export const Route = createFileRoute('/admin/form/$formID')({
   validateSearch: (search) => formSearchSchema.parse(search),
-  component: FormDetailComponent,
+  component: FormLayout,
 })
 
-function FormDetailComponent() {
+function FormLayout() {
+  const { formID } = Route.useParams()
+
+  const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
+
+  const tabs = [
+    {
+      label: 'Steps',
+      to: '/admin/form/$formID',
+      params: { formID },
+      icon: Workflow,
+      exact: true,
+    },
+    {
+      label: 'Members',
+      to: '/admin/form/$formID/members',
+      params: { formID },
+      icon: Users2,
+      exact: true,
+    },
+  ]
 
   return (
-    <div className="p-6">
-      <div className="mt-8 p-12 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground bg-muted/20">
-        Form coming soon...
+    <LayoutContext.Provider value={{ setHeader: setHeaderSlot }}>
+      <div className="flex flex-col h-full">
+        {/* Page Header Slot */}
+        {/*
+          Rendered only when a child page calls useLayoutHeader().
+          Sits between the tab bar and the page content.
+        */}
+        {headerSlot && (
+          <div className="border-b border-border/40 px-6 py-4 bg-background">
+            {headerSlot}
+          </div>
+        )}
+
+        {/* Tab Bar */}
+        <div className="border-b border-border/60 bg-background/50 px-6">
+          <div className="flex items-center gap-8 h-12">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.label}
+                to={tab.to}
+                params={tab.params}
+                activeOptions={{ exact: tab.exact, includeSearch: false }}
+                className="relative h-full flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-colors group"
+              >
+                {({ isActive }) => (
+                  <>
+                    <tab.icon
+                      className={cn(
+                        'size-3.5 transition-colors',
+                        isActive
+                          ? 'text-primary'
+                          : 'text-muted-foreground group-hover:text-foreground',
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'transition-colors',
+                        isActive
+                          ? 'text-foreground'
+                          : 'text-muted-foreground group-hover:text-foreground',
+                      )}
+                    >
+                      {tab.label}
+                    </span>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                    )}
+                  </>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Page Content */}
+        <div className="flex-1 p-6">
+          <Outlet />
+        </div>
+
       </div>
-    </div>
+    </LayoutContext.Provider>
   )
 }
