@@ -3,9 +3,8 @@ package app
 import (
 	"Informd/internal/database/sqlc"
 	"Informd/internal/features/forms"
-	"Informd/internal/features/keys"
 	"Informd/internal/features/namespaces"
-	"Informd/models"
+	"Informd/internal/features/steps"
 	"Informd/ports"
 	"context"
 	"lib/authz"
@@ -25,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type runtime struct {
@@ -38,24 +36,21 @@ type runtime struct {
 	txRunner    database.TxRunner
 	tracer      trace.Tracer
 	logger      *zap.Logger
-	perms       authz.Checker
 }
 
 type commands struct {
 	namespaces *namespaces.Commands
-	apiKeys    *keys.Commands
 	forms      *forms.Commands
+	steps      *steps.Commands
 }
 
 type queries struct {
 	namespaces *namespaces.Queries
-	apiKeys    *keys.Queries
 	forms      *forms.Queries
 }
 
 type repos struct {
 	namespaces ports.NamespaceRepo
-	apiKeys    ports.ApiKeysRepo
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
 }
@@ -78,7 +73,6 @@ type mws struct {
 func (app *Informd) run() runtime {
 	var rt runtime
 	rt.logger = telemetry.Log()
-	rt.perms = authz.NewChecker(app.sdbClient)
 	rt.repoQueries = sqlc.New(app.db)
 	rt.txRunner = database.NewPGXTxRunner(app.db, rt.logger)
 	rt.tracer = otel.Tracer(app.Config.AppName)
@@ -96,8 +90,8 @@ func (app *Informd) run() runtime {
 func (app *Informd) startHandlers(rt runtime) *Deps {
 	var handlers Deps
 	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
-	handlers.ApiKeysHandler = keys.NewHandlers(rt.commands.apiKeys, rt.queries.apiKeys)
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
+	handlers.StepsHandler = steps.NewHandlers(rt.commands.steps)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -118,15 +112,14 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 func (app *Informd) startCommands(rt runtime) commands {
 	var cmd commands
 	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
-	cmd.apiKeys = keys.NewCommands(rt.repos.apiKeys, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
-	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.perms, rt.txRunner, rt.tracer)
+	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	cmd.steps = steps.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return cmd
 }
 
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
-	q.apiKeys = keys.NewQueries(rt.repos.apiKeys, app.sdbClient, rt.txRunner, rt.tracer)
 	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return q
 }
@@ -134,9 +127,8 @@ func (app *Informd) startQueries(rt runtime) queries {
 func (app *Informd) startRepos(rt runtime) repos {
 	var r repos
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = keys.NewRepos(rt.repoQueries, rt.logger, rt.tracer)
-	r.forms = forms.NewFormRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.steps = forms.NewStepRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.steps = steps.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
@@ -155,27 +147,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		if len(rawKey) < 11 {
-			return ctx, fun.ErrUnauthorized("invalid api key format")
-		}
-		prefix := rawKey[:11]
-
-		candidates, err := rt.repos.apiKeys.GetByPrefix(ctx, prefix)
-		if err != nil || len(candidates) == 0 {
-			return ctx, fun.ErrUnauthorized("invalid api key")
-		}
-
-		var matched *models.APIKey
-		for _, candidate := range candidates {
-			if bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)) == nil {
-				matched = &candidate
-				break
-			}
-		}
-		if matched == nil {
-			return ctx, fun.ErrUnauthorized("invalid api key")
-		}
-		return authz.WithSubject(ctx, &authz.UserSubject{ID: matched.OwnerID}), nil
+		return nil, fun.ErrNotImplemented("api keys are not yet supported")
 	}
 
 	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
