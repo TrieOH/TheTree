@@ -47,12 +47,6 @@ type CreateFormRequest struct {
 	Title string `json:"title" validate:"required"`
 }
 
-type CreateStepRequest struct {
-	Title        string  `json:"title" validate:"required"`
-	Description  *string `json:"description"`
-	PositionHint int     `json:"position_hint" validate:"required"`
-}
-
 type FormMemberRole string
 
 const (
