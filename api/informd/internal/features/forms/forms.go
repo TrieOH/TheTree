@@ -7,8 +7,7 @@ import (
 	"Informd/internal/features/forms/repos"
 )
 
-var NewFormRepo = repos.NewFormRepo
-var NewStepRepo = repos.NewStepRepo
+var NewRepo = repos.NewRepo
 var NewCommands = commands.NewCommands
 var NewQueries = queries.NewQueries
 var NewHandlers = handlers.NewHandlers

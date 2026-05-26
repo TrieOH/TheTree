@@ -2,6 +2,8 @@ package database
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/MintzyG/fun"
 	"github.com/jackc/pgx/v5"
@@ -53,4 +55,21 @@ func NewErrorHandler(resource string) ErrorHandler {
 			return fun.ErrInternal(pgErr.Error())
 		}
 	}
+}
+
+func BatchExec(br interface {
+	Exec(func(int, error))
+	Close() error
+}, dbe ErrorHandler, getID func(int) string) error {
+	defer br.Close()
+	var msgs []string
+	br.Exec(func(i int, err error) {
+		if err != nil {
+			msgs = append(msgs, fmt.Sprintf("%s: %s", getID(i), dbe(err).Error()))
+		}
+	})
+	if len(msgs) == 0 {
+		return nil
+	}
+	return fun.ErrValidation(strings.Join(msgs, "; "))
 }
