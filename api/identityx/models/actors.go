@@ -52,14 +52,14 @@ const (
 )
 
 type ActorExternalIdentities struct {
-	ID                    uuid.UUID        `json:"id"`
-	ActorID               uuid.UUID        `json:"actor_id"`
-	Provider              OAuthProvider    `json:"provider"`
-	Subject               *string          `json:"subject"`
-	Email                 *string          `json:"email"`
-	EncryptedAccessToken  *json.RawMessage `json:"-"`
-	EncryptedRefreshToken *json.RawMessage `json:"-"`
-	TokenExpiresAt        *time.Time       `json:"token_expires_at"`
-	CreatedAt             *time.Time       `json:"created_at"`
-	UpdatedAt             *time.Time       `json:"updated_at"`
+	ID                    uuid.UUID     `json:"id"`
+	ActorID               uuid.UUID     `json:"actor_id"`
+	Provider              OAuthProvider `json:"provider"`
+	Subject               string        `json:"subject"`
+	Email                 *string       `json:"email"`
+	EncryptedAccessToken  *string       `json:"-"`
+	EncryptedRefreshToken *string       `json:"-"`
+	TokenExpiresAt        *time.Time    `json:"token_expires_at"`
+	CreatedAt             time.Time     `json:"created_at"`
+	UpdatedAt             time.Time     `json:"updated_at"`
 }

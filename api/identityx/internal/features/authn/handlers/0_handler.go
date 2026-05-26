@@ -27,5 +27,7 @@ func RegisterRoutes(
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
+		r.Get("/auth/{provider}/connect", h.OAuthConnect)
+		r.Get("/auth/{provider}/callback", h.OAuthCallback)
 	})
 }

@@ -33,10 +33,11 @@ type runtime struct {
 }
 
 type repos struct {
-	actors        ports.ActorRepo
-	platformRoles ports.PlatformRolesRepo
-	cryptoKeys    ports.CryptoKeysRepo
-	blacklist     ports.BlacklistRepo
+	actors             ports.ActorRepo
+	platformRoles      ports.PlatformRolesRepo
+	cryptoKeys         ports.CryptoKeysRepo
+	blacklist          ports.BlacklistRepo
+	externalIdentities ports.ExternalIdentitiesRepo
 }
 
 type queries struct {
@@ -73,19 +74,21 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	r.platformRoles = platform_roles.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.cryptoKeys = crypto_keys.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.blacklist = blacklist.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.externalIdentities = authn.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	return r
 }
 
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.authn = authn.NewCommands(ports.AuthnDeps{
-		Actors:        r.actors,
-		PlatformRoles: r.platformRoles,
-		CryptoKeys:    r.cryptoKeys,
-		Blacklist:     r.blacklist,
-		Logger:        rt.logger,
-		Tracer:        rt.tracer,
-		Tx:            rt.tx,
+		Actors:             r.actors,
+		PlatformRoles:      r.platformRoles,
+		CryptoKeys:         r.cryptoKeys,
+		Blacklist:          r.blacklist,
+		ExternalIdentities: r.externalIdentities,
+		Logger:             rt.logger,
+		Tracer:             rt.tracer,
+		Tx:                 rt.tx,
 	})
 	return cmd
 }

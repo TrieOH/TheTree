@@ -3,6 +3,8 @@ package commands
 import (
 	"IdentityX/models"
 	"IdentityX/ports"
+	"context"
+	"lib/crypto"
 	"lib/database"
 	"lib/errx"
 	"os"
@@ -15,25 +17,62 @@ import (
 )
 
 type Commands struct {
-	actors        ports.ActorRepo
-	platformRoles ports.PlatformRolesRepo
-	cryptoKeys    ports.CryptoKeysRepo
-	blacklist     ports.BlacklistRepo
-	logger        *zap.Logger
-	tracer        trace.Tracer
-	tx            database.TxRunner
+	actors             ports.ActorRepo
+	platformRoles      ports.PlatformRolesRepo
+	cryptoKeys         ports.CryptoKeysRepo
+	blacklist          ports.BlacklistRepo
+	externalIdentities ports.ExternalIdentitiesRepo
+	logger             *zap.Logger
+	tracer             trace.Tracer
+	tx                 database.TxRunner
 }
 
 func NewCommands(deps ports.AuthnDeps) *Commands {
 	return errx.MustProvide(&Commands{
-		actors:        deps.Actors,
-		platformRoles: deps.PlatformRoles,
-		cryptoKeys:    deps.CryptoKeys,
-		blacklist:     deps.Blacklist,
-		logger:        deps.Logger,
-		tracer:        deps.Tracer,
-		tx:            deps.Tx,
+		actors:             deps.Actors,
+		platformRoles:      deps.PlatformRoles,
+		cryptoKeys:         deps.CryptoKeys,
+		blacklist:          deps.Blacklist,
+		externalIdentities: deps.ExternalIdentities,
+		logger:             deps.Logger,
+		tracer:             deps.Tracer,
+		tx:                 deps.Tx,
 	})
+}
+
+func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
+	activeKeyPair, err := c.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, nil)
+	if err != nil {
+		return nil, err
+	}
+	accessJTI := uuid.New()
+	refreshJTI := uuid.New()
+	accessExpiresAt := time.Now().Add(errx.Env[time.Duration]("ACCESS_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
+	refreshExpiresAt := time.Now().Add(errx.Env[time.Duration]("REFRESH_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
+	accessPayload, err := c.newIDXAccessToken(*actor, accessJTI, activeKeyPair.ID, accessExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+	refreshPayload, err := c.newIDXRefreshToken(refreshJTI, accessJTI, activeKeyPair.ID, refreshExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+	kp := activeKeyPair.ToKeyPair()
+	accessToken, err := crypto.SignToken(accessPayload, kp)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken, err := crypto.SignToken(refreshPayload, kp)
+	if err != nil {
+		return nil, err
+	}
+	return &models.UserTokensOutput{
+		AccessToken:      accessToken,
+		RefreshToken:     refreshToken,
+		AccessExpiresAt:  accessExpiresAt,
+		RefreshExpiresAt: refreshExpiresAt,
+		Domain:           os.Getenv("ISSUER"),
+	}, nil
 }
 
 func (c *Commands) newIDXAccessToken(actor models.Actor, jti, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
