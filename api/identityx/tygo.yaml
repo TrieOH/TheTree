@@ -1,0 +1,6 @@
+packages:
+  - path: "IdentityX/models"
+    output_path: "../../lib/ts/identityx/models/generated.ts"
+    type_mappings:
+      uuid.UUID: "string"
+      time.Time: "string"
