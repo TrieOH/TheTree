@@ -48,7 +48,7 @@ func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*model
 	accessJTI := uuid.New()
 	refreshJTI := uuid.New()
 	accessExpiresAt := time.Now().Add(errx.Env[time.Duration]("ACCESS_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
-	refreshExpiresAt := time.Now().Add(errx.Env[time.Duration]("REFRESH_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
+	refreshExpiresAt := time.Now().Add(errx.Env[time.Duration]("REFRESH_TOKEN_EXPIRATION", time.ParseDuration, 7*24*time.Hour))
 	accessPayload, err := c.newIDXAccessToken(*actor, accessJTI, activeKeyPair.ID, accessExpiresAt)
 	if err != nil {
 		return nil, err
