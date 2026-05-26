@@ -72,13 +72,14 @@ function RouteComponent() {
     <div className='flex flex-wrap p-4'>
       <PaginatedContainer<NamespaceI & { ownership: 'owner' | 'member' }>
         items={filteredNamespaces as (NamespaceI & { ownership: 'owner' | 'member' })[]}
-        className='w-full'
-        layout='flex'
+        layout='grid'
+        minItemWidth='18rem'
         pageSize={10}
         sortFields={[
           { key: "name", label: "Name" },
           { key: "ownership", label: "Ownership" }
         ]}
+        gap='6'
         filterValue={filter}
         onFilterChange={setFilter}
         filterPlaceholder="Filter by name, owner, member..."

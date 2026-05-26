@@ -89,8 +89,7 @@ function RouteComponent() {
     <div className='flex flex-wrap p-4'>
       <PaginatedContainer<ApiKeyI>
         items={filteredApiKeys}
-        className='w-full'
-        layout='flex'
+        layout='list'
         pageSize={10}
         sortFields={[
           { key: "name", label: "Name" },

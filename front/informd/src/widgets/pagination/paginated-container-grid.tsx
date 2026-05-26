@@ -38,9 +38,9 @@ export interface PaginationInfo {
 /**
  * Layout modes for the items wrapper.
  *
- * "flex"   - `flex flex-wrap`, items sit side-by-side and wrap when there's
- *            no room. Control item width inside your card component (e.g.
- *            `className="w-48"` or `flex: 1 1 160px`).
+ * "grid"   - CSS grid with auto-fill columns. Control minimum item width via
+ *            `minItemWidth` prop (default: "200px"). Items stretch to fill
+ *            the row evenly - no gap on the right side.
  *
  * "list"   - `flex flex-col`, one item per row, full width.
  *
@@ -53,7 +53,7 @@ export interface PaginationInfo {
  *              </div>
  *            )}
  */
-export type LayoutMode = "flex" | "list" | "custom";
+export type LayoutMode = "grid" | "list" | "custom";
 
 /**
  * Tailwind gap size applied to the items wrapper.
@@ -105,9 +105,9 @@ export interface PaginatedContainerProps<T> {
   className?: string;
 
   /**
-   * Layout mode for the items wrapper (default: "flex").
+   * Layout mode for the items wrapper (default: "grid").
    *
-   * "flex"   - flex-wrap row; items sit side-by-side and wrap as space shrinks.
+   * "grid"   - CSS grid auto-fill; items stretch to fill available width.
    * "list"   - flex-col; one item per row.
    * "custom" - no wrapper; you own the container inside `renderItems`.
    */
@@ -117,6 +117,14 @@ export interface PaginatedContainerProps<T> {
    * Maps to Tailwind's `gap-{n}` utility.
    */
   gap?: GapSize;
+  /**
+   * Minimum width for each item in grid layout (default: "200px").
+   * The grid will fit as many columns as possible at this minimum width,
+   * then stretch items to fill the row - no empty space on the right.
+   *
+   * Examples: "160px", "12rem", "240px"
+   */
+  minItemWidth?: string;
 }
 
 const GAP_CLASS: Record<GapSize, string> = {
@@ -134,20 +142,30 @@ const GAP_CLASS: Record<GapSize, string> = {
 interface ItemsWrapperProps {
   layout: LayoutMode;
   gap: GapSize;
+  minItemWidth: string;
   children: ReactNode;
 }
 
-function ItemsWrapper({ layout, gap, children }: ItemsWrapperProps) {
+function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps) {
   const gapClass = GAP_CLASS[gap];
 
   if (layout === "custom") return <>{children}</>;
 
   if (layout === "list") {
-    return <div className={`flex flex-col ${gapClass}`}>{children}</div>;
+    return <div className={`flex flex-col w-full ${gapClass}`}>{children}</div>;
   }
 
+  // "grid" - auto-fill columns that stretch to fill the row.
   return (
-    <div className={`flex flex-wrap ${gapClass}`}>{children}</div>
+    <div
+      className={`w-full justify-center ${gapClass}`}
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(auto-fill, minmax(${minItemWidth}, max-content))`,
+      }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -346,8 +364,9 @@ export function PaginatedContainer<T>({
   emptyState,
   headerActions,
   className,
-  layout = "flex",
+  layout = "grid",
   gap = "3",
+  minItemWidth = "200px",
 }: PaginatedContainerProps<T>) {
   const [page, setPage] = useState(defaultPage);
   const [internalSort, setInternalSort] = useState<SortState<T> | null>(
@@ -465,7 +484,7 @@ export function PaginatedContainer<T>({
             </p>
           )
         ) : (
-          <ItemsWrapper layout={layout} gap={gap}>
+          <ItemsWrapper layout={layout} gap={gap} minItemWidth={minItemWidth}>
             {renderItems(slice)}
           </ItemsWrapper>
         )}

@@ -57,8 +57,9 @@ export function FormsView({
 
       <PaginatedContainer<FormI>
         items={filteredForms}
-        className='w-full'
-        layout='flex'
+        layout='grid'
+        minItemWidth='14rem'
+        gap='6'
         pageSize={10}
         sortFields={[
           { key: "title", label: "Title" },

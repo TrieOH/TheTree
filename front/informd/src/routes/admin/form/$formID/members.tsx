@@ -103,8 +103,7 @@ function RouteComponent() {
     <div>
       <PaginatedContainer<FormMemberI>
         items={filteredMembers}
-        className='w-full'
-        layout='flex'
+        layout='list'
         pageSize={10}
         sortFields={[
           { key: "role", label: "Role" },
