@@ -4,6 +4,7 @@ import (
 	"IdentityX/models"
 	"context"
 	"encoding/json"
+	"io"
 	"lib/crypto"
 	"lib/oauth"
 	"net/http"
@@ -22,12 +23,12 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 		return nil, fun.ErrBadRequest("unsupported provider: " + provider)
 	}
 
-	googleToken, err := p.Config.Exchange(ctx, code)
+	providerToken, err := p.Config.Exchange(ctx, code)
 	if err != nil {
 		c.logger.Error("oauth code exchange failed", zap.Error(err))
 		return nil, fun.ErrUnauthorized("failed to exchange code")
 	}
-	if googleToken == nil {
+	if providerToken == nil {
 		return nil, fun.ErrUnauthorized("empty token from provider")
 	}
 
@@ -35,7 +36,7 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+googleToken.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+providerToken.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -43,32 +44,50 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	}
 	defer resp.Body.Close()
 
-	var info oauth.UserInfo
-	if err = json.NewDecoder(resp.Body).Decode(&info); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
-	if info.Sub == "" || info.Email == "" {
+	c.logger.Info("userinfo response", zap.String("provider", provider), zap.String("body", string(body)))
+
+	var info oauth.UserInfo
+	if err = json.Unmarshal(body, &info); err != nil {
+		return nil, err
+	}
+
+	if info.SubString() == "" {
 		return nil, fun.ErrUnauthorized("incomplete userinfo from provider")
 	}
 
-	encryptedAccess, err := crypto.EncryptPrivateKey([]byte(googleToken.AccessToken))
+	if info.Email == "" && provider == "github" {
+		info.Email, err = oauth.FetchGitHubEmail(ctx, providerToken.AccessToken)
+		if err != nil {
+			return nil, fun.ErrUnauthorized("could not fetch github email")
+		}
+	}
+
+	if info.Email == "" {
+		return nil, fun.ErrUnauthorized("incomplete userinfo from provider")
+	}
+
+	encryptedAccess, err := crypto.EncryptPrivateKey([]byte(providerToken.AccessToken))
 	if err != nil {
 		return nil, err
 	}
 	var encryptedRefresh *string
-	if googleToken.RefreshToken != "" {
-		e, err := crypto.EncryptPrivateKey([]byte(googleToken.RefreshToken))
+	if providerToken.RefreshToken != "" {
+		e, err := crypto.EncryptPrivateKey([]byte(providerToken.RefreshToken))
 		if err != nil {
 			return nil, err
 		}
 		encryptedRefresh = &e
 	}
 	var tokenExpiresAt *time.Time
-	if !googleToken.Expiry.IsZero() {
-		tokenExpiresAt = &googleToken.Expiry
+	if !providerToken.Expiry.IsZero() {
+		tokenExpiresAt = &providerToken.Expiry
 	}
 
-	identity, err := c.externalIdentities.GetByProviderAndSubject(ctx, provider, info.Sub)
+	identity, err := c.externalIdentities.GetByProviderAndSubject(ctx, provider, info.SubString())
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}
@@ -77,7 +96,7 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	if identity != nil {
 		_, err = c.externalIdentities.UpdateTokens(ctx, models.ActorExternalIdentities{
 			Provider:              models.OAuthProvider(provider),
-			Subject:               info.Sub,
+			Subject:               info.SubString(),
 			EncryptedAccessToken:  &encryptedAccess,
 			EncryptedRefreshToken: encryptedRefresh,
 			TokenExpiresAt:        tokenExpiresAt,
@@ -101,7 +120,7 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 		_, err = c.externalIdentities.Create(ctx, models.ActorExternalIdentities{
 			ActorID:               actor.ID,
 			Provider:              models.OAuthProvider(provider),
-			Subject:               info.Sub,
+			Subject:               info.SubString(),
 			Email:                 &info.Email,
 			EncryptedAccessToken:  &encryptedAccess,
 			EncryptedRefreshToken: encryptedRefresh,
