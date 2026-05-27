@@ -29,3 +29,10 @@ WHERE type = @type
 SELECT *
 FROM crypto_keys
 WHERE id = @id;
+
+-- name: GetActiveSigningKeys :many
+SELECT id, public_key, algorithm
+FROM crypto_keys
+WHERE (project_id = @project_id OR @project_id IS NULL)
+  AND type = 'signing'
+  AND status IN ('active', 'retiring');

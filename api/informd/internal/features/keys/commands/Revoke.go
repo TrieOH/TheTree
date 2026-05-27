@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"IdentityX/models"
 	"context"
 	"lib/authz"
 
@@ -11,7 +12,7 @@ func (s *CommandService) RevokeAPIKey(ctx context.Context, keyID uuid.UUID) erro
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Revoke")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	sub, err := models.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}

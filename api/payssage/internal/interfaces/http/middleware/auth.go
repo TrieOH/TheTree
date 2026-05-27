@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"IdentityX/models"
 	"lib/authz"
 	"net/http"
 	"payssage/contracts"
@@ -68,11 +69,11 @@ func (mw *AuthMiddleware) Auth() func(http.Handler) http.Handler {
 			}
 
 			// Inject subject into context
-			subject := authz.UserSubject{
+			subject := models.UserSubject{
 				ID:    accessClaims.Sub.ID,
 				Email: accessClaims.Sub.Email,
 			}
-			ctx = authz.WithSubject(ctx, &subject)
+			ctx = models.WithSubject(ctx, &subject)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

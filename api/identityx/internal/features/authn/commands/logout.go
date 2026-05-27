@@ -6,7 +6,6 @@ import (
 	"lib/crypto"
 
 	"github.com/MintzyG/fun"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -22,18 +21,7 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 	if accessClaims == nil {
 		return fun.ErrBadRequest("empty access claims")
 	}
-	kid, ok := token.Header["kid"].(string)
-	if !ok || kid == "" {
-		return fun.ErrUnauthorized("missing kid")
-	}
-	keyID, err := uuid.Parse(kid)
-	if err != nil {
-		return fun.ErrUnauthorized("invalid kid")
-	}
-	cryptoKey, err := c.cryptoKeys.GetByID(ctx, keyID)
-	if err != nil && fun.Is(err, fun.CodeNotFound) {
-		return fun.ErrUnauthorized("outdated token")
-	}
+	cryptoKey, err := c.cryptoKeyFromToken(ctx, token)
 	if err != nil {
 		return err
 	}

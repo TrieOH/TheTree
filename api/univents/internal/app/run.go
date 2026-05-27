@@ -1,8 +1,8 @@
 package app
 
 import (
+	"IdentityX/models"
 	"context"
-	"lib/authz"
 	database2 "lib/database"
 	"lib/xslices"
 	"log"
@@ -224,7 +224,7 @@ func (app *Univents) startMiddlewares(rt runtime) mws {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
-		return authz.WithSubject(ctx, &authz.UserSubject{
+		return models.WithSubject(ctx, &models.UserSubject{
 			ID:    claims.Sub.ID,
 			Email: claims.Sub.Email,
 		}), nil

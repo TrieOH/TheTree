@@ -1,9 +1,9 @@
 package queries
 
 import (
+	models2 "IdentityX/models"
 	"Informd/models"
 	"context"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -13,7 +13,7 @@ func (s *QueryService) ListFormMembers(ctx context.Context, namespaceID, formID 
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListFormMembers")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	sub, err := models2.RequireSubject(ctx)
 	if err != nil {
 		return nil, err
 	}

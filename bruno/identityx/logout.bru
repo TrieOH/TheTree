@@ -1,7 +1,7 @@
 meta {
   name: Logout
   type: http
-  seq: 4
+  seq: 5
 }
 
 post {
@@ -13,4 +13,11 @@ post {
 headers {
   access_token: {{access_token}}
   refresh_token: {{refresh_token}}
+}
+
+script:post-response {
+  bru.setEnvVar("access_token", "");
+  bru.setEnvVar("refresh_token", "");
+  bru.setEnvVar("access_expires_at", "");
+  bru.setEnvVar("refresh_expires_at", "");
 }

@@ -46,3 +46,9 @@ func (c *CryptoKey) ToKeyPair() *crypto.KeyPair {
 		Algorithm:        c.Algorithm,
 	}
 }
+
+type ActiveSigningKey struct {
+	ID        uuid.UUID
+	PublicKey string
+	Algorithm string
+}

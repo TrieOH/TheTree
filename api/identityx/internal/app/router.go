@@ -24,8 +24,11 @@ import (
 type RouterDeps struct {
 	AppName string
 
-	CORS   func(http.Handler) http.Handler
-	Logger func(http.Handler) http.Handler
+	CORS       func(http.Handler) http.Handler
+	Logger     func(http.Handler) http.Handler
+	JwtAuth    func(http.Handler) http.Handler
+	ApiKeyAuth func(http.Handler) http.Handler
+	AnyAuth    func(http.Handler) http.Handler
 
 	Authn *authn.Handlers
 }
@@ -107,7 +110,7 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	authn.RegisterRoutes(r, deps.Authn)
+	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
 	//account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
 	//sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
 	//projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth)

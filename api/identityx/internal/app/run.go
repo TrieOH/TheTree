@@ -29,6 +29,7 @@ type runtime struct {
 	mws    mws
 
 	repos    repos
+	queries  queries
 	commands commands
 }
 
@@ -41,6 +42,7 @@ type repos struct {
 }
 
 type queries struct {
+	authn *authn.Queries
 }
 
 type commands struct {
@@ -48,8 +50,11 @@ type commands struct {
 }
 
 type mws struct {
-	logger func(http.Handler) http.Handler
-	cors   func(http.Handler) http.Handler
+	logger     func(http.Handler) http.Handler
+	cors       func(http.Handler) http.Handler
+	jwtAuth    func(http.Handler) http.Handler
+	apiKeyAuth func(http.Handler) http.Handler
+	anyAuth    func(http.Handler) http.Handler
 }
 
 func (app *IdentityX) run() {
@@ -59,6 +64,7 @@ func (app *IdentityX) run() {
 	rt.tx = database.NewPGXTxRunner(app.db, rt.logger)
 	rt.tracer = otel.Tracer(app.cfg.AppName)
 	rt.repos = app.startRepos(rt)
+	rt.queries = app.startQueries(rt, rt.repos)
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.mws = app.startMiddlewares(rt)
 	routerDeps := app.setupRouter(rt)
@@ -78,6 +84,17 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	return r
 }
 
+func (app *IdentityX) startQueries(rt runtime, r repos) queries {
+	var cmd queries
+	cmd.authn = authn.NewQueries(ports.AuthnDeps{
+		CryptoKeys: r.cryptoKeys,
+		Logger:     rt.logger,
+		Tracer:     rt.tracer,
+		Tx:         rt.tx,
+	})
+	return cmd
+}
+
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.authn = authn.NewCommands(ports.AuthnDeps{
@@ -95,19 +112,22 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 
 func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 	return RouterDeps{
-		AppName: app.cfg.AppName,
-		CORS:    rt.mws.cors,
-		Logger:  rt.mws.logger,
-		Authn:   authn.NewHandlers(rt.commands.authn),
+		AppName:    app.cfg.AppName,
+		CORS:       rt.mws.cors,
+		Logger:     rt.mws.logger,
+		JwtAuth:    rt.mws.jwtAuth,
+		ApiKeyAuth: rt.mws.apiKeyAuth,
+		AnyAuth:    rt.mws.anyAuth,
+		Authn:      authn.NewHandlers(rt.commands.authn, rt.queries.authn),
 	}
 }
 
 func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	var mw mws
-	//authMW := SetupAuthMiddlewares(rt.repos.sessions, rt.repos.keys, rt.repos.apiKeys, rt.tracer, app.cfg.Issuer)
-	//mw.jwt = authMW.JWT()
-	//mw.apiKey = authMW.APIKey()
-	//mw.anyAuth = authMW.AnyAuth()
+	authMW := SetupAuthMiddlewares(rt)
+	mw.jwtAuth = authMW.JWT()
+	mw.apiKeyAuth = authMW.APIKey()
+	mw.anyAuth = authMW.AnyAuth()
 	//mw.bodySize = middlewares.MaxBodySize(1 << 20)
 	//mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})

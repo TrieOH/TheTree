@@ -1,6 +1,7 @@
 package app
 
 import (
+	models2 "IdentityX/models"
 	"Informd/internal/database/sqlc"
 	"Informd/internal/features/forms"
 	"Informd/internal/features/keys"
@@ -148,7 +149,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
-		return authz.WithSubject(ctx, &authz.UserSubject{
+		return models2.WithSubject(ctx, &models2.UserSubject{
 			ID:    claims.Sub.ID,
 			Email: claims.Sub.Email,
 		}), nil
@@ -175,7 +176,7 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 		if matched == nil {
 			return ctx, fun.ErrUnauthorized("invalid api key")
 		}
-		return authz.WithSubject(ctx, &authz.UserSubject{ID: matched.OwnerID}), nil
+		return models2.WithSubject(ctx, &models2.UserSubject{ID: matched.OwnerID}), nil
 	}
 
 	authMW := middlewares.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)

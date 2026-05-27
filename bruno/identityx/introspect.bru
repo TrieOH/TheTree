@@ -1,0 +1,15 @@
+meta {
+  name: Introspect
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{identityx_url}}/auth/introspect
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}

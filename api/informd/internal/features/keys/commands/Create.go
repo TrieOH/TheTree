@@ -1,6 +1,7 @@
 package commands
 
 import (
+	models2 "IdentityX/models"
 	"Informd/models"
 	"context"
 	"crypto/rand"
@@ -14,8 +15,8 @@ func (s *CommandService) Create(ctx context.Context, keyName string) (rawKey str
 	ctx, span := s.tracer.Start(ctx, "ApiKeys.Create")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	var sub *models2.UserSubject
+	sub, err = models2.RequireSubject(ctx)
 	if err != nil {
 		return "", nil, err
 	}

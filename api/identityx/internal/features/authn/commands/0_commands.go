@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -40,6 +41,28 @@ func NewCommands(deps ports.AuthnDeps) *Commands {
 	})
 }
 
+func (c *Commands) cryptoKeyFromToken(ctx context.Context, token *jwt.Token) (*models.CryptoKey, error) {
+	kid, ok := token.Header["kid"].(string)
+	if !ok || kid == "" {
+		return nil, fun.ErrUnauthorized("missing kid")
+	}
+	keyID, err := uuid.Parse(kid)
+	if err != nil {
+		return nil, fun.ErrUnauthorized("invalid kid")
+	}
+	cryptoKey, err := c.cryptoKeys.GetByID(ctx, keyID)
+	if err != nil && fun.Is(err, fun.CodeNotFound) {
+		return nil, fun.ErrUnauthorized("outdated token")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if cryptoKey.Status == "revoked" {
+		return nil, fun.ErrUnauthorized("token signing key revoked")
+	}
+	return cryptoKey, nil
+}
+
 func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
 	activeKeyPair, err := c.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, nil)
 	if err != nil {
@@ -53,7 +76,7 @@ func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*model
 	if err != nil {
 		return nil, err
 	}
-	refreshPayload, err := c.newIDXRefreshToken(refreshJTI, accessJTI, activeKeyPair.ID, refreshExpiresAt)
+	refreshPayload, err := c.newIDXRefreshToken(actor, refreshJTI, accessJTI, activeKeyPair.ID, refreshExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +127,11 @@ func (c *Commands) newIDXAccessToken(actor models.Actor, jti, kid uuid.UUID, exp
 	return []byte(payload), nil
 }
 
-func (c *Commands) newIDXRefreshToken(jti, accessJTI, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
+func (c *Commands) newIDXRefreshToken(actor *models.Actor, jti, accessJTI, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
 	claims := models.RefreshClaims{
 		Sub: models.RefreshSub{
+			ID:        actor.ID,
+			ProjectID: actor.ProjectID,
 			AccessJTI: accessJTI,
 		},
 		RegisteredClaims: jwt.RegisteredClaims{

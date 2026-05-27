@@ -1,9 +1,9 @@
 package commands
 
 import (
+	models2 "IdentityX/models"
 	"Informd/models"
 	"context"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -12,7 +12,7 @@ func (s *CommandService) RemoveMember(ctx context.Context, payload models.Remove
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	sub, err := models2.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}

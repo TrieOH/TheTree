@@ -1,12 +1,15 @@
 package crypto
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -160,5 +163,47 @@ func Sign(kp *KeyPair, payload []byte) ([]byte, error) {
 		return rsa.SignPKCS1v15(rand.Reader, key, hash, h.Sum(nil))
 	default:
 		return nil, fmt.Errorf("unsupported key type: %T", priv)
+	}
+}
+
+func PublicKeyToJWKS(keyID string, publicKey string) (map[string]any, error) {
+	block, _ := pem.Decode([]byte(publicKey))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block")
+	}
+
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	switch key := pub.(type) {
+	case *rsa.PublicKey:
+		n := base64.RawURLEncoding.EncodeToString(key.N.Bytes())
+		e := make([]byte, 4)
+		binary.BigEndian.PutUint32(e, uint32(key.E))
+		// trim leading zeros
+		e = bytes.TrimLeft(e, "\x00")
+		return map[string]any{
+			"kty": "RSA",
+			"kid": keyID,
+			"use": "sig",
+			"alg": "RS256",
+			"n":   n,
+			"e":   base64.RawURLEncoding.EncodeToString(e),
+		}, nil
+
+	case ed25519.PublicKey:
+		return map[string]any{
+			"kty": "OKP",
+			"kid": keyID,
+			"use": "sig",
+			"alg": "EdDSA",
+			"crv": "Ed25519",
+			"x":   base64.RawURLEncoding.EncodeToString(key),
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported key type: %T", pub)
 	}
 }

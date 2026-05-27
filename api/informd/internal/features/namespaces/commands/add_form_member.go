@@ -1,9 +1,9 @@
 package commands
 
 import (
+	models2 "IdentityX/models"
 	"Informd/models"
 	"context"
-	"lib/authz"
 	"time"
 
 	"github.com/MintzyG/fun"
@@ -13,7 +13,7 @@ func (s *CommandService) AddFormMember(ctx context.Context, payload models.AddNa
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddFormMember")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	sub, err := models2.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}

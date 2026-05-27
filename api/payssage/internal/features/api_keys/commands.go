@@ -1,6 +1,7 @@
 package api_keys
 
 import (
+	"IdentityX/models"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -46,8 +47,8 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Create")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	var sub *models.UserSubject
+	sub, err = models.RequireSubject(ctx)
 	if err != nil {
 		return "", nil, err
 	}
@@ -96,7 +97,7 @@ func (uc *CommandService) RevokeAPIKey(ctx context.Context, workspaceName string
 	ctx, span := uc.tracer.Start(ctx, "CommandService.RevokeAPIKey")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	sub, err := models.RequireSubject(ctx)
 	if err != nil {
 		return err
 	}

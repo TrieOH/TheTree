@@ -5,6 +5,7 @@ import (
 	"IdentityX/internal/jobs"
 	"IdentityX/models"
 	"context"
+	"lib/crypto"
 	"lib/database"
 	"lib/errx"
 	"lib/validator"
@@ -14,6 +15,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
@@ -122,17 +124,50 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 	}
 }
 
-func SetupAuthMiddlewares() *middlewares.Middleware[*models.AccessClaims] {
+func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
-		return nil, nil
+		claims := &models.AccessClaims{}
+		token, err := crypto.OpenUnverified(tokenStr, claims)
+		if err != nil {
+			return nil, err
+		}
+		kid, ok := token.Header["kid"].(string)
+		if !ok || kid == "" {
+			return nil, fun.ErrUnauthorized("missing kid")
+		}
+		keyID, err := uuid.Parse(kid)
+		if err != nil {
+			return nil, fun.ErrUnauthorized("invalid kid")
+		}
+		cryptoKey, err := rt.repos.cryptoKeys.GetByID(ctx, keyID)
+		if fun.Is(err, fun.CodeNotFound) {
+			return nil, fun.ErrUnauthorized("outdated token")
+		}
+		if err != nil {
+			return nil, err
+		}
+		if cryptoKey.Status == "revoked" {
+			return nil, fun.ErrUnauthorized("token signing key revoked")
+		}
+		_, err = crypto.VerifyToken(tokenStr, cryptoKey.PublicKey, claims)
+		if err != nil {
+			return nil, fun.ErrUnauthorized("invalid access token")
+		}
+		return claims, nil
 	}
 
 	jwtHook := func(ctx context.Context, claims *models.AccessClaims) (context.Context, error) {
-		return nil, nil
+		identity := &models.Identity{
+			Sub: models.SubjectFromAccessSub(claims.Sub),
+			Cred: models.Credential{
+				Type: models.TokenCredentialType,
+			},
+		}
+		return models.WithIdentity(ctx, identity), nil
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		return nil, nil
+		return nil, fun.ErrNotImplemented("api keys are not yet supported")
 	}
 
 	return middlewares.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)

@@ -44,3 +44,11 @@ func mapKeys(src sqlc.CryptoKey) models.CryptoKey {
 		ExpiresAt:           src.ExpiresAt,
 	}
 }
+
+func mapToActiveSigningKey(src sqlc.GetActiveSigningKeysRow) models.ActiveSigningKey {
+	return models.ActiveSigningKey{
+		ID:        src.ID,
+		PublicKey: src.PublicKey,
+		Algorithm: src.Algorithm,
+	}
+}
