@@ -30,9 +30,10 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.StepRe
 
 func mapStep(src sqlc.Step) models.Step {
 	return models.Step{
-		ID:          src.ID,
-		FormID:      src.FormID,
-		Title:       src.Title,
-		Description: src.Description,
+		ID:           src.ID,
+		FormID:       src.FormID,
+		Title:        src.Title,
+		Description:  src.Description,
+		PositionHint: src.PositionHint,
 	}
 }
