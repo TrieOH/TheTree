@@ -7,9 +7,9 @@ meta {
 get {
   url: {{identityx_url}}/auth/introspect
   body: none
-  auth: none
+  auth: bearer
 }
 
-headers {
-  Authorization: Bearer {{access_token}}
+auth:bearer {
+  token: {{access_token}}
 }

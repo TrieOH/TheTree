@@ -6,6 +6,7 @@ import (
 	"IdentityX/internal/features/authn"
 	"IdentityX/internal/features/blacklist"
 	"IdentityX/internal/features/crypto_keys"
+	"IdentityX/internal/features/organizations"
 	"IdentityX/internal/features/platform_roles"
 	"IdentityX/ports"
 	"lib/database"
@@ -39,22 +40,27 @@ type repos struct {
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
 	externalIdentities ports.ExternalIdentitiesRepo
+	orgs               ports.OrganizationRepo
 }
 
 type queries struct {
 	authn *authn.Queries
+	orgs  *organizations.Queries
 }
 
 type commands struct {
 	authn *authn.Commands
+	orgs  *organizations.Commands
 }
 
 type mws struct {
-	logger     func(http.Handler) http.Handler
-	cors       func(http.Handler) http.Handler
-	jwtAuth    func(http.Handler) http.Handler
-	apiKeyAuth func(http.Handler) http.Handler
-	anyAuth    func(http.Handler) http.Handler
+	logger            func(http.Handler) http.Handler
+	cors              func(http.Handler) http.Handler
+	jwtAuth           func(http.Handler) http.Handler
+	apiKeyAuth        func(http.Handler) http.Handler
+	anyAuth           func(http.Handler) http.Handler
+	clientOnly        func(http.Handler) http.Handler
+	projectClientOnly func(http.Handler) http.Handler
 }
 
 func (app *IdentityX) run() {
@@ -81,6 +87,7 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	r.cryptoKeys = crypto_keys.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.blacklist = blacklist.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.externalIdentities = authn.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.orgs = organizations.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	return r
 }
 
@@ -91,6 +98,13 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 		Logger:     rt.logger,
 		Tracer:     rt.tracer,
 		Tx:         rt.tx,
+	})
+	cmd.orgs = organizations.NewQueries(ports.OrganizationDeps{
+		Actors: r.actors,
+		Orgs:   r.orgs,
+		Logger: rt.logger,
+		Tracer: rt.tracer,
+		Tx:     rt.tx,
 	})
 	return cmd
 }
@@ -107,18 +121,28 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 		Tracer:             rt.tracer,
 		Tx:                 rt.tx,
 	})
+	cmd.orgs = organizations.NewCommands(ports.OrganizationDeps{
+		Actors: r.actors,
+		Orgs:   r.orgs,
+		Logger: rt.logger,
+		Tracer: rt.tracer,
+		Tx:     rt.tx,
+	})
 	return cmd
 }
 
 func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 	return RouterDeps{
-		AppName:    app.cfg.AppName,
-		CORS:       rt.mws.cors,
-		Logger:     rt.mws.logger,
-		JwtAuth:    rt.mws.jwtAuth,
-		ApiKeyAuth: rt.mws.apiKeyAuth,
-		AnyAuth:    rt.mws.anyAuth,
-		Authn:      authn.NewHandlers(rt.commands.authn, rt.queries.authn),
+		AppName:           app.cfg.AppName,
+		CORS:              rt.mws.cors,
+		Logger:            rt.mws.logger,
+		JwtAuth:           rt.mws.jwtAuth,
+		ApiKeyAuth:        rt.mws.apiKeyAuth,
+		AnyAuth:           rt.mws.anyAuth,
+		ClientOnly:        rt.mws.clientOnly,
+		ProjectClientOnly: rt.mws.projectClientOnly,
+		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
+		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
 	}
 }
 
@@ -146,5 +170,7 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	//mw.ratelimit = middlewares.RateLimit(middlewares.RateLimitConfig{RPS: 400, Burst: 20,
 	//	KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
 	//})
+	mw.clientOnly = ClientOnly()
+	mw.projectClientOnly = ProjectClientOnly()
 	return mw
 }

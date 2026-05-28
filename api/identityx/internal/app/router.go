@@ -2,6 +2,7 @@ package app
 
 import (
 	"IdentityX/internal/features/authn"
+	"IdentityX/internal/features/organizations"
 	_ "IdentityX/models"
 	"context"
 	"fmt"
@@ -24,13 +25,16 @@ import (
 type RouterDeps struct {
 	AppName string
 
-	CORS       func(http.Handler) http.Handler
-	Logger     func(http.Handler) http.Handler
-	JwtAuth    func(http.Handler) http.Handler
-	ApiKeyAuth func(http.Handler) http.Handler
-	AnyAuth    func(http.Handler) http.Handler
+	CORS              func(http.Handler) http.Handler
+	Logger            func(http.Handler) http.Handler
+	JwtAuth           func(http.Handler) http.Handler
+	ApiKeyAuth        func(http.Handler) http.Handler
+	AnyAuth           func(http.Handler) http.Handler
+	ClientOnly        func(http.Handler) http.Handler
+	ProjectClientOnly func(http.Handler) http.Handler
 
 	Authn *authn.Handlers
+	Orgs  *organizations.Handlers
 }
 
 // CreateRouter godoc
@@ -49,6 +53,8 @@ type RouterDeps struct {
 // @schemes http https
 // @tag.name authn
 // @tag.description "Operations related to user authentication"
+// @tag.name organizations
+// @tag.description "Operations related to organization management"
 // @tag.name projects
 // @tag.description "Operations related to project management"
 // @produce json
@@ -111,6 +117,7 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 	r.Handle("/metrics", promhttp.Handler())
 
 	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
+	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
 	//account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
 	//sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
 	//projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth)

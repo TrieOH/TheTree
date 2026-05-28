@@ -1,0 +1,21 @@
+meta {
+  name: Remove Member
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{identityx_url}}/organizations/{org_id}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "actor_id": "00000000-0000-0000-0000-000000000000",
+  }
+}

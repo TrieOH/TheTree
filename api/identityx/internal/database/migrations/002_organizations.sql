@@ -8,7 +8,7 @@ CREATE TABLE organizations (
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
 
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
@@ -30,7 +30,7 @@ CREATE TABLE org_members (
     role TEXT NOT NULL,
     CONSTRAINT chk_org_members_role CHECK (role IN ('owner', 'admin', 'member')),
 
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB DEFAULT '{}'::jsonb,
 
     joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
