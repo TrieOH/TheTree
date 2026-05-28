@@ -47,6 +47,7 @@ type commands struct {
 type queries struct {
 	namespaces *namespaces.Queries
 	forms      *forms.Queries
+	steps      *steps.Queries
 }
 
 type repos struct {
@@ -91,7 +92,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	var handlers Deps
 	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
-	handlers.StepsHandler = steps.NewHandlers(rt.commands.steps)
+	handlers.StepsHandler = steps.NewHandlers(rt.commands.steps, rt.queries.steps)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -121,6 +122,7 @@ func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
 	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	q.steps = steps.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return q
 }
 
