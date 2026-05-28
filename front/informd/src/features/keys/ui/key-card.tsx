@@ -45,8 +45,8 @@ export function APIKeyCard({ data, onRevoke }: PropsI) {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {isRevoked
-            ? `Revoked ${timeAgo(data.revoked_at!)}`
+          {isRevoked && data.revoked_at
+            ? `Revoked ${timeAgo(data.revoked_at)}`
             : `Created ${timeAgo(data.created_at)}`}
         </p>
       </div>

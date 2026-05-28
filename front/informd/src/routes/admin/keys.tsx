@@ -59,7 +59,7 @@ function RouteComponent() {
       if (response.success) {
         queryClient.setQueryData(
           allApiKeysQueryOptions().queryKey,
-          (oldData: ApiKeyI[] = []) => [response.data.APIKeyResponse, ...oldData]
+          (oldData: ApiKeyI[] = []) => [response.data, ...oldData]
         );
         setIsCreateOpen(false)
         setNewlyCreatedKey(response.data)
