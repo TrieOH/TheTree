@@ -21,10 +21,7 @@ func NewStep(formID uuid.UUID, title string, description *string, positionHint i
 		Description:  description,
 		PositionHint: positionHint,
 	}
-	if err := validate.Struct(s); err != nil {
-		return nil, err
-	}
-	return s, nil
+	return s, validate.Struct(s)
 }
 
 type CreateStepRequest struct {

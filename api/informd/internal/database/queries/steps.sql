@@ -1,6 +1,6 @@
 -- name: CreateStep :one
 INSERT INTO steps (form_id, title, description, position_hint)
-VALUES ($1, $2, $3, $4)
+VALUES (@form_id, @title, @description, @position_hint)
     RETURNING *;
 
 -- name: ListStepsByFormID :many
