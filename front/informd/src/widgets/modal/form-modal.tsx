@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "./modal";
 import { cn } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
+import { Textarea } from "#/shared/ui/shadcn/textarea";
 import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
 import {
@@ -96,16 +97,33 @@ export default function FormModal<T extends FieldValues>({
       );
     }
 
+    if (field.type === "textarea") {
+      return (
+        <Textarea
+          id={fieldName}
+          placeholder={field.placeholder}
+          rows={field.rows ?? 3}
+          className={cn(
+            "rounded-md border-border min-h-20 resize-y",
+            error && "border-destructive"
+          )}
+          {...register(fieldName)}
+        />
+      );
+    }
+
     return (
       <Input
         id={fieldName}
         type={field.type}
         placeholder={field.placeholder}
+        min={field.min}
+        max={field.max}
         className={cn(
           "rounded-md border-border",
           error && "border-destructive"
         )}
-        {...register(fieldName)}
+        {...register(fieldName, field.type === "number" ? { valueAsNumber: true } : undefined)}
       />
     );
   };

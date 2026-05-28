@@ -1,5 +1,5 @@
 import { spicedb } from "@soramux/node-perm-sdk";
-import { env } from "@/env";
+import { env } from "#/env";
 
 export const serverPerm = spicedb.permission({
   url: env.TRIEOH_AUTHZED_URL,

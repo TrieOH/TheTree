@@ -1,7 +1,7 @@
 import posthog from 'posthog-js'
 import { PostHogProvider as BasePostHogProvider } from '@posthog/react'
 import type { ReactNode } from 'react'
-import { env } from '@/env'
+import { env } from '#/env'
 
 if (typeof window !== 'undefined' && env.VITE_POSTHOG_KEY) {
   posthog.init(env.VITE_POSTHOG_KEY, {
