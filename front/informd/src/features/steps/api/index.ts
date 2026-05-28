@@ -1,6 +1,6 @@
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import type { StepCreateI, StepI } from "../model";
+import type { StepCreateI, StepI, StepUpdateI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
@@ -19,6 +19,24 @@ export const createStepFn = createClientOnlyFn((
     return authFetcher.post<StepI>(`namespaces/${namespace_id}/forms/${form_id}/steps`, formData);
   return authFetcher.post<StepI>(`/forms/${form_id}/steps`, formData);
 });
+
+/**
+ * Bulk edit Steps on the server.
+ * @param formData - The data for the updated steps.
+ * @param form_id - The ID of the Form to which the Steps belong.
+ * @param namespace_id - (Optional) The ID of the Namespace that the Form belongs to. If not provided, edits steps without namespace context.
+ * @returns A promise that resolves to the API response containing the updated Steps.
+ */
+export const bulkEditStepsFn = createClientOnlyFn((
+  formData: StepUpdateI[],
+  form_id: string,
+  namespace_id?: string
+) => {
+  if (namespace_id)
+    return authFetcher.put<StepI>(`namespaces/${namespace_id}/forms/${form_id}/steps`, formData);
+  return authFetcher.put<StepI>(`/forms/${form_id}/steps`, formData);
+});
+
 
 
 /**
