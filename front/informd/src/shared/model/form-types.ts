@@ -8,4 +8,5 @@ export interface FieldDefinition<T> {
   min?: number;
   max?: number;
   rows?: number;
-}
+  disabled?: boolean;
+  }

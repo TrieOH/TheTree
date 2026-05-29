@@ -16,6 +16,7 @@ import {
 import { AlertCircle } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
 import type { ZodType } from "zod";
+import { useEffect } from "react";
 import type {
   DefaultValues,
   FieldValues,
@@ -54,11 +55,18 @@ export default function FormModal<T extends FieldValues>({
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors },
   } = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues,
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset(defaultValues);
+    }
+  }, [isOpen, defaultValues, reset]);
 
   const handleFormSubmit: SubmitHandler<T> = (data) => {
     onSubmit(data);
@@ -119,6 +127,7 @@ export default function FormModal<T extends FieldValues>({
         placeholder={field.placeholder}
         min={field.min}
         max={field.max}
+        disabled={field.disabled || disabled}
         className={cn(
           "rounded-md border-border",
           error && "border-destructive"

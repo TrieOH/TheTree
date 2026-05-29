@@ -1,11 +1,10 @@
 import { allFormsStepsQueryOptions, createStepFn } from '#/features/steps/api'
 import { stepCreateSchema } from '#/features/steps/model'
 import type { StepCreateI, StepI } from '#/features/steps/model';
-import { StepCard } from '#/features/steps/ui/step-card'
+import { StepCarousel } from '#/features/steps/ui/step-carousel';
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import { Button } from '#/shared/ui/shadcn/button'
 import FormModal from '#/widgets/modal/form-modal'
-import { PaginatedContainer } from '#/widgets/pagination/paginated-container-grid'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
@@ -23,9 +22,25 @@ function RouteComponent() {
   const { data: steps = [] } = useQuery(allFormsStepsQueryOptions(formID, namespaceID))
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [filter, setFilter] = useState('')
+  const [defaultValues, setDefaultValues] = useState<Partial<StepCreateI>>({})
+  const [addContext, setAddContext] = useState<string | null>(null)
 
   const count = steps.length
+  const maxPosition = useMemo(() => {
+    if (count === 0) return 0
+    return Math.max(...steps.map(s => s.position_hint))
+  }, [steps, count])
+
+  const openAddModal = (requestedHint: number, contextName?: string) => {
+    // Check if hint is already taken
+    const isTaken = steps.some(s => s.position_hint === requestedHint)
+    const finalHint = isTaken ? maxPosition + 1 : requestedHint
+
+    setDefaultValues({ position_hint: finalHint })
+    setAddContext(contextName || null)
+    setIsCreateOpen(true)
+  }
+
   const header = useMemo(() => (
     <div className="flex items-start justify-between">
       <div>
@@ -36,20 +51,17 @@ function RouteComponent() {
             : `${count} step${count !== 1 ? 's' : ''} in this form`}
         </p>
       </div>
+      <Button
+        size="sm"
+        className="gap-2"
+        onClick={() => openAddModal(maxPosition + 1)}
+      >
+        <Plus className="w-4 h-4" />
+        Add Step
+      </Button>
     </div>
-  ), [count])
+  ), [count, maxPosition])
   useLayoutHeader(header)
-
-  const filteredSteps = steps.filter((step) => {
-    const search = filter.toLowerCase().trim()
-
-    if (!search) return true
-
-    return (
-      step.title.toLowerCase().includes(search) ||
-      (step.description?.toLowerCase().includes(search) ?? false)
-    )
-  })
 
   const { mutate: addStepToForm, isPending: isCreating } = useMutation({
     mutationFn: (data: StepCreateI) => createStepFn(data, formID, namespaceID),
@@ -57,7 +69,10 @@ function RouteComponent() {
       if (response.success) {
         queryClient.setQueryData(
           allFormsStepsQueryOptions(formID, namespaceID).queryKey,
-          (oldData: StepI[] = []) => [...oldData, response.data]
+          (oldData: StepI[] = []) => {
+            const newData = [...oldData, response.data]
+            return newData.sort((a, b) => a.position_hint - b.position_hint)
+          }
         )
         setIsCreateOpen(false)
         toast.success(response.message || "Step added successfully")
@@ -68,41 +83,20 @@ function RouteComponent() {
 
   return (
     <div>
-      <PaginatedContainer<StepI>
-        items={filteredSteps}
-        layout='list'
-        pageSize={10}
-        sortFields={[
-          { key: "title", label: "Title" },
-          { key: "position_hint", label: "Position" },
-        ]}
-        filterValue={filter}
-        onFilterChange={setFilter}
-        filterPlaceholder="Filter by description or title…"
-        itemLabel="steps"
-        headerActions={
-          <Button
-            onClick={() => setIsCreateOpen(true)}
-            size="icon"
-            variant="outline"
-            className="sm:w-auto px-3 rounded-sm"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline ml-2">Add Step</span>
-          </Button>
-        }
-        renderItems={(slice) => slice.map(item => {
-          return <StepCard key={item.id} step={item} />
-        })}
+      <StepCarousel
+        steps={steps}
+        onAddBefore={(hint) => openAddModal(hint, `before "${steps.find(s => s.position_hint === hint + 1)?.title || 'step'}"`)}
+        onAddAfter={(hint) => openAddModal(hint, `after "${steps.find(s => s.position_hint === hint - 1)?.title || 'step'}"`)}
       />
 
       <FormModal<StepCreateI>
         title="Add Step"
-        description="Create a new step for this form."
+        description={addContext ? `This step will be created ${addContext}.` : "Create a new step for this form."}
         buttonTitle="Add Step"
         schema={stepCreateSchema}
         formId="add-step-form"
         isOpen={isCreateOpen}
+        defaultValues={defaultValues}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={addStepToForm}
         fields={[
@@ -114,10 +108,10 @@ function RouteComponent() {
           },
           {
             name: 'position_hint',
-            label: 'Position Hint',
+            label: 'Position (System Managed)',
             type: 'number',
-            min: 1,
-            placeholder: 'e.g. 1 (This determines the order of steps in the form)',
+            disabled: true,
+            placeholder: 'Position is automatically assigned',
           },
           {
             name: 'description',
