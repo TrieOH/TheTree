@@ -60,36 +60,36 @@ type CreateOrganizationInput struct {
 }
 
 type AddOrganizationMemberRequest struct {
-	ActorID uuid.UUID        `json:"actor_id"`
-	Role    OrganizationRole `json:"role"`
+	ActorEmail string           `json:"actor_email"`
+	Role       OrganizationRole `json:"role"`
 }
 
 func (r *AddOrganizationMemberRequest) ToInput(orgID uuid.UUID) AddOrganizationMemberInput {
 	return AddOrganizationMemberInput{
-		ActorID:        r.ActorID,
+		ActorEmail:     r.ActorEmail,
 		Role:           r.Role,
 		OrganizationID: orgID,
 	}
 }
 
 type AddOrganizationMemberInput struct {
-	ActorID        uuid.UUID        `json:"actor_id"`
+	ActorEmail     string           `json:"actor_email"`
 	Role           OrganizationRole `json:"role"`
 	OrganizationID uuid.UUID        `json:"organization_id"`
 }
 
 type RemoveOrganizationMemberRequest struct {
-	ActorID uuid.UUID `json:"actor_id"`
+	ActorEmail string `json:"actor_email"`
 }
 
 func (r *RemoveOrganizationMemberRequest) ToInput(orgID uuid.UUID) RemoveOrganizationMemberInput {
 	return RemoveOrganizationMemberInput{
-		ActorID:        r.ActorID,
+		ActorEmail:     r.ActorEmail,
 		OrganizationID: orgID,
 	}
 }
 
 type RemoveOrganizationMemberInput struct {
-	ActorID        uuid.UUID `json:"actor_id"`
+	ActorEmail     string    `json:"actor_email"`
 	OrganizationID uuid.UUID `json:"organization_id"`
 }

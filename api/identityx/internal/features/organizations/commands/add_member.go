@@ -16,7 +16,12 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganization
 		return err
 	}
 
-	if ident.Sub.ID == payload.ActorID {
+	actor, err := c.actors.GetByEmail(ctx, payload.ActorEmail, nil)
+	if err != nil {
+		return err
+	}
+
+	if ident.Sub.ID == actor.ID {
 		return fun.ErrBadRequest("users can't add themselves to organizations")
 	}
 
@@ -25,7 +30,7 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganization
 		return err
 	}
 
-	if payload.ActorID == org.OwnerID {
+	if actor.ID == org.OwnerID {
 		return fun.ErrBadRequest("owners can't be added to organizations they own")
 	}
 
@@ -42,12 +47,12 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganization
 		}
 	}
 
-	_, err = c.actors.GetByID(ctx, payload.ActorID)
+	_, err = c.actors.GetByID(ctx, actor.ID)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.orgs.GetMember(ctx, payload.ActorID, org.ID)
+	_, err = c.orgs.GetMember(ctx, actor.ID, org.ID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return err
 	}
@@ -56,7 +61,7 @@ func (c *Commands) AddMember(ctx context.Context, payload models.AddOrganization
 	}
 
 	newMember := models.OrganizationMember{
-		ActorID:        payload.ActorID,
+		ActorID:        actor.ID,
 		OrganizationID: payload.OrganizationID,
 		Role:           payload.Role,
 	}

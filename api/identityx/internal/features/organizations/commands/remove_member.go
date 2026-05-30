@@ -15,7 +15,13 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 	if err != nil {
 		return err
 	}
-	if ident.Sub.ID == payload.ActorID {
+
+	actor, err := c.actors.GetByEmail(ctx, payload.ActorEmail, nil)
+	if err != nil {
+		return err
+	}
+
+	if ident.Sub.ID == actor.ID {
 		return fun.ErrBadRequest("Cannot remove yourself from the organization")
 	}
 
@@ -23,7 +29,7 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 	if err != nil {
 		return err
 	}
-	if payload.ActorID == org.OwnerID {
+	if actor.ID == org.OwnerID {
 		return fun.ErrBadRequest("cannot remove the owner of the organization")
 	}
 
@@ -40,7 +46,7 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 		}
 	}
 
-	_, err = c.orgs.GetMember(ctx, payload.ActorID, org.ID)
+	_, err = c.orgs.GetMember(ctx, actor.ID, org.ID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return err
 	}
@@ -48,5 +54,5 @@ func (c *Commands) RemoveMember(ctx context.Context, payload models.RemoveOrgani
 		return fun.ErrBadRequest("user is not a member of the organization")
 	}
 
-	return c.orgs.RemoveMember(ctx, payload.ActorID, payload.OrganizationID)
+	return c.orgs.RemoveMember(ctx, actor.ID, payload.OrganizationID)
 }

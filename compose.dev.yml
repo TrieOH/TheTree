@@ -59,6 +59,8 @@ services:
     depends_on:
       mailpit:
         condition: service_healthy
+    ports:
+      - "6060:6060"
 
   # -----------------
   # 💳 PAYSSAGE
@@ -67,6 +69,8 @@ services:
     build:
       context: .
       dockerfile: api/payssage/Dockerfile
+    ports:
+      - "6061:6061"
 
   # -----------------
   # 📢 INFORMD
@@ -75,6 +79,8 @@ services:
     build:
       context: .
       dockerfile: api/informd/Dockerfile
+    ports:
+      - "6062:6062"
 
   # -----------------
   # 🎟️ UNIVENTS
@@ -83,6 +89,8 @@ services:
     build:
       context: .
       dockerfile: api/univents/Dockerfile
+    ports:
+      - "6063:6063"
 
   # -----------------
   # 📧 MAILPIT

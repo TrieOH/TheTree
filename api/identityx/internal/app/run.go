@@ -14,6 +14,7 @@ import (
 	"lib/xslices"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 
 	"github.com/MintzyG/fun/middlewares"
@@ -75,6 +76,19 @@ func (app *IdentityX) run() {
 	rt.mws = app.startMiddlewares(rt)
 	routerDeps := app.setupRouter(rt)
 	mux := app.CreateRouter(routerDeps, app.cfg.DebugMode, app.cfg.DisableRateLimit)
+	if app.cfg.ProfilePort != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("identityx pprof listening on :%s", app.cfg.ProfilePort)
+			log.Println(http.ListenAndServe(":"+app.cfg.ProfilePort, pmux))
+		}()
+	}
+
 	port := app.cfg.Port
 	log.Printf("IdentityX listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

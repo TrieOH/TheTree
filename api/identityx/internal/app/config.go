@@ -52,6 +52,9 @@ type Config struct {
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
 
+	// Profiling
+	ProfilePort string `env:"PROFILE_PORT"`
+
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 }
