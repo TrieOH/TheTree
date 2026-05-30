@@ -41,4 +41,5 @@ SELECT ns.*
 FROM namespace_members nm
 INNER JOIN namespaces ns
 ON nm.namespace_id = ns.id
-WHERE nm.user_id = $1;
+WHERE nm.user_id = $1
+  AND ns.owner_id != $1;
