@@ -1,6 +1,7 @@
 package app
 
 import (
+	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces"
 	"Informd/internal/features/steps"
@@ -23,6 +24,7 @@ type Deps struct {
 	NamespacesHandler *namespaces.Handlers
 	FormsHandler      *forms.Handlers
 	StepsHandler      *steps.Handlers
+	FieldsHandler     *fields.Handlers
 
 	Logger    func(http.Handler) http.Handler
 	RequestID func(http.Handler) http.Handler
@@ -106,6 +108,7 @@ func CreateRouter(deps *Deps) http.Handler {
 	namespaces.RegisterRoutes(r, deps.NamespacesHandler, deps.Jwt)
 	forms.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
 	steps.RegisterRoutes(r, deps.StepsHandler, deps.AnyAuth)
+	fields.RegisterRoutes(r, deps.FieldsHandler, deps.AnyAuth)
 
 	r.Get("/health", handlers.Health(deps.AppName).Handle)
 
