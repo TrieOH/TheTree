@@ -43,20 +43,39 @@ func (s *QueryService) ListFormMembers(ctx context.Context, namespaceID, formID 
 	if err != nil {
 		return nil, err
 	}
-
 	namespaceMembers, err := s.namespaces.ListMembers(ctx, namespace.ID)
 	if err != nil {
 		return nil, err
 	}
 
+	var formRoleRank = map[models.FormMemberRole]int{
+		models.FormMemberRoleViewer: 0,
+		models.FormMemberRoleEditor: 1,
+		models.FormMemberRoleAdmin:  2,
+	}
+
+	// Index direct members by UserID for O(1) lookup during dedup.
+	// Namespace membership wins unless the direct role is strictly higher.
+	merged := make(map[uuid.UUID]models.FormMember, len(members)+len(namespaceMembers))
+	for _, m := range members {
+		merged[m.UserID] = m
+	}
 	for _, m := range namespaceMembers {
-		members = append(members, models.FormMember{
+		ns := models.FormMember{
 			UserID:  m.UserID,
 			FormID:  formID,
 			Role:    models.FormMemberRole(m.Role),
 			AddedAt: m.AddedAt,
 			AddedBy: m.AddedBy,
-		})
+		}
+		if existing, ok := merged[m.UserID]; !ok || formRoleRank[ns.Role] >= formRoleRank[existing.Role] {
+			merged[m.UserID] = ns
+		}
+	}
+
+	members = make([]models.FormMember, 0, len(merged))
+	for _, m := range merged {
+		members = append(members, m)
 	}
 
 	return members, nil

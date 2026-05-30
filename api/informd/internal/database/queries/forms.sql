@@ -35,7 +35,8 @@ SELECT f.*
 FROM form_members fm
 INNER JOIN forms f
 ON fm.form_id = f.id
-WHERE fm.user_id = $1;
+WHERE fm.user_id = $1
+  AND f.owner_id != $1;
 
 -- name: ListNamespaceForms :many
 SELECT *
