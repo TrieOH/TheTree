@@ -16,6 +16,7 @@ export const Route = createFileRoute('/admin/form/$formID')({
 
 function FormLayout() {
   const { formID } = Route.useParams()
+  const { namespaceID } = Route.useSearch()
 
   const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
 
@@ -58,6 +59,7 @@ function FormLayout() {
                 key={tab.label}
                 to={tab.to}
                 params={tab.params}
+                search={{ namespaceID }}
                 activeOptions={{ exact: tab.exact, includeSearch: false }}
                 className="relative h-full flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-colors group"
               >
