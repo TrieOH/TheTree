@@ -419,6 +419,7 @@ export function PaginatedContainer<T>({
               </span>
               <input
                 type="text"
+                name="table-filter"
                 value={filterValue ?? ""}
                 onChange={(e) => {
                   onFilterChange(e.target.value);
