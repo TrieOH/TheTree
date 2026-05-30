@@ -1,11 +1,11 @@
 meta {
   name: Add Member
   type: http
-  seq: 4
+  seq: 3
 }
 
 post {
-  url: {{identityx_url}}/organizations/{org_id}/members
+  url: {{identityx_url}}/projects/{project_id}/members
   body: json
   auth: bearer
 }

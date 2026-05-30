@@ -9,8 +9,6 @@ CREATE TABLE projects (
         ON DELETE RESTRICT,
 
     name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    CONSTRAINT uniq_projects_slug UNIQUE (slug),
 
     domain TEXT,
     CONSTRAINT uniq_verified_domain UNIQUE(domain),

@@ -3,6 +3,7 @@ package app
 import (
 	"IdentityX/internal/features/authn"
 	"IdentityX/internal/features/organizations"
+	"IdentityX/internal/features/projects"
 	_ "IdentityX/models"
 	"context"
 	"fmt"
@@ -33,8 +34,9 @@ type RouterDeps struct {
 	ClientOnly        func(http.Handler) http.Handler
 	ProjectClientOnly func(http.Handler) http.Handler
 
-	Authn *authn.Handlers
-	Orgs  *organizations.Handlers
+	Authn    *authn.Handlers
+	Orgs     *organizations.Handlers
+	Projects *projects.Handlers
 }
 
 // CreateRouter godoc
@@ -118,9 +120,9 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 
 	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
 	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
+	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth, deps.ClientOnly)
 	//account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
 	//sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
-	//projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth)
 	//api_keys.RegisterRoutes(r, deps.ApiKeys, deps.Jwt)
 
 	r.Get("/health", handlers.Health("IdentityX-API").Handle)

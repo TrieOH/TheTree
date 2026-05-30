@@ -38,3 +38,4 @@ dist
 api/**/docs/
 !/docs/
 **/sqlc/
+.sock

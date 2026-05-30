@@ -8,6 +8,7 @@ import (
 	"IdentityX/internal/features/crypto_keys"
 	"IdentityX/internal/features/organizations"
 	"IdentityX/internal/features/platform_roles"
+	"IdentityX/internal/features/projects"
 	"IdentityX/ports"
 	"lib/database"
 	"lib/telemetry"
@@ -42,16 +43,19 @@ type repos struct {
 	blacklist          ports.BlacklistRepo
 	externalIdentities ports.ExternalIdentitiesRepo
 	orgs               ports.OrganizationRepo
+	projects           ports.ProjectRepo
 }
 
 type queries struct {
-	authn *authn.Queries
-	orgs  *organizations.Queries
+	authn    *authn.Queries
+	orgs     *organizations.Queries
+	projects *projects.Queries
 }
 
 type commands struct {
-	authn *authn.Commands
-	orgs  *organizations.Commands
+	authn    *authn.Commands
+	orgs     *organizations.Commands
+	projects *projects.Commands
 }
 
 type mws struct {
@@ -102,6 +106,7 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 	r.blacklist = blacklist.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.externalIdentities = authn.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.orgs = organizations.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.projects = projects.NewRepos(rt.sqlcQ, rt.logger, rt.tracer)
 	return r
 }
 
@@ -120,6 +125,7 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 		Tracer: rt.tracer,
 		Tx:     rt.tx,
 	})
+	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
 
@@ -142,6 +148,7 @@ func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 		Tracer: rt.tracer,
 		Tx:     rt.tx,
 	})
+	cmd.projects = projects.NewCommands(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
 
@@ -157,6 +164,7 @@ func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 		ProjectClientOnly: rt.mws.projectClientOnly,
 		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
 		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
+		Projects:          projects.NewHandlers(rt.commands.projects, rt.queries.projects),
 	}
 }
 

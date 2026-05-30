@@ -24,10 +24,9 @@ services:
       - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U TheTreeRoot -d postgres"]
-      interval: 10s
+      interval: 3s
       timeout: 5s
       retries: 5
-      start_period: 10s
 
   # =============================================================
   # 🌐 CADDY
@@ -49,10 +48,9 @@ services:
       - internal
     healthcheck:
       test: ["CMD", "curl", "-s", "http://localhost:2019/"]
-      interval: 10s
+      interval: 3s
       timeout: 5s
       retries: 5
-      start_period: 5s
 
   # =============================================================
   # 📂 RUSTFS (S3-compatible object storage)
@@ -74,9 +72,9 @@ services:
       - internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health && wget -qO- http://localhost:9001/rustfs/console/health"]
-      interval: 10s
+      interval: 3s
       timeout: 5s
-      retries: 3
+      retries: 5
 
 networks:
   internal:
