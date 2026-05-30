@@ -1,13 +1,11 @@
-import { allFormsStepsQueryOptions, createStepFn } from '#/features/steps/api'
-import { stepCreateSchema } from '#/features/steps/model'
-import type { StepCreateI, StepI } from '#/features/steps/model';
+import { allFormsStepsQueryOptions, bulkEditStepsFn, createStepFn } from '#/features/steps/api'
+import { stepCreateSchema, stepUpdateSchema } from '#/features/steps/model'
+import type { StepCreateI, StepI, StepUpdateI } from '#/features/steps/model';
 import { StepCarousel } from '#/features/steps/ui/step-carousel';
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
-import { Button } from '#/shared/ui/shadcn/button'
 import FormModal from '#/widgets/modal/form-modal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -22,8 +20,12 @@ function RouteComponent() {
   const { data: steps = [] } = useQuery(allFormsStepsQueryOptions(formID, namespaceID))
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingStep, setEditingStep] = useState<StepI | null>(null)
   const [defaultValues, setDefaultValues] = useState<Partial<StepCreateI>>({})
   const [addContext, setAddContext] = useState<string | null>(null)
+  const [focusedStepId, setFocusedStepId] = useState<string | null>(null)
+  const [focusKey, setFocusKey] = useState(0)
 
   const count = steps.length
   const maxPosition = useMemo(() => {
@@ -41,6 +43,11 @@ function RouteComponent() {
     setIsCreateOpen(true)
   }
 
+  const openEditModal = (step: StepI) => {
+    setEditingStep(step)
+    setIsEditOpen(true)
+  }
+
   const header = useMemo(() => (
     <div className="flex items-start justify-between">
       <div>
@@ -51,14 +58,6 @@ function RouteComponent() {
             : `${count} step${count !== 1 ? 's' : ''} in this form`}
         </p>
       </div>
-      <Button
-        size="sm"
-        className="gap-2"
-        onClick={() => openAddModal(maxPosition + 1)}
-      >
-        <Plus className="w-4 h-4" />
-        Add Step
-      </Button>
     </div>
   ), [count, maxPosition])
   useLayoutHeader(header)
@@ -81,11 +80,76 @@ function RouteComponent() {
     onError: (error: Error) => toast.error(error.message)
   })
 
+  const { mutate: editStep, isPending: isEditing } = useMutation({
+    mutationFn: (data: StepUpdateI) => bulkEditStepsFn([data], formID, namespaceID),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: allFormsStepsQueryOptions(formID, namespaceID).queryKey })
+        setIsEditOpen(false)
+        setEditingStep(null)
+        toast.success(response.message || "Step updated successfully")
+      } else toast.error(response.message || "Failed to update step")
+    },
+    onError: (error: Error) => toast.error(error.message)
+  })
+
+  const { mutate: moveStep } = useMutation({
+    mutationFn: ({ stepId, direction }: { stepId: string, direction: 'left' | 'right' }) => {
+      const currentStep = steps.find(s => s.id === stepId)
+      if (!currentStep) throw new Error("Step not found")
+
+      const neighborPosition = direction === 'left'
+        ? currentStep.position_hint - 1
+        : currentStep.position_hint + 1
+
+      const neighborStep = steps.find(s => s.position_hint === neighborPosition)
+      if (!neighborStep) throw new Error("No adjacent step found")
+
+      const updatedSteps: StepUpdateI[] = [
+        { id: currentStep.id, title: currentStep.title, description: currentStep.description, position_hint: neighborStep.position_hint },
+        { id: neighborStep.id, title: neighborStep.title, description: neighborStep.description, position_hint: currentStep.position_hint },
+      ]
+
+      return bulkEditStepsFn(updatedSteps, formID, namespaceID)
+    },
+    onSuccess: (response, variables) => {
+      if (response.success) {
+        queryClient.setQueryData(
+          allFormsStepsQueryOptions(formID, namespaceID).queryKey,
+          (oldData: StepI[] = []) => {
+            const currentStep = oldData.find(s => s.id === variables.stepId)
+            if (!currentStep) return oldData
+
+            const neighborPosition = variables.direction === 'left'
+              ? currentStep.position_hint - 1
+              : currentStep.position_hint + 1
+
+            return oldData.map(s => {
+              if (s.id === variables.stepId) {
+                return { ...s, position_hint: neighborPosition }
+              }
+              if (s.position_hint === neighborPosition) {
+                return { ...s, position_hint: currentStep.position_hint }
+              }
+              return s
+            }).sort((a, b) => a.position_hint - b.position_hint)
+          }
+        )
+        setFocusedStepId(variables.stepId)
+        setFocusKey(k => k + 1)
+      } else toast.error(response.message || "Failed to reorder step")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
   return (
     <div>
       <StepCarousel
         steps={steps}
-        onAddBefore={(hint) => openAddModal(hint, `before "${steps.find(s => s.position_hint === hint + 1)?.title || 'step'}"`)}
+        focusedStepId={focusedStepId}
+        focusKey={focusKey}
+        onMoveStep={(stepId, direction) => moveStep({ stepId, direction })}
+        onEditStep={openEditModal}
         onAddAfter={(hint) => openAddModal(hint, `after "${steps.find(s => s.position_hint === hint - 1)?.title || 'step'}"`)}
       />
 
@@ -122,6 +186,34 @@ function RouteComponent() {
           }
         ]}
         disabled={isCreating}
+      />
+
+      <FormModal<StepUpdateI>
+        title="Edit Step"
+        description="Update the step's information."
+        buttonTitle="Save Changes"
+        schema={stepUpdateSchema}
+        formId="edit-step-form"
+        isOpen={isEditOpen}
+        defaultValues={editingStep || undefined}
+        onClose={() => setIsEditOpen(false)}
+        onSubmit={editStep}
+        fields={[
+          {
+            name: 'title',
+            label: 'Step Title',
+            type: 'text',
+            placeholder: 'e.g. Personal Information',
+          },
+          {
+            name: 'description',
+            label: 'Step Description',
+            type: 'textarea',
+            rows: 4,
+            placeholder: 'e.g. Collect basic personal information from the user.',
+          }
+        ]}
+        disabled={isEditing}
       />
     </div>
   )

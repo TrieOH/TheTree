@@ -14,12 +14,13 @@ export const stepCreateSchema = z.object({
 
 export type StepCreateI = CreateStepRequest;
 
-export const stepUpdateBulkSchema = z.object({
+export const stepUpdateSchema = z.object({
+  id: z.string({ error: "ID is required" }),
   title: z.string({ error: "Title is required" })
     .min(3, "Title must be at least 3 characters long"),
   description: z.string().optional(),
   position_hint: z.number({ error: "Position hint is required" })
-}) satisfies z.ZodType<CreateStepRequest>;
+}) satisfies z.ZodType<UpdateStepRequest>;
 
 export type StepUpdateI = UpdateStepRequest;
 
