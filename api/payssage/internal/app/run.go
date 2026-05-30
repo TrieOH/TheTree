@@ -5,6 +5,7 @@ import (
 	"lib/telemetry"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"payssage/internal/features/api_keys"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
@@ -99,6 +100,18 @@ func (app *Payssage) run() {
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.handlers = app.startHandlers(rt)
 	mux := router.CreateRouter(rt.handlers)
+	if pp := viper.GetString("PROFILE_PORT"); pp != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("payssage pprof listening on :%s", pp)
+			log.Println(http.ListenAndServe(":"+pp, pmux))
+		}()
+	}
 	port := viper.GetString("port")
 	log.Printf("payssage listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

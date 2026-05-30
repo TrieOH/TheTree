@@ -7,6 +7,7 @@ import (
 	"lib/xslices"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"time"
 	"univents/internal/features/activities"
@@ -130,6 +131,18 @@ func (app *Univents) run() runtime {
 	rt.handlers = app.startHandlers(rt)
 
 	mux := CreateRouter(rt.handlers)
+	if app.cfg.ProfilePort != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("univents pprof listening on :%s", app.cfg.ProfilePort)
+			log.Println(http.ListenAndServe(":"+app.cfg.ProfilePort, pmux))
+		}()
+	}
 	port := viper.GetString("PORT")
 	log.Printf("Univents listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
