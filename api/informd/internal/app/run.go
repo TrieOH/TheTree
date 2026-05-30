@@ -2,6 +2,7 @@ package app
 
 import (
 	"Informd/internal/database/sqlc"
+	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces"
 	"Informd/internal/features/steps"
@@ -42,18 +43,21 @@ type commands struct {
 	namespaces *namespaces.Commands
 	forms      *forms.Commands
 	steps      *steps.Commands
+	fields     *fields.Commands
 }
 
 type queries struct {
 	namespaces *namespaces.Queries
 	forms      *forms.Queries
 	steps      *steps.Queries
+	fields     *fields.Queries
 }
 
 type repos struct {
 	namespaces ports.NamespaceRepo
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
+	fields     ports.FieldsRepo
 }
 
 type mws struct {
@@ -93,6 +97,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	handlers.NamespacesHandler = namespaces.NewHandler(rt.commands.namespaces, rt.queries.namespaces)
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
 	handlers.StepsHandler = steps.NewHandlers(rt.commands.steps, rt.queries.steps)
+	handlers.FieldsHandler = fields.NewHandlers(rt.commands.fields, rt.queries.fields)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -115,6 +120,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 	cmd.namespaces = namespaces.NewCommands(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
 	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	cmd.steps = steps.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	cmd.fields = fields.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return cmd
 }
 
@@ -123,6 +129,7 @@ func (app *Informd) startQueries(rt runtime) queries {
 	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
 	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	q.steps = steps.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	q.fields = fields.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return q
 }
 
@@ -131,6 +138,7 @@ func (app *Informd) startRepos(rt runtime) repos {
 	r.namespaces = namespaces.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.steps = steps.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.fields = fields.NewRepos(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 

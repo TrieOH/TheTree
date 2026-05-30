@@ -1,0 +1,36 @@
+package queries
+
+import (
+	"Informd/models"
+	"context"
+	"lib/authz"
+
+	"github.com/MintzyG/fun"
+	"github.com/google/uuid"
+)
+
+func (s *Queries) ListNamespaced(ctx context.Context, formID, namespaceID, stepID uuid.UUID) ([]models.Field, error) {
+	ctx, span := s.tracer.Start(ctx, "FieldService.ListNamespaced")
+	defer span.End()
+
+	sub, err := authz.RequireSubject(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	if err != nil && !fun.Is(err, fun.CodeNotFound) {
+		return nil, err
+	}
+	if fun.Is(err, fun.CodeNotFound) {
+		_, err = s.forms.GetMember(ctx, sub.ID, formID)
+		if err != nil && !fun.Is(err, fun.CodeNotFound) {
+			return nil, err
+		}
+		if err != nil {
+			return nil, fun.ErrForbidden("insufficient permissions")
+		}
+	}
+
+	return s.fields.ListByStepID(ctx, stepID)
+}
