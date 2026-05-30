@@ -16,11 +16,16 @@ type Queries struct {
 	tx         database.TxRunner
 }
 
-func NewQueries(deps ports.AuthnDeps) *Queries {
+func NewQueries(
+	cryptoKeys ports.CryptoKeysRepo,
+	logger *zap.Logger,
+	tracer trace.Tracer,
+	tx database.TxRunner,
+) *Queries {
 	return errx.MustProvide(&Queries{
-		cryptoKeys: deps.CryptoKeys,
-		logger:     deps.Logger,
-		tracer:     deps.Tracer,
-		tx:         deps.Tx,
+		cryptoKeys: cryptoKeys,
+		logger:     logger,
+		tracer:     tracer,
+		tx:         tx,
 	})
 }

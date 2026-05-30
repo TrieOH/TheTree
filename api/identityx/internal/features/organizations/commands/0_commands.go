@@ -10,19 +10,28 @@ import (
 )
 
 type Commands struct {
-	actors ports.ActorRepo
-	orgs   ports.OrganizationRepo
-	logger *zap.Logger
-	tracer trace.Tracer
-	tx     database.TxRunner
+	projects ports.ProjectRepo
+	actors   ports.ActorRepo
+	orgs     ports.OrganizationRepo
+	logger   *zap.Logger
+	tracer   trace.Tracer
+	tx       database.TxRunner
 }
 
-func NewCommands(deps ports.OrganizationDeps) *Commands {
+func NewCommands(
+	projects ports.ProjectRepo,
+	actors ports.ActorRepo,
+	orgs ports.OrganizationRepo,
+	logger *zap.Logger,
+	tracer trace.Tracer,
+	tx database.TxRunner,
+) *Commands {
 	return errx.MustProvide(&Commands{
-		actors: deps.Actors,
-		orgs:   deps.Orgs,
-		logger: deps.Logger,
-		tracer: deps.Tracer,
-		tx:     deps.Tx,
+		projects: projects,
+		actors:   actors,
+		orgs:     orgs,
+		logger:   logger,
+		tracer:   tracer,
+		tx:       tx,
 	})
 }

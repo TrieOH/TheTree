@@ -10,17 +10,25 @@ import (
 )
 
 type Queries struct {
-	orgs   ports.OrganizationRepo
-	logger *zap.Logger
-	tracer trace.Tracer
-	tx     database.TxRunner
+	projects ports.ProjectRepo
+	orgs     ports.OrganizationRepo
+	logger   *zap.Logger
+	tracer   trace.Tracer
+	tx       database.TxRunner
 }
 
-func NewQueries(deps ports.OrganizationDeps) *Queries {
+func NewQueries(
+	projects ports.ProjectRepo,
+	orgs ports.OrganizationRepo,
+	logger *zap.Logger,
+	tracer trace.Tracer,
+	tx database.TxRunner,
+) *Queries {
 	return errx.MustProvide(&Queries{
-		orgs:   deps.Orgs,
-		logger: deps.Logger,
-		tracer: deps.Tracer,
-		tx:     deps.Tx,
+		projects: projects,
+		orgs:     orgs,
+		logger:   logger,
+		tracer:   tracer,
+		tx:       tx,
 	})
 }

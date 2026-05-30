@@ -30,8 +30,7 @@ FROM project_members pm
 INNER JOIN projects p
 ON pm.project_id = p.id
 WHERE pm.actor_id = @actor_id
-  AND p.owner_id != @actor_id
-  AND p.organization_id IS NULL;
+  AND p.owner_id != @actor_id;
 
 -- name: AddProjectMember :exec
 INSERT INTO project_members (project_id, actor_id, role, metadata, joined_at)

@@ -112,42 +112,16 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var cmd queries
-	cmd.authn = authn.NewQueries(ports.AuthnDeps{
-		CryptoKeys: r.cryptoKeys,
-		Logger:     rt.logger,
-		Tracer:     rt.tracer,
-		Tx:         rt.tx,
-	})
-	cmd.orgs = organizations.NewQueries(ports.OrganizationDeps{
-		Actors: r.actors,
-		Orgs:   r.orgs,
-		Logger: rt.logger,
-		Tracer: rt.tracer,
-		Tx:     rt.tx,
-	})
+	cmd.authn = authn.NewQueries(r.cryptoKeys, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewQueries(r.projects, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
 
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.authn = authn.NewCommands(ports.AuthnDeps{
-		Actors:             r.actors,
-		PlatformRoles:      r.platformRoles,
-		CryptoKeys:         r.cryptoKeys,
-		Blacklist:          r.blacklist,
-		ExternalIdentities: r.externalIdentities,
-		Logger:             rt.logger,
-		Tracer:             rt.tracer,
-		Tx:                 rt.tx,
-	})
-	cmd.orgs = organizations.NewCommands(ports.OrganizationDeps{
-		Actors: r.actors,
-		Orgs:   r.orgs,
-		Logger: rt.logger,
-		Tracer: rt.tracer,
-		Tx:     rt.tx,
-	})
+	cmd.authn = authn.NewCommands(r.actors, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewCommands(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewCommands(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }

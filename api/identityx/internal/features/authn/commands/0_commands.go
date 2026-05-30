@@ -28,16 +28,25 @@ type Commands struct {
 	tx                 database.TxRunner
 }
 
-func NewCommands(deps ports.AuthnDeps) *Commands {
+func NewCommands(
+	actors ports.ActorRepo,
+	platformRoles ports.PlatformRolesRepo,
+	cryptoKeys ports.CryptoKeysRepo,
+	blacklist ports.BlacklistRepo,
+	externalIdentities ports.ExternalIdentitiesRepo,
+	logger *zap.Logger,
+	tracer trace.Tracer,
+	tx database.TxRunner,
+) *Commands {
 	return errx.MustProvide(&Commands{
-		actors:             deps.Actors,
-		platformRoles:      deps.PlatformRoles,
-		cryptoKeys:         deps.CryptoKeys,
-		blacklist:          deps.Blacklist,
-		externalIdentities: deps.ExternalIdentities,
-		logger:             deps.Logger,
-		tracer:             deps.Tracer,
-		tx:                 deps.Tx,
+		actors:             actors,
+		platformRoles:      platformRoles,
+		cryptoKeys:         cryptoKeys,
+		blacklist:          blacklist,
+		externalIdentities: externalIdentities,
+		logger:             logger,
+		tracer:             tracer,
+		tx:                 tx,
 	})
 }
 
