@@ -7,6 +7,8 @@ import {
   createFieldFn,
   bulkEditFieldsFn,
   deleteFieldFn,
+  editFieldSelectConfigFn,
+  allSelectConfigsQueryOptions,
 } from '#/features/fields/api'
 import { createFieldRequestSchema, fieldUpdateRequestSchema } from '#/features/fields/model'
 import type {
@@ -14,6 +16,7 @@ import type {
   FieldI,
   FieldUpdateI,
 } from '#/features/fields/model';
+import { getFieldFormDefs } from '#/features/fields/model/field-defs';
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import FormModal from '#/widgets/modal/form-modal'
 import { ConfirmModal } from '#/widgets/modal/modal'
@@ -46,6 +49,34 @@ function RouteComponent() {
   const [fieldStepContext, setFieldStepContext] = useState<StepI | null>(null)
   const [editingField, setEditingField] = useState<FieldI | null>(null)
   const [deletingField, setDeletingField] = useState<FieldI | null>(null)
+
+  // Fetch select_config when editing a "select" field
+  const selectConfigQuery = useQuery({
+    ...allSelectConfigsQueryOptions(
+      editingField?.id ?? '',
+      formID,
+      editingField?.step_id ?? '',
+      namespaceID,
+    ),
+    enabled: !!editingField && editingField.type === 'select',
+  })
+  const fieldSelectConfig = selectConfigQuery.data
+
+  // Merge editingField + fetched select_config into edit modal defaults
+  const editFieldDefaults = useMemo(() => {
+    if (!editingField) return undefined
+    if (editingField.type !== 'select' || !fieldSelectConfig) return editingField
+    return {
+      ...editingField,
+      select_config: {
+        behaviour: fieldSelectConfig.behaviour,
+        value_type: fieldSelectConfig.value_type,
+        options: Array.isArray(fieldSelectConfig.options)
+          ? fieldSelectConfig.options.join('\n')
+          : '',
+      },
+    }
+  }, [editingField, fieldSelectConfig])
 
   const count = steps.length
   const maxPosition = useMemo(() => {
@@ -196,8 +227,11 @@ function RouteComponent() {
   })
 
   const { mutate: editField, isPending: isFieldEditing } = useMutation({
-    mutationFn: ({ data, step }: { data: FieldUpdateI; step: StepI }) =>
-      bulkEditFieldsFn([data], formID, step.id, namespaceID),
+    mutationFn: ({ data, step }: { data: FieldUpdateI; step: StepI }) => {
+      // Separate select_config - it goes through its own endpoint
+      const { select_config: _, ...fieldData } = data
+      return bulkEditFieldsFn([fieldData], formID, step.id, namespaceID)
+    },
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({
@@ -207,6 +241,27 @@ function RouteComponent() {
         setEditingField(null)
         toast.success(response.message || "Field updated successfully")
       } else toast.error(response.message || "Failed to update field")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  const { mutate: editFieldSelectConfig, isPending: isFieldSelectConfigEditing } = useMutation({
+    mutationFn: ({
+      config,
+      fieldId,
+      stepId,
+    }: {
+      config: { behaviour: string; value_type: string; options: string[] };
+      fieldId: string;
+      stepId: string;
+    }) => editFieldSelectConfigFn(config, fieldId, formID, stepId, namespaceID),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({
+          queryKey: allSelectConfigsQueryOptions(editingField?.id ?? '', formID, editingField?.step_id ?? '', namespaceID).queryKey,
+        })
+        toast.success(response.message || "Select config updated")
+      } else toast.error(response.message || "Failed to update select config")
     },
     onError: (error: Error) => toast.error(error.message),
   })
@@ -227,8 +282,6 @@ function RouteComponent() {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  // ── Field handlers ───────────────────────────────────────────────────────────
-
   const openAddFieldModal = useCallback((step: StepI) => {
     setFieldStepContext(step)
     setIsFieldCreateOpen(true)
@@ -247,6 +300,15 @@ function RouteComponent() {
   const handleAddFieldSubmit = useCallback(
     (data: CreateFieldRequestI) => {
       if (!fieldStepContext) return
+
+      // Transform select_config.options from textarea string → array of strings
+      if (data.select_config?.options && typeof data.select_config.options === 'string') {
+        data.select_config.options = data.select_config.options
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean)
+      }
+
       addField({ data, step: fieldStepContext })
     },
     [addField, fieldStepContext]
@@ -258,9 +320,31 @@ function RouteComponent() {
       // Find the step that owns this field
       const step = steps.find(s => s.id === editingField.step_id)
       if (!step) return
+
+      // 1. Update the field itself (without select_config)
       editField({ data, step })
+
+      // 2. If type is "select" and select_config was provided, update it separately
+      if (data.type === 'select' && data.select_config) {
+        const rawOptions = data.select_config.options
+        const optionsArray = typeof rawOptions === 'string'
+          ? rawOptions.split('\n').map(s => s.trim()).filter(Boolean)
+          : Array.isArray(rawOptions)
+            ? rawOptions
+            : []
+
+        editFieldSelectConfig({
+          config: {
+            behaviour: data.select_config.behaviour,
+            value_type: data.select_config.value_type,
+            options: optionsArray,
+          },
+          fieldId: editingField.id,
+          stepId: editingField.step_id,
+        })
+      }
     },
-    [editField, editingField, steps]
+    [editField, editFieldSelectConfig, editingField, steps]
   )
 
   const handleDeleteFieldConfirm = useCallback(() => {
@@ -370,75 +454,14 @@ function RouteComponent() {
         }}
         onClose={() => { setIsFieldCreateOpen(false); setFieldStepContext(null) }}
         onSubmit={handleAddFieldSubmit}
-        fields={[
-          {
-            name: 'key',
-            label: 'Field Key',
-            type: 'text',
-            placeholder: 'e.g. full_name',
-          },
-          {
-            name: 'title',
-            label: 'Field Label',
-            type: 'text',
-            placeholder: 'e.g. Full Name',
-          },
-          {
-            name: 'description',
-            label: 'Description',
-            type: 'textarea',
-            rows: 3,
-            placeholder: 'e.g. Enter your full name as it appears on your ID.',
-          },
-          {
-            name: 'type',
-            label: 'Field Type',
-            type: 'select',
-            placeholder: 'Select a type…',
-            options: [
-              { label: 'String', value: 'string' },
-              { label: 'Email', value: 'email' },
-              { label: 'Integer', value: 'int' },
-              { label: 'Float', value: 'float' },
-              { label: 'Boolean', value: 'bool' },
-              { label: 'Date', value: 'date' },
-              { label: 'Time', value: 'time' },
-              { label: 'Datetime', value: 'datetime' },
-              { label: 'Select', value: 'select' },
-              { label: 'File', value: 'file' },
-              { label: 'Phone', value: 'phone' },
-              { label: 'URL', value: 'url' },
-            ],
-          },
-          {
-            name: 'required',
-            label: 'Required',
-            type: 'select',
-            placeholder: 'No',
-            options: [
-              { label: 'Yes', value: 'true' },
-              { label: 'No', value: 'false' },
-            ],
-          },
-          {
-            name: 'placeholder',
-            label: 'Placeholder',
-            type: 'text',
-            placeholder: 'e.g. Type your answer here…',
-          },
-          {
-            name: 'default_value',
-            label: 'Default Value',
-            type: 'text',
-            placeholder: 'e.g. John Doe',
-          },
+        fields={getFieldFormDefs(
           {
             name: 'position_hint',
             label: 'Position (auto)',
             type: 'number',
             disabled: true,
           },
-        ]}
+        )}
         disabled={isFieldCreating}
       />
 
@@ -450,73 +473,11 @@ function RouteComponent() {
         schema={fieldUpdateRequestSchema}
         formId="edit-field-form"
         isOpen={isFieldEditOpen}
-        defaultValues={editingField || undefined}
+        defaultValues={editFieldDefaults}
         onClose={() => { setIsFieldEditOpen(false); setEditingField(null) }}
         onSubmit={handleEditFieldSubmit}
-        fields={[
-          {
-            name: 'key',
-            label: 'Field Key',
-            type: 'text',
-            placeholder: 'e.g. full_name',
-          },
-          {
-            name: 'title',
-            label: 'Field Label',
-            type: 'text',
-            placeholder: 'e.g. Full Name',
-          },
-          {
-            name: 'description',
-            label: 'Description',
-            type: 'textarea',
-            rows: 3,
-            placeholder: 'e.g. Enter your full name as it appears on your ID.',
-          },
-          {
-            name: 'type',
-            label: 'Field Type',
-            type: 'select',
-            placeholder: 'Select a type…',
-            options: [
-              { label: 'String', value: 'string' },
-              { label: 'Email', value: 'email' },
-              { label: 'Integer', value: 'int' },
-              { label: 'Float', value: 'float' },
-              { label: 'Boolean', value: 'bool' },
-              { label: 'Date', value: 'date' },
-              { label: 'Time', value: 'time' },
-              { label: 'Datetime', value: 'datetime' },
-              { label: 'Select', value: 'select' },
-              { label: 'File', value: 'file' },
-              { label: 'Phone', value: 'phone' },
-              { label: 'URL', value: 'url' },
-            ],
-          },
-          {
-            name: 'required',
-            label: 'Required',
-            type: 'select',
-            placeholder: 'No',
-            options: [
-              { label: 'Yes', value: 'true' },
-              { label: 'No', value: 'false' },
-            ],
-          },
-          {
-            name: 'placeholder',
-            label: 'Placeholder',
-            type: 'text',
-            placeholder: 'e.g. Type your answer here…',
-          },
-          {
-            name: 'default_value',
-            label: 'Default Value',
-            type: 'text',
-            placeholder: 'e.g. John Doe',
-          },
-        ]}
-        disabled={isFieldEditing}
+        fields={getFieldFormDefs()}
+        disabled={isFieldEditing || isFieldSelectConfigEditing}
       />
 
       {/* Field: Delete confirmation */}

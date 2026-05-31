@@ -1,4 +1,3 @@
-
 export interface FieldDefinition<T> {
   name: keyof T;
   placeholder?: string;
@@ -9,4 +8,5 @@ export interface FieldDefinition<T> {
   max?: number;
   rows?: number;
   disabled?: boolean;
-  }
+  dependsOn?: { field: keyof T; value: unknown };
+}

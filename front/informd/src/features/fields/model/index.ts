@@ -60,10 +60,8 @@ export type SelectValueTypeI =
   | typeof SelectValueTypePhone
   | typeof SelectValueTypeURL;
 
-
-
-const selectConfigSchema = z.object({
-  field_id: z.string({ error: "Field ID is required" }),
+/** Schema for creating/updating a select config */
+const createFieldSelectConfigSchema = z.object({
   behaviour: z.enum([
     SelectBehaviourCheckbox,
     SelectBehaviourRadio,
@@ -82,7 +80,7 @@ const selectConfigSchema = z.object({
     SelectValueTypeURL
   ], { error: "Invalid select value type" }),
   options: z.any(),
-}) satisfies z.ZodType<FieldSelectConfig>;
+}) satisfies z.ZodType<CreateFieldSelectConfigRequest>;
 
 
 export const createFieldRequestSchema = z.object({
@@ -108,7 +106,7 @@ export const createFieldRequestSchema = z.object({
   placeholder: z.any().optional(),
   default_value: z.any().optional(),
   config: z.any().optional(),
-  select_config: selectConfigSchema.optional(), // Only required when type is "select"
+  select_config: createFieldSelectConfigSchema.optional(), // Only required when type is "select"
 }) satisfies z.ZodType<CreateFieldRequest>;
 
 export const fieldUpdateRequestSchema = z.object({
@@ -135,7 +133,7 @@ export const fieldUpdateRequestSchema = z.object({
   placeholder: z.any().optional(),
   default_value: z.any().optional(),
   config: z.any().optional(),
-  select_config: selectConfigSchema.optional(),
+  select_config: createFieldSelectConfigSchema.optional(),
 }) satisfies z.ZodType<UpdateFieldRequest>;
 
 export type CreateFieldRequestI = CreateFieldRequest;

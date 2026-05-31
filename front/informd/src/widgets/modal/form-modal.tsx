@@ -1,4 +1,4 @@
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "./modal";
 import { cn } from "#/shared/lib/utils";
@@ -19,10 +19,21 @@ import type { ZodType } from "zod";
 import { useEffect } from "react";
 import type {
   DefaultValues,
+  FieldError,
   FieldValues,
   Path,
   SubmitHandler,
 } from "react-hook-form";
+
+/** Safely access nested error objects for dot-notation paths like "select_config.behaviour". */
+function getNestedError(errors: Record<string, unknown>, path: string) {
+  return path.split(".").reduce<Record<string, unknown> | undefined>((acc, key) => {
+    if (acc && typeof acc === "object" && key in acc) {
+      return (acc)[key] as Record<string, unknown>;
+    }
+    return undefined;
+  }, errors);
+}
 
 export interface PropsI<T> {
   isOpen: boolean;
@@ -62,6 +73,8 @@ export default function FormModal<T extends FieldValues>({
     defaultValues: defaultValues,
   });
 
+  const watchedValues = useWatch({ control });
+
   useEffect(() => {
     if (isOpen) {
       reset(defaultValues);
@@ -74,7 +87,7 @@ export default function FormModal<T extends FieldValues>({
 
   const renderField = (field: FieldDefinition<T>) => {
     const fieldName = field.name as Path<T>;
-    const error = errors[fieldName];
+    const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
 
     if (field.type === "select") {
       return (
@@ -156,8 +169,16 @@ export default function FormModal<T extends FieldValues>({
         className="space-y-6"
       >
         {fields.map((field) => {
+          // Skip field if its dependency is not met
+          if (field.dependsOn) {
+            const depValue = (watchedValues)[field.dependsOn.field as string];
+            const isMet = depValue === field.dependsOn.value
+              || String(depValue) === String(field.dependsOn.value);
+            if (!isMet) return null;
+          }
+
           const fieldName = field.name as Path<T>;
-          const error = errors[fieldName];
+          const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
           return (
             <div className="space-y-2" key={"t_" + field.name.toString()}>
               <Label
