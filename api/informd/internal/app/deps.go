@@ -76,12 +76,14 @@ func SetupConstraintMessages() {
 		"uniq_name_per_user":           "an API key with this name already exists",
 
 		// fields
-		"chk_fields_type":             "field type must be one of: string, email, int, float, bool, select",
-		"chk_fields_key_format":       "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores",
-		"chk_fields_select_behaviour": "select fields must have a behaviour of checkbox or radio",
-		"chk_fields_select_options":   "select fields must have a non-empty options array",
-		"chk_select_type":             "select_type must be one of: string, email, int, float, bool, select",
-		"uniq_key_per_step":           "a field with this key already exists in this step",
+		"chk_fields_type":       "field type must be one of: string, email, int, float, bool, date, time, datetime, select, file, phone, url",
+		"chk_fields_key_format": "field key must start with a letter or underscore and contain only lowercase letters, digits and underscores",
+		"uniq_key_per_step":     "a field with this key already exists in this step",
+
+		// select
+		"chk_select_behaviour":  "select fields must have a behaviour of checkbox or radio",
+		"chk_select_options":    "select fields must have a non-empty options array",
+		"chk_select_value_type": "select_type must be one of: email, int, float, date, time, datetime, phone, url",
 
 		// namespaces
 		"uniq_namespace_name_per_user":    "a namespace with this name already exists",

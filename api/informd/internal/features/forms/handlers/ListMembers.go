@@ -14,6 +14,7 @@ import (
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param form_id path string true "Form ID"
 // @Success 200 {object} fun.Response{data=[]models.FormMember}
 // @Failure 400 {object} fun.Response
 // @Failure 401 {object} fun.Response
