@@ -189,12 +189,13 @@ function applySorting<T>(
   fields: SortField<T>[]
 ): T[] {
   const field = fields.find((f) => f.key === sort.field);
-  const sorted = [...items].sort((a, b) =>
-    field?.comparator
+  const dir = sort.direction === "desc" ? -1 : 1;
+  return [...items].sort((a, b) => {
+    const result = field?.comparator
       ? field.comparator(a, b)
-      : defaultComparator(a, b, sort.field)
-  );
-  return sort.direction === "desc" ? sorted.reverse() : sorted;
+      : defaultComparator(a, b, sort.field);
+    return result * dir;
+  });
 }
 
 interface SortPanelProps<T> {

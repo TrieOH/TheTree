@@ -82,7 +82,13 @@ export default function FormModal<T extends FieldValues>({
           name={fieldName}
           control={control}
           render={({ field: { onChange, value } }) => (
-            <Select onValueChange={onChange} defaultValue={value}>
+            <Select
+              onValueChange={(val) => {
+                const strVal = String(val);
+                onChange(strVal === "true" ? true : strVal === "false" ? false : strVal);
+              }}
+              value={value ?? ""}
+            >
               <SelectTrigger
                 id={fieldName}
                 className={cn(

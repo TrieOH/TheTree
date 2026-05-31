@@ -2,11 +2,24 @@ import { allFormsStepsQueryOptions, bulkEditStepsFn, createStepFn } from '#/feat
 import { stepCreateSchema, stepUpdateSchema } from '#/features/steps/model'
 import type { StepCreateI, StepI, StepUpdateI } from '#/features/steps/model';
 import { StepCarousel } from '#/features/steps/ui/step-carousel';
+import {
+  allStepsFieldsQueryOptions,
+  createFieldFn,
+  bulkEditFieldsFn,
+  deleteFieldFn,
+} from '#/features/fields/api'
+import { createFieldRequestSchema, fieldUpdateRequestSchema } from '#/features/fields/model'
+import type {
+  CreateFieldRequestI,
+  FieldI,
+  FieldUpdateI,
+} from '#/features/fields/model';
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import FormModal from '#/widgets/modal/form-modal'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ConfirmModal } from '#/widgets/modal/modal'
+import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/admin/form/$formID/')({
@@ -27,11 +40,33 @@ function RouteComponent() {
   const [focusedStepId, setFocusedStepId] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState(0)
 
+  const [isFieldCreateOpen, setIsFieldCreateOpen] = useState(false)
+  const [isFieldEditOpen, setIsFieldEditOpen] = useState(false)
+  const [isFieldDeleteOpen, setIsFieldDeleteOpen] = useState(false)
+  const [fieldStepContext, setFieldStepContext] = useState<StepI | null>(null)
+  const [editingField, setEditingField] = useState<FieldI | null>(null)
+  const [deletingField, setDeletingField] = useState<FieldI | null>(null)
+
   const count = steps.length
   const maxPosition = useMemo(() => {
     if (count === 0) return 0
     return Math.max(...steps.map(s => s.position_hint))
   }, [steps, count])
+
+  // Fetch fields for ALL steps so any step the carousel shows has its fields ready
+  const fieldQueries = useQueries({
+    queries: steps.map(step => ({
+      ...allStepsFieldsQueryOptions(formID, step.id, namespaceID),
+      enabled: steps.length > 0,
+    })),
+  })
+  const fieldsByStepId = useMemo<Record<string, FieldI[]>>(() => {
+    const map: Record<string, FieldI[]> = {}
+    steps.forEach((step, i) => {
+      map[step.id] = fieldQueries[i]?.data ?? []
+    })
+    return map
+  }, [steps, fieldQueries])
 
   const openAddModal = (requestedHint: number, contextName?: string) => {
     // Check if hint is already taken
@@ -142,15 +177,113 @@ function RouteComponent() {
     onError: (error: Error) => toast.error(error.message),
   })
 
+  // ── Field mutations ──────────────────────────────────────────────────────────
+
+  const { mutate: addField, isPending: isFieldCreating } = useMutation({
+    mutationFn: ({ data, step }: { data: CreateFieldRequestI; step: StepI }) =>
+      createFieldFn(data, formID, step.id, namespaceID),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({
+          queryKey: allStepsFieldsQueryOptions(formID, fieldStepContext?.id ?? '', namespaceID).queryKey,
+        })
+        setIsFieldCreateOpen(false)
+        setFieldStepContext(null)
+        toast.success(response.message || "Field added successfully")
+      } else toast.error(response.message || "Failed to add field")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  const { mutate: editField, isPending: isFieldEditing } = useMutation({
+    mutationFn: ({ data, step }: { data: FieldUpdateI; step: StepI }) =>
+      bulkEditFieldsFn([data], formID, step.id, namespaceID),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({
+          queryKey: allStepsFieldsQueryOptions(formID, editingField?.step_id ?? '', namespaceID).queryKey,
+        })
+        setIsFieldEditOpen(false)
+        setEditingField(null)
+        toast.success(response.message || "Field updated successfully")
+      } else toast.error(response.message || "Failed to update field")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  const { mutate: deleteFieldMutation, isPending: isFieldDeleting } = useMutation({
+    mutationFn: ({ fieldId, stepId }: { fieldId: string; stepId: string }) =>
+      deleteFieldFn(fieldId, formID, stepId, namespaceID),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({
+          queryKey: allStepsFieldsQueryOptions(formID, deletingField?.step_id ?? '', namespaceID).queryKey,
+        })
+        setIsFieldDeleteOpen(false)
+        setDeletingField(null)
+        toast.success(response.message || "Field deleted successfully")
+      } else toast.error(response.message || "Failed to delete field")
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  // ── Field handlers ───────────────────────────────────────────────────────────
+
+  const openAddFieldModal = useCallback((step: StepI) => {
+    setFieldStepContext(step)
+    setIsFieldCreateOpen(true)
+  }, [])
+
+  const openEditFieldModal = useCallback((field: FieldI) => {
+    setEditingField(field)
+    setIsFieldEditOpen(true)
+  }, [])
+
+  const openDeleteFieldModal = useCallback((field: FieldI) => {
+    setDeletingField(field)
+    setIsFieldDeleteOpen(true)
+  }, [])
+
+  const handleAddFieldSubmit = useCallback(
+    (data: CreateFieldRequestI) => {
+      if (!fieldStepContext) return
+      addField({ data, step: fieldStepContext })
+    },
+    [addField, fieldStepContext]
+  )
+
+  const handleEditFieldSubmit = useCallback(
+    (data: FieldUpdateI) => {
+      if (!editingField) return
+      // Find the step that owns this field
+      const step = steps.find(s => s.id === editingField.step_id)
+      if (!step) return
+      editField({ data, step })
+    },
+    [editField, editingField, steps]
+  )
+
+  const handleDeleteFieldConfirm = useCallback(() => {
+    if (!deletingField) return
+    deleteFieldMutation({
+      fieldId: deletingField.id,
+      stepId: deletingField.step_id,
+    })
+  }, [deleteFieldMutation, deletingField])
+
   return (
     <div>
       <StepCarousel
         steps={steps}
         focusedStepId={focusedStepId}
         focusKey={focusKey}
+        fieldsByStepId={fieldsByStepId}
         onMoveStep={(stepId, direction) => moveStep({ stepId, direction })}
         onEditStep={openEditModal}
         onAddAfter={(hint) => openAddModal(hint, `after "${steps.find(s => s.position_hint === hint - 1)?.title || 'step'}"`)}
+        onAddField={openAddFieldModal}
+        onEditField={openEditFieldModal}
+        onDeleteField={openDeleteFieldModal}
       />
 
       <FormModal<StepCreateI>
@@ -214,6 +347,192 @@ function RouteComponent() {
           }
         ]}
         disabled={isEditing}
+      />
+
+      {/* Field: Create */}
+      <FormModal<CreateFieldRequestI>
+        title="Add Field"
+        description={
+          fieldStepContext
+            ? `Add a new field to "${fieldStepContext.title}".`
+            : 'Add a new field to this step.'
+        }
+        buttonTitle="Add Field"
+        schema={createFieldRequestSchema}
+        formId="add-field-form"
+        isOpen={isFieldCreateOpen}
+        defaultValues={{
+          position_hint: (fieldStepContext
+            ? fieldsByStepId[fieldStepContext.id].length + 1
+            : 1
+          ),
+          required: false,
+        }}
+        onClose={() => { setIsFieldCreateOpen(false); setFieldStepContext(null) }}
+        onSubmit={handleAddFieldSubmit}
+        fields={[
+          {
+            name: 'key',
+            label: 'Field Key',
+            type: 'text',
+            placeholder: 'e.g. full_name',
+          },
+          {
+            name: 'title',
+            label: 'Field Label',
+            type: 'text',
+            placeholder: 'e.g. Full Name',
+          },
+          {
+            name: 'description',
+            label: 'Description',
+            type: 'textarea',
+            rows: 3,
+            placeholder: 'e.g. Enter your full name as it appears on your ID.',
+          },
+          {
+            name: 'type',
+            label: 'Field Type',
+            type: 'select',
+            placeholder: 'Select a type…',
+            options: [
+              { label: 'String', value: 'string' },
+              { label: 'Email', value: 'email' },
+              { label: 'Integer', value: 'int' },
+              { label: 'Float', value: 'float' },
+              { label: 'Boolean', value: 'bool' },
+              { label: 'Date', value: 'date' },
+              { label: 'Time', value: 'time' },
+              { label: 'Datetime', value: 'datetime' },
+              { label: 'Select', value: 'select' },
+              { label: 'File', value: 'file' },
+              { label: 'Phone', value: 'phone' },
+              { label: 'URL', value: 'url' },
+            ],
+          },
+          {
+            name: 'required',
+            label: 'Required',
+            type: 'select',
+            placeholder: 'No',
+            options: [
+              { label: 'Yes', value: 'true' },
+              { label: 'No', value: 'false' },
+            ],
+          },
+          {
+            name: 'placeholder',
+            label: 'Placeholder',
+            type: 'text',
+            placeholder: 'e.g. Type your answer here…',
+          },
+          {
+            name: 'default_value',
+            label: 'Default Value',
+            type: 'text',
+            placeholder: 'e.g. John Doe',
+          },
+          {
+            name: 'position_hint',
+            label: 'Position (auto)',
+            type: 'number',
+            disabled: true,
+          },
+        ]}
+        disabled={isFieldCreating}
+      />
+
+      {/* Field: Edit */}
+      <FormModal<FieldUpdateI>
+        title="Edit Field"
+        description={editingField ? `Update "${editingField.title}".` : 'Update the field.'}
+        buttonTitle="Save Changes"
+        schema={fieldUpdateRequestSchema}
+        formId="edit-field-form"
+        isOpen={isFieldEditOpen}
+        defaultValues={editingField || undefined}
+        onClose={() => { setIsFieldEditOpen(false); setEditingField(null) }}
+        onSubmit={handleEditFieldSubmit}
+        fields={[
+          {
+            name: 'key',
+            label: 'Field Key',
+            type: 'text',
+            placeholder: 'e.g. full_name',
+          },
+          {
+            name: 'title',
+            label: 'Field Label',
+            type: 'text',
+            placeholder: 'e.g. Full Name',
+          },
+          {
+            name: 'description',
+            label: 'Description',
+            type: 'textarea',
+            rows: 3,
+            placeholder: 'e.g. Enter your full name as it appears on your ID.',
+          },
+          {
+            name: 'type',
+            label: 'Field Type',
+            type: 'select',
+            placeholder: 'Select a type…',
+            options: [
+              { label: 'String', value: 'string' },
+              { label: 'Email', value: 'email' },
+              { label: 'Integer', value: 'int' },
+              { label: 'Float', value: 'float' },
+              { label: 'Boolean', value: 'bool' },
+              { label: 'Date', value: 'date' },
+              { label: 'Time', value: 'time' },
+              { label: 'Datetime', value: 'datetime' },
+              { label: 'Select', value: 'select' },
+              { label: 'File', value: 'file' },
+              { label: 'Phone', value: 'phone' },
+              { label: 'URL', value: 'url' },
+            ],
+          },
+          {
+            name: 'required',
+            label: 'Required',
+            type: 'select',
+            placeholder: 'No',
+            options: [
+              { label: 'Yes', value: 'true' },
+              { label: 'No', value: 'false' },
+            ],
+          },
+          {
+            name: 'placeholder',
+            label: 'Placeholder',
+            type: 'text',
+            placeholder: 'e.g. Type your answer here…',
+          },
+          {
+            name: 'default_value',
+            label: 'Default Value',
+            type: 'text',
+            placeholder: 'e.g. John Doe',
+          },
+        ]}
+        disabled={isFieldEditing}
+      />
+
+      {/* Field: Delete confirmation */}
+      <ConfirmModal
+        isOpen={isFieldDeleteOpen}
+        onClose={() => { setIsFieldDeleteOpen(false); setDeletingField(null) }}
+        onConfirm={handleDeleteFieldConfirm}
+        title="Delete Field"
+        description={
+          deletingField
+            ? `Are you sure you want to delete "${deletingField.title}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this field?'
+        }
+        confirmText="Delete"
+        variant="destructive"
+        isLoading={isFieldDeleting}
       />
     </div>
   )

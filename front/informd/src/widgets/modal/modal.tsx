@@ -27,7 +27,7 @@ export function Modal({
 }: ModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="rounded-sm border-border sm:max-w-106.25 gap-1">
+      <DialogContent className="rounded-sm border-border sm:max-w-106.25 gap-0 max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">
             {title}
@@ -38,7 +38,7 @@ export function Modal({
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 px-2">
           {children}
         </div>
         {footer && (

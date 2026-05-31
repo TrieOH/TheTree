@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus } from "lucide-react";
 import type { StepI } from "../model";
+import type { FieldI } from "#/features/fields/model";
 import { StepCard } from "./step-card";
 import { cn } from "#/shared/lib/utils";
 import { Button } from "#/shared/ui/shadcn/button";
@@ -12,6 +13,10 @@ interface StepCarouselProps {
   onStepClick?: (step: StepI) => void;
   onEditStep?: (step: StepI) => void;
   onMoveStep?: (stepId: string, direction: 'left' | 'right') => void;
+  onAddField?: (step: StepI) => void;
+  onEditField?: (field: FieldI) => void;
+  onDeleteField?: (field: FieldI) => void;
+  fieldsByStepId?: Record<string, FieldI[]>;
   focusedStepId?: string | null;
   focusKey?: number;
 }
@@ -23,6 +28,10 @@ export function StepCarousel({
   onStepClick,
   onEditStep,
   onMoveStep,
+  onAddField,
+  onEditField,
+  onDeleteField,
+  fieldsByStepId,
   focusedStepId,
   focusKey,
 }: StepCarouselProps) {
@@ -89,7 +98,7 @@ export function StepCarousel({
 
   if (count === 0) {
     return (
-      <div className="w-full h-70 flex items-center justify-center border-2 border-dashed border-border rounded-sm bg-muted/30">
+      <div className="w-full min-h-64 flex items-center justify-center border-2 border-dashed border-border rounded-sm bg-muted/30">
         <Button
           onClick={() => onAddAfter(1)}
           variant="ghost"
@@ -109,6 +118,7 @@ export function StepCarousel({
   const activeStep = steps[activeIndex];
   const showSiblings = count > 1;
 
+  const activeFields = fieldsByStepId?.[activeStep.id] ?? [];
   const canMoveLeft = count > 1 && steps.some(s => s.position_hint === activeStep.position_hint - 1);
   const canMoveRight = count > 1 && steps.some(s => s.position_hint === activeStep.position_hint + 1);
   const maxPositionHint = count > 0 ? Math.max(...steps.map(s => s.position_hint)) : 0;
@@ -135,7 +145,7 @@ export function StepCarousel({
 
   return (
     <div className="w-full flex flex-col gap-4 select-none">
-      <div className="relative w-full h-70 overflow-hidden flex items-center justify-center">
+      <div className="relative w-full min-h-70 overflow-hidden">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={page}
@@ -152,50 +162,77 @@ export function StepCarousel({
               x: { type: "spring", stiffness: 400, damping: 40 },
               opacity: { duration: 0.2 },
             }}
-            className="absolute inset-0 flex items-center justify-center w-full h-full cursor-grab active:cursor-grabbing"
+            className="flex items-start justify-center w-full cursor-grab active:cursor-grabbing"
           >
             {showSiblings ? (
-              <div className="flex items-center justify-center gap-2 w-[140%] sm:w-full">
-                {/* Left Peek */}
-                <div
-                  className="shrink-0 w-[20%] opacity-60 hover:opacity-100 transition-opacity cursor-pointer scale-90"
-                  onClick={() => goTo(page - 1, -1)}
-                >
-                  <StepCard step={prevStep} active={false} className="pointer-events-none" />
-                </div>
-
-                {/* Main Active Card */}
-                <div className="shrink-0 w-[90%] sm:w-[50%] min-w-0">
+              <>
+                {/* Mobile: show only active step */}
+                <div className="sm:hidden w-full px-4">
                   <StepCard
                     step={activeStep}
+                    fields={activeFields}
                     active
                     onClick={() => onStepClick?.(activeStep)}
                     onEdit={onEditStep}
                     onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
                     onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                    onAddField={onAddField}
+                    onEditField={onEditField}
+                    onDeleteField={onDeleteField}
                     canMoveLeft={canMoveLeft}
                     canMoveRight={canMoveRight}
                     className="shadow-xl"
                   />
                 </div>
 
-                {/* Right Peek */}
-                <div
-                  className="shrink-0 w-[20%] opacity-60 hover:opacity-100 transition-opacity cursor-pointer scale-90"
-                  onClick={() => goTo(page + 1, 1)}
-                >
-                  <StepCard step={nextStep} active={false} className="pointer-events-none" />
+                {/* Desktop */}
+                <div className="hidden sm:flex items-center justify-center gap-1 w-full">
+                  <div
+                    className="shrink-0 w-[18%] opacity-40 hover:opacity-70 transition-opacity cursor-pointer scale-[0.70]"
+                    onClick={() => goTo(page - 1, -1)}
+                  >
+                    <StepCard step={prevStep} active={false} className="pointer-events-none" />
+                  </div>
+
+                  <div className="shrink-0 w-[56%] min-w-0">
+                    <StepCard
+                      step={activeStep}
+                      fields={activeFields}
+                      active
+                      onClick={() => onStepClick?.(activeStep)}
+                      onEdit={onEditStep}
+                      onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
+                      onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                      onAddField={onAddField}
+                      onEditField={onEditField}
+                      onDeleteField={onDeleteField}
+                      canMoveLeft={canMoveLeft}
+                      canMoveRight={canMoveRight}
+                      className="shadow-xl"
+                    />
+                  </div>
+
+                  <div
+                    className="shrink-0 w-[18%] opacity-40 hover:opacity-70 transition-opacity cursor-pointer scale-[0.70]"
+                    onClick={() => goTo(page + 1, 1)}
+                  >
+                    <StepCard step={nextStep} active={false} className="pointer-events-none" />
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
               <div className="w-full max-w-lg px-4">
                 <StepCard
                   step={activeStep}
+                  fields={activeFields}
                   active
                   onClick={() => onStepClick?.(activeStep)}
                   onEdit={onEditStep}
                   onMoveLeft={onMoveStep ? (s) => onMoveStep(s.id, 'left') : undefined}
                   onMoveRight={onMoveStep ? (s) => onMoveStep(s.id, 'right') : undefined}
+                  onAddField={onAddField}
+                  onEditField={onEditField}
+                  onDeleteField={onDeleteField}
                   canMoveLeft={canMoveLeft}
                   canMoveRight={canMoveRight}
                   className="shadow-lg"

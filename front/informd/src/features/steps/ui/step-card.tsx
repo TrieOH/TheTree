@@ -1,14 +1,20 @@
-import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil } from "lucide-react";
 import type { StepI } from "../model";
+import type { FieldI } from "#/features/fields/model";
+import FieldRow from "#/features/fields/ui/field-row";
 import { cn } from "#/shared/lib/utils";
 
 interface StepCardProps {
   step: StepI;
+  fields?: FieldI[];
   active?: boolean;
   onClick?: (step: StepI) => void;
   onEdit?: (step: StepI) => void;
   onMoveLeft?: (step: StepI) => void;
   onMoveRight?: (step: StepI) => void;
+  onAddField?: (step: StepI) => void;
+  onEditField?: (field: FieldI) => void;
+  onDeleteField?: (field: FieldI) => void;
   canMoveLeft?: boolean;
   canMoveRight?: boolean;
   className?: string;
@@ -16,15 +22,21 @@ interface StepCardProps {
 
 export function StepCard({
   step,
+  fields = [],
   active = false,
   onClick,
   onEdit,
   onMoveLeft,
   onMoveRight,
+  onAddField,
+  onEditField,
+  onDeleteField,
   canMoveLeft = true,
   canMoveRight = true,
   className,
 }: StepCardProps) {
+  const sortedFields = [...fields].sort((a, b) => a.position_hint - b.position_hint);
+
   return (
     <div
       onClick={() => onClick?.(step)}
@@ -38,17 +50,18 @@ export function StepCard({
       role={onClick ? "button" : undefined}
       aria-current={active ? "true" : undefined}
       className={cn(
-        "w-full min-h-44 flex flex-col gap-3.5 text-left select-none outline-none",
-        "rounded-sm border bg-card px-4.5 py-5 transition-all duration-300 ease-in-out",
+        "w-full flex flex-col text-left select-none outline-none",
+        "rounded-sm border bg-card transition-all duration-300 ease-in-out",
         active
-          ? "border-primary shadow-[0_4px_28px_rgba(var(--primary),0.13)] opacity-100 scale-100"
+          ? "border-primary shadow-[0_4px_28px_rgba(var(--primary),0.13)] opacity-100"
           : "border-border opacity-40 scale-[0.96] hover:opacity-55",
-        onClick && "cursor-pointer",
+        onClick && active && "cursor-default",
+        onClick && !active && "cursor-pointer",
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between w-full">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-0">
         <div className="flex items-center gap-1">
           {active && onMoveLeft && (
             <button
@@ -60,7 +73,7 @@ export function StepCard({
                 "p-0.5 rounded-xs transition-colors",
                 canMoveLeft
                   ? "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
-                  : "text-muted-foreground/15 cursor-not-allowed"
+                  : "text-muted-foreground/20 cursor-not-allowed"
               )}
               aria-label="Move step left"
             >
@@ -69,7 +82,7 @@ export function StepCard({
           )}
           <span
             className={cn(
-              "text-[10px] font-bold tracking-[0.13em] uppercase transition-colors duration-300",
+              "text-[10px] font-bold tracking-[0.14em] uppercase transition-colors duration-300",
               active ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -85,7 +98,7 @@ export function StepCard({
                 "p-0.5 rounded-xs transition-colors",
                 canMoveRight
                   ? "text-muted-foreground hover:text-primary hover:bg-primary/5 cursor-pointer"
-                  : "text-muted-foreground/15 cursor-not-allowed"
+                  : "text-muted-foreground/20 cursor-not-allowed"
               )}
               aria-label="Move step right"
             >
@@ -105,22 +118,64 @@ export function StepCard({
             )}
             aria-label="Edit step"
           >
-            <Pencil size={14} strokeWidth={2.5} />
+            <Pencil size={13} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
-      {/* Body */}
-      <div className="flex-1">
-        <p className="text-[17px] font-bold text-foreground leading-snug mb-1">
+      {/* Title + description */}
+      <div className="px-4 pt-2 pb-4">
+        <p className="text-[18px] font-bold text-foreground leading-snug">
           {step.title}
         </p>
         {step.description && (
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed mt-1">
             {step.description}
           </p>
         )}
       </div>
+      {/* Fields table - only when active */}
+      {active && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="border-t border-border"
+        >
+          {/* Rows */}
+          <div className="flex flex-col divide-y divide-border/40">
+            {sortedFields.length === 0 ? (
+              <p className="px-4 py-5 text-center text-[11px] text-muted-foreground/40 italic">
+                No fields yet
+              </p>
+            ) : (
+              sortedFields.map((field) => (
+                <FieldRow
+                  key={field.id}
+                  field={field}
+                  onEdit={onEditField}
+                  onDelete={onDeleteField}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Add field */}
+          {onAddField && (
+            <div className="border-t border-border/50 px-4 py-3">
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => onAddField(step)}
+                className="flex items-center gap-1.5 text-muted-foreground/50 hover:text-primary transition-colors duration-150 cursor-pointer"
+              >
+                <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center shrink-0">
+                  <Plus size={9} strokeWidth={3} />
+                </div>
+                <span className="text-[11px] font-medium">Add Field</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
