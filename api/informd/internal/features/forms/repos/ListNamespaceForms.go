@@ -10,7 +10,7 @@ import (
 )
 
 func (repo *repo) ListFromNamespace(ctx context.Context, namespaceID uuid.UUID) ([]models.Form, error) {
-	ctx, span := repo.tracer.Start(ctx, "ListMine")
+	ctx, span := repo.tracer.Start(ctx, "ListFromNamespace")
 	defer span.End()
 	sqlcForms, err := database.Queries(ctx, repo.q).ListNamespaceForms(ctx, &namespaceID)
 	if err != nil {
