@@ -16,6 +16,7 @@ interface StepCarouselProps {
   onAddField?: (step: StepI) => void;
   onEditField?: (field: FieldI) => void;
   onDeleteField?: (field: FieldI) => void;
+  onReorderFields?: (step: StepI, fieldIds: string[]) => void;
   fieldsByStepId?: Record<string, FieldI[]>;
   focusedStepId?: string | null;
   focusKey?: number;
@@ -31,11 +32,13 @@ export function StepCarousel({
   onAddField,
   onEditField,
   onDeleteField,
+  onReorderFields,
   fieldsByStepId,
   focusedStepId,
   focusKey,
 }: StepCarouselProps) {
   const [[page, direction], setPage] = useState([0, 0]);
+  const [isDraggingField, setIsDraggingField] = useState(false);
   const count = steps.length;
   const lastMoveTime = useRef(0);
 
@@ -154,7 +157,7 @@ export function StepCarousel({
             initial="enter"
             animate="center"
             exit="exit"
-            drag="x"
+            drag={isDraggingField ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
             onDragEnd={onDragEnd}
@@ -179,6 +182,8 @@ export function StepCarousel({
                     onAddField={onAddField}
                     onEditField={onEditField}
                     onDeleteField={onDeleteField}
+                    onReorderFields={onReorderFields}
+                    onFieldDragChange={setIsDraggingField}
                     canMoveLeft={canMoveLeft}
                     canMoveRight={canMoveRight}
                     className="shadow-xl"
@@ -206,6 +211,8 @@ export function StepCarousel({
                       onAddField={onAddField}
                       onEditField={onEditField}
                       onDeleteField={onDeleteField}
+                      onReorderFields={onReorderFields}
+                      onFieldDragChange={setIsDraggingField}
                       canMoveLeft={canMoveLeft}
                       canMoveRight={canMoveRight}
                       className="shadow-xl"
@@ -233,6 +240,8 @@ export function StepCarousel({
                   onAddField={onAddField}
                   onEditField={onEditField}
                   onDeleteField={onDeleteField}
+                  onReorderFields={onReorderFields}
+                  onFieldDragChange={setIsDraggingField}
                   canMoveLeft={canMoveLeft}
                   canMoveRight={canMoveRight}
                   className="shadow-lg"

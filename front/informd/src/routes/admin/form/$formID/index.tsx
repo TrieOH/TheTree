@@ -355,6 +355,41 @@ function RouteComponent() {
     })
   }, [deleteFieldMutation, deletingField])
 
+  const handleReorderFields = useCallback(
+    (step: StepI, fieldIds: string[]) => {
+      const stepFields = fieldsByStepId[step.id]
+      if (stepFields.length === 0) return
+
+      // Build a map of field ID → original field
+      const fieldMap = new Map(stepFields.map(f => [f.id, f]))
+
+      // Map the new order to updated position_hints
+      const updatedFields: FieldUpdateI[] = fieldIds.map((id, idx) => {
+        const field = fieldMap.get(id)
+        if (!field) throw new Error(`Field ${id} not found`)
+        return {
+          id: field.id,
+          key: field.key,
+          title: field.title,
+          position_hint: idx + 1,
+          required: field.required,
+          type: field.type,
+        }
+      })
+
+      bulkEditFieldsFn(updatedFields, formID, step.id, namespaceID).then((response) => {
+        if (response.success) {
+          queryClient.invalidateQueries({
+            queryKey: allStepsFieldsQueryOptions(formID, step.id, namespaceID).queryKey,
+          })
+        } else {
+          toast.error(response.message || "Failed to reorder fields")
+        }
+      }).catch((error: Error) => toast.error(error.message))
+    },
+    [fieldsByStepId, formID, namespaceID, queryClient],
+  )
+
   return (
     <div>
       <StepCarousel
@@ -368,6 +403,7 @@ function RouteComponent() {
         onAddField={openAddFieldModal}
         onEditField={openEditFieldModal}
         onDeleteField={openDeleteFieldModal}
+        onReorderFields={handleReorderFields}
       />
 
       <FormModal<StepCreateI>

@@ -1,7 +1,11 @@
+import { useCallback } from "react";
 import { ChevronLeft, ChevronRight, Plus, Pencil } from "lucide-react";
+import { DndContext,  PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import type {DragEndEvent} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { StepI } from "../model";
 import type { FieldI } from "#/features/fields/model";
-import FieldRow from "#/features/fields/ui/field-row";
+import SortableFieldRow from "#/features/fields/ui/sortable-field-row";
 import { cn } from "#/shared/lib/utils";
 
 interface StepCardProps {
@@ -15,6 +19,8 @@ interface StepCardProps {
   onAddField?: (step: StepI) => void;
   onEditField?: (field: FieldI) => void;
   onDeleteField?: (field: FieldI) => void;
+  onReorderFields?: (step: StepI, fieldIds: string[]) => void;
+  onFieldDragChange?: (dragging: boolean) => void;
   canMoveLeft?: boolean;
   canMoveRight?: boolean;
   className?: string;
@@ -31,11 +37,35 @@ export function StepCard({
   onAddField,
   onEditField,
   onDeleteField,
+  onReorderFields,
+  onFieldDragChange,
   canMoveLeft = true,
   canMoveRight = true,
   className,
 }: StepCardProps) {
   const sortedFields = [...fields].sort((a, b) => a.position_hint - b.position_hint);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    onFieldDragChange?.(false);
+
+    const { active: activeItem, over } = event;
+    if (!over || activeItem.id === over.id) return;
+
+    const oldIndex = sortedFields.findIndex(f => f.id === activeItem.id);
+    const newIndex = sortedFields.findIndex(f => f.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder the sortedFields array
+    const reordered = [...sortedFields];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    onReorderFields?.(step, reordered.map(f => f.id));
+  }, [sortedFields, step, onReorderFields, onFieldDragChange]);
 
   return (
     <div
@@ -141,22 +171,33 @@ export function StepCard({
           className="border-t border-border"
         >
           {/* Rows */}
-          <div className="flex flex-col divide-y divide-border/40">
-            {sortedFields.length === 0 ? (
-              <p className="px-4 py-5 text-center text-[11px] text-muted-foreground/40 italic">
-                No fields yet
-              </p>
-            ) : (
-              sortedFields.map((field) => (
-                <FieldRow
-                  key={field.id}
-                  field={field}
-                  onEdit={onEditField}
-                  onDelete={onDeleteField}
-                />
-              ))
-            )}
-          </div>
+          <DndContext
+            sensors={sensors}
+            onDragStart={() => onFieldDragChange?.(true)}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sortedFields.map(f => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col divide-y divide-border/40">
+                {sortedFields.length === 0 ? (
+                  <p className="px-4 py-5 text-center text-[11px] text-muted-foreground/40 italic">
+                    No fields yet
+                  </p>
+                ) : (
+                  sortedFields.map((field) => (
+                    <SortableFieldRow
+                      key={field.id}
+                      field={field}
+                      onEdit={onEditField}
+                      onDelete={onDeleteField}
+                    />
+                  ))
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           {/* Add field */}
           {onAddField && (

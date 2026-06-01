@@ -7,16 +7,27 @@ interface FieldRowProps {
   field: FieldI;
   onEdit?: (field: FieldI) => void;
   onDelete?: (field: FieldI) => void;
+  dragHandleRef?: React.Ref<HTMLButtonElement>;
+  dragHandleProps?: Record<string, unknown>;
 }
 
-export default function FieldRow({ field, onEdit, onDelete }: FieldRowProps) {
+export default function FieldRow({ field, onEdit, onDelete, dragHandleRef, dragHandleProps }: FieldRowProps) {
   return (
     <div className="flex items-center gap-2 px-3.5 py-2.5 hover:bg-muted/20 transition-colors duration-100 group">
-      <GripVertical
-        size={20}
-        strokeWidth={2}
-        className="shrink-0 text-muted-foreground/20 group-hover:text-muted-foreground/50 cursor-grab transition-colors"
-      />
+      <button
+        ref={dragHandleRef}
+        type="button"
+        tabIndex={-1}
+        {...(dragHandleProps as React.HTMLAttributes<HTMLButtonElement>)}
+        className="shrink-0 inline-flex cursor-grab active:cursor-grabbing touch-none"
+        aria-label={`Drag ${field.title}`}
+      >
+        <GripVertical
+          size={20}
+          strokeWidth={2}
+          className="text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors"
+        />
+      </button>
 
       <TypeIcon type={field.type} />
 
