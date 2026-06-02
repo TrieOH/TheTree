@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"lib/errx"
+	"net/url"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,7 +34,7 @@ func (c Config) DSN() string {
 	}
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.User, c.Password, c.Host, c.port(), c.DB, ssl,
+		url.QueryEscape(c.User), url.QueryEscape(c.Password), c.Host, c.port(), c.DB, ssl,
 	)
 }
 
@@ -52,7 +53,7 @@ func (c Config) RootDSN() string {
 	}
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		c.RootUser, c.RootPassword, host, rootPort, rootDB,
+		url.QueryEscape(c.RootUser), url.QueryEscape(c.RootPassword), host, rootPort, rootDB,
 	)
 }
 
