@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) GetFormResponseCount(ctx context.Context, namespaceID, formID uuid.UUID) (int, error) {
+func (s *Queries) GetFormResponseCount(ctx context.Context, namespaceID, formID uuid.UUID) (int, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.GetFormResponseCount")
 	defer span.End()
 

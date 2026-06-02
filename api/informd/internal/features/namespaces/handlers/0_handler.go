@@ -9,13 +9,13 @@ import (
 )
 
 type Handlers struct {
-	commands *commands.CommandService
-	queries  *queries.QueryService
+	commands *commands.Commands
+	queries  *queries.Queries
 }
 
 func NewHandler(
-	commands *commands.CommandService,
-	queries *queries.QueryService,
+	commands *commands.Commands,
+	queries *queries.Queries,
 ) *Handlers {
 	return &Handlers{
 		commands: commands,

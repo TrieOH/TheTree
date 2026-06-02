@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (s *CommandService) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
+func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveNamespaceMemberInput) error {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 

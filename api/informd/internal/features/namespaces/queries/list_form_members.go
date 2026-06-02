@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
+func (s *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListFormMembers")
 	defer span.End()
 

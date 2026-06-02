@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) ListArchivedForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
+func (s *Queries) ListArchivedForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListArchivedForms")
 	defer span.End()
 

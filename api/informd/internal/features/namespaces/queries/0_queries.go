@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type QueryService struct {
+type Queries struct {
 	namespaces ports.NamespaceRepo
 	forms      ports.FormsRepo
 	tx         database.TxRunner
@@ -19,8 +19,8 @@ func NewQueries(
 	forms ports.FormsRepo,
 	tx database.TxRunner,
 	tracer trace.Tracer,
-) *QueryService {
-	return &QueryService{
+) *Queries {
+	return &Queries{
 		namespaces: namespaces,
 		forms:      forms,
 		tx:         tx,

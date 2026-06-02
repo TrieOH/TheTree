@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (s *CommandService) Create(ctx context.Context, name string) (*models.Namespace, error) {
+func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
 	defer span.End()
 

@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
+func (s *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListForms")
 	defer span.End()
 

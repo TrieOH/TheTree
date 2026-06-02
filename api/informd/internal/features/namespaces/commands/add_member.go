@@ -9,7 +9,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (s *CommandService) AddMember(ctx context.Context, payload models.AddNamespaceMemberInput) error {
+func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMemberInput) error {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddMember")
 	defer span.End()
 
