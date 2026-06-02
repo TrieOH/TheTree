@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) ListMembers(ctx context.Context, namespaceID uuid.UUID) (members []models.NamespaceMember, err error) {
+func (s *Queries) ListMembers(ctx context.Context, namespaceID uuid.UUID) (members []models.NamespaceMember, err error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.GetMembers")
 	defer span.End()
 

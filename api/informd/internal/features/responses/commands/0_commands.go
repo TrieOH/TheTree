@@ -8,20 +8,26 @@ import (
 )
 
 type Commands struct {
-	namespaces ports.NamespaceRepo
+	responders ports.ResponderRepo
+	responses  ports.ResponseRepo
+	answers    ports.AnswerRepo
 	forms      ports.FormsRepo
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
 
 func NewCommands(
-	projects ports.NamespaceRepo,
+	responders ports.ResponderRepo,
+	responses ports.ResponseRepo,
+	answers ports.AnswerRepo,
 	forms ports.FormsRepo,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *Commands {
 	return &Commands{
-		namespaces: projects,
+		responders: responders,
+		responses:  responses,
+		answers:    answers,
 		forms:      forms,
 		tx:         tx,
 		tracer:     tracer,
