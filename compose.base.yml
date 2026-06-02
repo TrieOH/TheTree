@@ -19,11 +19,11 @@ services:
     env_file:
       - .tree.env
     volumes:
-      - postgres_data:/var/lib/data
+      - postgres_data:/var/lib/postgresql
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U TheTreeRoot -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U TheTree -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
