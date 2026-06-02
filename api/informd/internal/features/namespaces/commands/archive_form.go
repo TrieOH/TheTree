@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *CommandService) ArchiveForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
+func (s *Commands) ArchiveForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.ArchiveForm")
 	defer span.End()
 

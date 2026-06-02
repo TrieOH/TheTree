@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *CommandService) CloseForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
+func (s *Commands) CloseForm(ctx context.Context, namespaceID, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.CloseForm")
 	defer span.End()
 

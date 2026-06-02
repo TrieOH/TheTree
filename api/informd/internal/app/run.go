@@ -2,9 +2,12 @@ package app
 
 import (
 	"Informd/internal/database/sqlc"
+	"Informd/internal/features/answers"
 	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces"
+	"Informd/internal/features/responders"
+	"Informd/internal/features/responses"
 	"Informd/internal/features/steps"
 	"Informd/ports"
 	"context"
@@ -44,6 +47,7 @@ type commands struct {
 	forms      *forms.Commands
 	steps      *steps.Commands
 	fields     *fields.Commands
+	responses  *responses.Commands
 }
 
 type queries struct {
@@ -58,6 +62,9 @@ type repos struct {
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
 	fields     ports.FieldsRepo
+	answers    ports.AnswerRepo
+	responders ports.ResponderRepo
+	responses  ports.ResponseRepo
 }
 
 type mws struct {
@@ -98,6 +105,7 @@ func (app *Informd) startHandlers(rt runtime) *Deps {
 	handlers.FormsHandler = forms.NewHandlers(rt.commands.forms, rt.queries.forms)
 	handlers.StepsHandler = steps.NewHandlers(rt.commands.steps, rt.queries.steps)
 	handlers.FieldsHandler = fields.NewHandlers(rt.commands.fields, rt.queries.fields)
+	handlers.ResponsesHandler = responses.NewHandlers(rt.commands.responses)
 
 	handlers.BodySize = rt.middlewares.bodySize
 	handlers.RequestID = rt.middlewares.requestID
@@ -121,6 +129,7 @@ func (app *Informd) startCommands(rt runtime) commands {
 	cmd.forms = forms.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	cmd.steps = steps.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	cmd.fields = fields.NewCommands(rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	cmd.responses = responses.NewCommands(rt.repos.responders, rt.repos.responses, rt.repos.answers, rt.repos.forms, rt.txRunner, rt.tracer)
 	return cmd
 }
 
@@ -139,6 +148,9 @@ func (app *Informd) startRepos(rt runtime) repos {
 	r.forms = forms.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.steps = steps.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	r.fields = fields.NewRepos(rt.repoQueries, rt.logger, rt.tracer)
+	r.answers = answers.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.responders = responders.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
+	r.responses = responses.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
 	return r
 }
 
