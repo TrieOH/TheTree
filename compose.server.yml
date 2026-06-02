@@ -54,14 +54,15 @@ services:
       - "465:465"  # SMTPS
       - "587:587"  # submission
       - "993:993"  # IMAPS
+      - "127.0.0.1:9090:9090" # Admin panel
     volumes:
-      - ./mox_mailserver/config:/mox/config
-      - ./mox_mailserver/data:/mox/data
-      - ./mox_mailserver/certs:/mox/certs
+      - ./infra/mox/config:/mox/config
+      - ./infra/mox/data:/mox/data
+      - ./infra/mox/certs:/mox/certs
       - /etc/letsencrypt:/etc/letsencrypt:ro
     command: mox -config /mox/config/mox.conf serve
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/admin/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/webmail || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
