@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) ListMembers(ctx context.Context, formID uuid.UUID) ([]models.FormMember, error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.ListMembers")
+func (q *Queries) ListMembers(ctx context.Context, formID uuid.UUID) ([]models.FormMember, error) {
+	ctx, span := q.tracer.Start(ctx, "FormService.ListMembers")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
@@ -18,14 +18,14 @@ func (s *QueryService) ListMembers(ctx context.Context, formID uuid.UUID) ([]mod
 		return nil, err
 	}
 
-	form, err := s.forms.GetByID(ctx, formID)
+	form, err := q.forms.GetByID(ctx, formID)
 	if err != nil {
 		return nil, err
 	}
 
 	if sub.ID != form.OwnerID {
-		_, err := s.forms.GetMember(ctx, sub.ID, form.ID)
-		if err != nil && fun.Is(err, fun.CodeNotFound) {
+		_, err := q.forms.GetMember(ctx, sub.ID, form.ID)
+		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
 		if err != nil {
@@ -33,7 +33,7 @@ func (s *QueryService) ListMembers(ctx context.Context, formID uuid.UUID) ([]mod
 		}
 	}
 
-	members, err := s.forms.ListDirectMembers(ctx, form.ID)
+	members, err := q.forms.ListDirectMembers(ctx, form.ID)
 	if err != nil {
 		return nil, err
 	}

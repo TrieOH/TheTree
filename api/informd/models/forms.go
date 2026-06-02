@@ -128,3 +128,23 @@ type RemoveNamespaceFormMemberInput struct {
 	NamespaceID uuid.UUID `json:"namespace_id"`
 	FormID      uuid.UUID `json:"form_id"`
 }
+
+type FullForm struct {
+	Form  `json:"form"`
+	Steps []FullStep `json:"steps"`
+}
+
+type FullStep struct {
+	Step   `json:"step"`
+	Fields []FullField `json:"fields"`
+}
+
+type FullField struct {
+	Field   `json:"field"`
+	Answers []FullAnswer `json:"answers"`
+}
+
+type FullAnswer struct {
+	Answer    `json:"answer"`
+	Responder string `json:"responder"`
+}

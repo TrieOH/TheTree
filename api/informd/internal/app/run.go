@@ -135,8 +135,8 @@ func (app *Informd) startCommands(rt runtime) commands {
 
 func (app *Informd) startQueries(rt runtime) queries {
 	var q queries
-	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.txRunner, rt.tracer)
-	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
+	q.namespaces = namespaces.NewQueries(rt.repos.namespaces, rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.answers, rt.repos.responses, rt.repos.responders, rt.txRunner, rt.tracer)
+	q.forms = forms.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.answers, rt.repos.responses, rt.repos.responders, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	q.steps = steps.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	q.fields = fields.NewQueries(rt.repos.forms, rt.repos.steps, rt.repos.fields, rt.repos.namespaces, rt.txRunner, rt.tracer)
 	return q

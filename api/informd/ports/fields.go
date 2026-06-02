@@ -11,6 +11,7 @@ type FieldsRepo interface {
 	Create(ctx context.Context, toCreate models.Field) (*models.Field, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Field, error)
 	ListByStepID(ctx context.Context, stepID uuid.UUID) ([]models.Field, error)
+	ListByFormID(ctx context.Context, formID uuid.UUID) ([]models.Field, error)
 	BulkEdit(ctx context.Context, fields []models.Field) error
 	Delete(ctx context.Context, id uuid.UUID) error
 

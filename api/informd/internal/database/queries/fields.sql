@@ -12,6 +12,12 @@ SELECT * FROM fields
 WHERE step_id = $1
 ORDER BY position_hint ASC;
 
+-- name: ListFieldsByFormID :many
+SELECT f.* FROM fields f
+INNER JOIN steps s ON f.step_id = s.id
+WHERE s.form_id = @form_id
+ORDER BY f.position_hint ASC;
+
 -- name: BulkEditFields :batchexec
 UPDATE fields
 SET key           = @key,
