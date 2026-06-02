@@ -44,15 +44,16 @@ const REFRESH_DOMAIN_KEY = "trieoh_refresh_domain";
 export function getCookieDomain(returnedDomain?: string) {
   if (typeof window === "undefined") return null;
   const hostname = window.location.hostname;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname.includes("localhost");
+  if (isLocalhost) return null;
 
   if (returnedDomain) {
     try {
       let domain = returnedDomain;
       if (domain.startsWith("http")) domain = new URL(domain).hostname;
-      return domain;
-    } catch {
-      return returnedDomain;
-    }
+      if (hostname === domain || hostname.endsWith("." + domain)) return domain;
+      return hostname;
+    } catch { return hostname; }
   }
 
   return hostname;
@@ -60,8 +61,23 @@ export function getCookieDomain(returnedDomain?: string) {
 export function decodeJwt<T>(token: string): T | null {
   try {
     const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch {
+    if (!payload) return null;
+
+    let base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) {
+      base64 += "=";
+    }
+
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    logger.error("Error decoding JWT:", error);
     return null;
   }
 }

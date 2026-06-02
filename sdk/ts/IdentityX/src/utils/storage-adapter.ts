@@ -73,7 +73,7 @@ export const cookieStorage = {
   remove: (name: string, domain?: string | null) => {
     cookieStorage.set(name, "", {
       expires: "Thu, 01 Jan 1970 00:00:00 GMT",
-      domain,
+      domain: domain || undefined,
     });
   },
 };
