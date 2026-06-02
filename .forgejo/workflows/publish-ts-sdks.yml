@@ -3,7 +3,10 @@ name: Publish TS SDKs
 on:
   push:
     tags:
-      - 'sdk/ts/*/v*'
+      - '*-sdk-ts/v*'
+
+permissions:
+  contents: read
 
 jobs:
   publish-npm:
@@ -15,10 +18,12 @@ jobs:
         id: tag
         run: |
           TAG="${{ github.ref_name }}"
-          # Expected format: sdk/ts/IdentityX/v0.11.9
-          SDK_NAME=$(echo "$TAG" | cut -d'/' -f3)
-          VERSION_WITH_V=$(echo "$TAG" | cut -d'/' -f4)
-          VERSION=${VERSION_WITH_V#v}
+          # Expected format: identityx-sdk-ts/v0.11.9
+          SDK_NAME="${TAG%%/*}"
+          SDK_NAME="${SDK_NAME%-sdk-ts}"
+
+          VERSION="${TAG##*/}"
+          VERSION="${VERSION#v}"
           
           echo "sdk_name=$SDK_NAME" >> $GITHUB_OUTPUT
           echo "sdk_path=sdk/ts/$SDK_NAME" >> $GITHUB_OUTPUT
@@ -43,10 +48,10 @@ jobs:
       - name: Validate version and check NPM
         id: check
         run: |
-          PKG_INFO=$(bun -e "
-            const pkg = JSON.parse(require('fs').readFileSync('./package.json','utf8'));
-            console.log(pkg.name + '|' + pkg.version);
-          ")
+          PKG_INFO=$(bun -e '
+            const pkg = await Bun.file("./package.json").json();
+            console.log(pkg.name + "|" + pkg.version);
+          ')
 
           PKG_NAME="${PKG_INFO%|*}"
           PKG_VERSION="${PKG_INFO#*|}"
@@ -82,7 +87,10 @@ jobs:
 
       - name: Publish to NPM
         if: steps.check.outputs.skip != 'true'
-        run: npm publish --access public
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          npm publish --access public
+          rm -f ~/.npmrc
         working-directory: ${{ steps.tag.outputs.sdk_path }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
