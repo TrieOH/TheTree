@@ -6,8 +6,8 @@ import (
 	"lib/authz"
 )
 
-func (s *QueryService) ListForms(ctx context.Context) (forms []models.Form, err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.ListForms")
+func (q *Queries) ListForms(ctx context.Context) (forms []models.Form, err error) {
+	ctx, span := q.tracer.Start(ctx, "FormService.ListForms")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -16,7 +16,7 @@ func (s *QueryService) ListForms(ctx context.Context) (forms []models.Form, err 
 		return nil, err
 	}
 
-	forms, err = s.forms.ListMine(ctx, sub.ID)
+	forms, err = q.forms.ListMine(ctx, sub.ID)
 	if err != nil {
 		return nil, err
 	}

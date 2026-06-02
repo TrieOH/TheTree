@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *CommandService) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
+func (s *Commands) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.ReDraft")
 	defer span.End()
 

@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type CommandService struct {
+type Commands struct {
 	forms      ports.FormsRepo
 	steps      ports.StepRepo
 	namespaces ports.NamespaceRepo
@@ -21,8 +21,8 @@ func NewCommands(
 	namespaces ports.NamespaceRepo,
 	tx database.TxRunner,
 	tracer trace.Tracer,
-) *CommandService {
-	return &CommandService{
+) *Commands {
+	return &Commands{
 		forms:      forms,
 		steps:      steps,
 		namespaces: namespaces,

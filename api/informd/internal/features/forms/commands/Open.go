@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *CommandService) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
+func (s *Commands) Open(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Open")
 	defer span.End()
 

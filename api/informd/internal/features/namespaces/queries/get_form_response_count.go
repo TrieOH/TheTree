@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Queries) GetFormResponseCount(ctx context.Context, namespaceID, formID uuid.UUID) (int, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.GetFormResponseCount")
+func (q *Queries) GetFormResponseCount(ctx context.Context, namespaceID, formID uuid.UUID) (int, error) {
+	ctx, span := q.tracer.Start(ctx, "NamespaceService.GetFormResponseCount")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
@@ -17,18 +17,18 @@ func (s *Queries) GetFormResponseCount(ctx context.Context, namespaceID, formID 
 		return 0, err
 	}
 
-	namespace, err := s.namespaces.GetByID(ctx, namespaceID)
+	namespace, err := q.namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return 0, err
 	}
 
 	if sub.ID != namespace.OwnerID {
-		_, err = s.namespaces.GetMember(ctx, sub.ID, namespace.ID)
+		_, err = q.namespaces.GetMember(ctx, sub.ID, namespace.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return 0, err
 		}
 		if err != nil {
-			_, err = s.forms.GetMember(ctx, sub.ID, formID)
+			_, err = q.forms.GetMember(ctx, sub.ID, formID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return 0, err
 			}
@@ -38,5 +38,5 @@ func (s *Queries) GetFormResponseCount(ctx context.Context, namespaceID, formID 
 		}
 	}
 
-	return s.forms.ResponsesCount(ctx, formID)
+	return q.forms.ResponsesCount(ctx, formID)
 }

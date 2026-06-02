@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *QueryService) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.GetResponseCount")
+func (q *Queries) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, error) {
+	ctx, span := q.tracer.Start(ctx, "FormService.GetResponseCount")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
@@ -17,13 +17,13 @@ func (s *QueryService) GetResponseCount(ctx context.Context, formID uuid.UUID) (
 		return 0, err
 	}
 
-	form, err := s.forms.GetByID(ctx, formID)
+	form, err := q.forms.GetByID(ctx, formID)
 	if err != nil {
 		return 0, err
 	}
 
 	if sub.ID != form.OwnerID {
-		_, err := s.forms.GetMember(ctx, sub.ID, form.ID)
+		_, err := q.forms.GetMember(ctx, sub.ID, form.ID)
 		if err != nil && fun.Is(err, fun.CodeNotFound) {
 			return 0, err
 		}
@@ -32,5 +32,5 @@ func (s *QueryService) GetResponseCount(ctx context.Context, formID uuid.UUID) (
 		}
 	}
 
-	return s.forms.ResponsesCount(ctx, formID)
+	return q.forms.ResponsesCount(ctx, formID)
 }

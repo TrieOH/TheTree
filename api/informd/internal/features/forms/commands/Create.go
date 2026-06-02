@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (s *CommandService) Create(ctx context.Context, title string) (*models.Form, error) {
+func (s *Commands) Create(ctx context.Context, title string) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 

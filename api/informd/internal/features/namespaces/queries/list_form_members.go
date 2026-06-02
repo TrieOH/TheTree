@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListFormMembers")
+func (q *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.UUID) ([]models.FormMember, error) {
+	ctx, span := q.tracer.Start(ctx, "NamespaceService.ListFormMembers")
 	defer span.End()
 
 	sub, err := authz.RequireSubject(ctx)
@@ -18,18 +18,18 @@ func (s *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.
 		return nil, err
 	}
 
-	namespace, err := s.namespaces.GetByID(ctx, namespaceID)
+	namespace, err := q.namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
 	if sub.ID != namespace.OwnerID {
-		_, err = s.namespaces.GetMember(ctx, sub.ID, namespace.ID)
+		_, err = q.namespaces.GetMember(ctx, sub.ID, namespace.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
 		if err != nil {
-			_, err = s.forms.GetMember(ctx, sub.ID, formID)
+			_, err = q.forms.GetMember(ctx, sub.ID, formID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return nil, err
 			}
@@ -39,11 +39,11 @@ func (s *Queries) ListFormMembers(ctx context.Context, namespaceID, formID uuid.
 		}
 	}
 
-	members, err := s.forms.ListDirectMembers(ctx, formID)
+	members, err := q.forms.ListDirectMembers(ctx, formID)
 	if err != nil {
 		return nil, err
 	}
-	namespaceMembers, err := s.namespaces.ListMembers(ctx, namespace.ID)
+	namespaceMembers, err := q.namespaces.ListMembers(ctx, namespace.ID)
 	if err != nil {
 		return nil, err
 	}
