@@ -1,0 +1,96 @@
+name: Publish TS SDKs
+
+on:
+  push:
+    tags:
+      - '*-sdk-ts/v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Parse tag
+        id: tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Expected format: identityx-sdk-ts/v0.11.9
+          SDK_NAME="${TAG%%/*}"
+          SDK_NAME="${SDK_NAME%-sdk-ts}"
+
+          VERSION="${TAG##*/}"
+          VERSION="${VERSION#v}"
+          
+          echo "sdk_name=$SDK_NAME" >> $GITHUB_OUTPUT
+          echo "sdk_path=sdk/ts/$SDK_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check SDK existence
+        run: |
+          if [ ! -d "${{ steps.tag.outputs.sdk_path }}" ]; then
+            echo "::error::SDK directory ${{ steps.tag.outputs.sdk_path }} does not exist!"
+            exit 1
+          fi
+          if [ ! -f "${{ steps.tag.outputs.sdk_path }}/package.json" ]; then
+            echo "::error::package.json not found in ${{ steps.tag.outputs.sdk_path }}!"
+            exit 1
+          fi
+
+      - name: Setup Bun
+        uses: https://github.com/oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate version and check NPM
+        id: check
+        run: |
+          PKG_INFO=$(bun -e '
+            const pkg = await Bun.file("./package.json").json();
+            console.log(pkg.name + "|" + pkg.version);
+          ')
+
+          PKG_NAME="${PKG_INFO%|*}"
+          PKG_VERSION="${PKG_INFO#*|}"
+          TAG_VERSION=${{ steps.tag.outputs.version }}
+          
+          echo "Package: $PKG_NAME"
+          echo "Package Version: $PKG_VERSION"
+          echo "Tag Version: $TAG_VERSION"
+
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch! Tag version is $TAG_VERSION but package.json version is $PKG_VERSION"
+            exit 1
+          fi
+
+          # Check if version already exists on NPM
+          if npm view "$PKG_NAME@$TAG_VERSION" version >/dev/null 2>&1; then
+            echo "::warning::Version $TAG_VERSION already published to NPM. Skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ${{ steps.tag.outputs.sdk_path }}
+
+      - name: Install dependencies
+        if: steps.check.outputs.skip != 'true'
+        run: bun install --frozen-lockfile
+        working-directory: ${{ steps.tag.outputs.sdk_path }}
+
+      - name: Build
+        if: steps.check.outputs.skip != 'true'
+        run: bun run build
+        working-directory: ${{ steps.tag.outputs.sdk_path }}
+
+      - name: Publish to NPM
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          npm publish --access public
+          rm -f ~/.npmrc
+        working-directory: ${{ steps.tag.outputs.sdk_path }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
