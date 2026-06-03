@@ -2,5 +2,14 @@ packages:
   - 'front/*'
   - 'docs'
 minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@trieoh/identityx-sdk-ts'
+  - 'shiki'
+  - '@shikijs/*'
 blockExoticSubdeps: true
-trustPolicy: no-downgrade
+trustPolicy: check-and-allow-fixes
+onlyBuiltDependencies:
+  - esbuild
+  - lightningcss
+  - '@cloudflare/workerd-linux-64'
+  - workerd
