@@ -60,6 +60,11 @@ jobs:
       - name: Build IdentityX
         if: ${{ steps.filter.outputs.identityx == 'true' }}
         run: pnpm -F identityx build
+        env:
+          VITE_APP_TITLE: ${{ vars.IDENTITYX_APP_TITLE }}
+          VITE_API_URL: ${{ vars.IDENTITYX_API_URL }}
+          VITE_PUBLIC_POSTHOG_HOST: ${{ vars.IDENTITYX_POSTHOG_HOST }}
+          VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.IDENTITYX_POSTHOG_KEY }}
 
       - name: Deploy IdentityX
         if: ${{ steps.filter.outputs.identityx == 'true' }}
@@ -73,6 +78,13 @@ jobs:
       - name: Build Informd
         if: ${{ steps.filter.outputs.informd == 'true' }}
         run: pnpm -F informd build
+        env:
+          VITE_APP_TITLE: ${{ vars.INFORMD_APP_TITLE }}
+          VITE_API_URL: ${{ vars.INFORMD_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.INFORMD_AUTH_API_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.INFORMD_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.INFORMD_POSTHOG_HOST }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.INFORMD_AUTH_PROJECT_ID }}
 
       - name: Deploy Informd
         if: ${{ steps.filter.outputs.informd == 'true' }}
@@ -86,6 +98,14 @@ jobs:
       - name: Build Payssage
         if: ${{ steps.filter.outputs.payssage == 'true' }}
         run: pnpm -F payssage build
+        env:
+          VITE_APP_TITLE: ${{ vars.PAYSSAGE_APP_TITLE }}
+          VITE_API_URL: ${{ vars.PAYSSAGE_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.PAYSSAGE_AUTH_API_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.PAYSSAGE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.PAYSSAGE_POSTHOG_HOST }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.PAYSSAGE_AUTH_PROJECT_ID }}
+          VITE_MERCADO_PAGO_CALLBACK_URL: ${{ vars.PAYSSAGE_MERCADO_PAGO_CALLBACK_URL }}
 
       - name: Deploy Payssage
         if: ${{ steps.filter.outputs.payssage == 'true' }}
@@ -99,6 +119,10 @@ jobs:
       - name: Build Spicedb
         if: ${{ steps.filter.outputs.spicedb == 'true' }}
         run: pnpm -F spicedb-ui build
+        env:
+          VITE_APP_TITLE: ${{ vars.SPICEDB_APP_TITLE }}
+          VITE_POSTHOG_KEY: ${{ secrets.SPICEDB_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.SPICEDB_POSTHOG_HOST }}
 
       - name: Deploy Spicedb
         if: ${{ steps.filter.outputs.spicedb == 'true' }}
@@ -112,6 +136,15 @@ jobs:
       - name: Build Univents
         if: ${{ steps.filter.outputs.univents == 'true' }}
         run: pnpm -F univents build
+        env:
+          VITE_APP_TITLE: ${{ vars.UNIVENTS_APP_TITLE }}
+          VITE_API_URL: ${{ vars.UNIVENTS_API_URL }}
+          VITE_AUTH_API_URL: ${{ vars.UNIVENTS_AUTH_API_URL }}
+          VITE_POSTHOG_KEY: ${{ secrets.UNIVENTS_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.UNIVENTS_POSTHOG_HOST }}
+          VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.UNIVENTS_AUTH_PROJECT_ID }}
+          VITE_MERCADO_PAGO_CALLBACK_URL: ${{ vars.UNIVENTS_MERCADO_PAGO_CALLBACK_URL }}
+          VITE_MERCADO_PAGO_PUBLIC_KEY: ${{ secrets.UNIVENTS_MERCADO_PAGO_PUBLIC_KEY }}
 
       - name: Deploy Univents
         if: ${{ steps.filter.outputs.univents == 'true' }}
