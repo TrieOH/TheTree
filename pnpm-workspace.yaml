@@ -13,3 +13,8 @@ onlyBuiltDependencies:
   - lightningcss
   - '@cloudflare/workerd-linux-64'
   - workerd
+  - core-js
+  - msw
+  - protobufjs
+  - sharp
+  - unrs-resolver
