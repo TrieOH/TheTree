@@ -37,18 +37,24 @@ jobs:
             univents:
               - 'front/univents/**'
 
+      - name: Check if any frontend changed
+        id: any_frontend
+        run: echo "changed=${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}" >> $GITHUB_OUTPUT
+
       - name: Setup Node
-        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+        if: steps.any_frontend.outputs.changed == 'true'
         uses: https://github.com/actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Setup pnpm
-        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
-        run: npm install -g pnpm
+        if: steps.any_frontend.outputs.changed == 'true'
+        uses: https://github.com/pnpm/action-setup@v6
+        with:
+          version: 10
 
       - name: Install dependencies
-        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+        if: steps.any_frontend.outputs.changed == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build IdentityX

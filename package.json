@@ -20,18 +20,5 @@
   },
   "devDependencies": {
     "typescript": "^5.7.2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss",
-      "@cloudflare/workerd-linux-64",
-      "workerd",
-      "core-js",
-      "msw",
-      "protobufjs",
-      "sharp",
-      "unrs-resolver"
-    ]
   }
 }
