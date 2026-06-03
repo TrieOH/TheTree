@@ -1,4 +1,3 @@
 packages:
   - 'front/*'
-  - 'sdk/ts/*'
   - 'docs'

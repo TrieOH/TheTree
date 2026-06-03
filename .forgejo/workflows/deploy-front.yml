@@ -1,0 +1,117 @@
+name: Deploy Frontends
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'front/identityx/**'
+      - 'front/informd/**'
+      - 'front/payssage/**'
+      - 'front/spicedb/**'
+      - 'front/univents/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Filter changes
+        uses: https://github.com/dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            identityx:
+              - 'front/identityx/**'
+            informd:
+              - 'front/informd/**'
+            payssage:
+              - 'front/payssage/**'
+            spicedb:
+              - 'front/spicedb/**'
+            univents:
+              - 'front/univents/**'
+
+      - name: Setup Node
+        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+        uses: https://github.com/actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build IdentityX
+        if: ${{ steps.filter.outputs.identityx == 'true' }}
+        run: pnpm -F identityx build
+
+      - name: Deploy IdentityX
+        if: ${{ steps.filter.outputs.identityx == 'true' }}
+        uses: https://github.com/cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: front/identityx
+          command: deploy
+
+      - name: Build Informd
+        if: ${{ steps.filter.outputs.informd == 'true' }}
+        run: pnpm -F informd build
+
+      - name: Deploy Informd
+        if: ${{ steps.filter.outputs.informd == 'true' }}
+        uses: https://github.com/cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: front/informd
+          command: deploy
+
+      - name: Build Payssage
+        if: ${{ steps.filter.outputs.payssage == 'true' }}
+        run: pnpm -F payssage build
+
+      - name: Deploy Payssage
+        if: ${{ steps.filter.outputs.payssage == 'true' }}
+        uses: https://github.com/cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: front/payssage
+          command: deploy
+
+      - name: Build Spicedb
+        if: ${{ steps.filter.outputs.spicedb == 'true' }}
+        run: pnpm -F spicedb-ui build
+
+      - name: Deploy Spicedb
+        if: ${{ steps.filter.outputs.spicedb == 'true' }}
+        uses: https://github.com/cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: front/spicedb
+          command: deploy
+
+      - name: Build Univents
+        if: ${{ steps.filter.outputs.univents == 'true' }}
+        run: pnpm -F univents build
+
+      - name: Deploy Univents
+        if: ${{ steps.filter.outputs.univents == 'true' }}
+        uses: https://github.com/cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: front/univents
+          command: deploy
