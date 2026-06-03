@@ -1,4 +1,6 @@
 packages:
   - 'front/*'
-  - 'sdk/ts/*'
   - 'docs'
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
