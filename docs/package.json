@@ -16,10 +16,10 @@
   "dependencies": {
     "@takumi-rs/image-response": "^1.1.2",
     "ajv": "^8.20.0",
-    "fumadocs-core": "16.8.11",
+    "fumadocs-core": "16.9.0",
     "fumadocs-mdx": "15.0.5",
     "fumadocs-openapi": "^10.8.3",
-    "fumadocs-ui": "16.8.11",
+    "fumadocs-ui": "16.9.0",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

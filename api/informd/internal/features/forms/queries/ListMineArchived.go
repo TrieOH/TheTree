@@ -6,8 +6,8 @@ import (
 	"lib/authz"
 )
 
-func (s *QueryService) ListArchivedForms(ctx context.Context) (forms []models.Form, err error) {
-	ctx, span := s.tracer.Start(ctx, "FormService.ListArchivedForms")
+func (q *Queries) ListArchivedForms(ctx context.Context) (forms []models.Form, err error) {
+	ctx, span := q.tracer.Start(ctx, "FormService.ListArchivedForms")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -16,7 +16,7 @@ func (s *QueryService) ListArchivedForms(ctx context.Context) (forms []models.Fo
 		return nil, err
 	}
 
-	forms, err = s.forms.ListMineArchived(ctx, sub.ID)
+	forms, err = q.forms.ListMineArchived(ctx, sub.ID)
 	if err != nil {
 		return nil, err
 	}

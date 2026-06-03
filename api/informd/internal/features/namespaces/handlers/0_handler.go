@@ -38,6 +38,7 @@ func RegisterRoutes(
 		r.Post("/namespaces/{namespace_id}/forms", h.CreateForm)
 		r.Get("/namespaces/{namespace_id}/forms", h.ListForms)
 		r.Get("/namespaces/{namespace_id}/forms/archived", h.ListArchivedForms)
+		r.Get("/namespaces/{namespace_id}/forms/{form_id}/full", h.GetFullFormNamespaced)
 		r.Get("/namespaces/{namespace_id}/forms/{form_id}/members", h.ListFormMembers)
 		r.Post("/namespaces/{namespace_id}/forms/{form_id}/members", h.AddFormMember)
 		r.Delete("/namespaces/{namespace_id}/forms/{form_id}/members", h.RemoveFormMember)

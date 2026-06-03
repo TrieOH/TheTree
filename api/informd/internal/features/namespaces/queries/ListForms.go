@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
-	ctx, span := s.tracer.Start(ctx, "NamespaceService.ListForms")
+func (q *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms []models.Form, err error) {
+	ctx, span := q.tracer.Start(ctx, "NamespaceService.ListForms")
 	defer span.End()
 
 	var sub *authz.UserSubject
@@ -19,19 +19,19 @@ func (s *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms [
 	}
 
 	var namespace *models.Namespace
-	namespace, err = s.namespaces.GetByID(ctx, namespaceID)
+	namespace, err = q.namespaces.GetByID(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}
 
 	if sub.ID != namespace.OwnerID {
-		_, err = s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+		_, err = q.namespaces.GetMember(ctx, sub.ID, namespaceID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	forms, err = s.forms.ListFromNamespace(ctx, namespaceID)
+	forms, err = q.forms.ListFromNamespace(ctx, namespaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (s *CommandService) RemoveMember(ctx context.Context, payload models.RemoveFormMemberInput) (err error) {
+func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMemberInput) (err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.RemoveMember")
 	defer span.End()
 

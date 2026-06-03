@@ -9,13 +9,13 @@ import (
 )
 
 type Handlers struct {
-	commands *commands.CommandService
-	queries  *queries.QueryService
+	commands *commands.Commands
+	queries  *queries.Queries
 }
 
 func NewHandlers(
-	commands *commands.CommandService,
-	queries *queries.QueryService,
+	commands *commands.Commands,
+	queries *queries.Queries,
 ) *Handlers {
 	return &Handlers{
 		commands: commands,
@@ -33,6 +33,7 @@ func RegisterRoutes(
 		r.Post("/forms", h.Create)
 		r.Get("/forms", h.ListMine)
 		r.Get("/forms/archived", h.ListMineArchived)
+		r.Get("/forms/{form_id}/full", h.GetFull)
 		r.Get("/forms/{form_id}/members", h.ListMembers)
 		r.Post("/forms/{form_id}/members", h.AddMember)
 		r.Delete("/forms/{form_id}/members", h.RemoveMember)

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *CommandService) Archive(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
+func (s *Commands) Archive(ctx context.Context, formID uuid.UUID) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Archive")
 	defer span.End()
 

@@ -9,7 +9,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (s *CommandService) AddMember(ctx context.Context, payload models.AddFormMemberInput) (err error) {
+func (s *Commands) AddMember(ctx context.Context, payload models.AddFormMemberInput) (err error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.AddMember")
 	defer span.End()
 
