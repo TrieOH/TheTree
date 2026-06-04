@@ -1,7 +1,7 @@
 import { LayoutContext } from '#/shared/lib/hooks/layout-context'
 import { cn } from '#/shared/lib/utils'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Users2, Workflow } from 'lucide-react'
+import { Inbox, Users2, Workflow } from 'lucide-react'
 import { useState } from 'react'
 import z from 'zod'
 
@@ -29,6 +29,13 @@ function FormLayout() {
       exact: true,
     },
     {
+      label: 'Submissions',
+      to: '/admin/form/$formID/submissions',
+      params: { formID },
+      icon: Inbox,
+      exact: true,
+    },
+    {
       label: 'Members',
       to: '/admin/form/$formID/members',
       params: { formID },
@@ -52,8 +59,8 @@ function FormLayout() {
         )}
 
         {/* Tab Bar */}
-        <div className="border-b border-border/60 bg-background/50 px-6">
-          <div className="flex items-center gap-8 h-12">
+        <div className="border-b border-border/60 bg-background/50 px-6 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-8 h-12 min-w-max">
             {tabs.map((tab) => (
               <Link
                 key={tab.label}
@@ -75,7 +82,7 @@ function FormLayout() {
                     />
                     <span
                       className={cn(
-                        'transition-colors',
+                        'transition-colors whitespace-nowrap',
                         isActive
                           ? 'text-foreground'
                           : 'text-muted-foreground group-hover:text-foreground',

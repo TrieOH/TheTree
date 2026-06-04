@@ -12,6 +12,16 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import FormAdminHeader from '#/features/forms/ui/form-admin-header'
+import {
+  allNamespacesFormsQueryOptions,
+  formResponseCountOnNamespaceQueryOptions,
+} from '#/features/namespaces/api'
+import {
+  allUserFormsQueryOptions,
+  formResponseCountQueryOptions,
+} from '#/features/forms/api'
+import type { FormI } from '#/features/forms/model'
 
 export const Route = createFileRoute('/admin/form/$formID/members')({
   component: RouteComponent,
@@ -25,23 +35,59 @@ function RouteComponent() {
   const user_id = auth?.profile()?.id || null
   const { data: members = [] } = useQuery(allFormsMembersQueryOptions(formID, namespaceID))
 
+  const formsQueryKey = useMemo(() =>
+    namespaceID
+      ? allNamespacesFormsQueryOptions(namespaceID).queryKey
+      : allUserFormsQueryOptions().queryKey,
+    [namespaceID]
+  )
+
+  const formsQuery = useQuery({
+    queryKey: formsQueryKey,
+    queryFn: namespaceID
+      ? allNamespacesFormsQueryOptions(namespaceID).queryFn
+      : allUserFormsQueryOptions().queryFn,
+  })
+
+  const form = useMemo(() =>
+    formsQuery.data?.find((f) => f.id === formID),
+    [formsQuery.data, formID]
+  )
+
+  const countQuery = useQuery(
+    namespaceID
+      ? formResponseCountOnNamespaceQueryOptions(namespaceID, formID)
+      : formResponseCountQueryOptions(formID)
+  )
+
+  const responseCount = countQuery.data?.count ?? 0
+
+  const updateFormData = (updatedForm: FormI) => {
+    queryClient.setQueryData(
+      formsQueryKey,
+      (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
+    )
+  }
+
   const [filter, setFilter] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [memberToRemove, setMemberToRemove] = useState<FormMemberI | null>(null)
 
   const count = members.length
-  const header = useMemo(() => (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Members</h1>
-        <p className="text-sm text-muted-foreground">
-          {count === 0
-            ? 'No members yet in this form'
-            : `${count} member${count !== 1 ? 's' : ''} in this form`}
-        </p>
-      </div>
-    </div>
-  ), [count])
+  const header = useMemo(() => {
+    if (!form) return null
+
+    return (
+      <FormAdminHeader
+        title="Members"
+        description={count === 0 ? 'No members yet in this form' : `${count} member${count !== 1 ? 's' : ''} in this form`}
+        form={form}
+        namespaceID={namespaceID}
+        responseCount={responseCount}
+        onUpdate={updateFormData}
+      />
+    )
+  }, [form, count, responseCount, namespaceID])
 
   useLayoutHeader(header)
 

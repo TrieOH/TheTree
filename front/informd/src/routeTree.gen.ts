@@ -19,6 +19,7 @@ import { Route as AdminNamespaceIDIndexRouteImport } from './routes/admin/$names
 import { Route as AdminFormFormIDRouteImport } from './routes/admin/form/$formID'
 import { Route as AdminNamespaceIDMembersRouteImport } from './routes/admin/$namespaceID/members'
 import { Route as AdminFormFormIDIndexRouteImport } from './routes/admin/form/$formID/index'
+import { Route as AdminFormFormIDSubmissionsRouteImport } from './routes/admin/form/$formID/submissions'
 import { Route as AdminFormFormIDMembersRouteImport } from './routes/admin/form/$formID/members'
 
 const AdminRoute = AdminRouteImport.update({
@@ -71,6 +72,12 @@ const AdminFormFormIDIndexRoute = AdminFormFormIDIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminFormFormIDRoute,
 } as any)
+const AdminFormFormIDSubmissionsRoute =
+  AdminFormFormIDSubmissionsRouteImport.update({
+    id: '/submissions',
+    path: '/submissions',
+    getParentRoute: () => AdminFormFormIDRoute,
+  } as any)
 const AdminFormFormIDMembersRoute = AdminFormFormIDMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID/submissions': typeof AdminFormFormIDSubmissionsRoute
   '/admin/form/$formID/': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/admin/$namespaceID': typeof AdminNamespaceIDIndexRoute
   '/admin/form': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID/submissions': typeof AdminFormFormIDSubmissionsRoute
   '/admin/form/$formID': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRoutesById {
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
   '/admin/form/': typeof AdminFormIndexRoute
   '/admin/form/$formID/members': typeof AdminFormFormIDMembersRoute
+  '/admin/form/$formID/submissions': typeof AdminFormFormIDSubmissionsRoute
   '/admin/form/$formID/': typeof AdminFormFormIDIndexRoute
 }
 export interface FileRouteTypes {
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/admin/$namespaceID/'
     | '/admin/form/'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID/submissions'
     | '/admin/form/$formID/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/admin/$namespaceID'
     | '/admin/form'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID/submissions'
     | '/admin/form/$formID'
   id:
     | '__root__'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
     | '/admin/$namespaceID/'
     | '/admin/form/'
     | '/admin/form/$formID/members'
+    | '/admin/form/$formID/submissions'
     | '/admin/form/$formID/'
   fileRoutesById: FileRoutesById
 }
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFormFormIDIndexRouteImport
       parentRoute: typeof AdminFormFormIDRoute
     }
+    '/admin/form/$formID/submissions': {
+      id: '/admin/form/$formID/submissions'
+      path: '/submissions'
+      fullPath: '/admin/form/$formID/submissions'
+      preLoaderRoute: typeof AdminFormFormIDSubmissionsRouteImport
+      parentRoute: typeof AdminFormFormIDRoute
+    }
     '/admin/form/$formID/members': {
       id: '/admin/form/$formID/members'
       path: '/members'
@@ -255,11 +275,13 @@ const AdminNamespaceIDRouteWithChildren =
 
 interface AdminFormFormIDRouteChildren {
   AdminFormFormIDMembersRoute: typeof AdminFormFormIDMembersRoute
+  AdminFormFormIDSubmissionsRoute: typeof AdminFormFormIDSubmissionsRoute
   AdminFormFormIDIndexRoute: typeof AdminFormFormIDIndexRoute
 }
 
 const AdminFormFormIDRouteChildren: AdminFormFormIDRouteChildren = {
   AdminFormFormIDMembersRoute: AdminFormFormIDMembersRoute,
+  AdminFormFormIDSubmissionsRoute: AdminFormFormIDSubmissionsRoute,
   AdminFormFormIDIndexRoute: AdminFormFormIDIndexRoute,
 }
 

@@ -24,6 +24,16 @@ import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/rea
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import FormAdminHeader from '#/features/forms/ui/form-admin-header'
+import {
+  allNamespacesFormsQueryOptions,
+  formResponseCountOnNamespaceQueryOptions,
+} from '#/features/namespaces/api'
+import {
+  allUserFormsQueryOptions,
+  formResponseCountQueryOptions,
+} from '#/features/forms/api'
+import type { FormI } from '#/features/forms/model'
 
 export const Route = createFileRoute('/admin/form/$formID/')({
   component: RouteComponent,
@@ -34,6 +44,40 @@ function RouteComponent() {
   const { formID } = Route.useParams()
   const { namespaceID } = Route.useSearch()
   const { data: steps = [] } = useQuery(allFormsStepsQueryOptions(formID, namespaceID))
+
+  const formsQueryKey = useMemo(() =>
+    namespaceID
+      ? allNamespacesFormsQueryOptions(namespaceID).queryKey
+      : allUserFormsQueryOptions().queryKey,
+    [namespaceID]
+  )
+
+  const formsQuery = useQuery({
+    queryKey: formsQueryKey,
+    queryFn: namespaceID
+      ? allNamespacesFormsQueryOptions(namespaceID).queryFn
+      : allUserFormsQueryOptions().queryFn,
+  })
+
+  const form = useMemo(() =>
+    formsQuery.data?.find((f) => f.id === formID),
+    [formsQuery.data, formID]
+  )
+
+  const countQuery = useQuery(
+    namespaceID
+      ? formResponseCountOnNamespaceQueryOptions(namespaceID, formID)
+      : formResponseCountQueryOptions(formID)
+  )
+
+  const responseCount = countQuery.data?.count ?? 0
+
+  const updateFormData = (updatedForm: FormI) => {
+    queryClient.setQueryData(
+      formsQueryKey,
+      (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
+    )
+  }
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -114,18 +158,21 @@ function RouteComponent() {
     setIsEditOpen(true)
   }
 
-  const header = useMemo(() => (
-    <div className="flex items-start justify-between">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Steps</h1>
-        <p className="text-sm text-muted-foreground">
-          {count === 0
-            ? 'No steps yet in this form'
-            : `${count} step${count !== 1 ? 's' : ''} in this form`}
-        </p>
-      </div>
-    </div>
-  ), [count, maxPosition])
+  const header = useMemo(() => {
+    if (!form) return null
+
+    return (
+      <FormAdminHeader
+        title="Steps"
+        description={count === 0 ? 'No steps yet in this form' : `${count} step${count !== 1 ? 's' : ''} in this form`}
+        form={form}
+        namespaceID={namespaceID}
+        responseCount={responseCount}
+        onUpdate={updateFormData}
+      />
+    )
+  }, [form, count, responseCount, namespaceID])
+
   useLayoutHeader(header)
 
   const { mutate: addStepToForm, isPending: isCreating } = useMutation({

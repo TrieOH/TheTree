@@ -116,3 +116,68 @@ export const allNamespacesFormsQueryOptions = (namespace_id: string) => {
     queryFn: () => getAllNamespacesFormsFn(namespace_id),
   })
 }
+
+// Manage Form Status
+
+/**
+ * Opens a Form on the server.
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to open.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const openFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
+  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/open`);
+});
+
+/**
+ * Closes a Form on the server (if it is open).
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to close.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const closeFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
+  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/close`);
+});
+
+/**
+ * Archives a Form on the server (if it is closed).
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to archive.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const archiveFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
+  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/archive`);
+});
+
+/**
+ * Redrafts a Form on the server (if it is open and have zero submissions/responses).
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to redraft.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const redraftFormOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
+  return authFetcher.post<FormI>(`/namespaces/${namespace_id}/forms/${form_id}/redraft`);
+});
+
+/**
+ * Fetches the response count for a specific Form from the server.
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to fetch the response count for.
+ * @returns A promise that resolves to the number of responses for the specified Form.
+ */
+export const getFormResponseCountOnNamespaceFn = createClientOnlyFn((namespace_id: string, form_id: string) => {
+  return tanstackQueryFetcher<{ count: number }>(`/namespaces/${namespace_id}/forms/${form_id}/responses/count`);
+});
+
+/**
+ * Query options for fetching the response count for a specific Form, using TanStack Query.
+ * @param namespace_id - The ID of the namespace the form belongs to.
+ * @param form_id - The ID of the form to fetch the response count for.
+ * @returns An object containing the query key and query function for fetching the response count for a specific Form.
+ */
+export const formResponseCountOnNamespaceQueryOptions = (namespace_id: string, form_id: string) => {
+  return queryOptions({
+    queryKey: ['namespaces', namespace_id, 'forms', form_id, 'responses', 'count'],
+    queryFn: () => getFormResponseCountOnNamespaceFn(namespace_id, form_id),
+  })
+}
