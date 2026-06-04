@@ -1,6 +1,6 @@
 import type { FormCreateI, FormI } from '#/features/forms/model';
 import { FormsView } from '#/features/forms/ui/forms-view'
-import { allNamespacesFormsQueryOptions, createFormOnNamespaceFn } from '#/features/namespaces/api'
+import { allNamespacesArchivedFormsQueryOptions, allNamespacesFormsQueryOptions, createFormOnNamespaceFn } from '#/features/namespaces/api'
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -16,8 +16,10 @@ function RouteComponent() {
   const { namespaceID } = Route.useParams()
   const queryClient = useQueryClient()
   const { data: forms = [] } = useQuery(allNamespacesFormsQueryOptions(namespaceID))
+  const { data: archivedForms = [] } = useQuery(allNamespacesArchivedFormsQueryOptions(namespaceID))
+  const allForms = [...forms, ...archivedForms]
 
-  const count = forms.length
+  const count = allForms.length
 
   const header = useMemo(() => (
     <div className="flex items-start justify-between">
@@ -49,7 +51,7 @@ function RouteComponent() {
 
   return (
     <FormsView
-      forms={forms}
+      forms={allForms}
       onCreate={createForm}
       isCreating={isCreating}
       title="" // Title is handled by layout header

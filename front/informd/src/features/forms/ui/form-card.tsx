@@ -115,23 +115,35 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
   const navigate = useNavigate();
   const Item = isContext ? ContextMenuItem : DropdownMenuItem;
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
-  const temp_id = data.namespace_id
+
   return (
     <>
-      {temp_id &&
-        <Item
-          onClick={() => {
-            navigate({
-              to: '/admin/form/$formID',
-              params: { formID: data.id },
-              search: { namespaceID: data.namespace_id || undefined }
-            })
-          }}
-        >
-          <ExternalLink className="mr-2 size-4" />
-          View Steps
-        </Item>
-      }
+      <Item
+        onClick={() => {
+          navigate({
+            to: '/admin/form/$formID',
+            params: { formID: data.id },
+            search: { namespaceID: data.namespace_id || undefined }
+          })
+        }}
+      >
+        <ExternalLink className="mr-2 size-4" />
+        View Steps
+      </Item>
+
+      <Item
+        onClick={() => {
+          navigate({
+            to: '/admin/form/$formID/submissions',
+            params: { formID: data.id },
+            search: { namespaceID: data.namespace_id || undefined }
+          })
+        }}
+      >
+        <ClipboardCheck className="mr-2 size-4" />
+        View Submissions
+      </Item>
+
       <Separator />
       <Item
         onClick={() => {
@@ -157,6 +169,7 @@ interface FormCardProps {
 export function FormCard({ data }: FormCardProps) {
   const meta = getStatusMeta(data.status);
   const { Icon } = meta;
+  const isNamespaceForm = Boolean(data.namespace_id);
 
   return (
     <ContextMenu>
@@ -164,7 +177,7 @@ export function FormCard({ data }: FormCardProps) {
         render={
           <Link
             className={cn(
-              "group relative flex w-56 flex-col overflow-hidden rounded-sm",
+              "group relative flex w-72 max-w-full flex-col overflow-hidden rounded-sm",
               "bg-card ring-1 ring-foreground/10 shadow-xs",
               "cursor-pointer select-none",
               "transition-all duration-150",
@@ -178,10 +191,21 @@ export function FormCard({ data }: FormCardProps) {
       >
         <div
           className={cn(
-            "flex h-32 items-center justify-center",
+            "flex h-32 items-center justify-center relative",
             meta.headerBg
           )}
         >
+          <span
+            className={cn(
+              'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+              'absolute left-2.5 top-2.5 uppercase tracking-wider',
+              isNamespaceForm
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+            )}
+          >
+            {isNamespaceForm ? 'Namespace' : 'Personal'}
+          </span>
           <div
             className={cn(
               "flex size-12 items-center justify-center rounded-full",

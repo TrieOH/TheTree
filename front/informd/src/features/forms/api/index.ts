@@ -21,6 +21,14 @@ export const getAllUserFormsFn = createClientOnlyFn(async () => {
 });
 
 /**
+ * Fetches all archived Forms for the current user from the server.
+ * @returns A promise that resolves to an array of archived Form objects.
+ */
+export const getAllUserArchivedFormsFn = createClientOnlyFn(async () => {
+  return tanstackQueryFetcher<FormI[]>("/forms/archived");
+});
+
+/**
  * Query options for fetching all personal Forms for the current user, using TanStack Query.
  * @returns An object containing the query key and query function for fetching all personal Forms.
  */
@@ -31,6 +39,16 @@ export const allUserFormsQueryOptions = () => {
   })
 }
 
+/**
+ * Query options for fetching all archived Forms for the current user, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching all archived Forms.
+ */
+export const allUserArchivedFormsQueryOptions = () => {
+  return queryOptions({
+    queryKey: ["forms", "archived"],
+    queryFn: () => getAllUserArchivedFormsFn(),
+  })
+}
 // Manage Form Status
 
 /**

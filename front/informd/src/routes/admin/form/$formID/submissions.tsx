@@ -2,10 +2,12 @@ import { useMemo } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  allNamespacesArchivedFormsQueryOptions,
   allNamespacesFormsQueryOptions,
   formResponseCountOnNamespaceQueryOptions,
 } from '#/features/namespaces/api'
 import {
+  allUserArchivedFormsQueryOptions,
   allUserFormsQueryOptions,
   formResponseCountQueryOptions,
 } from '#/features/forms/api'
@@ -29,6 +31,12 @@ function SubmissionsComponent() {
       : allUserFormsQueryOptions().queryKey,
     [namespaceID]
   )
+  const archivedFormsQueryKey = useMemo(() =>
+    namespaceID
+      ? allNamespacesArchivedFormsQueryOptions(namespaceID).queryKey
+      : allUserArchivedFormsQueryOptions().queryKey,
+    [namespaceID]
+  )
 
   const formsQuery = useQuery({
     queryKey: formsQueryKey,
@@ -36,10 +44,16 @@ function SubmissionsComponent() {
       ? allNamespacesFormsQueryOptions(namespaceID).queryFn
       : allUserFormsQueryOptions().queryFn,
   })
+  const archivedFormsQuery = useQuery({
+    queryKey: archivedFormsQueryKey,
+    queryFn: namespaceID
+      ? allNamespacesArchivedFormsQueryOptions(namespaceID).queryFn
+      : allUserArchivedFormsQueryOptions().queryFn,
+  })
 
   const form = useMemo(() =>
-    formsQuery.data?.find((f) => f.id === formID),
-    [formsQuery.data, formID]
+    [...(formsQuery.data ?? []), ...(archivedFormsQuery.data ?? [])].find((f) => f.id === formID),
+    [formsQuery.data, archivedFormsQuery.data, formID]
   )
 
   const countQuery = useQuery(
@@ -53,6 +67,10 @@ function SubmissionsComponent() {
   const updateFormData = (updatedForm: FormI) => {
     queryClient.setQueryData(
       formsQueryKey,
+      (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
+    )
+    queryClient.setQueryData(
+      archivedFormsQueryKey,
       (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
     )
   }

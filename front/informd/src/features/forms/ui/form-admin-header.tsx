@@ -100,15 +100,15 @@ export default function FormAdminHeader({
   const isPending = isOpenPending || isClosePending || isArchivePending || isRedraftPending
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col gap-0.5">
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-lg font-semibold tracking-tight wrap-break-word">{title}</h1>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
         {/* Status Badge Group */}
-        <div className="flex items-center gap-2 pr-3 border-r border-border/60">
+        <div className="flex items-center gap-2 pr-6 border-r border-border/60 last:border-r-0">
           <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</span>
           <div className="flex items-center gap-1.5 px-2 py-1 bg-secondary/40 rounded-sm border border-border/40">
             <div className={cn("size-1.5 rounded-full", currentStatus.color)} />
@@ -117,7 +117,7 @@ export default function FormAdminHeader({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {form.status === FormStatusDraft && (
             <Button
               size="sm" onClick={() => openForm()}

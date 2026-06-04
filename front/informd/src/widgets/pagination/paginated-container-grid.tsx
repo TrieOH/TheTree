@@ -158,10 +158,9 @@ function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps
   // "grid" - auto-fill columns that stretch to fill the row.
   return (
     <div
-      className={`w-full justify-center ${gapClass}`}
+      className={`w-full grid justify-center justify-items-center ${gapClass}`}
       style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(auto-fill, minmax(${minItemWidth}, max-content))`,
+        gridTemplateColumns: `repeat(auto-fill, minmax(${minItemWidth}, 1fr))`,
       }}
     >
       {children}
@@ -414,7 +413,7 @@ export function PaginatedContainer<T>({
       {hasHeader && (
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border px-4 py-3">
           {onFilterChange !== undefined && (
-            <div className="relative min-w-40 flex-1 max-w-sm">
+            <div className="relative w-full sm:flex-1 sm:max-w-sm">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center">
                 <Search size={13} />
               </span>
@@ -428,12 +427,12 @@ export function PaginatedContainer<T>({
                 }}
                 placeholder={filterPlaceholder}
                 aria-label={filterPlaceholder}
-                className="w-full rounded-md border border-border bg-muted/50 py-1.5 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
+                className="h-9 w-full rounded-md border border-border bg-muted/50 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
               />
             </div>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             {headerActions}
 
             {sortFields && activeSort && (
@@ -443,7 +442,7 @@ export function PaginatedContainer<T>({
                   aria-expanded={sortOpen}
                   aria-haspopup="dialog"
                   className={[
-                    "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors",
+                    "flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors",
                     sortOpen
                       ? "border-ring/50 bg-muted text-foreground"
                       : "border-border text-muted-foreground hover:border-border/80 hover:bg-muted hover:text-foreground",

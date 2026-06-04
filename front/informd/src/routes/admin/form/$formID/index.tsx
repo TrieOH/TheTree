@@ -26,10 +26,12 @@ import { useMemo, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import FormAdminHeader from '#/features/forms/ui/form-admin-header'
 import {
+  allNamespacesArchivedFormsQueryOptions,
   allNamespacesFormsQueryOptions,
   formResponseCountOnNamespaceQueryOptions,
 } from '#/features/namespaces/api'
 import {
+  allUserArchivedFormsQueryOptions,
   allUserFormsQueryOptions,
   formResponseCountQueryOptions,
 } from '#/features/forms/api'
@@ -51,6 +53,12 @@ function RouteComponent() {
       : allUserFormsQueryOptions().queryKey,
     [namespaceID]
   )
+  const archivedFormsQueryKey = useMemo(() =>
+    namespaceID
+      ? allNamespacesArchivedFormsQueryOptions(namespaceID).queryKey
+      : allUserArchivedFormsQueryOptions().queryKey,
+    [namespaceID]
+  )
 
   const formsQuery = useQuery({
     queryKey: formsQueryKey,
@@ -58,10 +66,16 @@ function RouteComponent() {
       ? allNamespacesFormsQueryOptions(namespaceID).queryFn
       : allUserFormsQueryOptions().queryFn,
   })
+  const archivedFormsQuery = useQuery({
+    queryKey: archivedFormsQueryKey,
+    queryFn: namespaceID
+      ? allNamespacesArchivedFormsQueryOptions(namespaceID).queryFn
+      : allUserArchivedFormsQueryOptions().queryFn,
+  })
 
   const form = useMemo(() =>
-    formsQuery.data?.find((f) => f.id === formID),
-    [formsQuery.data, formID]
+    [...(formsQuery.data ?? []), ...(archivedFormsQuery.data ?? [])].find((f) => f.id === formID),
+    [formsQuery.data, archivedFormsQuery.data, formID]
   )
 
   const countQuery = useQuery(
@@ -75,6 +89,10 @@ function RouteComponent() {
   const updateFormData = (updatedForm: FormI) => {
     queryClient.setQueryData(
       formsQueryKey,
+      (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
+    )
+    queryClient.setQueryData(
+      archivedFormsQueryKey,
       (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
     )
   }
@@ -254,8 +272,6 @@ function RouteComponent() {
     },
     onError: (error: Error) => toast.error(error.message),
   })
-
-  // ── Field mutations ──────────────────────────────────────────────────────────
 
   const { mutate: addField, isPending: isFieldCreating } = useMutation({
     mutationFn: ({ data, step }: { data: CreateFieldRequestI; step: StepI }) =>

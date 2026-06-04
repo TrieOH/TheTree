@@ -106,6 +106,15 @@ export const getAllNamespacesFormsFn = createClientOnlyFn((namespace_id: string)
 });
 
 /**
+ * Fetches all archived forms for a specific namespace from the server.
+ * @param namespace_id - The ID of the namespace to fetch archived forms for.
+ * @returns A promise that resolves to an array of archived form objects.
+ */
+export const getAllNamespacesArchivedFormsFn = createClientOnlyFn((namespace_id: string) => {
+  return tanstackQueryFetcher<FormI[]>(`/namespaces/${namespace_id}/forms/archived`);
+});
+
+/**
  * Query options for fetching all Forms, using TanStack Query.
  * @param namespace_id - The ID of the namespace to fetch forms for.
  * @returns An object containing the query key and query function for fetching all Forms.
@@ -114,6 +123,13 @@ export const allNamespacesFormsQueryOptions = (namespace_id: string) => {
   return queryOptions({
     queryKey: ['namespaces', namespace_id, 'forms'],
     queryFn: () => getAllNamespacesFormsFn(namespace_id),
+  })
+}
+
+export const allNamespacesArchivedFormsQueryOptions = (namespace_id: string) => {
+  return queryOptions({
+    queryKey: ['namespaces', namespace_id, 'forms', 'archived'],
+    queryFn: () => getAllNamespacesArchivedFormsFn(namespace_id),
   })
 }
 

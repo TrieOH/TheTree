@@ -4,8 +4,9 @@ import { FormCard } from '#/features/forms/ui/form-card'
 import { Button } from '#/shared/ui/shadcn/button'
 import FormModal from '#/widgets/modal/form-modal'
 import { PaginatedContainer } from '#/widgets/pagination/paginated-container-grid'
+import { FormStatusArchived } from '@trieoh/informd-models'
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 interface FormsViewProps {
   forms: FormI[];
@@ -23,11 +24,20 @@ export function FormsView({
   description,
 }: FormsViewProps) {
   const [filter, setFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('active')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
-  const count = forms.length
+  const visibleForms = useMemo(() => {
+    return forms.filter((form) => {
+      if (statusFilter === 'archived') return form.status === FormStatusArchived
+      if (statusFilter === 'active') return form.status !== FormStatusArchived
+      return true
+    })
+  }, [forms, statusFilter])
 
-  const filteredForms = forms.filter((form) => {
+  const count = visibleForms.length
+
+  const filteredForms = visibleForms.filter((form) => {
     const search = filter.toLowerCase().trim()
 
     if (!search) return true
@@ -65,21 +75,50 @@ export function FormsView({
           { key: "title", label: "Title" },
           { key: "created_at", label: "Created At" },
           { key: "updated_at", label: "Updated At" },
+          {
+            key: "namespace_id",
+            label: "Scope",
+            comparator: (a, b) => Number(Boolean(b.namespace_id)) - Number(Boolean(a.namespace_id)),
+          },
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
         filterPlaceholder="Filter by title…"
         itemLabel="forms"
         headerActions={
-          <Button
-            onClick={() => setIsCreateOpen(true)}
-            size="icon"
-            variant="outline"
-            className="sm:w-auto px-3 rounded-sm"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline ml-2">Add Form</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex h-9 items-center gap-1 rounded-md border border-border bg-background p-1">
+              {[
+                { key: 'active', label: 'Active' },
+                { key: 'archived', label: 'Archived' },
+                { key: 'all', label: 'All' },
+              ].map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setStatusFilter(option.key as 'all' | 'active' | 'archived')}
+                  className={[
+                    'flex h-full items-center rounded-sm px-2.5 text-xs font-medium transition-colors',
+                    statusFilter === option.key
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  ].join(' ')}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              size="icon"
+              variant="outline"
+              className="h-9 sm:w-auto px-3 rounded-sm"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline ml-2">Add Form</span>
+            </Button>
+          </div>
         }
         renderItems={(slice) => slice.map(item => {
           return (
