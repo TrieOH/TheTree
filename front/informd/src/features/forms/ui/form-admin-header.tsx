@@ -27,6 +27,8 @@ import {
   StopCircle,
 } from 'lucide-react'
 import type { FormI } from '#/features/forms/model'
+import { useState } from 'react'
+import { ConfirmModal } from '#/widgets/modal/modal'
 
 interface FormAdminHeaderProps {
   title: string
@@ -45,6 +47,8 @@ export default function FormAdminHeader({
   responseCount,
   onUpdate
 }: FormAdminHeaderProps) {
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false)
+
   const statusConfig = {
     [FormStatusOpen]: { label: 'Open', color: 'bg-green-500' },
     [FormStatusDraft]: { label: 'Draft', color: 'bg-slate-400' },
@@ -81,6 +85,7 @@ export default function FormAdminHeader({
       if (response.success) {
         onUpdate(response.data)
         toast.success('Form archived successfully')
+        setIsArchiveModalOpen(false)
       } else toast.error(response.message || 'Failed to archive form')
     },
     onError: (error: Error) => toast.error(error.message),
@@ -154,19 +159,32 @@ export default function FormAdminHeader({
           )}
 
           {form.status === FormStatusClosed && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => archiveForm()}
-              disabled={isPending}
-              className="h-8 rounded-sm text-[10px] font-bold uppercase tracking-wider"
-            >
-              <Archive className="mr-1.5 size-3" />
-              Archive
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsArchiveModalOpen(true)}
+                disabled={isPending}
+                className="h-8 rounded-sm text-[10px] font-bold uppercase tracking-wider"
+              >
+                <Archive className="mr-1.5 size-3" />
+                Archive
+              </Button>
+              <ConfirmModal
+                isOpen={isArchiveModalOpen}
+                onClose={() => setIsArchiveModalOpen(false)}
+                onConfirm={() => archiveForm()}
+                title="Archive Form"
+                description="Are you sure you want to archive this form? This action cannot be undone and the form will no longer be accessible for responses."
+                confirmText="Archive"
+                variant="destructive"
+                isLoading={isArchivePending}
+              />
+            </>
           )}
         </div>
       </div>
     </div>
   )
 }
+
