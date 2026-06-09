@@ -4,23 +4,22 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   allNamespacesArchivedFormsQueryOptions,
   allNamespacesFormsQueryOptions,
-  formResponseCountOnNamespaceQueryOptions,
 } from '#/features/namespaces/api'
 import {
   allUserArchivedFormsQueryOptions,
   allUserFormsQueryOptions,
-  formResponseCountQueryOptions,
 } from '#/features/forms/api'
 import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import FormAdminHeader from '#/features/forms/ui/form-admin-header'
 import type { FormI } from '#/features/forms/model'
-import { mockForm } from '#/features/submissions/model/mock'
 import FormHeader from '#/features/submissions/ui/form-header'
 import { SubmissionDetail } from '#/features/submissions/ui/submission-details'
-import { deriveSubmissions  } from '#/features/submissions/model'
-import type {SubmissionSummaryI} from '#/features/submissions/model';
+import { deriveSubmissions } from '#/features/submissions/model'
+import type { SubmissionSummaryI } from '#/features/submissions/model';
 import ResponseCard from '#/features/submissions/ui/response-card'
 import { PaginatedContainer } from '#/widgets/pagination/paginated-container-grid'
+import { allFormsResponsesQueryOptions } from '#/features/submissions/api'
+import { FileText } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/form/$formID/submissions')({
   component: SubmissionsComponent,
@@ -33,7 +32,10 @@ function SubmissionsComponent() {
 
   const [selectedResponder, setSelectedResponder] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
-  const submissions = useMemo(() => deriveSubmissions(mockForm), []);
+
+  const { data: fullForm = null, isLoading: isFullFormLoading } = useQuery(allFormsResponsesQueryOptions(formID, namespaceID))
+
+  const submissions = useMemo(() => fullForm ? deriveSubmissions(fullForm) : [], [fullForm]);
 
   const filteredSubmissions = useMemo(() => {
     if (!filterText) return submissions;
@@ -62,6 +64,7 @@ function SubmissionsComponent() {
       ? allNamespacesFormsQueryOptions(namespaceID).queryFn
       : allUserFormsQueryOptions().queryFn,
   })
+
   const archivedFormsQuery = useQuery({
     queryKey: archivedFormsQueryKey,
     queryFn: namespaceID
@@ -74,14 +77,6 @@ function SubmissionsComponent() {
     [formsQuery.data, archivedFormsQuery.data, formID]
   )
 
-  const countQuery = useQuery(
-    namespaceID
-      ? formResponseCountOnNamespaceQueryOptions(namespaceID, formID)
-      : formResponseCountQueryOptions(formID)
-  )
-
-  const responseCount = countQuery.data?.count ?? 0
-
   const updateFormData = (updatedForm: FormI) => {
     queryClient.setQueryData(
       formsQueryKey,
@@ -92,6 +87,8 @@ function SubmissionsComponent() {
       (oldData: FormI[] = []) => oldData.map(f => f.id === formID ? updatedForm : f)
     )
   }
+
+  const responseCount = submissions.length
 
   const header = useMemo(() => {
     if (!form) return null
@@ -110,12 +107,34 @@ function SubmissionsComponent() {
 
   useLayoutHeader(header)
 
-  if (formsQuery.isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading form...</div>
-  if (!form) return <div className="p-6 text-sm text-muted-foreground">Form not found</div>
+  if (isFullFormLoading || formsQuery.isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-100 gap-4">
+        <div className="size-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading submissions...</p>
+      </div>
+    )
+  }
+
+  if (!fullForm || !form) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-100 gap-4 p-8 text-center">
+        <div className="size-16 rounded-2xl bg-muted flex items-center justify-center">
+          <FileText className="size-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-foreground">Form not found</h2>
+          <p className="text-sm text-muted-foreground max-w-62.5">
+            We couldn't find the form you're looking for or it might have been deleted.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className='space-y-2'>
-      <FormHeader form={mockForm.form} />
+    <div className='space-y-2 animate-in fade-in duration-500'>
+      <FormHeader form={fullForm.form} />
       <PaginatedContainer<SubmissionSummaryI>
         items={filteredSubmissions}
         layout="list"
@@ -123,7 +142,6 @@ function SubmissionsComponent() {
         sortFields={[
           { key: "responder", label: "Respondent" },
           { key: "completed_at", label: "Date" },
-          { key: "step_id", label: "Step" },
         ]}
         filterValue={filterText}
         onFilterChange={setFilterText}
@@ -134,7 +152,7 @@ function SubmissionsComponent() {
             <ResponseCard
               key={item.responder}
               data={item}
-              steps={mockForm.steps}
+              steps={fullForm.steps}
               isSelected={selectedResponder === item.responder}
               onClick={() => setSelectedResponder(item.responder)}
             />
@@ -142,7 +160,7 @@ function SubmissionsComponent() {
         }
       />
       <SubmissionDetail
-        fullForm={mockForm}
+        fullForm={fullForm}
         responder={selectedResponder}
         onClose={() => setSelectedResponder(null)}
       />

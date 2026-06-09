@@ -12,7 +12,7 @@ export interface FullFormI {
 
 export interface FullStepI {
   step: StepI;
-  fields: FullFieldI[];
+  fields: FullFieldI[] | null;
 }
 
 export interface FullFieldI {
@@ -36,7 +36,7 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
   const byResponder = new Map<string, FullAnswerI[]>();
 
   for (const step of fullForm.steps) {
-    for (const field of step.fields) {
+    for (const field of step.fields ?? []) {
       for (const fa of field.answers) {
         const list = byResponder.get(fa.responder) ?? [];
         list.push(fa);
@@ -56,7 +56,7 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
     let maxPosition = -1;
 
     for (const step of fullForm.steps) {
-      const hasAny = step.fields.some((f) =>
+      const hasAny = (step.fields ?? []).some((f) =>
         f.answers.some(
           (a) =>
             a.responder === responder &&

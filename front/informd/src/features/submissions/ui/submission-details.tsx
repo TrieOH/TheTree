@@ -107,7 +107,7 @@ function renderFieldValue(fieldType: FieldTypeI, value: string): React.ReactNode
 export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDetailProps) {
   const isOpen = !!responder;
 
-  const allFields = responder ? fullForm.steps.flatMap((s) => s.fields) : [];
+  const allFields = fullForm.steps.flatMap((s) => s.fields ?? []);
   const answers = responder ? allFields
     .flatMap((f) => f.answers)
     .filter((a) => a.responder === responder) : [];
@@ -163,10 +163,10 @@ export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDet
 
           {/* Form Content */}
           {responder && fullForm.steps.map((fullStep, stepIdx) => {
-            const stepAnswers = fullStep.fields.map((f) => ({
+            const stepAnswers = fullStep.fields?.map((f) => ({
               field: f.field,
-              value: getFieldAnswer(fullStep.fields, f.field.id, responder),
-            }));
+              value: getFieldAnswer(fullStep.fields ?? [], f.field.id, responder),
+            })) ?? [];
 
             const hasAnyAnswer = stepAnswers.some((a) => a.value !== null && a.value !== "");
             if (!hasAnyAnswer) return null;
