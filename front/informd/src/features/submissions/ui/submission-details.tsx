@@ -1,6 +1,4 @@
 import {
-  X,
-  User,
   Clock,
   Star,
   FileText,
@@ -10,11 +8,19 @@ import {
   Hash,
   ToggleLeft,
   Calendar,
-  List
+  List,
+  User,
 } from "lucide-react";
 import type { FullFieldI, FullFormI } from "../model";
 import type { FieldTypeI } from "#/features/fields/model";
 import { cn } from "#/shared/lib/utils";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "#/shared/ui/shadcn/drawer";
 
 interface SubmissionDetailProps {
   fullForm: FullFormI;
@@ -45,115 +51,118 @@ const typeIcons: Record<FieldTypeI, typeof FileText> = {
 };
 
 function renderFieldValue(fieldType: FieldTypeI, value: string): React.ReactNode {
-  if (value === "") return <span className="text-sm text-gray-400 italic">No response</span>;
+  if (value === "") return <span className="text-sm text-muted-foreground italic">No response</span>;
 
   switch (fieldType) {
     case "int": {
       const num = parseInt(value, 10);
-      if (isNaN(num)) return <span className="text-sm text-gray-900">{value}</span>;
+      if (isNaN(num)) return <span className="text-sm text-foreground">{value}</span>;
       if (num >= 1 && num <= 5) {
         return (
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
-                className={cn("w-4 h-4", i < num ? "text-yellow-400 fill-yellow-400" : "text-gray-300")}
+                className={cn("w-4 h-4", i < num ? "text-accent fill-accent" : "text-muted")}
               />
             ))}
-            <span className="ml-2 text-sm font-medium text-gray-900">{num}/5</span>
+            <span className="ml-2 text-sm font-medium text-foreground">{num}/5</span>
           </div>
         );
       }
-      return <span className="text-sm text-gray-900">{num}</span>;
+      return <span className="text-sm text-foreground">{num}</span>;
     }
     case "float": {
       const floatNum = parseFloat(value);
-      return <span className="text-sm text-gray-900">{isNaN(floatNum) ? value : floatNum.toFixed(2)}</span>;
+      return <span className="text-sm text-foreground">{isNaN(floatNum) ? value : floatNum.toFixed(2)}</span>;
     }
     case "bool": {
       const boolVal = value.toLowerCase() === "true" || value === "1";
       return (
-        <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium", boolVal ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700")}>
+        <span className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+          boolVal ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+        )}>
           {boolVal ? "Yes" : "No"}
         </span>
       );
     }
     case "email":
-      return <a href={`mailto:${value}`} className="text-sm text-blue-600 hover:underline">{value}</a>;
+      return <a href={`mailto:${value}`} className="text-sm text-secondary hover:text-primary transition-colors underline decoration-secondary/30 underline-offset-4">{value}</a>;
     case "url":
-      return <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline break-all">{value}</a>;
+      return <a href={value} target="_blank" rel="noopener noreferrer" className="text-sm text-secondary hover:text-primary transition-colors underline decoration-secondary/30 underline-offset-4 break-all">{value}</a>;
     case "phone":
-      return <a href={`tel:${value}`} className="text-sm text-blue-600 hover:underline">{value}</a>;
+      return <a href={`tel:${value}`} className="text-sm text-secondary hover:text-primary transition-colors underline decoration-secondary/30 underline-offset-4">{value}</a>;
     case "date":
-      return <span className="text-sm text-gray-900">{new Date(value).toLocaleDateString()}</span>;
+      return <span className="text-sm text-foreground tabular-nums">{new Date(value).toLocaleDateString()}</span>;
     case "datetime":
-      return <span className="text-sm text-gray-900">{new Date(value).toLocaleString()}</span>;
+      return <span className="text-sm text-foreground tabular-nums">{new Date(value).toLocaleString()}</span>;
     case "time":
-      return <span className="text-sm text-gray-900">{value}</span>;
+      return <span className="text-sm text-foreground tabular-nums">{value}</span>;
     default:
-      return <span className="text-sm text-gray-900 whitespace-pre-wrap">{value}</span>;
+      return <span className="text-sm text-foreground whitespace-pre-wrap">{value}</span>;
   }
 }
 
 export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDetailProps) {
-  if (!responder) return null;
+  const isOpen = !!responder;
 
-  const allFields = fullForm.steps.flatMap((s) => s.fields);
-  const answers = allFields
+  const allFields = responder ? fullForm.steps.flatMap((s) => s.fields) : [];
+  const answers = responder ? allFields
     .flatMap((f) => f.answers)
-    .filter((a) => a.responder === responder);
+    .filter((a) => a.responder === responder) : [];
 
   const completedAt = answers.length > 0
     ? new Date(Math.max(...answers.map((a) => new Date(a.answer.answered_at).getTime())))
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Submission Review</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Response #{responder.split("@")[0]}</p>
+    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} direction="right">
+      <DrawerContent className="h-full flex flex-col focus:outline-none rounded-none border-none">
+        <DrawerHeader className="border-b border-border bg-card py-6">
+          <div className="space-y-1">
+            <DrawerTitle className="text-xl font-bold tracking-tight">Submission Review</DrawerTitle>
+            <DrawerDescription className="font-medium">
+              {responder ? `Response from ${responder.split("@")[0]}` : ""}
+            </DrawerDescription>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+        </DrawerHeader>
 
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-lg border border-gray-200">
-                <User className="w-4 h-4 text-gray-600" />
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+          {/* Metadata Stack */}
+          {responder && (
+            <div className="flex flex-col gap-3 pb-8 border-b border-border/60">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/40 border border-border/40">
+                <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
+                  <User className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Respondent</div>
+                  <div className="text-sm font-semibold text-foreground truncate">{responder}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider font-medium">Respondent</div>
-                <div className="text-sm font-medium text-gray-900">{responder}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white rounded-lg border border-gray-200">
-                <Clock className="w-4 h-4 text-gray-600" />
-              </div>
-              <div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider font-medium">Submitted</div>
-                <div className="text-sm font-medium text-gray-900">
-                  {completedAt?.toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }) ?? "—"}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/40 border border-border/40">
+                <div className="p-2.5 bg-accent/10 text-accent rounded-lg">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Submitted At</div>
+                  <div className="text-sm font-semibold text-foreground tabular-nums">
+                    {completedAt?.toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }) ?? "—"}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="px-6 py-6 space-y-8">
-          {fullForm.steps.map((fullStep, stepIdx) => {
+          {/* Form Content */}
+          {responder && fullForm.steps.map((fullStep, stepIdx) => {
             const stepAnswers = fullStep.fields.map((f) => ({
               field: f.field,
               value: getFieldAnswer(fullStep.fields, f.field.id, responder),
@@ -163,40 +172,40 @@ export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDet
             if (!hasAnyAnswer) return null;
 
             return (
-              <div key={fullStep.step.id} className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-semibold">
+              <div key={fullStep.step.id} className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-sm">
                     {stepIdx + 1}
                   </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">{fullStep.step.title}</h3>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-foreground leading-tight truncate">{fullStep.step.title}</h3>
                     {fullStep.step.description && (
-                      <p className="text-xs text-gray-500">{fullStep.step.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{fullStep.step.description}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="ml-11 space-y-4">
+                <div className="sm:ml-14 space-y-4">
                   {stepAnswers.map(({ field, value }) => {
                     const TypeIcon = typeIcons[field.type];
                     return (
-                      <div key={field.id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                        <div className="flex items-start justify-between mb-1">
-                          <label className="text-sm font-medium text-gray-700">
+                      <div key={field.id} className="group bg-card hover:bg-accent/5 rounded-xl p-5 border border-border/60 hover:border-accent/30 transition-all shadow-sm">
+                        <div className="flex items-start justify-between gap-4 mb-2">
+                          <label className="text-sm font-bold text-foreground leading-snug">
                             {field.title}
-                            {field.required && <span className="text-red-500 ml-1">*</span>}
+                            {field.required && <span className="text-destructive ml-1">*</span>}
                           </label>
-                          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-400 font-medium">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:bg-accent/10 group-hover:text-accent transition-colors">
                             <TypeIcon className="w-3 h-3" />
                             {field.type}
                           </span>
                         </div>
                         {field.description && (
-                          <p className="text-xs text-gray-500 mb-2">{field.description}</p>
+                          <p className="text-xs text-muted-foreground mb-3">{field.description}</p>
                         )}
-                        <div className="mt-1">
+                        <div className="mt-1 pt-3 border-t border-border/40 group-hover:border-accent/20 transition-colors">
                           {value === null || value === "" ? (
-                            <span className="text-sm text-gray-400 italic">No response</span>
+                            <span className="text-sm text-muted-foreground italic">No response</span>
                           ) : (
                             renderFieldValue(field.type, value)
                           )}
@@ -209,7 +218,7 @@ export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDet
             );
           })}
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
