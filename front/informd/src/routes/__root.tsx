@@ -59,7 +59,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased wrap-anywhere">
+      <body className="font-body antialiased wrap-anywhere">
         <PostHogProvider>
           <TanStackQueryProvider>
             <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
