@@ -96,7 +96,7 @@ export const allStepsFieldsQueryOptions = (
   namespace_id?: string
 ) => {
   return queryOptions({
-    queryKey: ["forms", form_id, "steps", step_id, "fields"],
+    queryKey: ["forms", form_id, "steps", step_id, "fields", namespace_id],
     queryFn: () => getAllUserFieldsFn(form_id, step_id, namespace_id),
   });
 };
@@ -158,7 +158,7 @@ export const allSelectConfigsQueryOptions = (
   namespace_id?: string
 ) => {
   return queryOptions({
-    queryKey: ["forms", form_id, "steps", step_id, "fields", field_id, "select_config"],
+    queryKey: ["forms", form_id, "steps", step_id, "fields", field_id, "select_config", namespace_id],
     queryFn: () => getFieldSelectConfigFn(field_id, form_id, step_id, namespace_id),
   });
 };

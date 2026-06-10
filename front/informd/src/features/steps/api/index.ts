@@ -65,7 +65,7 @@ export const allFormsStepsQueryOptions = (
   namespace_id?: string
 ) => {
   return queryOptions({
-    queryKey: ["forms", form_id, "steps"],
+    queryKey: ["forms", form_id, "steps", namespace_id],
     queryFn: () => getAllUserStepsFn(form_id, namespace_id),
   })
 }
