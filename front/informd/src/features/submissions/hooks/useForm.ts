@@ -215,7 +215,7 @@ export function useForm(formId: string, namespaceId?: string) {
 
       const res = await submitFormFn(formId, request);
 
-      if (res.success || (res.code && res.code >= 400)) {
+      if (!res.success) {
         const message = res.message || "Error submitting form";
         setState((prev) => ({ ...prev, submitting: false }));
         toast.error(message);
