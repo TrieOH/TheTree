@@ -1,63 +1,100 @@
-import { useState, useCallback, useEffect } from "react";
-import { getForm, getSteps, getFields, submitForm as apiSubmit } from "../model/mock";
-import type { FormI } from "#/features/forms/model";
-import type { StepI } from "#/features/steps/model";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import type { FieldI } from "#/features/fields/model";
 import { toast } from "sonner";
-import type { AnswerI, SubmitRequestI } from "../model";
+import type { AnswerCreateI, SubmitRequestI } from "../model";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { allFormsStepsQueryOptions } from "#/features/steps/api";
+import { allStepsFieldsQueryOptions, allSelectConfigsQueryOptions } from "#/features/fields/api";
+import { submitFormFn } from "../api";
 
 interface FormState {
-  form: FormI | null;
-  steps: StepI[];
-  fields: Record<string, FieldI[]>;
   currentStepIndex: number;
   formData: Record<string, unknown>;
   errors: Record<string, string>;
-  loading: boolean;
   submitting: boolean;
   submitted: boolean;
 }
 
-export function useForm() {
+export function useForm(formId: string, namespaceId?: string) {
   const [state, setState] = useState<FormState>({
-    form: null,
-    steps: [],
-    fields: {},
     currentStepIndex: 0,
     formData: {},
     errors: {},
-    loading: true,
     submitting: false,
     submitted: false,
   });
 
-  const load = useCallback(async () => {
-    try {
-      const [formData, stepsData] = await Promise.all([getForm(), getSteps()]);
-      const fieldsMap: Record<string, FieldI[]> = {};
+  // 1. Fetch Steps
+  const { data: steps } = useSuspenseQueries({
+    queries: [allFormsStepsQueryOptions(formId, namespaceId)],
+    combine: (results) => ({
+      data: results[0].data.sort((a, b) => a.position_hint - b.position_hint)
+    })
+  });
 
-      await Promise.all(
-        stepsData.map(async (step) => {
-          fieldsMap[step.id] = await getFields(step.id);
-        })
-      );
+  // 2. Fetch Fields for each step
+  const fieldsQueries = useSuspenseQueries({
+    queries: steps.map((step) => allStepsFieldsQueryOptions(formId, step.id, namespaceId)),
+  });
 
-      setState((prev) => ({
-        ...prev,
-        form: formData,
-        steps: stepsData,
-        fields: fieldsMap,
-        loading: false,
-      }));
-    } catch (err) {
-      toast.error("Error loading form");
-      setState((prev) => ({ ...prev, loading: false }));
-    }
-  }, []);
+  const fields = useMemo(() => {
+    const map: Record<string, FieldI[]> = {};
+    steps.forEach((step, index) => {
+      map[step.id] = fieldsQueries[index].data;
+    });
+    return map;
+  }, [steps, fieldsQueries]);
 
+  // 3. Fetch Select Configs for all select fields
+  const allFields = useMemo(() => Object.values(fields).flat(), [fields]);
+  const selectFields = useMemo(() => allFields.filter(f => f.type === 'select'), [allFields]);
+
+  const selectConfigsQueries = useSuspenseQueries({
+    queries: selectFields.map(f => allSelectConfigsQueryOptions(f.id, formId, f.step_id, namespaceId))
+  });
+
+  // Enrich fields with their select configs
+  const enrichedFields = useMemo(() => {
+    const enrichedMap: Record<string, FieldI[]> = { ...fields };
+    selectFields.forEach((field, index) => {
+      const config = selectConfigsQueries[index].data;
+      const stepFields = enrichedMap[field.step_id];
+      const fieldIndex = stepFields.findIndex(f => f.id === field.id);
+      if (fieldIndex !== -1) stepFields[fieldIndex] = { ...stepFields[fieldIndex], config };
+    });
+    return enrichedMap;
+  }, [fields, selectFields, selectConfigsQueries]);
+
+  // Initial Form Data with Defaults - Use useEffect to run only once after fields are loaded
   useEffect(() => {
-    load();
-  }, [load]);
+    if (steps.length === 0) return;
+
+    const defaults: Record<string, unknown> = {};
+    Object.values(enrichedFields).flat().forEach(field => {
+      let defaultValue: unknown;
+      if (typeof field.default_value === 'object' && field.default_value !== null && 'value' in field.default_value) {
+        defaultValue = (field.default_value as { value: unknown }).value;
+      } else defaultValue = field.default_value;
+
+      if (defaultValue !== undefined && defaultValue !== null && defaultValue !== "") {
+        // Standardize select field defaults to array if they aren't already
+        if (field.type === 'select' && !Array.isArray(defaultValue)) {
+          defaults[field.id] = [String(defaultValue)];
+        } else defaults[field.id] = defaultValue;
+      } else if (field.type === 'select') {
+        // Ensure select fields always start as arrays
+        defaults[field.id] = [];
+      }
+    });
+
+    if (Object.keys(defaults).length > 0) {
+      setState(prev => {
+        // Only apply if formData is completely empty to avoid overwriting during session
+        if (Object.keys(prev.formData).length === 0) return { ...prev, formData: defaults };
+        return prev;
+      });
+    }
+  }, [enrichedFields, steps.length]);
 
   const setFieldValue = useCallback((fieldId: string, value: unknown) => {
     setState((prev) => ({
@@ -67,18 +104,34 @@ export function useForm() {
     }));
   }, []);
 
-  const validateStep = useCallback((): boolean => {
-    const { steps, fields, currentStepIndex, formData } = state;
-    const step = steps[currentStepIndex];
+  const lastStepHasFields = useMemo(() => {
+    if (steps.length === 0) return false;
+    const lastStepId = steps[steps.length - 1].id;
+    return enrichedFields[lastStepId].length > 0;
+  }, [steps, enrichedFields]);
 
-    const stepFields = fields[step.id];
+  const totalStepsCount = useMemo(() => {
+    return steps.length + (lastStepHasFields ? 1 : 0);
+  }, [steps.length, lastStepHasFields]);
+
+  const isReviewStep = useMemo(() => {
+    if (state.currentStepIndex >= steps.length) return true;
+    const currentStep = steps[state.currentStepIndex];
+    return enrichedFields[currentStep.id].length === 0;
+  }, [state.currentStepIndex, steps, enrichedFields]);
+
+  const validateStep = useCallback((): boolean => {
+    if (isReviewStep) return true;
+    const step = steps[state.currentStepIndex];
+    const stepFields = enrichedFields[step.id];
     const newErrors: Record<string, string> = {};
     let valid = true;
 
     for (const field of stepFields) {
       if (!field.required) continue;
 
-      const value = formData[field.id];
+      const value = state.formData[field.id];
+
       const isEmpty =
         value === undefined ||
         value === "" ||
@@ -111,7 +164,7 @@ export function useForm() {
 
     setState((prev) => ({ ...prev, errors: newErrors }));
     return valid;
-  }, [state]);
+  }, [state.currentStepIndex, steps, enrichedFields, isReviewStep, state.formData]);
 
   const goNext = useCallback(() => {
     if (!validateStep()) {
@@ -121,9 +174,9 @@ export function useForm() {
 
     setState((prev) => ({
       ...prev,
-      currentStepIndex: Math.min(prev.currentStepIndex + 1, prev.steps.length - 1),
+      currentStepIndex: Math.min(prev.currentStepIndex + 1, totalStepsCount - 1),
     }));
-  }, [validateStep]);
+  }, [validateStep, totalStepsCount]);
 
   const goBack = useCallback(() => {
     setState((prev) => ({
@@ -141,22 +194,18 @@ export function useForm() {
     setState((prev) => ({ ...prev, submitting: true }));
 
     try {
-      const allFields = Object.values(state.fields).flat();
-      const emailField = allFields.find((f) => f.type === "email");
+      const allFieldsList = Object.values(enrichedFields).flat();
+      const emailField = allFieldsList.find((f) => f.type === "email");
       const email = emailField ? (state.formData[emailField.id] as string) : undefined;
 
-      const answers: AnswerI[] = allFields
+      const answers: AnswerCreateI[] = allFieldsList
         .filter((f) => {
           const val = state.formData[f.id];
           return val !== undefined && val !== "" && val !== null;
         })
         .map((f) => ({
-          id: "temp",
-          response_id: "temp",
           field_id: f.id,
           answer: JSON.stringify(state.formData[f.id]),
-          answered_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         }));
 
       const request: SubmitRequestI = {
@@ -164,17 +213,35 @@ export function useForm() {
         answers,
       };
 
-      await apiSubmit(request);
+      const res = await submitFormFn(formId, request);
+
+      if (res.success || (res.code && res.code >= 400)) {
+        const message = res.message || "Error submitting form";
+        setState((prev) => ({ ...prev, submitting: false }));
+        toast.error(message);
+        return;
+      }
+
       setState((prev) => ({ ...prev, submitting: false, submitted: true }));
       toast.success("Form submitted successfully!");
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error("Form submission error:", err);
+      let message = ""
+      if (err instanceof Error) message = err.message || "Error submitting form";
+      else message = String(err)
+
       setState((prev) => ({ ...prev, submitting: false }));
-      toast.error("Error submitting form");
+      toast.error(message);
     }
-  }, [state, validateStep]);
+  }, [formId, state.formData, enrichedFields, validateStep]);
 
   return {
     ...state,
+    steps,
+    fields: enrichedFields,
+    isReviewStep,
+    totalStepsCount,
+    loading: false, // Handled by Suspense
     setFieldValue,
     goNext,
     goBack,

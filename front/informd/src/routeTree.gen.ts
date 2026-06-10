@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ViewIndexRouteImport } from './routes/view/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as ViewFormIDRouteImport } from './routes/view/$formID'
 import { Route as AdminKeysRouteImport } from './routes/admin/keys'
 import { Route as AdminNamespaceIDRouteImport } from './routes/admin/$namespaceID'
 import { Route as AdminFormIndexRouteImport } from './routes/admin/form/index'
@@ -33,15 +33,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ViewIndexRoute = ViewIndexRouteImport.update({
-  id: '/view/',
-  path: '/view/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const ViewFormIDRoute = ViewFormIDRouteImport.update({
+  id: '/view/$formID',
+  path: '/view/$formID',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminKeysRoute = AdminKeysRouteImport.update({
   id: '/keys',
@@ -95,8 +95,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin/$namespaceID': typeof AdminNamespaceIDRouteWithChildren
   '/admin/keys': typeof AdminKeysRoute
+  '/view/$formID': typeof ViewFormIDRoute
   '/admin/': typeof AdminIndexRoute
-  '/view/': typeof ViewIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
   '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
@@ -108,8 +108,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/keys': typeof AdminKeysRoute
+  '/view/$formID': typeof ViewFormIDRoute
   '/admin': typeof AdminIndexRoute
-  '/view': typeof ViewIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
   '/admin/$namespaceID': typeof AdminNamespaceIDIndexRoute
   '/admin/form': typeof AdminFormIndexRoute
@@ -123,8 +123,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin/$namespaceID': typeof AdminNamespaceIDRouteWithChildren
   '/admin/keys': typeof AdminKeysRoute
+  '/view/$formID': typeof ViewFormIDRoute
   '/admin/': typeof AdminIndexRoute
-  '/view/': typeof ViewIndexRoute
   '/admin/$namespaceID/members': typeof AdminNamespaceIDMembersRoute
   '/admin/form/$formID': typeof AdminFormFormIDRouteWithChildren
   '/admin/$namespaceID/': typeof AdminNamespaceIDIndexRoute
@@ -140,8 +140,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/$namespaceID'
     | '/admin/keys'
+    | '/view/$formID'
     | '/admin/'
-    | '/view/'
     | '/admin/$namespaceID/members'
     | '/admin/form/$formID'
     | '/admin/$namespaceID/'
@@ -153,8 +153,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin/keys'
+    | '/view/$formID'
     | '/admin'
-    | '/view'
     | '/admin/$namespaceID/members'
     | '/admin/$namespaceID'
     | '/admin/form'
@@ -167,8 +167,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/$namespaceID'
     | '/admin/keys'
+    | '/view/$formID'
     | '/admin/'
-    | '/view/'
     | '/admin/$namespaceID/members'
     | '/admin/form/$formID'
     | '/admin/$namespaceID/'
@@ -181,7 +181,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  ViewIndexRoute: typeof ViewIndexRoute
+  ViewFormIDRoute: typeof ViewFormIDRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -200,19 +200,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/view/': {
-      id: '/view/'
-      path: '/view'
-      fullPath: '/view/'
-      preLoaderRoute: typeof ViewIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/view/$formID': {
+      id: '/view/$formID'
+      path: '/view/$formID'
+      fullPath: '/view/$formID'
+      preLoaderRoute: typeof ViewFormIDRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/keys': {
       id: '/admin/keys'
@@ -330,7 +330,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  ViewIndexRoute: ViewIndexRoute,
+  ViewFormIDRoute: ViewFormIDRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

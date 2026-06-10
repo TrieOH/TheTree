@@ -1,7 +1,20 @@
-import { tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import type { FullFormI } from "../model";
+import type { FullFormI, SubmitRequestI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
+
+/**
+ * Submit the form answer to the server.
+ * @param form_id - The ID of the Form for which to fetch responses.
+ * @param submitData - The answer to submit.
+ * @returns A promise that resolves to the API response.
+ */
+export const submitFormFn = createClientOnlyFn((
+  form_id: string,
+  submitData: SubmitRequestI
+) => {
+  return authFetcher.post<void>(`/forms/${form_id}/responses`, submitData);
+});
 
 /**
  * Fetches all Form Responses for the current user from the server.

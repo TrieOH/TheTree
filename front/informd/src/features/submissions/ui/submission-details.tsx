@@ -31,7 +31,7 @@ interface SubmissionDetailProps {
 function getFieldAnswer(fields: FullFieldI[], fieldId: string, responder: string): string | null {
   const field = fields.find((f) => f.field.id === fieldId);
   if (!field) return null;
-  const answer = field.answers.find((a) => a.responder === responder);
+  const answer = field.answers?.find((a) => a.responder === responder);
   return answer?.answer.answer ?? null;
 }
 
@@ -109,7 +109,7 @@ export function SubmissionDetail({ fullForm, responder, onClose }: SubmissionDet
 
   const allFields = fullForm.steps.flatMap((s) => s.fields ?? []);
   const answers = responder ? allFields
-    .flatMap((f) => f.answers)
+    .flatMap((f) => f.answers ?? [])
     .filter((a) => a.responder === responder) : [];
 
   const completedAt = answers.length > 0

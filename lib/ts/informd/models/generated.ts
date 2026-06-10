@@ -11,14 +11,23 @@ export interface Answer {
   answered_at: string;
   updated_at?: string;
 }
+export interface SubmitAnswer {
+  field_id?: string;
+  answer?: any /* json.RawMessage */;
+}
+export interface SubmitAnswerInput {
+  field_id?: string;
+  answer?: any /* json.RawMessage */;
+  response_id: string;
+}
 export interface SubmitRequest {
   email?: string;
-  answers: Answer[];
+  answers: SubmitAnswer[];
 }
 export interface SubmitInput {
   form_id: string;
   email?: string;
-  answers: Answer[];
+  answers: SubmitAnswerInput[];
 }
 
 //////////

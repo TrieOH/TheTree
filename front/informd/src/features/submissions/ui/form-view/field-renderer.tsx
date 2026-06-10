@@ -24,7 +24,9 @@ interface FieldRendererProps {
 }
 
 function getPlaceholder(field: FieldI): string {
-  return field.placeholder?.value ?? "";
+  const p = field.placeholder;
+  if (typeof p === 'object' && p !== null && 'value' in p) return (p as { value: string }).value;
+  return typeof p === 'string' ? p : "";
 }
 
 function getInputType(fieldType: string): string {
@@ -78,26 +80,34 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   const inputType = getInputType(field.type);
   const placeholder = getPlaceholder(field);
 
+  const currentValue = value !== undefined ? value : "";
+
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(field.id, e.target.value);
   };
 
   const renderSelect = () => {
     const config = field.config as FieldSelectConfigI | undefined;
-    const options = config?.options;
+    const rawOptions = config?.options ?? [];
     const behaviour = config?.behaviour ?? "dropdown-radio";
     const isMultiple = behaviour === "checkbox" || behaviour === "dropdown-checkbox";
 
-    if (behaviour === "radio" || behaviour === "checkbox") {
-      const selectedValues: string[] = value
-        ? Array.isArray(value)
-          ? (value as string[])
-          : [value as string]
+    // Normalize options: convert string[] to OptionI[]
+    const options = rawOptions.map(opt => {
+      if (typeof opt === 'string') return { label: opt, value: opt };
+      return opt;
+    });
+
+    const selectedValues: string[] = Array.isArray(currentValue)
+      ? currentValue
+      : currentValue
+        ? [String(currentValue)]
         : [];
 
+    if (behaviour === "radio" || behaviour === "checkbox") {
       return (
         <div className="flex flex-col gap-2 w-full">
-          {options?.map((opt) => {
+          {options.map((opt) => {
             const isSelected = selectedValues.includes(opt.value);
             return (
               <label
@@ -116,17 +126,16 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
                   checked={isSelected}
                   onChange={(e) => {
                     if (isMultiple) {
-                      const current = Array.isArray(value) ? [...(value as string[])] : [];
                       if (e.target.checked) {
-                        onChange(field.id, [...current, opt.value]);
+                        onChange(field.id, [...selectedValues, opt.value]);
                       } else {
                         onChange(
                           field.id,
-                          current.filter((v) => v !== opt.value)
+                          selectedValues.filter((v) => v !== opt.value)
                         );
                       }
                     } else {
-                      onChange(field.id, opt.value);
+                      onChange(field.id, [opt.value]);
                     }
                   }}
                   className="h-4 w-4 accent-primary"
@@ -143,15 +152,15 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
     return (
       <div className="relative group w-full">
         <select
-          value={(value as string) || ""}
-          onChange={(e) => onChange(field.id, e.target.value)}
+          value={selectedValues[0] || ""}
+          onChange={(e) => onChange(field.id, e.target.value ? [e.target.value] : [])}
           className={cn(
             "h-10 w-full appearance-none rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
             error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
           )}
         >
-          <option value="">Select...</option>
-          {options?.map((opt) => (
+          <option value="">{placeholder || "Select..."}</option>
+          {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -165,7 +174,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   };
 
   const renderBool = () => {
-    const checked = value === true || value === "true";
+    const checked = currentValue === true || currentValue === "true";
     return (
       <label
         className={cn(
@@ -201,18 +210,16 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
           <div className="flex items-center gap-2">
             <Paperclip className="size-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground text-center line-clamp-1 px-4">
-              {value && (value as File).name
-                ? (value as File).name
-                : "Click to upload or drag a file here"}
+              {currentValue instanceof File
+                ? currentValue.name
+                : placeholder || "Click to upload or drag a file here"}
             </span>
           </div>
           <input
             type="file"
             className="hidden"
             onChange={(e) => {
-              if (e.target.files?.[0]) {
-                onChange(field.id, e.target.files[0]);
-              }
+              if (e.target.files?.[0]) onChange(field.id, e.target.files[0]);
             }}
           />
         </label>
@@ -221,21 +228,17 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   };
 
   const renderTextInput = () => {
-    let inputValue = (value as string) || "";
+    let inputValue = String(currentValue);
 
     // Normalize date values for standard HTML inputs
-    if (inputValue) {
+    if (inputValue && inputValue !== "null" && inputValue !== "undefined") {
       if (inputType === "date" && inputValue.includes("T")) {
         inputValue = inputValue.split("T")[0];
       } else if (inputType === "datetime-local") {
         const date = new Date(inputValue);
-        if (!isNaN(date.getTime())) {
-          // Format as YYYY-MM-DDTHH:mm
-          inputValue = date.toISOString().slice(0, 16);
-        }
+        if (!isNaN(date.getTime())) inputValue = date.toISOString().slice(0, 16);
       }
-    }
-
+    } else inputValue = "";
     return (
       <div className="relative group w-full">
         <input

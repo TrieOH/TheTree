@@ -1,17 +1,16 @@
 import type { FieldI } from "#/features/fields/model";
 import type { FormI } from "#/features/forms/model";
 import type { StepI } from "#/features/steps/model";
-import type { Answer, SubmitRequest } from "@trieoh/informd-models";
+import type { Answer, SubmitAnswer, SubmitRequest } from "@trieoh/informd-models";
 import { z } from "zod";
 
 export const answerSchema = z.object({
-  id: z.string(), // i don't need on submit
-  response_id: z.string(), // i don't need on submit
   field_id: z.string().optional(),
   answer: z.any().optional(),
-  answered_at: z.string(), // i don't need on submit
-  updated_at: z.string().optional(), // i don't need on submit
-}) satisfies z.ZodType<Answer>;
+  response_id: z.string(),
+}) satisfies z.ZodType<SubmitAnswer>;
+
+export type AnswerCreateI = SubmitAnswer;
 
 export const submitRequestSchema = z.object({
   email: z.email().optional().or(z.literal("")),

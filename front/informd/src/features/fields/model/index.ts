@@ -144,7 +144,7 @@ export interface FieldI extends Omit<Field, "type"> {
   type: FieldTypeI;
 }
 
-interface OptionI {
+export interface OptionI {
   label: string;
   value: string;
 }
@@ -152,5 +152,5 @@ interface OptionI {
 export interface FieldSelectConfigI extends Omit<FieldSelectConfig, "behaviour" | "value_type" | "options"> {
   behaviour: SelectBehaviourI;
   value_type: SelectValueTypeI;
-  options: OptionI[]
+  options: (OptionI | string)[]
 }

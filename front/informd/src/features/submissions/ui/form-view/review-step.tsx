@@ -34,8 +34,8 @@ function formatValue(field: FieldI, value: unknown): string {
 }
 
 export function ReviewStep({ steps, fields, formData }: ReviewStepProps) {
-  // Exclui o último step (review) da listagem
-  const reviewSteps = steps.slice(0, -1);
+  // Only review steps that have fields
+  const reviewSteps = steps.filter((s) => fields[s.id].length > 0);
 
   return (
     <div className="space-y-4">
