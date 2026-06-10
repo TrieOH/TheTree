@@ -4,7 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderKanban,
-  KeySquare,
+  // KeySquare,
   FileText
 } from 'lucide-react'
 import { useState } from 'react'
@@ -31,12 +31,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       label: 'Forms',
       exact: true
     },
-    {
-      to: '/admin/keys',
-      icon: KeySquare,
-      label: 'API Keys',
-      exact: true
-    },
+    // {
+    //   to: '/admin/keys',
+    //   icon: KeySquare,
+    //   label: 'API Keys',
+    //   exact: true
+    // },
   ]
 
   return (
