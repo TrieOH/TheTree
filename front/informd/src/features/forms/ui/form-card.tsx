@@ -2,6 +2,7 @@ import { cn } from "#/shared/lib/utils";
 import {
   Archive,
   ClipboardCheck,
+  Copy,
   Ellipsis,
   ExternalLink,
   FileText,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { timeAgo } from "#/shared/lib/helpers/date-utils";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,6 +120,34 @@ function MenuItems({ data, isContext = false }: MenuItemsProps) {
 
   return (
     <>
+      {data.status === FormStatusOpen && (
+        <>
+          <Item
+            onClick={() => {
+              const url = `${window.location.origin}/view/${data.id}${data.namespace_id ? `?namespace_id=${data.namespace_id}` : ""}`
+              navigator.clipboard.writeText(url)
+              toast.success("Link copied to clipboard")
+            }}
+          >
+            <Copy className="mr-2 size-4" />
+            Copy Link
+          </Item>
+          <Item
+            onClick={() => {
+              navigate({
+                to: '/view/$formID',
+                params: { formID: data.id },
+                search: { namespace_id: data.namespace_id || undefined }
+              })
+            }}
+          >
+            <ExternalLink className="mr-2 size-4" />
+            View Form
+          </Item>
+          <Separator />
+        </>
+      )}
+
       <Item
         onClick={() => {
           navigate({

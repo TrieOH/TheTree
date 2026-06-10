@@ -22,6 +22,8 @@ import {
 import { cn } from '#/shared/lib/utils'
 import {
   Archive,
+  Copy,
+  ExternalLink,
   Play,
   RotateCcw,
   StopCircle,
@@ -29,6 +31,7 @@ import {
 import type { FormI } from '#/features/forms/model'
 import { useState } from 'react'
 import { ConfirmModal } from '#/widgets/modal/modal'
+import { useNavigate } from '@tanstack/react-router'
 
 interface FormAdminHeaderProps {
   title: string
@@ -102,6 +105,8 @@ export default function FormAdminHeader({
     onError: (error: Error) => toast.error(error.message),
   })
 
+  const navigate = useNavigate()
+
   const isPending = isOpenPending || isClosePending || isArchivePending || isRedraftPending
 
   return (
@@ -136,6 +141,34 @@ export default function FormAdminHeader({
 
           {form.status === FormStatusOpen && (
             <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 rounded-sm text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => {
+                  const url = `${window.location.origin}/view/${form.id}${namespaceID ? `?namespace_id=${namespaceID}` : ""}`
+                  navigator.clipboard.writeText(url)
+                  toast.success("Link copied to clipboard")
+                }}
+              >
+                <Copy className="mr-1.5 size-3" />
+                Copy Link
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 rounded-sm text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => {
+                  navigate({
+                    to: '/view/$formID',
+                    params: { formID: form.id },
+                    search: { namespace_id: namespaceID || undefined }
+                  })
+                }}
+              >
+                <ExternalLink className="mr-1.5 size-3" />
+                View Form
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
