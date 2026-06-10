@@ -102,7 +102,7 @@ function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: st
   }
 
   const currentStep = steps[currentStepIndex];
-  const stepFields = fields[currentStep.id];
+  const stepFields = isReviewStep ? [] : fields[currentStep.id];
   const isLastStep = currentStepIndex === totalStepsCount - 1;
 
   return (
