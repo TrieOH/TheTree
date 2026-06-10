@@ -89,8 +89,13 @@ func SetupConstraintMessages() {
 		"uniq_namespace_name_per_user":    "a namespace with this name already exists",
 		"chk_valid_namespace_member_role": "invalid namespace member role",
 
+		// response
+		"uniq_answer_per_field_per_response": "this field already has an answer in this response",
+
 		// responders
 		"uniq_responder_email_on_system": "a responder with this email already exists on this system",
+		"chk_invite_not_both_named":      "an invite cannot have both responder_id and email set",
+		"form_invites_token_key":         "an invite with this token already exists",
 	})
 }
 
