@@ -33,7 +33,7 @@ export interface FullStepI {
 
 export interface FullFieldI {
   field: FieldI;
-  answers: FullAnswerI[];
+  answers: FullAnswerI[] | null;
 }
 
 export interface FullAnswerI {
@@ -53,7 +53,7 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
 
   for (const step of fullForm.steps) {
     for (const field of step.fields ?? []) {
-      for (const fa of field.answers) {
+      for (const fa of field.answers ?? []) {
         const list = byResponder.get(fa.responder) ?? [];
         list.push(fa);
         byResponder.set(fa.responder, list);
@@ -73,7 +73,7 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
 
     for (const step of fullForm.steps) {
       const hasAny = (step.fields ?? []).some((f) =>
-        f.answers.some(
+        (f.answers ?? []).some(
           (a) =>
             a.responder === responder &&
             a.answer.answer !== undefined &&
