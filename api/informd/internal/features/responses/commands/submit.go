@@ -3,6 +3,7 @@ package commands
 import (
 	"Informd/models"
 	"context"
+	"lib/xslices"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -52,7 +53,7 @@ func (c *Commands) Submit(ctx context.Context, payload models.SubmitInput) error
 			payload.Answers[i].ResponseID = response.ID
 		}
 
-		err = c.answers.BatchUpsert(ctx, payload.Answers)
+		err = c.answers.BatchUpsert(ctx, xslices.MapSlice(payload.Answers, models.SubmitAnswerInputToAnswer))
 		if err != nil {
 			return err
 		}
