@@ -9,10 +9,9 @@ import { CatchBoundary } from "@tanstack/react-router";
 
 interface FormContainerProps {
   formId: string;
-  namespaceId?: string;
 }
 
-export default function FormContainer({ formId, namespaceId }: FormContainerProps) {
+export default function FormContainer({ formId }: FormContainerProps) {
   return (
     <CatchBoundary
       getResetKey={() => formId}
@@ -41,12 +40,12 @@ export default function FormContainer({ formId, namespaceId }: FormContainerProp
         );
       }}
     >
-      <FormContent formId={formId} namespaceId={namespaceId} />
+      <FormContent formId={formId} />
     </CatchBoundary>
   );
 }
 
-function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: string }) {
+function FormContent({ formId }: { formId: string }) {
   const {
     steps,
     fields,
@@ -62,7 +61,7 @@ function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: st
     goNext,
     goBack,
     submit,
-  } = useForm(formId, namespaceId);
+  } = useForm(formId);
 
   if (loading) {
     return (
@@ -102,7 +101,7 @@ function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: st
   }
 
   const currentStep = steps[currentStepIndex];
-  const stepFields = isReviewStep ? [] : fields[currentStep.id];
+  const stepFields = isReviewStep ? [] : fields[currentStep.step.id];
   const isLastStep = currentStepIndex === totalStepsCount - 1;
 
   return (
@@ -113,20 +112,20 @@ function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: st
       <div className="px-6 pb-6 pt-6">
         <AnimatePresence mode="wait">
           <motion.div
-            key={isReviewStep ? "review" : currentStep.id}
+            key={isReviewStep ? "review" : currentStep.step.id}
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
           >
             <h1 className="mb-1 text-xl font-bold text-foreground sm:text-lg">
-              {isReviewStep ? "Review & Submit" : currentStep.title}
+              {isReviewStep ? "Review & Submit" : currentStep.step.title}
             </h1>
-            {(isReviewStep || currentStep.description) && (
+            {(isReviewStep || currentStep.step.description) && (
               <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
                 {isReviewStep
                   ? "Please review your information before final submission."
-                  : currentStep.description}
+                  : currentStep.step.description}
               </p>
             )}
 
@@ -135,13 +134,13 @@ function FormContent({ formId, namespaceId }: { formId: string; namespaceId?: st
             ) : (
               <div className="space-y-1">
                 {stepFields
-                  .sort((a, b) => a.position_hint - b.position_hint)
+                  .sort((a, b) => a.field.position_hint - b.field.position_hint)
                   .map((field) => (
                     <FieldRenderer
-                      key={field.id}
+                      key={field.field.id}
                       field={field}
-                      value={formData[field.id]}
-                      error={errors[field.id]}
+                      value={formData[field.field.id]}
+                      error={errors[field.field.id]}
                       onChange={setFieldValue}
                     />
                   ))}

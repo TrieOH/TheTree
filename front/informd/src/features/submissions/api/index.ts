@@ -1,6 +1,6 @@
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import type { FullFormI, SubmitRequestI } from "../model";
+import type { FormAnswerableI, FullFormI, SubmitRequestI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
@@ -44,5 +44,28 @@ export const allFormsResponsesQueryOptions = (
   return queryOptions({
     queryKey: ["forms", form_id, "full", namespace_id],
     queryFn: () => getFullFormResponseDetailsFn(form_id, namespace_id),
+  })
+}
+
+// Answer
+
+/**
+ * Fetches all Form from the server.
+ * @param form_id - The ID of the Form for which to fetch responses.
+ * @returns A promise that resolves to an array of  objects.
+ */
+export const getFormAnswerableFn = createClientOnlyFn(async (form_id: string) => {
+  return tanstackQueryFetcher<FormAnswerableI>(`/forms/${form_id}/asnwerable`);
+});
+
+/**
+ * Query options for fetching all Form Answerable for a specific Form.
+ * @param form_id - The ID of the Form for which to fetch responses.
+ * @returns An object containing the query key and query function for the specified Form to Answer.
+ */
+export const allFormsAnswerableQueryOptions = (form_id: string) => {
+  return queryOptions({
+    queryKey: ["forms", form_id, "answerable"],
+    queryFn: () => getFormAnswerableFn(form_id),
   })
 }

@@ -1,10 +1,10 @@
 import type { FieldI } from "#/features/fields/model";
-import type { StepI } from "#/features/steps/model";
 import { cn } from "#/shared/lib/utils";
+import type { FieldAnswerable, StepAnswerable } from "@trieoh/informd-models";
 
 interface ReviewStepProps {
-  steps: StepI[];
-  fields: Record<string, FieldI[]>;
+  steps: StepAnswerable[];
+  fields: Record<string, FieldAnswerable[]>;
   formData: Record<string, unknown>;
 }
 
@@ -35,35 +35,35 @@ function formatValue(field: FieldI, value: unknown): string {
 
 export function ReviewStep({ steps, fields, formData }: ReviewStepProps) {
   // Only review steps that have fields
-  const reviewSteps = steps.filter((s) => fields[s.id].length > 0);
+  const reviewSteps = steps.filter((s) => fields[s.step.id].length > 0);
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg bg-muted/30 p-4">
         {reviewSteps.map((step, stepIdx) => {
-          const stepFields = fields[step.id].sort(
-            (a, b) => a.position_hint - b.position_hint
+          const stepFields = fields[step.step.id].sort(
+            (a, b) => a.field.position_hint - b.field.position_hint
           );
 
           return (
             <div
-              key={step.id}
+              key={step.step.id}
               className={cn(
                 stepIdx < reviewSteps.length - 1 && "mb-5 border-b border-border/50 pb-5"
               )}
             >
               <h3 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {step.title}
+                {step.step.title}
               </h3>
               <div className="space-y-2">
                 {stepFields.map((field) => (
                   <div
-                    key={field.id}
+                    key={field.field.id}
                     className="flex justify-between gap-4 border-b border-border/30 py-1.5 last:border-0"
                   >
-                    <span className="text-xs text-muted-foreground">{field.title}</span>
+                    <span className="text-xs text-muted-foreground">{field.field.title}</span>
                     <span className="max-w-[60%] text-right text-xs font-medium text-foreground">
-                      {formatValue(field, formData[field.id])}
+                      {formatValue(field.field, formData[field.field.id])}
                     </span>
                   </div>
                 ))}

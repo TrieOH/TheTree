@@ -31,16 +31,16 @@ export const authStore = {
   },
 };
 
-// // Sync between tabs
-// if (typeof window !== "undefined") {
-//   window.addEventListener("storage", (event) => {
-//     if (event.key === "trieoh_access_expiry") {
-//       if (!event.newValue) authStore.reset();
-//       else {
-//         const expiry = parseInt(event.newValue, 10);
-//         const isAuthenticated = !isNaN(expiry) && expiry > Date.now();
-//         authStore.set({ isAuthenticated, isInitializing: false });
-//       }
-//     }
-//   });
-// }
+// Sync between tabs
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === "trieoh_access_expiry") {
+      if (!event.newValue) authStore.reset();
+      else {
+        const expiry = parseInt(event.newValue, 10);
+        const isAuthenticated = !isNaN(expiry) && expiry > Date.now();
+        authStore.set({ isAuthenticated, isInitializing: false });
+      }
+    }
+  });
+}
