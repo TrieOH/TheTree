@@ -56,16 +56,16 @@ const BOOL_OPTIONS = [
  */
 const BASE_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
     {
-        name: "key",
-        label: "Field Key",
-        type: "text",
-        placeholder: "e.g. full_name",
-    },
-    {
         name: "title",
         label: "Field Label",
         type: "text",
         placeholder: "e.g. Full Name",
+    },
+    {
+        name: "key",
+        label: "Field Key",
+        type: "text",
+        placeholder: "e.g. full_name",
     },
     {
         name: "description",
@@ -84,9 +84,8 @@ const BASE_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
     {
         name: "required",
         label: "Required",
-        type: "select",
-        placeholder: "No",
-        options: [...BOOL_OPTIONS],
+        type: "boolean",
+        placeholder: "User must select an option to submit",
     },
     {
         name: "placeholder",

@@ -1,4 +1,4 @@
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller, useWatch, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "./modal";
 import { cn } from "#/shared/lib/utils";
@@ -47,6 +47,7 @@ export interface PropsI<T> {
   fields: FieldDefinition<T>[];
   schema: ZodType<T, T>;
   disabled?: boolean;
+  children?: React.ReactNode;
 }
 
 export default function FormModal<T extends FieldValues>({
@@ -61,17 +62,20 @@ export default function FormModal<T extends FieldValues>({
   defaultValues,
   buttonTitle,
   disabled = false,
+  children,
 }: PropsI<T>) {
+  const methods = useForm<T>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValues,
+  });
+
   const {
     register,
     handleSubmit,
     control,
     reset,
     formState: { errors },
-  } = useForm<T>({
-    resolver: zodResolver(schema),
-    defaultValues: defaultValues,
-  });
+  } = methods;
 
   const watchedValues = useWatch({ control });
 
@@ -87,7 +91,61 @@ export default function FormModal<T extends FieldValues>({
 
   const renderField = (field: FieldDefinition<T>) => {
     const fieldName = field.name as Path<T>;
-    const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
+    const error = getNestedError(errors, String(field.name)) as
+      | FieldError
+      | undefined;
+
+    if (field.type === "boolean") {
+      return (
+        <Controller
+          name={fieldName}
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onChange(!value)}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  onChange(!value);
+                }
+              }}
+              className={cn(
+                "flex items-center justify-between rounded-md border p-3.5 transition-all cursor-pointer group select-none",
+                value
+                  ? "border-primary/40 bg-primary/5 shadow-xs"
+                  : "border-border bg-card/50 hover:border-border/80 hover:bg-muted/10"
+              )}
+            >
+              <div className="space-y-1 pr-4">
+                <div className="text-sm font-medium tracking-tight text-foreground">
+                  {field.label}
+                </div>
+                {field.placeholder && (
+                  <div className="text-[11px] leading-relaxed text-muted-foreground/80 font-medium">
+                    {field.placeholder}
+                  </div>
+                )}
+              </div>
+              <div
+                className={cn(
+                  "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+                  value ? "bg-primary" : "bg-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-md ring-0 transition-transform duration-200",
+                    value ? "translate-x-4.5" : "translate-x-0.5"
+                  )}
+                />
+              </div>
+            </div>
+          )}
+        />
+      );
+    }
 
     if (field.type === "select") {
       return (
@@ -163,55 +221,62 @@ export default function FormModal<T extends FieldValues>({
       title={title}
       description={description}
     >
-      <form
-        id={formId}
-        onSubmit={handleSubmit(handleFormSubmit)}
-        className="space-y-6"
-      >
-        {fields.map((field) => {
-          // Skip field if its dependency is not met
-          if (field.dependsOn) {
-            const depValue = (watchedValues)[field.dependsOn.field as string];
-            const isMet = depValue === field.dependsOn.value
-              || String(depValue) === String(field.dependsOn.value);
-            if (!isMet) return null;
-          }
+      <FormProvider {...methods}>
+        <form
+          id={formId}
+          onSubmit={handleSubmit(handleFormSubmit)}
+          className="space-y-6"
+        >
+          {fields.map((field) => {
+            // Skip field if its dependency is not met
+            if (field.dependsOn) {
+              const depValue = (watchedValues)[field.dependsOn.field as string];
+              const isMet = depValue === field.dependsOn.value
+                || String(depValue) === String(field.dependsOn.value);
+              if (!isMet) return null;
+            }
 
-          const fieldName = field.name as Path<T>;
-          const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
-          return (
-            <div className="space-y-2" key={"t_" + field.name.toString()}>
-              <Label
-                htmlFor={fieldName}
-                className="text-xs font-semibold text-muted-foreground"
-              >
-                {field.label}
-              </Label>
-              {renderField(field)}
-              {error && (
-                <span
-                  className={cn(
-                    "text-[10px] font-bold text-destructive uppercase",
-                    "tracking-widest flex items-start gap-1"
-                  )}
-                >
-                  <AlertCircle className="w-3 h-3" />
-                  <span className="-mt-px">{error.message?.toString()}</span>
-                </span>
-              )}
-            </div>
-          );
-        })}
-        <div className="flex justify-end pt-2">
-          <Button
-            type="submit"
-            disabled={disabled}
-            className="w-full rounded-sm font-bold transition-all h-10"
-          >
-            {buttonTitle}
-          </Button>
-        </div>
-      </form>
+            const fieldName = field.name as Path<T>;
+            const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
+            const isBoolean = field.type === "boolean";
+
+            return (
+              <div className="space-y-2" key={"t_" + field.name.toString()}>
+                {!isBoolean && (
+                  <Label
+                    htmlFor={fieldName}
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    {field.label}
+                  </Label>
+                )}
+                {renderField(field)}
+                {error && (
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold text-destructive uppercase",
+                      "tracking-widest flex items-start gap-1"
+                    )}
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    <span className="-mt-px">{error.message?.toString()}</span>
+                  </span>
+                )}
+              </div>
+            );
+          })}
+          {children}
+          <div className="flex justify-end pt-2">
+            <Button
+              type="submit"
+              disabled={disabled}
+              className="w-full rounded-sm font-bold transition-all h-10"
+            >
+              {buttonTitle}
+            </Button>
+          </div>
+        </form>
+      </FormProvider>
     </Modal>
   );
 }

@@ -1,4 +1,4 @@
-import type { FieldSelectConfigI } from "#/features/fields/model";
+import type { OptionI } from "#/features/fields/model";
 import { cn } from "#/shared/lib/utils";
 import type { FieldAnswerable } from "@trieoh/informd-models";
 import {
@@ -88,8 +88,8 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   };
 
   const renderSelect = () => {
-    const config = field.field_select_config as FieldSelectConfigI | undefined;
-    const rawOptions = config?.options ?? [];
+    const config = field.field_select_config;
+    const rawOptions = (config?.options ?? []) as (OptionI | string)[];
     const behaviour = config?.behaviour ?? "dropdown-radio";
     const isMultiple = behaviour === "checkbox" || behaviour === "dropdown-checkbox";
 
