@@ -28,13 +28,13 @@ func RegisterRoutes(
 	h *Handlers,
 	anyAuth func(http.Handler) http.Handler,
 ) {
+	r.Get("/forms/{form_id}/steps", h.List)
+	r.Get("/namespaces/{namespace_id}/forms/{form_id}/steps", h.ListNamespaced)
 	r.Group(func(r chi.Router) {
 		r.Use(anyAuth)
 		r.Post("/forms/{form_id}/steps", h.CreateStep)
 		r.Put("/forms/{form_id}/steps", h.BulkEditSteps)
-		r.Get("/forms/{form_id}/steps", h.List)
 		r.Post("/namespaces/{namespace_id}/forms/{form_id}/steps", h.CreateNamespacedStep)
 		r.Put("/namespaces/{namespace_id}/forms/{form_id}/steps", h.BulkEditNamespacedSteps)
-		r.Get("/namespaces/{namespace_id}/forms/{form_id}/steps", h.ListNamespaced)
 	})
 }
