@@ -243,9 +243,21 @@ export interface FullForm {
   form: Form;
   steps: FullStep[];
 }
+export interface FormAnswerable {
+  form: Form;
+  steps: StepAnswerable[];
+}
 export interface FullStep {
   step: Step;
   fields: FullField[];
+}
+export interface StepAnswerable {
+  step: Step;
+  fields: FieldAnswerable[];
+}
+export interface FieldAnswerable {
+  field: Field;
+  field_select_config?: FieldSelectConfig;
 }
 export interface FullField {
   field: Field;

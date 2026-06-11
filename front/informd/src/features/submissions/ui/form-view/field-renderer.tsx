@@ -1,5 +1,6 @@
-import type { FieldI, FieldSelectConfigI } from "#/features/fields/model";
+import type { FieldSelectConfigI } from "#/features/fields/model";
 import { cn } from "#/shared/lib/utils";
+import type { FieldAnswerable } from "@trieoh/informd-models";
 import {
   Type,
   Mail,
@@ -17,14 +18,14 @@ import {
 import { motion } from "motion/react";
 
 interface FieldRendererProps {
-  field: FieldI;
+  field: FieldAnswerable;
   value: unknown;
   error?: string;
   onChange: (fieldId: string, value: unknown) => void;
 }
 
-function getPlaceholder(field: FieldI): string {
-  const p = field.placeholder;
+function getPlaceholder(field: FieldAnswerable): string {
+  const p = field.field.placeholder;
   if (typeof p === 'object' && p !== null && 'value' in p) return (p as { value: string }).value;
   return typeof p === 'string' ? p : "";
 }
@@ -77,17 +78,17 @@ function getIcon(fieldType: string) {
 
 
 export function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
-  const inputType = getInputType(field.type);
+  const inputType = getInputType(field.field.type);
   const placeholder = getPlaceholder(field);
 
   const currentValue = value !== undefined ? value : "";
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(field.id, e.target.value);
+    onChange(field.field.id, e.target.value);
   };
 
   const renderSelect = () => {
-    const config = field.config as FieldSelectConfigI | undefined;
+    const config = field.field_select_config as FieldSelectConfigI | undefined;
     const rawOptions = config?.options ?? [];
     const behaviour = config?.behaviour ?? "dropdown-radio";
     const isMultiple = behaviour === "checkbox" || behaviour === "dropdown-checkbox";
@@ -121,21 +122,21 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
               >
                 <input
                   type={isMultiple ? "checkbox" : "radio"}
-                  name={field.id}
+                  name={field.field.id}
                   value={opt.value}
                   checked={isSelected}
                   onChange={(e) => {
                     if (isMultiple) {
                       if (e.target.checked) {
-                        onChange(field.id, [...selectedValues, opt.value]);
+                        onChange(field.field.id, [...selectedValues, opt.value]);
                       } else {
                         onChange(
-                          field.id,
+                          field.field.id,
                           selectedValues.filter((v) => v !== opt.value)
                         );
                       }
                     } else {
-                      onChange(field.id, [opt.value]);
+                      onChange(field.field.id, [opt.value]);
                     }
                   }}
                   className="h-4 w-4 accent-primary"
@@ -153,7 +154,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
       <div className="relative group w-full">
         <select
           value={selectedValues[0] || ""}
-          onChange={(e) => onChange(field.id, e.target.value ? [e.target.value] : [])}
+          onChange={(e) => onChange(field.field.id, e.target.value ? [e.target.value] : [])}
           className={cn(
             "h-10 w-full appearance-none rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
             error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
@@ -187,12 +188,12 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
         <input
           type="checkbox"
           checked={checked}
-          onChange={(e) => onChange(field.id, e.target.checked)}
+          onChange={(e) => onChange(field.field.id, e.target.checked)}
           className="h-4 w-4 accent-primary"
         />
         <span className="text-sm text-foreground">
-          {field.title}
-          {field.required && <span className="text-destructive"> *</span>}
+          {field.field.title}
+          {field.field.required && <span className="text-destructive"> *</span>}
         </span>
       </label>
     );
@@ -219,7 +220,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             type="file"
             className="hidden"
             onChange={(e) => {
-              if (e.target.files?.[0]) onChange(field.id, e.target.files[0]);
+              if (e.target.files?.[0]) onChange(field.field.id, e.target.files[0]);
             }}
           />
         </label>
@@ -243,7 +244,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
       <div className="relative group w-full">
         <input
           type={inputType}
-          step={getStep(field.type)}
+          step={getStep(field.field.type)}
           value={inputValue}
           placeholder={placeholder}
           onChange={handleTextChange}
@@ -257,7 +258,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   };
 
   const renderField = () => {
-    switch (field.type) {
+    switch (field.field.type) {
       case "select":
         return renderSelect();
       case "bool":
@@ -276,16 +277,16 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
       transition={{ duration: 0.3 }}
       className="mb-5"
     >
-      {field.type !== "bool" && (
+      {field.field.type !== "bool" && (
         <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-foreground">
-          <span className="text-primary/70">{getIcon(field.type)}</span>
-          {field.title}
-          {field.required && <span className="text-destructive"> *</span>}
+          <span className="text-primary/70">{getIcon(field.field.type)}</span>
+          {field.field.title}
+          {field.field.required && <span className="text-destructive"> *</span>}
         </label>
       )}
       {renderField()}
-      {field.description && !error && (
-        <p className="mt-1 text-xs text-muted-foreground/80">{field.description}</p>
+      {field.field.description && !error && (
+        <p className="mt-1 text-xs text-muted-foreground/80">{field.field.description}</p>
       )}
       {error && <p className="mt-1 text-xs text-destructive font-medium">{error}</p>}
     </motion.div>

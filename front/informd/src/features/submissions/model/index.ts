@@ -1,7 +1,7 @@
 import type { FieldI } from "#/features/fields/model";
 import type { FormI } from "#/features/forms/model";
 import type { StepI } from "#/features/steps/model";
-import type { Answer, SubmitAnswer, SubmitRequest } from "@trieoh/informd-models";
+import type { Answer, FormAnswerable, SubmitAnswer, SubmitRequest } from "@trieoh/informd-models";
 import { z } from "zod";
 
 export const answerSchema = z.object({
@@ -104,3 +104,7 @@ export function deriveSubmissions(fullForm: FullFormI): SubmissionSummaryI[] {
     (a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
   );
 }
+
+// Answer
+
+export type FormAnswerableI = FormAnswerable
