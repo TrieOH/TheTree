@@ -28,6 +28,7 @@ func RegisterRoutes(
 	h *Handlers,
 	anyAuth func(http.Handler) http.Handler,
 ) {
+	r.Get("/forms/{form_id}/asnwerable", h.GetAnswerable)
 	r.Group(func(r chi.Router) {
 		r.Use(anyAuth)
 		r.Post("/forms", h.Create)

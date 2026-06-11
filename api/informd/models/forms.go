@@ -134,9 +134,24 @@ type FullForm struct {
 	Steps []FullStep `json:"steps"`
 }
 
+type FormAnswerable struct {
+	Form  `json:"form"`
+	Steps []StepAnswerable `json:"steps"`
+}
+
 type FullStep struct {
 	Step   `json:"step"`
 	Fields []FullField `json:"fields"`
+}
+
+type StepAnswerable struct {
+	Step   `json:"step"`
+	Fields []FieldAnswerable `json:"fields"`
+}
+
+type FieldAnswerable struct {
+	Field              `json:"field"`
+	*FieldSelectConfig `json:"field_select_config,omitempty"`
 }
 
 type FullField struct {
