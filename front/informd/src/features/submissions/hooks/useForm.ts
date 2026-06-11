@@ -63,6 +63,8 @@ export function useForm(formId: string) {
       } else if (answerableField.field.type === 'select') {
         // Ensure select fields always start as arrays
         defaults[answerableField.field.id] = [];
+      } else if (answerableField.field.type === 'bool') {
+        defaults[answerableField.field.id] = false;
       }
     });
 
