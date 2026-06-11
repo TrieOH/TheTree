@@ -12,7 +12,7 @@ export interface ApiKeyI {
   name: string;
   prefix: string;
   created_at: string;
-  revoked_at: string;
+  revoked_at: string | undefined;
 }
 
 export interface ApiKeyCreateResponseI extends ApiKeyI {

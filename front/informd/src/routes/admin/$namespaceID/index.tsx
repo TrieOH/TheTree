@@ -1,12 +1,12 @@
-import { allNamespaceFormsQueryOptions, createFormOnNamespaceFn } from '#/features/forms/api'
-import { formCreateSchema } from '#/features/forms/model'
-import type { FormCreateI, FormI } from '#/features/forms/model'
-import { FormList } from '#/features/forms/ui/form-list'
-import FormModal from '#/widgets/modal/form-modal'
+import type { FormCreateI, FormI } from '#/features/forms/model';
+import { FormsView } from '#/features/forms/ui/forms-view'
+import { allNamespacesArchivedFormsQueryOptions, allNamespacesFormsQueryOptions, createFormOnNamespaceFn } from '#/features/namespaces/api'
+import { useLayoutHeader } from '#/shared/lib/hooks/layout-context'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { toast } from 'sonner'
+
 
 export const Route = createFileRoute('/admin/$namespaceID/')({
   component: RouteComponent,
@@ -14,76 +14,48 @@ export const Route = createFileRoute('/admin/$namespaceID/')({
 
 function RouteComponent() {
   const { namespaceID } = Route.useParams()
-  const { auth } = Route.useRouteContext()
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const queryClient = useQueryClient()
-  const userId = auth?.auth.profile()?.id || ''
+  const { data: forms = [] } = useQuery(allNamespacesFormsQueryOptions(namespaceID))
+  const { data: archivedForms = [] } = useQuery(allNamespacesArchivedFormsQueryOptions(namespaceID))
+  const allForms = [...forms, ...archivedForms]
 
-  const { data: forms = [], isLoading } = useQuery(
-    allNamespaceFormsQueryOptions(namespaceID, userId)
-  )
+  const count = allForms.length
 
-  const { mutate: createForm, isPending: isPendingCreate } = useMutation({
-    mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(data, namespaceID),
+  const header = useMemo(() => (
+    <div className="flex items-start justify-between">
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">Forms</h1>
+        <p className="text-sm text-muted-foreground">
+          {count === 0
+            ? 'No forms yet in this namespace'
+            : `${count} form${count !== 1 ? 's' : ''} in this namespace`}
+        </p>
+      </div>
+    </div>
+  ), [count])
+
+  useLayoutHeader(header)
+
+  const { mutate: createForm, isPending: isCreating } = useMutation({
+    mutationFn: (data: FormCreateI) => createFormOnNamespaceFn(namespaceID, data),
     onSuccess: (response) => {
       if (response.success) {
-        queryClient.setQueryData(
-          allNamespaceFormsQueryOptions(namespaceID, userId).queryKey,
-          (old: FormI[] = []) => [...old, response.data],
-        )
-        setIsCreateOpen(false)
-        toast.success('Form created successfully')
-      }
+        queryClient.setQueryData(allNamespacesFormsQueryOptions(namespaceID).queryKey, (oldData: FormI[] = []) => {
+          return [response.data, ...oldData];
+        })
+        toast.success(response.message || "Form created successfully")
+      } else toast.error(response.message || "Failed to create form")
     },
     onError: (error: Error) => toast.error(error.message)
   })
 
-  if (isLoading) {
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="space-y-1">
-            <div className="h-9 w-48 bg-muted animate-pulse rounded-none" />
-            <div className="h-5 w-64 bg-muted animate-pulse rounded-none" />
-          </div>
-          <div className="h-10 w-full sm:w-36 bg-muted animate-pulse rounded-none" />
-        </div>
-
-        <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))]">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-40 border-2 border-border/50 bg-card/50 animate-pulse rounded-none" />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <FormList
-        forms={forms}
-        openModal={() => setIsCreateOpen(true)}
-        namespaceID={namespaceID}
-      />
-      <FormModal<FormCreateI>
-        title="Create Form"
-        description="Give your form a title to identify it."
-        buttonTitle="Create Form"
-        schema={formCreateSchema}
-        formId="create-form-form"
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSubmit={createForm}
-        fields={[
-          {
-            name: 'title',
-            label: 'Form Title',
-            type: 'text',
-            placeholder: 'e.g. Contact Form',
-          },
-        ]}
-        disabled={isPendingCreate}
-      />
-    </div>
+    <FormsView
+      forms={allForms}
+      onCreate={createForm}
+      isCreating={isCreating}
+      title="" // Title is handled by layout header
+      description="" // Description is handled by layout header
+    />
   )
 }

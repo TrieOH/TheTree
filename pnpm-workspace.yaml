@@ -1,5 +1,6 @@
 packages:
   - 'front/*'
+  - 'lib/ts/*'
   - 'docs'
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:

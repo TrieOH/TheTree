@@ -1,22 +1,7 @@
 import { authFetcher } from "#/shared/lib/api/fetch";
-import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import type { ApiKeyCreateI, ApiKeyCreateResponseI, ApiKeyI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
-import { lookupResources } from "@soramux/node-perm-sdk";
-import { serverPerm } from "#/shared/lib/api/server-auth";
-
-const getApiKeyIds = createServerFn({ method: 'GET' })
-  .inputValidator((userId: string) => userId)
-  .handler(async ({ data: userId }) => {
-    const request = lookupResources().subject("user", userId)
-      .permission("view").resourceType("api_key").build()
-    const userIds = [];
-    const stream = serverPerm.lookupResources(request);
-    for await (const response of stream) {
-      if (response.result) userIds.push(response.result.resourceObjectId)
-    }
-    return userIds
-  })
 
 /**
  * Create a new API key for the current user on the server.
@@ -29,13 +14,11 @@ export const createApiKeyFn = createClientOnlyFn((apiKeyData: ApiKeyCreateI) => 
 
 
 /**
- * Fetches all API keys for the current user from the server.
- * @param userId the user ID
+ * Fetches all API keys from the server.
  * @returns A promise that resolves to an array of API key objects.
  */
-export const getAllUserApiKeysFn = createClientOnlyFn(async (userId: string) => {
-  const ids = await getApiKeyIds({ data: userId })
-  const res = await authFetcher.post<ApiKeyI[]>('/api-keys/bulk', { ids });
+export const getAllApiKeysFn = createClientOnlyFn(async () => {
+  const res = await authFetcher.post<ApiKeyI[]>('/api-keys/bulk');
   return res.success ? res.data : []
 });
 
@@ -43,10 +26,10 @@ export const getAllUserApiKeysFn = createClientOnlyFn(async (userId: string) => 
  * Query options for fetching all API keys for the current user, using TanStack Query.
  * @returns An object containing the query key and query function for fetching all API keys.
  */
-export const allUserApiKeysQueryOptions = (userId: string) => {
+export const allApiKeysQueryOptions = () => {
   return queryOptions({
-    queryKey: ['users', userId, "keys"],
-    queryFn: () => getAllUserApiKeysFn(userId),
+    queryKey: ["keys"],
+    queryFn: () => getAllApiKeysFn(),
   })
 }
 

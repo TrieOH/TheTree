@@ -1,15 +1,39 @@
-import { useForm } from "react-hook-form";
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "./modal";
 import { cn } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
+import { Textarea } from "#/shared/ui/shadcn/textarea";
 import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/shared/ui/shadcn/select";
 import { AlertCircle } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
 import type { ZodType } from "zod";
-import type { DefaultValues, FieldValues, Path } from "react-hook-form";
+import { useEffect } from "react";
+import type {
+  DefaultValues,
+  FieldError,
+  FieldValues,
+  Path,
+  SubmitHandler,
+} from "react-hook-form";
 
+/** Safely access nested error objects for dot-notation paths like "select_config.behaviour". */
+function getNestedError(errors: Record<string, unknown>, path: string) {
+  return path.split(".").reduce<Record<string, unknown> | undefined>((acc, key) => {
+    if (acc && typeof acc === "object" && key in acc) {
+      return (acc)[key] as Record<string, unknown>;
+    }
+    return undefined;
+  }, errors);
+}
 
 export interface PropsI<T> {
   isOpen: boolean;
@@ -21,7 +45,7 @@ export interface PropsI<T> {
   formId: string;
   defaultValues?: DefaultValues<T>;
   fields: FieldDefinition<T>[];
-  schema: ZodType<T>;
+  schema: ZodType<T, T>;
   disabled?: boolean;
 }
 
@@ -36,32 +60,98 @@ export default function FormModal<T extends FieldValues>({
   schema,
   defaultValues,
   buttonTitle,
-  disabled = false
+  disabled = false,
 }: PropsI<T>) {
-
-  const { register, handleSubmit, formState: { errors } } = useForm<T>({
-    resolver: standardSchemaResolver(schema),
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<T>({
+    resolver: zodResolver(schema),
     defaultValues: defaultValues,
   });
 
-  const handleFormSubmit = (data: T) => {
+  const watchedValues = useWatch({ control });
+
+  useEffect(() => {
+    if (isOpen) {
+      reset(defaultValues);
+    }
+  }, [isOpen, defaultValues, reset]);
+
+  const handleFormSubmit: SubmitHandler<T> = (data) => {
     onSubmit(data);
   };
 
   const renderField = (field: FieldDefinition<T>) => {
     const fieldName = field.name as Path<T>;
-    const error = errors[fieldName];
+    const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
+
+    if (field.type === "select") {
+      return (
+        <Controller
+          name={fieldName}
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <Select
+              onValueChange={(val) => {
+                const strVal = String(val);
+                onChange(strVal === "true" ? true : strVal === "false" ? false : strVal);
+              }}
+              value={value ?? ""}
+            >
+              <SelectTrigger
+                id={fieldName}
+                className={cn(
+                  "rounded-sm border-border w-full",
+                  error && "border-destructive"
+                )}
+              >
+                <SelectValue placeholder={field.placeholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      );
+    }
+
+    if (field.type === "textarea") {
+      return (
+        <Textarea
+          id={fieldName}
+          placeholder={field.placeholder}
+          rows={field.rows ?? 3}
+          className={cn(
+            "rounded-md border-border min-h-20 resize-y",
+            error && "border-destructive"
+          )}
+          {...register(fieldName)}
+        />
+      );
+    }
+
     return (
       <Input
         id={fieldName}
         type={field.type}
         placeholder={field.placeholder}
+        min={field.min}
+        max={field.max}
+        disabled={field.disabled || disabled}
         className={cn(
-          "rounded-none border-border focus-visible:ring-0 font-bold",
-          "focus-visible:border-primary transition-colors",
+          "rounded-md border-border",
           error && "border-destructive"
         )}
-        {...register(fieldName)}
+        {...register(fieldName, field.type === "number" ? { valueAsNumber: true } : undefined)}
       />
     );
   };
@@ -73,41 +163,55 @@ export default function FormModal<T extends FieldValues>({
       title={title}
       description={description}
     >
-      <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-        {fields.map(field => {
+      <form
+        id={formId}
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="space-y-6"
+      >
+        {fields.map((field) => {
+          // Skip field if its dependency is not met
+          if (field.dependsOn) {
+            const depValue = (watchedValues)[field.dependsOn.field as string];
+            const isMet = depValue === field.dependsOn.value
+              || String(depValue) === String(field.dependsOn.value);
+            if (!isMet) return null;
+          }
+
           const fieldName = field.name as Path<T>;
-          const error = errors[fieldName];
+          const error = getNestedError(errors, String(field.name)) as FieldError | undefined;
           return (
             <div className="space-y-2" key={"t_" + field.name.toString()}>
               <Label
                 htmlFor={fieldName}
-                className="text-[10px] font-black uppercase tracking-[0.2em]"
+                className="text-xs font-semibold text-muted-foreground"
               >
                 {field.label}
               </Label>
               {renderField(field)}
               {error && (
-                <span className={cn(
-                  "text-[10px] font-bold text-destructive uppercase",
-                  "tracking-widest flex items-start gap-1"
-                )}>
+                <span
+                  className={cn(
+                    "text-[10px] font-bold text-destructive uppercase",
+                    "tracking-widest flex items-start gap-1"
+                  )}
+                >
                   <AlertCircle className="w-3 h-3" />
                   <span className="-mt-px">{error.message?.toString()}</span>
                 </span>
               )}
             </div>
-          )
+          );
         })}
         <div className="flex justify-end pt-2">
           <Button
             type="submit"
             disabled={disabled}
-            className="w-full rounded-none font-black uppercase tracking-widest transition-all h-12"
+            className="w-full rounded-sm font-bold transition-all h-10"
           >
             {buttonTitle}
           </Button>
         </div>
       </form>
     </Modal>
-  )
+  );
 }

@@ -1,95 +1,111 @@
-import { authFetcher } from "#/shared/lib/api/fetch";
-import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
+import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import type { FormCreateI, FormI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
-import { lookupResources } from "@soramux/node-perm-sdk";
-import { serverPerm } from "#/shared/lib/api/server-auth";
-
-const getFormsIds = createServerFn({ method: 'GET' })
-  .inputValidator((userId: string) => userId)
-  .handler(async ({ data }) => {
-    const request = lookupResources().subject("user", data)
-      .permission("view").resourceType("form").build()
-    const userIds = [];
-    const stream = serverPerm.lookupResources(request);
-    for await (const response of stream) {
-      if (response.result) userIds.push(response.result.resourceObjectId)
-    }
-    return userIds
-  })
 
 /**
- * Create a new Form for the specified namespace on the server.
- * @param formData - The data for the new form.
- * @param namespaceID - The namespace ID
- * @returns A promise that resolves to the API response containing the newly created Form.
- */
-export const createFormOnNamespaceFn = createClientOnlyFn((
-  formData: FormCreateI,
-  namespaceID: string
-) => {
-  return authFetcher.post<FormI>(`/namespaces/${namespaceID}/forms`, formData);
-});
-
-/**
- * Create a new Form for the current user (personal form) on the server.
+ * Create a new Form on the server.
  * @param formData - The data for the new form.
  * @returns A promise that resolves to the API response containing the newly created Form.
  */
-export const createFormOnUserFn = createClientOnlyFn((
-  formData: FormCreateI
-) => {
-  return authFetcher.post<FormI>(`/forms`, formData);
-});
-
-/**
- * Fetches all Forms for the specified namespace from the server.
- * @param userId if the user that want to see the namespace forms
- * @returns A promise that resolves to an array of Form objects.
- */
-export const getAllNamespaceFormsFn = createClientOnlyFn(async (
-  namespaceId: string, userId: string
-) => {
-  const ids = await getFormsIds({ data: userId })
-  const res = await authFetcher.post<FormI[] | null>(
-    `/forms/bulk?filter_key=namespace_id&filter_op=eq&filter_value=${namespaceId}`,
-    { ids }
-  );
-  return res.success ? (res.data ?? []) : []
+export const createFormFn = createClientOnlyFn((formData: FormCreateI) => {
+  return authFetcher.post<FormI>('forms', formData);
 });
 
 /**
  * Fetches all personal Forms for the current user from the server.
- * @param userId the user ID
  * @returns A promise that resolves to an array of Form objects.
  */
-export const getAllUserFormsFn = createClientOnlyFn(async (userId: string) => {
-  const ids = await getFormsIds({ data: userId })
-  const res = await authFetcher.post<FormI[] | null>(
-    '/forms/bulk?filter_key=namespace_id&filter_op=is_null',
-    { ids }
-  );
-  return res.success ? (res.data ?? []) : []
+export const getAllUserFormsFn = createClientOnlyFn(async () => {
+  return tanstackQueryFetcher<FormI[]>("/forms");
 });
 
 /**
- * Query options for fetching all Form for a specific namespace, using TanStack Query.
- * @returns An object containing the query key and query function for fetching all Form.
+ * Fetches all archived Forms for the current user from the server.
+ * @returns A promise that resolves to an array of archived Form objects.
  */
-export const allNamespaceFormsQueryOptions = (namespaceId: string, userId: string) => {
-  return queryOptions({
-    queryKey: ['namespaces', namespaceId, "forms"],
-    queryFn: () => getAllNamespaceFormsFn(namespaceId, userId),
-  })
-}
+export const getAllUserArchivedFormsFn = createClientOnlyFn(async () => {
+  return tanstackQueryFetcher<FormI[]>("/forms/archived");
+});
 
 /**
  * Query options for fetching all personal Forms for the current user, using TanStack Query.
  * @returns An object containing the query key and query function for fetching all personal Forms.
  */
-export const allUserFormsQueryOptions = (userId: string) => {
+export const allUserFormsQueryOptions = () => {
   return queryOptions({
-    queryKey: ['users', userId, "forms"],
-    queryFn: () => getAllUserFormsFn(userId),
+    queryKey: ["forms"],
+    queryFn: () => getAllUserFormsFn(),
+  })
+}
+
+/**
+ * Query options for fetching all archived Forms for the current user, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching all archived Forms.
+ */
+export const allUserArchivedFormsQueryOptions = () => {
+  return queryOptions({
+    queryKey: ["forms", "archived"],
+    queryFn: () => getAllUserArchivedFormsFn(),
+  })
+}
+// Manage Form Status
+
+/**
+ * Opens a Form on the server.
+ * @param form_id - The ID of the form to open.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const openFormFn = createClientOnlyFn((form_id: string) => {
+  return authFetcher.post<FormI>(`forms/${form_id}/open`);
+});
+
+/**
+ * Closes a Form on the server (if it is open).
+ * @param form_id - The ID of the form to close.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const closeFormFn = createClientOnlyFn((form_id: string) => {
+  return authFetcher.post<FormI>(`forms/${form_id}/close`);
+});
+
+/**
+ * Archives a Form on the server (if it is closed).
+ * @param form_id - The ID of the form to archive.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const archiveFormFn = createClientOnlyFn((form_id: string) => {
+  return authFetcher.post<FormI>(`forms/${form_id}/archive`);
+});
+
+/**
+ * Redrafts a Form on the server (if it is open and have zero submissions/responses).
+ * @param form_id - The ID of the form to redraft.
+ * @returns A promise that resolves to the API response containing the updated Form.
+ */
+export const redraftFormFn = createClientOnlyFn((form_id: string) => {
+  return authFetcher.post<FormI>(`forms/${form_id}/redraft`);
+});
+
+// Response Count
+
+/**
+ * Fetches the response count for a specific Form from the server.
+ * @param form_id - The ID of the form to fetch the response count for.
+ * @returns A promise that resolves to the number of responses for the specified Form.
+ */
+export const getFormResponseCountFn = createClientOnlyFn((form_id: string) => {
+  return tanstackQueryFetcher<{ count: number }>(`forms/${form_id}/responses/count`);
+});
+
+/**
+ * Query options for fetching the response count for a specific Form, using TanStack Query.
+ * @param form_id - The ID of the form to fetch the response count for.
+ * @returns An object containing the query key and query function for fetching the response count.
+ */
+export const formResponseCountQueryOptions = (form_id: string) => {
+  return queryOptions({
+    queryKey: ["forms", form_id, "responses", "count"],
+    queryFn: () => getFormResponseCountFn(form_id),
   })
 }
