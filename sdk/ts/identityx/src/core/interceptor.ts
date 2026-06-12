@@ -40,11 +40,12 @@ export class AuthInterceptor {
     this.onRefreshFailed = config?.onRefreshFailed;
   }
 
-  private async refreshToken(): Promise<void> {
+  async refreshToken(): Promise<void> {
     if (this.isRefreshing && this.refreshPromise) return this.refreshPromise;
 
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
+      let shouldClear = true;
       try {
         const res = await simpleFetch<{ code: number; data?: AuthTokens; message?: string }>(
           joinUrl(this.authBaseURL, "/auth/refresh"),
@@ -52,7 +53,7 @@ export class AuthInterceptor {
         );
 
         if (res.code !== 200 || !res.data) {
-          if (res.code !== 503) clearAuthTokens();
+          shouldClear = res.code !== 503;
           throw new Error(res.message || "Failed to refresh token");
         }
 
@@ -64,7 +65,7 @@ export class AuthInterceptor {
         logger.log("Token refreshed successfully");
       } catch (error) {
         logger.warn("Failed to refresh token:", error);
-        clearAuthTokens();
+        if (shouldClear) clearAuthTokens();
         this.onRefreshFailed?.(error as Error);
         throw error;
       } finally {
@@ -83,9 +84,8 @@ export class AuthInterceptor {
     }
 
     const hasAccessToken = !!tokenStore.getAccessToken();
-    const hasRefreshToken = !!cookieStorage.get("refresh_token");
 
-    if ((!hasAccessToken && hasRefreshToken) || (hasAccessToken && isTokenExpiringSoon(30))) {
+    if (!hasAccessToken || isTokenExpiringSoon(30)) {
       try {
         await this.refreshToken();
       } catch (error) {
@@ -125,9 +125,10 @@ export class AuthInterceptor {
     let response = await executeFetch();
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
+      const hasRefreshCookie = !!cookieStorage.get("refresh_token");
       const isExpiring = isTokenExpiringSoon(30);
 
-      if (isExpiring) {
+      if (hasRefreshCookie && isExpiring) {
         logger.log("401 detected and token is expiring/expired, attempting refresh...");
         try {
           await this.refreshToken();

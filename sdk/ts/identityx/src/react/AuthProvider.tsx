@@ -107,8 +107,7 @@ export function AuthProvider({
         return;
       }
 
-      const hasRefreshToken = !!cookieStorage.get("refresh_token");
-      if (!hasRefreshToken || isRefreshSessionExpired()) {
+      if (isRefreshSessionExpired()) {
         authStore.reset();
         authStore.set({ isInitializing: false });
         return;
@@ -116,14 +115,8 @@ export function AuthProvider({
 
       logger.log("No cached claims, attempting silent refresh...");
       try {
-        const res = await auth.refresh();
-        if (res.success) {
-          authStore.set({ isAuthenticated: true, isInitializing: false });
-          logger.log("Session restored.");
-        } else {
-          authStore.reset();
-          logger.warn("No active session.");
-        }
+        await apiInstance.interceptor.refreshToken();
+        logger.log("Session restored.");
       } catch {
         authStore.reset();
         logger.warn("Could not restore session (offline?).");
