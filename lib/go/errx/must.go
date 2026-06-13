@@ -15,6 +15,18 @@ func Exit(err error, msg string) {
 	}
 }
 
+func Env[T any](key string, parse func(string) (T, error), fallback T) T {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	result, err := parse(v)
+	if err != nil {
+		return fallback
+	}
+	return result
+}
+
 func MustEnv[T any](key string, parse func(string) (T, error)) T {
 	v := os.Getenv(key)
 	result, err := parse(v)

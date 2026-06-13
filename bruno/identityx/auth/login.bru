@@ -1,0 +1,25 @@
+meta {
+  name: Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{identityx_url}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "admin@trieoh.com",
+    "password": "S3cretPa$$"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("access_token", res.body.data.access_token);
+  bru.setEnvVar("refresh_token", res.body.data.refresh_token);
+  bru.setEnvVar("access_expires_at", res.body.data.access_expires_at);
+  bru.setEnvVar("refresh_expires_at", res.body.data.refresh_expires_at);
+}

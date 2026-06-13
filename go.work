@@ -1,6 +1,8 @@
 go 1.26.2
 
 replace google.golang.org/genproto => google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4
+replace golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421 => golang.org/x/oauth2 v0.36.0
+replace cloud.google.com/go v0.26.0 => cloud.google.com/go/compute/metadata v0.9.0
 
 use (
 	./api/identityx

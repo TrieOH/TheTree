@@ -1,0 +1,15 @@
+meta {
+  name: List Projects
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{identityx_url}}/organizations/{org_id}/projects
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

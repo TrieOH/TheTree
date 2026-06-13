@@ -1,0 +1,22 @@
+meta {
+  name: OAuth Callback
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{identityx_url}}/auth/google/callback
+  body: none
+  auth: none
+}
+
+params:query {
+  code: your_code_here
+}
+
+script:post-response {
+  bru.setEnvVar("access_token", res.body.data.access_token);
+  bru.setEnvVar("refresh_token", res.body.data.refresh_token);
+  bru.setEnvVar("access_expires_at", res.body.data.access_expires_at);
+  bru.setEnvVar("refresh_expires_at", res.body.data.refresh_expires_at);
+}
