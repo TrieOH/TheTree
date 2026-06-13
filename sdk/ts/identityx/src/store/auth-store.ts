@@ -37,7 +37,7 @@ if (typeof window !== "undefined") {
     if (event.key === "trieoh_access_expiry") {
       if (!event.newValue) authStore.reset();
       else {
-        const expiry = parseInt(event.newValue, 10);
+        const expiry = Number(event.newValue);
         const isAuthenticated = !isNaN(expiry) && expiry > Date.now();
         authStore.set({ isAuthenticated, isInitializing: false });
       }

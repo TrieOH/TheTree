@@ -51,16 +51,16 @@ const BOOL_OPTIONS = [
     { label: "No", value: "false" },
 ] as const;
 
+/** Text-based field types that support placeholder and text default_value. */
+const TEXT_BASED_TYPES = [
+    "string", "email", "int", "float", "phone", "url",
+    "date", "time", "datetime",
+];
+
 /**
  * Base field definitions shared between create and edit field forms.
  */
 const BASE_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
-    {
-        name: "key",
-        label: "Field Key",
-        type: "text",
-        placeholder: "e.g. full_name",
-    },
     {
         name: "title",
         label: "Field Label",
@@ -68,11 +68,18 @@ const BASE_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
         placeholder: "e.g. Full Name",
     },
     {
+        name: "key",
+        label: "Field Key",
+        type: "text",
+        placeholder: "e.g. full_name",
+    },
+    {
         name: "description",
         label: "Description",
         type: "textarea",
         rows: 3,
         placeholder: "e.g. Enter your full name as it appears on your ID.",
+        required: false,
     },
     {
         name: "type",
@@ -84,21 +91,24 @@ const BASE_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
     {
         name: "required",
         label: "Required",
-        type: "select",
-        placeholder: "No",
-        options: [...BOOL_OPTIONS],
+        type: "boolean",
+        placeholder: "User must select an option to submit",
     },
     {
         name: "placeholder",
         label: "Placeholder",
         type: "text",
         placeholder: "e.g. Type your answer here…",
+        required: false,
+        dependsOn: { field: "type", value: TEXT_BASED_TYPES },
     },
     {
         name: "default_value",
         label: "Default Value",
         type: "text",
         placeholder: "e.g. John Doe",
+        required: false,
+        dependsOn: { field: "type", value: [...TEXT_BASED_TYPES, "select"] },
     },
 ];
 
@@ -112,6 +122,7 @@ const SELECT_CONFIG_FIELD_DEFS: FieldDefinition<Record<string, unknown>>[] = [
         type: "textarea",
         rows: 5,
         placeholder: "One option per line\ne.g.\nOption 1\nOption 2\nOption 3",
+        required: false,
         dependsOn: { field: "type", value: "select" },
     },
     {

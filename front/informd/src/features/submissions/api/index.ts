@@ -1,10 +1,10 @@
-import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
+import { publicFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import type { FormAnswerableI, FullFormI, SubmitRequestI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
- * Submit the form answer to the server.
+ * Submit the form answer to the server (public endpoint via envoy).
  * @param form_id - The ID of the Form for which to fetch responses.
  * @param submitData - The answer to submit.
  * @returns A promise that resolves to the API response.
@@ -13,7 +13,7 @@ export const submitFormFn = createClientOnlyFn((
   form_id: string,
   submitData: SubmitRequestI
 ) => {
-  return authFetcher.post<void>(`/forms/${form_id}/responses`, submitData);
+  return publicFetcher.post<void>(`/forms/${form_id}/responses`, submitData);
 });
 
 /**
@@ -50,12 +50,14 @@ export const allFormsResponsesQueryOptions = (
 // Answer
 
 /**
- * Fetches all Form from the server.
+ * Fetches all Form from the server (public endpoint via envoy).
  * @param form_id - The ID of the Form for which to fetch responses.
- * @returns A promise that resolves to an array of  objects.
+ * @returns A promise that resolves to an array of objects.
  */
 export const getFormAnswerableFn = createClientOnlyFn(async (form_id: string) => {
-  return tanstackQueryFetcher<FormAnswerableI>(`/forms/${form_id}/asnwerable`);
+  const result = await publicFetcher.get<FormAnswerableI>(`/forms/${form_id}/asnwerable`);
+  if (!result.success) throw result;
+  return result.data;
 });
 
 /**

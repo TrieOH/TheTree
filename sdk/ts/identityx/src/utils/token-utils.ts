@@ -2,7 +2,6 @@ import { authStore } from "../store/auth-store";
 import { tokenStore } from "../store/token-store";
 import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage, cookieStorage } from "./storage-adapter";
-import { obfuscate, deobfuscate } from "./obfuscation-utils";
 
 export interface AuthTokens {
   access_token_string: string;
@@ -37,7 +36,7 @@ export interface AuthTokenClaims {
 }
 
 // Stored only in memory
-let _obfuscatedClaims: string | null = null;
+let _cachedClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
 const REFRESH_DOMAIN_KEY = "trieoh_refresh_domain";
@@ -115,10 +114,10 @@ export function saveAuthSession(tokens: AuthTokens): void {
     refresh_expiry_date: refreshExpiry,
   };
 
-  _obfuscatedClaims = obfuscate(sessionData);
+  _cachedClaims = sessionData;
 
-  browserStorage.setItem(ACCESS_EXPIRY_KEY, obfuscate(accessExpiry));
-  browserStorage.setItem(REFRESH_EXPIRY_KEY, obfuscate(refreshExpiry));
+  browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
+  browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
   if (domain) browserStorage.setItem(REFRESH_DOMAIN_KEY, domain);
   else browserStorage.removeItem(REFRESH_DOMAIN_KEY);
 
@@ -131,7 +130,7 @@ export function saveAuthSession(tokens: AuthTokens): void {
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
-  if (_obfuscatedClaims) return deobfuscate<AuthTokenClaims>(_obfuscatedClaims);
+  if (_cachedClaims) return _cachedClaims;
 
   const token = tokenStore.getAccessToken();
   if (!token) return null;
@@ -145,25 +144,25 @@ export function getTokenClaims(): AuthTokenClaims | null {
   const refreshExpiryStr = browserStorage.getItem(REFRESH_EXPIRY_KEY);
   if (!refreshExpiryStr) return null;
 
-  const refreshExpiry = deobfuscate<number>(refreshExpiryStr);
-  if (!refreshExpiry) return null;
+  const refreshExpiry = Number(refreshExpiryStr);
+  if (isNaN(refreshExpiry)) return null;
 
   const sessionData = {
     access_data: claims,
     refresh_expiry_date: refreshExpiry,
   };
 
-  _obfuscatedClaims = obfuscate(sessionData);
+  _cachedClaims = sessionData;
 
   return sessionData;
 }
 
 function isExpiringSoon(key: string, thresholdSeconds: number): boolean {
   try {
-    const obfuscated = browserStorage.getItem(key);
-    if (!obfuscated) return true;
-    const expiry = deobfuscate<number>(obfuscated);
-    if (!expiry) return true;
+    const stored = browserStorage.getItem(key);
+    if (!stored) return true;
+    const expiry = Number(stored);
+    if (isNaN(expiry)) return true;
     return (expiry - Date.now()) <= thresholdSeconds * 1000;
   } catch (e) {
     logger.warn("Error reading expiry:", e);
@@ -176,15 +175,15 @@ export const isRefreshSessionExpired = (t = 10) => isExpiringSoon(REFRESH_EXPIRY
 
 export function isAuthenticated(): boolean {
   if (!tokenStore.getAccessToken()) return false;
-  const obfuscated = browserStorage.getItem(ACCESS_EXPIRY_KEY);
-  if (!obfuscated) return false;
-  const accessExpiryTimestamp = deobfuscate<number>(obfuscated);
-  if (!accessExpiryTimestamp) return false;
+  const stored = browserStorage.getItem(ACCESS_EXPIRY_KEY);
+  if (!stored) return false;
+  const accessExpiryTimestamp = Number(stored);
+  if (isNaN(accessExpiryTimestamp)) return false;
   return accessExpiryTimestamp > Date.now();
 }
 
 export function clearAuthTokens(): void {
-  _obfuscatedClaims = null;
+  _cachedClaims = null;
   tokenStore.clear();
   browserStorage.removeItem(ACCESS_EXPIRY_KEY);
   browserStorage.removeItem(REFRESH_EXPIRY_KEY);
