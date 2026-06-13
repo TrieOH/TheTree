@@ -267,7 +267,7 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
             onChange={(e) => {
               const typed = e.target.value;
               const clean = typed.replace(/^https?:\/\//i, "");
-              onChange(field.field.id, clean ? `https://${clean}` : undefined);
+              onChange(field.field.id, clean ? `https://${clean}` : "");
             }}
             className="h-10 w-full min-w-0 bg-card px-3 text-sm text-foreground outline-none rounded-r-md"
           />

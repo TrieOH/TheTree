@@ -24,7 +24,7 @@ import type {
   Path,
   SubmitHandler,
 } from "react-hook-form";
-import { formatPhoneMask } from "#/shared/lib/helpers/mask";
+import { formatPhoneMask, isValidPhone, isValidUrl } from "#/shared/lib/helpers/mask";
 
 /** Safely access nested error objects for dot-notation paths like "select_config.behaviour". */
 function getNestedError(errors: Record<string, unknown>, path: string) {
@@ -75,6 +75,7 @@ export default function FormModal<T extends FieldValues>({
     handleSubmit,
     control,
     reset,
+    setError,
     formState: { errors },
   } = methods;
 
@@ -87,6 +88,26 @@ export default function FormModal<T extends FieldValues>({
   }, [isOpen, defaultValues, reset]);
 
   const handleFormSubmit: SubmitHandler<T> = (data) => {
+    const raw = data as Record<string, unknown>;
+    const currentType = raw["type"] as string | undefined;
+    const defaultValue = raw["default_value"] as string | undefined;
+
+    // Validate default_value against the selected field type
+    if (defaultValue && defaultValue !== "__none__") {
+      if (currentType === "phone" && !isValidPhone(defaultValue)) {
+        setError("default_value" as Path<T>, {
+          message: "Invalid phone number — must have at least 10 digits",
+        });
+        return;
+      }
+      if (currentType === "url" && !isValidUrl(defaultValue)) {
+        setError("default_value" as Path<T>, {
+          message: "Invalid URL",
+        });
+        return;
+      }
+    }
+
     onSubmit(data);
   };
 
@@ -351,7 +372,7 @@ export default function FormModal<T extends FieldValues>({
                       const typed = e.target.value;
                       // Strip any https:// the user may have typed/pasted so we don't double up
                       const clean = typed.replace(/^https?:\/\//i, "");
-                      onChange(clean ? `https://${clean}` : undefined);
+                      onChange(clean ? `https://${clean}` : "");
                     }}
                     className="h-9 w-full min-w-0 bg-transparent px-2.5 py-1 text-base outline-none md:text-sm"
                   />

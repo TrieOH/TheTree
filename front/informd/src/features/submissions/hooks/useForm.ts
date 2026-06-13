@@ -4,6 +4,7 @@ import type { AnswerCreateI } from "../model";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { allFormsAnswerableQueryOptions, submitFormFn } from "../api";
 import type { FieldAnswerable, StepAnswerable } from "@trieoh/informd-models";
+import { isValidPhone, isValidUrl } from "#/shared/lib/helpers/mask";
 
 interface FormState {
   currentStepIndex: number;
@@ -92,8 +93,10 @@ export function useForm(formId: string) {
       } else if (!isEmpty && typeof val === "string") {
         if (f.field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
           newErrors[f.field.id] = "Invalid email";
-        } else if (f.field.type === "url") {
-          try { new URL(val) } catch { newErrors[f.field.id] = "Invalid URL" }
+        } else if (f.field.type === "url" && !isValidUrl(val)) {
+          newErrors[f.field.id] = "Invalid URL";
+        } else if (f.field.type === "phone" && !isValidPhone(val)) {
+          newErrors[f.field.id] = "Invalid phone number";
         }
       }
     });
