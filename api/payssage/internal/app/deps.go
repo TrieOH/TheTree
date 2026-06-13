@@ -2,12 +2,12 @@ package app
 
 import (
 	"context"
-	"lib/database"
 	"log"
 	"os"
 	"time"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"lib/database"
+
 	"github.com/MintzyG/fun"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	idx "sdk/identityx"
 )
 
 func SetupFUN() {

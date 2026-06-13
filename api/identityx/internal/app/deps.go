@@ -1,19 +1,10 @@
 package app
 
 import (
-	"IdentityX/contracts"
-	"IdentityX/internal/database/sqlc"
-	"IdentityX/internal/shared/authz"
-	"IdentityX/internal/shared/ports"
-	"IdentityX/internal/shared/security"
 	"context"
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"lib/crypto"
-	"lib/database"
-	"lib/errx"
-	"lib/telemetry"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +12,16 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"IdentityX/contracts"
+	"IdentityX/internal/database/sqlc"
+	"IdentityX/internal/shared/authz"
+	"IdentityX/internal/shared/ports"
+	"IdentityX/internal/shared/security"
+	"lib/crypto"
+	"lib/database"
+	"lib/errx"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

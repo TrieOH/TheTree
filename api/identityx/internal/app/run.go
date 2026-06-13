@@ -1,6 +1,11 @@
 package app
 
 import (
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/features/account"
 	"IdentityX/internal/features/api_keys"
@@ -15,10 +20,6 @@ import (
 	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"

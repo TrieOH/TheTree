@@ -1,11 +1,12 @@
 package auth
 
 import (
-	"IdentityX/contracts"
 	"encoding/json"
-	"lib/telemetry"
 	"net/http"
 	"time"
+
+	"IdentityX/contracts"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

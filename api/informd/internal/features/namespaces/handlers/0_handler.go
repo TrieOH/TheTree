@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"net/http"
+
 	"Informd/internal/features/namespaces/commands"
 	"Informd/internal/features/namespaces/queries"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )

@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"Informd/models"
 	"context"
+
+	"Informd/models"
 	"lib/xslices"
 
 	"github.com/MintzyG/fun"

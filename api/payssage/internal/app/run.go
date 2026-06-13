@@ -1,10 +1,11 @@
 package app
 
 import (
-	"lib/database"
-	"lib/telemetry"
 	"log"
 	"net/http"
+
+	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/features/api_keys"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"

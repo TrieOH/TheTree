@@ -1,3 +1,3 @@
-module git.trieoh.com/TrieOH/Payssage-SDK-Go
+module sdk/payssage
 
 go 1.26

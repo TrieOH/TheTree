@@ -1,9 +1,10 @@
 package feature_deps
 
 import (
+	"time"
+
 	"IdentityX/internal/shared/ports"
 	"lib/database"
-	"time"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

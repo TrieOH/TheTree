@@ -1,6 +1,12 @@
 package app
 
 import (
+	"context"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
 	"Informd/internal/database/sqlc"
 	"Informd/internal/features/answers"
 	"Informd/internal/features/fields"
@@ -10,18 +16,14 @@ import (
 	"Informd/internal/features/responses"
 	"Informd/internal/features/steps"
 	"Informd/ports"
-	"context"
 	"lib/authz"
 	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	idx "sdk/identityx"
+
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/prometheus/client_golang/prometheus"

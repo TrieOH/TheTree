@@ -1,13 +1,14 @@
 package sessions
 
 import (
+	"context"
+	"time"
+
 	"IdentityX/contracts"
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/shared/ports"
-	"context"
 	"lib/database"
 	"lib/xslices"
-	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"

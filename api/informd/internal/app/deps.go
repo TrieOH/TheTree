@@ -2,15 +2,17 @@ package app
 
 import (
 	"context"
-	"lib/database"
-	"lib/errx"
 	"log"
 	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"lib/database"
+	"lib/errx"
+
+	idx "sdk/identityx"
+
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
 	"github.com/go-chi/chi/v5"

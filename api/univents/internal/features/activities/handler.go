@@ -2,6 +2,7 @@ package activities
 
 import (
 	"net/http"
+
 	"univents/internal/shared/contracts"
 
 	"github.com/MintzyG/fun"

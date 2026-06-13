@@ -1,12 +1,13 @@
 package sessions
 
 import (
+	"context"
+	"errors"
+
 	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
-	"context"
-	"errors"
 	"lib/database"
 	"lib/errx"
 

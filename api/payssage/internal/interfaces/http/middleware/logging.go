@@ -3,10 +3,11 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"payssage/internal/platform/telemetry"
-	"payssage/internal/shared/errx"
 	"strings"
 	"time"
+
+	"payssage/internal/platform/telemetry"
+	"payssage/internal/shared/errx"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"

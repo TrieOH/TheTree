@@ -1,9 +1,10 @@
 package projects
 
 import (
+	"net/http"
+
 	"IdentityX/contracts"
 	"IdentityX/internal/platform/middlewares"
-	"net/http"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

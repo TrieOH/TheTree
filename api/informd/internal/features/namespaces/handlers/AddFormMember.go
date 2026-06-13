@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"Informd/models"
 	"net/http"
+
+	"Informd/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

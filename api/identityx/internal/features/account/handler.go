@@ -1,9 +1,10 @@
 package account
 
 import (
-	"IdentityX/contracts"
 	"net/http"
 	"time"
+
+	"IdentityX/contracts"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"

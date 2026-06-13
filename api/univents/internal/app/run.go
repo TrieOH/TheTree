@@ -2,13 +2,14 @@ package app
 
 import (
 	"context"
-	"lib/authz"
-	database2 "lib/database"
-	"lib/xslices"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"lib/authz"
+	database2 "lib/database"
+	"lib/xslices"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"
 	"univents/internal/features/editions"
@@ -25,7 +26,6 @@ import (
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	idx "git.trieoh.com/TrieOH/IdentityX-SDK-Go"
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/middlewares"
 	"github.com/hibiken/asynq"
@@ -35,6 +35,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	idx "sdk/identityx"
 )
 
 type runtime struct {

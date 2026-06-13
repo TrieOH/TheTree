@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
 	"univents/internal/platform/database/sqlc"
 	"univents/internal/platform/telemetry"
 

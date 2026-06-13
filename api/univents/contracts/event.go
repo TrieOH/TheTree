@@ -3,6 +3,7 @@ package contracts
 import (
 	"encoding/json"
 	"time"
+
 	"univents/internal/shared/errx"
 
 	"github.com/google/uuid"
