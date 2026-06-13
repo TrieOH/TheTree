@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"lib/errx"
 	"log"
 	"strings"
 	"time"
+
+	"lib/errx"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"

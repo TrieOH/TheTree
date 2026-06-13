@@ -1,11 +1,12 @@
 package renderer
 
 import (
-	"IdentityX/internal/shared/ports"
 	"bytes"
 	"context"
 	"html/template"
 	texttemplate "text/template"
+
+	"IdentityX/internal/shared/ports"
 
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"

@@ -1,17 +1,18 @@
 package security
 
 import (
-	"IdentityX/contracts"
 	"crypto/ed25519"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"lib/crypto"
-	"lib/errx"
 	"strings"
 	"time"
+
+	"IdentityX/contracts"
+	"lib/crypto"
+	"lib/errx"
 
 	"github.com/MintzyG/fun"
 	"github.com/golang-jwt/jwt/v5"

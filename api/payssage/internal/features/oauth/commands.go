@@ -6,13 +6,14 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
+	"time"
+
 	"payssage/internal/platform/database"
 	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/authz"
 	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/ports"
-	"time"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"

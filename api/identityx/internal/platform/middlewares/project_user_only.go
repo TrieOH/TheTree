@@ -1,8 +1,9 @@
 package middlewares
 
 import (
-	"IdentityX/internal/shared/authz"
 	"net/http"
+
+	"IdentityX/internal/shared/authz"
 
 	"github.com/MintzyG/fun"
 )

@@ -4,6 +4,7 @@ package app
 
 import (
 	"net/http"
+
 	_ "univents/contracts"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"

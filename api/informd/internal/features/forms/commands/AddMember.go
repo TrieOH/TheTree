@@ -1,10 +1,11 @@
 package commands
 
 import (
-	"Informd/models"
 	"context"
-	"lib/authz"
 	"time"
+
+	"Informd/models"
+	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )

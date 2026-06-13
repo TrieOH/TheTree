@@ -1,8 +1,9 @@
 package telemetry
 
 import (
-	"lib/errx"
 	"sync"
+
+	"lib/errx"
 
 	"go.uber.org/zap"
 )

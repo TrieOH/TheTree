@@ -4,22 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"lib/database"
 	"net/url"
 	"strings"
+
+	"lib/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+
+	"sdk/payssage"
 )
 
 type CommandService struct {

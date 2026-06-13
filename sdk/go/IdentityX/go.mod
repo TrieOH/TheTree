@@ -1,4 +1,4 @@
-module git.trieoh.com/TrieOH/IdentityX-SDK-Go
+module sdk/identityx
 
 go 1.26.1
 

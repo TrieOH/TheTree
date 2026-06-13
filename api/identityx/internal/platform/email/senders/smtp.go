@@ -1,7 +1,6 @@
 package senders
 
 import (
-	"IdentityX/internal/shared/ports"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -9,6 +8,8 @@ import (
 	"mime/multipart"
 	"net/smtp"
 	"net/textproto"
+
+	"IdentityX/internal/shared/ports"
 
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/trace"

@@ -1,17 +1,19 @@
 package middleware
 
 import (
-	"lib/authz"
 	"net/http"
-	"payssage/contracts"
-	"payssage/internal/shared/ports"
 	"strings"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"lib/authz"
+	"payssage/contracts"
+	"payssage/internal/shared/ports"
+
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
+
+	idx "sdk/identityx"
 )
 
 type AuthMiddleware struct {

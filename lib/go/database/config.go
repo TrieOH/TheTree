@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"lib/errx"
 	"net/url"
 	"time"
+
+	"lib/errx"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

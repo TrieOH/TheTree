@@ -1,8 +1,9 @@
 package api_keys
 
 import (
-	"IdentityX/internal/platform/middlewares"
 	"net/http"
+
+	"IdentityX/internal/platform/middlewares"
 
 	_ "IdentityX/contracts"
 

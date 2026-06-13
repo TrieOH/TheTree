@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"lib/database"
 	"net/url"
 	"strings"
+
+	"lib/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"

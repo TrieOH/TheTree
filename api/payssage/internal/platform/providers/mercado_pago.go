@@ -10,14 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"lib/telemetry"
 	"log"
 	"net/http"
-	"payssage/contracts"
-	"payssage/internal/shared/ports"
 	"strconv"
 	"strings"
 	"time"
+
+	"lib/telemetry"
+	"payssage/contracts"
+	"payssage/internal/shared/ports"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"

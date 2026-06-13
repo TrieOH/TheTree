@@ -5,12 +5,12 @@ import (
 	"log"
 	"net/http"
 	"time"
+
 	"univents/internal/platform/telemetry"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
@@ -18,6 +18,8 @@ import (
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"sdk/payssage"
 )
 
 type Handler struct {

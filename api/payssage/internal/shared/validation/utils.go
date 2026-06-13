@@ -6,9 +6,10 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"payssage/internal/shared/errx"
 	"strconv"
 	"strings"
+
+	"payssage/internal/shared/errx"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"

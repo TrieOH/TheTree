@@ -1,17 +1,18 @@
 package auth
 
 import (
+	"context"
+	"errors"
+	"strings"
+	"time"
+
 	"IdentityX/contracts"
 	"IdentityX/internal/shared/authz"
 	"IdentityX/internal/shared/feature_deps"
 	"IdentityX/internal/shared/ports"
 	"IdentityX/internal/shared/security"
-	"context"
-	"errors"
 	"lib/database"
 	"lib/errx"
-	"strings"
-	"time"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

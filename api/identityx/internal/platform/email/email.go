@@ -1,9 +1,6 @@
 package email
 
 import (
-	"IdentityX/internal/platform/email/renderer"
-	"IdentityX/internal/platform/email/senders"
-	"IdentityX/internal/shared/ports"
 	"embed"
 	"fmt"
 	"html/template"
@@ -11,6 +8,10 @@ import (
 	"log"
 	"path"
 	texttemplate "text/template"
+
+	"IdentityX/internal/platform/email/renderer"
+	"IdentityX/internal/platform/email/senders"
+	"IdentityX/internal/shared/ports"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

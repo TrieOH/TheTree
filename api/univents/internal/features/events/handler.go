@@ -3,6 +3,7 @@ package events
 import (
 	"encoding/json"
 	"net/http"
+
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/validation"
 

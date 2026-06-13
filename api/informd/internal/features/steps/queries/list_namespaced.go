@@ -1,8 +1,9 @@
 package queries
 
 import (
-	"Informd/models"
 	"context"
+
+	"Informd/models"
 	"lib/authz"
 
 	"github.com/MintzyG/fun"
