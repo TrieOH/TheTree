@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"context"
+
 	"IdentityX/contracts"
 	"IdentityX/internal/shared/ports"
-	"context"
 	"lib/database"
 	"lib/telemetry"
 

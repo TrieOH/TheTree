@@ -4,17 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"lib/database"
 	"log"
+
+	"lib/database"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 	"univents/internal/shared/validation"
 
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
+
+	"sdk/payssage"
 )
 
 type AsynqHandlers struct {

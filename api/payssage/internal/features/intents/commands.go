@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"payssage/internal/platform/database"
 	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/authz"
 	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/ports"
-	"strings"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"

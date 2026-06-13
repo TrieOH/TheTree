@@ -1,9 +1,10 @@
 package app
 
 import (
+	"time"
+
 	"lib/database"
 	"lib/errx"
-	"time"
 
 	"github.com/caarlos0/env/v11"
 )

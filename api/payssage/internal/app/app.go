@@ -2,16 +2,18 @@ package app
 
 import (
 	"context"
-	"lib/telemetry"
 	"time"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
+	"lib/telemetry"
+
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	idx "sdk/identityx"
 )
 
 type Payssage struct {

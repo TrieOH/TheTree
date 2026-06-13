@@ -8,12 +8,11 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
 	"univents/internal/platform/database"
 	"univents/internal/platform/telemetry"
 	"univents/internal/shared/errx"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
 	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
@@ -30,6 +29,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	idx "sdk/identityx"
+	"sdk/payssage"
 )
 
 type SimpleLogger struct{}

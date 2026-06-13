@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"net/http"
+
 	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/validation"

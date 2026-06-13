@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"lib/database"
 	"log"
 	"time"
+
+	"lib/database"
 	"univents/internal/platform/telemetry"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -22,6 +22,8 @@ import (
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"sdk/payssage"
 )
 
 type CommandService struct {

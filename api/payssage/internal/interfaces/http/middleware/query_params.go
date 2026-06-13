@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+
 	"payssage/internal/shared/errx"
 
 	"github.com/MintzyG/fun"

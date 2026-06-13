@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+
 	"univents/internal/platform/database"
 	"univents/internal/platform/database/sqlc"
 	"univents/internal/shared/contracts"

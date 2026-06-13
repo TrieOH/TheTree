@@ -3,6 +3,7 @@ package editions
 import (
 	"context"
 	"encoding/json"
+
 	"lib/database"
 	"univents/internal/platform/telemetry"
 	"univents/internal/shared/contracts"

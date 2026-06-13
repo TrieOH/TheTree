@@ -1,8 +1,9 @@
 package queries
 
 import (
-	"Informd/models"
 	"context"
+
+	"Informd/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"

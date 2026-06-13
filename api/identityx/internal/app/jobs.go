@@ -1,13 +1,14 @@
 package app
 
 import (
-	"IdentityX/internal/database/sqlc"
 	"context"
+	"log"
+	"time"
+
+	"IdentityX/internal/database/sqlc"
 	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
-	"log"
-	"time"
 
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"

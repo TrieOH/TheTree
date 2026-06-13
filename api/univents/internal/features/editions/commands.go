@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"lib/database"
 	"time"
+
+	"lib/database"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"

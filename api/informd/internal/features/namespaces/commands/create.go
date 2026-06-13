@@ -1,10 +1,11 @@
 package commands
 
 import (
-	"Informd/models"
 	"context"
-	"lib/authz"
 	"time"
+
+	"Informd/models"
+	"lib/authz"
 )
 
 func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, error) {

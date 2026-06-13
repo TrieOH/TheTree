@@ -2,10 +2,11 @@ package contracts
 
 import (
 	"encoding/json"
-	"payssage/internal/shared/errx"
-	"payssage/internal/shared/validation"
 	"strings"
 	"time"
+
+	"payssage/internal/shared/errx"
+	"payssage/internal/shared/validation"
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"

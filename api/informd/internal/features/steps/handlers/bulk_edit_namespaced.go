@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"net/http"
+
 	"Informd/models"
 	"lib/xslices"
-	"net/http"
 
 	"github.com/MintzyG/fun"
 )

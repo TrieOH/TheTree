@@ -3,17 +3,19 @@ package app
 import (
 	"context"
 	"time"
+
 	"univents/internal/platform/telemetry"
 	"univents/internal/shared/errx"
 
-	"git.trieoh.com/TrieOH/IdentityX-SDK-Go"
-	"git.trieoh.com/TrieOH/Payssage-SDK-Go"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
+
+	idx "sdk/identityx"
+	"sdk/payssage"
 )
 
 type Univents struct {
