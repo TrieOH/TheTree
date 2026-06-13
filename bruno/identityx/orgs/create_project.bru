@@ -1,0 +1,22 @@
+meta {
+  name: Create Project
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{identityx_url}}/organizations/{org_id}/projects
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "My Project",
+    "domain": null
+  }
+}

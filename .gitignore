@@ -52,3 +52,4 @@ forgejo-runner
 api/**/docs/
 !/docs/
 **/sqlc/
+.sock

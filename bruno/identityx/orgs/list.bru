@@ -1,0 +1,15 @@
+meta {
+  name: List
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{identityx_url}}/organizations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Add Project Member
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{identityx_url}}/organizations/{org_id}/projects/{project_id}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "actor_email": "dummy@email.com",
+    "role": "member"
+  }
+}
