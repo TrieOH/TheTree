@@ -2,12 +2,12 @@ package oauth
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel/trace"
@@ -33,8 +33,8 @@ func (repo *oauthStatesRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapOAuthStateFromDB(src *sqlc.OauthState) *contracts.OAuthState {
-	return &contracts.OAuthState{
+func mapOAuthStateFromDB(src *sqlc.OauthState) *models.OAuthState {
+	return &models.OAuthState{
 		State:            src.State,
 		WorkspaceID:      src.WorkspaceID,
 		Provider:         src.Provider,
@@ -47,7 +47,7 @@ func mapOAuthStateFromDB(src *sqlc.OauthState) *contracts.OAuthState {
 	}
 }
 
-func (repo *oauthStatesRepo) Create(ctx context.Context, state contracts.OAuthState) (*contracts.OAuthState, error) {
+func (repo *oauthStatesRepo) Create(ctx context.Context, state models.OAuthState) (*models.OAuthState, error) {
 	ctx, span := repo.tracer.Start(ctx, "OAuthStatesRepo.Create")
 	defer span.End()
 
@@ -68,7 +68,7 @@ func (repo *oauthStatesRepo) Create(ctx context.Context, state contracts.OAuthSt
 	return mapOAuthStateFromDB(&row), nil
 }
 
-func (repo *oauthStatesRepo) Get(ctx context.Context, state string) (*contracts.OAuthState, error) {
+func (repo *oauthStatesRepo) Get(ctx context.Context, state string) (*models.OAuthState, error) {
 	ctx, span := repo.tracer.Start(ctx, "OAuthStatesRepo.Get")
 	defer span.End()
 

@@ -3,21 +3,18 @@ package app
 import (
 	"log"
 	"net/http"
+	ports2 "payssage/ports"
 
 	"lib/database"
 	"lib/telemetry"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/features/api_keys"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
-	"payssage/internal/interfaces/http/middleware"
-	"payssage/internal/interfaces/http/router"
-	"payssage/internal/interfaces/http/system"
-	"payssage/internal/platform/database/sqlc"
 	"payssage/internal/platform/providers"
 	"payssage/internal/platform/queue"
-	"payssage/internal/shared/ports"
 
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -29,7 +26,7 @@ import (
 
 type runtime struct {
 	middlewares      middlewares
-	handlers         *router.HTTPDeps
+	handlers         *HTTPDeps
 	commands         commands
 	queries          queries
 	repos            repos
@@ -42,8 +39,8 @@ type runtime struct {
 }
 
 type paymentProviders struct {
-	oauth    map[string]ports.OAuthProvider
-	payments map[string]ports.PaymentAbstractionLayer
+	oauth    map[string]ports2.OAuthProvider
+	payments map[string]ports2.PaymentAbstractionLayer
 }
 
 type commands struct {
@@ -63,19 +60,19 @@ type queries struct {
 }
 
 type repos struct {
-	intentRepo              ports.IntentRepository
-	workspaceRepo           ports.WorkspaceRepo
-	apiKeysRepo             ports.ApiKeysRepo
-	endpointsRepo           ports.WebhookEndpointRepo
-	deliveriesRepo          ports.WebhookDeliveryRepo
-	eventsRepo              ports.WebhookEventRepo
-	oauthStatesRepo         ports.OAuthStateRepo
-	providerCredentialsRepo ports.ProviderCredentialRepo
-	marketplaceRepo         ports.MarketplaceConfigRepo
+	intentRepo              ports2.IntentRepository
+	workspaceRepo           ports2.WorkspaceRepo
+	apiKeysRepo             ports2.ApiKeysRepo
+	endpointsRepo           ports2.WebhookEndpointRepo
+	deliveriesRepo          ports2.WebhookDeliveryRepo
+	eventsRepo              ports2.WebhookEventRepo
+	oauthStatesRepo         ports2.OAuthStateRepo
+	providerCredentialsRepo ports2.ProviderCredentialRepo
+	marketplaceRepo         ports2.MarketplaceConfigRepo
 }
 
 type middlewares struct {
-	authMW *middleware.AuthMiddleware
+	authMW *AuthMiddleware
 }
 
 type asynqDeps struct {
@@ -99,14 +96,14 @@ func (app *Payssage) run() {
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.handlers = app.startHandlers(rt)
-	mux := router.CreateRouter(rt.handlers)
+	mux := CreateRouter(rt.handlers)
 	port := viper.GetString("port")
 	log.Printf("payssage listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func (app *Payssage) startHandlers(rt runtime) *router.HTTPDeps {
-	var handlers router.HTTPDeps
+func (app *Payssage) startHandlers(rt runtime) *HTTPDeps {
+	var handlers HTTPDeps
 	handlers.AsynqmonHandler = asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
 		RedisConnOpt: asynq.RedisClientOpt{
@@ -116,7 +113,6 @@ func (app *Payssage) startHandlers(rt runtime) *router.HTTPDeps {
 		},
 	})
 	handlers.AuthMiddleware = rt.middlewares.authMW
-	handlers.SystemHandler = system.NewHandler()
 	handlers.IntentsHandler = intents.NewHandler(rt.commands.intents, rt.queries.intents)
 	handlers.WorkspacesHandler = workspaces.NewHandler(rt.commands.workspaces, rt.queries.workspaces)
 	handlers.ApiKeysHandler = api_keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
@@ -159,11 +155,11 @@ func (app *Payssage) startPaymentProviders() paymentProviders {
 		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
 	}
 
-	pp.oauth = map[string]ports.OAuthProvider{
+	pp.oauth = map[string]ports2.OAuthProvider{
 		"mercadopago": mpProvider,
 	}
 
-	pp.payments = map[string]ports.PaymentAbstractionLayer{
+	pp.payments = map[string]ports2.PaymentAbstractionLayer{
 		"mercadopago": mpProvider,
 	}
 
@@ -186,7 +182,7 @@ func (app *Payssage) startRepos(rt runtime) repos {
 
 func (app *Payssage) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(app.ga, rt.repos.apiKeysRepo, rt.repos.workspaceRepo, rt.tracer)
+	mw.authMW = NewAuthMiddleware(app.ga, rt.repos.apiKeysRepo, rt.repos.workspaceRepo, rt.tracer)
 	return mw
 }
 

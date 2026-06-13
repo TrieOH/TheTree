@@ -1,4 +1,4 @@
-package router
+package app
 
 import (
 	"payssage/internal/features/api_keys"
@@ -6,14 +6,11 @@ import (
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
-	"payssage/internal/interfaces/http/middleware"
-	"payssage/internal/interfaces/http/system"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
-	registerSystemRoutes(r, deps.SystemHandler, deps.AuthMiddleware)
 	registerIntentsRoutes(r, deps.IntentsHandler, deps.AuthMiddleware)
 	registerWorkspacesRoutes(r, deps.WorkspacesHandler, deps.AuthMiddleware)
 	registerApiKeysRoutes(r, deps.ApiKeysHandler, deps.AuthMiddleware)
@@ -21,22 +18,10 @@ func registerRoutes(r *chi.Mux, deps *HTTPDeps) {
 	registerOAuthRoutes(r, deps.OauthHandler, deps.AuthMiddleware)
 }
 
-func registerSystemRoutes(
-	r *chi.Mux,
-	h *system.Handler,
-	authMW *middleware.AuthMiddleware,
-) {
-	r.Group(func(r chi.Router) {
-		r.Get("/health", h.Health)
-		r.With(authMW.Auth()).
-			Get("/protected/health", h.ProtectedHealth)
-	})
-}
-
 func registerWorkspacesRoutes(
 	r *chi.Mux,
 	h *workspaces.Handler,
-	authMW *middleware.AuthMiddleware,
+	authMW *AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
@@ -50,7 +35,7 @@ func registerWorkspacesRoutes(
 func registerApiKeysRoutes(
 	r *chi.Mux,
 	h *api_keys.Handler,
-	authMW *middleware.AuthMiddleware,
+	authMW *AuthMiddleware,
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.Auth())
@@ -63,7 +48,7 @@ func registerApiKeysRoutes(
 func registerIntentsRoutes(
 	r *chi.Mux,
 	h *intents.Handler,
-	authMW *middleware.AuthMiddleware,
+	authMW *AuthMiddleware,
 ) {
 	r.With(authMW.AnyAuth()).Get("/intents", h.List)
 	r.With(authMW.AnyAuth()).Get("/workspaces/{name}/intents", h.ListByWorkspace)
@@ -80,7 +65,7 @@ func registerIntentsRoutes(
 func registerWebhookRoutes(
 	r *chi.Mux,
 	h *webhooks.Handler,
-	authMW *middleware.AuthMiddleware,
+	authMW *AuthMiddleware,
 ) {
 	// inbound from providers — no auth, verified by signature
 	r.Post("/webhooks/{provider}", h.HandleProviderWebhook)
@@ -97,7 +82,7 @@ func registerWebhookRoutes(
 func registerOAuthRoutes(
 	r *chi.Mux,
 	h *oauth.Handler,
-	authMW *middleware.AuthMiddleware,
+	authMW *AuthMiddleware,
 ) {
 	// callback from provider — no auth, browser redirect
 	r.Get("/oauth/{provider}/callback", h.CompleteOAuth)

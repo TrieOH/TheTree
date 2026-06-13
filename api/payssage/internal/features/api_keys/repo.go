@@ -2,12 +2,12 @@ package api_keys
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -38,8 +38,8 @@ func (repo *apiKeyRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapApiKeyFromDB(src *sqlc.ApiKey) *contracts.APIKey {
-	return &contracts.APIKey{
+func mapApiKeyFromDB(src *sqlc.ApiKey) *models.APIKey {
+	return &models.APIKey{
 		ID:          src.ID,
 		ScopeID:     src.ScopeID,
 		WorkspaceID: src.WorkspaceID,
@@ -51,7 +51,7 @@ func mapApiKeyFromDB(src *sqlc.ApiKey) *contracts.APIKey {
 	}
 }
 
-func (repo *apiKeyRepo) Create(ctx context.Context, toCreate contracts.APIKey) (*contracts.APIKey, error) {
+func (repo *apiKeyRepo) Create(ctx context.Context, toCreate models.APIKey) (*models.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Create")
 	defer span.End()
 
@@ -70,7 +70,7 @@ func (repo *apiKeyRepo) Create(ctx context.Context, toCreate contracts.APIKey) (
 	return mapApiKeyFromDB(&sqlcApiKey), nil
 }
 
-func (repo *apiKeyRepo) GetByPrefix(ctx context.Context, prefix string) ([]contracts.APIKey, error) {
+func (repo *apiKeyRepo) GetByPrefix(ctx context.Context, prefix string) ([]models.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.GetByPrefix")
 	defer span.End()
 
@@ -79,14 +79,14 @@ func (repo *apiKeyRepo) GetByPrefix(ctx context.Context, prefix string) ([]contr
 		return nil, errx.FromDB(err, "api key")
 	}
 
-	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
+	out := make([]models.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
 		out = append(out, *mapApiKeyFromDB(&key))
 	}
 	return out, nil
 }
 
-func (repo *apiKeyRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]contracts.APIKey, error) {
+func (repo *apiKeyRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]models.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.ListByWorkspace")
 	defer span.End()
 
@@ -95,14 +95,14 @@ func (repo *apiKeyRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UU
 		return nil, errx.FromDB(err, "api key")
 	}
 
-	out := make([]contracts.APIKey, 0, len(sqlcApiKeys))
+	out := make([]models.APIKey, 0, len(sqlcApiKeys))
 	for _, key := range sqlcApiKeys {
 		out = append(out, *mapApiKeyFromDB(&key))
 	}
 	return out, nil
 }
 
-func (repo *apiKeyRepo) Revoke(ctx context.Context, id, workspaceID uuid.UUID) (*contracts.APIKey, error) {
+func (repo *apiKeyRepo) Revoke(ctx context.Context, id, workspaceID uuid.UUID) (*models.APIKey, error) {
 	ctx, span := repo.tracer.Start(ctx, "ApiKeyRepo.Revoke")
 	defer span.End()
 

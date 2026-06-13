@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "payssage/docs"
+	_ "payssage/generated/docs"
 	"payssage/internal/app"
 )
 

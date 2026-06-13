@@ -6,7 +6,7 @@ import (
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/validation"
 
-	_ "payssage/internal/shared/contracts"
+	_ "payssage/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -40,10 +40,10 @@ type CreateWorkspaceRequest struct {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param request body CreateWorkspaceRequest true "Workspace details"
-// @Success 201 {object} contracts.Workspace "Workspace created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 201 {object} models.Workspace "Workspace created successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateWorkspaceRequest
@@ -69,10 +69,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {object} contracts.Workspace "Sandbox disabled"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Workspace "Sandbox disabled"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/sandbox/disable [post]
 func (h *Handler) DisableSandbox(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
@@ -98,10 +98,10 @@ func (h *Handler) DisableSandbox(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {object} contracts.Workspace "Sandbox enabled"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Workspace "Sandbox enabled"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/sandbox/enable [post]
 func (h *Handler) EnableSandbox(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
@@ -127,9 +127,9 @@ func (h *Handler) EnableSandbox(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
-// @Success 200 {array} contracts.Workspace "Workspaces retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.Workspace "Workspaces retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	workspaces, err := h.queries.List(r.Context())

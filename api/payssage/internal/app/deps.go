@@ -15,7 +15,6 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,24 +38,22 @@ func SetupFUN() {
 	})
 }
 
-func SetupDB(migrationPath, dsn string) *pgxpool.Pool {
-	var err error
-	db, err := database.WaitForDB(30*time.Second, dsn)
-	if err != nil {
-		log.Fatalf("Failed to connect DB: %v", err)
+func SetupDB() *pgxpool.Pool {
+	cfg := database.Config{
+		Host:          viper.GetString("PAYSSAGE_POSTGRES_HOST"),
+		Port:          viper.GetString("PAYSSAGE_POSTGRES_PORT"),
+		DB:            viper.GetString("PAYSSAGE_POSTGRES_DB"),
+		User:          viper.GetString("PAYSSAGE_POSTGRES_USER"),
+		Password:      viper.GetString("PAYSSAGE_POSTGRES_PASSWORD"),
+		SSLMode:       "disable",
+		RootUser:      viper.GetString("POSTGRES_USER"),
+		RootPassword:  viper.GetString("POSTGRES_PASSWORD"),
+		RootDB:        viper.GetString("POSTGRES_DB"),
+		RootHost:      "postgres",
+		RootPort:      "5432",
+		MigrationPath: "./internal/platform/database/migrations",
 	}
-	if err = database.RunMigrations(db, migrationPath); err != nil {
-		log.Fatalf("Failed migrations: %v", err)
-	}
-	return db
-}
-
-func SetupRedis(timeout time.Duration, addr, pass string, db int) *redis.Client {
-	rdb, err := database.WaitForRedis(timeout, addr, pass, db)
-	if err != nil {
-		log.Fatalf("Failed to connect Redis: %v", err)
-	}
-	return rdb
+	return database.SetupDB(cfg)
 }
 
 func SetupCron(db *pgxpool.Pool) gocron.Scheduler {

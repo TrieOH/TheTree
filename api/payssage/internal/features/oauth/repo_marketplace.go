@@ -2,12 +2,12 @@ package oauth
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -34,8 +34,8 @@ func (repo *marketplaceConfigRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapMarketplaceConfigFromDB(src *sqlc.MarketplaceConfig) *contracts.MarketplaceConfig {
-	return &contracts.MarketplaceConfig{
+func mapMarketplaceConfigFromDB(src *sqlc.MarketplaceConfig) *models.MarketplaceConfig {
+	return &models.MarketplaceConfig{
 		ID:           src.ID,
 		WorkspaceID:  src.WorkspaceID,
 		CredentialID: src.CredentialID,
@@ -46,7 +46,7 @@ func mapMarketplaceConfigFromDB(src *sqlc.MarketplaceConfig) *contracts.Marketpl
 	}
 }
 
-func (repo *marketplaceConfigRepo) Create(ctx context.Context, config contracts.MarketplaceConfig) (*contracts.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) Create(ctx context.Context, config models.MarketplaceConfig) (*models.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Create")
 	defer span.End()
 
@@ -63,7 +63,7 @@ func (repo *marketplaceConfigRepo) Create(ctx context.Context, config contracts.
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
-func (repo *marketplaceConfigRepo) List(ctx context.Context, workspaceID uuid.UUID) ([]contracts.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) List(ctx context.Context, workspaceID uuid.UUID) ([]models.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.List")
 	defer span.End()
 
@@ -72,14 +72,14 @@ func (repo *marketplaceConfigRepo) List(ctx context.Context, workspaceID uuid.UU
 		return nil, errx.FromDB(err, "marketplace_config")
 	}
 
-	configs := make([]contracts.MarketplaceConfig, len(rows))
+	configs := make([]models.MarketplaceConfig, len(rows))
 	for i := range rows {
 		configs[i] = *mapMarketplaceConfigFromDB(&rows[i])
 	}
 	return configs, nil
 }
 
-func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID, credentialID uuid.UUID) (*contracts.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID, credentialID uuid.UUID) (*models.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Get")
 	defer span.End()
 
@@ -94,7 +94,7 @@ func (repo *marketplaceConfigRepo) Get(ctx context.Context, workspaceID, credent
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
-func (repo *marketplaceConfigRepo) GetByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*contracts.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) GetByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*models.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.GetByProvider")
 	defer span.End()
 
@@ -109,7 +109,7 @@ func (repo *marketplaceConfigRepo) GetByProvider(ctx context.Context, workspaceI
 	return mapMarketplaceConfigFromDB(&row), nil
 }
 
-func (repo *marketplaceConfigRepo) Update(ctx context.Context, config contracts.MarketplaceConfig) (*contracts.MarketplaceConfig, error) {
+func (repo *marketplaceConfigRepo) Update(ctx context.Context, config models.MarketplaceConfig) (*models.MarketplaceConfig, error) {
 	ctx, span := repo.tracer.Start(ctx, "MarketplaceConfigRepo.Update")
 	defer span.End()
 

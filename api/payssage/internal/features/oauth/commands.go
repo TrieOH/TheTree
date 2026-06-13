@@ -5,15 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"lib/authz"
 	"net/url"
+	"payssage/ports"
 	"time"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/telemetry"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -80,7 +80,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 		return "", errx.Internal("oauth").SetMessage(fmt.Sprintf("failed to exchange code: %s", err.Error()))
 	}
 
-	cred, err := uc.credentials.Create(ctx, contracts.ProviderCredential{
+	cred, err := uc.credentials.Create(ctx, models.ProviderCredential{
 		WorkspaceID: oauthState.WorkspaceID,
 		Provider:    provider,
 		Credentials: credData,
@@ -113,7 +113,7 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	)
 
 	// if setup flow + marketplace, auto-create marketplace config
-	if oauthState.Flow == contracts.OAuthFlowSetup && oauthState.IsMarketplace {
+	if oauthState.Flow == models.OAuthFlowSetup && oauthState.IsMarketplace {
 		existing, err := uc.marketplace.Get(ctx, oauthState.WorkspaceID, cred.ID)
 		if err != nil && !errx.IsKind(err, "not_found") {
 			return "", err
@@ -122,13 +122,13 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 			if provider != existing.Provider {
 				return "", errx.Invalid("marketplace_config").SetMessage("cannot change provider of a config through OAuth")
 			}
-			_, err = uc.marketplace.Update(ctx, contracts.MarketplaceConfig{
+			_, err = uc.marketplace.Update(ctx, models.MarketplaceConfig{
 				WorkspaceID:  oauthState.WorkspaceID,
 				CredentialID: cred.ID,
 				FeeBps:       oauthState.FeeBps,
 			})
 		} else {
-			_, err = uc.marketplace.Create(ctx, contracts.MarketplaceConfig{
+			_, err = uc.marketplace.Create(ctx, models.MarketplaceConfig{
 				WorkspaceID:  oauthState.WorkspaceID,
 				Provider:     provider,
 				CredentialID: cred.ID,
@@ -143,9 +143,9 @@ func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToke
 	_ = uc.oauthStates.Delete(ctx, stateToken)
 
 	switch oauthState.Flow {
-	case contracts.OAuthFlowSetup:
+	case models.OAuthFlowSetup:
 		return fmt.Sprintf("%s&provider=%s&status=success", FinalRedirectURL, provider), nil
-	case contracts.OAuthFlowConnect:
+	case models.OAuthFlowConnect:
 		return fmt.Sprintf("%s&credential_id=%s&provider=%s&public_key=%s", FinalRedirectURL, cred.ID, provider, cred.Credentials.PublicKey), nil
 	default:
 		return FinalRedirectURL, nil
@@ -183,11 +183,11 @@ func (uc *CommandService) ConnectSeller(ctx context.Context, req ConnectSellerIn
 		return "", "", errx.Internal("oauth_state").SetCause(err)
 	}
 
-	_, err = uc.oauthStates.Create(ctx, contracts.OAuthState{
+	_, err = uc.oauthStates.Create(ctx, models.OAuthState{
 		State:            stateToken,
 		WorkspaceID:      workspace.ID,
 		Provider:         req.Provider,
-		Flow:             contracts.OAuthFlowConnect,
+		Flow:             models.OAuthFlowConnect,
 		IsMarketplace:    false,
 		FeeBps:           0,
 		FinalRedirectURL: req.FinalRedirectURL,
@@ -233,7 +233,7 @@ func (uc *CommandService) DeleteMarketplaceConfig(ctx context.Context, workspace
 	return uc.marketplace.Delete(ctx, workspace.ID, credentialID)
 }
 
-func (uc *CommandService) DisconnectCredential(ctx context.Context, credentialID uuid.UUID) (*contracts.ProviderCredential, error) {
+func (uc *CommandService) DisconnectCredential(ctx context.Context, credentialID uuid.UUID) (*models.ProviderCredential, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.DisconnectCredential")
 	defer span.End()
 
@@ -245,7 +245,7 @@ func (uc *CommandService) DisconnectCredential(ctx context.Context, credentialID
 	return uc.credentials.Revoke(ctx, credentialID, workspace.ID)
 }
 
-func (uc *CommandService) RevokeCredential(ctx context.Context, workspaceName string, credentialID uuid.UUID) (*contracts.ProviderCredential, error) {
+func (uc *CommandService) RevokeCredential(ctx context.Context, workspaceName string, credentialID uuid.UUID) (*models.ProviderCredential, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.RevokeCredential")
 	defer span.End()
 
@@ -276,7 +276,7 @@ type SetMarketplaceConfigInput struct {
 	FeeBps        int
 }
 
-func (uc *CommandService) SetMarketplaceConfig(ctx context.Context, req SetMarketplaceConfigInput) (*contracts.MarketplaceConfig, error) {
+func (uc *CommandService) SetMarketplaceConfig(ctx context.Context, req SetMarketplaceConfigInput) (*models.MarketplaceConfig, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.SetMarketplaceConfig")
 	defer span.End()
 
@@ -305,14 +305,14 @@ func (uc *CommandService) SetMarketplaceConfig(ctx context.Context, req SetMarke
 	}
 
 	if existing != nil {
-		return uc.marketplace.Update(ctx, contracts.MarketplaceConfig{
+		return uc.marketplace.Update(ctx, models.MarketplaceConfig{
 			WorkspaceID:  workspace.ID,
 			CredentialID: req.CredentialID,
 			FeeBps:       req.FeeBps,
 		})
 	}
 
-	return uc.marketplace.Create(ctx, contracts.MarketplaceConfig{
+	return uc.marketplace.Create(ctx, models.MarketplaceConfig{
 		WorkspaceID:  workspace.ID,
 		CredentialID: req.CredentialID,
 		FeeBps:       req.FeeBps,
@@ -351,11 +351,11 @@ func (uc *CommandService) SetupProvider(ctx context.Context, req SetupProviderIn
 		return "", "", errx.Internal("oauth_state").SetCause(err)
 	}
 
-	_, err = uc.oauthStates.Create(ctx, contracts.OAuthState{
+	_, err = uc.oauthStates.Create(ctx, models.OAuthState{
 		State:            stateToken,
 		WorkspaceID:      workspace.ID,
 		Provider:         req.Provider,
-		Flow:             contracts.OAuthFlowSetup,
+		Flow:             models.OAuthFlowSetup,
 		IsMarketplace:    req.IsMarketplace,
 		FeeBps:           req.FeeBps,
 		FinalRedirectURL: req.FinalRedirectURL,

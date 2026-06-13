@@ -1,4 +1,4 @@
-package contracts
+package models
 
 type ErrorResponse struct {
 	Code    int    `json:"code"`

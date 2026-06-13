@@ -196,47 +196,6 @@ func FromDB(err error, resource string) Error {
 	}
 }
 
-/*
-=== Specific helpers (optional but nice ergonomics)
-You can use these if you already KNOW the context.
-*/
-
-func UniqueViolation(resource, constraint string, err error) Error {
-	return Conflict(resource).
-		SetConstraint(constraint).
-		SetCause(err)
-}
-
-func ForeignKeyViolation(resource, constraint string, err error) Error {
-	return Invalid(resource).
-		SetConstraint(constraint).
-		SetCause(err)
-}
-
-func ViolationError(resource, constraint string, err error) Error {
-	return Violation(resource).
-		SetConstraint(constraint).
-		SetCause(err)
-}
-
-func CheckViolation(resource, constraint string, err error) Error {
-	return Invalid(resource).
-		SetConstraint(constraint).
-		SetCause(err)
-}
-
-/*
-=== Helpers ===
-*/
-
-func As(err error) (Error, bool) {
-	var appErr Error
-	if errors.As(err, &appErr) {
-		return appErr, true
-	}
-	return Error{}, false
-}
-
 func IsKind(err error, kind string) bool {
 	var appErr Error
 	if errors.As(err, &appErr) {

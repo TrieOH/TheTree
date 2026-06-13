@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"payssage/internal/features/webhooks"
-	"payssage/internal/shared/contracts"
+	"payssage/models"
 
 	"github.com/hibiken/asynq"
 	"github.com/spf13/viper"
@@ -41,7 +41,7 @@ func InitAsynq(deps Deps) (*asynq.Server, *asynq.Client, *asynq.Scheduler, *asyn
 
 	// Setup handlers
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(contracts.TypeDeliverWebhook, deps.WebhookAsynq.HandleDeliverWebhook)
+	mux.HandleFunc(models.TypeDeliverWebhook, deps.WebhookAsynq.HandleDeliverWebhook)
 
 	// Run server in background
 	go func() {

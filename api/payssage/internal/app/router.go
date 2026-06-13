@@ -1,6 +1,4 @@
-//go:build !test
-
-package router
+package app
 
 import (
 	"log"
@@ -13,10 +11,6 @@ import (
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
-	"payssage/internal/interfaces/http/middleware"
-	"payssage/internal/interfaces/http/system"
-
-	_ "payssage/internal/shared/contracts"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -29,13 +23,12 @@ import (
 )
 
 type HTTPDeps struct {
-	SystemHandler     *system.Handler
 	IntentsHandler    *intents.Handler
 	WorkspacesHandler *workspaces.Handler
 	ApiKeysHandler    *api_keys.Handler
 	WebhooksHandler   *webhooks.Handler
 	OauthHandler      *oauth.Handler
-	AuthMiddleware    *middleware.AuthMiddleware
+	AuthMiddleware    *AuthMiddleware
 	AsynqmonHandler   http.Handler
 }
 
@@ -66,13 +59,13 @@ type HTTPDeps struct {
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
-// @response 400 {object} contracts.ErrorResponse "Standard error response for bad requests"
-// @response 401 {object} contracts.ErrorResponse "Standard error response for unauthorized requests"
-// @response 403 {object} contracts.ErrorResponse "Standard error response for forbidden requests"
-// @response 404 {object} contracts.ErrorResponse "Standard error response for not found errors"
-// @response 413 {object} contracts.ErrorResponse "Standard error response for payload too large 1MB"
-// @response 429 {object} contracts.ErrorResponse "Standard error response for too many requests"
-// @response 500 {object} contracts.ErrorResponse "Standard error response for internal server errors"
+// @response 400 {object} fun.Response "Standard error response for bad requests"
+// @response 401 {object} fun.Response "Standard error response for unauthorized requests"
+// @response 403 {object} fun.Response "Standard error response for forbidden requests"
+// @response 404 {object} fun.Response "Standard error response for not found errors"
+// @response 413 {object} fun.Response "Standard error response for payload too large 1MB"
+// @response 429 {object} fun.Response "Standard error response for too many requests"
+// @response 500 {object} fun.Response "Standard error response for internal server errors"
 // @securityDefinitions.apikey Cookie
 // @in header
 // @name Cookie
@@ -91,16 +84,9 @@ func CreateRouter(deps *HTTPDeps) http.Handler {
 		))
 	}
 
-	r.Use(middleware.MaxBodySize(1 << 20)) // 1 MB
-
 	r.Use(cors.Handler(GetCORSOptions()))
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.Logs)
-	r.Use(middleware.Metrics)
-
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-	r.Handle("/metrics", middleware.Handler())
 
 	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 

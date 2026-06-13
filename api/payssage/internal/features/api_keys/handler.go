@@ -3,10 +3,8 @@ package api_keys
 import (
 	"net/http"
 
-	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/validation"
-
-	_ "payssage/internal/shared/contracts"
+	"payssage/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -32,7 +30,7 @@ type CreateAPIKeyRequest struct {
 }
 
 type CreateAPIKeyResponse struct {
-	ApiKey *contracts.APIKey
+	ApiKey *models.APIKey
 	Key    string `json:"key"` // only returned once
 }
 
@@ -47,10 +45,10 @@ type CreateAPIKeyResponse struct {
 // @Param name path string true "Workspace name"
 // @Param request body CreateAPIKeyRequest true "API key details"
 // @Success 201 {object} CreateAPIKeyResponse "API key created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/keys [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -82,10 +80,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {array} contracts.APIKey "API keys retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.APIKey "API keys retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/keys [get]
 func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -110,10 +108,10 @@ func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 // @Param name path string true "Workspace name"
 // @Param id path string true "API key ID"
 // @Success 200 {object} object "Key revoked"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/keys/{id} [delete]
 func (h *Handler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
