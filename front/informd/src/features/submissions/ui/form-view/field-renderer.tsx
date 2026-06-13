@@ -1,5 +1,6 @@
 import type { OptionI } from "#/features/fields/model";
 import { cn } from "#/shared/lib/utils";
+import { formatPhoneMask } from "#/shared/lib/helpers/mask";
 import type { FieldAnswerable } from "@trieoh/informd-models";
 import {
   Type,
@@ -229,6 +230,52 @@ export function FieldRenderer({ field, value, error, onChange }: FieldRendererPr
   };
 
   const renderTextInput = () => {
+    const fieldType = field.field.type;
+
+    // --- Phone: masked input ---
+    if (fieldType === "phone") {
+      return (
+        <div className="relative group w-full">
+          <input
+            type="tel"
+            placeholder={placeholder || "(dd) dddd-dddd"}
+            value={currentValue ? formatPhoneMask(String(currentValue)) : ""}
+            onChange={(e) => onChange(field.field.id, formatPhoneMask(e.target.value))}
+            className={cn(
+              "h-10 w-full rounded-md border bg-card px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/5 focus:shadow-sm",
+              error ? "border-destructive bg-destructive/5" : "border-border group-hover:border-border/80"
+            )}
+          />
+        </div>
+      );
+    }
+
+    // --- URL: https:// prefix badge ---
+    if (fieldType === "url") {
+      const rawValue = currentValue ? String(currentValue) : "";
+      const stored = rawValue.startsWith("https://") ? rawValue.slice(8) : rawValue;
+
+      return (
+        <div className="flex w-full rounded-md border border-border has-focus-within:border-primary has-focus-within:ring-2 has-focus-within:ring-primary/5 transition-all group hover:border-border/80">
+          <span className="inline-flex items-center px-3 text-xs font-medium text-muted-foreground bg-muted/50 border-r border-border rounded-l-md select-none whitespace-nowrap">
+            https://
+          </span>
+          <input
+            type="text"
+            placeholder="example.com"
+            value={stored}
+            onChange={(e) => {
+              const typed = e.target.value;
+              const clean = typed.replace(/^https?:\/\//i, "");
+              onChange(field.field.id, clean ? `https://${clean}` : undefined);
+            }}
+            className="h-10 w-full min-w-0 bg-card px-3 text-sm text-foreground outline-none rounded-r-md"
+          />
+        </div>
+      );
+    }
+
+    // --- Standard text input ---
     let inputValue = String(currentValue);
 
     // Normalize date values for standard HTML inputs

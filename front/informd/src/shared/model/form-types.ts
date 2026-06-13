@@ -8,5 +8,10 @@ export interface FieldDefinition<T> {
   max?: number;
   rows?: number;
   disabled?: boolean;
-  dependsOn?: { field: keyof T; value: unknown };
+  required?: boolean;
+  dependsOn?: {
+    field: keyof T;
+    /** Single value or array of accepted values. When the watched field matches, the field is shown. */
+    value: unknown | unknown[];
+  };
 }

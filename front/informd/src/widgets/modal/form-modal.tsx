@@ -24,6 +24,7 @@ import type {
   Path,
   SubmitHandler,
 } from "react-hook-form";
+import { formatPhoneMask } from "#/shared/lib/helpers/mask";
 
 /** Safely access nested error objects for dot-notation paths like "select_config.behaviour". */
 function getNestedError(errors: Record<string, unknown>, path: string) {
@@ -197,6 +198,171 @@ export default function FormModal<T extends FieldValues>({
       );
     }
 
+    // Special case: default_value renders differently depending on the selected field type
+    if (fieldName === "default_value" as unknown as Path<T>) {
+      const currentType = (watchedValues as Record<string, unknown>)["type"];
+
+      // "select" type → dropdown with options from select_config.options
+      if (currentType === "select") {
+        const selectConfig = (watchedValues as Record<string, unknown>)["select_config"] as Record<string, unknown> | undefined;
+        const rawOptions = selectConfig?.["options"] as string | undefined;
+        const parsedOptions = (rawOptions ?? "")
+          .split("\n")
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <Select
+                onValueChange={(val) => onChange(val === "__none__" ? undefined : val)}
+                value={value ?? "__none__"}
+              >
+                <SelectTrigger
+                  id={fieldName}
+                  className={cn(
+                    "rounded-sm border-border w-full",
+                    error && "border-destructive"
+                  )}
+                >
+                  <SelectValue placeholder="Select a default value…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {parsedOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        );
+      }
+
+      // "date" type → native date picker
+      if (currentType === "date") {
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                type="date"
+                value={value ?? ""}
+                onChange={(e) => onChange(e.target.value || undefined)}
+                className={cn(
+                  "rounded-md border-border",
+                  error && "border-destructive"
+                )}
+              />
+            )}
+          />
+        );
+      }
+
+      // "time" type → native time picker
+      if (currentType === "time") {
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                type="time"
+                value={value ?? ""}
+                onChange={(e) => onChange(e.target.value || undefined)}
+                className={cn(
+                  "rounded-md border-border",
+                  error && "border-destructive"
+                )}
+              />
+            )}
+          />
+        );
+      }
+
+      // "datetime" type → native datetime-local picker
+      if (currentType === "datetime") {
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                type="datetime-local"
+                value={value ?? ""}
+                onChange={(e) => onChange(e.target.value || undefined)}
+                className={cn(
+                  "rounded-md border-border",
+                  error && "border-destructive"
+                )}
+              />
+            )}
+          />
+        );
+      }
+
+      // "phone" type → masked input (dd) dddd-dddd
+      if (currentType === "phone") {
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <Input
+                type="text"
+                placeholder="(dd) dddd-dddd"
+                value={value ?? ""}
+                onChange={(e) => onChange(formatPhoneMask(e.target.value))}
+                className={cn(
+                  "rounded-md border-border",
+                  error && "border-destructive"
+                )}
+              />
+            )}
+          />
+        );
+      }
+
+      // "url" type → input with a fixed https:// prefix badge
+      if (currentType === "url") {
+        return (
+          <Controller
+            name={fieldName}
+            control={control}
+            render={({ field: { onChange, value } }) => {
+              const rawValue = value ?? "";
+              const stored = rawValue.startsWith("https://") ? rawValue.slice(8) : rawValue;
+
+              return (
+                <div className="flex rounded-md border-border border has-focus-within:border-ring has-focus-within:ring-3 has-focus-within:ring-ring/50 transition-[color,box-shadow]">
+                  <span className="inline-flex items-center px-2.5 text-xs font-medium text-muted-foreground bg-muted/50 border-r border-border rounded-l-md select-none whitespace-nowrap">
+                    https://
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="example.com"
+                    value={stored}
+                    onChange={(e) => {
+                      const typed = e.target.value;
+                      // Strip any https:// the user may have typed/pasted so we don't double up
+                      const clean = typed.replace(/^https?:\/\//i, "");
+                      onChange(clean ? `https://${clean}` : undefined);
+                    }}
+                    className="h-9 w-full min-w-0 bg-transparent px-2.5 py-1 text-base outline-none md:text-sm"
+                  />
+                </div>
+              );
+            }}
+          />
+        );
+      }
+    }
+
     return (
       <Input
         id={fieldName}
@@ -231,8 +397,10 @@ export default function FormModal<T extends FieldValues>({
             // Skip field if its dependency is not met
             if (field.dependsOn) {
               const depValue = (watchedValues)[field.dependsOn.field as string];
-              const isMet = depValue === field.dependsOn.value
-                || String(depValue) === String(field.dependsOn.value);
+              const accepted = Array.isArray(field.dependsOn.value)
+                ? field.dependsOn.value
+                : [field.dependsOn.value];
+              const isMet = accepted.some(v => depValue === v || String(depValue) === String(v));
               if (!isMet) return null;
             }
 
@@ -248,6 +416,11 @@ export default function FormModal<T extends FieldValues>({
                     className="text-xs font-semibold text-muted-foreground"
                   >
                     {field.label}
+                    {field.required === false ? (
+                      <span className="ml-1.5 font-normal text-muted-foreground/60">(optional)</span>
+                    ) : (
+                      <span className="ml-1 text-destructive">*</span>
+                    )}
                   </Label>
                 )}
                 {renderField(field)}
