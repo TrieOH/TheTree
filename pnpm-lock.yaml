@@ -127,8 +127,8 @@ importers:
         specifier: ^0.9.3
         version: 0.9.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/identityx-sdk-ts':
-        specifier: ^0.12.0
-        version: 0.12.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: ^0.12.6
+        version: 0.12.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -854,6 +854,8 @@ importers:
       wrangler:
         specifier: ^4.73.0
         version: 4.97.0
+
+  lib/ts/identityx: {}
 
   lib/ts/informd: {}
 
