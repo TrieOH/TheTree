@@ -1,30 +1,41 @@
+@layer theme, base, components, utilities;
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
+/* SDK theme tokens — uses standard names with fallbacks to allow project overrides. */
 @theme {
-  --color-trieoh-primary: oklch(0.1139 0.0789 264.05);
-  --color-trieoh-secondary: oklch(0.7975 0.1018 262.7);
-  --color-trieoh-neutral1: oklch(0.9702 0 0);
-  --color-trieoh-neutral2: oklch(0.1944 0.0051 248.09);
+  --font-sans: var(--font-sans, "Inter", sans-serif);
 
-  --radius-trieoh-full: 50%;
+  /* Standard theme tokens with fallbacks.
+    Uses var(--variable, fallback) pattern common in Shadcn-like projects. */
+  --color-background: var(--background, oklch(0.9702 0 0));
+  --color-foreground: var(--foreground, oklch(0.1944 0.0051 248.09));
+  --color-primary: var(--primary, oklch(0.7975 0.1018 262.7));
+  --color-primary-foreground: var(--primary-foreground, oklch(0.9702 0 0));
+  --color-secondary: var(--secondary, oklch(0.1139 0.0789 264.05));
+  --color-secondary-foreground: var(--secondary-foreground, oklch(0.9702 0 0));
+  --color-muted: var(--muted, oklch(0.9569 0.0026 248.09));
+  --color-muted-foreground: var(--muted-foreground, oklch(0.5278 0 0));
+  --color-border: var(--border, oklch(0.869 0.0093 248.09));
+  --color-input: var(--input, oklch(0.9145 0.0062 248.09));
+  --color-destructive: var(--destructive, oklch(0.6373 0.1718 28.92));
+  --color-destructive-foreground: var(--destructive-foreground, oklch(0.9851 0 0));
+  --color-ring: var(--ring, oklch(0.7975 0.1018 262.7));
+  --color-accent: var(--accent, oklch(0.9326 0.0313 262.7));
+  --color-accent-foreground: var(--accent-foreground, oklch(0.1944 0.0051 248.09));
 
-  --font-size-trieoh-sm: 0.75rem;
-  --font-size-trieoh-base: 0.875rem;
-  --font-size-trieoh-xl: 1.25rem;
-  --font-size-trieoh-2xl: 1.5rem;
-  --font-size-trieoh-3xl: 1.875rem;
-  --font-size-trieoh-6xl: 3.75rem;
+  --radius-sm: calc(var(--radius, 0.625rem) - 4px);
+  --radius-md: calc(var(--radius, 0.625rem) - 2px);
+  --radius-lg: var(--radius, 0.625rem);
+  --radius-full: 9999px;
 
-  --font-inter: "Inter", sans-serif;
-
-  @keyframes trieoh-shine {
+  @keyframes shine {
     0% { left: -150%; }
     100% { left: 150%; }
   }
 }
 
-@utility trieoh-button-loading {
+@utility button-loading {
   &::after {
     content: "";
     position: absolute;
@@ -35,9 +46,9 @@
     background: linear-gradient(
       120deg,
       transparent 0%,
-      color-mix(in oklab, var(--trieoh-neutral2) 40%, white 15%) 40%,
+      color-mix(in oklab, var(--color-foreground) 40%, white 15%) 40%,
       transparent 80%
     );
-    animation: trieoh-shine 1.5s infinite;
+    animation: shine 1.5s infinite;
   }
 }

@@ -11,9 +11,22 @@ import { VerifyEmail } from "./VerifyEmail/VerifyEmail";
 import { ResendVerifyEmail } from "./VerifyEmail/ResendVerifyEmail";
 import BasicInputField from "./Form/BasicInputField"
 
+import { ModernSignIn } from "./Modern/ModernSignIn";
+import { ModernSignUp } from "./Modern/ModernSignUp";
+import { ModernForgotPassword } from "./Modern/ModernForgotPassword";
+import { ModernResetPassword } from "./Modern/ModernResetPassword";
+import { ModernVerifyEmail } from "./Modern/ModernVerifyEmail";
+import { ModernAuth } from "./Modern/ModernAuth";
+
 export {
   SignIn,
   SignUp,
+  ModernSignIn,
+  ModernSignUp,
+  ModernForgotPassword,
+  ModernResetPassword,
+  ModernVerifyEmail,
+  ModernAuth,
   BasicLogoutButton,
   Copyright,
   Sessions,
