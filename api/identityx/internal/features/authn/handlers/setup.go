@@ -37,7 +37,7 @@ func (h *Handlers) Setup(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	tokens, err := h.commands.Login(ctx, payload.ToInput())
+	tokens, err := h.commands.Login(ctx, payload.ToInput(nil))
 	if fun.Bail(w, err) {
 		return
 	}

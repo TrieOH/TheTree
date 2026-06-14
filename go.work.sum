@@ -315,6 +315,8 @@ github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lpr
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/MintzyG/fun v0.10.0/go.mod h1:SH0gOLG3uEQeIaYiZL5a01beiOqCRMsS+CAXz8PTLaY=
+github.com/MintzyG/fun/middlewares v0.1.3 h1:DPT8712BWbxcPn6PEzFzSP4sFQk6N2JLmUt2SuIBfEo=
+github.com/MintzyG/fun/middlewares v0.1.3/go.mod h1:l5qkpXCvcRBJgzqZze4S64WJPNOdvsxc73EPKOp6mRs=
 github.com/MirrexOne/unqueryvet v1.4.0 h1:6KAkqqW2KUnkl9Z0VuTphC3IXRPoFqEkJEtyxxHj5eQ=
 github.com/MirrexOne/unqueryvet v1.4.0/go.mod h1:IWwCwMQlSWjAIteW0t+28Q5vouyktfujzYznSIWiuOg=
 github.com/OpenPeeDeeP/depguard/v2 v2.2.1 h1:vckeWVESWp6Qog7UZSARNqfu/cZqvki8zsuj3piCMx4=

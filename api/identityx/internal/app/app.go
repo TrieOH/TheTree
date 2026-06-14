@@ -12,17 +12,15 @@ import (
 	"lib/telemetry"
 	"time"
 
-	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 )
 
 type IdentityX struct {
-	db        *pgxpool.Pool
-	scheduler gocron.Scheduler
-	river     *river.Client[pgx.Tx]
-	cfg       Config
+	db    *pgxpool.Pool
+	river *river.Client[pgx.Tx]
+	cfg   Config
 }
 
 var app IdentityX
