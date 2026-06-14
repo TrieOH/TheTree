@@ -121,7 +121,7 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.authn = authn.NewCommands(r.actors, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, rt.logger, rt.tracer, rt.tx)
+	cmd.authn = authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, rt.logger, rt.tracer, rt.tx)
 	cmd.orgs = organizations.NewCommands(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewCommands(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	return cmd

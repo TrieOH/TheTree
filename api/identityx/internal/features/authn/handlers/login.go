@@ -7,6 +7,7 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	"github.com/MintzyG/fun/middlewares"
 )
 
 // Login godoc
@@ -16,6 +17,7 @@ import (
 // @ID authn_login
 // @Accept json
 // @Produce json
+// @Param project_id query uuid.UUID false "Project ID"
 // @Param request body models.IDXLoginRequest true "login details"
 // @Success 200 {object} fun.Response{data=models.UserTokensOutput}
 // @Failure 400 {object} fun.Response
@@ -29,11 +31,12 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := fun.From(r)
+	projectID := middlewares.QueryParams[models.ProjectIDQueryParam](r)
 	var payload models.IDXLoginRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}
-	tokens, err := h.commands.Login(r.Context(), payload.ToInput())
+	tokens, err := h.commands.Login(r.Context(), payload.ToInput(projectID.ProjectID))
 	if fun.Bail(w, err) {
 		return
 	}

@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"IdentityX/models"
 	"encoding/json"
 	"lib/globals"
 	"lib/telemetry"
 	"net/http"
 
 	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/middlewares"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +19,7 @@ import (
 // @ID authn_jwks
 // @Accept json
 // @Produce json
+// @Param project_id query uuid.UUID false "Project ID"
 // @Success 200 {object} object "JSON Web Key Set (JWKS)"
 // @Failure 500 {object} fun.Response "Internal Server Error"
 // @Failure 503 {object} fun.Response "Internal Server Error"
@@ -26,7 +29,8 @@ func (h *Handlers) JWKS(w http.ResponseWriter, r *http.Request) {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
 		return
 	}
-	jwks, err := h.queries.JWKS(r.Context())
+	projectID := middlewares.QueryParams[models.ProjectIDQueryParam](r)
+	jwks, err := h.queries.JWKS(r.Context(), projectID.ProjectID)
 	if fun.Bail(w, err) {
 		return
 	}
