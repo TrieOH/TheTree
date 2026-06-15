@@ -6,9 +6,7 @@ import {
 } from '@tanstack/react-router'
 import { AuthProvider, type useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
-import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
 import appCss from '../styles.css?url'
-import Header from '@/widgets/header/ui/Header'
 import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
 
@@ -38,10 +36,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
   shellComponent: RootDocument,
   notFoundComponent: () => { return (<p>This page doesn't exist!</p>) },
-  staticData: { components: RouteComponentTemplate }
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {    
+function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -51,8 +48,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
           <AuthSynchronizer>
             {/* <PHProvider> */}
-              <Header />
-              {children}
+            {children}
             {/* </PHProvider> */}
           </AuthSynchronizer>
         </AuthProvider>
@@ -61,10 +57,4 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
-}
-
-declare module '@tanstack/react-router' {
-  interface StaticDataRouteOption {
-    components: RouteStaticConfigI
-  }
 }

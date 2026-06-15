@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { ModernAuth } from '@trieoh/identityx-sdk-ts/react'
 import z from 'zod';
 import { requireGuest } from '@/features/auth/lib/route-guard';
@@ -11,11 +11,6 @@ const authSearchSchema = z.object({
 export const Route = createFileRoute('/auth/')({
   validateSearch: (search) => authSearchSchema.parse(search),
   beforeLoad: requireGuest,
-  staticData: {
-    components: {
-      header: "auth"
-    }
-  },
   component: RouteComponent,
 })
 
@@ -51,11 +46,19 @@ function RouteComponent() {
   }
 
   return (
-    <ModernAuth
-      initialView='signin'
-      onLoginSuccess={handleLoginSuccess}
-      onSignUpSuccess={handleSignUpSuccess}
-      onFailed={handleFailure}
-    />
+    <div className="relative min-h-screen bg-background">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 z-10 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← Back to Home
+      </Link>
+      <ModernAuth
+        initialView='signin'
+        onLoginSuccess={handleLoginSuccess}
+        onSignUpSuccess={handleSignUpSuccess}
+        onFailed={handleFailure}
+      />
+    </div>
   )
 }

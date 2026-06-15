@@ -12,11 +12,6 @@ import { useQuery } from '@tanstack/react-query';
 
 export const Route = createFileRoute('/projects/')({
   beforeLoad: requireAuth,
-  staticData: {
-    components: {
-      header: "projects"
-    }
-  },
   pendingComponent: ProjectsSkeleton,
   component: RouteComponent,
 })
@@ -26,18 +21,18 @@ function RouteComponent() {
 
   const hasProjects = projects && projects.length > 0
 
-  if(!hasProjects) return (
+  if (!hasProjects) return (
     <main className={cn(
       "flex justify-center items-center bg-background",
       "w-full h-(--screen--minus-header) px-4"
     )}>
-      <ProjectsEmptyState 
+      <ProjectsEmptyState
         onCreate={projectActions.openCreate}
       />
       <ProjectDialog />
     </main>
   )
-  
+
   return (
     <main className="w-full bg-background flex flex-col items-center my-4">
       <div className="text-center space-y-1 mb-7">

@@ -9,9 +9,4 @@ export const Route = createFileRoute('/projects/$projectId/')({
       },
     })
   },
-  staticData: {
-    components: {
-      header: "projects/config"
-    }
-  },
 })

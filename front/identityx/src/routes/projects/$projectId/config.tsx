@@ -11,18 +11,13 @@ import { useMemo } from 'react';
 
 export const Route = createFileRoute('/projects/$projectId/config')({
   beforeLoad: requireAuth,
-  loader: async ({ context: { queryClient }, params}) => {
-    if (typeof window === 'undefined') return { }
+  loader: async ({ context: { queryClient }, params }) => {
+    if (typeof window === 'undefined') return {}
     queryClient.prefetchQuery(usersQueryOptions(params.projectId || ""))
-    return { }
+    return {}
   },
   validateSearch: z.object({ tab: z.string().optional().default('users') }),
   component: RouteComponent,
-  staticData: {
-    components: {
-      header: "projects/config"
-    }
-  },
 })
 
 function RouteComponent() {
@@ -43,13 +38,13 @@ function RouteComponent() {
       value: 'api-keys',
       label: 'API Keys',
       icon: KeySquare,
-      content: <APIKeyManager publicKey={currentProjectId}/>
+      content: <APIKeyManager publicKey={currentProjectId} />
     },
   ], [currentProjectId, queryClient, users]);
 
   return (
     <main className='flex justify-center items-center h-(--screen--minus-header)'>
-      <CustomTabs items={items} initialValue={tab}/>
+      <CustomTabs items={items} initialValue={tab} />
     </main>
   );
 }
