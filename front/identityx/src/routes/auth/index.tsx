@@ -3,6 +3,8 @@ import { ModernAuth } from '@trieoh/identityx-sdk-ts/react'
 import z from 'zod';
 import { requireGuest } from '@/features/auth/lib/route-guard';
 import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
@@ -49,9 +51,12 @@ function RouteComponent() {
     <div className="relative min-h-screen bg-background">
       <Link
         to="/"
-        className="absolute top-4 left-4 z-10 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className={cn(
+          "absolute top-4 left-4 z-10 text-sm text-muted-foreground",
+          "hover:text-foreground transition-colors flex items-center gap-0.5"
+        )}
       >
-        ← Back to Home
+        <ArrowLeft size={20} /> Back to Home
       </Link>
       <ModernAuth
         initialView='signin'
