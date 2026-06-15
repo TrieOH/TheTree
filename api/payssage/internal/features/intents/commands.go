@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"lib/authz"
+	"payssage/ports"
 	"strings"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/telemetry"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"lib/telemetry"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -55,7 +55,7 @@ func NewCommandService(
 	}
 }
 
-func (uc *CommandService) CancelIntent(ctx context.Context, intentID uuid.UUID) (*contracts.Intent, error) {
+func (uc *CommandService) CancelIntent(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.CancelIntent")
 	defer span.End()
 
@@ -87,7 +87,7 @@ type CancelPixInput struct {
 	SellerCredentialID uuid.UUID
 }
 
-func (uc *CommandService) CancelPix(ctx context.Context, in CancelPixInput) (*contracts.Intent, error) {
+func (uc *CommandService) CancelPix(ctx context.Context, in CancelPixInput) (*models.Intent, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.CancelPix")
 	defer span.End()
 
@@ -141,7 +141,7 @@ func (uc *CommandService) CancelPix(ctx context.Context, in CancelPixInput) (*co
 	return created, nil
 }
 
-func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, sellerCredentialID uuid.UUID) (*contracts.Intent, error) {
+func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, sellerCredentialID uuid.UUID) (*models.Intent, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Charge")
 	defer span.End()
 
@@ -159,7 +159,7 @@ func (uc *CommandService) Charge(ctx context.Context, intentID uuid.UUID, seller
 		return nil, errx.Forbidden("intent").SetMessage("intent doesn't belong to this workspace")
 	}
 
-	if intent.Status != contracts.IntentStatusPending {
+	if intent.Status != models.IntentStatusPending {
 		return nil, errx.Invalid("intent").SetMessage("intent is not in a payable state")
 	}
 
@@ -210,7 +210,7 @@ type CreateIntentInput struct {
 	IdentificationType   string
 }
 
-func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentInput) (*contracts.Intent, error) {
+func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentInput) (*models.Intent, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.InitiateCheckout")
 	defer span.End()
 
@@ -239,7 +239,7 @@ func (uc *CommandService) InitiateCheckout(ctx context.Context, in CreateIntentI
 		return nil, errx.Invalid("No such payment provider")
 	}
 
-	var intent *contracts.Intent
+	var intent *models.Intent
 
 	switch p := provider.(type) {
 	case ports.MercadoPagoProvider:

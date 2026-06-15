@@ -1,12 +1,12 @@
-package middleware
+package app
 
 import (
 	"net/http"
+	"payssage/ports"
 	"strings"
 
 	"lib/authz"
-	"payssage/contracts"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/MintzyG/fun"
 	"go.opentelemetry.io/otel/attribute"
@@ -112,7 +112,7 @@ func (mw *AuthMiddleware) APIKey() func(http.Handler) http.Handler {
 				return
 			}
 
-			var matched *contracts.APIKey
+			var matched *models.APIKey
 			for _, candidate := range candidates {
 				if err := bcrypt.CompareHashAndPassword([]byte(candidate.KeyHash), []byte(rawKey)); err == nil {
 					matched = &candidate

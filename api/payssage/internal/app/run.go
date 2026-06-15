@@ -7,18 +7,15 @@ import (
 
 	"lib/database"
 	"lib/telemetry"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/features/api_keys"
 	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
-	"payssage/internal/interfaces/http/middleware"
-	"payssage/internal/interfaces/http/router"
-	"payssage/internal/interfaces/http/system"
-	"payssage/internal/platform/database/sqlc"
 	"payssage/internal/platform/providers"
 	"payssage/internal/platform/queue"
-	"payssage/internal/shared/ports"
+	"payssage/ports"
 
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -76,7 +73,7 @@ type repos struct {
 }
 
 type middlewares struct {
-	authMW *middleware.AuthMiddleware
+	authMW *AuthMiddleware
 }
 
 type asynqDeps struct {
@@ -100,7 +97,7 @@ func (app *Payssage) run() {
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.handlers = app.startHandlers(rt)
-	mux := router.CreateRouter(rt.handlers)
+	mux := CreateRouter(rt.handlers)
 	if pp := viper.GetString("PROFILE_PORT"); pp != "" {
 		go func() {
 			pmux := http.NewServeMux()
@@ -118,8 +115,8 @@ func (app *Payssage) run() {
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func (app *Payssage) startHandlers(rt runtime) *router.HTTPDeps {
-	var handlers router.HTTPDeps
+func (app *Payssage) startHandlers(rt runtime) *HTTPDeps {
+	var handlers HTTPDeps
 	handlers.AsynqmonHandler = asynqmon.New(asynqmon.Options{
 		RootPath: "/admin/asynq",
 		RedisConnOpt: asynq.RedisClientOpt{
@@ -129,7 +126,6 @@ func (app *Payssage) startHandlers(rt runtime) *router.HTTPDeps {
 		},
 	})
 	handlers.AuthMiddleware = rt.middlewares.authMW
-	handlers.SystemHandler = system.NewHandler()
 	handlers.IntentsHandler = intents.NewHandler(rt.commands.intents, rt.queries.intents)
 	handlers.WorkspacesHandler = workspaces.NewHandler(rt.commands.workspaces, rt.queries.workspaces)
 	handlers.ApiKeysHandler = api_keys.NewHandler(rt.commands.apiKeys, rt.queries.apiKeys)
@@ -199,7 +195,7 @@ func (app *Payssage) startRepos(rt runtime) repos {
 
 func (app *Payssage) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
-	mw.authMW = middleware.NewAuthMiddleware(app.ga, rt.repos.apiKeysRepo, rt.repos.workspaceRepo, rt.tracer)
+	mw.authMW = NewAuthMiddleware(app.ga, rt.repos.apiKeysRepo, rt.repos.workspaceRepo, rt.tracer)
 	return mw
 }
 

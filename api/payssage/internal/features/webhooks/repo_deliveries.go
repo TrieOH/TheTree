@@ -3,12 +3,12 @@ package webhooks
 import (
 	"context"
 	"encoding/json"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -35,21 +35,21 @@ func (repo *webhookDeliveryRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapWebhookDeliveryFromDB(src *sqlc.WebhookDelivery) *contracts.WebhookDelivery {
-	return &contracts.WebhookDelivery{
+func mapWebhookDeliveryFromDB(src *sqlc.WebhookDelivery) *models.WebhookDelivery {
+	return &models.WebhookDelivery{
 		ID:              src.ID,
 		EndpointID:      src.EndpointID,
 		IntentID:        src.IntentID,
 		Event:           src.Event,
 		Payload:         json.RawMessage(src.Payload),
-		Status:          contracts.DeliveryStatus(src.Status),
+		Status:          models.DeliveryStatus(src.Status),
 		Attempts:        int(src.Attempts),
 		LastAttemptedAt: src.LastAttemptedAt,
 		CreatedAt:       src.CreatedAt,
 	}
 }
 
-func (repo *webhookDeliveryRepo) Create(ctx context.Context, toCreate contracts.WebhookDelivery) (*contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) Create(ctx context.Context, toCreate models.WebhookDelivery) (*models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.Create")
 	defer span.End()
 
@@ -68,7 +68,7 @@ func (repo *webhookDeliveryRepo) Create(ctx context.Context, toCreate contracts.
 	return mapWebhookDeliveryFromDB(&row), nil
 }
 
-func (repo *webhookDeliveryRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.GetByID")
 	defer span.End()
 
@@ -80,7 +80,7 @@ func (repo *webhookDeliveryRepo) GetByID(ctx context.Context, id uuid.UUID) (*co
 	return mapWebhookDeliveryFromDB(&row), nil
 }
 
-func (repo *webhookDeliveryRepo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) ListByEndpoint(ctx context.Context, endpointID uuid.UUID) ([]models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.ListByEndpoint")
 	defer span.End()
 
@@ -89,14 +89,14 @@ func (repo *webhookDeliveryRepo) ListByEndpoint(ctx context.Context, endpointID 
 		return nil, errx.FromDB(err, "webhook_delivery")
 	}
 
-	out := make([]contracts.WebhookDelivery, 0, len(rows))
+	out := make([]models.WebhookDelivery, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, *mapWebhookDeliveryFromDB(&row))
 	}
 	return out, nil
 }
 
-func (repo *webhookDeliveryRepo) MarkDelivered(ctx context.Context, id uuid.UUID) (*contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) MarkDelivered(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.MarkDelivered")
 	defer span.End()
 
@@ -108,7 +108,7 @@ func (repo *webhookDeliveryRepo) MarkDelivered(ctx context.Context, id uuid.UUID
 	return mapWebhookDeliveryFromDB(&row), nil
 }
 
-func (repo *webhookDeliveryRepo) MarkFailed(ctx context.Context, id uuid.UUID) (*contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) MarkFailed(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.MarkFailed")
 	defer span.End()
 
@@ -120,7 +120,7 @@ func (repo *webhookDeliveryRepo) MarkFailed(ctx context.Context, id uuid.UUID) (
 	return mapWebhookDeliveryFromDB(&row), nil
 }
 
-func (repo *webhookDeliveryRepo) IncrementAttempt(ctx context.Context, id uuid.UUID) (*contracts.WebhookDelivery, error) {
+func (repo *webhookDeliveryRepo) IncrementAttempt(ctx context.Context, id uuid.UUID) (*models.WebhookDelivery, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookDeliveryRepo.IncrementAttempt")
 	defer span.End()
 

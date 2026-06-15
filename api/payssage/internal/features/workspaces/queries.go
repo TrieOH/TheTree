@@ -2,11 +2,11 @@ package workspaces
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
-	"payssage/internal/shared/ports"
+	"lib/authz"
+	"lib/database"
+	"payssage/models"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -29,7 +29,7 @@ func NewQueryService(
 	}
 }
 
-func (uc *QueryService) List(ctx context.Context) (ws []contracts.Workspace, err error) {
+func (uc *QueryService) List(ctx context.Context) (ws []models.Workspace, err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.List")
 	defer span.End()
 
@@ -39,7 +39,7 @@ func (uc *QueryService) List(ctx context.Context) (ws []contracts.Workspace, err
 		return nil, err
 	}
 
-	var workspaces []contracts.Workspace
+	var workspaces []models.Workspace
 	workspaces, err = uc.workspaces.List(ctx, sub.ID)
 	if err != nil {
 		return nil, err

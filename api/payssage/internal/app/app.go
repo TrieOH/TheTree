@@ -2,15 +2,12 @@ package app
 
 import (
 	"context"
-	"time"
 
 	"lib/telemetry"
 
 	"github.com/authzed/authzed-go/v1"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	idx "sdk/identityx"
@@ -18,7 +15,6 @@ import (
 
 type Payssage struct {
 	db        *pgxpool.Pool
-	redis     *redis.Client
 	scheduler gocron.Scheduler
 	ga        *idx.Client
 	sdb       *authzed.Client
@@ -28,10 +24,8 @@ func New() *Payssage {
 	var app Payssage
 	LoadEnv()
 	SetupFUN()
-	app.redis = SetupRedis(15*time.Second, viper.GetString("REDIS_ADDR"), viper.GetString("REDIS_PASSWORD"), viper.GetInt("REDIS_DB"))
 	app.ga = SetupIdentityX()
-	migrationPath := "./internal/platform/database/migrations"
-	app.db = SetupDB(migrationPath, viper.GetString("DATABASE_URL"))
+	app.db = SetupDB()
 	app.scheduler = SetupCron(app.db)
 	app.sdb = SetupSpiceDB()
 	return &app
@@ -41,7 +35,6 @@ func (app *Payssage) Run() {
 	ctx := context.Background()
 
 	defer app.CloseDB()
-	defer app.CloseRedis()
 	defer app.StopScheduler()
 	shutdown := app.StartTracer(ctx)
 	defer app.ShutdownTracer(ctx, shutdown)
@@ -52,17 +45,8 @@ func (app *Payssage) CloseDB() {
 	app.db.Close()
 }
 
-func (app *Payssage) CloseRedis() {
-	if err := app.redis.Close(); err != nil {
-		telemetry.Log().Error("error closing redis connection", zap.Error(err))
-	}
-}
-
 func (app *Payssage) StartTracer(ctx context.Context) func(context.Context) error {
-	shutdown, err := telemetry.InitTracer(ctx, "Payssage")
-	if err != nil {
-		telemetry.Log().Fatal("error starting tracer", zap.Error(err))
-	}
+	shutdown := telemetry.InitTracer(ctx, "Payssage")
 	return shutdown
 }
 

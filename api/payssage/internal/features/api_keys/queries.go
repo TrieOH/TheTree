@@ -2,11 +2,11 @@ package api_keys
 
 import (
 	"context"
+	"payssage/models"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
-	"payssage/internal/shared/ports"
+	"lib/authz"
+	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -32,7 +32,7 @@ func NewQueryService(
 	}
 }
 
-func (uc *QueryService) List(ctx context.Context, workspaceName string) (ak []contracts.APIKey, err error) {
+func (uc *QueryService) List(ctx context.Context, workspaceName string) (ak []models.APIKey, err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.List")
 	defer span.End()
 
@@ -42,13 +42,13 @@ func (uc *QueryService) List(ctx context.Context, workspaceName string) (ak []co
 		return nil, err
 	}
 
-	var workspace *contracts.Workspace
+	var workspace *models.Workspace
 	workspace, err = uc.workspaces.GetByName(ctx, workspaceName, sub.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	var keys []contracts.APIKey
+	var keys []models.APIKey
 	keys, err = uc.apiKeys.ListByWorkspace(ctx, workspace.ID)
 	if err != nil {
 		return nil, err

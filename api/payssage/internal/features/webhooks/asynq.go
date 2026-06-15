@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"payssage/ports"
 	"time"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/contracts"
-	"payssage/internal/shared/ports"
+	"lib/database"
+	"payssage/models"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/trace"
@@ -38,7 +38,7 @@ func NewAsynqService(
 }
 
 func (h *AsynqHandlers) HandleDeliverWebhook(ctx context.Context, t *asynq.Task) error {
-	var p contracts.DeliverWebhookPayload
+	var p models.DeliverWebhookPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
 	}

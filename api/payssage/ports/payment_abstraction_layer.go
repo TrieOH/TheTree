@@ -3,9 +3,8 @@ package ports
 import (
 	"context"
 	"encoding/json"
+	"payssage/models"
 	"time"
-
-	"payssage/contracts"
 
 	"github.com/google/uuid"
 )
@@ -35,7 +34,7 @@ type Payer struct {
 
 // ChargeRequest is the normalized input for any payment operation.
 type ChargeRequest struct {
-	Intent contracts.Intent
+	Intent models.Intent
 	// Amount in the smallest currency unit (cents / centavos).
 	// Each provider impl is responsible for converting if needed.
 	Amount   int64
@@ -148,14 +147,14 @@ type PaymentAbstractionLayer interface {
 	// InitiateCheckout starts a provider-specific checkout session.
 	// Stripe returns a ClientSecret for Elements.
 	// MP returns a RedirectURL for Checkout Pro.
-	InitiateCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*contracts.Intent, error)
+	InitiateCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*models.Intent, error)
 
 	// Charge performs a direct server-side charge.
 	// Use for server-to-server flows where you already have a payment method token.
-	Charge(ctx context.Context, request *ChargeRequest) (*contracts.Intent, error)
+	Charge(ctx context.Context, request *ChargeRequest) (*models.Intent, error)
 
 	// Refund issues a full or partial refund against a prior transaction.
-	Refund(ctx context.Context, request *RefundRequest) (*contracts.Intent, error)
+	Refund(ctx context.Context, request *RefundRequest) (*models.Intent, error)
 }
 
 // ResolveProvider returns the appropriate PaymentAbstractionLayer for the given request.
@@ -184,10 +183,10 @@ type MercadoPagoProvider interface {
 	// InitiatePixCheckout builds a Pix-specific order payload.
 	// Different payment_method structure — no token, no installments.
 	// Populates PixQRCode and PixQRCodeB64 on the returned data.
-	InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*contracts.Intent, error)
+	InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*models.Intent, error)
 
 	CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error
 
 	// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
-	NormalizeStatus(status string, statusDetail string) contracts.IntentStatus
+	NormalizeStatus(status string, statusDetail string) models.IntentStatus
 }

@@ -1,13 +1,13 @@
 package oauth
 
 import (
+	"lib/telemetry"
 	"net/http"
 
-	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/validation"
 
-	_ "payssage/internal/shared/contracts"
+	_ "payssage/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -38,8 +38,8 @@ func NewHandler(
 // @Param code query string true "Authorization code from provider"
 // @Param state query string true "State token"
 // @Param redirect_uri query string true "Redirect URI"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /oauth/{provider}/callback [get]
 func (h *Handler) CompleteOAuth(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
@@ -85,10 +85,10 @@ type BeginOAuthResponse struct {
 // @Param provider path string true "Provider name (e.g. mercadopago)"
 // @Param request body ConnectSellerRequest true "Connect request"
 // @Success 200 {object} BeginOAuthResponse
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/providers/{provider}/connect [post]
 func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -126,9 +126,9 @@ func (h *Handler) ConnectSeller(w http.ResponseWriter, r *http.Request) {
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Success 200 {object} object
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/marketplace/{credential_id} [delete]
 func (h *Handler) DeleteMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -157,9 +157,9 @@ func (h *Handler) DeleteMarketplaceConfig(w http.ResponseWriter, r *http.Request
 // @Param name path string true "Workspace name"
 // @Param credential_id path string true "Credential ID"
 // @Success 200 {object} object "disconnected successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/providers/{credential_id}/disconnect [delete]
 func (h *Handler) DisconnectProvider(w http.ResponseWriter, r *http.Request) {
 	credentialID, rs := validation.GetUUID(r, "credential_id")
@@ -189,10 +189,10 @@ func (h *Handler) DisconnectProvider(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {array} contracts.MarketplaceConfig
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.MarketplaceConfig
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/marketplace [get]
 func (h *Handler) ListMarketplaceConfigs(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -215,9 +215,9 @@ func (h *Handler) ListMarketplaceConfigs(w http.ResponseWriter, r *http.Request)
 // @Param name path string true "Workspace name"
 // @Param credential_id path string true "Credential ID"
 // @Success 200 {object} object "revoked successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/providers/{credential_id} [delete]
 func (h *Handler) RevokeProvider(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -255,12 +255,12 @@ type SetMarketplaceConfigRequest struct {
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Param request body SetMarketplaceConfigRequest true "Marketplace config"
-// @Success 200 {object} contracts.MarketplaceConfig
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 403 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.MarketplaceConfig
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 403 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/marketplace [put]
 func (h *Handler) SetMarketplaceConfig(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -303,10 +303,10 @@ type SetupProviderRequest struct {
 // @Param provider path string true "Provider name (e.g. mercadopago)"
 // @Param request body SetupProviderRequest true "Setup request"
 // @Success 200 {object} BeginOAuthResponse
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/providers/{provider}/setup [post]
 func (h *Handler) SetupProvider(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
