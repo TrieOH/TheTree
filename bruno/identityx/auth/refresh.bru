@@ -1,0 +1,22 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{identityx_url}}/auth/refresh
+  body: none
+  auth: none
+}
+
+headers {
+  refresh_token: {{refresh_token}}
+}
+
+script:post-response {
+  bru.setEnvVar("access_token", res.body.data.access_token);
+  bru.setEnvVar("refresh_token", res.body.data.refresh_token);
+  bru.setEnvVar("access_expires_at", res.body.data.access_expires_at);
+  bru.setEnvVar("refresh_expires_at", res.body.data.refresh_expires_at);
+}

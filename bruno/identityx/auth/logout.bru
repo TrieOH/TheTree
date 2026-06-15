@@ -1,0 +1,23 @@
+meta {
+  name: Logout
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{identityx_url}}/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  access_token: {{access_token}}
+  refresh_token: {{refresh_token}}
+}
+
+script:post-response {
+  bru.setEnvVar("access_token", "");
+  bru.setEnvVar("refresh_token", "");
+  bru.setEnvVar("access_expires_at", "");
+  bru.setEnvVar("refresh_expires_at", "");
+}

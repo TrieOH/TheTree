@@ -53,11 +53,20 @@ obs:
 #   just dev univents               → univents back + front
 #   just dev payssage informd       → those two, back + front
 
+[no-exit-message]
 dev +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    set -euo pipefail
     just obs
-    just api {{SERVICES}} &
-    just front {{SERVICES}} &
-    wait
+    export SERVICES="{{SERVICES}}"
+    procs="api"
+    for svc in {{SERVICES}}; do
+      procs="$procs,front-$svc"
+    done
+    trap 'overmind quit 2>/dev/null || kill $PID 2>/dev/null; exit 0' INT
+    overmind start -l "$procs" &
+    PID=$!
+    wait $PID
 
 # =============================================================
 # 🖥️ API — backend only
@@ -81,10 +90,12 @@ api +SERVICES="identityx informd payssage univents":
 
 front +SERVICES="identityx informd payssage univents":
     #!/usr/bin/env bash
+    procs=""
     for svc in {{SERVICES}}; do
-      (cd front/$svc && pnpm dev) &
+      [ -n "$procs" ] && procs="$procs,"
+      procs="${procs}front-$svc"
     done
-    wait
+    overmind start -l "$procs"
 
 # =============================================================
 # 🧹 TEARDOWN

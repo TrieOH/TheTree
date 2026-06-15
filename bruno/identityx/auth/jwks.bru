@@ -1,0 +1,15 @@
+meta {
+  name: JWKS
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{identityx_url}}/.well-known/jwks.json
+  body: none
+  auth: none
+}
+
+params:query {
+  ~project_id: some-uuid
+}

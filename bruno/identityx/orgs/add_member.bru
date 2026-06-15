@@ -1,0 +1,22 @@
+meta {
+  name: Add Member
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{identityx_url}}/organizations/{org_id}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "actor_email": "dummy@email.com",
+    "role": "member"
+  }
+}

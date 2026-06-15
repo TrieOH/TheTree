@@ -22,7 +22,8 @@ import FormModal from '#/widgets/modal/form-modal'
 import { ConfirmModal } from '#/widgets/modal/modal'
 import { useMutation, useQuery, useQueries, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import FormAdminHeader from '#/features/forms/ui/form-admin-header'
 import {
@@ -36,6 +37,25 @@ import {
   formResponseCountQueryOptions,
 } from '#/features/forms/api'
 import type { FormI } from '#/features/forms/model'
+
+function FieldAutoKey() {
+  const { setValue, control, formState: { dirtyFields } } = useFormContext()
+  const title = useWatch({ control, name: 'title' })
+
+  useEffect(() => {
+    if (title && !dirtyFields.key) {
+      const normalized = String(title)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+      setValue('key', normalized, { shouldValidate: true })
+    }
+  }, [title, dirtyFields.key, setValue])
+
+  return null
+}
 
 export const Route = createFileRoute('/admin/form/$formID/')({
   component: RouteComponent,
@@ -545,6 +565,8 @@ function RouteComponent() {
         formId="add-field-form"
         isOpen={isFieldCreateOpen}
         defaultValues={{
+          title: '',
+          key: '',
           position_hint: (fieldStepContext
             ? fieldsByStepId[fieldStepContext.id].length + 1
             : 1
@@ -562,7 +584,9 @@ function RouteComponent() {
           },
         )}
         disabled={isFieldCreating}
-      />
+      >
+        <FieldAutoKey />
+      </FormModal>
 
       {/* Field: Edit */}
       <FormModal<FieldUpdateI>
@@ -577,7 +601,9 @@ function RouteComponent() {
         onSubmit={handleEditFieldSubmit}
         fields={getFieldFormDefs()}
         disabled={isFieldEditing || isFieldSelectConfigEditing}
-      />
+      >
+        <FieldAutoKey />
+      </FormModal>
 
       {/* Field: Delete confirmation */}
       <ConfirmModal

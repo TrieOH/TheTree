@@ -4,11 +4,14 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"time"
 
 	"lib/authz"
-	database2 "lib/database"
+	"lib/database"
+	"lib/errx"
+	"lib/telemetry"
 	"lib/xslices"
 	"univents/internal/features/activities"
 	"univents/internal/features/checkpoints"
@@ -18,11 +21,8 @@ import (
 	"univents/internal/features/purchases"
 	"univents/internal/features/security"
 	"univents/internal/features/tickets"
-	"univents/internal/platform/database"
 	"univents/internal/platform/database/sqlc"
 	"univents/internal/platform/queue"
-	"univents/internal/platform/telemetry"
-	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 	"univents/internal/shared/sockets"
 
@@ -47,7 +47,7 @@ type runtime struct {
 	storeDeps   storeDeps
 	repos       repos
 	repoQueries *sqlc.Queries
-	txRunner    database2.TxRunner
+	txRunner    database.TxRunner
 	tracer      trace.Tracer
 	logger      *zap.Logger
 	asynq       asynqDeps
@@ -115,7 +115,7 @@ func (app *Univents) run() runtime {
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
 	rt.txRunner = database.NewPGXTxRunner(app.db)
-	rt.tracer = otel.Tracer(string(telemetry.UniventsTracer))
+	rt.tracer = otel.Tracer("Univents")
 	rt.logger = telemetry.Log()
 
 	rt.repos = app.startRepos(rt)
@@ -132,6 +132,18 @@ func (app *Univents) run() runtime {
 	rt.handlers = app.startHandlers(rt)
 
 	mux := CreateRouter(rt.handlers)
+	if app.cfg.ProfilePort != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("univents pprof listening on :%s", app.cfg.ProfilePort)
+			log.Println(http.ListenAndServe(":"+app.cfg.ProfilePort, pmux))
+		}()
+	}
 	port := viper.GetString("PORT")
 	log.Printf("Univents listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

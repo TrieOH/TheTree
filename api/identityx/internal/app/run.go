@@ -1,23 +1,22 @@
 package app
 
 import (
+	"lib/errx"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
-	"time"
 
 	"IdentityX/internal/database/sqlc"
-	"IdentityX/internal/features/account"
-	"IdentityX/internal/features/api_keys"
-	"IdentityX/internal/features/auth"
+	"IdentityX/internal/features/actors"
+	"IdentityX/internal/features/authn"
+	"IdentityX/internal/features/blacklist"
+	"IdentityX/internal/features/crypto_keys"
+	"IdentityX/internal/features/organizations"
+	"IdentityX/internal/features/platform_roles"
 	"IdentityX/internal/features/projects"
-	"IdentityX/internal/features/security"
-	"IdentityX/internal/features/sessions"
-	"IdentityX/internal/platform/email"
-	"IdentityX/internal/shared/feature_deps"
-	"IdentityX/internal/shared/ports"
+	"IdentityX/ports"
 	"lib/database"
-	"lib/errx"
 	"lib/telemetry"
 	"lib/xslices"
 
@@ -29,193 +28,133 @@ import (
 )
 
 type runtime struct {
-	middlewares mws
-	handlers    Handlers
-	commands    commands
-	queries     queries
-	repos       repos
-	repoQueries *sqlc.Queries
-	tx          database.TxRunner
-	tracer      trace.Tracer
-	logger      *zap.Logger
-	renderer    ports.EmailRenderer
-	mailer      ports.Mailer
-}
+	sqlcQ  *sqlc.Queries
+	tx     database.TxRunner
+	tracer trace.Tracer
+	logger *zap.Logger
+	mws    mws
 
-type commands struct {
-	auth     *auth.CommandService
-	accounts *account.CommandService
-	sessions *sessions.CommandService
-	projects *projects.CommandService
-	apiKeys  *api_keys.CommandService
-}
-
-type queries struct {
-	auth     *auth.QueryService
-	projects *projects.QueryService
-	sessions *sessions.QueryService
+	repos    repos
+	queries  queries
+	commands commands
 }
 
 type repos struct {
-	users          ports.UserRepository
-	accounts       ports.AccountRepository
-	sessions       ports.SessionRepository
-	projects       ports.ProjectRepository
-	keys           ports.KeysRepository
-	tokenReuseList ports.TokenReuseListRepository
-	apiKeys        ports.ApiKeyRepository
+	actors             ports.ActorRepo
+	platformRoles      ports.PlatformRolesRepo
+	cryptoKeys         ports.CryptoKeysRepo
+	blacklist          ports.BlacklistRepo
+	externalIdentities ports.ExternalIdentitiesRepo
+	orgs               ports.OrganizationRepo
+	projects           ports.ProjectRepo
+}
+
+type queries struct {
+	authn    *authn.Queries
+	orgs     *organizations.Queries
+	projects *projects.Queries
+}
+
+type commands struct {
+	authn    *authn.Commands
+	orgs     *organizations.Commands
+	projects *projects.Commands
 }
 
 type mws struct {
-	logger    func(http.Handler) http.Handler
-	requestID func(http.Handler) http.Handler
-	bodySize  func(http.Handler) http.Handler
-	metrics   func(http.Handler) http.Handler
-	cors      func(http.Handler) http.Handler
-	realIP    func(http.Handler) http.Handler
-	recover   func(http.Handler) http.Handler
-	timeout   func(http.Handler) http.Handler
-	ratelimit func(http.Handler) http.Handler
-	jwt       func(http.Handler) http.Handler
-	apiKey    func(http.Handler) http.Handler
-	anyAuth   func(http.Handler) http.Handler
+	logger            func(http.Handler) http.Handler
+	cors              func(http.Handler) http.Handler
+	jwtAuth           func(http.Handler) http.Handler
+	apiKeyAuth        func(http.Handler) http.Handler
+	anyAuth           func(http.Handler) http.Handler
+	clientOnly        func(http.Handler) http.Handler
+	projectClientOnly func(http.Handler) http.Handler
+	metrics           func(http.Handler) http.Handler
 }
 
 func (app *IdentityX) run() {
 	var rt runtime
-	rt.repoQueries = sqlc.New(app.db)
+	rt.sqlcQ = sqlc.New(app.db)
 	rt.logger = telemetry.Log()
 	rt.tx = database.NewPGXTxRunner(app.db, rt.logger)
 	rt.tracer = otel.Tracer(app.cfg.AppName)
 	rt.repos = app.startRepos(rt)
-	rt.renderer, rt.mailer = email.NewMailPair(
-		rt.logger,
-		rt.tracer,
-		app.cfg.AppUrl,
-		app.cfg.SmtpHost,
-		app.cfg.SmtpPort,
-		app.cfg.SmtpUser,
-		app.cfg.SmtpPass,
-		app.cfg.SmtpFrom,
-		app.cfg.SmtpTls,
-		app.cfg.SmtpStartTls,
-	)
-	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
-	rt.middlewares = app.startMiddlewares(rt)
-	rt.handlers = app.startHandlers(rt)
-	mux := CreateRouter(rt.handlers, app.cfg.DebugMode, app.cfg.DisableRateLimit)
+	rt.commands = app.startCommands(rt, rt.repos)
+	rt.mws = app.startMiddlewares(rt)
+	routerDeps := app.setupRouter(rt)
+	mux := app.CreateRouter(routerDeps, app.cfg.DebugMode, app.cfg.DisableRateLimit)
+	if app.cfg.ProfilePort != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("identityx pprof listening on :%s", app.cfg.ProfilePort)
+			log.Println(http.ListenAndServe(":"+app.cfg.ProfilePort, pmux))
+		}()
+	}
+
 	port := app.cfg.Port
 	log.Printf("IdentityX listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func (app *IdentityX) startHandlers(rt runtime) Handlers {
-	var h Handlers
-	h.Users = auth.NewHandler(*rt.commands.auth, *rt.queries.auth)
-	h.Accounts = account.NewHandler(*rt.commands.accounts)
-	h.Projects = projects.NewHandler(*rt.commands.projects, *rt.queries.projects)
-	h.Sessions = sessions.NewHandler(*rt.commands.sessions, *rt.queries.sessions)
-	h.ApiKeys = api_keys.NewHandler(*rt.commands.apiKeys)
+func (app *IdentityX) startRepos(rt runtime) repos {
+	var r repos
+	r.actors = actors.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.platformRoles = platform_roles.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.cryptoKeys = crypto_keys.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.blacklist = blacklist.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.externalIdentities = authn.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.orgs = organizations.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.projects = projects.NewRepos(rt.sqlcQ, rt.logger, rt.tracer)
+	return r
+}
 
-	h.BodySize = rt.middlewares.bodySize
-	h.RequestID = rt.middlewares.requestID
-	h.Logger = rt.middlewares.logger
-	h.Metrics = rt.middlewares.metrics
-	h.CORS = rt.middlewares.cors
-	h.RealIP = rt.middlewares.realIP
-	h.Recover = rt.middlewares.recover
-	h.Timeout = rt.middlewares.timeout
-	h.RateLimit = rt.middlewares.ratelimit
-	h.Jwt = rt.middlewares.jwt
-	h.ApiKey = rt.middlewares.apiKey
-	h.AnyAuth = rt.middlewares.anyAuth
-	return h
+func (app *IdentityX) startQueries(rt runtime, r repos) queries {
+	var cmd queries
+	cmd.authn = authn.NewQueries(r.cryptoKeys, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewQueries(r.projects, r.orgs, rt.logger, rt.tracer, rt.tx)
+	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
+	return cmd
 }
 
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.apiKeys = api_keys.NewCommandService(feature_deps.ApiKeysCommandDeps{
-		ApiKeys: r.apiKeys,
-		Project: r.projects,
-		Logger:  rt.logger,
-		Tracer:  rt.tracer,
-		Tx:      rt.tx,
-	})
-	cmd.projects = projects.NewCommandService(feature_deps.ProjectCommandDeps{
-		KeyLifetime:   app.cfg.KeyLifetime,
-		EncryptionKey: app.encryptionKey,
-		Projects:      r.projects,
-		Keys:          r.keys,
-		Logger:        rt.logger,
-		Tracer:        rt.tracer,
-		Tx:            rt.tx,
-	})
-	cmd.sessions = sessions.NewCommandService(feature_deps.SessionCommandDeps{
-		Sessions: r.sessions,
-		Keys:     r.keys,
-		Logger:   rt.logger,
-		Tracer:   rt.tracer,
-		Tx:       rt.tx,
-	})
-	cmd.auth = auth.NewCommandService(feature_deps.AuthCommandDeps{
-		EncryptionKey: app.encryptionKey,
-		Issuer:        app.cfg.Issuer,
-		Users:         r.users,
-		Sessions:      r.sessions,
-		Projects:      r.projects,
-		Keys:          r.keys,
-		Renderer:      rt.renderer,
-		Mailer:        rt.mailer,
-		Logger:        rt.logger,
-		Tracer:        rt.tracer,
-		Tx:            rt.tx,
-	})
-	cmd.accounts = account.NewCommandService(feature_deps.AccountCommandDeps{
-		EncryptionKey:  app.encryptionKey,
-		Issuer:         app.cfg.Issuer,
-		Users:          r.users,
-		Accounts:       r.accounts,
-		Sessions:       r.sessions,
-		Keys:           r.keys,
-		TokenReuseList: r.tokenReuseList,
-		MailRenderer:   rt.renderer,
-		MailSender:     rt.mailer,
-		Logger:         rt.logger,
-		Tracer:         rt.tracer,
-		Tx:             rt.tx,
-	})
+	cmd.authn = authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewCommands(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
+	cmd.projects = projects.NewCommands(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
 
-func (app *IdentityX) startQueries(rt runtime, r repos) queries {
-	var q queries
-	q.auth = auth.NewQueryService(r.keys, rt.logger, rt.tracer, rt.tx)
-	q.projects = projects.NewQueryService(r.projects, r.users, rt.logger, rt.tracer, rt.tx)
-	q.sessions = sessions.NewQueryService(r.sessions, rt.logger, rt.tracer, rt.tx)
-	return q
-}
-
-func (app *IdentityX) startRepos(rt runtime) repos {
-	var r repos
-	r.users = auth.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.accounts = account.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.sessions = sessions.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.projects = projects.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.keys = security.NewKeysRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.tokenReuseList = security.NewTokenReuseRepo(rt.repoQueries, rt.logger, rt.tracer)
-	r.apiKeys = api_keys.NewRepo(rt.repoQueries, rt.logger, rt.tracer)
-	return r
+func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
+	return RouterDeps{
+		AppName:           app.cfg.AppName,
+		CORS:              rt.mws.cors,
+		Logger:            rt.mws.logger,
+		JwtAuth:           rt.mws.jwtAuth,
+		ApiKeyAuth:        rt.mws.apiKeyAuth,
+		AnyAuth:           rt.mws.anyAuth,
+		ClientOnly:        rt.mws.clientOnly,
+		ProjectClientOnly: rt.mws.projectClientOnly,
+		Metrics:           rt.mws.metrics,
+		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
+		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
+		Projects:          projects.NewHandlers(rt.commands.projects, rt.queries.projects),
+	}
 }
 
 func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	var mw mws
-	authMW := SetupAuthMiddlewares(rt.repos.sessions, rt.repos.keys, rt.repos.apiKeys, rt.tracer, app.cfg.Issuer)
-	mw.jwt = authMW.JWT()
-	mw.apiKey = authMW.APIKey()
+	authMW := SetupAuthMiddlewares(rt)
+	mw.jwtAuth = authMW.JWT()
+	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	mw.bodySize = middlewares.MaxBodySize(1 << 20)
-	mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
+	//mw.bodySize = middlewares.MaxBodySize(1 << 20)
+	//mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
@@ -226,11 +165,13 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
 		AllowCredentials: true,
 	})
-	mw.realIP = middlewares.RealIP()
-	mw.recover = middlewares.Recover(rt.logger)
-	mw.timeout = middlewares.Timeout(60 * time.Second)
-	mw.ratelimit = middlewares.RateLimit(middlewares.RateLimitConfig{RPS: 400, Burst: 20,
-		KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	})
+	//mw.realIP = middlewares.RealIP()
+	//mw.recover = middlewares.Recover(rt.logger)
+	//mw.timeout = middlewares.Timeout(60 * time.Second)
+	//mw.ratelimit = middlewares.RateLimit(middlewares.RateLimitConfig{RPS: 400, Burst: 20,
+	//	KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
+	//})
+	mw.clientOnly = ClientOnly()
+	mw.projectClientOnly = ProjectClientOnly()
 	return mw
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"time"
 
@@ -96,6 +97,18 @@ func (app *Informd) run() runtime {
 	rt.queries = app.startQueries(rt)
 	rt.handlers = app.startHandlers(rt)
 	mux := CreateRouter(rt.handlers)
+	if app.Config.ProfilePort != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("informd pprof listening on :%s", app.Config.ProfilePort)
+			log.Println(http.ListenAndServe(":"+app.Config.ProfilePort, pmux))
+		}()
+	}
 	log.Printf("Informd listening on :%s", app.Config.Port)
 	log.Fatal(http.ListenAndServe(":"+app.Config.Port, mux))
 	return rt

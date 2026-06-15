@@ -3,7 +3,7 @@ package app
 import (
 	"log"
 	"net/http"
-	ports2 "payssage/ports"
+	"net/http/pprof"
 
 	"lib/database"
 	"lib/telemetry"
@@ -15,6 +15,7 @@ import (
 	"payssage/internal/features/workspaces"
 	"payssage/internal/platform/providers"
 	"payssage/internal/platform/queue"
+	"payssage/ports"
 
 	"github.com/hibiken/asynq"
 	"github.com/hibiken/asynqmon"
@@ -26,7 +27,7 @@ import (
 
 type runtime struct {
 	middlewares      middlewares
-	handlers         *HTTPDeps
+	handlers         *router.HTTPDeps
 	commands         commands
 	queries          queries
 	repos            repos
@@ -39,8 +40,8 @@ type runtime struct {
 }
 
 type paymentProviders struct {
-	oauth    map[string]ports2.OAuthProvider
-	payments map[string]ports2.PaymentAbstractionLayer
+	oauth    map[string]ports.OAuthProvider
+	payments map[string]ports.PaymentAbstractionLayer
 }
 
 type commands struct {
@@ -60,15 +61,15 @@ type queries struct {
 }
 
 type repos struct {
-	intentRepo              ports2.IntentRepository
-	workspaceRepo           ports2.WorkspaceRepo
-	apiKeysRepo             ports2.ApiKeysRepo
-	endpointsRepo           ports2.WebhookEndpointRepo
-	deliveriesRepo          ports2.WebhookDeliveryRepo
-	eventsRepo              ports2.WebhookEventRepo
-	oauthStatesRepo         ports2.OAuthStateRepo
-	providerCredentialsRepo ports2.ProviderCredentialRepo
-	marketplaceRepo         ports2.MarketplaceConfigRepo
+	intentRepo              ports.IntentRepository
+	workspaceRepo           ports.WorkspaceRepo
+	apiKeysRepo             ports.ApiKeysRepo
+	endpointsRepo           ports.WebhookEndpointRepo
+	deliveriesRepo          ports.WebhookDeliveryRepo
+	eventsRepo              ports.WebhookEventRepo
+	oauthStatesRepo         ports.OAuthStateRepo
+	providerCredentialsRepo ports.ProviderCredentialRepo
+	marketplaceRepo         ports.MarketplaceConfigRepo
 }
 
 type middlewares struct {
@@ -97,6 +98,18 @@ func (app *Payssage) run() {
 	rt.queries = app.startQueries(rt, rt.repos)
 	rt.handlers = app.startHandlers(rt)
 	mux := CreateRouter(rt.handlers)
+	if pp := viper.GetString("PROFILE_PORT"); pp != "" {
+		go func() {
+			pmux := http.NewServeMux()
+			pmux.HandleFunc("/debug/pprof/", pprof.Index)
+			pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+			pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+			pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+			pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+			log.Printf("payssage pprof listening on :%s", pp)
+			log.Println(http.ListenAndServe(":"+pp, pmux))
+		}()
+	}
 	port := viper.GetString("port")
 	log.Printf("payssage listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
@@ -155,11 +168,11 @@ func (app *Payssage) startPaymentProviders() paymentProviders {
 		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
 	}
 
-	pp.oauth = map[string]ports2.OAuthProvider{
+	pp.oauth = map[string]ports.OAuthProvider{
 		"mercadopago": mpProvider,
 	}
 
-	pp.payments = map[string]ports2.PaymentAbstractionLayer{
+	pp.payments = map[string]ports.PaymentAbstractionLayer{
 		"mercadopago": mpProvider,
 	}
 

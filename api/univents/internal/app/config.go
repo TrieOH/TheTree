@@ -28,6 +28,7 @@ type Config struct {
 	ObjStorageSecretKey   string    `env:"OBJECT_STORAGE_SECRET_KEY,required"`
 	ObjStorageUseSSL      bool      `env:"OBJECT_STORAGE_USE_SSL,required"`
 	DisableRateLimit      bool      `env:"DISABLE_RATE_LIMIT,required"`
+	ProfilePort           string    `env:"PROFILE_PORT"`
 }
 
 func LoadConfig() (Config, error) {

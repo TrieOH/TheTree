@@ -1,43 +1,52 @@
--- name: CreateProject :one
-INSERT INTO projects (project_name, owner_id, metadata, is_active, domain)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING *;
-
--- name: GetProjectByIDExternal :one
-SELECT *
-FROM projects
-WHERE id = $1 AND owner_id = $2;
-
--- name: GetProjectByIDInternal :one
-SELECT *
-FROM projects
-WHERE id = $1;
-
 -- name: ListProjects :many
-SELECT *
-FROM projects
-WHERE owner_id = $1
-ORDER BY created_at DESC;
+SELECT * FROM projects;
 
--- name: UpdateProject :one
-UPDATE projects
-SET 
-  project_name = $3,
-  metadata = $4,
-  domain = $5,
-  updated_at = NOW()
-WHERE id = $1 and owner_id = $2
+-- name: CreateProject :one
+INSERT INTO projects (organization_id, owner_id, name, domain, metadata)
+VALUES (@organization_id, @owner_id, @name, @domain, @metadata)
 RETURNING *;
 
--- name: DeleteProject :execrows
-DELETE FROM projects
-WHERE id = $1 AND owner_id = $2;
+-- name: GetProjectByID :one
+SELECT *
+FROM projects
+WHERE id = @id;
 
--- name: IsOwnerOf :one
-SELECT EXISTS (
-    SELECT 1
-    FROM projects
-    WHERE id = $1 AND owner_id = $2
-);
+-- name: ListProjectsByOrganizationID :many
+SELECT *
+FROM projects
+WHERE organization_id = @organization_id
+  AND deleted_at IS NULL
+  AND organization_id IS NOT NULL;
 
+-- name: ListOwnedProjects :many
+SELECT *
+FROM projects
+WHERE owner_id = @owner_id
+  AND organization_id IS NULL;
 
+-- name: ListJoinedProjects :many
+SELECT p.*
+FROM project_members pm
+INNER JOIN projects p
+ON pm.project_id = p.id
+WHERE pm.actor_id = @actor_id
+  AND p.owner_id != @actor_id;
+
+-- name: AddProjectMember :exec
+INSERT INTO project_members (project_id, actor_id, role, metadata, joined_at)
+VALUES (@project_id, @actor_id, @role, @metadata, NOW())
+RETURNING *;
+
+-- name: RemoveProjectMember :exec
+DELETE FROM project_members
+WHERE project_id = @project_id
+  AND actor_id = @actor_id;
+
+-- name: GetProjectMemberByID :one
+SELECT * FROM project_members
+WHERE project_id = @project_id
+  AND actor_id = @actor_id;
+
+-- name: ListProjectMembers :many
+SELECT * FROM project_members
+WHERE project_id = @project_id;

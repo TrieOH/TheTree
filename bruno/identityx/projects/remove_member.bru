@@ -1,0 +1,21 @@
+meta {
+  name: Remove Member
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{identityx_url}}/projects/{project_id}/members
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "actor_email": "dummy@email.com"
+  }
+}
