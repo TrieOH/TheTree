@@ -15,7 +15,7 @@ func (c *Commands) Login(ctx context.Context, in models.IDXLoginInput) (tokens *
 	ctx, span := c.tracer.Start(ctx, "Login")
 	defer span.End()
 
-	actor, err := c.actors.GetByEmail(ctx, in.Email, nil)
+	actor, err := c.actors.GetByEmail(ctx, in.Email, in.ProjectID)
 	if fun.Is(err, fun.CodeNotFound) {
 		return nil, fun.ErrUnauthorized("invalid email or password")
 	}
@@ -32,6 +32,5 @@ func (c *Commands) Login(ctx context.Context, in models.IDXLoginInput) (tokens *
 	if err = c.actors.UpdateLastLoginAt(ctx, actor.ID); err != nil {
 		return nil, err
 	}
-
 	return c.issueTokens(ctx, actor)
 }

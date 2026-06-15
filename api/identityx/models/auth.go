@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type CredentialType string
 
 const (
@@ -13,14 +15,16 @@ type IDXRegisterRequest struct {
 }
 
 type IDXRegisterInput struct {
-	Email    string
-	Password string
+	Email     string
+	Password  string
+	ProjectID *uuid.UUID
 }
 
-func (r IDXRegisterRequest) ToInput() IDXRegisterInput {
+func (r IDXRegisterRequest) ToInput(projectID *uuid.UUID) IDXRegisterInput {
 	return IDXRegisterInput{
-		Email:    r.Email,
-		Password: r.Password,
+		Email:     r.Email,
+		Password:  r.Password,
+		ProjectID: projectID,
 	}
 }
 
@@ -30,14 +34,16 @@ type IDXLoginRequest struct {
 }
 
 type IDXLoginInput struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	ProjectID *uuid.UUID
 }
 
-func (r IDXLoginRequest) ToInput() IDXLoginInput {
+func (r IDXLoginRequest) ToInput(projectID *uuid.UUID) IDXLoginInput {
 	return IDXLoginInput{
-		Email:    r.Email,
-		Password: r.Password,
+		Email:     r.Email,
+		Password:  r.Password,
+		ProjectID: projectID,
 	}
 }
 
@@ -56,4 +62,8 @@ func (r IDXLoginRequest) ToSetupInput() SetupInput {
 type LogoutInput struct {
 	AccessToken  string
 	RefreshToken string
+}
+
+type ProjectIDQueryParam struct {
+	ProjectID *uuid.UUID `fun_query:"project_id"`
 }

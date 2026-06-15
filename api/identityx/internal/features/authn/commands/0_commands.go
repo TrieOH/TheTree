@@ -6,6 +6,7 @@ import (
 	"context"
 	"lib/crypto"
 	"lib/database"
+	"lib/env"
 	"lib/errx"
 	"os"
 	"time"
@@ -19,6 +20,7 @@ import (
 
 type Commands struct {
 	actors             ports.ActorRepo
+	projects           ports.ProjectRepo
 	platformRoles      ports.PlatformRolesRepo
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
@@ -30,6 +32,7 @@ type Commands struct {
 
 func NewCommands(
 	actors ports.ActorRepo,
+	projects ports.ProjectRepo,
 	platformRoles ports.PlatformRolesRepo,
 	cryptoKeys ports.CryptoKeysRepo,
 	blacklist ports.BlacklistRepo,
@@ -40,6 +43,7 @@ func NewCommands(
 ) *Commands {
 	return errx.MustProvide(&Commands{
 		actors:             actors,
+		projects:           projects,
 		platformRoles:      platformRoles,
 		cryptoKeys:         cryptoKeys,
 		blacklist:          blacklist,
@@ -79,9 +83,9 @@ func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*model
 	}
 	accessJTI := uuid.New()
 	refreshJTI := uuid.New()
-	accessExpiresAt := time.Now().Add(errx.Env[time.Duration]("ACCESS_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
-	refreshExpiresAt := time.Now().Add(errx.Env[time.Duration]("REFRESH_TOKEN_EXPIRATION", time.ParseDuration, 7*24*time.Hour))
-	accessPayload, err := c.newIDXAccessToken(*actor, accessJTI, activeKeyPair.ID, accessExpiresAt)
+	accessExpiresAt := time.Now().Add(env.Get[time.Duration]("ACCESS_TOKEN_EXPIRATION", time.ParseDuration, 15*time.Minute))
+	refreshExpiresAt := time.Now().Add(env.Get[time.Duration]("REFRESH_TOKEN_EXPIRATION", time.ParseDuration, 7*24*time.Hour))
+	accessPayload, err := c.newAccessToken(*actor, accessJTI, activeKeyPair.ID, accessExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -107,11 +111,11 @@ func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*model
 	}, nil
 }
 
-func (c *Commands) newIDXAccessToken(actor models.Actor, jti, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
+func (c *Commands) newAccessToken(actor models.Actor, jti, kid uuid.UUID, expiresAt time.Time) ([]byte, error) {
 	claims := models.AccessClaims{
 		Sub: models.AccessSub{
 			ID:           actor.ID,
-			ProjectID:    nil,
+			ProjectID:    actor.ProjectID,
 			Email:        actor.Email,
 			Type:         actor.Type,
 			Capabilities: nil,

@@ -18,7 +18,15 @@ func (c *Commands) Register(ctx context.Context, in models.IDXRegisterInput) err
 		return err
 	}
 
+	if in.ProjectID != nil {
+		_, err := c.projects.GetByID(ctx, *in.ProjectID)
+		if err != nil {
+			return err
+		}
+	}
+
 	_, err = c.actors.Register(ctx, models.Actor{
+		ProjectID:    in.ProjectID,
 		AuthMethod:   models.PasswordAuthMethod,
 		PasswordHash: &hashedPassword,
 		Email:        &in.Email,

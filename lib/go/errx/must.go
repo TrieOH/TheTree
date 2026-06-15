@@ -1,7 +1,6 @@
 package errx
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"reflect"
@@ -13,27 +12,6 @@ func Exit(err error, msg string) {
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error(msg, "err", err)
 		os.Exit(1)
 	}
-}
-
-func Env[T any](key string, parse func(string) (T, error), fallback T) T {
-	v := os.Getenv(key)
-	if v == "" {
-		return fallback
-	}
-	result, err := parse(v)
-	if err != nil {
-		return fallback
-	}
-	return result
-}
-
-func MustEnv[T any](key string, parse func(string) (T, error)) T {
-	v := os.Getenv(key)
-	result, err := parse(v)
-	if err != nil {
-		Exit(err, fmt.Sprintf("MustEnv failed to parse %s=%q", key, v))
-	}
-	return result
 }
 
 // MustProvide validates that all fields of the given struct are non-zero/non-nil.

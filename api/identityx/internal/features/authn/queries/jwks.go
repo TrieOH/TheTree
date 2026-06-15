@@ -4,11 +4,12 @@ import (
 	"context"
 	"lib/crypto"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-func (c *Queries) JWKS(ctx context.Context) (map[string]any, error) {
-	keys, err := c.cryptoKeys.GetActiveSigningKeys(ctx, nil)
+func (c *Queries) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]any, error) {
+	keys, err := c.cryptoKeys.GetActiveSigningKeys(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}

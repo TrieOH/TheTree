@@ -26,15 +26,14 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 		return err
 	}
 
-	_, err = crypto.VerifyToken(in.AccessToken, cryptoKey.PublicKey, accessClaims)
+	ident, err := models.RequireIdentity(ctx)
 	if err != nil {
-		c.logger.Error("access token verification failed", zap.Error(err))
-		return fun.ErrUnauthorized("invalid access token")
+		return err
 	}
 
 	accessEntry := models.BlacklistEntry{
-		CreatedByActorID: &accessClaims.Sub.ID,
-		ProjectID:        accessClaims.Sub.ProjectID,
+		CreatedByActorID: &ident.Sub.ID,
+		ProjectID:        ident.Sub.ProjectID,
 		Type:             models.BlacklistEntryTypeToken,
 		Target:           accessClaims.ID,
 		Reason:           new("logout"),
@@ -53,8 +52,8 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 	}
 
 	refreshEntry := models.BlacklistEntry{
-		CreatedByActorID: &accessClaims.Sub.ID,
-		ProjectID:        accessClaims.Sub.ProjectID,
+		CreatedByActorID: &ident.Sub.ID,
+		ProjectID:        ident.Sub.ProjectID,
 		Type:             models.BlacklistEntryTypeToken,
 		Target:           refreshClaims.ID,
 		Reason:           new("logout"),
