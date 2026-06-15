@@ -48,22 +48,22 @@ function RouteComponent() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
-      <Link
-        to="/"
-        className={cn(
-          "absolute top-4 left-4 z-10 text-sm text-muted-foreground",
-          "hover:text-foreground transition-colors flex items-center gap-0.5"
-        )}
-      >
-        <ArrowLeft size={20} /> Back to Home
-      </Link>
-      <ModernAuth
-        initialView='signin'
-        onLoginSuccess={handleLoginSuccess}
-        onSignUpSuccess={handleSignUpSuccess}
-        onFailed={handleFailure}
-      />
-    </div>
+    <ModernAuth
+      initialView='signin'
+      onLoginSuccess={handleLoginSuccess}
+      onSignUpSuccess={handleSignUpSuccess}
+      onFailed={handleFailure}
+      backLink={
+        <Link
+          to="/"
+          className={cn(
+            "inline-flex items-center gap-0.5 text-sm text-muted-foreground",
+            "hover:text-foreground transition-colors"
+          )}
+        >
+          <ArrowLeft size={20} /> Back to Home
+        </Link>
+      }
+    />
   )
 }

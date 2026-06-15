@@ -12,6 +12,7 @@ export interface ModernAuthProps {
   onLoginSuccess?: (message?: string) => Promise<void>;
   onSignUpSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
+  backLink?: React.ReactNode;
 }
 
 const viewConfig: Record<AuthView, { title: string; subtitle: string; toggleLabel: string; toggleAction: string; toggleTo: AuthView }> = {
@@ -43,6 +44,7 @@ export function ModernAuth({
   onLoginSuccess,
   onSignUpSuccess,
   onFailed,
+  backLink,
 }: ModernAuthProps) {
   const [view, setView] = useState<AuthView>(initialView);
 
@@ -54,7 +56,7 @@ export function ModernAuth({
   const config = viewConfig[view];
 
   return (
-    <AuthLayout>
+    <AuthLayout backLink={backLink}>
       <div className="w-full max-w-md z-10 flex flex-col">
         <div className="text-center mb-6">
           <motion.h1
