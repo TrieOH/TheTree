@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (q *Queries) ListOrgProjectMembers(ctx context.Context, orgID, projectID uuid.UUID) ([]models.ProjectMember, error) {
-	ctx, span := q.tracer.Start(ctx, "OrganizationService.ListOrgProjectMembers")
+func (q *Queries) GetActorByID(ctx context.Context, id, orgID, projectID uuid.UUID) (*models.Actor, error) {
+	ctx, span := q.tracer.Start(ctx, "OrganizationService.GetByID")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)
@@ -20,6 +20,14 @@ func (q *Queries) ListOrgProjectMembers(ctx context.Context, orgID, projectID uu
 	org, err := q.orgs.GetByID(ctx, orgID)
 	if err != nil {
 		return nil, err
+	}
+
+	project, err := q.projects.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if project.OrganizationID != nil && *project.OrganizationID != orgID {
+		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	if ident.Sub.ID != org.OwnerID {
@@ -38,23 +46,14 @@ func (q *Queries) ListOrgProjectMembers(ctx context.Context, orgID, projectID uu
 		}
 	}
 
-	members, err := q.projects.ListMembers(ctx, projectID)
+	actor, err := q.actors.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	orgMembers, err := q.orgs.ListMembers(ctx, orgID)
-	if err != nil {
-		return nil, err
+	if actor.ProjectID != nil && *actor.ProjectID != projectID {
+		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
-	for _, m := range orgMembers {
-		members = append(members, models.ProjectMember{
-			ActorID:   m.ActorID,
-			ProjectID: projectID,
-			Role:      models.ProjectRole(m.Role),
-		})
-	}
-
-	return members, nil
+	return actor, nil
 }

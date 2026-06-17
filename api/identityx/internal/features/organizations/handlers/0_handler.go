@@ -41,5 +41,6 @@ func RegisterRoutes(
 		r.Get("/organizations/{organization_id}/projects/{project_id}/members", h.ListProjectMembers)
 		r.Post("/organizations/{organization_id}/projects/{project_id}/members", h.AddProjectMember)
 		r.Delete("/organizations/{organization_id}/projects/{project_id}/members", h.RemoveProjectMember)
+		r.Get("/organizations/{organization_id}/projects/{project_id}/actors/{actor_id}", h.GetActorByID)
 	})
 }

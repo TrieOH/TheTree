@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Queries) ListMembers(ctx context.Context, orgID uuid.UUID) (members []models.OrganizationMember, err error) {
-	ctx, span := s.tracer.Start(ctx, "OrganizationService.GetMembers")
+func (q *Queries) ListMembers(ctx context.Context, orgID uuid.UUID) (members []models.OrganizationMember, err error) {
+	ctx, span := q.tracer.Start(ctx, "OrganizationService.GetMembers")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)
@@ -17,19 +17,19 @@ func (s *Queries) ListMembers(ctx context.Context, orgID uuid.UUID) (members []m
 	}
 
 	var org *models.Organization
-	org, err = s.orgs.GetByID(ctx, orgID)
+	org, err = q.orgs.GetByID(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
 
 	if ident.Sub.ID != org.OwnerID {
-		_, err = s.orgs.GetMember(ctx, ident.Sub.ID, orgID)
+		_, err = q.orgs.GetMember(ctx, ident.Sub.ID, orgID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	members, err = s.orgs.ListMembers(ctx, orgID)
+	members, err = q.orgs.ListMembers(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}

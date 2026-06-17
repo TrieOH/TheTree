@@ -53,6 +53,7 @@ type queries struct {
 	authn    *authn.Queries
 	orgs     *organizations.Queries
 	projects *projects.Queries
+	actors   *actors.Queries
 }
 
 type commands struct {
@@ -116,8 +117,9 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var cmd queries
+	cmd.actors = actors.NewQueries(r.actors, rt.logger, rt.tracer, rt.tx)
 	cmd.authn = authn.NewQueries(r.cryptoKeys, rt.logger, rt.tracer, rt.tx)
-	cmd.orgs = organizations.NewQueries(r.projects, r.orgs, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewQueries(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
@@ -141,6 +143,7 @@ func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 		ClientOnly:        rt.mws.clientOnly,
 		ProjectClientOnly: rt.mws.projectClientOnly,
 		Metrics:           rt.mws.metrics,
+		Actors:            actors.NewHandlers(rt.queries.actors),
 		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
 		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
 		Projects:          projects.NewHandlers(rt.commands.projects, rt.queries.projects),
