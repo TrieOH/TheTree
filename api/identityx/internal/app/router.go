@@ -2,6 +2,7 @@ package app
 
 import (
 	"IdentityX/generated/docs"
+	"IdentityX/internal/features/actors"
 	"fmt"
 	"net/http"
 
@@ -30,6 +31,7 @@ type RouterDeps struct {
 	ProjectClientOnly func(http.Handler) http.Handler
 	Metrics           func(http.Handler) http.Handler
 
+	Actors   *actors.Handlers
 	Authn    *authn.Handlers
 	Orgs     *organizations.Handlers
 	Projects *projects.Handlers
@@ -110,6 +112,7 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 
 	r.Handle("/metrics", promhttp.Handler())
 
+	actors.RegisterRoutes(r, deps.Actors, deps.JwtAuth, deps.ClientOnly)
 	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
 	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
 	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth, deps.ClientOnly)

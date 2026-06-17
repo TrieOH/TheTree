@@ -29,7 +29,7 @@ type Actor struct {
 	ProjectID    *uuid.UUID       `json:"project_id"`
 	AuthMethod   AuthMethod       `json:"auth_method"`
 	VerifiedAt   *time.Time       `json:"verified_at"`
-	PasswordHash *string          `json:"password_hash"`
+	PasswordHash *string          `json:"-"`
 	Email        *string          `json:"email"`
 	Type         ActorType        `json:"type"`
 	Metadata     *json.RawMessage `json:"metadata"`
