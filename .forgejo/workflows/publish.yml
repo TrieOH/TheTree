@@ -34,6 +34,10 @@ jobs:
           FORGEJO_USER: ${{ secrets.FORGEJO_USER }}
         run: printenv FORGEJO_TOKEN | docker login git.trieoh.com -u "$FORGEJO_USER" --password-stdin
 
+      - name: Download Docker
+        if: ${{ steps.tag.outputs.skip == 'false' }}
+        run: curl -fsSL https://get.docker.com | sh
+
       - name: Build & push
         if: ${{ steps.tag.outputs.skip == 'false' }}
         run: |
