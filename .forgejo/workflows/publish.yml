@@ -34,9 +34,9 @@ jobs:
       - name: Login to registry
         if: ${{ steps.tag.outputs.skip == 'false' }}
         env:
-          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
-          FORGEJO_USER: ${{ secrets.FORGEJO_USER }}
-        run: printenv FORGEJO_TOKEN | docker login git.trieoh.com -u "$FORGEJO_USER" --password-stdin
+          FJ_TOKEN: ${{ secrets.FJ_TOKEN }}
+          FJ_USER: ${{ secrets.FJ_USER }}
+        run: printenv FJ_TOKEN | docker login git.trieoh.com -u "$FJ_USER" --password-stdin
 
       - name: Build & push
         if: ${{ steps.tag.outputs.skip == 'false' }}
