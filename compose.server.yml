@@ -14,7 +14,7 @@
 # No service exposes ports directly — all HTTP traffic is
 # routed through Caddy. Exception: mox SMTP/IMAP ports (25,
 # 465, 587, 993) are not HTTP and must be exposed directly.
-# Forgejo SSH (2222) likewise.
+# Forgejo SSH is handled by system sshd forwarding to localhost:3000.
 # =============================================================
 
 services:
@@ -90,7 +90,7 @@ services:
       - forgejo-data:/data
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "2222:22"  # SSH — not HTTP, must be exposed directly
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/healthz"]
       interval: 10s
