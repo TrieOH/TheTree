@@ -21,7 +21,8 @@ RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
     cd /app && echo 'package identityx' > doc.go && \
     cd /app/api/identityx && \
-    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList -ot json
+    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList -ot json && \
+    rm /app/doc.go
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
     CGO_ENABLED=0 GOOS=linux go build -o identityx ./cmd/identityx
