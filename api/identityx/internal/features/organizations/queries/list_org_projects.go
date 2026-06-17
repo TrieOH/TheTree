@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Queries) ListOrgProjects(ctx context.Context, orgID uuid.UUID) ([]models.Project, error) {
-	ctx, span := s.tracer.Start(ctx, "OrganizationService.ListOrgProjects")
+func (q *Queries) ListOrgProjects(ctx context.Context, orgID uuid.UUID) ([]models.Project, error) {
+	ctx, span := q.tracer.Start(ctx, "OrganizationService.ListOrgProjects")
 	defer span.End()
 
 	ident, err := models.RequireIdentity(ctx)
@@ -17,13 +17,13 @@ func (s *Queries) ListOrgProjects(ctx context.Context, orgID uuid.UUID) ([]model
 		return nil, err
 	}
 
-	org, err := s.orgs.GetByID(ctx, orgID)
+	org, err := q.orgs.GetByID(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
 
 	if ident.Sub.ID != org.OwnerID {
-		_, err = s.orgs.GetMember(ctx, ident.Sub.ID, orgID)
+		_, err = q.orgs.GetMember(ctx, ident.Sub.ID, orgID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
@@ -32,5 +32,5 @@ func (s *Queries) ListOrgProjects(ctx context.Context, orgID uuid.UUID) ([]model
 		}
 	}
 
-	return s.projects.ListByOrganization(ctx, orgID)
+	return q.projects.ListByOrganization(ctx, orgID)
 }
