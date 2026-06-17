@@ -224,3 +224,7 @@ autoconfig.trieoh.com {
     reverse_proxy mox:81
     log
 }
+
+:80, :443 {
+    abort
+}
