@@ -3,12 +3,12 @@ package intents
 import (
 	"context"
 	"encoding/json"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -39,13 +39,13 @@ func (repo *intentsRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapIntentFromDB(src *sqlc.Intent) (*contracts.Intent, error) {
-	intent := &contracts.Intent{
+func mapIntentFromDB(src *sqlc.Intent) (*models.Intent, error) {
+	intent := &models.Intent{
 		ID:          src.ID,
 		WorkspaceID: src.WorkspaceID,
 		Amount:      src.Amount,
 		Currency:    src.Currency,
-		Status:      contracts.IntentStatus(src.Status),
+		Status:      models.IntentStatus(src.Status),
 		Provider:    src.Provider,
 		Metadata:    src.Metadata,
 		CreatedAt:   src.CreatedAt,
@@ -59,7 +59,7 @@ func mapIntentFromDB(src *sqlc.Intent) (*contracts.Intent, error) {
 	switch src.Provider {
 	case "mercadopago":
 		if src.ProviderData != nil {
-			var mp contracts.MercadoPagoIntentData
+			var mp models.MercadoPagoIntentData
 			if err := json.Unmarshal(src.ProviderData, &mp); err != nil {
 				return nil, errx.Internal("intent").SetMessage("failed to unmarshal mercadopago provider data").SetCause(err)
 			}
@@ -70,7 +70,7 @@ func mapIntentFromDB(src *sqlc.Intent) (*contracts.Intent, error) {
 	return intent, nil
 }
 
-func marshalProviderData(intent contracts.Intent) (json.RawMessage, error) {
+func marshalProviderData(intent models.Intent) (json.RawMessage, error) {
 	switch intent.Provider {
 	case "mercadopago":
 		if intent.MercadoPagoData == nil {
@@ -86,7 +86,7 @@ func marshalProviderData(intent contracts.Intent) (json.RawMessage, error) {
 	}
 }
 
-func (repo *intentsRepo) Create(ctx context.Context, toCreate contracts.Intent) (*contracts.Intent, error) {
+func (repo *intentsRepo) Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Create")
 	defer span.End()
 
@@ -113,7 +113,7 @@ func (repo *intentsRepo) Create(ctx context.Context, toCreate contracts.Intent) 
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Intent, error) {
+func (repo *intentsRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByID")
 	defer span.End()
 
@@ -125,7 +125,7 @@ func (repo *intentsRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) List(ctx context.Context) ([]contracts.Intent, error) {
+func (repo *intentsRepo) List(ctx context.Context) ([]models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.List")
 	defer span.End()
 
@@ -134,7 +134,7 @@ func (repo *intentsRepo) List(ctx context.Context) ([]contracts.Intent, error) {
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	out := make([]contracts.Intent, 0, len(sqlcIntents))
+	out := make([]models.Intent, 0, len(sqlcIntents))
 	for _, intent := range sqlcIntents {
 		mapped, err := mapIntentFromDB(&intent)
 		if err != nil {
@@ -145,7 +145,7 @@ func (repo *intentsRepo) List(ctx context.Context) ([]contracts.Intent, error) {
 	return out, nil
 }
 
-func (repo *intentsRepo) ListIntentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]contracts.Intent, error) {
+func (repo *intentsRepo) ListIntentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.ListIntentsByWorkspace")
 	defer span.End()
 
@@ -154,7 +154,7 @@ func (repo *intentsRepo) ListIntentsByWorkspace(ctx context.Context, workspaceID
 		return nil, errx.FromDB(err, "intent")
 	}
 
-	out := make([]contracts.Intent, 0, len(sqlcIntents))
+	out := make([]models.Intent, 0, len(sqlcIntents))
 	for _, intent := range sqlcIntents {
 		mapped, err := mapIntentFromDB(&intent)
 		if err != nil {
@@ -165,7 +165,7 @@ func (repo *intentsRepo) ListIntentsByWorkspace(ctx context.Context, workspaceID
 	return out, nil
 }
 
-func (repo *intentsRepo) Cancel(ctx context.Context, id uuid.UUID) (*contracts.Intent, error) {
+func (repo *intentsRepo) Cancel(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Cancel")
 	defer span.End()
 
@@ -177,7 +177,7 @@ func (repo *intentsRepo) Cancel(ctx context.Context, id uuid.UUID) (*contracts.I
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) Confirm(ctx context.Context, id uuid.UUID) (*contracts.Intent, error) {
+func (repo *intentsRepo) Confirm(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Confirm")
 	defer span.End()
 
@@ -189,7 +189,7 @@ func (repo *intentsRepo) Confirm(ctx context.Context, id uuid.UUID) (*contracts.
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*contracts.Intent, error) {
+func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Fail")
 	defer span.End()
 
@@ -201,7 +201,7 @@ func (repo *intentsRepo) Fail(ctx context.Context, id uuid.UUID) (*contracts.Int
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) UpdateProviderData(ctx context.Context, intent contracts.Intent) (*contracts.Intent, error) {
+func (repo *intentsRepo) UpdateProviderData(ctx context.Context, intent models.Intent) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.UpdateProviderData")
 	defer span.End()
 
@@ -221,7 +221,7 @@ func (repo *intentsRepo) UpdateProviderData(ctx context.Context, intent contract
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) GetByMPOrderID(ctx context.Context, orderID string) (*contracts.Intent, error) {
+func (repo *intentsRepo) GetByMPOrderID(ctx context.Context, orderID string) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByMPOrderID")
 	defer span.End()
 
@@ -233,7 +233,7 @@ func (repo *intentsRepo) GetByMPOrderID(ctx context.Context, orderID string) (*c
 	return mapIntentFromDB(&sqlcIntent)
 }
 
-func (repo *intentsRepo) GetByMPTransactionID(ctx context.Context, transactionID string) (*contracts.Intent, error) {
+func (repo *intentsRepo) GetByMPTransactionID(ctx context.Context, transactionID string) (*models.Intent, error) {
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.GetByMPTransactionID")
 	defer span.End()
 

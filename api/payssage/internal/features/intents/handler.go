@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"payssage/internal/shared/contracts"
 	"payssage/internal/shared/errx"
 	"payssage/internal/shared/validation"
-
-	_ "payssage/internal/shared/contracts"
+	"payssage/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -39,11 +37,11 @@ func NewHandler(
 // @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
-// @Success 200 {object} contracts.Intent "Intent canceled successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Intent "Intent canceled successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents/{intent_id}/cancel [post]
 func (h *Handler) CancelIntent(w http.ResponseWriter, r *http.Request) {
 	intentID, rs := validation.GetUUID(r, "intent_id")
@@ -79,11 +77,11 @@ type CancelPixRequest struct {
 // @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
-// @Success 200 {object} contracts.Intent "Pix canceled successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Intent "Pix canceled successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents/{intent_id}/cancel-pix [post]
 func (h *Handler) CancelPix(w http.ResponseWriter, r *http.Request) {
 	intentID, rs := validation.GetUUID(r, "intent_id")
@@ -126,11 +124,11 @@ func (h *Handler) CancelPix(w http.ResponseWriter, r *http.Request) {
 // @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
-// @Success 200 {object} contracts.Intent "Intent retrieved successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Intent "Intent retrieved successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents/{intent_id} [get]
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	intentID, rs := validation.GetUUID(r, "intent_id")
@@ -172,10 +170,10 @@ type CreateIntentRequest struct {
 // @Param X-API-Key header string true "X-API-Key: tp_xxxxxxxx"
 // @Security APIKey
 // @Param request body CreateIntentRequest true "Intent details"
-// @Success 201 {object} contracts.Intent "Intent created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 201 {object} models.Intent "Intent created successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents [post]
 func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 	var req CreateIntentRequest
@@ -218,9 +216,9 @@ func (h *Handler) InitiateCheckout(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string false "Cookie: access_token=xxx"
 // @Security APIKey
 // @Security Cookie
-// @Success 200 {array} contracts.Intent "Intents retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.Intent "Intents retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	intents, err := h.queries.List(r.Context())
@@ -229,7 +227,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := make([]contracts.Intent, 0, len(intents))
+	out := make([]models.Intent, 0, len(intents))
 	for _, i := range intents {
 		out = append(out, i)
 	}
@@ -247,9 +245,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Param Cookie header string false "Cookie: access_token=xxx"
 // @Security APIKey
 // @Security Cookie
-// @Success 200 {array} contracts.Intent "Intents retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.Intent "Intents retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/intents [get]
 func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -260,7 +258,7 @@ func (h *Handler) ListByWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out := make([]contracts.Intent, 0, len(intents))
+	out := make([]models.Intent, 0, len(intents))
 	for _, i := range intents {
 		out = append(out, i)
 	}
@@ -282,11 +280,11 @@ type PayIntentRequest struct {
 // @Security APIKey
 // @Param intent_id path string true "Intent ID"
 // @Param request body PayIntentRequest true "Payment details"
-// @Success 200 {object} contracts.Intent "Intent charged successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {object} models.Intent "Intent charged successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /intents/{intent_id}/charge [post]
 func (h *Handler) Charge(w http.ResponseWriter, r *http.Request) {
 	intentID, rs := validation.GetUUID(r, "intent_id")

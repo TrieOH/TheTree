@@ -32,6 +32,7 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.Post("/auth/setup", h.Setup)
+		r.Get("/auth/setup", h.IsSetup)
 		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Post("/auth/register", h.Register)
 		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Post("/auth/login", h.Login)
 		r.With(jwtAuth).Post("/auth/logout", h.Logout)

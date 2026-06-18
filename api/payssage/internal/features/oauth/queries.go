@@ -2,11 +2,11 @@ package oauth
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
-	"payssage/internal/shared/ports"
+	"lib/authz"
+	"lib/database"
+	"payssage/models"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -32,7 +32,7 @@ func NewQueryService(
 	}
 }
 
-func (uc *QueryService) ListMarketplaceConfigs(ctx context.Context, workspaceName string) ([]contracts.MarketplaceConfig, error) {
+func (uc *QueryService) ListMarketplaceConfigs(ctx context.Context, workspaceName string) ([]models.MarketplaceConfig, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.ListMarketplaceConfigs")
 	defer span.End()
 

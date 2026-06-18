@@ -1,6 +1,7 @@
 package app
 
 import (
+	"lib/errx"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -20,6 +21,7 @@ import (
 	"lib/xslices"
 
 	"github.com/MintzyG/fun/middlewares"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -51,6 +53,7 @@ type queries struct {
 	authn    *authn.Queries
 	orgs     *organizations.Queries
 	projects *projects.Queries
+	actors   *actors.Queries
 }
 
 type commands struct {
@@ -67,6 +70,7 @@ type mws struct {
 	anyAuth           func(http.Handler) http.Handler
 	clientOnly        func(http.Handler) http.Handler
 	projectClientOnly func(http.Handler) http.Handler
+	metrics           func(http.Handler) http.Handler
 }
 
 func (app *IdentityX) run() {
@@ -113,8 +117,9 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var cmd queries
+	cmd.actors = actors.NewQueries(r.actors, rt.logger, rt.tracer, rt.tx)
 	cmd.authn = authn.NewQueries(r.cryptoKeys, rt.logger, rt.tracer, rt.tx)
-	cmd.orgs = organizations.NewQueries(r.projects, r.orgs, rt.logger, rt.tracer, rt.tx)
+	cmd.orgs = organizations.NewQueries(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
 	return cmd
 }
@@ -137,6 +142,8 @@ func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 		AnyAuth:           rt.mws.anyAuth,
 		ClientOnly:        rt.mws.clientOnly,
 		ProjectClientOnly: rt.mws.projectClientOnly,
+		Metrics:           rt.mws.metrics,
+		Actors:            actors.NewHandlers(rt.queries.actors),
 		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
 		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
 		Projects:          projects.NewHandlers(rt.commands.projects, rt.queries.projects),
@@ -152,11 +159,11 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	//mw.bodySize = middlewares.MaxBodySize(1 << 20)
 	//mw.requestID = middlewares.RequestID(middlewares.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = middlewares.Logs(middlewares.Config{Logger: rt.logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	//collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
-	//if err != nil {
-	//	errx.Exit(err, "Failed to create collectors")
-	//}
-	//mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	collectors, err := middlewares.NewCollectors(prometheus.DefaultRegisterer)
+	if err != nil {
+		errx.Exit(err, "Failed to create collectors")
+	}
+	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
 		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
 		AllowCredentials: true,

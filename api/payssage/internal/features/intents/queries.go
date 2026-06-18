@@ -2,12 +2,12 @@ package intents
 
 import (
 	"context"
+	"lib/authz"
+	"payssage/models"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"lib/database"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -34,7 +34,7 @@ func NewQueryService(
 	}
 }
 
-func (uc *QueryService) GetByID(ctx context.Context, id uuid.UUID) (intent *contracts.Intent, err error) {
+func (uc *QueryService) GetByID(ctx context.Context, id uuid.UUID) (intent *models.Intent, err error) {
 	ctx, span := uc.tracer.Start(ctx, "QueryService.GetByID")
 	defer span.End()
 
@@ -55,7 +55,7 @@ func (uc *QueryService) GetByID(ctx context.Context, id uuid.UUID) (intent *cont
 	return intent, nil
 }
 
-func (uc *QueryService) List(ctx context.Context) (intents []contracts.Intent, err error) {
+func (uc *QueryService) List(ctx context.Context) (intents []models.Intent, err error) {
 	ctx, span := uc.tracer.Start(ctx, "QueryService.List")
 	defer span.End()
 
@@ -87,7 +87,7 @@ func (uc *QueryService) List(ctx context.Context) (intents []contracts.Intent, e
 	return intents, nil
 }
 
-func (uc *QueryService) ListByWorkspace(ctx context.Context, wsName string) (intents []contracts.Intent, err error) {
+func (uc *QueryService) ListByWorkspace(ctx context.Context, wsName string) (intents []models.Intent, err error) {
 	ctx, span := uc.tracer.Start(ctx, "QueryService.List")
 	defer span.End()
 

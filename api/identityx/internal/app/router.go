@@ -1,10 +1,9 @@
 package app
 
 import (
-	"context"
+	"IdentityX/generated/docs"
+	"IdentityX/internal/features/actors"
 	"fmt"
-	"lib/errx"
-	"log/slog"
 	"net/http"
 
 	"IdentityX/internal/features/authn"
@@ -14,14 +13,10 @@ import (
 
 	_ "IdentityX/generated/docs"
 
-	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/riandyrn/otelchi"
-	"github.com/swaggo/swag/v2"
-	"riverqueue.com/riverui"
 )
 
 type RouterDeps struct {
@@ -34,7 +29,9 @@ type RouterDeps struct {
 	AnyAuth           func(http.Handler) http.Handler
 	ClientOnly        func(http.Handler) http.Handler
 	ProjectClientOnly func(http.Handler) http.Handler
+	Metrics           func(http.Handler) http.Handler
 
+	Actors   *actors.Handlers
 	Authn    *authn.Handlers
 	Orgs     *organizations.Handlers
 	Projects *projects.Handlers
@@ -85,46 +82,40 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 	//r.Use(deps.RealIP)
 	//r.Use(deps.RequestID)
 	r.Use(deps.Logger)
-	//r.Use(deps.Metrics)
+	r.Use(deps.Metrics)
 	//r.Use(deps.Recover)
 	//r.Use(deps.Timeout)
 	//r.Use(deps.BodySize)
 	//r.Use(deps.RateLimit)
 	r.Use(deps.CORS)
 
-	endpoints := riverui.NewEndpoints(app.river, nil)
-
-	handler, err := riverui.NewHandler(&riverui.HandlerOpts{
-		Endpoints: endpoints,
-		Logger:    slog.Default(),
-		Prefix:    "/riverui",
-	})
-	if err != nil {
-		errx.Exit(err, "failed to create river handler")
-	}
-	err = handler.Start(context.Background())
-	if err != nil {
-		errx.Exit(err, "failed to start river handler")
-	}
-	r.Mount("/riverui", handler)
+	//endpoints := riverui.NewEndpoints(app.river, nil)
+	//
+	//handler, err := riverui.NewHandler(&riverui.HandlerOpts{
+	//	Endpoints: endpoints,
+	//	Logger:    slog.Default(),
+	//	Prefix:    "/riverui",
+	//})
+	//if err != nil {
+	//	errx.Exit(err, "failed to create river handler")
+	//}
+	//err = handler.Start(context.Background())
+	//if err != nil {
+	//	errx.Exit(err, "failed to start river handler")
+	//}
+	//r.Mount("/riverui", handler)
 
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
-		doc, err := swag.ReadDoc()
-		if fun.Bail(w, err) {
-			return
-		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(doc))
+		_, _ = w.Write(docs.SwaggerJSON)
 	})
 
 	r.Handle("/metrics", promhttp.Handler())
 
+	actors.RegisterRoutes(r, deps.Actors, deps.JwtAuth, deps.ClientOnly)
 	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
 	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
 	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth, deps.ClientOnly)
-	//account.RegisterRoutes(r, deps.Accounts, deps.Jwt)
-	//sessions.RegisterRoutes(r, deps.Sessions, deps.Jwt)
-	//api_keys.RegisterRoutes(r, deps.ApiKeys, deps.Jwt)
 
 	r.Get("/health", handlers.Health("IdentityX-API").Handle)
 

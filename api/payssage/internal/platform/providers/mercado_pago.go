@@ -12,13 +12,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"payssage/ports"
 	"strconv"
 	"strings"
 	"time"
 
 	"lib/telemetry"
-	"payssage/contracts"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
@@ -70,7 +70,7 @@ func (p *MercadoPagoImpl) BuildAuthURL(state, redirectURI string) string {
 	return p.oauthClient.GetAuthorizationURL(p.clientID, redirectURI, state)
 }
 
-func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI string) (contracts.ProviderCredentialData, error) {
+func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI string) (models.ProviderCredentialData, error) {
 	body, err := json.Marshal(map[string]any{
 		"grant_type":    "authorization_code",
 		"client_id":     p.clientID,
@@ -81,7 +81,7 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 	})
 	if err != nil {
 		telemetry.Log().Error("error marshaling MP exchange code request body", zap.Error(err))
-		return contracts.ProviderCredentialData{}, err
+		return models.ProviderCredentialData{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -90,21 +90,21 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 	)
 	if err != nil {
 		telemetry.Log().Error("error creating MP exchange code request", zap.Error(err))
-		return contracts.ProviderCredentialData{}, err
+		return models.ProviderCredentialData{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		telemetry.Log().Error("error executing MP exchange code request", zap.Error(err))
-		return contracts.ProviderCredentialData{}, err
+		return models.ProviderCredentialData{}, err
 	}
 	defer resp.Body.Close()
 
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		telemetry.Log().Error("error reading MP exchange code response body", zap.Error(err))
-		return contracts.ProviderCredentialData{}, err
+		return models.ProviderCredentialData{}, err
 	}
 
 	telemetry.Log().Info("MP exchange response",
@@ -120,15 +120,15 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 	}
 	if err := json.Unmarshal(rawBody, &result); err != nil {
 		telemetry.Log().Error("error unmarshaling MP exchange code response body", zap.Error(err))
-		return contracts.ProviderCredentialData{}, err
+		return models.ProviderCredentialData{}, err
 	}
 
 	if result.AccessToken == "" {
 		telemetry.Log().Error("MP exchange code response had empty access token", zap.Any("result struct", result), zap.Any("rawBody", rawBody))
-		return contracts.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
+		return models.ProviderCredentialData{}, fmt.Errorf("MP token exchange failed: %s", string(rawBody))
 	}
 
-	return contracts.ProviderCredentialData{
+	return models.ProviderCredentialData{
 		AccessToken:    result.AccessToken,
 		RefreshToken:   result.RefreshToken,
 		ProviderUserID: result.UserID,
@@ -164,8 +164,8 @@ func VerifyMercadoPagoSignature(xSignature, xRequestID, dataID, secret string) b
 
 // -- PAL methods --
 
-func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *ports.InitiateCheckoutRequest) (*contracts.Intent, error) {
-	intent, err := contracts.NewIntent(request.WorkspaceID, request.Amount, request.Currency, request.Provider, request.Metadata)
+func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *ports.InitiateCheckoutRequest) (*models.Intent, error) {
+	intent, err := models.NewIntent(request.WorkspaceID, request.Amount, request.Currency, request.Provider, request.Metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *ports.I
 		return nil, err
 	}
 
-	intent.MercadoPagoData = &contracts.MercadoPagoIntentData{
+	intent.MercadoPagoData = &models.MercadoPagoIntentData{
 		OrderID:           strconv.Itoa(mpResp.ID),
 		TransactionID:     strconv.Itoa(mpResp.ID),
 		OrderStatus:       mpResp.Status,
@@ -254,8 +254,8 @@ func (p *MercadoPagoImpl) InitiateCheckout(ctx context.Context, request *ports.I
 	return intent, nil
 }
 
-func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *ports.InitiateCheckoutRequest) (*contracts.Intent, error) {
-	intent, err := contracts.NewIntent(request.WorkspaceID, request.Amount, request.Currency, request.Provider, request.Metadata)
+func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *ports.InitiateCheckoutRequest) (*models.Intent, error) {
+	intent, err := models.NewIntent(request.WorkspaceID, request.Amount, request.Currency, request.Provider, request.Metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +338,7 @@ func (p *MercadoPagoImpl) InitiatePixCheckout(ctx context.Context, request *port
 
 	paymentID := fmt.Sprintf("%d", mpResp.ID)
 
-	intent.MercadoPagoData = &contracts.MercadoPagoIntentData{
+	intent.MercadoPagoData = &models.MercadoPagoIntentData{
 		OrderID:           paymentID,
 		TransactionID:     paymentID,
 		OrderStatus:       mpResp.Status,
@@ -393,7 +393,7 @@ func (p *MercadoPagoImpl) CancelPixCode(ctx context.Context, paymentID string, s
 	return nil
 }
 
-func (p *MercadoPagoImpl) Charge(ctx context.Context, request *ports.ChargeRequest) (*contracts.Intent, error) {
+func (p *MercadoPagoImpl) Charge(ctx context.Context, request *ports.ChargeRequest) (*models.Intent, error) {
 	chargeIDKey, err := uuid.NewV7()
 	if err != nil {
 		return nil, wrapMPError(err)
@@ -461,29 +461,29 @@ func (p *MercadoPagoImpl) Charge(ctx context.Context, request *ports.ChargeReque
 	return &intent, nil
 }
 
-func (p *MercadoPagoImpl) Refund(ctx context.Context, request *ports.RefundRequest) (*contracts.Intent, error) {
+func (p *MercadoPagoImpl) Refund(ctx context.Context, request *ports.RefundRequest) (*models.Intent, error) {
 	return nil, wrapMPError(errors.New("not implemented"))
 }
 
 // -- MercadoPagoImpl internal methods --
 
-func (p *MercadoPagoImpl) CreatePixOrder(ctx context.Context, req ports.ChargeRequest) (*contracts.MercadoPagoIntentData, error) {
+func (p *MercadoPagoImpl) CreatePixOrder(ctx context.Context, req ports.ChargeRequest) (*models.MercadoPagoIntentData, error) {
 	return nil, wrapMPError(errors.New("not implemented"))
 }
 
-func (p *MercadoPagoImpl) NormalizeStatus(status, statusDetail string) contracts.IntentStatus {
+func (p *MercadoPagoImpl) NormalizeStatus(status, statusDetail string) models.IntentStatus {
 	switch status {
 	case "processed":
-		return contracts.IntentStatusSucceeded
+		return models.IntentStatusSucceeded
 	case "processing":
-		return contracts.IntentStatusPending
+		return models.IntentStatusPending
 	case "action_required":
 		// statusDetail disambiguates — for now treat as pending
-		return contracts.IntentStatusPending
+		return models.IntentStatusPending
 	case "canceled":
-		return contracts.IntentStatusCancelled
+		return models.IntentStatusCancelled
 	default:
-		return contracts.IntentStatusPending
+		return models.IntentStatusPending
 	}
 }
 

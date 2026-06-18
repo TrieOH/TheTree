@@ -2,12 +2,12 @@ package workspaces
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -38,8 +38,8 @@ func (repo *workspaceRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapWorkspaceFromDB(src *sqlc.Workspace) *contracts.Workspace {
-	return &contracts.Workspace{
+func mapWorkspaceFromDB(src *sqlc.Workspace) *models.Workspace {
+	return &models.Workspace{
 		ID:        src.ID,
 		ScopeID:   src.ScopeID,
 		UserID:    src.UserID,
@@ -50,7 +50,7 @@ func mapWorkspaceFromDB(src *sqlc.Workspace) *contracts.Workspace {
 	}
 }
 
-func (repo *workspaceRepo) Create(ctx context.Context, toCreate contracts.Workspace) (*contracts.Workspace, error) {
+func (repo *workspaceRepo) Create(ctx context.Context, toCreate models.Workspace) (*models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.Create")
 	defer span.End()
 
@@ -67,7 +67,7 @@ func (repo *workspaceRepo) Create(ctx context.Context, toCreate contracts.Worksp
 	return mapWorkspaceFromDB(&sqlcWorkspace), nil
 }
 
-func (repo *workspaceRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.Workspace, error) {
+func (repo *workspaceRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.GetByID")
 	defer span.End()
 
@@ -78,7 +78,7 @@ func (repo *workspaceRepo) GetByID(ctx context.Context, id uuid.UUID) (*contract
 
 	return mapWorkspaceFromDB(&sqlcWorkspace), nil
 }
-func (repo *workspaceRepo) GetByName(ctx context.Context, name string, userID uuid.UUID) (*contracts.Workspace, error) {
+func (repo *workspaceRepo) GetByName(ctx context.Context, name string, userID uuid.UUID) (*models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.GetByName")
 	defer span.End()
 
@@ -93,7 +93,7 @@ func (repo *workspaceRepo) GetByName(ctx context.Context, name string, userID uu
 	return mapWorkspaceFromDB(&sqlcWorkspace), nil
 }
 
-func (repo *workspaceRepo) List(ctx context.Context, userID uuid.UUID) ([]contracts.Workspace, error) {
+func (repo *workspaceRepo) List(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.List")
 	defer span.End()
 
@@ -102,14 +102,14 @@ func (repo *workspaceRepo) List(ctx context.Context, userID uuid.UUID) ([]contra
 		return nil, errx.FromDB(err, "workspace")
 	}
 
-	out := make([]contracts.Workspace, 0, len(sqlcWorkspaces))
+	out := make([]models.Workspace, 0, len(sqlcWorkspaces))
 	for _, workspace := range sqlcWorkspaces {
 		out = append(out, *mapWorkspaceFromDB(&workspace))
 	}
 	return out, nil
 }
 
-func (repo *workspaceRepo) EnableSandbox(ctx context.Context, id uuid.UUID) (*contracts.Workspace, error) {
+func (repo *workspaceRepo) EnableSandbox(ctx context.Context, id uuid.UUID) (*models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.EnableSandbox")
 	defer span.End()
 
@@ -121,7 +121,7 @@ func (repo *workspaceRepo) EnableSandbox(ctx context.Context, id uuid.UUID) (*co
 	return mapWorkspaceFromDB(&sqlcWorkspace), nil
 }
 
-func (repo *workspaceRepo) DisableSandbox(ctx context.Context, id uuid.UUID) (*contracts.Workspace, error) {
+func (repo *workspaceRepo) DisableSandbox(ctx context.Context, id uuid.UUID) (*models.Workspace, error) {
 	ctx, span := repo.tracer.Start(ctx, "WorkspaceRepo.DisableSandbox")
 	defer span.End()
 

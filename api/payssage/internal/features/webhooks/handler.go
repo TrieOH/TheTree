@@ -2,14 +2,14 @@ package webhooks
 
 import (
 	"encoding/json"
+	"lib/telemetry"
 	"log"
 	"net/http"
 	"time"
 
-	"payssage/internal/platform/telemetry"
 	"payssage/internal/shared/validation"
 
-	_ "payssage/internal/shared/contracts"
+	_ "payssage/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/go-chi/chi/v5"
@@ -56,11 +56,11 @@ type WebhookEndpointResponse struct {
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Param request body RegisterWebhookEndpointRequest true "Endpoint details"
-// @Success 201 {object} contracts.WebhookEndpoint "Endpoint registered successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 201 {object} models.WebhookEndpoint "Endpoint registered successfully"
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/webhooks [post]
 func (h *Handler) RegisterWebhookEndpoint(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -99,10 +99,10 @@ func (h *Handler) RegisterWebhookEndpoint(w http.ResponseWriter, r *http.Request
 // @Param name path string true "Workspace name"
 // @Param endpoint_id path string true "Endpoint ID"
 // @Success 200 {object} object "Endpoint deleted successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/webhooks/{endpoint_id} [delete]
 func (h *Handler) DeleteWebhookEndpoint(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -142,8 +142,8 @@ type MercadoPagoWebhookRequest struct {
 // @Param provider path string true "Provider name (e.g. mock, stripe)"
 // @Param request body ProviderWebhookRequest true "Provider webhook payload"
 // @Success 200 {object} object "Received"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Failure 400 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /webhooks/{provider} [post]
 func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
@@ -228,10 +228,10 @@ func (h *Handler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) 
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {array} contracts.WebhookEndpoint "Endpoints retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.WebhookEndpoint "Endpoints retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/webhooks [get]
 func (h *Handler) ListWebhookEndpoints(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -255,10 +255,10 @@ func (h *Handler) ListWebhookEndpoints(w http.ResponseWriter, r *http.Request) {
 // @Security Cookie
 // @Param name path string true "Workspace name"
 // @Param endpoint_id path string true "Endpoint ID"
-// @Success 200 {array} contracts.WebhookDelivery "Deliveries retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.WebhookDelivery "Deliveries retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/webhooks/{endpoint_id}/deliveries [get]
 func (h *Handler) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")
@@ -287,10 +287,10 @@ func (h *Handler) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request) 
 // @Param Cookie header string true "Cookie: access_token=xxx"
 // @Security Cookie
 // @Param name path string true "Workspace name"
-// @Success 200 {array} contracts.WebhookEventOriginal "Events retrieved successfully"
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
+// @Success 200 {array} models.WebhookEventOriginal "Events retrieved successfully"
+// @Failure 401 {object} fun.Response
+// @Failure 404 {object} fun.Response
+// @Failure 500 {object} fun.Response
 // @Router /workspaces/{name}/webhook-events [get]
 func (h *Handler) ListWebhookEvents(w http.ResponseWriter, r *http.Request) {
 	workspaceName := chi.URLParam(r, "name")

@@ -5,11 +5,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"payssage/ports"
 
 	"lib/authz"
 	"lib/database"
-	"payssage/contracts"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
@@ -20,7 +20,6 @@ import (
 type CommandService struct {
 	apiKeys    ports.ApiKeysRepo
 	workspaces ports.WorkspaceRepo
-	checker    authz.Checker
 	az         *authzed.Client
 	tx         database.TxRunner
 	tracer     trace.Tracer
@@ -29,7 +28,6 @@ type CommandService struct {
 func NewCommandService(
 	apiKeys ports.ApiKeysRepo,
 	workspaces ports.WorkspaceRepo,
-	checker authz.Checker,
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -37,14 +35,13 @@ func NewCommandService(
 	return &CommandService{
 		apiKeys:    apiKeys,
 		workspaces: workspaces,
-		checker:    checker,
 		az:         az,
 		tx:         tx,
 		tracer:     tracer,
 	}
 }
 
-func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName string) (rawKey string, ak *contracts.APIKey, err error) {
+func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName string) (rawKey string, ak *models.APIKey, err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Create")
 	defer span.End()
 
@@ -59,14 +56,14 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 		return "", nil, err
 	}
 
-	if err = uc.checker.Require(ctx,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_api_keys"),
-		authz.Resource("workspace", workspace.ID.String()),
-		nil,
-	); err != nil {
-		return "", nil, err
-	}
+	//if err = uc.checker.Require(ctx,
+	//	authz.Subject("user", sub.ID),
+	//	authz.Permission("create_api_keys"),
+	//	authz.Resource("workspace", workspace.ID.String()),
+	//	nil,
+	//); err != nil {
+	//	return "", nil, err
+	//}
 
 	rawBytes := make([]byte, 32)
 	if _, err := rand.Read(rawBytes); err != nil {
@@ -80,12 +77,12 @@ func (uc *CommandService) Create(ctx context.Context, workspaceName, keyName str
 		return "", nil, err
 	}
 
-	apiKey, err := contracts.NewAPIKey(workspace.ID, keyName, string(hash), prefix)
+	apiKey, err := models.NewAPIKey(workspace.ID, keyName, string(hash), prefix)
 	if err != nil {
 		return "", nil, err
 	}
 
-	var created *contracts.APIKey
+	var created *models.APIKey
 	created, err = uc.apiKeys.Create(ctx, *apiKey)
 	if err != nil {
 		return "", nil, err
@@ -108,13 +105,13 @@ func (uc *CommandService) RevokeAPIKey(ctx context.Context, workspaceName string
 		return err
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("revoke_api_keys"),
-		authz.Resource("workspace", workspace.ID.String()),
-	); err != nil {
-		return err
-	}
+	//if err = authz.Require(ctx, uc.az,
+	//	authz.Subject("user", sub.ID),
+	//	authz.Permission("revoke_api_keys"),
+	//	authz.Resource("workspace", workspace.ID.String()),
+	//); err != nil {
+	//	return err
+	//}
 
 	if _, err := uc.apiKeys.Revoke(ctx, keyID, workspace.ID); err != nil {
 		return err

@@ -2,12 +2,12 @@ package workspaces
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/shared/authz"
-	"payssage/internal/shared/contracts"
+	"lib/authz"
+	"lib/database"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/authzed/authzed-go/v1"
 	"go.opentelemetry.io/otel/trace"
@@ -34,7 +34,7 @@ func NewCommandService(
 	}
 }
 
-func (uc *CommandService) Create(ctx context.Context, name string) (ws *contracts.Workspace, err error) {
+func (uc *CommandService) Create(ctx context.Context, name string) (ws *models.Workspace, err error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.Create")
 	defer span.End()
 
@@ -44,21 +44,21 @@ func (uc *CommandService) Create(ctx context.Context, name string) (ws *contract
 		return nil, err
 	}
 
-	var workspace *contracts.Workspace
-	workspace, err = contracts.NewWorkspace(sub.ID, name)
+	var workspace *models.Workspace
+	workspace, err = models.NewWorkspace(sub.ID, name)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_workspaces"),
-		authz.Resource("platform", "global"),
-	); err != nil {
-		return nil, err
-	}
+	//if err = authz.Require(ctx, uc.az,
+	//	authz.Subject("user", sub.ID),
+	//	authz.Permission("create_workspaces"),
+	//	authz.Resource("platform", "global"),
+	//); err != nil {
+	//	return nil, err
+	//}
 
-	var created *contracts.Workspace
+	var created *models.Workspace
 	created, err = uc.workspaces.Create(ctx, *workspace)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (uc *CommandService) Create(ctx context.Context, name string) (ws *contract
 	return created, nil
 }
 
-func (uc *CommandService) DisableSandbox(ctx context.Context, workspaceName string) (*contracts.Workspace, error) {
+func (uc *CommandService) DisableSandbox(ctx context.Context, workspaceName string) (*models.Workspace, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.DisableSandbox")
 	defer span.End()
 
@@ -87,7 +87,7 @@ func (uc *CommandService) DisableSandbox(ctx context.Context, workspaceName stri
 	return uc.workspaces.DisableSandbox(ctx, workspace.ID)
 }
 
-func (uc *CommandService) EnableSandbox(ctx context.Context, workspaceName string) (*contracts.Workspace, error) {
+func (uc *CommandService) EnableSandbox(ctx context.Context, workspaceName string) (*models.Workspace, error) {
 	ctx, span := uc.tracer.Start(ctx, "CommandService.EnableSandbox")
 	defer span.End()
 

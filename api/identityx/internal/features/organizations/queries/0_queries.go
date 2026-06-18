@@ -11,6 +11,7 @@ import (
 
 type Queries struct {
 	projects ports.ProjectRepo
+	actors   ports.ActorRepo
 	orgs     ports.OrganizationRepo
 	logger   *zap.Logger
 	tracer   trace.Tracer
@@ -19,6 +20,7 @@ type Queries struct {
 
 func NewQueries(
 	projects ports.ProjectRepo,
+	actors ports.ActorRepo,
 	orgs ports.OrganizationRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
@@ -26,6 +28,7 @@ func NewQueries(
 ) *Queries {
 	return errx.MustProvide(&Queries{
 		projects: projects,
+		actors:   actors,
 		orgs:     orgs,
 		logger:   logger,
 		tracer:   tracer,

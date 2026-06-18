@@ -3,12 +3,12 @@ package oauth
 import (
 	"context"
 	"encoding/json"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -35,13 +35,13 @@ func (repo *providerCredentialsRepo) queries(ctx context.Context) *sqlc.Queries 
 	return repo.q
 }
 
-func mapProviderCredentialFromDB(src *sqlc.ProviderCredential) (*contracts.ProviderCredential, error) {
-	var data contracts.ProviderCredentialData
+func mapProviderCredentialFromDB(src *sqlc.ProviderCredential) (*models.ProviderCredential, error) {
+	var data models.ProviderCredentialData
 	if err := json.Unmarshal(src.Credentials, &data); err != nil {
 		return nil, err
 	}
 
-	return &contracts.ProviderCredential{
+	return &models.ProviderCredential{
 		ID:          src.ID,
 		WorkspaceID: src.WorkspaceID,
 		Provider:    src.Provider,
@@ -51,7 +51,7 @@ func mapProviderCredentialFromDB(src *sqlc.ProviderCredential) (*contracts.Provi
 	}, nil
 }
 
-func (repo *providerCredentialsRepo) Create(ctx context.Context, cred contracts.ProviderCredential) (*contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) Create(ctx context.Context, cred models.ProviderCredential) (*models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.Create")
 	defer span.End()
 
@@ -72,7 +72,7 @@ func (repo *providerCredentialsRepo) Create(ctx context.Context, cred contracts.
 	return mapProviderCredentialFromDB(&row)
 }
 
-func (repo *providerCredentialsRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.GetByID")
 	defer span.End()
 
@@ -84,7 +84,7 @@ func (repo *providerCredentialsRepo) GetByID(ctx context.Context, id uuid.UUID) 
 	return mapProviderCredentialFromDB(&row)
 }
 
-func (repo *providerCredentialsRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.ListByWorkspace")
 	defer span.End()
 
@@ -93,7 +93,7 @@ func (repo *providerCredentialsRepo) ListByWorkspace(ctx context.Context, worksp
 		return nil, errx.FromDB(err, "provider_credential")
 	}
 
-	out := make([]contracts.ProviderCredential, 0, len(rows))
+	out := make([]models.ProviderCredential, 0, len(rows))
 	for _, row := range rows {
 		cred, err := mapProviderCredentialFromDB(&row)
 		if err != nil {
@@ -104,7 +104,7 @@ func (repo *providerCredentialsRepo) ListByWorkspace(ctx context.Context, worksp
 	return out, nil
 }
 
-func (repo *providerCredentialsRepo) Revoke(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) Revoke(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.Revoke")
 	defer span.End()
 
@@ -119,7 +119,7 @@ func (repo *providerCredentialsRepo) Revoke(ctx context.Context, id uuid.UUID, w
 	return mapProviderCredentialFromDB(&row)
 }
 
-func (repo *providerCredentialsRepo) GetByWorkspaceAndProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) GetByWorkspaceAndProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.GetByWorkspaceAndProvider")
 	defer span.End()
 
@@ -134,7 +134,7 @@ func (repo *providerCredentialsRepo) GetByWorkspaceAndProvider(ctx context.Conte
 	return mapProviderCredentialFromDB(&row)
 }
 
-func (repo *providerCredentialsRepo) GetSellerCredentialByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*contracts.ProviderCredential, error) {
+func (repo *providerCredentialsRepo) GetSellerCredentialByProvider(ctx context.Context, workspaceID uuid.UUID, provider string) (*models.ProviderCredential, error) {
 	ctx, span := repo.tracer.Start(ctx, "ProviderCredentialsRepo.GetSellerCredentialByProvider")
 	defer span.End()
 

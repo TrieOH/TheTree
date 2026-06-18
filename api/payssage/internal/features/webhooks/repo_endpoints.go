@@ -2,12 +2,12 @@ package webhooks
 
 import (
 	"context"
+	"payssage/ports"
 
-	"payssage/internal/platform/database"
-	"payssage/internal/platform/database/sqlc"
-	"payssage/internal/shared/contracts"
+	"lib/database"
+	"payssage/internal/database/sqlc"
 	"payssage/internal/shared/errx"
-	"payssage/internal/shared/ports"
+	"payssage/models"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -34,8 +34,8 @@ func (repo *webhookEndpointRepo) queries(ctx context.Context) *sqlc.Queries {
 	return repo.q
 }
 
-func mapWebhookEndpointFromDB(src *sqlc.WebhookEndpoint) *contracts.WebhookEndpoint {
-	return &contracts.WebhookEndpoint{
+func mapWebhookEndpointFromDB(src *sqlc.WebhookEndpoint) *models.WebhookEndpoint {
+	return &models.WebhookEndpoint{
 		ID:          src.ID,
 		ScopeID:     src.ScopeID,
 		WorkspaceID: src.WorkspaceID,
@@ -46,7 +46,7 @@ func mapWebhookEndpointFromDB(src *sqlc.WebhookEndpoint) *contracts.WebhookEndpo
 	}
 }
 
-func (repo *webhookEndpointRepo) Create(ctx context.Context, toCreate contracts.WebhookEndpoint) (*contracts.WebhookEndpoint, error) {
+func (repo *webhookEndpointRepo) Create(ctx context.Context, toCreate models.WebhookEndpoint) (*models.WebhookEndpoint, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEndpointRepo.Create")
 	defer span.End()
 
@@ -64,7 +64,7 @@ func (repo *webhookEndpointRepo) Create(ctx context.Context, toCreate contracts.
 	return mapWebhookEndpointFromDB(&row), nil
 }
 
-func (repo *webhookEndpointRepo) GetByID(ctx context.Context, id uuid.UUID) (*contracts.WebhookEndpoint, error) {
+func (repo *webhookEndpointRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.WebhookEndpoint, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEndpointRepo.GetByID")
 	defer span.End()
 
@@ -76,7 +76,7 @@ func (repo *webhookEndpointRepo) GetByID(ctx context.Context, id uuid.UUID) (*co
 	return mapWebhookEndpointFromDB(&row), nil
 }
 
-func (repo *webhookEndpointRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]contracts.WebhookEndpoint, error) {
+func (repo *webhookEndpointRepo) ListByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]models.WebhookEndpoint, error) {
 	ctx, span := repo.tracer.Start(ctx, "WebhookEndpointRepo.ListByWorkspace")
 	defer span.End()
 
@@ -85,7 +85,7 @@ func (repo *webhookEndpointRepo) ListByWorkspace(ctx context.Context, workspaceI
 		return nil, errx.FromDB(err, "webhook_endpoint")
 	}
 
-	out := make([]contracts.WebhookEndpoint, 0, len(rows))
+	out := make([]models.WebhookEndpoint, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, *mapWebhookEndpointFromDB(&row))
 	}
