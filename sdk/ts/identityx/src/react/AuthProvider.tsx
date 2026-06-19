@@ -38,6 +38,7 @@ export function AuthProvider({
   waitSession = true,
   clientConfig,
   onLogin,
+  onSetup,
   onResetPassword,
   onRegister,
   onVerify,
@@ -87,12 +88,13 @@ export function AuthProvider({
   const auth = useMemo(
     () => createAuthService(apiInstance, {
       onLogin,
+      onSetup,
       onResetPassword,
       onRegister,
       onVerify,
       onRefresh,
     }),
-    [apiInstance, onLogin, onResetPassword, onRegister, onVerify, onRefresh],
+    [apiInstance, onLogin, onSetup, onResetPassword, onRegister, onVerify, onRefresh],
   );
 
   useEffect(() => {

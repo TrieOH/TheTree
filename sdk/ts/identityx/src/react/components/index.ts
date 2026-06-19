@@ -16,6 +16,7 @@ import { ModernSignUp } from "./Modern/ModernSignUp";
 import { ModernForgotPassword } from "./Modern/ModernForgotPassword";
 import { ModernResetPassword } from "./Modern/ModernResetPassword";
 import { ModernVerifyEmail } from "./Modern/ModernVerifyEmail";
+import { ModernSetup } from "./Modern/ModernSetup";
 import { ModernAuth } from "./Modern/ModernAuth";
 
 export {
@@ -26,6 +27,7 @@ export {
   ModernForgotPassword,
   ModernResetPassword,
   ModernVerifyEmail,
+  ModernSetup,
   ModernAuth,
   BasicLogoutButton,
   Copyright,
