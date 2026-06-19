@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router'
 import { AuthProvider, type useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
+import { requireSetup } from '@/features/auth/lib/route-guard'
 import appCss from '../styles.css?url'
 import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
@@ -16,6 +17,7 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: requireSetup,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

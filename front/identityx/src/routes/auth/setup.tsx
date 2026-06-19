@@ -1,12 +1,16 @@
-import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { ModernSetup } from '@trieoh/identityx-sdk-ts/react'
-import { requireGuest } from '@/features/auth/lib/route-guard';
+import { requireSetupNotDone } from '@/features/auth/lib/route-guard';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
-import { cn } from '@/shared/lib/utils';
+
+const SETUP_DONE_KEY = 'trieoh_setup_done';
+
+function markSetupComplete() {
+  if (typeof window !== "undefined") localStorage.setItem(SETUP_DONE_KEY, "true");
+}
 
 export const Route = createFileRoute('/auth/setup')({
-  beforeLoad: requireGuest,
+  beforeLoad: requireSetupNotDone,
   component: RouteComponent,
 })
 
@@ -16,6 +20,7 @@ function RouteComponent() {
 
   const handleSetupSuccess = async (message?: string) => {
     toast.success(message ?? "Initial setup completed successfully!")
+    markSetupComplete()
     const auth = router.options.context.auth
     if (auth) {
       router.update({
@@ -38,17 +43,6 @@ function RouteComponent() {
     <ModernSetup
       onSuccess={handleSetupSuccess}
       onFailed={handleFailure}
-      backLink={
-        <Link
-          to="/"
-          className={cn(
-            "inline-flex items-center gap-0.5 text-sm text-muted-foreground",
-            "hover:text-foreground transition-colors"
-          )}
-        >
-          <ArrowLeft size={20} /> Back to Home
-        </Link>
-      }
     />
   )
 }
