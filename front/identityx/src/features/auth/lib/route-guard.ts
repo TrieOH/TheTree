@@ -20,7 +20,7 @@ export const requireAuth = ({ context, location }: BeforeLoadArgs) => {
 export const requireGuest = ({ context, location }: BeforeLoadArgs) => {
   if (context.auth?.isAuthenticated) {
     throw redirect({
-      to: '/projects',
+      to: '/admin',
       search: { redirect: location.pathname, }
     })
   }

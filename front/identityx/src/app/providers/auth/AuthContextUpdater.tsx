@@ -1,8 +1,9 @@
 import { useRouter } from "@tanstack/react-router"
 import { useAuth } from "@trieoh/identityx-sdk-ts/react"
 import { useLayoutEffect } from "react"
+import type { ReactNode } from "react"
 
-export function AuthSynchronizer({ children }: { children: React.ReactNode }) {
+export function AuthContextUpdater({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const router = useRouter()
 
@@ -17,7 +18,8 @@ export function AuthSynchronizer({ children }: { children: React.ReactNode }) {
         }
       })
 
-      if (currentRouterAuth?.isAuthenticated !== auth.isAuthenticated) router.invalidate()
+      if (currentRouterAuth?.isAuthenticated !== auth.isAuthenticated)
+        void router.invalidate()
     }
   }, [auth, router])
 

@@ -31,7 +31,7 @@ function RouteComponent() {
           auth: { ...auth, isAuthenticated: true },
         },
       })
-      const destination = search.redirect || '/projects'
+      const destination = search.redirect || '/admin'
       await navigate({ to: destination, replace: true })
       toast.success(message ?? "Login successful!")
       router.options.context.queryClient.invalidateQueries();

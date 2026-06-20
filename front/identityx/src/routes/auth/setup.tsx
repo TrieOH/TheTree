@@ -29,7 +29,7 @@ function RouteComponent() {
           auth: { ...auth, isAuthenticated: true },
         },
       })
-      await navigate({ to: '/projects', replace: true })
+      await navigate({ to: '/admin', replace: true })
       router.options.context.queryClient.invalidateQueries();
     } else await navigate({ to: '/auth', replace: true })
   }

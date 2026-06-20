@@ -5,11 +5,11 @@ import {
   Scripts,
 } from '@tanstack/react-router'
 import { AuthProvider, type useAuth } from '@trieoh/identityx-sdk-ts/react'
-import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
 import { requireSetup } from '@/features/auth/lib/route-guard'
 import appCss from '../styles.css?url'
 import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
+import { AuthContextUpdater } from '@/app/providers/auth/AuthContextUpdater'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -48,11 +48,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className='min-w-xs' suppressHydrationWarning>
         <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
-          <AuthSynchronizer>
+          <AuthContextUpdater>
             {/* <PHProvider> */}
             {children}
             {/* </PHProvider> */}
-          </AuthSynchronizer>
+          </AuthContextUpdater>
         </AuthProvider>
         <Toaster />
         <Scripts />

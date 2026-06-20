@@ -17,7 +17,6 @@ export interface Actor {
   project_id?: string;
   auth_method: AuthMethod;
   verified_at?: string;
-  password_hash?: string;
   email?: string;
   type: ActorType;
   metadata?: any /* json.RawMessage */;
@@ -74,6 +73,7 @@ export interface IDXRegisterRequest {
 export interface IDXRegisterInput {
   Email: string;
   Password: string;
+  ProjectID?: string;
 }
 export interface IDXLoginRequest {
   email: string;
@@ -82,6 +82,7 @@ export interface IDXLoginRequest {
 export interface IDXLoginInput {
   email: string;
   password: string;
+  ProjectID?: string;
 }
 export interface SetupInput {
   Email: string;
@@ -90,6 +91,9 @@ export interface SetupInput {
 export interface LogoutInput {
   AccessToken: string;
   RefreshToken: string;
+}
+export interface ProjectIDQueryParam {
+  ProjectID?: string;
 }
 
 //////////

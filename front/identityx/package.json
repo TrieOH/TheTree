@@ -28,6 +28,7 @@
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/react-store": "^0.9.3",
     "@trieoh/identityx-sdk-ts": "link:../../sdk/ts/identityx",
+    "@trieoh/identityx-models": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

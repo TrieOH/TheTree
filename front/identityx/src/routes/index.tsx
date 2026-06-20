@@ -18,13 +18,13 @@ function App() {
           {isAuthenticated ? (
             <>
               <Link
-                to="/projects"
+                to="/admin"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 Dashboard
               </Link>
               <Link
-                to="/projects"
+                to="/admin"
                 className="text-sm px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
               >
                 Dashboard
@@ -65,7 +65,7 @@ function App() {
         <div className="flex items-center justify-center gap-4">
           {isAuthenticated ? (
             <Link
-              to="/projects"
+              to="/admin"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
             >
               Go to Dashboard
@@ -135,7 +135,7 @@ function App() {
         <div className="max-w-6xl mx-auto px-6 py-16 text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to ship auth?</h2>
           <Link
-            to={isAuthenticated ? "/projects" : "/auth"}
+            to={isAuthenticated ? "/admin" : "/auth"}
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
           >
             {isAuthenticated ? "Go to Dashboard" : "Get started"}
@@ -149,7 +149,7 @@ function App() {
         <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-sm text-muted-foreground">
           <span>IdentityX by TrieOH</span>
           <Link
-            to={isAuthenticated ? "/projects" : "/auth"}
+            to={isAuthenticated ? "/admin" : "/auth"}
             className="hover:text-foreground transition-colors"
           >
             {isAuthenticated ? "Dashboard" : "Sign in"}
