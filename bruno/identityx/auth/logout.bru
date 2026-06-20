@@ -7,11 +7,14 @@ meta {
 post {
   url: {{identityx_url}}/auth/logout
   body: none
-  auth: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
 }
 
 headers {
-  access_token: {{access_token}}
   refresh_token: {{refresh_token}}
 }
 

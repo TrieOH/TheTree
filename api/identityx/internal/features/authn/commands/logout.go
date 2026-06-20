@@ -16,7 +16,8 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 	accessClaims := &models.AccessClaims{}
 	token, err := crypto.OpenUnverified(in.AccessToken, accessClaims)
 	if err != nil {
-		return err
+		c.logger.Error("access token verification failed", zap.Error(err))
+		return fun.ErrUnauthorized("invalid access token")
 	}
 	if accessClaims == nil {
 		return fun.ErrBadRequest("empty access claims")
