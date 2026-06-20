@@ -1,5 +1,10 @@
 import type { AnyFormApi, FormAsyncValidateOrFn, FormValidateOrFn } from "@tanstack/react-form";
 
+export interface RuleStatus {
+  message: string
+  passed: boolean
+}
+
 export interface CrudFormConfig<TFormData> {
   defaultValues: TFormData;
   validators?: {
@@ -26,6 +31,7 @@ export interface FieldConfig {
   placeholder?: string;
   type?: FieldType;
   autoComplete?: string;
-  errors?: string[];
+  required?: boolean;
+  getRulesStatus?: (value: unknown) => RuleStatus[]
   options?: FieldOption[];
 }

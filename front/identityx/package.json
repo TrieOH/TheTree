@@ -15,6 +15,7 @@
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@t3-oss/env-core": "^0.13.10",
     "@tanstack/react-devtools": "^0.7.0",
@@ -27,8 +28,8 @@
     "@tanstack/react-router-ssr-query": "^1.131.7",
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/react-store": "^0.9.3",
-    "@trieoh/identityx-sdk-ts": "link:../../sdk/ts/identityx",
     "@trieoh/identityx-models": "workspace:*",
+    "@trieoh/identityx-sdk-ts": "link:../../sdk/ts/identityx",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

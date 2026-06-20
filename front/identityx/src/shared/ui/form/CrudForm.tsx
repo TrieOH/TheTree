@@ -45,11 +45,12 @@ export default function CrudForm<TFormData>({
               switch (item.type) {
                 default:
                   return (
-                    <field.TextField 
-                      label={item.label} 
+                    <field.TextField
+                      label={item.label}
                       placeholder={item.placeholder || ""}
                       autoComplete={item.autoComplete}
-                      errors={item.errors}
+                      required={item.required}
+                      getRulesStatus={item.getRulesStatus}
                       submitted={submitted}
                     />
                   );
