@@ -3,6 +3,7 @@ import { Modal } from './modal'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import CrudForm from '@/shared/ui/form/CrudForm'
 import type { CrudFormConfig, FieldConfig } from '@/shared/ui/form/types'
+import type { FormValidateOrFn } from '@tanstack/react-form'
 import type { ZodObject } from 'zod'
 
 export interface FieldDefinition {
@@ -39,7 +40,7 @@ export function FormModal<TFormData extends object>({
   isLoading,
   formId,
 }: FormModalProps<TFormData>) {
-  const validateFn = (value: Record<string, unknown>) => {
+  const validateFn: FormValidateOrFn<TFormData> = ({ value }) => {
     const result = schema.safeParse(value)
     if (!result.success) {
       const fieldErrors: Record<string, string> = {}
@@ -67,7 +68,7 @@ export function FormModal<TFormData extends object>({
       onSubmit: validateFn,
     },
     onSubmit: async ({ value }) => {
-      await onSubmit(value as TFormData)
+      await onSubmit(value)
     },
   }
 
