@@ -1,4 +1,4 @@
-package queries
+package commands
 
 import (
 	"IdentityX/ports"
@@ -8,24 +8,27 @@ import (
 	"go.uber.org/zap"
 )
 
-type Queries struct {
-	projects ports.ProjectRepo
+type Commands struct {
 	actors   ports.ActorRepo
+	apiKeys  ports.ApiKeysRepo
+	projects ports.ProjectRepo
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	tx       database.TxRunner
 }
 
-func NewQueries(
-	projects ports.ProjectRepo,
+func NewCommands(
 	actors ports.ActorRepo,
+	apiKeys ports.ApiKeysRepo,
+	projects ports.ProjectRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
-) *Queries {
-	return &Queries{
-		projects: projects,
+) *Commands {
+	return &Commands{
 		actors:   actors,
+		apiKeys:  apiKeys,
+		projects: projects,
 		logger:   logger,
 		tracer:   tracer,
 		tx:       tx,

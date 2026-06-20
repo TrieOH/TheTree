@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"lib/api_keys"
 	"net/http"
+	"time"
 
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/jobs"
@@ -43,7 +45,7 @@ func SetupConstraintMessages() {
 	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
 		// actors
 		"chk_actors_type":                      "actor type must be one of: human, service, machine",
-		"chk_actors_auth_method":               "auth method must be one of: password, google, github",
+		"chk_actors_auth_method":               "auth method must be one of: api_key, password, google, github",
 		"chk_actors_email_required_for_humans": "email is required for human actors",
 		"uniq_email_per_scope_per_method":      "an account with this email already exists for this scope and auth method",
 
@@ -168,9 +170,50 @@ func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClai
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		return nil, fun.ErrNotImplemented("api keys are not yet supported")
-	}
+		if len(rawKey) < api_keys.ApiKeyPrefixLen {
+			return nil, fun.ErrUnauthorized("invalid api key")
+		}
+		body, err := api_keys.StripKeyHeader(rawKey)
+		if err != nil || len(body) < api_keys.ApiKeyPrefixLen {
+			return nil, fun.ErrUnauthorized("invalid api key")
+		}
+		prefix := body[:api_keys.ApiKeyPrefixLen]
 
+		apiKey, err := rt.repos.apiKeys.GetByPrefix(ctx, prefix)
+		if err != nil {
+			return nil, fun.ErrUnauthorized("invalid api key")
+		}
+
+		if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash) {
+			return nil, fun.ErrUnauthorized("invalid api key")
+		}
+
+		if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
+			return nil, fun.ErrUnauthorized("api key expired")
+		}
+
+		actor, err := rt.repos.actors.GetByID(ctx, apiKey.ActorID)
+		if err != nil {
+			return nil, fun.ErrUnauthorized("invalid api key")
+		}
+
+		ctx = models.WithIdentity(ctx, &models.Identity{
+			Sub: models.Subject{
+				ID:           actor.ID,
+				ProjectID:    actor.ProjectID,
+				Email:        actor.Email,
+				Type:         actor.Type,
+				Capabilities: nil,
+				Metadata:     nil,
+			},
+			Cred: models.Credential{
+				ID:   &apiKey.ID,
+				Type: models.ApiKeyCredentialType,
+				Raw:  rawKey,
+			},
+		})
+		return ctx, nil
+	}
 	return middlewares.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }
 

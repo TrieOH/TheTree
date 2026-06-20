@@ -1,6 +1,7 @@
 package app
 
 import (
+	"IdentityX/internal/features/api_keys"
 	"lib/errx"
 	"log"
 	"net/http"
@@ -41,6 +42,7 @@ type runtime struct {
 
 type repos struct {
 	actors             ports.ActorRepo
+	apiKeys            ports.ApiKeysRepo
 	platformRoles      ports.PlatformRolesRepo
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
@@ -58,6 +60,7 @@ type queries struct {
 
 type commands struct {
 	authn    *authn.Commands
+	apiKeys  *api_keys.Commands
 	orgs     *organizations.Commands
 	projects *projects.Commands
 }
@@ -106,6 +109,7 @@ func (app *IdentityX) run() {
 func (app *IdentityX) startRepos(rt runtime) repos {
 	var r repos
 	r.actors = actors.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
+	r.apiKeys = api_keys.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.platformRoles = platform_roles.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.cryptoKeys = crypto_keys.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
 	r.blacklist = blacklist.NewRepo(rt.sqlcQ, rt.logger, rt.tracer)
@@ -117,7 +121,7 @@ func (app *IdentityX) startRepos(rt runtime) repos {
 
 func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 	var cmd queries
-	cmd.actors = actors.NewQueries(r.actors, rt.logger, rt.tracer, rt.tx)
+	cmd.actors = actors.NewQueries(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	cmd.authn = authn.NewQueries(r.cryptoKeys, rt.logger, rt.tracer, rt.tx)
 	cmd.orgs = organizations.NewQueries(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewQueries(r.projects, rt.logger, rt.tracer, rt.tx)
@@ -127,6 +131,7 @@ func (app *IdentityX) startQueries(rt runtime, r repos) queries {
 func (app *IdentityX) startCommands(rt runtime, r repos) commands {
 	var cmd commands
 	cmd.authn = authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, rt.logger, rt.tracer, rt.tx)
+	cmd.apiKeys = api_keys.NewCommands(r.actors, r.apiKeys, r.projects, rt.logger, rt.tracer, rt.tx)
 	cmd.orgs = organizations.NewCommands(r.projects, r.actors, r.orgs, rt.logger, rt.tracer, rt.tx)
 	cmd.projects = projects.NewCommands(r.projects, r.actors, rt.logger, rt.tracer, rt.tx)
 	return cmd
@@ -144,6 +149,7 @@ func (app *IdentityX) setupRouter(rt runtime) RouterDeps {
 		ProjectClientOnly: rt.mws.projectClientOnly,
 		Metrics:           rt.mws.metrics,
 		Actors:            actors.NewHandlers(rt.queries.actors),
+		ApiKeys:           api_keys.NewHandlers(rt.commands.apiKeys),
 		Authn:             authn.NewHandlers(rt.commands.authn, rt.queries.authn),
 		Orgs:              organizations.NewHandlers(rt.commands.orgs, rt.queries.orgs),
 		Projects:          projects.NewHandlers(rt.commands.projects, rt.queries.projects),

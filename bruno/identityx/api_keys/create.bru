@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{identityx_url}}/projects
+  url: {{identityx_url}}/projects/:project_id/api_keys
   body: json
   auth: bearer
 }
@@ -16,8 +16,8 @@ auth:bearer {
 
 body:json {
   {
-    "name": "My Project",
-    "slug": "mp",
-    "domain": "https://myproject.com"
+    "name": "my key",
+    "expires_at": "",
+    "create_for_service_account": false
   }
 }

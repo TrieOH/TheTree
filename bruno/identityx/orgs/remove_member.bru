@@ -5,7 +5,7 @@ meta {
 }
 
 delete {
-  url: {{identityx_url}}/organizations/{org_id}/members
+  url: {{identityx_url}}/organizations/:org_id/members
   body: json
   auth: bearer
 }
