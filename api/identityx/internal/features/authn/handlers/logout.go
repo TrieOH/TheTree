@@ -4,6 +4,7 @@ import (
 	"IdentityX/models"
 	"lib/globals"
 	"net/http"
+	"strings"
 
 	"github.com/MintzyG/fun"
 )
@@ -27,7 +28,12 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := fun.From(r)
-	accessToken := req.Header("access_token").String()
+	authorization := req.Header("Authorization").String()
+	accessToken, found := strings.CutPrefix("Bearer ", authorization)
+	if !found {
+		fun.Error(fun.ErrUnauthorized("Invalid access token"))
+		return
+	}
 	refreshToken := req.Header("refresh_token").String()
 	err := h.commands.Logout(r.Context(), models.LogoutInput{
 		AccessToken:  accessToken,
