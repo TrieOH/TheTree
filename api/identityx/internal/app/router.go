@@ -3,6 +3,7 @@ package app
 import (
 	"IdentityX/generated/docs"
 	"IdentityX/internal/features/actors"
+	"IdentityX/internal/features/api_keys"
 	"fmt"
 	"net/http"
 
@@ -32,6 +33,7 @@ type RouterDeps struct {
 	Metrics           func(http.Handler) http.Handler
 
 	Actors   *actors.Handlers
+	ApiKeys  *api_keys.Handlers
 	Authn    *authn.Handlers
 	Orgs     *organizations.Handlers
 	Projects *projects.Handlers
@@ -57,6 +59,8 @@ type RouterDeps struct {
 // @tag.description "Operations related to organization management"
 // @tag.name projects
 // @tag.description "Operations related to project management"
+// @tag.name apikeys
+// @tag.description "Operations related to api key management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
@@ -113,7 +117,8 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 	r.Handle("/metrics", promhttp.Handler())
 
 	actors.RegisterRoutes(r, deps.Actors, deps.JwtAuth, deps.ClientOnly)
-	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth)
+	api_keys.RegisterRoutes(r, deps.ApiKeys, deps.JwtAuth, deps.ClientOnly)
+	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth, deps.AnyAuth)
 	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
 	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth, deps.ClientOnly)
 

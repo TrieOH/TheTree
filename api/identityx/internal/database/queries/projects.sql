@@ -50,3 +50,8 @@ WHERE project_id = @project_id
 -- name: ListProjectMembers :many
 SELECT * FROM project_members
 WHERE project_id = @project_id;
+
+-- name: GetProjectServiceAccount :one
+SELECT * FROM actors
+WHERE project_id = @project_id
+  AND type = 'service';
