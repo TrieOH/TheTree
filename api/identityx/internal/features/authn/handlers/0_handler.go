@@ -29,6 +29,7 @@ func RegisterRoutes(
 	r *chi.Mux,
 	h *Handlers,
 	jwtAuth func(http.Handler) http.Handler,
+	anyAuth func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
 		r.Post("/auth/setup", h.Setup)
@@ -40,6 +41,6 @@ func RegisterRoutes(
 		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Get("/auth/{provider}/connect", h.OAuthConnect)
 		r.Get("/auth/{provider}/callback", h.OAuthCallback)
 		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Get("/.well-known/jwks.json", h.JWKS)
-		r.With(jwtAuth).Get("/auth/introspect", h.Introspect)
+		r.With(anyAuth).Get("/auth/introspect", h.Introspect)
 	})
 }

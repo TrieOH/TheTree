@@ -32,7 +32,7 @@ func SubjectFromAccessSub(sub AccessSub) Subject {
 type Credential struct {
 	ID   *uuid.UUID     `json:"id"` // Applicable for stateful credentials like api keys
 	Type CredentialType `json:"type"`
-	Raw  string         `json:"raw"`
+	Raw  string         `json:"-"`
 }
 
 type Identity struct {

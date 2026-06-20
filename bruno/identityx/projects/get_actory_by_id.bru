@@ -1,0 +1,15 @@
+meta {
+  name: Get Actor
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{identityx_url}}/projects/:project_id/actors/:actor_id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

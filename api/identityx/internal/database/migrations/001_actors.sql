@@ -7,7 +7,7 @@ CREATE TABLE actors(
 
     auth_method TEXT NOT NULL DEFAULT 'password',
     CONSTRAINT chk_actors_auth_method CHECK (
-        auth_method IN ('password', 'google', 'github')
+        auth_method IN ('api_key', 'password', 'google', 'github')
     ),
 
     verified_at TIMESTAMPTZ,
