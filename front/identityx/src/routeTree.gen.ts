@@ -14,7 +14,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AuthSetupRouteImport } from './routes/auth/setup'
+import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
+import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
+import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 
 const AdminRoute = AdminRouteImport.update({
@@ -42,27 +45,45 @@ const AuthSetupRoute = AuthSetupRouteImport.update({
   path: '/auth/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
+  id: '/$organizationID',
+  path: '/$organizationID',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProjectsIndexRoute = AdminProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrganizationIDIndexRoute =
   AdminOrganizationIDIndexRouteImport.update({
-    id: '/$organizationID/',
-    path: '/$organizationID/',
-    getParentRoute: () => AdminRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminProjectsProjectIDRoute = AdminProjectsProjectIDRouteImport.update({
+  id: '/projects/$projectID',
+  path: '/projects/$projectID',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrganizationIDMembersRoute =
   AdminOrganizationIDMembersRouteImport.update({
-    id: '/$organizationID/members',
-    path: '/$organizationID/members',
-    getParentRoute: () => AdminRoute,
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/auth/setup': typeof AuthSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
+  '/admin/projects/': typeof AdminProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,28 +91,36 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
+  '/admin/projects': typeof AdminProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/auth/setup': typeof AuthSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
+  '/admin/projects/': typeof AdminProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin/$organizationID'
     | '/auth/setup'
     | '/admin/'
     | '/auth/'
     | '/admin/$organizationID/members'
+    | '/admin/projects/$projectID'
     | '/admin/$organizationID/'
+    | '/admin/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,16 +128,21 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/admin/$organizationID/members'
+    | '/admin/projects/$projectID'
     | '/admin/$organizationID'
+    | '/admin/projects'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin/$organizationID'
     | '/auth/setup'
     | '/admin/'
     | '/auth/'
     | '/admin/$organizationID/members'
+    | '/admin/projects/$projectID'
     | '/admin/$organizationID/'
+    | '/admin/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,33 +189,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/$organizationID': {
+      id: '/admin/$organizationID'
+      path: '/$organizationID'
+      fullPath: '/admin/$organizationID'
+      preLoaderRoute: typeof AdminOrganizationIDRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/projects/': {
+      id: '/admin/projects/'
+      path: '/projects'
+      fullPath: '/admin/projects/'
+      preLoaderRoute: typeof AdminProjectsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/$organizationID/': {
       id: '/admin/$organizationID/'
-      path: '/$organizationID'
+      path: '/'
       fullPath: '/admin/$organizationID/'
       preLoaderRoute: typeof AdminOrganizationIDIndexRouteImport
+      parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/admin/projects/$projectID': {
+      id: '/admin/projects/$projectID'
+      path: '/projects/$projectID'
+      fullPath: '/admin/projects/$projectID'
+      preLoaderRoute: typeof AdminProjectsProjectIDRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/$organizationID/members': {
       id: '/admin/$organizationID/members'
-      path: '/$organizationID/members'
+      path: '/members'
       fullPath: '/admin/$organizationID/members'
       preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminOrganizationIDRoute
     }
   }
 }
 
-interface AdminRouteChildren {
-  AdminIndexRoute: typeof AdminIndexRoute
+interface AdminOrganizationIDRouteChildren {
   AdminOrganizationIDMembersRoute: typeof AdminOrganizationIDMembersRoute
   AdminOrganizationIDIndexRoute: typeof AdminOrganizationIDIndexRoute
 }
 
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminIndexRoute: AdminIndexRoute,
+const AdminOrganizationIDRouteChildren: AdminOrganizationIDRouteChildren = {
   AdminOrganizationIDMembersRoute: AdminOrganizationIDMembersRoute,
   AdminOrganizationIDIndexRoute: AdminOrganizationIDIndexRoute,
+}
+
+const AdminOrganizationIDRouteWithChildren =
+  AdminOrganizationIDRoute._addFileChildren(AdminOrganizationIDRouteChildren)
+
+interface AdminRouteChildren {
+  AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminProjectsProjectIDRoute: typeof AdminProjectsProjectIDRoute
+  AdminProjectsIndexRoute: typeof AdminProjectsIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminProjectsProjectIDRoute: AdminProjectsProjectIDRoute,
+  AdminProjectsIndexRoute: AdminProjectsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

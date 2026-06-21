@@ -1,56 +1,39 @@
 import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import type { Project, ProjectCRUD } from "../model/types";
+import type { ProjectCreateI, ProjectI } from "../model";
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
  * Creates a new project on the server.
  * @param projectData - The data for the new project.
+ * @param orgId - The organization ID to which the project belongs (optional).
  * @returns A promise that resolves to the API response containing the newly created project.
  */
-export const createProjectFn = createClientOnlyFn((projectData: Omit<ProjectCRUD, "id">) => {
-    const dataToSend = {
-    ...projectData,
-    metadata: {}
-  };
-
-  return authFetcher.post<Project>("/projects", dataToSend);
+export const createProjectFn = createClientOnlyFn((projectData: ProjectCreateI, orgId?: string) => {
+  if (orgId)
+    return authFetcher.post<ProjectI>(`/organizations/${orgId}/projects`, projectData);
+  return authFetcher.post<ProjectI>("/projects", projectData);
 });
 
 /**
  * Fetches all projects from the server.
- * @returns A promise that resolves to an array of Project objects.
+ * @param orgId - The organization ID to filter projects by (optional).
+ * @returns A promise that resolves to an array of ProjectI objects.
  */
-export const getProjectsFn = createClientOnlyFn(async () => {
-  try {
-    return await tanstackQueryFetcher<Project[]>("/projects");
-  } catch (_) {
-    return [] as Project[];
-  }
-});
-
-export const projectsQueryOptions = queryOptions({
-  queryKey: ['projects'],
-  queryFn: getProjectsFn
-})
-
-/**
- * Updates an existing project on the server.
- * @param projectData - The data for the project to update, including its ID.
- * @returns A promise that resolves to the API response containing the updated project.
- */
-export const patchProjectFn = createClientOnlyFn((projectData: ProjectCRUD) => {
-  const { id, ...dataToSend } = projectData;
-
-  return authFetcher.patch<Project>(`/projects/${id}`, dataToSend);
+export const getProjectsFn = createClientOnlyFn(async (orgId?: string) => {
+  if (orgId)
+    return await tanstackQueryFetcher<ProjectI[]>(`/organizations/${orgId}/projects`);
+  return await tanstackQueryFetcher<ProjectI[]>("/projects");
 });
 
 /**
- * Deletes a project from the server.
- * @param id - The ID of the project to delete.
- * @returns A promise that resolves to the API response.
+ * Query options for fetching projects, compatible with React Query's useQuery hook.
+ * @param orgId - The organization ID to filter projects by (optional).
+ * @returns An object containing the query key and query function for fetching projects.
  */
-export const deleteProjectFn = createClientOnlyFn((id: string) => {
-  return authFetcher.delete<void>(`/projects/${id}`);
-});
-
+export const allProjectsQueryOptions = (orgId?: string) => {
+  return queryOptions({
+    queryKey: ["organizations", orgId, "projects"],
+    queryFn: () => getProjectsFn(orgId),
+  });
+};
