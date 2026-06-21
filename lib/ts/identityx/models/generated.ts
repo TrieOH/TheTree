@@ -46,7 +46,7 @@ export interface ActorExternalIdentities {
 //////////
 // source: api_keys.go
 
-export interface ApiKeys {
+export interface ApiKey {
   id: string;
   actor_id: string;
   project_id?: string;
@@ -54,10 +54,25 @@ export interface ApiKeys {
   key_prefix: string;
   key_hash: string;
   metadata: any /* json.RawMessage */;
-  expires_at: string;
-  revoked_at: string;
-  last_used_at: string;
+  expires_at?: string;
+  revoked_at?: string;
+  last_used_at?: string;
   created_at: string;
+}
+export interface CreateApiKeyRequest {
+  name: string;
+  expires_at?: string;
+  create_for_service_account: boolean;
+}
+export interface CreateApiKeyInput {
+  Name: string;
+  ExpiresAt?: string;
+  ProjectID: string;
+  CreateForServiceAccount: boolean;
+}
+export interface CreateApiKeyResponse {
+  key?: ApiKey;
+  raw_key: string;
 }
 
 //////////
@@ -333,7 +348,6 @@ export interface Subject {
 export interface Credential {
   id?: string; // Applicable for stateful credentials like api keys
   type: CredentialType;
-  raw: string;
 }
 export interface Identity {
   sub: Subject;

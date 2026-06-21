@@ -81,8 +81,8 @@ function RouteComponent() {
         schema={organizationCreateSchema}
         defaultValues={{ name: '', slug: '' }}
         fields={[
-          { name: 'name', label: 'Name', placeholder: 'John Doe Goods' },
-          { name: 'slug', label: 'Slug', placeholder: 'jd-goods' },
+          { name: 'name', label: 'Name', placeholder: 'John Doe Goods', required: true },
+          { name: 'slug', label: 'Slug', placeholder: 'jd-goods', required: true },
         ]}
         onSubmit={(data) => createOrganization(data)}
         submitLabel="Create Organization"

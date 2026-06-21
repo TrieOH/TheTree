@@ -101,11 +101,13 @@ export function ProjectsView({
             name: 'name',
             label: 'Project Name',
             placeholder: 'e.g. My Own Project',
+            required: true,
           },
           {
             name: 'domain',
             label: 'Project Domain',
             placeholder: 'e.g. my.domain.com',
+            required: true,
           },
         ]}
       />

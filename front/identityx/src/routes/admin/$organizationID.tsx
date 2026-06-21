@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Files } from 'lucide-react'
+import { Files, Users2 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { LayoutContext } from '@/shared/lib/hooks/layout-context'
 
@@ -20,7 +20,14 @@ function NamespaceLayout() {
       params: { organizationID },
       icon: Files,
       exact: true,
-    }
+    },
+    {
+      label: 'Members',
+      to: '/admin/$organizationID/members',
+      params: { organizationID },
+      icon: Users2,
+      exact: true,
+    },
   ]
 
   return (

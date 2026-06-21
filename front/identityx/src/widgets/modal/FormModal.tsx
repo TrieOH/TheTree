@@ -6,11 +6,15 @@ import type { CrudFormConfig, FieldConfig } from '@/shared/ui/form/types'
 import type { FormValidateOrFn } from '@tanstack/react-form'
 import type { ZodObject } from 'zod'
 
+import type { FieldType, FieldOption } from '@/shared/ui/form/types'
+
 export interface FieldDefinition {
   name: string
   label: string
   placeholder?: string
   required?: boolean
+  type?: FieldType
+  options?: FieldOption[]
 }
 
 interface FormModalProps<TFormData extends object> {
@@ -56,9 +60,10 @@ export function FormModal<TFormData extends object>({
     name: f.name,
     label: f.label,
     placeholder: f.placeholder ?? `Enter ${f.label.toLowerCase()}`,
-    type: 'text' as const,
+    type: f.type ?? ('text' as const),
     required: f.required,
     getRulesStatus: (value) => getFieldRulesStatus(schema, f.name, value),
+    options: f.options,
   }))
 
   const formOptions: CrudFormConfig<TFormData> = {

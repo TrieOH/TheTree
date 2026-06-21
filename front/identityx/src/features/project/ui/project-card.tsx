@@ -5,6 +5,7 @@ import {
   ExternalLink,
   FolderKanban,
   Globe,
+  Users2,
 } from "lucide-react";
 import type { ProjectI } from "../model";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -53,6 +54,18 @@ function MenuItems({
       >
         <ExternalLink className="mr-2 size-4" />
         View Project
+      </Item>
+      <Item
+        onClick={() =>
+          navigate({
+            to: "/admin/projects/$projectID/members",
+            params: { projectID: data.id },
+            search: { organizationID: data.organization_id || undefined }
+          })
+        }
+      >
+        <Users2 className="mr-2 size-4" />
+        View Members
       </Item>
       {data.domain && (
         <>

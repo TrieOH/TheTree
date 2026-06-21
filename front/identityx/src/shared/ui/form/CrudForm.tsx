@@ -1,6 +1,7 @@
 import { useAppForm } from "@/shared/lib/forms";
 import type { CrudFormConfig, FieldConfig } from "./types";
 import { useState } from "react";
+import OptionPicker from "./OptionPicker";
 
 interface PropsI<TFormData> {
   formId: string;
@@ -43,6 +44,16 @@ export default function CrudForm<TFormData>({
           >
             {(field) => {
               switch (item.type) {
+                case "option-picker":
+                  return (
+                    <OptionPicker
+                      label={item.label}
+                      value={String(field.state.value)}
+                      onChange={field.handleChange as unknown as (value: string) => void}
+                      options={item.options || []}
+                      required={item.required}
+                    />
+                  );
                 default:
                   return (
                     <field.TextField

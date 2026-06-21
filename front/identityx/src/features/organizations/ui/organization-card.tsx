@@ -50,7 +50,7 @@ function MenuItems({
         }
       >
         <ExternalLink className="mr-2 size-4" />
-        View Organization
+        View Projects
       </Item>
       <Separator />
       <Item

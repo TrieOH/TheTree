@@ -18,11 +18,14 @@ export interface CrudFormConfig<TFormData> {
   onSubmit: (props: { value: TFormData, formApi: AnyFormApi }) => Promise<void> | void;
 }
 
-export type FieldType = "text" | "select" | "icon" | "color";
+import type React from 'react';
+
+export type FieldType = "text" | "select" | "option-picker";
 
 export interface FieldOption {
   label: string;
   value: string;
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
 export interface FieldConfig {
