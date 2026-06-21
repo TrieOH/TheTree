@@ -15,7 +15,7 @@ function NamespaceLayout() {
 
   const tabs = [
     {
-      label: 'Forms',
+      label: 'Projects',
       to: '/admin/$organizationID',
       params: { organizationID },
       icon: Files,

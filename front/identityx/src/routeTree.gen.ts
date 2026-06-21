@@ -19,6 +19,8 @@ import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
 import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
+import { Route as AdminProjectsProjectIDIndexRouteImport } from './routes/admin/projects/$projectID/index'
+import { Route as AdminProjectsProjectIDMembersRouteImport } from './routes/admin/projects/$projectID/members'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -72,6 +74,18 @@ const AdminOrganizationIDMembersRoute =
     path: '/members',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminProjectsProjectIDIndexRoute =
+  AdminProjectsProjectIDIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
+const AdminProjectsProjectIDMembersRoute =
+  AdminProjectsProjectIDMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,9 +95,11 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
-  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,9 +107,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
-  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/admin/projects': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,9 +121,11 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
-  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRoute
+  '/admin/projects/$projectID': typeof AdminProjectsProjectIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
+  '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +140,8 @@ export interface FileRouteTypes {
     | '/admin/projects/$projectID'
     | '/admin/$organizationID/'
     | '/admin/projects/'
+    | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,9 +149,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/admin/$organizationID/members'
-    | '/admin/projects/$projectID'
     | '/admin/$organizationID'
     | '/admin/projects'
+    | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID'
   id:
     | '__root__'
     | '/'
@@ -143,6 +165,8 @@ export interface FileRouteTypes {
     | '/admin/projects/$projectID'
     | '/admin/$organizationID/'
     | '/admin/projects/'
+    | '/admin/projects/$projectID/members'
+    | '/admin/projects/$projectID/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,6 +248,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
+    '/admin/projects/$projectID/': {
+      id: '/admin/projects/$projectID/'
+      path: '/'
+      fullPath: '/admin/projects/$projectID/'
+      preLoaderRoute: typeof AdminProjectsProjectIDIndexRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
+    '/admin/projects/$projectID/members': {
+      id: '/admin/projects/$projectID/members'
+      path: '/members'
+      fullPath: '/admin/projects/$projectID/members'
+      preLoaderRoute: typeof AdminProjectsProjectIDMembersRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
   }
 }
 
@@ -240,17 +278,33 @@ const AdminOrganizationIDRouteChildren: AdminOrganizationIDRouteChildren = {
 const AdminOrganizationIDRouteWithChildren =
   AdminOrganizationIDRoute._addFileChildren(AdminOrganizationIDRouteChildren)
 
+interface AdminProjectsProjectIDRouteChildren {
+  AdminProjectsProjectIDMembersRoute: typeof AdminProjectsProjectIDMembersRoute
+  AdminProjectsProjectIDIndexRoute: typeof AdminProjectsProjectIDIndexRoute
+}
+
+const AdminProjectsProjectIDRouteChildren: AdminProjectsProjectIDRouteChildren =
+  {
+    AdminProjectsProjectIDMembersRoute: AdminProjectsProjectIDMembersRoute,
+    AdminProjectsProjectIDIndexRoute: AdminProjectsProjectIDIndexRoute,
+  }
+
+const AdminProjectsProjectIDRouteWithChildren =
+  AdminProjectsProjectIDRoute._addFileChildren(
+    AdminProjectsProjectIDRouteChildren,
+  )
+
 interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminProjectsProjectIDRoute: typeof AdminProjectsProjectIDRoute
+  AdminProjectsProjectIDRoute: typeof AdminProjectsProjectIDRouteWithChildren
   AdminProjectsIndexRoute: typeof AdminProjectsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
-  AdminProjectsProjectIDRoute: AdminProjectsProjectIDRoute,
+  AdminProjectsProjectIDRoute: AdminProjectsProjectIDRouteWithChildren,
   AdminProjectsIndexRoute: AdminProjectsIndexRoute,
 }
 

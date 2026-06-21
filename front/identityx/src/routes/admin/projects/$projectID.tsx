@@ -1,7 +1,7 @@
 import { LayoutContext } from '@/shared/lib/hooks/layout-context'
 import { cn } from '@/shared/lib/utils'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Workflow } from 'lucide-react'
+import { KeySquare, User2 } from 'lucide-react'
 import { useState } from 'react'
 import z from 'zod'
 
@@ -22,10 +22,17 @@ function ProjectLayout() {
 
   const tabs = [
     {
-      label: 'Main',
+      label: 'Api Keys',
       to: '/admin/projects/$projectID',
       params: { projectID },
-      icon: Workflow,
+      icon: KeySquare,
+      exact: true,
+    },
+    {
+      label: 'Members',
+      to: '/admin/projects/$projectID/members',
+      params: { projectID },
+      icon: User2,
       exact: true,
     },
   ]
