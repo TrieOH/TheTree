@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import {
   ChevronLeft,
   ChevronRight,
+  FileText,
   FolderKanban,
   LogOut,
 } from "lucide-react"
@@ -24,6 +25,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       to: "/admin",
       icon: FolderKanban,
       label: "Orgs",
+      exact: true,
+    },
+    {
+      to: "/admin/projects",
+      icon: FileText,
+      label: "Projects",
       exact: true,
     },
   ]

@@ -82,7 +82,7 @@ export default function ProjectCard({ data }: PropsI) {
             )}
             to="/admin/projects/$projectID"
             params={{ projectID: data.id }}
-            search={{ organizationID: data.organization_id }}
+            search={{ organizationID: data.organization_id || undefined }}
           />
         }
       >
