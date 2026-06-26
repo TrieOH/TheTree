@@ -1,0 +1,91 @@
+name: Trivy Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'front/**'
+      - 'api/**'
+      - 'docs/**'
+      - 'infra/**'
+      - 'lib/**'
+      - 'sdk/**'
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - docs
+          - infra
+          # Front
+          - front/identityx
+          - front/informd
+          - front/payssage
+          - front/spicedb
+          - front/univents
+          # API
+          - api/identityx
+          - api/informd
+          - api/payssage
+          - api/univents
+          # Lib
+          - lib/ts/identityx
+          - lib/ts/informd
+          - lib/go/api_keys
+          - lib/go/authz
+          - lib/go/crypto
+          - lib/go/database
+          - lib/go/env
+          - lib/go/errx
+          - lib/go/globals
+          - lib/go/oauth
+          - lib/go/river
+          - lib/go/telemetry
+          - lib/go/utils
+          - lib/go/validator
+          - lib/go/xslices
+          # Sdk
+          - sdk/ts/identityx
+          - sdk/ts/Payssage
+          - sdk/go/IdentityX
+          - sdk/go/Payssage
+
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if changed
+        id: changes
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.project }}/**'
+
+      - name: Cache Trivy DB
+        if: steps.changes.outputs.changed == 'true'
+        uses: https://code.forgejo.org/actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ steps.date.outputs.date }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
+
+      - name: Trivy scan
+        if: steps.changes.outputs.changed == 'true'
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ matrix.project }}
+          severity: LOW,MEDIUM,HIGH,CRITICAL
+          scanners: 'vuln,secret,misconfig'
+          exit-code: '1'
