@@ -1,7 +1,7 @@
 import { authStore } from "../store/auth-store";
 import { tokenStore } from "../store/token-store";
 import { logger } from "@trieoh/envoy-fetch-ts";
-import { browserStorage, cookieStorage } from "./storage-adapter";
+import { browserStorage } from "./storage-adapter";
 
 export interface AuthTokens {
   access_token: string;
@@ -39,25 +39,7 @@ export interface AuthTokenClaims {
 let _cachedClaims: AuthTokenClaims | null = null;
 const ACCESS_EXPIRY_KEY = "trieoh_access_expiry";
 const REFRESH_EXPIRY_KEY = "trieoh_refresh_expiry";
-const REFRESH_DOMAIN_KEY = "trieoh_refresh_domain";
-
-export function getCookieDomain(returnedDomain?: string) {
-  if (typeof window === "undefined") return null;
-  const hostname = window.location.hostname;
-  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname.includes("localhost");
-  if (isLocalhost) return null;
-
-  if (returnedDomain) {
-    try {
-      let domain = returnedDomain;
-      if (domain.startsWith("http")) domain = new URL(domain).hostname;
-      if (hostname === domain || hostname.endsWith("." + domain)) return domain;
-      return hostname;
-    } catch { return hostname; }
-  }
-
-  return hostname;
-}
+const REFRESH_TOKEN_KEY = "trieoh_refresh_token";
 
 export function decodeJwt<T>(token: string): T | null {
   try {
@@ -102,12 +84,10 @@ export function saveAuthSession(tokens: AuthTokens): void {
 
   const refreshExpiry = new Date(refresh_expires_at).getTime();
   const accessExpiry = new Date(access_expires_at).getTime();
-  const domain = getCookieDomain(tokens.domain);
 
-  cookieStorage.set("refresh_token", refresh_token, {
-    expires: new Date(refreshExpiry).toUTCString(),
-    domain
-  });
+  browserStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+  browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
+  browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
 
   const sessionData: AuthTokenClaims = {
     access_data: claims,
@@ -116,17 +96,16 @@ export function saveAuthSession(tokens: AuthTokens): void {
 
   _cachedClaims = sessionData;
 
-  browserStorage.setItem(ACCESS_EXPIRY_KEY, String(accessExpiry));
-  browserStorage.setItem(REFRESH_EXPIRY_KEY, String(refreshExpiry));
-  if (domain) browserStorage.setItem(REFRESH_DOMAIN_KEY, domain);
-  else browserStorage.removeItem(REFRESH_DOMAIN_KEY);
-
   authStore.set({
     isAuthenticated: true,
     isInitializing: false,
   });
 
   logger.log("Auth session saved");
+}
+
+export function getStoredRefreshToken(): string | null {
+  return browserStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export function getTokenClaims(): AuthTokenClaims | null {
@@ -187,10 +166,7 @@ export function clearAuthTokens(): void {
   tokenStore.clear();
   browserStorage.removeItem(ACCESS_EXPIRY_KEY);
   browserStorage.removeItem(REFRESH_EXPIRY_KEY);
-
-  const domain = browserStorage.getItem(REFRESH_DOMAIN_KEY) || getCookieDomain();
-  cookieStorage.remove("refresh_token", domain);
-  browserStorage.removeItem(REFRESH_DOMAIN_KEY);
+  browserStorage.removeItem(REFRESH_TOKEN_KEY);
 
   authStore.reset();
 

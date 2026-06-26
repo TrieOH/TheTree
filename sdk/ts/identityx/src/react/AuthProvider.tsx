@@ -18,7 +18,6 @@ import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
 import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
-import { cookieStorage } from "../utils/storage-adapter";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
