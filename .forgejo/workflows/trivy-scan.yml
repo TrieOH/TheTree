@@ -36,21 +36,22 @@ jobs:
           - api/payssage
           - api/univents
           # Lib
-          - lib/ts/identityx
-          - lib/ts/informd
-          - lib/go/api_keys
-          - lib/go/authz
-          - lib/go/crypto
-          - lib/go/database
-          - lib/go/env
-          - lib/go/errx
-          - lib/go/globals
-          - lib/go/oauth
-          - lib/go/river
-          - lib/go/telemetry
-          - lib/go/utils
-          - lib/go/validator
-          - lib/go/xslices
+          - lib/go
+          # - lib/ts/identityx
+          # - lib/ts/informd
+          # - lib/go/api_keys
+          # - lib/go/authz
+          # - lib/go/crypto
+          # - lib/go/database
+          # - lib/go/env
+          # - lib/go/errx
+          # - lib/go/globals
+          # - lib/go/oauth
+          # - lib/go/river
+          # - lib/go/telemetry
+          # - lib/go/utils
+          # - lib/go/validator
+          # - lib/go/xslices
           # Sdk
           - sdk/ts/identityx
           - sdk/ts/Payssage
