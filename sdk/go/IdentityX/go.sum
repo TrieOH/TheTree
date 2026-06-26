@@ -1,3 +1,5 @@
+github.com/MintzyG/fun v0.10.6 h1:/JOM7vFwc1WAW40un7WKw+WUfc3AR3f+v1KuJBpe2X0=
+github.com/MintzyG/fun v0.10.6/go.mod h1:OpLKRWQgonKc4MUr6S/Lf+o5ZbfmtrHeU5xesP4egoQ=
 github.com/MintzyG/sdkkit v0.0.2 h1:TZx0L4Zr6MvNcOMPRJhXi5iO/LEGsslUMCSyhlgXMC8=
 github.com/MintzyG/sdkkit v0.0.2/go.mod h1:xJqKVfCeEOBvEMK0N3wtbo70eNeUjtBO1y8Becz/PRU=
 github.com/golang-jwt/jwt/v5 v5.3.1 h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
