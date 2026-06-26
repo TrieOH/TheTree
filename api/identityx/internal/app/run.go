@@ -171,7 +171,8 @@ func (app *IdentityX) startMiddlewares(rt runtime) mws {
 	}
 	mw.metrics = middlewares.Metrics(collectors, middlewares.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = middlewares.CORS(middlewares.CORSConfig{
-		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
+		AllowedOrigins: xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
+		// AllowedHeaders:   []string{"Content-Type", "Authorization", "X-Request-ID", "X-API-Key", "refresh_token"},
 		AllowCredentials: true,
 	})
 	//mw.realIP = middlewares.RealIP()
