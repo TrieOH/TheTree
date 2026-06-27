@@ -884,8 +884,8 @@ importers:
         specifier: ^0.1.5
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
-        specifier: link:../../../sdk/ts/identityx
-        version: link:../../../sdk/ts/identityx
+        specifier: ^0.12.7
+        version: 0.12.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
 
   lib/ts/front-core:
     dependencies:
@@ -896,8 +896,8 @@ importers:
         specifier: ^1.132.0
         version: 1.170.16(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@trieoh/identityx-sdk-ts':
-        specifier: link:../../../sdk/ts/identityx
-        version: link:../../../sdk/ts/identityx
+        specifier: ^0.12.7
+        version: 0.12.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       posthog-js:
         specifier: ^1.335.2
         version: 1.379.0
@@ -4008,6 +4008,12 @@ packages:
       react: ^19.2.0
       react-dom: ^19.2.0
 
+  '@trieoh/identityx-sdk-ts@0.12.7':
+    resolution: {integrity: sha512-cCfBJRDpA5GoKUgu2kfc5+0l/2y/eAhbbL3RZSjU9OQMceVo4nK1DIhY6Ol12krL6xfWeQBh+gjpVtEeyAbExA==}
+    peerDependencies:
+      react: ^19.2.0
+      react-dom: ^19.2.0
+
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
 
@@ -5876,6 +5882,11 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  lucide-react@1.21.0:
+    resolution: {integrity: sha512-reEZMXq8Qdd5jg5XYkQ5TR1fB/GiQ7ih4vcrthYDtgjSDwh0i6/YLiGjsWsIwgN49gpAnd4J2elSNzncMEEUUQ==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
@@ -6432,6 +6443,12 @@ packages:
 
   react-hook-form@7.77.0:
     resolution: {integrity: sha512-Sslh9YDYc0GDlWT/lxasnIduNo4v3yyvqRGvmGKUre5AFjDs/HV9/OafHGD8d+sB2yoL4UIL9L8X9i0WlZZebg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+
+  react-hook-form@7.80.0:
+    resolution: {integrity: sha512-4P+fk6oXsxY+6xSj7Euhc2sumQD8zQqCuVHoJwoyp9EchP+IUW9OESB7uHFJOKsIBQ4MQqYE84INJFqUCYNoOg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
@@ -8085,6 +8102,11 @@ snapshots:
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.77.0(react@19.2.7)
+
+  '@hookform/resolvers@5.4.0(react-hook-form@7.80.0(react@19.2.7))':
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.80.0(react@19.2.7)
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -10425,6 +10447,24 @@ snapshots:
       react-icons: 5.6.0(react@19.2.7)
       ua-parser-js: 2.0.10
 
+  '@trieoh/identityx-sdk-ts@0.12.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@hookform/resolvers': 5.4.0(react-hook-form@7.80.0(react@19.2.7))
+      '@trieoh/envoy-fetch-ts': 0.1.5
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      lucide-react: 1.21.0(react@19.2.7)
+      motion: 12.40.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      react-hook-form: 7.80.0(react@19.2.7)
+      sonner: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      tailwind-merge: 3.6.0
+      ua-parser-js: 2.0.10
+      zod: 4.4.3
+    transitivePeerDependencies:
+      - '@emotion/is-prop-valid'
+
   '@ts-morph/common@0.27.0':
     dependencies:
       fast-glob: 3.3.3
@@ -12374,6 +12414,10 @@ snapshots:
     dependencies:
       react: 19.2.7
 
+  lucide-react@1.21.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
   lz-string@1.5.0: {}
 
   magic-string@0.30.21:
@@ -13289,6 +13333,10 @@ snapshots:
       scheduler: 0.27.0
 
   react-hook-form@7.77.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
+  react-hook-form@7.80.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 

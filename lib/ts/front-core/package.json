@@ -16,7 +16,7 @@
     "sonner": "^2.0.7"
   },
   "dependencies": {
-    "@trieoh/identityx-sdk-ts": "link:../../../sdk/ts/identityx"
+    "@trieoh/identityx-sdk-ts": "^0.12.7"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
