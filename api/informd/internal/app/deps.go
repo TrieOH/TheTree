@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"reflect"
 	"strings"
@@ -16,10 +15,8 @@ import (
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-co-op/gocron/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func SetupValidator() *validator.Validate {
@@ -101,26 +98,14 @@ func SetupConstraintMessages() {
 	})
 }
 
-func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
-	scheduler, err := gocron.NewScheduler()
-	if err != nil {
-		errx.Exit(err, "Failed to create Scheduler")
-	}
-
-	//_ = database.NewPGXTxRunner(db)
-	// Call Jobs in jobs.go
-
-	go scheduler.Start()
-	log.Println("Started the cron Scheduler")
-	return scheduler
-}
-
 func SetupIdentityX(cfg Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:   cfg.IdxURL,
-		APIKey:    cfg.IdxAPIKey,
-		ProjectID: cfg.IdxProjectID,
-		Debug:     true,
+		BaseURL:            cfg.IdxURL,
+		APIKey:             cfg.IdxAPIKey,
+		ProjectID:          cfg.IdxProjectID,
+		Debug:              true,
+		EncryptionPassword: cfg.CredsEncryptionPassword,
+		CredsFilePath:      cfg.CredsFilePath,
 	})
 	if err != nil {
 		errx.Exit(err, "error creating identity_x client")

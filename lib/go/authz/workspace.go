@@ -7,6 +7,8 @@ import (
 	"github.com/MintzyG/fun"
 )
 
+type contextKey string
+
 const WorkspaceContextKey contextKey = "workspace"
 
 func WithWorkspace(ctx context.Context, workspace *models.Workspace) context.Context {

@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -13,13 +13,12 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMe
 	ctx, span := s.tracer.Start(ctx, "FormService.RemoveMember")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	if sub.ID == payload.UserID {
+	if ident.Sub.ID == payload.UserID {
 		return fun.ErrBadRequest("users can't remove themselves from forms")
 	}
 
@@ -31,8 +30,8 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveFormMe
 	if payload.UserID == form.OwnerID {
 		return fun.ErrBadRequest("cannot remove owner of the form")
 	}
-	if sub.ID != form.OwnerID {
-		member, err := s.forms.GetMember(ctx, sub.ID, form.ID)
+	if ident.Sub.ID != form.OwnerID {
+		member, err := s.forms.GetMember(ctx, ident.Sub.ID, form.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
 		}

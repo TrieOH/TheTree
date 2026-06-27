@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -13,7 +13,7 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveNamesp
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.RemoveMember")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
@@ -23,8 +23,8 @@ func (s *Commands) RemoveMember(ctx context.Context, payload models.RemoveNamesp
 		return err
 	}
 
-	if sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, sub.ID, payload.NamespaceID)
+	if ident.Sub.ID != namespace.OwnerID {
+		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, payload.NamespaceID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
 		}

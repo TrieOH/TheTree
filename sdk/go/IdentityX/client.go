@@ -10,10 +10,12 @@ import (
 )
 
 type Config struct {
-	BaseURL   string
-	APIKey    string
-	ProjectID uuid.UUID
-	Debug     bool
+	BaseURL            string
+	APIKey             string
+	ProjectID          uuid.UUID
+	Debug              bool
+	EncryptionPassword string
+	CredsFilePath      string
 }
 
 type Client struct {
@@ -57,6 +59,7 @@ func NewClient(cfg Config) (*Client, error) {
 		setupComplete.Store(false)
 	}
 
+	c.Creds = NewCredentialHandler(cfg.CredsFilePath, []byte(cfg.EncryptionPassword))
 	c.Tokens = &TokenService{client: c, cacheTTL: time.Hour}
 	return c, nil
 }

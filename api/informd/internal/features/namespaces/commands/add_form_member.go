@@ -2,10 +2,10 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 	"time"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -14,12 +14,12 @@ func (s *Commands) AddFormMember(ctx context.Context, payload models.AddNamespac
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddFormMember")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	if sub.ID == payload.UserID {
+	if ident.Sub.ID == payload.UserID {
 		return fun.ErrBadRequest("users can't add themselves to forms")
 	}
 
@@ -32,8 +32,8 @@ func (s *Commands) AddFormMember(ctx context.Context, payload models.AddNamespac
 		return fun.ErrBadRequest("owner of the namespace is already a member of the form")
 	}
 
-	if sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, sub.ID, namespace.ID)
+	if ident.Sub.ID != namespace.OwnerID {
+		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
 		}
@@ -71,7 +71,7 @@ func (s *Commands) AddFormMember(ctx context.Context, payload models.AddNamespac
 		FormID:  form.ID,
 		Role:    payload.Role,
 		AddedAt: time.Now(),
-		AddedBy: sub.ID,
+		AddedBy: ident.Sub.ID,
 	}
 
 	return s.forms.AddMember(ctx, newMember)

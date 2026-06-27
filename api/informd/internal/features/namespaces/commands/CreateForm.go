@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,8 +14,7 @@ func (s *Commands) CreateForm(ctx context.Context, title string, namespaceID uui
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.CreateForm")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -26,8 +25,8 @@ func (s *Commands) CreateForm(ctx context.Context, title string, namespaceID uui
 	}
 
 	var member *models.NamespaceMember
-	if sub.ID != namespace.OwnerID {
-		member, err = s.namespaces.GetMember(ctx, sub.ID, namespace.ID)
+	if ident.Sub.ID != namespace.OwnerID {
+		member, err = s.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
 		if err != nil {
 			return nil, fun.ErrForbidden("insufficient permissions")
 		}
@@ -36,7 +35,7 @@ func (s *Commands) CreateForm(ctx context.Context, title string, namespaceID uui
 		}
 	}
 
-	form, err := models.NewForm(&namespaceID, namespace.OwnerID, sub.ID, title)
+	form, err := models.NewForm(&namespaceID, namespace.OwnerID, ident.Sub.ID, title)
 	if err != nil {
 		return nil, err
 	}

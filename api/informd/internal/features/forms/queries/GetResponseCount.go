@@ -2,8 +2,7 @@ package queries
 
 import (
 	"context"
-
-	"lib/authz"
+	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -13,7 +12,7 @@ func (q *Queries) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, 
 	ctx, span := q.tracer.Start(ctx, "FormService.GetResponseCount")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -23,8 +22,8 @@ func (q *Queries) GetResponseCount(ctx context.Context, formID uuid.UUID) (int, 
 		return 0, err
 	}
 
-	if sub.ID != form.OwnerID {
-		_, err := q.forms.GetMember(ctx, sub.ID, form.ID)
+	if ident.Sub.ID != form.OwnerID {
+		_, err := q.forms.GetMember(ctx, ident.Sub.ID, form.ID)
 		if err != nil && fun.Is(err, fun.CodeNotFound) {
 			return 0, err
 		}
