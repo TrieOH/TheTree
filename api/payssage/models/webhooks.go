@@ -9,7 +9,6 @@ import (
 	"payssage/internal/shared/validation"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 )
 
 type DeliveryStatus string
@@ -68,7 +67,6 @@ func NewWebhookDelivery(endpointID, intentID uuid.UUID, event string, payload js
 	}, nil
 }
 
-const TypeDeliverWebhook = "webhook:deliver"
 const MaxDeliverRetries = 5
 
 type DeliverWebhookPayload struct {
@@ -77,25 +75,6 @@ type DeliverWebhookPayload struct {
 	URL        string    `json:"url"`
 	Secret     string    `json:"secret"`
 	Payload    []byte    `json:"payload"`
-}
-
-func NewDeliverWebhookTask(deliveryID, endpointID uuid.UUID, url, secret string, payload []byte) (*asynq.Task, error) {
-	data, err := json.Marshal(DeliverWebhookPayload{
-		DeliveryID: deliveryID,
-		EndpointID: endpointID,
-		URL:        url,
-		Secret:     secret,
-		Payload:    payload,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return asynq.NewTask(
-		TypeDeliverWebhook,
-		data,
-		asynq.MaxRetry(MaxDeliverRetries),
-		asynq.TaskID(deliveryID.String()),
-	), nil
 }
 
 type WebhookEndpoint struct {

@@ -2,9 +2,8 @@ package app
 
 import (
 	"context"
+	"lib/validator"
 	"net/http"
-	"reflect"
-	"strings"
 	"time"
 
 	"lib/database"
@@ -16,39 +15,7 @@ import (
 	"github.com/MintzyG/fun/bind"
 	fm "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 )
-
-func SetupValidator() *validator.Validate {
-	var v = validator.New()
-	if err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
-		vv := fl.Field().String()
-
-		u, err := uuid.Parse(vv)
-		if err != nil {
-			return false
-		}
-
-		return u.Version() == 7
-	}); err != nil {
-		errx.Exit(err, "failed to register uuid7 validator")
-	}
-
-	// Use JSON field names for better API responses
-	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return ""
-		}
-		if name == "" {
-			return fld.Name
-		}
-		return name
-	})
-
-	return v
-}
 
 func SetupFUN(module string) {
 	fun.SetConfig(fun.Config{
@@ -60,7 +27,7 @@ func SetupFUN(module string) {
 		DefaultModule:        module,
 	})
 
-	v := SetupValidator()
+	v := validator.SetupValidator()
 	bind.SetValidator(v)
 	fun.SetPathParamFunc(func(r *http.Request, key string) string {
 		return chi.URLParam(r, key)
@@ -101,12 +68,10 @@ func SetupConstraintMessages() {
 
 func SetupIdentityX(cfg Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:            cfg.IdxURL,
-		APIKey:             cfg.IdxAPIKey,
-		ProjectID:          cfg.IdxProjectID,
-		Debug:              true,
-		EncryptionPassword: cfg.CredsEncryptionPassword,
-		CredsFilePath:      cfg.CredsFilePath,
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     true,
 	})
 	if err != nil {
 		errx.Exit(err, "error creating identity_x client")

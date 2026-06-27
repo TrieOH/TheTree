@@ -2,32 +2,19 @@ package app
 
 import (
 	"context"
-	"log"
-	"os"
+	"lib/errx"
+	"lib/validator"
+	"net/http"
 	"time"
 
-	"lib/database"
+	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
-	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
-	"github.com/authzed/grpcutil"
-	"github.com/go-co-op/gocron/v2"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	idx "sdk/identityx"
+	"github.com/MintzyG/fun/bind"
+	"github.com/go-chi/chi/v5"
 )
 
-func SetupFUN() {
-	module := viper.GetString("MODULE")
-	if module == "" {
-		module = "PayssageAPI"
-	}
-
+func SetupFUN(module string) {
 	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
@@ -36,85 +23,35 @@ func SetupFUN() {
 		EnableSizeValidation: true,
 		DefaultModule:        module,
 	})
+
+	v := validator.SetupValidator()
+	bind.SetValidator(v)
+	fun.SetPathParamFunc(func(r *http.Request, key string) string {
+		return chi.URLParam(r, key)
+	})
 }
 
-func SetupDB() *pgxpool.Pool {
-	cfg := database.Config{
-		Host:          viper.GetString("PAYSSAGE_POSTGRES_HOST"),
-		Port:          viper.GetString("PAYSSAGE_POSTGRES_PORT"),
-		DB:            viper.GetString("PAYSSAGE_POSTGRES_DB"),
-		User:          viper.GetString("PAYSSAGE_POSTGRES_USER"),
-		Password:      viper.GetString("PAYSSAGE_POSTGRES_PASSWORD"),
-		SSLMode:       "disable",
-		RootUser:      viper.GetString("POSTGRES_USER"),
-		RootPassword:  viper.GetString("POSTGRES_PASSWORD"),
-		RootDB:        viper.GetString("POSTGRES_DB"),
-		RootHost:      "postgres",
-		RootPort:      "5432",
-		MigrationPath: "./internal/platform/database/migrations",
-	}
-	return database.SetupDB(cfg)
+func SetupConstraintMessages() {
+	//database.SetConstraintErrorRegistry(database.ConstraintRegistry{})
 }
 
-func SetupCron(db *pgxpool.Pool) gocron.Scheduler {
-	scheduler, err := gocron.NewScheduler()
-	if err != nil {
-		log.Fatalf("Failed to create Scheduler: %v", err)
-	}
-
-	//_ = database.NewPGXTxRunner(db)
-	// Call Jobs in jobs.go
-
-	go scheduler.Start()
-	log.Println("Started the cron Scheduler")
-	return scheduler
-}
-
-func SetupIdentityX() *idx.Client {
-	projectID := uuid.MustParse(viper.GetString("IDENTITY_X_PROJECT_ID"))
+func SetupIdentityX(cfg Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
-		BaseURL:   viper.GetString("IDENTITY_X_URL"),
-		APIKey:    viper.GetString("IDENTITY_X_API_KEY"),
-		ProjectID: projectID,
-		Debug:     true,
+		BaseURL:   cfg.IdxURL,
+		APIKey:    cfg.IdxAPIKey,
+		ProjectID: cfg.IdxProjectID,
+		Debug:     cfg.DebugMode,
 	})
 	if err != nil {
-		log.Fatalf("Error creating goauth client: %s", err.Error())
+		errx.Exit(err, "error creating identity_x client")
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_, err = client.Tokens.GetJWKS(ctx, true)
 		if err != nil {
-			log.Fatalf("error fetching initial JWKS: %s", err.Error())
+			errx.Exit(err, "error fetching initial JWKS")
 		}
 	}()
-	return client
-}
-
-func SetupSpiceDB() *authzed.Client {
-	client, err := authzed.NewClient(
-		viper.GetString("SPICEDB_ADDR"),
-		grpcutil.WithInsecureBearerToken(viper.GetString("SPICEDB_TOKEN")),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Fatalf("failed to connect to SpiceDB: %v", err)
-	}
-
-	schema, err := os.ReadFile("./schema.zed")
-	if err != nil {
-		log.Fatalf("failed to read SpiceDB schema: %v", err)
-	}
-
-	ctx := context.Background()
-	_, err = client.WriteSchema(ctx, &pb.WriteSchemaRequest{
-		Schema: string(schema),
-	})
-	if err != nil {
-		log.Fatalf("failed to write SpiceDB schema: %v", err)
-	}
-
-	log.Println("SpiceDB schema ensured")
 	return client
 }

@@ -1,11 +1,13 @@
 package app
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/pprof"
 
 	"lib/database"
+	libriver "lib/river"
 	"lib/telemetry"
 	"payssage/internal/database/sqlc"
 	"payssage/internal/features/api_keys"
@@ -13,31 +15,14 @@ import (
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
+	"payssage/internal/jobs"
 	"payssage/internal/platform/providers"
-	"payssage/internal/platform/queue"
 	"payssage/ports"
 
-	"github.com/hibiken/asynq"
-	"github.com/hibiken/asynqmon"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
-
-type runtime struct {
-	middlewares      middlewares
-	handlers         *router.HTTPDeps
-	commands         commands
-	queries          queries
-	repos            repos
-	repoQueries      *sqlc.Queries
-	txRunner         database.TxRunner
-	tracer           trace.Tracer
-	logger           *zap.Logger
-	asynq            asynqDeps
-	paymentProviders paymentProviders
-}
 
 type paymentProviders struct {
 	oauth    map[string]ports.OAuthProvider
@@ -60,30 +45,12 @@ type queries struct {
 	oauth      *oauth.QueryService
 }
 
-type repos struct {
-	intentRepo              ports.IntentRepository
-	workspaceRepo           ports.WorkspaceRepo
-	apiKeysRepo             ports.ApiKeysRepo
-	endpointsRepo           ports.WebhookEndpointRepo
-	deliveriesRepo          ports.WebhookDeliveryRepo
-	eventsRepo              ports.WebhookEventRepo
-	oauthStatesRepo         ports.OAuthStateRepo
-	providerCredentialsRepo ports.ProviderCredentialRepo
-	marketplaceRepo         ports.MarketplaceConfigRepo
-}
-
 type middlewares struct {
 	authMW *AuthMiddleware
 }
 
-type asynqDeps struct {
-	client    *asynq.Client
-	inspector *asynq.Inspector
-	scheduler *asynq.Scheduler
-	server    *asynq.Server
-}
-
 func (app *Payssage) run() {
+	ctx := context.Background()
 	var rt runtime
 	rt.repoQueries = sqlc.New(app.db)
 	rt.logger = telemetry.Log()
@@ -91,8 +58,15 @@ func (app *Payssage) run() {
 	rt.tracer = otel.Tracer("Payssage")
 	rt.repos = app.startRepos(rt)
 	rt.middlewares = app.startMiddlewares(rt)
-	rt.asynq = app.startAsynq(rt)
-	defer app.stopAsynq(rt.asynq)
+
+	app.river = libriver.NewClient(app.db, libriver.NewWorkers(
+		libriver.Register[jobs.DeliverWebhookArgs](jobs.NewDeliverWebhookWorker(rt.repos.deliveriesRepo)),
+	), nil, nil)
+	if err := app.river.Start(ctx); err != nil {
+		telemetry.Log().Fatal("failed to start river client", zap.Error(err))
+	}
+	defer app.river.Stop(ctx)
+
 	rt.paymentProviders = app.startPaymentProviders()
 	rt.commands = app.startCommands(rt, rt.repos)
 	rt.queries = app.startQueries(rt, rt.repos)
@@ -117,14 +91,6 @@ func (app *Payssage) run() {
 
 func (app *Payssage) startHandlers(rt runtime) *HTTPDeps {
 	var handlers HTTPDeps
-	handlers.AsynqmonHandler = asynqmon.New(asynqmon.Options{
-		RootPath: "/admin/asynq",
-		RedisConnOpt: asynq.RedisClientOpt{
-			Addr:     viper.GetString("REDIS_ADDR"),
-			Password: viper.GetString("REDIS_PASSWORD"),
-			DB:       viper.GetInt("REDIS_DB"),
-		},
-	})
 	handlers.AuthMiddleware = rt.middlewares.authMW
 	handlers.IntentsHandler = intents.NewHandler(rt.commands.intents, rt.queries.intents)
 	handlers.WorkspacesHandler = workspaces.NewHandler(rt.commands.workspaces, rt.queries.workspaces)
@@ -136,7 +102,7 @@ func (app *Payssage) startHandlers(rt runtime) *HTTPDeps {
 
 func (app *Payssage) startCommands(rt runtime, r repos) commands {
 	var cmd commands
-	cmd.webhooks = webhooks.NewCommandService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, r.intentRepo, r.providerCredentialsRepo, rt.asynq.client, app.sdb, rt.txRunner, rt.tracer)
+	cmd.webhooks = webhooks.NewCommandService(r.endpointsRepo, r.deliveriesRepo, r.eventsRepo, r.workspaceRepo, r.intentRepo, r.providerCredentialsRepo, app.river, app.sdb, rt.txRunner, rt.tracer)
 	cmd.intents = intents.NewCommandService(r.intentRepo, r.workspaceRepo, r.providerCredentialsRepo, r.marketplaceRepo, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, rt.txRunner, rt.tracer)
 	cmd.workspaces = workspaces.NewCommandService(r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
 	cmd.apiKeys = api_keys.NewCommandService(r.apiKeysRepo, r.workspaceRepo, app.sdb, rt.txRunner, rt.tracer)
@@ -197,28 +163,4 @@ func (app *Payssage) startMiddlewares(rt runtime) middlewares {
 	var mw middlewares
 	mw.authMW = NewAuthMiddleware(app.ga, rt.repos.apiKeysRepo, rt.repos.workspaceRepo, rt.tracer)
 	return mw
-}
-
-func (app *Payssage) startAsynq(rt runtime) asynqDeps {
-	webhooksAsynq := webhooks.NewAsynqService(rt.repos.deliveriesRepo, rt.tracer, rt.txRunner)
-	var err error
-	var deps asynqDeps
-	deps.server, deps.client, deps.scheduler, deps.inspector, err = queue.InitAsynq(queue.Deps{
-		WebhookAsynq: webhooksAsynq,
-	})
-	if err != nil {
-		telemetry.Log().Fatal("failed to init Asynq", zap.Error(err))
-	}
-	return deps
-}
-
-func (app *Payssage) stopAsynq(deps asynqDeps) {
-	if err := deps.inspector.Close(); err != nil {
-		telemetry.Log().Error("error closing the asynq inspector", zap.Error(err))
-	}
-	deps.scheduler.Shutdown()
-	deps.server.Shutdown()
-	if err := deps.client.Close(); err != nil {
-		telemetry.Log().Error("error closing the asynq client", zap.Error(err))
-	}
 }

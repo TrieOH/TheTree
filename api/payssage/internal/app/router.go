@@ -1,9 +1,7 @@
 package app
 
 import (
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"payssage/internal/features/api_keys"
@@ -14,8 +12,6 @@ import (
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
@@ -29,8 +25,6 @@ type HTTPDeps struct {
 	ApiKeysHandler    *api_keys.Handler
 	WebhooksHandler   *webhooks.Handler
 	OauthHandler      *oauth.Handler
-	AuthMiddleware    *AuthMiddleware
-	AsynqmonHandler   http.Handler
 }
 
 // CreateRouter godoc
@@ -74,9 +68,6 @@ type HTTPDeps struct {
 func CreateRouter(deps *HTTPDeps) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(chimiddleware.Recoverer)
-	r.Use(chimiddleware.Timeout(60 * time.Second))
-
 	if !viper.GetBool("DISABLE_RATE_LIMIT") {
 		r.Use(httprate.Limit(
 			400,
@@ -85,75 +76,10 @@ func CreateRouter(deps *HTTPDeps) http.Handler {
 		))
 	}
 
-	r.Use(cors.Handler(GetCORSOptions()))
-
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-
-	r.Mount("/admin/asynq", deps.AsynqmonHandler)
 
 	r.Get("/health", fh.Health("payssage").Handle)
 
 	registerRoutes(r, deps)
 	return otelhttp.NewHandler(r, "http.server")
-}
-
-func splitAndCleanCSV(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-
-	for _, p := range parts {
-		if v := strings.TrimSpace(p); v != "" {
-			out = append(out, v)
-		}
-	}
-
-	if len(out) == 0 {
-		return nil
-	}
-
-	return out
-}
-
-// GetCORSOptions builds a safe cors.Options configuration from environment
-// variables, applying sensible defaults and preventing invalid empty values.
-func GetCORSOptions() cors.Options {
-	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
-	allowedMethods := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_METHODS"))
-	allowedHeaders := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_HEADERS"))
-
-	// Never default origins to "*"
-	if allowedOrigins == nil {
-		log.Fatalf("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
-	}
-
-	if allowedMethods == nil {
-		allowedMethods = []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		}
-	}
-
-	if allowedHeaders == nil {
-		allowedHeaders = []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-		}
-	}
-
-	return cors.Options{
-		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   allowedMethods,
-		AllowedHeaders:   allowedHeaders,
-		AllowCredentials: true,
-		MaxAge:           300,
-	}
 }

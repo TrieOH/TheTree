@@ -14,11 +14,13 @@ import (
 
 	"lib/authz"
 	"lib/database"
+	"payssage/internal/jobs"
 	"payssage/internal/shared/errx"
 
 	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -29,7 +31,7 @@ type CommandService struct {
 	workspaces  ports.WorkspaceRepo
 	intents     ports.IntentRepository
 	credentials ports.ProviderCredentialRepo
-	asynq       *asynq.Client
+	river       *river.Client[pgx.Tx]
 	az          *authzed.Client
 	tx          database.TxRunner
 	tracer      trace.Tracer
@@ -42,7 +44,7 @@ func NewCommandService(
 	workspaces ports.WorkspaceRepo,
 	intents ports.IntentRepository,
 	credentials ports.ProviderCredentialRepo,
-	asynq *asynq.Client,
+	riverClient *river.Client[pgx.Tx],
 	az *authzed.Client,
 	tx database.TxRunner,
 	tracer trace.Tracer,
@@ -54,7 +56,7 @@ func NewCommandService(
 		workspaces:  workspaces,
 		intents:     intents,
 		credentials: credentials,
-		asynq:       asynq,
+		river:       riverClient,
 		az:          az,
 		tx:          tx,
 		tracer:      tracer,
@@ -327,14 +329,16 @@ func (uc *CommandService) HandleProviderWebhook(ctx context.Context, eventID uui
 			continue
 		}
 
-		var task *asynq.Task
-		task, err = models.NewDeliverWebhookTask(created.ID, endpoint.ID, endpoint.URL, endpoint.Secret, payloadBytes)
-		if err != nil {
-			log.Printf("[webhook] failed to create delivery task for endpoint %s: %v", endpoint.ID, err)
-			continue
-		}
-
-		if _, err = uc.asynq.EnqueueContext(context.Background(), task); err != nil {
+		if _, err = uc.river.Insert(context.Background(), jobs.DeliverWebhookArgs{
+			DeliveryID: created.ID,
+			EndpointID: endpoint.ID,
+			URL:        endpoint.URL,
+			Secret:     endpoint.Secret,
+			Payload:    payloadBytes,
+		}, &river.InsertOpts{
+			MaxAttempts: models.MaxDeliverRetries,
+			UniqueOpts:  river.UniqueOpts{ByArgs: true},
+		}); err != nil {
 			log.Printf("[webhook] failed to enqueue delivery task for endpoint %s: %v", endpoint.ID, err)
 		} else {
 			log.Printf("[webhook] enqueued delivery for endpoint=%s url=%s", endpoint.ID, endpoint.URL)
