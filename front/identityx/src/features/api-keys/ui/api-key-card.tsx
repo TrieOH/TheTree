@@ -1,10 +1,10 @@
 import { cn } from "@/shared/lib/utils";
-import { Badge } from "@/shared/ui/shadcn/badge";
 import { timeAgo } from "@/shared/lib/date-utils";
 import { KeySquare, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 import type { ApiKeyI } from "../model";
+import { Badge } from "@trieoh/ui-base/shadcn/badge";
 
 interface ApiKeyCardProps {
   data: ApiKeyI;

@@ -16,20 +16,12 @@ function App() {
         <span className="text-xl font-bold tracking-tight">IdentityX</span>
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
-            <>
-              <Link
-                to="/admin"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/admin"
-                className="text-sm px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
-              >
-                Dashboard
-              </Link>
-            </>
+            <Link
+              to="/admin"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dashboard
+            </Link>
           ) : (
             <>
               <Link

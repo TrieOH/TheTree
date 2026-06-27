@@ -7,9 +7,9 @@ import {
 import { AuthProvider, type useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { requireSetup } from '@/features/auth/lib/route-guard'
 import appCss from '../styles.css?url'
-import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
 import { AuthContextUpdater } from '@trieoh/front-core'
+import { Toaster } from '@trieoh/ui-base/shadcn/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
