@@ -118,12 +118,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   pointer-events: none;
 }
 
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-internal-autofill-selected {
-  -webkit-text-fill-color: var(--foreground) !important;
-  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-  caret-color: transparent !important;
-  transition: background-color 5000s ease-in-out 0s !important;
+@layer base {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-internal-autofill-selected {
+    -webkit-text-fill-color: var(--foreground) !important;
+    -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+    caret-color: var(--foreground) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
 }
