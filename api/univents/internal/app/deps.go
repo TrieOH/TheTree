@@ -2,36 +2,24 @@ package app
 
 import (
 	"context"
+	"lib/validator"
 	"log"
 	"net/http"
-	"os"
-	"reflect"
-	"strings"
 	"time"
 
-	"univents/internal/platform/database"
-	"univents/internal/platform/telemetry"
-	"univents/internal/shared/errx"
-
-	"github.com/MintzyG/fun"
-	"github.com/MintzyG/fun/bind"
-	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
-	"github.com/authzed/grpcutil"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-co-op/gocron/v2"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"lib/errx"
+	"lib/telemetry"
 
 	idx "sdk/identityx"
 	"sdk/payssage"
+
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+	mws "github.com/MintzyG/fun/middlewares"
+	"github.com/go-chi/chi/v5"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"go.uber.org/zap"
 )
 
 type SimpleLogger struct{}
@@ -48,36 +36,7 @@ func (l *SimpleLogger) InterceptSimple(rs *fun.Response, statusCode int) {
 	}
 }
 
-func SetupValidator() *validator.Validate {
-	var v = validator.New()
-	if err := v.RegisterValidation("uuid7", func(fl validator.FieldLevel) bool {
-		vv := fl.Field().String()
-		u, err := uuid.Parse(vv)
-		if err != nil {
-			return false
-		}
-		return u.Version() == 7
-	}); err != nil {
-		errx.Must(err, "failed to register uuid7 validator")
-	}
-
-	// Use JSON field names for better API responses
-	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
-		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
-		if name == "-" {
-			return ""
-		}
-		if name == "" {
-			return fld.Name
-		}
-		return name
-	})
-
-	return v
-}
-
-func SetupFUN() {
-	module := "UniventsAPI"
+func SetupFUN(module string) {
 	fun.SetConfig(fun.Config{
 		MaxTraceSize:         50,
 		ResponseSizeLimit:    10 * 1024 * 1024,
@@ -89,22 +48,18 @@ func SetupFUN() {
 
 	err := fun.AddInterceptor(&SimpleLogger{})
 	if err != nil {
-		errx.Must(err, "failed to add interceptor")
+		errx.Exit(err, "failed to add interceptor")
 	}
 
-	v := SetupValidator()
+	v := validator.SetupValidator()
 	bind.SetValidator(v)
 	fun.SetPathParamFunc(func(r *http.Request, key string) string {
 		return chi.URLParam(r, key)
 	})
 }
 
-func SetupRedis(timeout time.Duration) *redis.Client {
-	rdb, err := database.WaitForRedis(timeout)
-	if err != nil {
-		log.Fatalf("Failed to connect Redis: %v", err)
-	}
-	return rdb
+func SetupConstraintMessages() {
+	//database.SetConstraintErrorRegistry(database.ConstraintRegistry{})
 }
 
 func SetupIdentityX(cfg Config) *idx.Client {
@@ -113,17 +68,17 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
 		ProjectID: projectID,
-		Debug:     true,
+		Debug:     cfg.DebugMode,
 	})
 	if err != nil {
-		errx.Must(err, "error creating goauth client")
+		errx.Exit(err, "error creating identityx client")
 	}
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_, err = client.Tokens.GetJWKS(ctx, false)
 		if err != nil {
-			errx.Must(err, "error fetching initial JWKS")
+			errx.Exit(err, "error fetching initial JWKS")
 		}
 	}()
 	return client
@@ -142,52 +97,40 @@ func SetupObjectStorage(cfg Config) *minio.Client {
 		Secure: cfg.ObjStorageUseSSL,
 	})
 	if err != nil {
-		errx.Must(err, "failed to create ObjectStorage client")
+		errx.Exit(err, "failed to create ObjectStorage client")
 	}
 	log.Println("Connected to ObjectStorage")
 	return client
 }
 
-func SetupDB(migrationPath string) *pgxpool.Pool {
-	db, err := database.WaitForDB(30 * time.Second)
-	if err != nil {
-		log.Fatalf("Failed to connect DB: %v", err)
+func SetupAuthMiddlewares() *mws.Middleware[*idx.AccessClaims] {
+	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
+		return app.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 	}
-	if err = database.RunMigrations(db, migrationPath); err != nil {
-		log.Fatalf("Failed migrations: %v", err)
-	}
-	return db
-}
 
-func SetupCron(app *Univents) gocron.Scheduler {
-	scheduler, err := gocron.NewScheduler()
-	if err != nil {
-		log.Fatalf("Failed to create Scheduler: %v", err)
+	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
+		return idx.WithIdentity(ctx, &idx.Identity{
+			Sub: idx.Subject{
+				ID:           claims.Sub.ID,
+				ProjectID:    claims.Sub.ProjectID,
+				Email:        claims.Sub.Email,
+				Type:         claims.Sub.Type,
+				Capabilities: claims.Sub.Capabilities,
+				Metadata:     claims.Sub.Metadata,
+			},
+			Cred: idx.Credential{
+				Type: "token",
+			},
+		}), nil
 	}
-	productHardDeleteJob(scheduler, app.minio, app.db)
-	go scheduler.Start()
-	log.Println("Started the cron Scheduler")
-	return scheduler
-}
 
-func SetupSpiceDB(cfg Config) *authzed.Client {
-	client, err := authzed.NewClient(
-		cfg.SpiceDBAddr,
-		grpcutil.WithInsecureBearerToken(cfg.SpiceDBToken),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		errx.Must(err, "failed to connect to SpiceDB")
+	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+		telemetry.Log().Info("user tried to use api key",
+			zap.String("message", "this service does not provide a public api"),
+			zap.String("key", rawKey),
+		)
+		return ctx, fun.ErrForbidden("this service does not provide public access to the api")
 	}
-	schema, err := os.ReadFile("./schema.zed")
-	if err != nil {
-		errx.Must(err, "failed to read SpiceDB schema")
-	}
-	ctx := context.Background()
-	_, err = client.WriteSchema(ctx, &pb.WriteSchemaRequest{Schema: string(schema)})
-	if err != nil {
-		errx.Must(err, "failed to write SpiceDB schema")
-	}
-	log.Println("SpiceDB schema ensured")
-	return client
+
+	return mws.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }

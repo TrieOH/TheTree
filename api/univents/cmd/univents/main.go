@@ -1,10 +1,7 @@
 package main
 
-import (
-	_ "univents/docs"
-	"univents/internal/app"
-)
+import "univents/internal/app"
 
 func main() {
-	app.New().Run()
+	app.Start()
 }

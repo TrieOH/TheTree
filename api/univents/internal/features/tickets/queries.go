@@ -9,11 +9,13 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type QueryService struct {
 	tickets  ports.TicketsRepository
 	editions ports.EditionsRepository
+	logger   *zap.Logger
 	tracer   trace.Tracer
 	tx       database.TxRunner
 }
@@ -21,12 +23,14 @@ type QueryService struct {
 func NewQueryService(
 	tickets ports.TicketsRepository,
 	editions ports.EditionsRepository,
+	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *QueryService {
 	return &QueryService{
 		tickets:  tickets,
 		editions: editions,
+		logger:   logger,
 		tracer:   tracer,
 		tx:       tx,
 	}

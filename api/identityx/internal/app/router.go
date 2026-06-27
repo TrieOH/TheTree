@@ -4,8 +4,9 @@ import (
 	"IdentityX/generated/docs"
 	"IdentityX/internal/features/actors"
 	"IdentityX/internal/features/api_keys"
-	"fmt"
+	"log"
 	"net/http"
+	"net/http/pprof"
 
 	"IdentityX/internal/features/authn"
 	"IdentityX/internal/features/organizations"
@@ -14,30 +15,12 @@ import (
 
 	_ "IdentityX/generated/docs"
 
-	"github.com/MintzyG/fun/handlers"
+	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/riandyrn/otelchi"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
-
-type RouterDeps struct {
-	AppName string
-
-	CORS              func(http.Handler) http.Handler
-	Logger            func(http.Handler) http.Handler
-	JwtAuth           func(http.Handler) http.Handler
-	ApiKeyAuth        func(http.Handler) http.Handler
-	AnyAuth           func(http.Handler) http.Handler
-	ClientOnly        func(http.Handler) http.Handler
-	ProjectClientOnly func(http.Handler) http.Handler
-	Metrics           func(http.Handler) http.Handler
-
-	Actors   *actors.Handlers
-	ApiKeys  *api_keys.Handlers
-	Authn    *authn.Handlers
-	Orgs     *organizations.Handlers
-	Projects *projects.Handlers
-}
 
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
@@ -73,10 +56,10 @@ type RouterDeps struct {
 // @response 429 {object} fun.Response "Standard error response for too many requests"
 // @response 500 {object} fun.Response "Standard error response for internal server errors"
 // @response 503 {object} fun.Response "Standard error response for service unavailable"
-func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit bool) http.Handler {
+func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(otelchi.Middleware(deps.AppName,
+	r.Use(otelchi.Middleware(app.cfg.AppName,
 		otelchi.WithChiRoutes(r),
 		otelchi.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/health" && r.URL.Path != "/metrics"
@@ -85,13 +68,13 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 
 	//r.Use(deps.RealIP)
 	//r.Use(deps.RequestID)
-	r.Use(deps.Logger)
-	r.Use(deps.Metrics)
+	r.Use(middlewares.logger)
+	r.Use(middlewares.metrics)
 	//r.Use(deps.Recover)
 	//r.Use(deps.Timeout)
 	//r.Use(deps.BodySize)
 	//r.Use(deps.RateLimit)
-	r.Use(deps.CORS)
+	r.Use(middlewares.cors)
 
 	//endpoints := riverui.NewEndpoints(app.river, nil)
 	//
@@ -116,20 +99,33 @@ func (app *IdentityX) CreateRouter(deps RouterDeps, debugMode, disableRateLimit 
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	actors.RegisterRoutes(r, deps.Actors, deps.JwtAuth, deps.ClientOnly)
-	api_keys.RegisterRoutes(r, deps.ApiKeys, deps.JwtAuth, deps.ClientOnly)
-	authn.RegisterRoutes(r, deps.Authn, deps.JwtAuth, deps.AnyAuth)
-	organizations.RegisterRoutes(r, deps.Orgs, deps.JwtAuth, deps.ClientOnly)
-	projects.RegisterRoutes(r, deps.Projects, deps.AnyAuth, deps.ClientOnly)
+	actors.RegisterRoutes(r, handlers.Actors, middlewares.jwtAuth, middlewares.clientOnly)
+	api_keys.RegisterRoutes(r, handlers.ApiKeys, middlewares.jwtAuth, middlewares.clientOnly)
+	authn.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
+	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
+	projects.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
 
-	r.Get("/health", handlers.Health("IdentityX-API").Handle)
+	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
-	if debugMode {
-		_ = chi.Walk(r, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-			fmt.Printf("[%s] %s\n", method, route)
-			return nil
-		})
+	return otelhttp.NewHandler(r, "http.server",
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/health"
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/metrics"
+		}),
+	)
+}
+
+func servePprof(port string) {
+	pmux := http.NewServeMux()
+	pmux.HandleFunc("/debug/pprof/", pprof.Index)
+	pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	log.Printf("identityx pprof listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, pmux); err != nil {
+		log.Fatalf("identityx pprof server error: %v", err)
 	}
-
-	return r
 }

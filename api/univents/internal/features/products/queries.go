@@ -8,18 +8,17 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type QueryService struct {
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
 	editions  ports.EditionsRepository
-	inventory ports.InventorySubscriber
+	logger    *zap.Logger
 	tracer    trace.Tracer
-	az        *authzed.Client
 	tx        database.TxRunner
 }
 
@@ -27,18 +26,16 @@ func NewQueryService(
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
 	editions ports.EditionsRepository,
-	inventory ports.InventorySubscriber,
+	logger *zap.Logger,
 	tracer trace.Tracer,
-	az *authzed.Client,
 	tx database.TxRunner,
 ) *QueryService {
 	return &QueryService{
 		products:  products,
 		purchases: purchases,
 		editions:  editions,
-		inventory: inventory,
+		logger:    logger,
 		tracer:    tracer,
-		az:        az,
 		tx:        tx,
 	}
 }

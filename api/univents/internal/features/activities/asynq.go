@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 
 	"lib/database"
-	"univents/internal/platform/telemetry"
-	"univents/internal/shared/contracts"
+	"lib/telemetry"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"github.com/hibiken/asynq"

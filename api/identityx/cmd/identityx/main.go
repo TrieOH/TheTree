@@ -1,8 +1,6 @@
 package main
 
-import (
-	"IdentityX/internal/app"
-)
+import "IdentityX/internal/app"
 
 func main() {
 	app.Start()
