@@ -23,7 +23,6 @@ import (
 )
 
 type Handler struct {
-	Registry *sockets.Registry
 	commands *CommandService
 	queries  *QueryService
 }
@@ -31,12 +30,10 @@ type Handler struct {
 func NewHandler(
 	commands *CommandService,
 	queries *QueryService,
-	registry *sockets.Registry,
 ) *Handler {
 	return &Handler{
 		commands: commands,
 		queries:  queries,
-		Registry: registry,
 	}
 }
 

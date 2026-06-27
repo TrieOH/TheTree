@@ -4,35 +4,34 @@ import (
 	"context"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type QueryService struct {
 	checkpoints ports.CheckpointsRepository
 	editions    ports.EditionsRepository
+	logger      *zap.Logger
 	tracer      trace.Tracer
-	az          *authzed.Client
 	tx          database.TxRunner
 }
 
 func NewQueryService(
 	checkpoints ports.CheckpointsRepository,
 	editions ports.EditionsRepository,
+	logger *zap.Logger,
 	tracer trace.Tracer,
-	az *authzed.Client,
 	tx database.TxRunner,
 ) *QueryService {
 	return &QueryService{
 		checkpoints: checkpoints,
 		editions:    editions,
+		logger:      logger,
 		tracer:      tracer,
-		az:          az,
 		tx:          tx,
 	}
 }

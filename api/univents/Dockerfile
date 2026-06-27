@@ -1,4 +1,4 @@
-FROM git.trieoh.com/trieoh/go-tools:latest AS tools
+FROM git.trieoh.com/trieoh/go-tools:1 AS tools
 
 FROM golang:1.26.2 AS builder
 
@@ -28,6 +28,12 @@ COPY --from=builder /go/bin/goose /usr/local/bin/goose
 COPY --from=builder /app/internal/platform/database/migrations ./internal/platform/database/migrations
 COPY --from=builder /app/schema.zed ./schema.zed
 
+RUN adduser -D -H -s /sbin/nologin appuser
+USER appuser
+
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 CMD ["./univents"]

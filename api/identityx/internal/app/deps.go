@@ -2,13 +2,14 @@ package app
 
 import (
 	"context"
-	"lib/api_keys"
 	"net/http"
 	"time"
 
 	"IdentityX/internal/database/sqlc"
 	"IdentityX/internal/jobs"
 	"IdentityX/models"
+	"IdentityX/ports"
+	"lib/api_keys"
 	"lib/crypto"
 	"lib/database"
 	"lib/errx"
@@ -16,7 +17,7 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
-	"github.com/MintzyG/fun/middlewares"
+	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -127,7 +128,7 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 	}
 }
 
-func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClaims] {
+func SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports.ApiKeysRepo, actorsRepo ports.ActorRepo) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
 		token, err := crypto.OpenUnverified(tokenStr, claims)
@@ -142,7 +143,7 @@ func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClai
 		if err != nil {
 			return nil, fun.ErrUnauthorized("invalid kid")
 		}
-		cryptoKey, err := rt.repos.cryptoKeys.GetByID(ctx, keyID)
+		cryptoKey, err := cryptoKeysRepo.GetByID(ctx, keyID)
 		if fun.Is(err, fun.CodeNotFound) {
 			return nil, fun.ErrUnauthorized("outdated token")
 		}
@@ -179,7 +180,7 @@ func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClai
 		}
 		prefix := body[:api_keys.ApiKeyPrefixLen]
 
-		apiKey, err := rt.repos.apiKeys.GetByPrefix(ctx, prefix)
+		apiKey, err := apiKeysRepo.GetByPrefix(ctx, prefix)
 		if err != nil {
 			return nil, fun.ErrUnauthorized("invalid api key")
 		}
@@ -192,7 +193,7 @@ func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClai
 			return nil, fun.ErrUnauthorized("api key expired")
 		}
 
-		actor, err := rt.repos.actors.GetByID(ctx, apiKey.ActorID)
+		actor, err := actorsRepo.GetByID(ctx, apiKey.ActorID)
 		if err != nil {
 			return nil, fun.ErrUnauthorized("invalid api key")
 		}
@@ -214,7 +215,7 @@ func SetupAuthMiddlewares(rt runtime) *middlewares.Middleware[*models.AccessClai
 		})
 		return ctx, nil
 	}
-	return middlewares.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+	return mws.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }
 
 // ClientOnly returns a middleware that rejects unauthenticated requests

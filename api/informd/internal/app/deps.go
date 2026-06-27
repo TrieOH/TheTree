@@ -14,6 +14,7 @@ import (
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
+	fm "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -119,4 +120,32 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		}
 	}()
 	return client
+}
+
+func setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
+	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
+		return app.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
+	}
+
+	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
+		return idx.WithIdentity(ctx, &idx.Identity{
+			Sub: idx.Subject{
+				ID:           claims.Sub.ID,
+				ProjectID:    claims.Sub.ProjectID,
+				Email:        claims.Sub.Email,
+				Type:         claims.Sub.Type,
+				Capabilities: claims.Sub.Capabilities,
+				Metadata:     claims.Sub.Metadata,
+			},
+			Cred: idx.Credential{
+				Type: "token",
+			},
+		}), nil
+	}
+
+	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
+		return nil, fun.ErrNotImplemented("api keys are not yet supported")
+	}
+
+	return fm.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
 }

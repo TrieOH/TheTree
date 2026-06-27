@@ -1,9 +1,12 @@
 package app
 
 import (
+	"log"
 	"net/http"
+	"net/http/pprof"
 	idx "sdk/identityx"
 
+	"Informd/generated/docs"
 	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
 	"Informd/internal/features/namespaces"
@@ -13,49 +16,24 @@ import (
 
 	_ "Informd/generated/docs"
 
-	"github.com/MintzyG/fun"
 	_ "github.com/MintzyG/fun"
-	"github.com/MintzyG/fun/handlers"
+	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/swaggo/swag/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
-
-type Deps struct {
-	NamespacesHandler *namespaces.Handlers
-	FormsHandler      *forms.Handlers
-	StepsHandler      *steps.Handlers
-	FieldsHandler     *fields.Handlers
-	ResponsesHandler  *responses.Handlers
-
-	Logger    func(http.Handler) http.Handler
-	RequestID func(http.Handler) http.Handler
-	BodySize  func(http.Handler) http.Handler
-	Metrics   func(http.Handler) http.Handler
-	CORS      func(http.Handler) http.Handler
-	RealIP    func(http.Handler) http.Handler
-	Recover   func(http.Handler) http.Handler
-	Timeout   func(http.Handler) http.Handler
-	RateLimit func(http.Handler) http.Handler
-	Jwt       func(http.Handler) http.Handler
-	ApiKey    func(http.Handler) http.Handler
-	AnyAuth   func(http.Handler) http.Handler
-
-	AppName string
-}
 
 // CreateRouter
 // @title Informd
 // @version 0.0.1
 // @description API for managing forms.
-// @termsOfService https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/Informd/LICENSE
+// @termsOfService https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/informd/LICENSE
 // @contact.name TrieOH
 // @contact.url https://trieoh.com
 // @contact.email support@trieoh.com
 // @license.name TSAL License
-// @license.url https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/Informd/LICENSE
+// @license.url https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/informd/LICENSE
 // @host informd.trieoh.com
 // @BasePath /
 // @schemes http https
@@ -85,37 +63,33 @@ type Deps struct {
 // @in header
 // @name X-API-KEY
 // @description API key for service-to-service authentication
-func (app *Informd) CreateRouter(deps *Deps) http.Handler {
+func (app *Informd) CreateRouter(handlers handlers, middlewares middlewares) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(deps.RealIP)
-	r.Use(deps.RequestID)
-	r.Use(deps.Logger)
-	r.Use(deps.Metrics)
-	r.Use(deps.Recover)
-	r.Use(deps.Timeout)
-	r.Use(deps.BodySize)
-	r.Use(deps.RateLimit)
-	r.Use(deps.CORS)
+	r.Use(middlewares.realIP)
+	r.Use(middlewares.requestID)
+	r.Use(middlewares.logger)
+	r.Use(middlewares.metrics)
+	r.Use(middlewares.recover)
+	r.Use(middlewares.timeout)
+	r.Use(middlewares.bodySize)
+	r.Use(middlewares.ratelimit)
+	r.Use(middlewares.cors)
 
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
-		doc, err := swag.ReadDoc()
-		if fun.Bail(w, err) {
-			return
-		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(doc))
+		_, _ = w.Write(docs.SwaggerJSON)
 	})
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	namespaces.RegisterRoutes(r, deps.NamespacesHandler, deps.Jwt)
-	forms.RegisterRoutes(r, deps.FormsHandler, deps.AnyAuth)
-	steps.RegisterRoutes(r, deps.StepsHandler, deps.AnyAuth)
-	fields.RegisterRoutes(r, deps.FieldsHandler, deps.AnyAuth)
-	responses.RegisterRoutes(r, deps.ResponsesHandler)
+	namespaces.RegisterRoutes(r, handlers.namespaces, middlewares.jwt)
+	forms.RegisterRoutes(r, handlers.forms, middlewares.anyAuth)
+	steps.RegisterRoutes(r, handlers.steps, middlewares.anyAuth)
+	fields.RegisterRoutes(r, handlers.fields, middlewares.anyAuth)
+	responses.RegisterRoutes(r, handlers.responses)
 
-	r.Get("/health", handlers.Health(deps.AppName).Handle)
+	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
 	r.Mount("/idx/setup", idx.NewSetupHandler(app.idxClient))
 
@@ -123,5 +97,21 @@ func (app *Informd) CreateRouter(deps *Deps) http.Handler {
 		otelhttp.WithFilter(func(r *http.Request) bool {
 			return r.URL.Path != "/health"
 		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/metrics"
+		}),
 	)
+}
+
+func servePprof(port string) {
+	pmux := http.NewServeMux()
+	pmux.HandleFunc("/debug/pprof/", pprof.Index)
+	pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	log.Printf("informd pprof listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, pmux); err != nil {
+		log.Fatalf("informd pprof server error: %v", err)
+	}
 }

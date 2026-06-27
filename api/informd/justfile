@@ -10,7 +10,7 @@ gen-sqlc:
     sqlc generate
 
 gen-swag:
-    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList
+    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList -ot json
 
 gen-mocks:
     mockery

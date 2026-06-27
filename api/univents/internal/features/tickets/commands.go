@@ -8,33 +8,31 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/ports"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type CommandService struct {
 	editions ports.EditionsRepository
 	tickets  ports.TicketsRepository
-	asynq    *asynq.Client
+	logger   *zap.Logger
 	tracer   trace.Tracer
-	az       *authzed.Client
 	tx       database.TxRunner
 }
 
 func NewCommandService(
 	editions ports.EditionsRepository,
 	tickets ports.TicketsRepository,
-	asynq *asynq.Client,
+	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		editions: editions,
 		tickets:  tickets,
-		asynq:    asynq,
+		logger:   logger,
 		tracer:   tracer,
 		tx:       tx,
 	}

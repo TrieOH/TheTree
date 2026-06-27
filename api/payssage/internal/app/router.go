@@ -12,6 +12,7 @@ import (
 	"payssage/internal/features/webhooks"
 	"payssage/internal/features/workspaces"
 
+	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -89,6 +90,8 @@ func CreateRouter(deps *HTTPDeps) http.Handler {
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	r.Mount("/admin/asynq", deps.AsynqmonHandler)
+
+	r.Get("/health", fh.Health("payssage").Handle)
 
 	registerRoutes(r, deps)
 	return otelhttp.NewHandler(r, "http.server")
