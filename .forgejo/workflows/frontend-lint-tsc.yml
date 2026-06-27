@@ -1,0 +1,99 @@
+name: Frontend Lint & TypeScript
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'front/**'
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+
+jobs:
+  changes:
+    runs-on: debian
+    outputs:
+      identityx: ${{ steps.filter.outputs.identityx }}
+      informd: ${{ steps.filter.outputs.informd }}
+      payssage: ${{ steps.filter.outputs.payssage }}
+      spicedb: ${{ steps.filter.outputs.spicedb }}
+      univents: ${{ steps.filter.outputs.univents }}
+      any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v7
+
+      - uses: https://github.com/dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            identityx:
+              - 'front/identityx/**'
+            informd:
+              - 'front/informd/**'
+            payssage:
+              - 'front/payssage/**'
+            spicedb:
+              - 'front/spicedb/**'
+            univents:
+              - 'front/univents/**'
+
+  lint-tsc:
+    needs: changes
+    if: ${{ needs.changes.outputs.any == 'true' }}
+    runs-on: debian
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v7
+
+      - name: Setup Node
+        uses: https://github.com/actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint IdentityX
+        if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: pnpm -F identityx lint
+
+      - name: TypeScript IdentityX
+        if: ${{ needs.changes.outputs.identityx == 'true' }}
+        run: pnpm -F identityx tsc
+
+      - name: Lint Informd
+        if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: pnpm -F informd lint
+
+      - name: TypeScript Informd
+        if: ${{ needs.changes.outputs.informd == 'true' }}
+        run: pnpm -F informd tsc
+
+      - name: Lint Payssage
+        if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: pnpm -F payssage lint
+
+      - name: TypeScript Payssage
+        if: ${{ needs.changes.outputs.payssage == 'true' }}
+        run: pnpm -F payssage tsc
+
+      - name: Lint Spicedb
+        if: ${{ needs.changes.outputs.spicedb == 'true' }}
+        run: pnpm -F spicedb-ui lint
+
+      - name: TypeScript Spicedb
+        if: ${{ needs.changes.outputs.spicedb == 'true' }}
+        run: pnpm -F spicedb-ui tsc
+
+      - name: Lint Univents
+        if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: pnpm -F univents lint
+
+      - name: TypeScript Univents
+        if: ${{ needs.changes.outputs.univents == 'true' }}
+        run: pnpm -F univents tsc
