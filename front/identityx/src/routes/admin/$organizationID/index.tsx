@@ -1,7 +1,7 @@
 import { allProjectsQueryOptions, createProjectFn } from '@/features/project/api'
 import type { ProjectCreateI, ProjectI } from '@/features/project/model'
 import { ProjectsView } from '@/features/project/ui/ProjectsView'
-import { useLayoutHeader } from '@/shared/lib/hooks/layout-context'
+import { useLayoutHeader } from '@trieoh/ui-base'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo } from 'react'

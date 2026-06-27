@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { Files, Users2 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import { LayoutContext } from '@/shared/lib/hooks/layout-context'
+import { LayoutContext } from '@trieoh/ui-base'
 
 export const Route = createFileRoute('/admin/$organizationID')({
   component: NamespaceLayout,

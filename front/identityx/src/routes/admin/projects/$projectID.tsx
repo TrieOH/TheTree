@@ -1,4 +1,4 @@
-import { LayoutContext } from '@/shared/lib/hooks/layout-context'
+import { LayoutContext } from '@trieoh/ui-base'
 import { cn } from '@/shared/lib/utils'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { KeySquare, User2 } from 'lucide-react'

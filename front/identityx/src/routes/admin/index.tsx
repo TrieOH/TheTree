@@ -1,7 +1,7 @@
 import { allOrganizationsQueryOptions, createOrganizationFn } from '@/features/organizations/api'
 import { organizationCreateSchema, type OrganizationCreateI, type OrganizationI } from '@/features/organizations/model'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
-import { PaginatedContainer } from '@/widgets/pagination/PaginatedContainer'
+import { PaginatedContainer } from '@trieoh/ui-base'
 import { FormModal } from '@/widgets/modal/FormModal'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'

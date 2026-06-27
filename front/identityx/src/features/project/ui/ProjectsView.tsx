@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { projectCreateSchema, type ProjectCreateI, type ProjectI } from '../model';
-import { PaginatedContainer } from '@/widgets/pagination/PaginatedContainer';
+import { PaginatedContainer } from '@trieoh/ui-base';
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton';
 import { FormModal } from '@/widgets/modal/FormModal';
 import ProjectCard from './project-card';

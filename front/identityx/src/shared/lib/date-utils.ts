@@ -1,1 +1,1 @@
-export { formatDate, timeAgo } from "@trieoh/shared-utils"
+export { timeAgo } from "@trieoh/shared-utils"
