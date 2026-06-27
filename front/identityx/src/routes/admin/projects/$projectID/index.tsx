@@ -10,7 +10,7 @@ import { Modal } from '@/widgets/modal/modal'
 import { PaginatedContainer } from '@/widgets/pagination/PaginatedContainer'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { KeySquare, Plus } from 'lucide-react'
+import { Copy, KeySquare, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -67,6 +67,12 @@ const MOCK_API_KEYS: ApiKeyI[] = [
   },
 ]
 
+const handleCopyProjectId = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
+  e.stopPropagation();
+  navigator.clipboard.writeText(id);
+  toast.success("Project ID copied to clipboard");
+};
+
 function RouteComponent() {
   const queryClient = useQueryClient()
   const { projectID } = Route.useParams()
@@ -92,20 +98,24 @@ function RouteComponent() {
     )
   })
 
-  const count = apiKeys.filter(k => !k.revoked_at).length
-
   const header = useMemo(() => (
     <div className="flex items-start justify-between">
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Api Keys</h1>
-        <p className="text-sm text-muted-foreground">
-          {count === 0
-            ? 'No API keys yet for this project'
-            : `${count} active API key${count !== 1 ? 's' : ''} in this project`}
-        </p>
+        <div className='flex items-center gap-2 text-sm'>
+          <span className="truncate text-muted-foreground font-mono max-w-1/2">
+            Project ID: {projectID}
+          </span>
+          <ShadowButton
+            variant="ghost"
+            onClick={(e) => handleCopyProjectId(e, projectID)}
+            className="p-0 h-auto"
+            leftIcon={<Copy className="size-3" />}
+          />
+        </div>
       </div>
     </div>
-  ), [count])
+  ), [projectID])
 
   useLayoutHeader(header)
 
@@ -118,9 +128,7 @@ function RouteComponent() {
           queryKey: allApiKeysQueryOptions(projectID).queryKey,
         })
         toast.success(response.message || "API key created successfully")
-      } else {
-        toast.error(response.message || "Failed to create API key")
-      }
+      } else toast.error(response.message || "Failed to create API key")
     },
     onError: (error: Error) => toast.error(error.message),
   })
@@ -195,7 +203,7 @@ function RouteComponent() {
         isOpen={isCreateOpen && !createdKey}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={createApiKey}
-        defaultValues={{ name: '', create_for_service_account: false, expires_at: undefined }}
+        defaultValues={{ name: '', create_for_service_account: 'false', expires_at: undefined }}
         isLoading={isCreating}
         fields={[
           {

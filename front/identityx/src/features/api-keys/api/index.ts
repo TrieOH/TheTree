@@ -10,7 +10,11 @@ import { queryOptions } from "@tanstack/react-query";
  * @returns A promise resolving to the response containing the new API key.
  */
 export const rotateApiKeyFn = createClientOnlyFn((project_id: string, apiKeyData: ApiKeyCreateI) => {
-  return authFetcher.post<CreateApiKeyResponseI>(`/projects/${project_id}/api_keys`, apiKeyData);
+  const dataToSend = {
+    ...apiKeyData,
+    create_for_service_account: apiKeyData.create_for_service_account === 'true',
+  };
+  return authFetcher.post<CreateApiKeyResponseI>(`/projects/${project_id}/api_keys`, dataToSend);
 });
 
 /**
