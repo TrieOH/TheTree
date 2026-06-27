@@ -64,18 +64,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Manual Trivy Setup
-        uses: https://github.com/aquasecurity/setup-trivy@v0.3.1
-        with:
-          cache: true
-          version: v0.71.2
+      - name: Install Trivy (no sudo)
+        env:
+          TRIVY_VERSION: "0.71.2"
+        run: |
+          set -e
+          TRIVY_DIR="$HOME/.local/trivy"
+          mkdir -p "$TRIVY_DIR"
+
+          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            -o /tmp/trivy.tar.gz
+
+          tar -xzf /tmp/trivy.tar.gz -C "$TRIVY_DIR" trivy
+
+          chmod +x "$TRIVY_DIR/trivy"
+
+          echo "$TRIVY_DIR" >> "$GITHUB_PATH"
+
+      - name: Verify Trivy
+        run: |
+          trivy --version
 
       - name: Trivy scan
-        uses: https://github.com/aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: 'fs'
-          scan-ref: ${{ matrix.project }}
-          severity: LOW,MEDIUM,HIGH,CRITICAL
-          scanners: 'vuln,secret,misconfig'
-          exit-code: 1
-          skip-setup-trivy: true
+        run: |
+          trivy fs \
+            --severity LOW,MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --exit-code 1 \
+            "${{ matrix.project }}"
