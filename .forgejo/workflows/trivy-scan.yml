@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 0
 
       - name: Manual Trivy Setup
-        uses: https://github.com/aquasecurity/setup-trivy@v0.2.0
+        uses: https://github.com/aquasecurity/setup-trivy@v0.3.1
         with:
           cache: true
           version: v0.71.2
