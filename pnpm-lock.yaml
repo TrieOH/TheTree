@@ -275,8 +275,8 @@ importers:
         specifier: ^0.1.5
         version: 0.1.5
       '@trieoh/identityx-sdk-ts':
-        specifier: ^0.12.6
-        version: 0.12.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: link:../../sdk/ts/identityx
+        version: link:../../sdk/ts/identityx
       '@trieoh/informd-models':
         specifier: workspace:*
         version: link:../../lib/ts/informd
@@ -4282,12 +4282,6 @@ packages:
 
   '@trieoh/identityx-sdk-ts@0.12.0':
     resolution: {integrity: sha512-6s8N7vz1fvdwP2mW8svokXld4uWPzbilIcXnxdo4pkfmSet2xak5YVeAevWJBYXfcHYZBgpCpt2l04fGGnh4Vg==}
-    peerDependencies:
-      react: ^19.2.0
-      react-dom: ^19.2.0
-
-  '@trieoh/identityx-sdk-ts@0.12.6':
-    resolution: {integrity: sha512-VMWvz7KJytH6xxT4vAq1l9uXodSBDQD/Kyk3dpHonTQpg+DHNWPzTBwGUEW7mVR4ZZlkWgmNtQk7AouwKeOpKw==}
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -10959,14 +10953,6 @@ snapshots:
   '@trieoh/envoy-fetch-ts@0.1.5': {}
 
   '@trieoh/identityx-sdk-ts@0.12.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@trieoh/envoy-fetch-ts': 0.1.5
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      react-icons: 5.6.0(react@19.2.7)
-      ua-parser-js: 2.0.10
-
-  '@trieoh/identityx-sdk-ts@0.12.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@trieoh/envoy-fetch-ts': 0.1.5
       react: 19.2.7

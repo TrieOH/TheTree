@@ -36,7 +36,7 @@
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.132.0",
     "@trieoh/envoy-fetch-ts": "^0.1.5",
-    "@trieoh/identityx-sdk-ts": "^0.12.6",
+    "@trieoh/identityx-sdk-ts": "link:../../sdk/ts/identityx",
     "@trieoh/informd-models": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
