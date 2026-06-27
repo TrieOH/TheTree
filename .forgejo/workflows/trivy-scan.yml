@@ -4,16 +4,51 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'front/**'
-      - 'api/**'
-      - 'docs/**'
-      - 'infra/**'
-      - 'lib/**'
-      - 'sdk/**'
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.filter.outputs.projects }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed projects
+        id: filter
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          ALL_PROJECTS=(
+            "docs" "infra"
+            "front/identityx" "front/informd" "front/payssage" "front/spicedb" "front/univents"
+            "api/identityx" "api/informd" "api/payssage" "api/univents"
+            "lib/go"
+            "sdk/ts/identityx" "sdk/ts/Payssage"
+            "sdk/go/IdentityX" "sdk/go/Payssage"
+          )
+
+          CHANGED_FILES=$(git diff --name-only "$BASE" "$HEAD")
+          RESULT=()
+
+          for project in "${ALL_PROJECTS[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "^${project}/"; then
+              RESULT+=("\"$project\"")
+            fi
+          done
+
+          if [ ${#RESULT[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            JOINED=$(IFS=,; echo "${RESULT[*]}")
+            echo "projects=[$JOINED]" >> $GITHUB_OUTPUT
+          fi
+
   trivy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.projects != '[]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,42 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project:
-          - docs
-          - infra
-          # Front
-          - front/identityx
-          - front/informd
-          - front/payssage
-          - front/spicedb
-          - front/univents
-          # API
-          - api/identityx
-          - api/informd
-          - api/payssage
-          - api/univents
-          # Lib
-          - lib/go
-          # - lib/ts/identityx
-          # - lib/ts/informd
-          # - lib/go/api_keys
-          # - lib/go/authz
-          # - lib/go/crypto
-          # - lib/go/database
-          # - lib/go/env
-          # - lib/go/errx
-          # - lib/go/globals
-          # - lib/go/oauth
-          # - lib/go/river
-          # - lib/go/telemetry
-          # - lib/go/utils
-          # - lib/go/validator
-          # - lib/go/xslices
-          # Sdk
-          - sdk/ts/identityx
-          - sdk/ts/Payssage
-          - sdk/go/IdentityX
-          - sdk/go/Payssage
+        project: ${{ fromJson(needs.detect-changes.outputs.projects) }}
 
     steps:
       - name: Checkout
@@ -64,25 +64,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if changed
-        id: changes
-        uses: https://github.com/dorny/paths-filter@v4
-        with:
-          filters: |
-            changed:
-              - '${{ matrix.project }}/**'
-
-      - name: Cache Trivy DB
-        if: steps.changes.outputs.changed == 'true'
-        uses: https://code.forgejo.org/actions/cache@v4
-        with:
-          path: ~/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ steps.date.outputs.date }}
-          restore-keys: |
-            trivy-db-${{ runner.os }}-
-
       - name: Trivy scan
-        if: steps.changes.outputs.changed == 'true'
         uses: https://github.com/aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
