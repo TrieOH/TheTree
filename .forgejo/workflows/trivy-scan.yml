@@ -17,10 +17,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
       - name: Trivy scan
-        uses: https://github.com/aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          severity: LOW,MEDIUM,HIGH,CRITICAL
-          scanners: vuln,secret,misconfig
-          exit-code: '1'
+        run: |
+          trivy fs . \
+            --severity LOW,MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --exit-code 1
