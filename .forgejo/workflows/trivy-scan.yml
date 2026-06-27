@@ -1,33 +1,74 @@
 name: Trivy Scan
+
 on:
   pull_request:
     branches:
       - main
+
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.filter.outputs.projects }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed projects
+        id: filter
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          ALL_PROJECTS=(
+            "docs" "infra"
+            "front/identityx" "front/informd" "front/payssage" "front/spicedb" "front/univents"
+            "api/identityx" "api/informd" "api/payssage" "api/univents"
+            "lib/go"
+            "sdk/ts/identityx" "sdk/ts/Payssage"
+            "sdk/go/IdentityX" "sdk/go/Payssage"
+          )
+
+          CHANGED_FILES=$(git diff --name-only "$BASE" "$HEAD")
+          RESULT=()
+
+          for project in "${ALL_PROJECTS[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "^${project}/"; then
+              RESULT+=("\"$project\"")
+            fi
+          done
+
+          if [ ${#RESULT[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            JOINED=$(IFS=,; echo "${RESULT[*]}")
+            echo "projects=[$JOINED]" >> $GITHUB_OUTPUT
+          fi
+
   trivy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.projects != '[]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-changes.outputs.projects) }}
+
     steps:
       - name: Checkout
-        run: |
-          git clone --depth=0 ${{ github.server_url }}/${{ github.repository }}.git .
-
-      - name: Install Trivy
-        run: |
-          sudo apt-get install -y wget gnupg
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
-            | gpg --dearmor \
-            | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
-            | sudo tee /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Trivy scan
-        run: |
-          trivy fs . \
-            --severity LOW,MEDIUM,HIGH,CRITICAL \
-            --scanners vuln,secret,misconfig \
-            --exit-code 1
+        uses: https://github.com/aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: ${{ matrix.project }}
+          severity: LOW,MEDIUM,HIGH,CRITICAL
+          scanners: 'vuln,secret,misconfig'
+          exit-code: '1'
