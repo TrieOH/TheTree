@@ -2,10 +2,10 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 	"time"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -14,12 +14,12 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMem
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.AddMember")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	if sub.ID == payload.UserID {
+	if ident.Sub.ID == payload.UserID {
 		return fun.ErrBadRequest("users can't add themselves to namespaces")
 	}
 
@@ -32,8 +32,8 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMem
 		return fun.ErrBadRequest("owners can't be added to namespaces they own")
 	}
 
-	if sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, sub.ID, payload.NamespaceID)
+	if ident.Sub.ID != namespace.OwnerID {
+		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, payload.NamespaceID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return err
 		}
@@ -58,7 +58,7 @@ func (s *Commands) AddMember(ctx context.Context, payload models.AddNamespaceMem
 		NamespaceID: payload.NamespaceID,
 		Role:        payload.Role,
 		AddedAt:     time.Now(),
-		AddedBy:     sub.ID,
+		AddedBy:     ident.Sub.ID,
 	}
 
 	if err = s.namespaces.AddMember(ctx, newMember); err != nil {

@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -13,18 +13,18 @@ func (s *Command) CreateNamespaced(ctx context.Context, payload models.CreateNam
 	ctx, span := s.tracer.Start(ctx, "FieldService.CreateNamespaced")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, sub.ID, payload.NamespaceID)
+	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, payload.NamespaceID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}
 	if fun.Is(err, fun.CodeNotFound) {
 		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, sub.ID, payload.FormID)
+			member, err := s.forms.GetMember(ctx, ident.Sub.ID, payload.FormID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return nil, err
 			}

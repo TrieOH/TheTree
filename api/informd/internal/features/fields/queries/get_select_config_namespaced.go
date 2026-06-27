@@ -2,9 +2,9 @@ package queries
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,17 +14,17 @@ func (s *Queries) GetSelectConfigNamespaced(ctx context.Context, formID, namespa
 	ctx, span := s.tracer.Start(ctx, "FieldService.GetSelectConfigNamespaced")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	_, err = s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return nil, err
 	}
 	if fun.Is(err, fun.CodeNotFound) {
-		_, err = s.forms.GetMember(ctx, sub.ID, formID)
+		_, err = s.forms.GetMember(ctx, ident.Sub.ID, formID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}

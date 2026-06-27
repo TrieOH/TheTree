@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 	"lib/xslices"
 
 	"github.com/MintzyG/fun"
@@ -15,18 +15,18 @@ func (s *Command) BulkEditNamespaced(ctx context.Context, formID, namespaceID uu
 	ctx, span := s.tracer.Start(ctx, "StepService.BulkEditNamespaced")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return err
 	}
 	if fun.Is(err, fun.CodeNotFound) {
 		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, sub.ID, formID)
+			member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return err
 			}

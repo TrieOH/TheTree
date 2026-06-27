@@ -1,0 +1,94 @@
+name: Trivy Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.filter.outputs.projects }}
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed projects
+        id: filter
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+
+          ALL_PROJECTS=(
+            "docs" "infra"
+            "front/identityx" "front/informd" "front/payssage" "front/spicedb" "front/univents"
+            "api/identityx" "api/informd" "api/payssage" "api/univents"
+            "lib/go"
+            "sdk/ts/identityx" "sdk/ts/Payssage"
+            "sdk/go/IdentityX" "sdk/go/Payssage"
+          )
+
+          CHANGED_FILES=$(git diff --name-only "$BASE" "$HEAD")
+          RESULT=()
+
+          for project in "${ALL_PROJECTS[@]}"; do
+            if echo "$CHANGED_FILES" | grep -q "^${project}/"; then
+              RESULT+=("\"$project\"")
+            fi
+          done
+
+          if [ ${#RESULT[@]} -eq 0 ]; then
+            echo "projects=[]" >> $GITHUB_OUTPUT
+          else
+            JOINED=$(IFS=,; echo "${RESULT[*]}")
+            echo "projects=[$JOINED]" >> $GITHUB_OUTPUT
+          fi
+
+  trivy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.projects != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-changes.outputs.projects) }}
+
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Trivy (no sudo)
+        env:
+          TRIVY_VERSION: "0.71.2"
+        run: |
+          set -e
+          TRIVY_DIR="$HOME/.local/trivy"
+          mkdir -p "$TRIVY_DIR"
+
+          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            -o /tmp/trivy.tar.gz
+
+          tar -xzf /tmp/trivy.tar.gz -C "$TRIVY_DIR" trivy
+
+          chmod +x "$TRIVY_DIR/trivy"
+
+          echo "$TRIVY_DIR" >> "$GITHUB_PATH"
+
+      - name: Verify Trivy
+        run: |
+          trivy --version
+
+      - name: Trivy scan
+        run: |
+          trivy fs \
+            --severity LOW,MEDIUM,HIGH,CRITICAL \
+            --scanners vuln,secret,misconfig \
+            --exit-code 1 \
+            "${{ matrix.project }}"

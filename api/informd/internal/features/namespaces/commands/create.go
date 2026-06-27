@@ -2,22 +2,22 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 	"time"
 
 	"Informd/models"
-	"lib/authz"
 )
 
 func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, error) {
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.Create")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	project, err := models.NewNamespace(sub.ID, name)
+	project, err := models.NewNamespace(ident.Sub.ID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +30,11 @@ func (s *Commands) Create(ctx context.Context, name string) (*models.Namespace, 
 		}
 
 		return s.namespaces.AddMember(ctx, models.NamespaceMember{
-			UserID:      sub.ID,
+			UserID:      ident.Sub.ID,
 			NamespaceID: created.ID,
 			Role:        models.NamespaceMemberRoleOwner,
 			AddedAt:     time.Now(),
-			AddedBy:     sub.ID,
+			AddedBy:     ident.Sub.ID,
 		})
 	}); err != nil {
 		return nil, err

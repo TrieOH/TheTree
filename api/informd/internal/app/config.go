@@ -43,6 +43,10 @@ type Config struct {
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
+
+	// IDX Setup
+	CredsEncryptionPassword string `env:"CREDS_ENCRYPTION_PASSWORD,required"`
+	CredsFilePath           string `env:"CREDS_FILE_PATH,required"`
 }
 
 func (cfg Config) ToDBConfig() database.Config {

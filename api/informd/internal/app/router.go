@@ -2,6 +2,7 @@ package app
 
 import (
 	"net/http"
+	idx "sdk/identityx"
 
 	"Informd/internal/features/fields"
 	"Informd/internal/features/forms"
@@ -84,7 +85,7 @@ type Deps struct {
 // @in header
 // @name X-API-KEY
 // @description API key for service-to-service authentication
-func CreateRouter(deps *Deps) http.Handler {
+func (app *Informd) CreateRouter(deps *Deps) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(deps.RealIP)
@@ -115,6 +116,8 @@ func CreateRouter(deps *Deps) http.Handler {
 	responses.RegisterRoutes(r, deps.ResponsesHandler)
 
 	r.Get("/health", handlers.Health(deps.AppName).Handle)
+
+	r.Mount("/idx/setup", idx.NewSetupHandler(app.idxClient))
 
 	return otelhttp.NewHandler(r, "http.server",
 		otelhttp.WithFilter(func(r *http.Request) bool {

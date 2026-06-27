@@ -2,27 +2,26 @@ package queries
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 )
 
 func (q *Queries) ListNamespaces(ctx context.Context) (members []models.Namespace, err error) {
 	ctx, span := q.tracer.Start(ctx, "NamespaceService.GetMembers")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	ownNamespaces, err := q.namespaces.ListOwned(ctx, sub.ID)
+	ownNamespaces, err := q.namespaces.ListOwned(ctx, ident.Sub.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	joinedNamespaces, err := q.namespaces.ListJoined(ctx, sub.ID)
+	joinedNamespaces, err := q.namespaces.ListJoined(ctx, ident.Sub.ID)
 	if err != nil {
 		return nil, err
 	}

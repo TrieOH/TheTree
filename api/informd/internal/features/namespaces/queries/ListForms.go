@@ -2,9 +2,9 @@ package queries
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/google/uuid"
 )
@@ -13,8 +13,7 @@ func (q *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms [
 	ctx, span := q.tracer.Start(ctx, "NamespaceService.ListForms")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +24,8 @@ func (q *Queries) ListForms(ctx context.Context, namespaceID uuid.UUID) (forms [
 		return nil, err
 	}
 
-	if sub.ID != namespace.OwnerID {
-		_, err = q.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	if ident.Sub.ID != namespace.OwnerID {
+		_, err = q.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
 		if err != nil {
 			return nil, err
 		}

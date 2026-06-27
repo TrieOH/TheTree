@@ -2,9 +2,9 @@ package queries
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ func (q *Queries) ListMembers(ctx context.Context, formID uuid.UUID) ([]models.F
 	ctx, span := q.tracer.Start(ctx, "FormService.ListMembers")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +24,8 @@ func (q *Queries) ListMembers(ctx context.Context, formID uuid.UUID) ([]models.F
 		return nil, err
 	}
 
-	if sub.ID != form.OwnerID {
-		_, err := q.forms.GetMember(ctx, sub.ID, form.ID)
+	if ident.Sub.ID != form.OwnerID {
+		_, err := q.forms.GetMember(ctx, ident.Sub.ID, form.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
