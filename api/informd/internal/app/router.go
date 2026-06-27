@@ -117,7 +117,7 @@ func (app *Informd) CreateRouter(deps *Deps) http.Handler {
 
 	r.Get("/health", handlers.Health(deps.AppName).Handle)
 
-	r.Mount("/", idx.NewSetupHandler(app.idxClient))
+	r.Mount("/idx/setup", idx.NewSetupHandler(app.idxClient))
 
 	return otelhttp.NewHandler(r, "http.server",
 		otelhttp.WithFilter(func(r *http.Request) bool {
