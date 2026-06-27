@@ -53,6 +53,16 @@ export default function CrudForm<TFormData>({
                       required={item.required}
                     />
                   );
+                case "date":
+                  return (
+                    <field.DateField
+                      label={item.label}
+                      placeholder={item.placeholder}
+                      required={item.required}
+                      getRulesStatus={item.getRulesStatus}
+                      submitted={submitted}
+                    />
+                  );
                 default:
                   return (
                     <field.TextField

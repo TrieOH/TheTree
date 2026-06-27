@@ -36,7 +36,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   ]
 
   return (
-    <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
+    <div className="flex min-h-screen bg-background font-body selection:bg-primary/10">
       {/* Desktop Sidebar Navigation */}
       <aside
         className={cn(

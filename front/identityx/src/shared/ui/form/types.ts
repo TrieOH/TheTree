@@ -20,7 +20,7 @@ export interface CrudFormConfig<TFormData> {
 
 import type React from 'react';
 
-export type FieldType = "text" | "select" | "option-picker";
+export type FieldType = "text" | "select" | "option-picker" | "date";
 
 export interface FieldOption {
   label: string;

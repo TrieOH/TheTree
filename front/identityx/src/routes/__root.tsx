@@ -42,11 +42,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className='min-w-xs' suppressHydrationWarning>
+      <body className="font-body antialiased wrap-anywhere">
         <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
           <AuthContextUpdater>
             {/* <PHProvider> */}

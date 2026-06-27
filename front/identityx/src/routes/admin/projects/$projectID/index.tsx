@@ -225,9 +225,8 @@ function RouteComponent() {
           },
           {
             name: 'expires_at',
-            label: 'Expires At (optional)',
-            type: 'text',
-            placeholder: 'e.g. 2027-12-31T23:59:59Z',
+            label: 'Expires At',
+            type: 'date',
           },
         ]}
       />
