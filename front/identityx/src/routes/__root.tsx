@@ -9,7 +9,7 @@ import { requireSetup } from '@/features/auth/lib/route-guard'
 import appCss from '../styles.css?url'
 import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
-import { AuthContextUpdater } from '@/app/providers/auth/AuthContextUpdater'
+import { AuthContextUpdater } from '@trieoh/front-core'
 
 interface MyRouterContext {
   queryClient: QueryClient

@@ -1,3 +1,3 @@
-import type { Actor } from "@trieoh/identityx-models";
+// import type { Actor } from "@trieoh/identityx-models";
 
-export type ActorI = Actor
+// export type ActorI = Actor
