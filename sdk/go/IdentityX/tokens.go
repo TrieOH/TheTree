@@ -16,22 +16,36 @@ import (
 	"github.com/google/uuid"
 )
 
+type ActorType string
+
+const (
+	HumanActorType   ActorType = "human"
+	ServiceActorType ActorType = "service"
+	MachineActorType ActorType = "machine"
+)
+
 type AccessSub struct {
-	ID         uuid.UUID        `json:"id"`
-	Email      string           `json:"email"`
-	ProjectID  *uuid.UUID       `json:"project_id"`
-	UserType   string           `json:"user_type"`
-	Metadata   *json.RawMessage `json:"metadata"`
-	SessionID  uuid.UUID        `json:"session_id"`
-	UserAgent  string           `json:"user_agent"`
-	UserIP     string           `json:"user_ip"`
-	IsVerified bool             `json:"is_verified"`
-	FamilyID   uuid.UUID        `json:"family_id"`
-	VerifiedAt *time.Time       `json:"verified_at"`
+	ID           uuid.UUID       `json:"id"`
+	ProjectID    *uuid.UUID      `json:"project_id"`
+	Email        *string         `json:"email"`
+	Type         ActorType       `json:"type"`
+	Capabilities json.RawMessage `json:"capabilities"`
+	Metadata     json.RawMessage `json:"metadata"`
 }
 
 type AccessClaims struct {
 	Sub AccessSub `json:"sub"`
+	jwt.RegisteredClaims
+}
+
+type RefreshSub struct {
+	ID        uuid.UUID  `json:"id"`
+	ProjectID *uuid.UUID `json:"project_id"`
+	AccessJTI uuid.UUID  `json:"access_jti"`
+}
+
+type RefreshClaims struct {
+	Sub RefreshSub `json:"sub"`
 	jwt.RegisteredClaims
 }
 

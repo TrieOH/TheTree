@@ -2,9 +2,9 @@ package queries
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ func (q *Queries) GetFullForm(ctx context.Context, namespaceID, formID uuid.UUID
 	ctx, span := q.tracer.Start(ctx, "NamespaceService.GetFullForm")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -29,13 +29,13 @@ func (q *Queries) GetFullForm(ctx context.Context, namespaceID, formID uuid.UUID
 		return nil, err
 	}
 
-	if sub.ID != namespace.OwnerID {
-		_, err = q.namespaces.GetMember(ctx, sub.ID, namespace.ID)
+	if ident.Sub.ID != namespace.OwnerID {
+		_, err = q.namespaces.GetMember(ctx, ident.Sub.ID, namespace.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}
 		if err != nil {
-			_, err = q.forms.GetMember(ctx, sub.ID, formID)
+			_, err = q.forms.GetMember(ctx, ident.Sub.ID, formID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return nil, err
 			}

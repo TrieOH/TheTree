@@ -17,7 +17,6 @@ import (
 	"Informd/internal/features/responses"
 	"Informd/internal/features/steps"
 	"Informd/ports"
-	"lib/authz"
 	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
@@ -96,7 +95,7 @@ func (app *Informd) run() runtime {
 	rt.commands = app.startCommands(rt)
 	rt.queries = app.startQueries(rt)
 	rt.handlers = app.startHandlers(rt)
-	mux := CreateRouter(rt.handlers)
+	mux := app.CreateRouter(rt.handlers)
 	if app.Config.ProfilePort != "" {
 		go func() {
 			pmux := http.NewServeMux()
@@ -177,9 +176,18 @@ func (app *Informd) startMiddlewares(rt runtime) mws {
 	}
 
 	jwtHook := func(ctx context.Context, claims *idx.AccessClaims) (context.Context, error) {
-		return authz.WithSubject(ctx, &authz.UserSubject{
-			ID:    claims.Sub.ID,
-			Email: claims.Sub.Email,
+		return idx.WithIdentity(ctx, &idx.Identity{
+			Sub: idx.Subject{
+				ID:           claims.Sub.ID,
+				ProjectID:    claims.Sub.ProjectID,
+				Email:        claims.Sub.Email,
+				Type:         claims.Sub.Type,
+				Capabilities: claims.Sub.Capabilities,
+				Metadata:     claims.Sub.Metadata,
+			},
+			Cred: idx.Credential{
+				Type: "token",
+			},
 		}), nil
 	}
 

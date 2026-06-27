@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,18 +14,18 @@ func (s *Command) DeleteNamespaced(ctx context.Context, namespaceID, formID, fie
 	ctx, span := s.tracer.Start(ctx, "FieldService.DeleteNamespaced")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	namespaceMember, err := s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	namespaceMember, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
 	if err != nil && !fun.Is(err, fun.CodeNotFound) {
 		return err
 	}
 	if fun.Is(err, fun.CodeNotFound) {
 		if namespaceMember.Role == models.NamespaceMemberRoleViewer {
-			member, err := s.forms.GetMember(ctx, sub.ID, formID)
+			member, err := s.forms.GetMember(ctx, ident.Sub.ID, formID)
 			if err != nil && !fun.Is(err, fun.CodeNotFound) {
 				return err
 			}

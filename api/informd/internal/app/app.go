@@ -37,7 +37,6 @@ func Start() {
 
 	app.db = database.SetupDB(app.Config.ToDBConfig())
 	defer database.CloseDB(app.db)
-	app.scheduler = SetupCron(app.db)
 
 	shutdown := telemetry.InitTracer(ctx, app.Config.AppName)
 	defer telemetry.ShutdownTracer(ctx, shutdown, app.Config.AppName)

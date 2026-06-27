@@ -2,22 +2,22 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 	"time"
 
 	"Informd/models"
-	"lib/authz"
 )
 
 func (s *Commands) Create(ctx context.Context, title string) (*models.Form, error) {
 	ctx, span := s.tracer.Start(ctx, "FormService.Create")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	form, err := models.NewForm(nil, sub.ID, sub.ID, title)
+	form, err := models.NewForm(nil, ident.Sub.ID, ident.Sub.ID, title)
 	if err != nil {
 		return nil, err
 	}
@@ -30,11 +30,11 @@ func (s *Commands) Create(ctx context.Context, title string) (*models.Form, erro
 		}
 
 		return s.forms.AddMember(ctx, models.FormMember{
-			UserID:  sub.ID,
+			UserID:  ident.Sub.ID,
 			FormID:  created.ID,
 			Role:    models.FormMemberRoleOwner,
 			AddedAt: time.Now(),
-			AddedBy: sub.ID,
+			AddedBy: ident.Sub.ID,
 		})
 	}); err != nil {
 		return nil, err

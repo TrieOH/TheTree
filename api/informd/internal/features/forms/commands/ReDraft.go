@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ func (s *Commands) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form,
 	ctx, span := s.tracer.Start(ctx, "FormService.ReDraft")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +38,8 @@ func (s *Commands) ReDraft(ctx context.Context, formID uuid.UUID) (*models.Form,
 		return nil, fun.ErrBadRequest("cannot redraft a form with responses")
 	}
 
-	if sub.ID != form.OwnerID {
-		member, err := s.forms.GetMember(ctx, sub.ID, form.ID)
+	if ident.Sub.ID != form.OwnerID {
+		member, err := s.forms.GetMember(ctx, ident.Sub.ID, form.ID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}

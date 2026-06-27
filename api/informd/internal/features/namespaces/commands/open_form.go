@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -14,7 +14,7 @@ func (s *Commands) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID) 
 	ctx, span := s.tracer.Start(ctx, "NamespaceService.OpenForm")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -33,8 +33,8 @@ func (s *Commands) OpenForm(ctx context.Context, namespaceID, formID uuid.UUID) 
 		return nil, fun.ErrBadRequest("cannot open a form not on draft")
 	}
 
-	if sub.ID != namespace.OwnerID {
-		member, err := s.namespaces.GetMember(ctx, sub.ID, namespaceID)
+	if ident.Sub.ID != namespace.OwnerID {
+		member, err := s.namespaces.GetMember(ctx, ident.Sub.ID, namespaceID)
 		if err != nil && !fun.Is(err, fun.CodeNotFound) {
 			return nil, err
 		}

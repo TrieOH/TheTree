@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"Informd/models"
-	"lib/authz"
 
 	"github.com/MintzyG/fun"
 )
@@ -13,12 +13,12 @@ func (s *Command) Create(ctx context.Context, payload models.CreateStepFieldInpu
 	ctx, span := s.tracer.Start(ctx, "FieldService.Create")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	member, err := s.forms.GetMember(ctx, sub.ID, payload.FormID)
+	member, err := s.forms.GetMember(ctx, ident.Sub.ID, payload.FormID)
 	if err != nil {
 		return nil, err
 	}
