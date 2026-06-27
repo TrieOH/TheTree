@@ -1,27 +1,38 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Minus, Search, X } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
-import type { KeyboardEvent, ReactNode } from "react"
+import { useState, useRef, useEffect } from "react";
+import type { ReactNode, KeyboardEvent } from "react";
+import {
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  X,
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-export type SortDirection = "asc" | "desc"
+export type SortDirection = "asc" | "desc";
 
 export interface SortField<T> {
-  key: keyof T
-  label: string
-  comparator?: (a: T, b: T) => number
+  key: keyof T;
+  label: string;
+  comparator?: (a: T, b: T) => number;
 }
 
 export interface SortState<T> {
-  field: keyof T
-  direction: SortDirection
+  field: keyof T;
+  direction: SortDirection;
 }
 
 export interface PaginationInfo {
-  page: number
-  totalPages: number
-  pageSize: number
-  start: number
-  end: number
-  count: number
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  start: number;
+  end: number;
+  count: number;
 }
 
 /**
@@ -42,56 +53,56 @@ export interface PaginationInfo {
  *              </div>
  *            )}
  */
-export type LayoutMode = "grid" | "list" | "custom"
+export type LayoutMode = "grid" | "list" | "custom";
 
 /**
  * Tailwind gap size applied to the items wrapper.
  * Maps to `gap-{n}` utility classes.
  */
-export type GapSize = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "8" | "10"
+export type GapSize = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "8" | "10";
 
 export interface PaginatedContainerProps<T> {
   /** Full dataset - filter externally before passing. */
-  items: T[]
+  items: T[];
   /** Items per page (default: 8). */
-  pageSize?: number
+  pageSize?: number;
   /** Starting page (default: 1). */
-  defaultPage?: number
+  defaultPage?: number;
 
   /**
    * Sortable field definitions. When provided a Sort button appears in the
    * header that opens a dropdown panel (field picker + direction toggle).
    */
-  sortFields?: SortField<T>[]
+  sortFields?: SortField<T>[];
   /**
    * Controlled sort state. Pair with `onSortChange` for external control.
    * Leave unset to let the component manage sort internally.
    */
-  sort?: SortState<T>
-  onSortChange?: (sort: SortState<T>) => void
+  sort?: SortState<T>;
+  onSortChange?: (sort: SortState<T>) => void;
 
   /**
    * Controlled filter value. The component renders the search input and
    * calls `onFilterChange` on every keystroke - the actual filtering is
    * done by you so you can match any fields you want.
    */
-  filterValue?: string
-  onFilterChange?: (value: string) => void
+  filterValue?: string;
+  onFilterChange?: (value: string) => void;
   /** Placeholder for the filter input (default: "Filter…"). */
-  filterPlaceholder?: string
+  filterPlaceholder?: string;
 
   /**
    * Item noun used in the footer counter.
-   * E.g. "organizations" → "Showing 1–4 of 24 organizations"
+   * E.g. "namespaces" → "Showing 1–4 of 24 namespaces"
    */
-  itemLabel?: string
+  itemLabel?: string;
   /** Render the current page slice. */
-  renderItems: (slice: T[]) => ReactNode
+  renderItems: (slice: T[]) => ReactNode;
   /** Shown when the item list is empty after filtering. */
-  emptyState?: ReactNode
+  emptyState?: ReactNode;
   /** Extra content placed in the header to the right of the Sort button. */
-  headerActions?: ReactNode
-  className?: string
+  headerActions?: ReactNode;
+  className?: string;
 
   /**
    * Layout mode for the items wrapper (default: "grid").
@@ -100,18 +111,20 @@ export interface PaginatedContainerProps<T> {
    * "list"   - flex-col; one item per row.
    * "custom" - no wrapper; you own the container inside `renderItems`.
    */
-  layout?: LayoutMode
+  layout?: LayoutMode;
   /**
    * Gap between items (default: "3").
    * Maps to Tailwind's `gap-{n}` utility.
    */
-  gap?: GapSize
+  gap?: GapSize;
   /**
    * Minimum width for each item in grid layout (default: "200px").
    * The grid will fit as many columns as possible at this minimum width,
    * then stretch items to fill the row - no empty space on the right.
+   *
+   * Examples: "160px", "12rem", "240px"
    */
-  minItemWidth?: string
+  minItemWidth?: string;
 }
 
 const GAP_CLASS: Record<GapSize, string> = {
@@ -124,22 +137,22 @@ const GAP_CLASS: Record<GapSize, string> = {
   "6": "gap-6",
   "8": "gap-8",
   "10": "gap-10",
-}
+};
 
 interface ItemsWrapperProps {
-  layout: LayoutMode
-  gap: GapSize
-  minItemWidth: string
-  children: ReactNode
+  layout: LayoutMode;
+  gap: GapSize;
+  minItemWidth: string;
+  children: ReactNode;
 }
 
 function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps) {
-  const gapClass = GAP_CLASS[gap]
+  const gapClass = GAP_CLASS[gap];
 
-  if (layout === "custom") return <>{children}</>
+  if (layout === "custom") return <>{children}</>;
 
   if (layout === "list") {
-    return <div className={`flex flex-col w-full ${gapClass}`}>{children}</div>
+    return <div className={`flex flex-col w-full ${gapClass}`}>{children}</div>;
   }
 
   // "grid" - auto-fill columns that stretch to fill the row.
@@ -152,73 +165,73 @@ function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps
     >
       {children}
     </div>
-  )
+  );
 }
 
 function buildPageNumbers(current: number, total: number): (number | "…")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  if (current <= 4) return [1, 2, 3, 4, 5, "…", total]
-  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total]
-  return [1, "…", current - 1, current, current + 1, "…", total]
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "…", total];
+  if (current >= total - 3) return [1, "…", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "…", current - 1, current, current + 1, "…", total];
 }
 
 function defaultComparator<T>(a: T, b: T, key: keyof T): number {
-  const av = a[key]
-  const bv = b[key]
-  if (typeof av === "number" && typeof bv === "number") return av - bv
-  return String(av).localeCompare(String(bv))
+  const av = a[key];
+  const bv = b[key];
+  if (typeof av === "number" && typeof bv === "number") return av - bv;
+  return String(av).localeCompare(String(bv));
 }
 
 function applySorting<T>(
   items: T[],
   sort: SortState<T>,
-  fields: SortField<T>[],
+  fields: SortField<T>[]
 ): T[] {
-  const field = fields.find((f) => f.key === sort.field)
-  const dir = sort.direction === "desc" ? -1 : 1
+  const field = fields.find((f) => f.key === sort.field);
+  const dir = sort.direction === "desc" ? -1 : 1;
   return [...items].sort((a, b) => {
     const result = field?.comparator
       ? field.comparator(a, b)
-      : defaultComparator(a, b, sort.field)
-    return result * dir
-  })
+      : defaultComparator(a, b, sort.field);
+    return result * dir;
+  });
 }
 
 interface SortPanelProps<T> {
-  fields: SortField<T>[]
-  sort: SortState<T>
-  onChange: (sort: SortState<T>) => void
-  onClose: () => void
+  fields: SortField<T>[];
+  sort: SortState<T>;
+  onChange: (sort: SortState<T>) => void;
+  onClose: () => void;
 }
 
 function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [onClose])
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onClose]);
 
   const handleFieldClick = (key: keyof T) => {
     onChange({
       field: key,
       direction:
         sort.field === key && sort.direction === "asc" ? "desc" : "asc",
-    })
-  }
+    });
+  };
 
   const handleFieldKeyDown = (
     e: KeyboardEvent<HTMLDivElement>,
-    key: keyof T,
+    key: keyof T
   ) => {
     if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault()
-      handleFieldClick(key)
+      e.preventDefault();
+      handleFieldClick(key);
     }
-  }
+  };
 
   return (
     <div
@@ -233,7 +246,6 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
           Sort by
         </span>
         <button
-          type="button"
           onClick={onClose}
           aria-label="Close sort panel"
           className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -245,7 +257,7 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
       {/* Field list */}
       <div className="flex flex-col gap-0.5 mb-2">
         {fields.map((f) => {
-          const isActive = sort.field === f.key
+          const isActive = sort.field === f.key;
           return (
             <div
               key={String(f.key)}
@@ -277,7 +289,7 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
                 )}
               </span>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -285,7 +297,6 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
       <div className="grid grid-cols-2 gap-1.5 border-t border-border pt-2">
         {(["asc", "desc"] as const).map((dir) => (
           <button
-            type="button"
             key={dir}
             onClick={() => onChange({ ...sort, direction: dir })}
             className={[
@@ -301,16 +312,16 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 interface PaginationButtonProps {
-  onClick: () => void
-  disabled?: boolean
-  active?: boolean
-  title?: string
-  "aria-current"?: "page" | undefined
-  children: ReactNode
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  title?: string;
+  "aria-current"?: "page" | undefined;
+  children: ReactNode;
 }
 
 function PaginationButton({
@@ -335,7 +346,7 @@ function PaginationButton({
     >
       {children}
     </button>
-  )
+  );
 }
 
 export function PaginatedContainer<T>({
@@ -357,39 +368,39 @@ export function PaginatedContainer<T>({
   gap = "3",
   minItemWidth = "200px",
 }: PaginatedContainerProps<T>) {
-  const [page, setPage] = useState(defaultPage)
+  const [page, setPage] = useState(defaultPage);
   const [internalSort, setInternalSort] = useState<SortState<T> | null>(
-    sortFields ? { field: sortFields[0].key, direction: "asc" as const } : null,
-  )
-  const [sortOpen, setSortOpen] = useState(false)
+    sortFields ? { field: sortFields[0].key, direction: "asc" } : null
+  );
+  const [sortOpen, setSortOpen] = useState(false);
 
-  const activeSort = controlledSort ?? internalSort
+  const activeSort = controlledSort ?? internalSort;
 
   const handleSortChange = (next: SortState<T>) => {
-    onSortChange?.(next)
-    if (!controlledSort) setInternalSort(next)
-  }
+    onSortChange?.(next);
+    if (!controlledSort) setInternalSort(next);
+  };
 
   const processedItems =
     activeSort && sortFields
       ? applySorting(items, activeSort, sortFields)
-      : items
+      : items;
 
-  const totalPages = Math.max(1, Math.ceil(processedItems.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-  const start = (safePage - 1) * pageSize
-  const slice = processedItems.slice(start, start + pageSize)
-  const pageNums = buildPageNumbers(safePage, totalPages)
+  const totalPages = Math.max(1, Math.ceil(processedItems.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * pageSize;
+  const slice = processedItems.slice(start, start + pageSize);
+  const pageNums = buildPageNumbers(safePage, totalPages);
 
-  const go = (p: number) => setPage(Math.max(1, Math.min(totalPages, p)))
+  const go = (p: number) => setPage(Math.max(1, Math.min(totalPages, p)));
 
   const activeSortLabel =
     activeSort && sortFields
       ? sortFields.find((f) => f.key === activeSort.field)?.label
-      : null
+      : null;
 
   const hasHeader =
-    onFilterChange !== undefined || sortFields || headerActions
+    onFilterChange !== undefined || sortFields || headerActions;
 
   return (
     <div
@@ -411,8 +422,8 @@ export function PaginatedContainer<T>({
                 name="table-filter"
                 value={filterValue ?? ""}
                 onChange={(e) => {
-                  onFilterChange(e.target.value)
-                  setPage(1)
+                  onFilterChange(e.target.value);
+                  setPage(1);
                 }}
                 placeholder={filterPlaceholder}
                 aria-label={filterPlaceholder}
@@ -427,7 +438,6 @@ export function PaginatedContainer<T>({
             {sortFields && activeSort && (
               <div className="relative">
                 <button
-                  type="submit"
                   onClick={() => setSortOpen((v) => !v)}
                   aria-expanded={sortOpen}
                   aria-haspopup="dialog"
@@ -454,8 +464,8 @@ export function PaginatedContainer<T>({
                     fields={sortFields}
                     sort={activeSort}
                     onChange={(s) => {
-                      handleSortChange(s)
-                      setPage(1)
+                      handleSortChange(s);
+                      setPage(1);
                     }}
                     onClose={() => setSortOpen(false)}
                   />
@@ -517,10 +527,10 @@ export function PaginatedContainer<T>({
             <ChevronLeft size={14} />
           </PaginationButton>
 
-          {pageNums.map((p) =>
+          {pageNums.map((p, i) =>
             p === "…" ? (
               <span
-                key={p}
+                key={`ellipsis-${i}`}
                 className="flex h-7 w-7 items-center justify-center text-xs text-muted-foreground"
               >
                 …
@@ -534,7 +544,7 @@ export function PaginatedContainer<T>({
               >
                 {p}
               </PaginationButton>
-            ),
+            )
           )}
 
           <PaginationButton
@@ -554,5 +564,5 @@ export function PaginatedContainer<T>({
         </nav>
       </div>
     </div>
-  )
+  );
 }
