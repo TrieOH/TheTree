@@ -13,33 +13,30 @@ import (
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type CommandService struct {
 	events ports.EventsRepository
-	minio  *minio.Client
+	logger *zap.Logger
 	tracer trace.Tracer
-	az     *authzed.Client
 	tx     database.TxRunner
 }
 
 func NewCommandService(
 	events ports.EventsRepository,
-	minio *minio.Client,
+	logger *zap.Logger,
 	tracer trace.Tracer,
-	az *authzed.Client,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		events: events,
-		minio:  minio,
+		logger: logger,
 		tracer: tracer,
-		az:     az,
 		tx:     tx,
 	}
 }

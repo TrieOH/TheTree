@@ -8,19 +8,13 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/authzed/authzed-go/v1"
-	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
 )
 
 type Informd struct {
 	db        *pgxpool.Pool
-	redis     *redis.Client
-	scheduler gocron.Scheduler
 	idxClient *idx.Client
-	sdbClient *authzed.Client
-	Config    Config
+	cfg       Config
 }
 
 var app Informd
@@ -29,17 +23,17 @@ func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
 
-	app.Config = LoadConfig()
+	app.cfg = LoadConfig()
 
-	SetupFUN(app.Config.AppName)
+	SetupFUN(app.cfg.AppName)
 
-	app.idxClient = SetupIdentityX(app.Config)
+	app.idxClient = SetupIdentityX(app.cfg)
 
-	app.db = database.SetupDB(app.Config.ToDBConfig())
+	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)
 
-	shutdown := telemetry.InitTracer(ctx, app.Config.AppName)
-	defer telemetry.ShutdownTracer(ctx, shutdown, app.Config.AppName)
+	shutdown := telemetry.InitTracer(ctx, app.cfg.AppName)
+	defer telemetry.ShutdownTracer(ctx, shutdown, app.cfg.AppName)
 
 	app.run()
 }

@@ -11,10 +11,11 @@ import (
 
 type Config struct {
 	// Server
-	Port      string `env:"PORT" envDefault:"8080"`
-	AppName   string `env:"APP_NAME,required"`
-	AppUrl    string `env:"APP_URL,required"`
-	DebugMode bool   `env:"DEBUG_MODE"`
+	Port        string `env:"PORT" envDefault:"8080"`
+	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
+	AppName     string `env:"APP_NAME,required"`
+	AppUrl      string `env:"APP_URL,required"`
+	DebugMode   bool   `env:"DEBUG_MODE"`
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"IDX_POSTGRES_HOST,required"`
@@ -52,9 +53,6 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
-
-	// Profiling
-	ProfilePort string `env:"PROFILE_PORT"`
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`

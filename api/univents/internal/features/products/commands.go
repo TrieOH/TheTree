@@ -12,31 +12,20 @@ import (
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
-	"univents/internal/shared/sockets"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-
-	"sdk/payssage"
+	"go.uber.org/zap"
 )
 
 type CommandService struct {
 	editions  ports.EditionsRepository
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
-	payssage  *payssage.Client
-	sessions  ports.PurchaseSessionStore
-	ws        *sockets.Registry
-	inventory ports.InventoryPublisher
-	minio     *minio.Client
-	asynq     *asynq.Client
-	inspector *asynq.Inspector
+	logger    *zap.Logger
 	tracer    trace.Tracer
-	az        *authzed.Client
 	tx        database.TxRunner
 }
 
@@ -44,30 +33,16 @@ func NewCommandService(
 	editions ports.EditionsRepository,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
-	payssage *payssage.Client,
-	session ports.PurchaseSessionStore,
-	ws *sockets.Registry,
-	inventory ports.InventoryPublisher,
-	minio *minio.Client,
-	asynq *asynq.Client,
-	inspector *asynq.Inspector,
+	logger *zap.Logger,
 	tracer trace.Tracer,
-	az *authzed.Client,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		editions:  editions,
 		products:  products,
 		purchases: purchases,
-		payssage:  payssage,
-		sessions:  session,
-		ws:        ws,
-		inventory: inventory,
-		minio:     minio,
-		asynq:     asynq,
-		inspector: inspector,
+		logger:    logger,
 		tracer:    tracer,
-		az:        az,
 		tx:        tx,
 	}
 }
