@@ -27,7 +27,7 @@
     "@trieoh/api-client": "workspace:*",
     "@trieoh/front-core": "workspace:*",
     "@trieoh/identityx-models": "workspace:*",
-    "@trieoh/identityx-sdk-ts": "link:../../sdk/ts/identityx",
+    "@trieoh/identityx-sdk-ts": "^0.12.7",
     "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-base": "workspace:*",
     "class-variance-authority": "^0.7.1",
