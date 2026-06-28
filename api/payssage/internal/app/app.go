@@ -8,15 +8,12 @@ import (
 
 	idx "sdk/identityx"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/riverqueue/river"
 )
 
 type Payssage struct {
 	db        *pgxpool.Pool
 	idxClient *idx.Client
-	river     *river.Client[pgx.Tx]
 
 	cfg Config
 }

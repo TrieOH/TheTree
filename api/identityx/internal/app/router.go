@@ -13,8 +13,6 @@ import (
 	"IdentityX/internal/features/projects"
 	_ "IdentityX/models"
 
-	_ "IdentityX/generated/docs"
-
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

@@ -9,11 +9,13 @@ import (
 	"lib/database"
 
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type QueryService struct {
 	apiKeys    ports.ApiKeysRepo
 	workspaces ports.WorkspaceRepo
+	logger     *zap.Logger
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -21,12 +23,14 @@ type QueryService struct {
 func NewQueryService(
 	apiKeys ports.ApiKeysRepo,
 	workspaces ports.WorkspaceRepo,
+	logger *zap.Logger,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
 	return &QueryService{
 		apiKeys:    apiKeys,
 		workspaces: workspaces,
+		logger:     logger,
 		tx:         tx,
 		tracer:     tracer,
 	}

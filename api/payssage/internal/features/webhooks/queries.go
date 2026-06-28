@@ -8,9 +8,9 @@ import (
 	"lib/database"
 	"payssage/models"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type QueryService struct {
@@ -18,7 +18,7 @@ type QueryService struct {
 	deliveries ports.WebhookDeliveryRepo
 	events     ports.WebhookEventRepo
 	workspaces ports.WorkspaceRepo
-	az         *authzed.Client
+	logger     *zap.Logger
 	tx         database.TxRunner
 	tracer     trace.Tracer
 }
@@ -28,7 +28,7 @@ func NewQueryService(
 	deliveries ports.WebhookDeliveryRepo,
 	events ports.WebhookEventRepo,
 	workspaces ports.WorkspaceRepo,
-	az *authzed.Client,
+	logger *zap.Logger,
 	tx database.TxRunner,
 	tracer trace.Tracer,
 ) *QueryService {
@@ -37,7 +37,7 @@ func NewQueryService(
 		deliveries: deliveries,
 		events:     events,
 		workspaces: workspaces,
-		az:         az,
+		logger:     logger,
 		tx:         tx,
 		tracer:     tracer,
 	}

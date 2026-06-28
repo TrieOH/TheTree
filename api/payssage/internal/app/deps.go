@@ -4,7 +4,10 @@ import (
 	"context"
 	"lib/errx"
 	"lib/validator"
+	"log"
 	"net/http"
+	"payssage/internal/platform/providers"
+	"payssage/ports"
 	"time"
 
 	idx "sdk/identityx"
@@ -54,4 +57,28 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		}
 	}()
 	return client
+}
+
+func setupPaymentProviders(cfg Config) paymentProviders {
+	var pp paymentProviders
+	mpProvider, err := providers.NewMercadoPagoProvider(
+		cfg.MpClientID,
+		cfg.MpAccessToken,
+		cfg.MpClientSecret,
+		cfg.MpRedirectURI,
+		cfg.MpWebhookSecret,
+	)
+	if err != nil {
+		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
+	}
+
+	pp.oauth = map[string]ports.OAuthProvider{
+		"mercadopago": mpProvider,
+	}
+
+	pp.payments = map[string]ports.PaymentAbstractionLayer{
+		"mercadopago": mpProvider,
+	}
+
+	return pp
 }

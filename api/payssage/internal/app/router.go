@@ -1,31 +1,16 @@
 package app
 
 import (
+	"log"
 	"net/http"
-	"time"
-
-	"payssage/internal/features/api_keys"
-	"payssage/internal/features/intents"
-	"payssage/internal/features/oauth"
-	"payssage/internal/features/webhooks"
-	"payssage/internal/features/workspaces"
+	"net/http/pprof"
+	"payssage/generated/docs"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/httprate"
-	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
-
-type HTTPDeps struct {
-	IntentsHandler    *intents.Handler
-	WorkspacesHandler *workspaces.Handler
-	ApiKeysHandler    *api_keys.Handler
-	WebhooksHandler   *webhooks.Handler
-	OauthHandler      *oauth.Handler
-}
 
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
@@ -65,21 +50,39 @@ type HTTPDeps struct {
 // @in header
 // @name Cookie
 // @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
-func CreateRouter(deps *HTTPDeps) http.Handler {
+func (app *Payssage) CreateRouter(handlers handlers) http.Handler {
 	r := chi.NewRouter()
 
-	if !viper.GetBool("DISABLE_RATE_LIMIT") {
-		r.Use(httprate.Limit(
-			400,
-			1*time.Minute,
-			httprate.WithKeyFuncs(httprate.KeyByRealIP),
-		))
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(docs.SwaggerJSON)
+	})
+
+	r.Handle("/metrics", promhttp.Handler())
+
+	// Routes
+
+	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
+
+	return otelhttp.NewHandler(r, "http.server",
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/health"
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/metrics"
+		}),
+	)
+}
+
+func servePprof(port string) {
+	pmux := http.NewServeMux()
+	pmux.HandleFunc("/debug/pprof/", pprof.Index)
+	pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	log.Printf("payssage pprof listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, pmux); err != nil {
+		log.Fatalf("payssage pprof server error: %v", err)
 	}
-
-	r.Handle("/swagger/*", httpSwagger.WrapHandler)
-
-	r.Get("/health", fh.Health("payssage").Handle)
-
-	registerRoutes(r, deps)
-	return otelhttp.NewHandler(r, "http.server")
 }
