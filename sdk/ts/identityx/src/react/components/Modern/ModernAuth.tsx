@@ -4,6 +4,7 @@ import { ModernSignIn } from './ModernSignIn';
 import { ModernSignUp } from './ModernSignUp';
 import { ModernForgotPassword } from './ModernForgotPassword';
 import { AuthLayout } from './Shared/AuthLayout';
+import { OAuthProviderI } from '../../../types/common-types';
 
 export type AuthView = "signin" | "signup" | "forgot-password";
 
@@ -13,6 +14,8 @@ export interface ModernAuthProps {
   onSignUpSuccess?: (message?: string) => Promise<void>;
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
   backLink?: React.ReactNode;
+  /** OAuth providers to show as login buttons (e.g. ["google", "github"]) */
+  providers?: OAuthProviderI[];
 }
 
 const viewConfig: Record<AuthView, { title: string; subtitle: string; toggleLabel: string; toggleAction: string; toggleTo: AuthView }> = {
@@ -45,6 +48,7 @@ export function ModernAuth({
   onSignUpSuccess,
   onFailed,
   backLink,
+  providers,
 }: ModernAuthProps) {
   const [view, setView] = useState<AuthView>(initialView);
 
@@ -84,7 +88,7 @@ export function ModernAuth({
         </div>
 
         {/* Animated form area with fixed min-height to prevent layout shift */}
-        <div className="relative min-h-80">
+        <div className={`relative ${providers && providers.length > 0 ? "min-h-112" : "min-h-80"}`}>
           <AnimatePresence mode="wait">
             {view === "signin" && (
               <motion.div
@@ -100,6 +104,7 @@ export function ModernAuth({
                   onFailed={onFailed}
                   signUpRedirect={() => setView("signup")}
                   forgotPasswordRedirect={() => setView("forgot-password")}
+                  providers={providers}
                 />
               </motion.div>
             )}

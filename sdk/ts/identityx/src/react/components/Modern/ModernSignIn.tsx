@@ -8,6 +8,9 @@ import { useAuth } from "../../AuthProvider";
 import FormInput from './Shared/FormInput';
 import FormError from './Shared/FormError';
 import { Button } from './Shared/Button';
+import { OAuthDivider } from './Shared/OAuthDivider';
+import { OAuthProviderButton } from './Shared/OAuthProviderButton';
+import { OAuthProviderI } from '../../../types/common-types';
 
 const loginSchema = z.object({
   email: z.email("E-mail inválido"),
@@ -21,6 +24,7 @@ export interface ModernSignInProps {
   onFailed?: (message: string, trace?: string[]) => Promise<void>;
   signUpRedirect?: () => void;
   forgotPasswordRedirect?: () => void;
+  providers?: OAuthProviderI[];
 }
 
 export function ModernSignIn({
@@ -28,9 +32,28 @@ export function ModernSignIn({
   onFailed,
   signUpRedirect,
   forgotPasswordRedirect,
+  providers,
 }: ModernSignInProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProviderI | null>(null);
   const { auth } = useAuth();
+
+  const handleOAuthLogin = async (provider: OAuthProviderI) => {
+    setOauthLoading(provider);
+    try {
+      const res = await auth.loginWithProvider(provider);
+      if (res.success && res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        if (onFailed) await onFailed(res.message || "Falha na autenticação");
+        else toast.error("Falha ao conectar com provedor");
+      }
+    } catch {
+      toast.error("Ocorreu um erro inesperado");
+    } finally {
+      setOauthLoading(null);
+    }
+  };
 
   const {
     register,
@@ -110,6 +133,22 @@ export function ModernSignIn({
           </>
         )}
       </Button>
+
+      {providers && providers.length > 0 && (
+        <>
+          <OAuthDivider />
+          <div className="flex flex-col gap-2">
+            {providers.map((provider) => (
+              <OAuthProviderButton
+                key={provider}
+                provider={provider}
+                onClick={() => handleOAuthLogin(provider)}
+                isLoading={oauthLoading === provider}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </form>
   );
 }

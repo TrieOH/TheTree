@@ -7,8 +7,12 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "dependencies": {
-    "@trieoh/envoy-fetch-ts": "^0.1.5",
-    "@trieoh/identityx-sdk-ts": "^0.12.7"
+  "peerDependencies": {
+    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/envoy-fetch-ts": "catalog:"
+  },
+  "devDependencies": {
+    "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/envoy-fetch-ts": "catalog:"
   }
 }

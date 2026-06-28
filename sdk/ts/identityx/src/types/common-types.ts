@@ -1,3 +1,1 @@
-
-
-export type ProviderI = 'github' | 'google'
+export type OAuthProviderI = 'github' | 'google'

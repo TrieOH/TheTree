@@ -5,7 +5,7 @@ import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
 import type { IntrospectResponse } from "../types/instropect-types";
 import { AuthTokens } from "../types/token-types";
-import type { ProviderI } from "../types/common-types";
+import type { OAuthProviderI } from "../types/common-types";
 
 export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
@@ -55,13 +55,13 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     return res;
   },
 
-  loginWithProvider: async (provider: ProviderI) => {
+  loginWithProvider: async (provider: OAuthProviderI) => {
     const url = `/auth/${provider}/connect`;
     const res = await apiInstance.get<{ url: string }>(url, { requiresAuth: false });
     return res;
   },
 
-  completeProviderLogin: async (provider: ProviderI, code: string) => {
+  completeProviderLogin: async (provider: OAuthProviderI, code: string) => {
     const url = `/auth/${provider}/callback?code=${code}`;
     const res = await apiInstance.get<AuthTokens>(url, { requiresAuth: false });
     if (res.success) {
