@@ -1,13 +1,11 @@
 import type { CurrentSessionI, SessionI } from "../types/sessions-types";
-import {
-  clearAuthTokens,
-  getUserInfo,
-  saveAuthSession,
-  type AuthTokens
-} from "../utils/token-utils";
+import { clearAuthTokens, getUserInfo, saveAuthSession } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import type { Api, ApiResponse } from "./api";
 import { env } from "./env";
+import type { IntrospectResponse } from "../types/instropect-types";
+import { AuthTokens } from "../types/token-types";
+import type { ProviderI } from "../types/common-types";
 
 export interface AuthCallbacks {
   onLogin?: (res: ApiResponse<AuthTokens>) => void;
@@ -57,6 +55,22 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     return res;
   },
 
+  loginWithProvider: async (provider: ProviderI) => {
+    const url = `/auth/${provider}/connect`;
+    const res = await apiInstance.get<{ url: string }>(url, { requiresAuth: false });
+    return res;
+  },
+
+  completeProviderLogin: async (provider: ProviderI, code: string) => {
+    const url = `/auth/${provider}/callback?code=${code}`;
+    const res = await apiInstance.get<AuthTokens>(url, { requiresAuth: false });
+    if (res.success) {
+      saveAuthSession(res.data);
+      callbacks?.onLogin?.(res);
+    }
+    return res;
+  },
+
   register: async (email: string, password: string) => {
     const options = { requiresAuth: false };
     const url = `/auth/register${env.PROJECT_ID ? `?project_id=${env.PROJECT_ID}` : ""}`;
@@ -89,6 +103,7 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
     return res;
   },
 
+  // FIXME: This is not being used for now
   sessions: async () => apiInstance.get<SessionI[]>("/sessions"),
 
   currentSession: async () => apiInstance.get<CurrentSessionI>("/sessions/me"),
@@ -133,6 +148,8 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
   },
 
   resendVerifyEmail: async () => apiInstance.post<void>("/account/verify/resend"),
+
+  introspect: async () => apiInstance.get<IntrospectResponse>("/auth/introspect"),
 
   health: async () => {
     return apiInstance.get<{ service: string; status: string }>("/health", {

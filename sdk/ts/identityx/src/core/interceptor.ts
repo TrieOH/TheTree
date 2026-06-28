@@ -6,12 +6,11 @@ import {
   saveAuthSession,
   getTokenClaims,
   getStoredRefreshToken,
-  type AuthTokenClaims,
-  type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
 import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
 import { tokenStore } from "../store/token-store";
+import type { AuthTokenClaims, AuthTokens } from "../types/token-types";
 
 export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;

@@ -2,38 +2,8 @@ import { authStore } from "../store/auth-store";
 import { tokenStore } from "../store/token-store";
 import { logger } from "@trieoh/envoy-fetch-ts";
 import { browserStorage } from "./storage-adapter";
+import type { AuthTokenClaims, AuthTokens, TokenClaims } from "../types//token-types";
 
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-  access_expires_at: string;
-  refresh_expires_at: string;
-  domain: string;
-}
-
-export interface TokenClaims {
-  sub: {
-    id: string;
-    email: string;
-    session_id: string;
-    user_agent: string;
-    user_ip: string;
-    project_id: string | null;
-    verified_at: string | null;
-    is_verified: boolean;
-    user_type: "client" | "project";
-    metadata: Record<string, unknown> | null;
-  };
-  iss: string;
-  exp: number;
-  iat: number;
-  jti: string;
-}
-
-export interface AuthTokenClaims {
-  access_data: TokenClaims;
-  refresh_expiry_date: string | number;
-}
 
 // Stored only in memory
 let _cachedClaims: AuthTokenClaims | null = null;
