@@ -1,22 +1,10 @@
-import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
-import { env } from "@/env";
+import { createAppFetchers } from "@trieoh/api-client"
+import { env } from "@/env"
 
-export const authFetcher = createFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_API_URL,
-    clientConfig: {
-      timeout: 10_000, // 10 seconds timeout
-    }
-  }
-);
+const { authFetcher, queryFetcher } = createAppFetchers({
+  apiURL: env.VITE_API_URL,
+  authAPIURL: env.VITE_API_URL, // identityx uses same URL for both
+  timeout: 10_000,
+})
 
-export const tanstackQueryFetcher = createQueryFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_API_URL,
-    clientConfig: {
-      timeout: 10_000, // 10 seconds timeout
-    }
-  }
-);
+export { authFetcher, queryFetcher as tanstackQueryFetcher }

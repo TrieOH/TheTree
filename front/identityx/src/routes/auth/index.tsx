@@ -1,28 +1,22 @@
-import { createFileRoute, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
-import { SignIn, SignUp } from '@trieoh/identityx-sdk-ts/react'
-import { motion } from "motion/react";
-import { useState } from 'react'
+import { createFileRoute, Link, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
+import { ModernAuth } from '@trieoh/identityx-sdk-ts/react'
 import z from 'zod';
 import { requireGuest } from '@/features/auth/lib/route-guard';
 import { toast } from 'sonner';
+import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
 
 const authSearchSchema = z.object({
   redirect: z.string().optional().catch(''),
 })
 
 export const Route = createFileRoute('/auth/')({
-  validateSearch: (search) =>authSearchSchema.parse(search),
+  validateSearch: (search) => authSearchSchema.parse(search),
   beforeLoad: requireGuest,
-  staticData: {
-    components: {
-      header: "auth"
-    }
-  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const [isLogin, setIsLogin] = useState(true);
 
   const navigate = useNavigate()
   const router = useRouter()
@@ -30,14 +24,14 @@ function RouteComponent() {
 
   const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth
-    if(auth) {
-      router.update({ 
-        context: { 
-          ...router.options.context, 
-          auth: {...auth, isAuthenticated: true },
+    if (auth) {
+      router.update({
+        context: {
+          ...router.options.context,
+          auth: { ...auth, isAuthenticated: true },
         },
       })
-      const destination = search.redirect || '/projects'
+      const destination = search.redirect || '/admin'
       await navigate({ to: destination, replace: true })
       toast.success(message ?? "Login successful!")
       router.options.context.queryClient.invalidateQueries();
@@ -45,36 +39,31 @@ function RouteComponent() {
   }
 
   const handleSignUpSuccess = async (message?: string) => {
-    setIsLogin(true);
     toast.success(message ?? "Account successfully created!")
   }
 
   const handleFailure = async (message: string, trace?: string[]) => {
     const traceMsg = trace?.join("\n").replaceAll("trace: ", "")
-    toast.warning(`Auth Failed: ${message}`, {description: traceMsg})
+    toast.warning(`Auth Failed: ${message}`, { description: traceMsg })
   }
 
   return (
-    <motion.main
-      key={isLogin ? 'signin' : 'signup'}
-      initial={{ opacity: 0, scale: 0.8, y: 5 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className='flex justify-center items-center py-2 h-(--screen--minus-header)'
-    >
-      {isLogin ? (
-        <SignIn 
-          signUpRedirect={() => setIsLogin(false)} 
-          onSuccess={handleLoginSuccess}
-          onFailed={handleFailure}
-        />
-      ) : (
-        <SignUp 
-          loginRedirect={() => setIsLogin(true)} 
-          onSuccess={handleSignUpSuccess}
-          onFailed={handleFailure}
-        />
-      )}
-    </motion.main>
+    <ModernAuth
+      initialView='signin'
+      onLoginSuccess={handleLoginSuccess}
+      onSignUpSuccess={handleSignUpSuccess}
+      onFailed={handleFailure}
+      backLink={
+        <Link
+          to="/"
+          className={cn(
+            "inline-flex items-center gap-0.5 text-sm text-muted-foreground",
+            "hover:text-foreground transition-colors"
+          )}
+        >
+          <ArrowLeft size={20} /> Back to Home
+        </Link>
+      }
+    />
   )
 }

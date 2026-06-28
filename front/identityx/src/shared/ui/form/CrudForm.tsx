@@ -43,13 +43,34 @@ export default function CrudForm<TFormData>({
           >
             {(field) => {
               switch (item.type) {
+                case "option-picker":
+                  return (
+                    <field.OptionPicker
+                      label={item.label}
+                      value={String(field.state.value)}
+                      onChange={field.handleChange as unknown as (value: string) => void}
+                      options={item.options || []}
+                      required={item.required}
+                    />
+                  );
+                case "date":
+                  return (
+                    <field.DateField
+                      label={item.label}
+                      placeholder={item.placeholder}
+                      required={item.required}
+                      getRulesStatus={item.getRulesStatus}
+                      submitted={submitted}
+                    />
+                  );
                 default:
                   return (
-                    <field.TextField 
-                      label={item.label} 
+                    <field.TextField
+                      label={item.label}
                       placeholder={item.placeholder || ""}
                       autoComplete={item.autoComplete}
-                      errors={item.errors}
+                      required={item.required}
+                      getRulesStatus={item.getRulesStatus}
                       submitted={submitted}
                     />
                   );

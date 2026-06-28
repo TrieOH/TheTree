@@ -17,7 +17,6 @@ export interface Actor {
   project_id?: string;
   auth_method: AuthMethod;
   verified_at?: string;
-  password_hash?: string;
   email?: string;
   type: ActorType;
   metadata?: any /* json.RawMessage */;
@@ -47,7 +46,7 @@ export interface ActorExternalIdentities {
 //////////
 // source: api_keys.go
 
-export interface ApiKeys {
+export interface ApiKey {
   id: string;
   actor_id: string;
   project_id?: string;
@@ -55,49 +54,33 @@ export interface ApiKeys {
   key_prefix: string;
   key_hash: string;
   metadata: any /* json.RawMessage */;
-  expires_at: string;
-  revoked_at: string;
-  last_used_at: string;
+  expires_at?: string;
+  revoked_at?: string;
+  last_used_at?: string;
   created_at: string;
+}
+export interface CreateApiKeyRequest {
+  name: string;
+  expires_at?: string;
+  create_for_service_account: boolean;
+}
+export interface CreateApiKeyInput {
+  Name: string;
+  ExpiresAt?: string;
+  ProjectID: string;
+  CreateForServiceAccount: boolean;
+}
+export interface CreateApiKeyResponse {
+  key?: ApiKey;
+  raw_key: string;
 }
 
 //////////
 // source: auth.go
 
-export interface AccessSub {
-  id: string;
-  project_id?: string;
-  email?: string;
-  type: ActorType;
-  capabilities: any /* json.RawMessage */;
-  metadata: any /* json.RawMessage */;
-}
-export interface AccessClaims {
-  sub: AccessSub;
-  RegisteredClaims: any /* jwt.RegisteredClaims */;
-}
-export interface RefreshSub {
-  access_jti: string;
-}
-export interface RefreshClaims {
-  sub: RefreshSub;
-  RegisteredClaims: any /* jwt.RegisteredClaims */;
-}
-export interface VerificationSub {
-  subject: string;
-}
-export interface VerificationClaims {
-  sub: VerificationSub;
-  RegisteredClaims: any /* jwt.RegisteredClaims */;
-}
-export interface ResetPasswordSub {
-  subject: string;
-  project_id?: string;
-}
-export interface ResetPasswordClaims {
-  sub: ResetPasswordSub;
-  RegisteredClaims: any /* jwt.RegisteredClaims */;
-}
+export type CredentialType = string;
+export const TokenCredentialType: CredentialType = "token";
+export const ApiKeyCredentialType: CredentialType = "api_key";
 export interface IDXRegisterRequest {
   email: string;
   password: string;
@@ -105,6 +88,7 @@ export interface IDXRegisterRequest {
 export interface IDXRegisterInput {
   Email: string;
   Password: string;
+  ProjectID?: string;
 }
 export interface IDXLoginRequest {
   email: string;
@@ -113,6 +97,7 @@ export interface IDXLoginRequest {
 export interface IDXLoginInput {
   email: string;
   password: string;
+  ProjectID?: string;
 }
 export interface SetupInput {
   Email: string;
@@ -122,24 +107,8 @@ export interface LogoutInput {
   AccessToken: string;
   RefreshToken: string;
 }
-export interface UserTokensOutput {
-  access_token: string;
-  refresh_token: string;
-  access_expires_at: string;
-  refresh_expires_at: string;
-  domain: string;
-}
-export interface UserTokensResponse {
-  access_token_string: string;
-  refresh_token_string: string;
-  access_expires_at: string;
-  refresh_expires_at: string;
-  domain: string;
-}
-export interface RefreshInput {
-  refresh_cookie: string;
-  agent: string;
-  ip: string;
+export interface ProjectIDQueryParam {
+  ProjectID?: string;
 }
 
 //////////
@@ -187,29 +156,94 @@ export interface CryptoKey {
   rotated_at?: string;
   expires_at?: string;
 }
+export interface ActiveSigningKey {
+  ID: string;
+  PublicKey: string;
+  Algorithm: string;
+}
 
 //////////
 // source: organizations.go
 
-export interface Organizations {
+export interface Organization {
   id: string;
   owner_id: string;
   name: string;
   slug: string;
-  metadata: any /* json.RawMessage */;
+  metadata?: any /* json.RawMessage */;
   created_at: string;
-  deleted_at: string;
+  deleted_at?: string;
 }
 export type OrganizationRole = string;
 export const OrganizationRoleMember: OrganizationRole = "member";
 export const OrganizationRoleAdmin: OrganizationRole = "admin";
 export const OrganizationRoleOwner: OrganizationRole = "owner";
-export interface OrganizationMembers {
+export interface OrganizationMember {
   organization_id: string;
   actor_id: string;
   role: OrganizationRole;
-  metadata: any /* json.RawMessage */;
+  metadata?: any /* json.RawMessage */;
   joined_at: string;
+}
+export interface CreateOrganizationRequest {
+  name: string;
+  slug: string;
+}
+export interface CreateOrganizationInput {
+  name: string;
+  slug: string;
+}
+export interface AddOrganizationMemberRequest {
+  actor_email: string;
+  role: OrganizationRole;
+}
+export interface AddOrganizationMemberInput {
+  actor_email: string;
+  role: OrganizationRole;
+  organization_id: string;
+}
+export interface RemoveOrganizationMemberRequest {
+  actor_email: string;
+}
+export interface RemoveOrganizationMemberInput {
+  actor_email: string;
+  organization_id: string;
+}
+/**
+ * CreateOrgProjectRequest is the HTTP request body for creating an org-scoped project.
+ */
+export interface CreateOrgProjectRequest {
+  name: string;
+  domain?: string;
+}
+export interface CreateOrgProjectInput {
+  OrganizationID: string;
+  Name: string;
+  Domain?: string;
+}
+/**
+ * AddOrgProjectMemberRequest is the HTTP request body for adding a member to an org-scoped project.
+ */
+export interface AddOrgProjectMemberRequest {
+  actor_email: string;
+  role: ProjectRole;
+}
+export interface AddOrgProjectMemberInput {
+  ActorEmail: string;
+  Role: ProjectRole;
+  OrganizationID: string;
+  ProjectID: string;
+}
+/**
+ * RemoveOrgProjectMemberRequest is the HTTP request body for removing a member from an org-scoped project.
+ */
+export interface RemoveOrgProjectMemberRequest {
+  actor_email: string;
+}
+export interface RemoveOrgProjectMemberInput {
+  ActorEmail: string;
+  OrganizationID: string;
+  ProjectID: string;
 }
 
 //////////
@@ -234,11 +268,10 @@ export interface Project {
   organization_id?: string;
   owner_id: string;
   name: string;
-  slug: string;
   domain?: string;
   domain_verified_at?: string;
   metadata: any /* json.RawMessage */;
-  created_at?: string;
+  created_at: string;
   deleted_at?: string;
 }
 export interface ProjectDomainChallenges {
@@ -254,12 +287,12 @@ export type ProjectRole = string;
 export const ProjectRoleMember: ProjectRole = "member";
 export const ProjectRoleAdmin: ProjectRole = "admin";
 export const ProjectRoleOwner: ProjectRole = "owner";
-export interface ProjectMembers {
+export interface ProjectMember {
   project_id: string;
   actor_id: string;
   role: ProjectRole;
   metadata: any /* json.RawMessage */;
-  joined_at?: string;
+  joined_at: string;
 }
 export interface ProjectOAuthProviders {
   id: string;
@@ -271,4 +304,91 @@ export interface ProjectOAuthProviders {
   enabled: boolean;
   created_at: string;
   updated_at: string;
+}
+export interface CreateProjectRequest {
+  name: string;
+  domain?: string;
+}
+export interface CreateProjectInput {
+  OrganizationID?: string;
+  Name: string;
+  Domain?: string;
+}
+export interface AddProjectMemberRequest {
+  actor_email: string;
+  role: ProjectRole;
+}
+export interface AddProjectMemberInput {
+  actor_email: string;
+  role: ProjectRole;
+  project_id: string;
+}
+export interface RemoveProjectMemberRequest {
+  actor_email: string;
+}
+export interface RemoveProjectMemberInput {
+  actor_email: string;
+  project_id: string;
+}
+
+//////////
+// source: subject.go
+
+/**
+ * Subject represents the full 'sub' claim object
+ */
+export interface Subject {
+  id: string;
+  project_id?: string;
+  email?: string;
+  type: ActorType;
+  capabilities: any /* json.RawMessage */;
+  metadata: any /* json.RawMessage */;
+}
+export interface Credential {
+  id?: string; // Applicable for stateful credentials like api keys
+  type: CredentialType;
+}
+export interface Identity {
+  sub: Subject;
+  cred: Credential;
+}
+
+//////////
+// source: tokens.go
+
+export interface AccessSub {
+  id: string;
+  project_id?: string;
+  email?: string;
+  type: ActorType;
+  capabilities: any /* json.RawMessage */;
+  metadata: any /* json.RawMessage */;
+}
+export interface AccessClaims {
+  sub: AccessSub;
+  RegisteredClaims: any /* jwt.RegisteredClaims */;
+}
+export interface RefreshSub {
+  id: string;
+  project_id?: string;
+  access_jti: string;
+}
+export interface RefreshClaims {
+  sub: RefreshSub;
+  RegisteredClaims: any /* jwt.RegisteredClaims */;
+}
+export interface UserTokensOutput {
+  access_token: string;
+  refresh_token: string;
+  access_expires_at: string;
+  refresh_expires_at: string;
+  domain: string;
+}
+export interface UserTokensResponse {
+  access_token_string: string;
+  refresh_token_string: string;
+  access_expires_at: string;
+  refresh_expires_at: string;
+  domain: string;
 }

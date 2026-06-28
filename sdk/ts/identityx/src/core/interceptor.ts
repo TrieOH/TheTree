@@ -5,12 +5,12 @@ import {
   isTokenExpiringSoon,
   saveAuthSession,
   getTokenClaims,
+  getStoredRefreshToken,
   type AuthTokenClaims,
   type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
 import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
-import { cookieStorage } from "../utils/storage-adapter";
 import { tokenStore } from "../store/token-store";
 
 export interface RequestOptions extends RequestInit {
@@ -47,9 +47,19 @@ export class AuthInterceptor {
     this.refreshPromise = (async () => {
       let shouldClear = true;
       try {
+        const refreshToken = getStoredRefreshToken();
+        if (!refreshToken) {
+          shouldClear = true;
+          throw new Error("No refresh token available");
+        }
+
         const res = await simpleFetch<{ code: number; data?: AuthTokens; message?: string }>(
           joinUrl(this.authBaseURL, "/auth/refresh"),
-          { method: "POST", credentials: "include" }
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "refresh_token": refreshToken },
+          }
         );
 
         if (res.code !== 200 || !res.data) {
@@ -125,10 +135,10 @@ export class AuthInterceptor {
     let response = await executeFetch();
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
-      const hasRefreshCookie = !!cookieStorage.get("refresh_token");
+      const hasRefreshToken = !!getStoredRefreshToken();
       const isExpiring = isTokenExpiringSoon(30);
 
-      if (hasRefreshCookie && isExpiring) {
+      if (hasRefreshToken && isExpiring) {
         logger.log("401 detected and token is expiring/expired, attempting refresh...");
         try {
           await this.refreshToken();

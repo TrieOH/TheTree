@@ -29,7 +29,7 @@ export function ResendVerifyEmail({
   };
 
   return (
-    <div className="font-inter flex flex-col w-full max-w-[30rem] min-w-[15rem] max-h-[max(75dvh,32rem)] overflow-hidden gap-5 items-center bg-trieoh-neutral1 text-trieoh-neutral2 p-[1.25rem_1.5rem] shadow-[0_0.25rem_0.25rem_0_rgba(0,0,0,0.25)] transition-transform duration-150 ease-in-out rounded-[0.25rem]">
+    <div className="font-sans flex flex-col w-full max-w-120 min-w-60 max-h-[max(75dvh,32rem)] overflow-hidden gap-5 items-center bg-background text-foreground p-[1.25rem_1.5rem] shadow-[0_0.25rem_0.25rem_0_rgba(0,0,0,0.25)] transition-transform duration-150 ease-in-out rounded-lg">
       <CardAvatar
         mainText="Reenviar Verificação"
         subText="Não recebeu o e-mail de verificação? Clique no botão abaixo para reenviar."
@@ -42,7 +42,7 @@ export function ResendVerifyEmail({
       />
 
       {sent && (
-        <p className="text-trieoh-sm font-semibold text-trieoh-secondary">
+        <p className="text-sm font-semibold text-primary">
           Um novo link de verificação foi enviado para seu e-mail.
         </p>
       )}
