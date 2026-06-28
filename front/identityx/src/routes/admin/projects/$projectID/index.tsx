@@ -6,7 +6,7 @@ import { useLayoutHeader, PaginatedContainer } from '@trieoh/ui-base'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import { FormModal } from '@/widgets/modal/FormModal'
 import { Modal } from '@/widgets/modal/modal'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { EmptyState } from '@trieoh/ui-base'
 import { Copy, KeySquare, Plus } from 'lucide-react'
@@ -17,54 +17,6 @@ export const Route = createFileRoute('/admin/projects/$projectID/')({
   component: RouteComponent,
 })
 
-// Mock data for development
-const MOCK_API_KEYS: ApiKeyI[] = [
-  {
-    id: 'ak_01j2x',
-    actor_id: 'user_001',
-    project_id: 'proj_001',
-    name: 'Production API Key',
-    key_prefix: 'trieoh_pk_prod',
-    key_hash: 'hash_abc123',
-    metadata: null,
-    expires_at: '2027-06-26T00:00:00Z',
-    last_used_at: '2026-06-25T14:30:00Z',
-    created_at: '2026-01-15T10:00:00Z',
-  },
-  {
-    id: 'ak_02j3y',
-    actor_id: 'user_001',
-    project_id: 'proj_001',
-    name: 'Staging API Key',
-    key_prefix: 'trieoh_pk_stag',
-    key_hash: 'hash_def456',
-    metadata: null,
-    revoked_at: '2026-05-20T08:00:00Z',
-    created_at: '2026-02-10T12:00:00Z',
-  },
-  {
-    id: 'ak_03j4z',
-    actor_id: 'user_002',
-    project_id: 'proj_001',
-    name: 'Development Key',
-    key_prefix: 'trieoh_pk_dev',
-    key_hash: 'hash_ghi789',
-    metadata: null,
-    expires_at: '2026-12-31T23:59:59Z',
-    last_used_at: '2026-06-26T09:15:00Z',
-    created_at: '2026-03-20T16:00:00Z',
-  },
-  {
-    id: 'ak_04j5a',
-    actor_id: 'user_002',
-    project_id: 'proj_001',
-    name: 'CI/CD Pipeline Key',
-    key_prefix: 'trieoh_pk_cicd',
-    key_hash: 'hash_jkl012',
-    metadata: null,
-    created_at: '2026-04-05T09:00:00Z',
-  },
-]
 
 const handleCopyProjectId = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
   e.stopPropagation();
@@ -77,11 +29,7 @@ function RouteComponent() {
   const { projectID } = Route.useParams()
 
   // const { data: apiKeys = [] } = useQuery(allApiKeysQueryOptions(projectID))
-  const { data: apiKeys = MOCK_API_KEYS } = useQuery({
-    ...allApiKeysQueryOptions(projectID),
-    enabled: false, // Disabled while using mock data
-    initialData: MOCK_API_KEYS,
-  })
+  const apiKeys: ApiKeyI[] = []
 
   const [filter, setFilter] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
