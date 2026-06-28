@@ -17,6 +17,7 @@ import { Route as AuthSetupRouteImport } from './routes/auth/setup'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
+import { Route as AuthProviderCallbackRouteImport } from './routes/auth/$provider/callback'
 import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/projects/$projectID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 import { Route as AdminProjectsProjectIDIndexRouteImport } from './routes/admin/projects/$projectID/index'
@@ -63,6 +64,11 @@ const AdminOrganizationIDIndexRoute =
     path: '/',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AuthProviderCallbackRoute = AuthProviderCallbackRouteImport.update({
+  id: '/auth/$provider/callback',
+  path: '/auth/$provider/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminProjectsProjectIDRoute = AdminProjectsProjectIDRouteImport.update({
   id: '/projects/$projectID',
   path: '/projects/$projectID',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/projects/$projectID': typeof AdminProjectsProjectIDRouteWithChildren
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/admin/projects': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/projects/$projectID': typeof AdminProjectsProjectIDRouteWithChildren
+  '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/admin/$organizationID/members'
     | '/admin/projects/$projectID'
+    | '/auth/$provider/callback'
     | '/admin/$organizationID/'
     | '/admin/projects/'
     | '/admin/projects/$projectID/members'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/admin/$organizationID/members'
+    | '/auth/$provider/callback'
     | '/admin/$organizationID'
     | '/admin/projects'
     | '/admin/projects/$projectID/members'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/admin/$organizationID/members'
     | '/admin/projects/$projectID'
+    | '/auth/$provider/callback'
     | '/admin/$organizationID/'
     | '/admin/projects/'
     | '/admin/projects/$projectID/members'
@@ -174,6 +186,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AuthSetupRoute: typeof AuthSetupRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  AuthProviderCallbackRoute: typeof AuthProviderCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -233,6 +246,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/$organizationID/'
       preLoaderRoute: typeof AdminOrganizationIDIndexRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/auth/$provider/callback': {
+      id: '/auth/$provider/callback'
+      path: '/auth/$provider/callback'
+      fullPath: '/auth/$provider/callback'
+      preLoaderRoute: typeof AuthProviderCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/projects/$projectID': {
       id: '/admin/projects/$projectID'
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AuthSetupRoute: AuthSetupRoute,
   AuthIndexRoute: AuthIndexRoute,
+  AuthProviderCallbackRoute: AuthProviderCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
