@@ -28,6 +28,7 @@ function CopyButton({ json }: { json: string }) {
 
   return (
     <button
+      type='button'
       onClick={handleCopy}
       className={cn(
         'flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all',
@@ -79,6 +80,7 @@ function RouteComponent() {
           <div className="flex items-center gap-2 flex-wrap">
             <CopyButton json={JSON.stringify(introspectResponse, null, 2)} />
             <button
+              type='button'
               onClick={() => setShowRaw(!showRaw)}
               className={cn(
                 'flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all',
@@ -90,6 +92,7 @@ function RouteComponent() {
               <Terminal className="w-3 h-3" /> Raw
             </button>
             <button
+              type='button'
               onClick={() => refetch()}
               disabled={isFetching}
               className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-50"
@@ -125,6 +128,7 @@ function RouteComponent() {
             </p>
           </div>
           <button
+            type='button'
             onClick={() => refetch()}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-muted transition-all shadow-sm"
           >
