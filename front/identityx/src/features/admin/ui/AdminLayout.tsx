@@ -5,6 +5,7 @@ import {
   FileText,
   FolderKanban,
   LogOut,
+  Search,
 } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/shared/lib/utils"
@@ -31,6 +32,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       to: "/admin/projects",
       icon: FileText,
       label: "Projects",
+      exact: true,
+    },
+    {
+      to: "/admin/introspect",
+      icon: Search,
+      label: "Introspect",
       exact: true,
     },
   ]

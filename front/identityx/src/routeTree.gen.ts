@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AuthSetupRouteImport } from './routes/auth/setup'
+import { Route as AdminIntrospectRouteImport } from './routes/admin/introspect'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as AdminProjectsIndexRouteImport } from './routes/admin/projects/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
@@ -47,6 +48,11 @@ const AuthSetupRoute = AuthSetupRouteImport.update({
   id: '/auth/setup',
   path: '/auth/setup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIntrospectRoute = AdminIntrospectRouteImport.update({
+  id: '/introspect',
+  path: '/introspect',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
   id: '/$organizationID',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/introspect': typeof AdminIntrospectRoute
   '/auth/setup': typeof AuthSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/introspect': typeof AdminIntrospectRoute
   '/auth/setup': typeof AuthSetupRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/introspect': typeof AdminIntrospectRoute
   '/auth/setup': typeof AuthSetupRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/introspect'
     | '/auth/setup'
     | '/admin/'
     | '/auth/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/introspect'
     | '/auth/setup'
     | '/admin'
     | '/auth'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/introspect'
     | '/auth/setup'
     | '/admin/'
     | '/auth/'
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/setup'
       preLoaderRoute: typeof AuthSetupRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/introspect': {
+      id: '/admin/introspect'
+      path: '/introspect'
+      fullPath: '/admin/introspect'
+      preLoaderRoute: typeof AdminIntrospectRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/$organizationID': {
       id: '/admin/$organizationID'
@@ -316,6 +335,7 @@ const AdminProjectsProjectIDRouteWithChildren =
 
 interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
+  AdminIntrospectRoute: typeof AdminIntrospectRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProjectsProjectIDRoute: typeof AdminProjectsProjectIDRouteWithChildren
   AdminProjectsIndexRoute: typeof AdminProjectsIndexRoute
@@ -323,6 +343,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
+  AdminIntrospectRoute: AdminIntrospectRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProjectsProjectIDRoute: AdminProjectsProjectIDRouteWithChildren,
   AdminProjectsIndexRoute: AdminProjectsIndexRoute,

@@ -56,7 +56,7 @@ export class AuthInterceptor {
           joinUrl(this.authBaseURL, "/auth/refresh"),
           {
             method: "POST",
-            credentials: "include",
+            credentials: "omit",
             headers: { "refresh_token": refreshToken },
           }
         );
@@ -127,7 +127,7 @@ export class AuthInterceptor {
       return fetch(finalUrl, {
         ...options,
         headers,
-        credentials: "include",
+        credentials: "omit",
       });
     };
 
