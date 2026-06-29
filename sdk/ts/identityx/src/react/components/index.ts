@@ -18,6 +18,7 @@ import { ModernResetPassword } from "./Modern/ModernResetPassword";
 import { ModernVerifyEmail } from "./Modern/ModernVerifyEmail";
 import { ModernSetup } from "./Modern/ModernSetup";
 import { ModernAuth } from "./Modern/ModernAuth";
+import { ModernIntrospect } from "./Modern/ModernIntrospect";
 
 export {
   SignIn,
@@ -29,6 +30,7 @@ export {
   ModernVerifyEmail,
   ModernSetup,
   ModernAuth,
+  ModernIntrospect,
   BasicLogoutButton,
   Copyright,
   Sessions,

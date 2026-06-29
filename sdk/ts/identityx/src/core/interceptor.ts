@@ -6,12 +6,11 @@ import {
   saveAuthSession,
   getTokenClaims,
   getStoredRefreshToken,
-  type AuthTokenClaims,
-  type AuthTokens
 } from "../utils/token-utils";
 import { env } from "./env";
 import { logger, simpleFetch } from "@trieoh/envoy-fetch-ts";
 import { tokenStore } from "../store/token-store";
+import type { AuthTokenClaims, AuthTokens } from "../types/token-types";
 
 export interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
@@ -57,7 +56,7 @@ export class AuthInterceptor {
           joinUrl(this.authBaseURL, "/auth/refresh"),
           {
             method: "POST",
-            credentials: "include",
+            credentials: "omit",
             headers: { "refresh_token": refreshToken },
           }
         );
@@ -128,7 +127,7 @@ export class AuthInterceptor {
       return fetch(finalUrl, {
         ...options,
         headers,
-        credentials: "include",
+        credentials: "omit",
       });
     };
 

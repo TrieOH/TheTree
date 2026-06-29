@@ -9,15 +9,12 @@ import {
 } from "react";
 import { Api } from "../core/api";
 import { createAuthService, type AuthCallbacks } from "../core/services";
-import {
-  getTokenClaims,
-  isRefreshSessionExpired,
-  type AuthTokenClaims
-} from "../utils/token-utils";
+import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
 import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
+import type { AuthTokenClaims } from "../types/token-types";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;

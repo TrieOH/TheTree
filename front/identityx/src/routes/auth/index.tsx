@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate, useRouter, useSearch } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { ModernAuth } from '@trieoh/identityx-sdk-ts/react'
 import z from 'zod';
 import { requireGuest } from '@/features/auth/lib/route-guard';
@@ -18,9 +18,9 @@ export const Route = createFileRoute('/auth/')({
 
 function RouteComponent() {
 
-  const navigate = useNavigate()
+  const navigate = Route.useNavigate()
   const router = useRouter()
-  const search = useSearch({ from: '/auth/' })
+  const search = Route.useSearch()
 
   const handleLoginSuccess = async (message?: string) => {
     const auth = router.options.context.auth
@@ -53,6 +53,7 @@ function RouteComponent() {
       onLoginSuccess={handleLoginSuccess}
       onSignUpSuccess={handleSignUpSuccess}
       onFailed={handleFailure}
+      providers={["google", "github"]}
       backLink={
         <Link
           to="/"

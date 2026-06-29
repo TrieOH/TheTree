@@ -22,10 +22,8 @@
     "overrides": {
       "dompurify": ">=3.4.11",
       "esbuild": ">=0.28.1",
-      "@opentelemetry/core": ">=2.8.0"
+      "@opentelemetry/core": ">=2.8.0",
+      "@trieoh/identityx-sdk-ts": "^v0.12.9"
     }
-  },
-  "devDependencies": {
-    "typescript": "^5.7.2"
   }
 }

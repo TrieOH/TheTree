@@ -9,25 +9,25 @@
     "./shadcn/*": "./src/shadcn/*.tsx"
   },
   "peerDependencies": {
-    "class-variance-authority": ">=0.7.0",
-    "clsx": ">=2.1.0",
-    "lucide-react": ">=0.500.0",
-    "next-themes": ">=0.4.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sonner": ">=2.0.0",
-    "tailwind-merge": ">=3.0.0"
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "lucide-react": "catalog:",
+    "next-themes": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.0.2"
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "lucide-react": ">=0.500.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }
