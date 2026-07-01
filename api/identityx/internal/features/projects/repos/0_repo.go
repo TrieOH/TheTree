@@ -35,6 +35,7 @@ func mapProject(src sqlc.Project) models.Project {
 		OwnerID:          src.OwnerID,
 		Name:             src.Name,
 		Domain:           src.Domain,
+		BrandSlug:        src.BrandSlug,
 		DomainVerifiedAt: src.DomainVerifiedAt,
 		Metadata:         src.Metadata,
 		CreatedAt:        src.CreatedAt,

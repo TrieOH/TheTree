@@ -4,6 +4,7 @@ import (
 	"IdentityX/generated/docs"
 	"IdentityX/internal/features/actors"
 	"IdentityX/internal/features/api_keys"
+	"IdentityX/internal/features/capabilities"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -44,6 +45,8 @@ import (
 // @tag.description "Operations related to project management"
 // @tag.name apikeys
 // @tag.description "Operations related to api key management"
+// @tag.name capabilities
+// @tag.description "Operations related to capabilities management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
@@ -104,6 +107,7 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 	authn.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
 	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
 	projects.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
+	capabilities.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.clientOnly)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

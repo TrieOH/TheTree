@@ -16,11 +16,11 @@ func (app *IdentityX) run() {
 	tx := database.NewPGXTxRunner(app.db, loggr)
 	tracer := otel.Tracer(app.cfg.AppName)
 
-	repos := initRepos(q, loggr, tracer)
-	queries := initQueries(repos, tx, loggr, tracer)
-	commands := initCommands(repos, tx, loggr, tracer)
-	handlers := initHandlers(queries, commands)
-	middlewares := initMiddlewares(repos, loggr, app.cfg)
+	repos := app.initRepos(q, loggr, tracer)
+	queries := app.initQueries(repos, tx, loggr, tracer)
+	commands := app.initCommands(repos, tx, loggr, tracer)
+	handlers := app.initHandlers(queries, commands)
+	middlewares := app.initMiddlewares(repos, loggr, app.cfg)
 
 	if app.cfg.ProfilePort != "" {
 		go servePprof(app.cfg.ProfilePort)

@@ -1,21 +1,24 @@
 # =============================================================
-# compose.prod.yml  (override)
+# compose.prod.yml  (entry point)
 #
-# Pulls versioned images from GHCR. Caddy with TLS via
-# Cloudflare origin certs + Let's Encrypt for mail domains.
-# Postgres is internal only (no port exposure).
+# Production environment. Pulls versioned images from GHCR,
+# Caddy with TLS via Cloudflare origin certs + Let's Encrypt.
+# Server profiles (email, git) are included but inert unless
+# explicitly activated. Postgres is internal only.
 #
 # Usage:
-#   docker compose \
-#     -f compose.base.yml \
-#     -f compose.app.yml \
-#     -f compose.infra.yml \
-#     -f compose.prod.yml \
-#     --profile monitor \
-#     up -d
+#   docker compose -f compose.prod.yml up -d
+#   docker compose -f compose.prod.yml --profile email up -d mox
+#   docker compose -f compose.prod.yml --profile git up -d forgejo ...
 #
-# Or via just: just prod
+# Or via just: just prod, just email, just git
 # =============================================================
+
+include:
+  - compose.base.yml
+  - compose.app.yml
+  - compose.obs.yml
+  - compose.server.yml
 
 services:
   # -----------------
@@ -37,32 +40,24 @@ services:
   # -----------------
   identityx:
     image: git.trieoh.com/trieoh/identityx:${IDENTITY_X_TAG}
-    env_file:
-      - .tree.env
 
   # -----------------
   # 💳 PAYSSAGE
   # -----------------
   payssage:
     image: git.trieoh.com/trieoh/payssage:${PAYSSAGE_TAG}
-    env_file:
-      - .tree.env
 
   # -----------------
   # 📢 INFORMD
   # -----------------
   informd:
     image: git.trieoh.com/trieoh/informd:${INFORMD_TAG}
-    env_file:
-      - .tree.env
 
   # -----------------
   # 🎟️ UNIVENTS
   # -----------------
   univents:
     image: git.trieoh.com/trieoh/univents:${UNIVENTS_TAG}
-    env_file:
-      - .tree.env
 
 volumes:
   caddy_data:

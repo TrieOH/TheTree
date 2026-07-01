@@ -34,7 +34,7 @@ func (c *Commands) CreateProject(ctx context.Context, in models.CreateOrgProject
 		}
 	}
 
-	project, err := models.NewProject(org.OwnerID, in.Name, in.Domain, &in.OrganizationID)
+	project, err := models.NewProject(org.OwnerID, in.BrandSlug, in.Name, in.Domain, &in.OrganizationID)
 	if err != nil {
 		return nil, err
 	}

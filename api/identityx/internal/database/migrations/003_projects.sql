@@ -8,6 +8,7 @@ CREATE TABLE projects (
     owner_id UUID NOT NULL REFERENCES actors(id)
         ON DELETE RESTRICT,
 
+    brand_slug TEXT NOT NULL,
     name TEXT NOT NULL,
 
     domain TEXT,
@@ -17,7 +18,10 @@ CREATE TABLE projects (
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+
+    CONSTRAINT chk_brand_slug_length CHECK (char_length(brand_slug) BETWEEN 3 AND 32),
+    CONSTRAINT chk_brand_slug_format CHECK (brand_slug ~ '^[a-z]+$')
 );
 
 CREATE INDEX idx_projects_organization_id ON projects(organization_id);

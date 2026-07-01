@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/MintzyG/fun"
-	"github.com/MintzyG/fun/bind"
 )
 
 // Create godoc
@@ -35,10 +34,10 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var payload models.CreateApiKeyRequest
-	if bind.BailInto(w, req, &payload) {
+	if fun.BailInto(w, req, &payload) {
 		return
 	}
-	key, rawKey, err := h.commands.Create(r.Context(), payload.ToInput(projectID))
+	key, rawKey, err := h.commands.Create(r.Context(), payload.ToInput(&projectID))
 	if fun.Bail(w, err) {
 		return
 	}

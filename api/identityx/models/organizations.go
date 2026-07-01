@@ -96,8 +96,9 @@ type RemoveOrganizationMemberInput struct {
 
 // CreateOrgProjectRequest is the HTTP request body for creating an org-scoped project.
 type CreateOrgProjectRequest struct {
-	Name   string  `json:"name"             validate:"required,min=3"`
-	Domain *string `json:"domain,omitempty" validate:"omitempty,url"`
+	Name      string  `json:"name"             validate:"required,min=3"`
+	Domain    *string `json:"domain,omitempty" validate:"omitempty,url"`
+	BrandSlug string  `json:"brand_slug"`
 }
 
 func (r CreateOrgProjectRequest) ToInput(orgID uuid.UUID) CreateOrgProjectInput {
@@ -105,6 +106,7 @@ func (r CreateOrgProjectRequest) ToInput(orgID uuid.UUID) CreateOrgProjectInput 
 		OrganizationID: orgID,
 		Name:           r.Name,
 		Domain:         r.Domain,
+		BrandSlug:      r.BrandSlug,
 	}
 }
 
@@ -112,6 +114,7 @@ type CreateOrgProjectInput struct {
 	OrganizationID uuid.UUID
 	Name           string
 	Domain         *string
+	BrandSlug      string `json:"brand_slug"`
 }
 
 // AddOrgProjectMemberRequest is the HTTP request body for adding a member to an org-scoped project.
