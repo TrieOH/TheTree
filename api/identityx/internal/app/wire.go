@@ -6,6 +6,7 @@ import (
 	apikeys "IdentityX/internal/features/api_keys"
 	"IdentityX/internal/features/authn"
 	"IdentityX/internal/features/blacklist"
+	"IdentityX/internal/features/capabilities"
 	"IdentityX/internal/features/crypto_keys"
 	"IdentityX/internal/features/organizations"
 	"IdentityX/internal/features/platform_roles"
@@ -28,6 +29,7 @@ import (
 type repos struct {
 	actors             ports.ActorRepo
 	apiKeys            ports.ApiKeysRepo
+	capabilities       ports.CapabilityRepo
 	platformRoles      ports.PlatformRolesRepo
 	cryptoKeys         ports.CryptoKeysRepo
 	blacklist          ports.BlacklistRepo
@@ -37,17 +39,19 @@ type repos struct {
 }
 
 type queries struct {
-	authn    *authn.Queries
-	orgs     *organizations.Queries
-	projects *projects.Queries
-	actors   *actors.Queries
+	authn        *authn.Queries
+	orgs         *organizations.Queries
+	projects     *projects.Queries
+	actors       *actors.Queries
+	capabilities *capabilities.Queries
 }
 
 type commands struct {
-	authn    *authn.Commands
-	apiKeys  *apikeys.Commands
-	orgs     *organizations.Commands
-	projects *projects.Commands
+	authn        *authn.Commands
+	apiKeys      *apikeys.Commands
+	capabilities *capabilities.Commands
+	orgs         *organizations.Commands
+	projects     *projects.Commands
 }
 
 type middlewares struct {
@@ -71,19 +75,21 @@ type handlers struct {
 	ProjectClientOnly func(http.Handler) http.Handler
 	Metrics           func(http.Handler) http.Handler
 
-	Actors   *actors.Handlers
-	ApiKeys  *apikeys.Handlers
-	Authn    *authn.Handlers
-	Orgs     *organizations.Handlers
-	Projects *projects.Handlers
+	Actors       *actors.Handlers
+	ApiKeys      *apikeys.Handlers
+	Authn        *authn.Handlers
+	Orgs         *organizations.Handlers
+	Projects     *projects.Handlers
+	Capabilities *capabilities.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
+func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 	return repos{
 		actors:             actors.NewRepo(q, logger, tracer),
 		apiKeys:            apikeys.NewRepo(q, logger, tracer),
+		capabilities:       capabilities.NewRepos(q, logger, tracer),
 		platformRoles:      platform_roles.NewRepo(q, logger, tracer),
 		cryptoKeys:         crypto_keys.NewRepo(q, logger, tracer),
 		blacklist:          blacklist.NewRepo(q, logger, tracer),
@@ -93,27 +99,29 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 	}
 }
 
-func initQueries(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
+func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
-		actors:   actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
-		authn:    authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
-		orgs:     organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
-		projects: projects.NewQueries(r.projects, logger, tracer, tx),
+		actors:       actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
+		authn:        authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
+		orgs:         organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
+		projects:     projects.NewQueries(r.projects, logger, tracer, tx),
+		capabilities: capabilities.NewQueries(r.capabilities, r.projects, logger, tracer, tx),
 	}
 }
 
-func initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
+func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
-		authn:    authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
-		apiKeys:  apikeys.NewCommands(r.actors, r.apiKeys, r.projects, logger, tracer, tx),
-		orgs:     organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
-		projects: projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
+		authn:        authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
+		apiKeys:      apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, logger, tracer, tx),
+		orgs:         organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
+		projects:     projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
+		capabilities: capabilities.NewCommands(r.actors, r.capabilities, r.projects, logger, tracer, tx),
 	}
 }
 
-func initMiddlewares(r repos, logger *zap.Logger, cfg Config) middlewares {
+func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) middlewares {
 	var mw middlewares
-	authMW := SetupAuthMiddlewares(r.cryptoKeys, r.apiKeys, r.actors)
+	authMW := app.SetupAuthMiddlewares(r.cryptoKeys, r.apiKeys, r.actors, r.capabilities, logger)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
@@ -141,12 +149,13 @@ func initMiddlewares(r repos, logger *zap.Logger, cfg Config) middlewares {
 	return mw
 }
 
-func initHandlers(q queries, c commands) handlers {
+func (app *IdentityX) initHandlers(q queries, c commands) handlers {
 	return handlers{
-		Actors:   actors.NewHandlers(q.actors),
-		ApiKeys:  apikeys.NewHandlers(c.apiKeys),
-		Authn:    authn.NewHandlers(c.authn, q.authn),
-		Orgs:     organizations.NewHandlers(c.orgs, q.orgs),
-		Projects: projects.NewHandlers(c.projects, q.projects),
+		Actors:       actors.NewHandlers(q.actors),
+		ApiKeys:      apikeys.NewHandlers(c.apiKeys),
+		Authn:        authn.NewHandlers(c.authn, q.authn),
+		Orgs:         organizations.NewHandlers(c.orgs, q.orgs),
+		Projects:     projects.NewHandlers(c.projects, q.projects),
+		Capabilities: capabilities.NewHandlers(c.capabilities, q.capabilities),
 	}
 }

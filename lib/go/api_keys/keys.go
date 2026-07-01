@@ -1,73 +1,93 @@
 package api_keys
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
 )
 
 const (
-	apiKeyAlphabet  = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.-_"
-	apiKeySecretLen = 64
-	ApiKeyPrefixLen = 12 // chars safe to store/display unhashed
+	alphabet      = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
+	secretLength  = 128
+	displayLength = 32
 )
 
 type GeneratedAPIKey struct {
-	Raw    string // full key, return to caller once, never persisted
-	Prefix string // first N chars of the random body, safe to store
-	Hash   string // sha256 hex of Raw, stored for verification
+	Raw           string
+	DisplayPrefix string
+	Hash          []byte
 }
 
-func GenerateAPIKey(env string) (*GeneratedAPIKey, error) {
-	body, err := randomString(apiKeySecretLen)
+func GenerateAPIKey(brand string, env string, hmacSecret []byte) (*GeneratedAPIKey, error) {
+	secret, err := randomString(secretLength)
 	if err != nil {
-		return nil, fmt.Errorf("generating api key: %w", err)
+		return nil, fmt.Errorf("generate secret: %w", err)
 	}
 
-	raw := fmt.Sprintf("idx_%s_%s", env, body)
-	sum := sha256.Sum256([]byte(raw))
+	raw := fmt.Sprintf("%s_v1_%s_%s", brand, env, secret)
+	hash := hashAPIKey(raw, hmacSecret)
 
 	return &GeneratedAPIKey{
-		Raw:    raw,
-		Prefix: body[:ApiKeyPrefixLen],
-		Hash:   hex.EncodeToString(sum[:]),
+		Raw:           raw,
+		DisplayPrefix: fmt.Sprintf("%s_v1_%s_%s", brand, env, secret[:displayLength]),
+		Hash:          hash,
 	}, nil
 }
 
 // VerifyAPIKey re-hashes a raw key and checks it against a stored hash.
 // Use this on auth, never compare raw strings or decode the hash.
-func VerifyAPIKey(raw string, storedHash string) bool {
-	sum := sha256.Sum256([]byte(raw))
-	computedHash := hex.EncodeToString(sum[:])
+func VerifyAPIKey(raw string, storedHash []byte, hmacSecret []byte) bool {
+	computed := hashAPIKey(raw, hmacSecret)
+	return hmac.Equal(computed, storedHash)
+}
 
-	return subtle.ConstantTimeCompare([]byte(computedHash), []byte(storedHash)) == 1
+func hashAPIKey(raw string, secret []byte) []byte {
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(raw))
+	return mac.Sum(nil)
 }
 
 func randomString(n int) (string, error) {
 	out := make([]byte, n)
-	alphabetLen := big.NewInt(int64(len(apiKeyAlphabet)))
+	alphabetLen := big.NewInt(int64(len(alphabet)))
 	for i := range out {
 		idx, err := rand.Int(rand.Reader, alphabetLen)
 		if err != nil {
 			return "", err
 		}
-		out[i] = apiKeyAlphabet[idx.Int64()]
+		out[i] = alphabet[idx.Int64()]
 	}
 	return string(out), nil
 }
 
-func StripKeyHeader(rawKey string) (string, error) {
-	idx := strings.IndexByte(rawKey, '_')
-	if idx == -1 {
-		return "", fmt.Errorf("malformed api key")
+type APIKey struct {
+	Brand         string
+	Version       string
+	Environment   string
+	Secret        string
+	DisplayPrefix string
+}
+
+func ParseAPIKey(raw string) (*APIKey, error) {
+	parts := strings.SplitN(raw, "_", 4)
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("invalid api key")
 	}
-	idx2 := strings.IndexByte(rawKey[idx+1:], '_')
-	if idx2 == -1 {
-		return "", fmt.Errorf("malformed api key")
+
+	secret := parts[3]
+
+	if len(secret) < displayLength {
+		return nil, fmt.Errorf("invalid api key")
 	}
-	return rawKey[idx+1+idx2+1:], nil
+
+	return &APIKey{
+		Brand:         parts[0],
+		Version:       parts[1],
+		Environment:   parts[2],
+		Secret:        secret,
+		DisplayPrefix: fmt.Sprintf("%s_%s_%s_%s", parts[0], parts[1], parts[2], secret[:displayLength]),
+	}, nil
 }

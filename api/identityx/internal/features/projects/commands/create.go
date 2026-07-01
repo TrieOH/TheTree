@@ -15,7 +15,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 		return nil, err
 	}
 
-	project, err := models.NewProject(ident.Sub.ID, in.Name, in.Domain, nil)
+	project, err := models.NewProject(ident.Sub.ID, in.BrandSlug, in.Name, in.Domain, nil)
 	if err != nil {
 		return nil, err
 	}

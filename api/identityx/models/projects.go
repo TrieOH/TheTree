@@ -11,6 +11,7 @@ type Project struct {
 	ID               uuid.UUID       `json:"id"`
 	OrganizationID   *uuid.UUID      `json:"organization_id"`
 	OwnerID          uuid.UUID       `json:"owner_id"`
+	BrandSlug        string          `json:"brand_slug" validate:"required,min=3,max=32"`
 	Name             string          `json:"name" validate:"required,min=3"`
 	Domain           *string         `json:"domain" validate:"omitempty,url"`
 	DomainVerifiedAt *time.Time      `json:"domain_verified_at"`
@@ -19,11 +20,12 @@ type Project struct {
 	DeletedAt        *time.Time      `json:"deleted_at"`
 }
 
-func NewProject(ownerID uuid.UUID, name string, domain *string, orgID *uuid.UUID) (*Project, error) {
+func NewProject(ownerID uuid.UUID, slug, name string, domain *string, orgID *uuid.UUID) (*Project, error) {
 	p := &Project{
 		OrganizationID:   orgID,
 		OwnerID:          ownerID,
 		Name:             name,
+		BrandSlug:        slug,
 		Domain:           domain,
 		Metadata:         json.RawMessage("{}"),
 		DomainVerifiedAt: nil,
@@ -80,8 +82,9 @@ type ProjectOAuthProviders struct {
 }
 
 type CreateProjectRequest struct {
-	Name   string  `json:"name"             validate:"required,min=3"`
-	Domain *string `json:"domain,omitempty" validate:"omitempty,url"`
+	Name      string  `json:"name"             validate:"required,min=3"`
+	Domain    *string `json:"domain,omitempty" validate:"omitempty,url"`
+	BrandSlug string  `json:"brand_slug"`
 }
 
 func (r CreateProjectRequest) ToInput(orgID *uuid.UUID) CreateProjectInput {
@@ -89,6 +92,7 @@ func (r CreateProjectRequest) ToInput(orgID *uuid.UUID) CreateProjectInput {
 		OrganizationID: orgID,
 		Name:           r.Name,
 		Domain:         r.Domain,
+		BrandSlug:      r.BrandSlug,
 	}
 }
 
@@ -96,6 +100,7 @@ type CreateProjectInput struct {
 	OrganizationID *uuid.UUID
 	Name           string
 	Domain         *string
+	BrandSlug      string
 }
 
 type AddProjectMemberRequest struct {

@@ -1,20 +1,21 @@
 # =============================================================
-# compose.dev.yml  (override)
+# compose.dev.yml  (entry point)
 #
-# Builds service images from local source. Exposes ports for
-# direct access via Caddy only — no service exposes ports
-# directly. Postgres port exposed for local tooling.
+# Development environment. Builds images from local source,
+# exposes ports via Caddy, and adds Mailpit for email testing.
+# This file includes all dependencies — use a single -f flag.
 #
 # Usage:
-#   docker compose \
-#     -f compose.base.yml \
-#     -f compose.app.yml \
-#     -f compose.infra.yml \
-#     -f compose.dev.yml \
-#     up --build
+#   docker compose -f compose.dev.yml up --build
+#   docker compose -f compose.dev.yml up -d beszel grafana ...
 #
-# Or via just: just dev
+# Or via just: just dev, just api <svc>, just obs
 # =============================================================
+
+include:
+  - compose.base.yml
+  - compose.app.yml
+  - compose.obs.yml
 
 services:
 
