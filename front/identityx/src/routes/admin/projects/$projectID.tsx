@@ -1,7 +1,7 @@
 import { LayoutContext } from '@trieoh/ui-base'
 import { cn } from '@/shared/lib/utils'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { KeySquare, User2 } from 'lucide-react'
+import { Fingerprint, KeySquare, User2 } from 'lucide-react'
 import { useState } from 'react'
 import z from 'zod'
 
@@ -26,6 +26,13 @@ function ProjectLayout() {
       to: '/admin/projects/$projectID',
       params: { projectID },
       icon: KeySquare,
+      exact: true,
+    },
+    {
+      label: 'Capabilities',
+      to: '/admin/projects/$projectID/capabilities',
+      params: { projectID },
+      icon: Fingerprint,
       exact: true,
     },
     {

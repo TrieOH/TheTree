@@ -127,9 +127,9 @@ export default function ProjectCard({ data }: PropsI) {
 
         <div className="flex flex-col gap-1 px-4 mt-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Owner</span>
-            <span className="truncate max-w-35" title={data.owner_id}>
-              {data.owner_id}
+            <span className="text-muted-foreground">Slug</span>
+            <span className="truncate max-w-35" title={data.brand_slug}>
+              {data.brand_slug}
             </span>
           </div>
           <div className="flex justify-between text-sm">

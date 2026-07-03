@@ -23,6 +23,7 @@ import { Route as AdminProjectsProjectIDRouteImport } from './routes/admin/proje
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 import { Route as AdminProjectsProjectIDIndexRouteImport } from './routes/admin/projects/$projectID/index'
 import { Route as AdminProjectsProjectIDMembersRouteImport } from './routes/admin/projects/$projectID/members'
+import { Route as AdminProjectsProjectIDCapabilitiesRouteImport } from './routes/admin/projects/$projectID/capabilities'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -98,6 +99,12 @@ const AdminProjectsProjectIDMembersRoute =
     path: '/members',
     getParentRoute: () => AdminProjectsProjectIDRoute,
   } as any)
+const AdminProjectsProjectIDCapabilitiesRoute =
+  AdminProjectsProjectIDCapabilitiesRouteImport.update({
+    id: '/capabilities',
+    path: '/capabilities',
+    getParentRoute: () => AdminProjectsProjectIDRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
   '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/admin/projects': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
   '/admin/projects/$projectID': typeof AdminProjectsProjectIDIndexRoute
 }
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/auth/$provider/callback': typeof AuthProviderCallbackRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/admin/projects/': typeof AdminProjectsIndexRoute
+  '/admin/projects/$projectID/capabilities': typeof AdminProjectsProjectIDCapabilitiesRoute
   '/admin/projects/$projectID/members': typeof AdminProjectsProjectIDMembersRoute
   '/admin/projects/$projectID/': typeof AdminProjectsProjectIDIndexRoute
 }
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/auth/$provider/callback'
     | '/admin/$organizationID/'
     | '/admin/projects/'
+    | '/admin/projects/$projectID/capabilities'
     | '/admin/projects/$projectID/members'
     | '/admin/projects/$projectID/'
   fileRoutesByTo: FileRoutesByTo
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/auth/$provider/callback'
     | '/admin/$organizationID'
     | '/admin/projects'
+    | '/admin/projects/$projectID/capabilities'
     | '/admin/projects/$projectID/members'
     | '/admin/projects/$projectID'
   id:
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/auth/$provider/callback'
     | '/admin/$organizationID/'
     | '/admin/projects/'
+    | '/admin/projects/$projectID/capabilities'
     | '/admin/projects/$projectID/members'
     | '/admin/projects/$projectID/'
   fileRoutesById: FileRoutesById
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProjectsProjectIDMembersRouteImport
       parentRoute: typeof AdminProjectsProjectIDRoute
     }
+    '/admin/projects/$projectID/capabilities': {
+      id: '/admin/projects/$projectID/capabilities'
+      path: '/capabilities'
+      fullPath: '/admin/projects/$projectID/capabilities'
+      preLoaderRoute: typeof AdminProjectsProjectIDCapabilitiesRouteImport
+      parentRoute: typeof AdminProjectsProjectIDRoute
+    }
   }
 }
 
@@ -318,12 +338,15 @@ const AdminOrganizationIDRouteWithChildren =
   AdminOrganizationIDRoute._addFileChildren(AdminOrganizationIDRouteChildren)
 
 interface AdminProjectsProjectIDRouteChildren {
+  AdminProjectsProjectIDCapabilitiesRoute: typeof AdminProjectsProjectIDCapabilitiesRoute
   AdminProjectsProjectIDMembersRoute: typeof AdminProjectsProjectIDMembersRoute
   AdminProjectsProjectIDIndexRoute: typeof AdminProjectsProjectIDIndexRoute
 }
 
 const AdminProjectsProjectIDRouteChildren: AdminProjectsProjectIDRouteChildren =
   {
+    AdminProjectsProjectIDCapabilitiesRoute:
+      AdminProjectsProjectIDCapabilitiesRoute,
     AdminProjectsProjectIDMembersRoute: AdminProjectsProjectIDMembersRoute,
     AdminProjectsProjectIDIndexRoute: AdminProjectsProjectIDIndexRoute,
   }

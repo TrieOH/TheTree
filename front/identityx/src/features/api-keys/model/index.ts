@@ -4,6 +4,7 @@ import z from "zod";
 export const apiKeyCreateSchema = z.object({
   name: z.string().min(3, "Api key name must be at least 3 characters long"),
   create_for_service_account: z.enum(['true', 'false']).default('false'),
+  env: z.string().min(3, "Environment must be at least 3 characters long").optional(),
   expires_at: z.string().optional(),
 });
 
