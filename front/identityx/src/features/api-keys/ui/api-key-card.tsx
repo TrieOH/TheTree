@@ -17,7 +17,7 @@ export function ApiKeyCard({ data, onRevoke }: ApiKeyCardProps) {
 
   const handleCopyPrefix = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(data.key_prefix);
+    navigator.clipboard.writeText(data.display_prefix);
     toast.success("Key prefix copied to clipboard");
   };
 
@@ -54,7 +54,7 @@ export function ApiKeyCard({ data, onRevoke }: ApiKeyCardProps) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-muted-foreground font-mono">
-            {data.key_prefix}...
+            {data.display_prefix}...
           </span>
           <ShadowButton
             variant="ghost"

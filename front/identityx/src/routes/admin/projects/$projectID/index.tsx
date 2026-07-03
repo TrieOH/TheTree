@@ -1,12 +1,13 @@
 import { allApiKeysQueryOptions, revokeApiKeyFn, rotateApiKeyFn } from '@/features/api-keys/api'
 import { apiKeyCreateSchema, type ApiKeyCreateI, type ApiKeyI, type CreateApiKeyResponseI } from '@/features/api-keys/model'
+import { allCapabilitiesQueryOptions } from '@/features/capabilities/api'
 import { ApiKeyCard } from '@/features/api-keys/ui/api-key-card'
 import { ApiKeyCreatedDisplay } from '@/features/api-keys/ui/api-key-created-display'
 import { useLayoutHeader, PaginatedContainer } from '@trieoh/ui-base'
 import { ShadowButton } from '@/shared/ui/buttons/ShadowButton'
 import { FormModal } from '@/widgets/modal/FormModal'
 import { Modal } from '@/widgets/modal/modal'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { EmptyState } from '@trieoh/ui-base'
 import { Copy, KeySquare, Plus } from 'lucide-react'
@@ -27,9 +28,11 @@ const handleCopyProjectId = (e: React.MouseEvent<HTMLButtonElement>, id: string)
 function RouteComponent() {
   const queryClient = useQueryClient()
   const { projectID } = Route.useParams()
+  const { data: capabilities = [] } = useQuery(allCapabilitiesQueryOptions(projectID))
 
   // const { data: apiKeys = [] } = useQuery(allApiKeysQueryOptions(projectID))
   const apiKeys: ApiKeyI[] = []
+  const projectCapabilities = capabilities.filter((capability) => capability.project_id === projectID)
 
   const [filter, setFilter] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -41,7 +44,7 @@ function RouteComponent() {
     if (!search) return true
     return (
       key.name.toLowerCase().includes(search) ||
-      key.key_prefix.toLowerCase().includes(search)
+      key.display_prefix.toLowerCase().includes(search)
     )
   })
 
@@ -150,7 +153,7 @@ function RouteComponent() {
         isOpen={isCreateOpen && !createdKey}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={createApiKey}
-        defaultValues={{ name: '', create_for_service_account: 'false', expires_at: undefined }}
+        defaultValues={{ name: '', capabilities: [], subject_id: undefined, env: '', expires_at: undefined }}
         isLoading={isCreating}
         fields={[
           {
@@ -161,19 +164,32 @@ function RouteComponent() {
             required: true,
           },
           {
-            name: 'create_for_service_account',
-            label: 'Create for service account',
-            type: 'option-picker',
-            options: [
-              { value: 'false', label: 'No - Personal use' },
-              { value: 'true', label: 'Yes - Service account' },
-            ],
+            name: 'subject_id',
+            label: 'Subject ID',
+            type: 'text',
+            placeholder: 'Optional subject UUID',
+          },
+          {
+            name: 'env',
+            label: 'Environment',
+            type: 'text',
+            placeholder: 'e.g. production',
             required: true,
           },
           {
             name: 'expires_at',
             label: 'Expires At',
             type: 'date',
+          },
+          {
+            name: 'capabilities',
+            label: 'Capabilities',
+            type: 'multi-option-picker',
+            options: projectCapabilities.map((capability) => ({
+              value: capability.id,
+              label: `${capability.resource}:${capability.action}`,
+            })),
+            required: false,
           },
         ]}
       />
@@ -235,7 +251,7 @@ function RouteComponent() {
           </div>
           <div className="flex items-center gap-2 p-3 rounded-sm bg-muted border border-border">
             <span className="text-xs font-mono text-muted-foreground">
-              {keyToRevoke?.key_prefix}...
+              {keyToRevoke?.display_prefix}...
             </span>
           </div>
         </div>

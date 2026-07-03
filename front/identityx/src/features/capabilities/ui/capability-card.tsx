@@ -1,5 +1,5 @@
 import { cn } from '@/shared/lib/utils'
-import { Fingerprint, ShieldCheck } from 'lucide-react'
+import { Fingerprint } from 'lucide-react'
 import type { CapabilityI } from '../model'
 import { timeAgo } from '@/shared/lib/date-utils'
 
@@ -24,11 +24,7 @@ export function CapabilityCard({ data }: PropsI) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold truncate">
-            {data.resource}
-          </span>
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-sm text-blue-500 bg-blue-500/10">
-            <ShieldCheck className="size-3" />
-            {data.action}
+            {data.resource}:{data.action}
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">

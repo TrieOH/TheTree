@@ -53,6 +53,16 @@ export default function CrudForm<TFormData>({
                       required={item.required}
                     />
                   );
+                case "multi-option-picker":
+                  return (
+                    <field.MultiOptionPicker
+                      label={item.label}
+                      value={Array.isArray(field.state.value) ? field.state.value : []}
+                      onChange={field.handleChange as unknown as (value: string[]) => void}
+                      options={item.options || []}
+                      required={item.required}
+                    />
+                  );
                 case "date":
                   return (
                     <field.DateField
