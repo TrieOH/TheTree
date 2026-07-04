@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAuth, ModernIntrospect } from '@trieoh/identityx-sdk-ts/react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
   RefreshCw,
@@ -49,18 +49,20 @@ function CopyButton({ json }: { json: string }) {
 function RouteComponent() {
   const { auth } = useAuth()
   const [showRaw, setShowRaw] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [draftApiKey, setDraftApiKey] = useState('')
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ['introspect'],
-    queryFn: () => auth.introspect(),
+    queryKey: ['introspect', apiKey],
+    queryFn: () => auth.introspect(apiKey || undefined),
     retry: 1,
+    placeholderData: keepPreviousData,
   })
 
   const introspectResponse = data?.success ? data.data : undefined
+  const introspectError = data && !data.success ? data : undefined
 
-  const capKeys = introspectResponse?.sub.capabilities
-    ? Object.keys(introspectResponse.sub.capabilities)
-    : []
+  const capabilities = Object.values(introspectResponse?.sub.capabilities ?? {}).map(String)
 
   return (
     <div className="min-w-75 w-full max-w-5xl mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
@@ -104,6 +106,47 @@ function RouteComponent() {
         )}
       </div>
 
+      <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Api Key opcional
+          </span>
+          <p className="text-xs text-muted-foreground">
+            Se preenchido, o introspect vai usar `X-API-KEY` em vez da sessão atual.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            value={draftApiKey}
+            onChange={(event) => setDraftApiKey(event.target.value)}
+            placeholder="Cole a apiKey aqui"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50"
+          />
+          <button
+            type='button'
+            onClick={() => setApiKey(draftApiKey.trim())}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm font-medium text-foreground transition-all hover:bg-muted"
+          >
+            Aplicar
+          </button>
+          <button
+            type='button'
+            onClick={() => {
+              setDraftApiKey('')
+              setApiKey('')
+            }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:text-foreground hover:bg-muted"
+          >
+            Limpar
+          </button>
+        </div>
+        {apiKey && (
+          <p className="text-[11px] font-mono text-muted-foreground break-all">
+            Using apiKey: {apiKey}
+          </p>
+        )}
+      </div>
+
       {/* Loading */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -137,6 +180,40 @@ function RouteComponent() {
         </div>
       )}
 
+      {!isLoading && introspectError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 flex flex-col items-center gap-4 text-center">
+          <div className="w-11 h-11 rounded-full bg-destructive/10 flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">Introspect failed</p>
+            <p className="text-xs text-muted-foreground">
+              {introspectError.message}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
+              <span className="text-[10px] font-mono px-2 py-1 rounded-md border border-border/60 bg-background text-muted-foreground">
+                code {introspectError.code}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-1 rounded-md border border-border/60 bg-background text-muted-foreground">
+                {introspectError.error_id}
+              </span>
+            </div>
+            {introspectError.trace?.length ? (
+              <pre className="mt-4 max-w-full overflow-x-auto rounded-lg border border-border/60 bg-background p-3 text-left text-[11px] font-mono leading-relaxed text-muted-foreground">
+                {introspectError.trace.join('\n')}
+              </pre>
+            ) : null}
+          </div>
+          <button
+            type='button'
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-muted transition-all shadow-sm"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Try again
+          </button>
+        </div>
+      )}
+
       {/* Content */}
       {introspectResponse && !isLoading && (
         <div className="flex flex-col gap-5">
@@ -157,12 +234,8 @@ function RouteComponent() {
                       project_id: introspectResponse.sub.project_id,
                       email: introspectResponse.sub.email,
                       type: introspectResponse.sub.type,
-                      capabilities: Array.isArray(introspectResponse.sub.capabilities)
-                        ? introspectResponse.sub.capabilities
-                        : Object.keys(introspectResponse.sub.capabilities ?? {}).map(Number),
-                      metadata: Array.isArray(introspectResponse.sub.metadata)
-                        ? introspectResponse.sub.metadata
-                        : Object.keys(introspectResponse.sub.metadata ?? {}).map(Number),
+                      capabilities: capabilities,
+                      metadata: Object.values(introspectResponse.sub.metadata ?? {}).map(String),
                     },
                   }}
                 />
@@ -177,9 +250,9 @@ function RouteComponent() {
                 </span>
               </div>
               <div className="p-4">
-                {capKeys.length > 0 ? (
+                {capabilities.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
-                    {capKeys.map((key) => (
+                    {capabilities.map((key) => (
                       <span
                         key={key}
                         className="text-[11px] font-mono px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-muted-foreground"

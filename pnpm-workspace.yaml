@@ -5,7 +5,7 @@ packages:
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.12.9
+  '@trieoh/identityx-sdk-ts': ^0.12.10
   '@trieoh/envoy-fetch-ts': ^0.1.5
 
   # === Core UI ===
