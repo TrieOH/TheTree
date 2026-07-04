@@ -1,16 +1,18 @@
 package handlers
 
 import (
+	"IdentityX/models"
 	"lib/globals"
 	"net/http"
 
 	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
 )
 
-// GetByID godoc
-// @Summary Get actors by ID
+// CreateProjectActor godoc
+// @Summary Create actors in a project
 // @Tags organizations
-// @ID organizations_getactorbyid
+// @ID organizations_createprojectactor
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -19,8 +21,8 @@ import (
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response
 // @Failure 503 {object} fun.Response
-// @Router /organizations/{organization_id}/projects/{project_id}/actors/{actor_id} [get]
-func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
+// @Router /organizations/{org_id}/projects/{project_id}/actors [post]
+func (h *Handlers) CreateProjectActor(w http.ResponseWriter, r *http.Request) {
 	if !globals.SetupComplete() {
 		fun.ServiceUnavailable("please setup IDX first on /auth/setup").Send(w)
 		return
@@ -30,13 +32,17 @@ func (h *Handlers) GetByID(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	actorID, err := req.Path("actor_id").UUID()
+	orgID, err := req.Path("org_id").UUID()
 	if fun.Bail(w, err) {
 		return
 	}
-	members, err := h.queries.GetByID(r.Context(), actorID, projectID)
+	var payload models.CreateActorRequest
+	if bind.BailInto(w, req, &payload) {
+		return
+	}
+	actors, err := h.commands.CreateProjectActor(r.Context(), orgID, payload.ToInput(&projectID))
 	if fun.Bail(w, err) {
 		return
 	}
-	fun.Respond(w, members)
+	fun.Respond(w, actors)
 }
