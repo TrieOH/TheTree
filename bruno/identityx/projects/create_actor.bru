@@ -1,0 +1,23 @@
+meta {
+  name: Create Actor
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{identityx_url}}/projects/:project_id/actors
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "auth_method": "password",
+    "type": "service",
+    "email": "identityx@trieoh.com"
+  }
+}
