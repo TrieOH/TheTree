@@ -11,10 +11,10 @@ export interface IntrospectData {
     type?: CredentialType;
   };
   sub: {
-    capabilities?: number[];
+    capabilities?: string[];
     email?: string;
     id?: string;
-    metadata?: number[];
+    metadata?: string[];
     project_id?: string;
     type?: ActorType;
   };
@@ -23,14 +23,6 @@ export interface IntrospectData {
 export interface IdentityCardProps {
   data: IntrospectData;
 }
-
-const CAPABILITY_LABELS: Record<number, string> = {
-  0: "...",
-  1: "...",
-  2: "...",
-  3: "...",
-  4: "...",
-};
 
 const ACTOR_THEME: Record<ActorType, {
   gradient: string;
@@ -139,7 +131,7 @@ export function ModernIntrospect({ data }: IdentityCardProps) {
   const actorType: ActorType = sub.type ?? "human";
   const theme = ACTOR_THEME[actorType];
   const caps = sub.capabilities ?? [];
-  const capLabels = caps.map((c) => CAPABILITY_LABELS[c] ?? String(c));
+  const capLabels = caps.map((c) => String(c));
 
   return (
     <motion.div

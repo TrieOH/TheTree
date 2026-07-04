@@ -17,9 +17,7 @@ export interface AuthCallbacks {
 }
 
 export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) => ({
-  isSetupDone: async () => {
-    return apiInstance.get<void>("/auth/setup", { requiresAuth: false });
-  },
+  isSetupDone: async () => apiInstance.get<void>("/auth/setup", { requiresAuth: false }),
 
   setup: async (email: string, password: string) => {
     if (env.PROJECT_ID) validateProjectKey();
@@ -149,7 +147,12 @@ export const createAuthService = (apiInstance: Api, callbacks?: AuthCallbacks) =
 
   resendVerifyEmail: async () => apiInstance.post<void>("/account/verify/resend"),
 
-  introspect: async () => apiInstance.get<IntrospectResponse>("/auth/introspect"),
+  introspect: async (apiKey?: string) => {
+    return apiInstance.get<IntrospectResponse>("/auth/introspect", {
+      requiresAuth: !apiKey,
+      headers: apiKey ? { "X-API-KEY": apiKey } : undefined,
+    });
+  },
 
   health: async () => {
     return apiInstance.get<{ service: string; status: string }>("/health", {
