@@ -3,7 +3,6 @@ package commands
 import (
 	"IdentityX/models"
 	"context"
-	"time"
 )
 
 func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*models.Project, error) {
@@ -32,21 +31,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 			return err
 		}
 
-		err = c.projects.AddMember(ctx, *member)
-		if err != nil {
-			return err
-		}
-
-		_, err = c.actors.Register(ctx, models.Actor{
-			ProjectID:  &created.ID,
-			AuthMethod: models.ApiKeyAuthMethod,
-			VerifiedAt: new(time.Now()),
-			Type:       models.ServiceActorType,
-		})
-		if err != nil {
-			return err
-		}
-		return nil
+		return c.projects.AddMember(ctx, *member)
 	}); err != nil {
 		return nil, err
 	}

@@ -48,6 +48,7 @@ type queries struct {
 
 type commands struct {
 	authn        *authn.Commands
+	actors       *actors.Commands
 	apiKeys      *apikeys.Commands
 	capabilities *capabilities.Commands
 	orgs         *organizations.Commands
@@ -112,6 +113,7 @@ func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Log
 func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
 		authn:        authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
+		actors:       actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
 		apiKeys:      apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, logger, tracer, tx),
 		orgs:         organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
 		projects:     projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
@@ -151,7 +153,7 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 
 func (app *IdentityX) initHandlers(q queries, c commands) handlers {
 	return handlers{
-		Actors:       actors.NewHandlers(q.actors),
+		Actors:       actors.NewHandlers(q.actors, c.actors),
 		ApiKeys:      apikeys.NewHandlers(c.apiKeys),
 		Authn:        authn.NewHandlers(c.authn, q.authn),
 		Orgs:         organizations.NewHandlers(c.orgs, q.orgs),

@@ -47,6 +47,8 @@ import (
 // @tag.description "Operations related to api key management"
 // @tag.name capabilities
 // @tag.description "Operations related to capabilities management"
+// @tag.name actors
+// @tag.description "Operations related to actors management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
