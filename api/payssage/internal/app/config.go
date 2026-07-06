@@ -12,18 +12,17 @@ type Config struct {
 	// Server
 	Port      string `env:"PORT" envDefault:"8080"`
 	AppName   string `env:"APP_NAME,required"`
-	AppUrl    string `env:"APP_URL,required"`
 	DebugMode bool   `env:"DEBUG_MODE"`
 
 	// Migration
 	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/database/migrations"`
 
 	// Postgres (own DB)
-	PostgresHost     string `env:"INFORMD_POSTGRES_HOST,required"`
-	PostgresPort     string `env:"INFORMD_POSTGRES_PORT" envDefault:"5432"`
-	PostgresDB       string `env:"INFORMD_POSTGRES_DB,required"`
-	PostgresUser     string `env:"INFORMD_POSTGRES_USER,required"`
-	PostgresPassword string `env:"INFORMD_POSTGRES_PASSWORD,required"`
+	PostgresHost     string `env:"PAYSSAGE_POSTGRES_HOST,required"`
+	PostgresPort     string `env:"PAYSSAGE_POSTGRES_PORT" envDefault:"5432"`
+	PostgresDB       string `env:"PAYSSAGE_POSTGRES_DB,required"`
+	PostgresUser     string `env:"PAYSSAGE_POSTGRES_USER,required"`
+	PostgresPassword string `env:"PAYSSAGE_POSTGRES_PASSWORD,required"`
 
 	// Postgres (root — from .tree.env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
@@ -45,6 +44,7 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
+	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT"`

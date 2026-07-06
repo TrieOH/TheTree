@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"payssage/generated/docs"
+	"payssage/internal/features/orgs"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -50,7 +51,7 @@ import (
 // @in header
 // @name Cookie
 // @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
-func (app *Payssage) CreateRouter(handlers handlers) http.Handler {
+func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) http.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +62,7 @@ func (app *Payssage) CreateRouter(handlers handlers) http.Handler {
 	r.Handle("/metrics", promhttp.Handler())
 
 	// Routes
+	orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

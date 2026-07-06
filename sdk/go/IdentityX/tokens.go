@@ -5,7 +5,6 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -14,14 +13,6 @@ import (
 	"github.com/MintzyG/sdkkit"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-)
-
-type ActorType string
-
-const (
-	HumanActorType   ActorType = "human"
-	ServiceActorType ActorType = "service"
-	MachineActorType ActorType = "machine"
 )
 
 type AccessSub struct {
@@ -34,8 +25,9 @@ type AccessSub struct {
 }
 
 type AccessClaims struct {
-	Sub AccessSub `json:"sub"`
 	jwt.RegisteredClaims
+
+	Sub AccessSub `json:"sub"`
 }
 
 type RefreshSub struct {
@@ -45,8 +37,9 @@ type RefreshSub struct {
 }
 
 type RefreshClaims struct {
-	Sub RefreshSub `json:"sub"`
 	jwt.RegisteredClaims
+
+	Sub RefreshSub `json:"sub"`
 }
 
 type JWK struct {
@@ -71,9 +64,6 @@ type TokenService struct {
 }
 
 func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, error) {
-	if !setupComplete.Load() {
-		return nil, errors.New("please setup IDX client first on /auth/setup")
-	}
 	s.mu.RLock()
 	cached := s.jwks
 	lastUpdated := s.lastUpdated
@@ -121,9 +111,6 @@ func (s *TokenService) GetJWKS(ctx context.Context, forceRefresh bool) (*JWKS, e
 // returning the raw *jwt.Token. Prefer VerifyAccessToken for full claim
 // validation.
 func (s *TokenService) ValidateToken(ctx context.Context, tokenStr string) (*jwt.Token, error) {
-	if !setupComplete.Load() {
-		return nil, errors.New("please setup IDX client first on /auth/setup")
-	}
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 			return nil, &InvalidTokenError{Cause: fmt.Errorf("unexpected signing method: %T", token.Method)}
@@ -188,9 +175,6 @@ func (s *TokenService) decodeKey(key JWK) (interface{}, error) {
 // VerifyAccessToken fully validates a raw access token string: signature,
 // expiry, nbf, and issuer. Returns the parsed AccessClaims on success.
 func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (*AccessClaims, error) {
-	if !setupComplete.Load() {
-		return nil, errors.New("please setup IDX client first on /auth/setup")
-	}
 	claims := &AccessClaims{}
 
 	// Parse unverified first to extract kid so we can fetch the right key

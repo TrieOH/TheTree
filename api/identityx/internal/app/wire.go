@@ -67,15 +67,6 @@ type middlewares struct {
 }
 
 type handlers struct {
-	CORS              func(http.Handler) http.Handler
-	Logger            func(http.Handler) http.Handler
-	JwtAuth           func(http.Handler) http.Handler
-	ApiKeyAuth        func(http.Handler) http.Handler
-	AnyAuth           func(http.Handler) http.Handler
-	ClientOnly        func(http.Handler) http.Handler
-	ProjectClientOnly func(http.Handler) http.Handler
-	Metrics           func(http.Handler) http.Handler
-
 	Actors       *actors.Handlers
 	ApiKeys      *apikeys.Handlers
 	Authn        *authn.Handlers
