@@ -26,9 +26,9 @@ export type OrganizationI = Organization;
 // Member
 
 export type OrganizationMemberRoleI =
-  | typeof OrganizationRoleMember
-  | typeof OrganizationRoleAdmin
-  | typeof OrganizationRoleOwner;
+  | "member"
+  | "admin"
+  | "owner";
 
 export const memberAddToOrganizationSchema = z.object({
   actor_email: z.email({ error: "Must be a valid email address" }),

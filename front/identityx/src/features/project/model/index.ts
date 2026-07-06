@@ -20,9 +20,9 @@ export type ProjectI = Project
 // Members
 
 export type ProjectMemberRoleI =
-  | typeof ProjectRoleMember
-  | typeof ProjectRoleAdmin
-  | typeof ProjectRoleOwner;
+  | "member"
+  | "admin"
+  | "owner";
 
 export const memberAddToProjectSchema = z.object({
   actor_email: z.email({ error: "Must be a valid email address" }),
