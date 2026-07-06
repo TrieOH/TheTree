@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RiEyeCloseLine, RiEyeLine } from "react-icons/ri";
+import { Eye, EyeOff } from "lucide-react";
 import type { RuleStatus } from "../../../utils/field-validator";
 
 interface BasicInputFieldProps {
@@ -44,19 +44,18 @@ export default function BasicInputField({
   const hasAnyFailing = rulesStatus.some(r => !r.passed);
 
   return (
-    <div className="font-inter relative w-full flex flex-col gap-1 text-trieoh-neutral2">
-      <label htmlFor={name} className="text-[1rem] font-semibold">
+    <div className="font-sans relative w-full flex flex-col gap-1 text-foreground">
+      <label htmlFor={name} className="text-base font-semibold">
         {label}
       </label>
-      <div 
-        className={`flex justify-between items-center px-[0.625rem] py-[0.0625rem] gap-[0.625rem] border-b-2 border-trieoh-neutral2 ${
-          (hasAnyFailing && submitted) ? "!border-[#e53935]" : ""
-        }`}
+      <div
+        className={`flex justify-between items-center px-2.5 py-px gap-2.5 border-b-2 border-foreground ${(hasAnyFailing && submitted) ? "border-destructive!" : ""
+          }`}
       >
-        <input 
-          type={isSecretVisible ? "text" : type} 
-          name={name} 
-          id={name} 
+        <input
+          type={isSecretVisible ? "text" : type}
+          name={name}
+          id={name}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onValueChange && onValueChange(e.target.value)}
@@ -64,31 +63,31 @@ export default function BasicInputField({
           autoComplete={autoComplete}
           aria-invalid={hasAnyFailing && submitted}
           ref={inputRef}
-          className="min-w-[10rem] flex-1 text-trieoh-base font-light text-trieoh-neutral2 appearance-none bg-transparent outline-none border-none !shadow-none py-[0.125rem]" 
+          className="min-w-40 flex-1 text-base font-light text-foreground appearance-none bg-transparent outline-none border-none shadow-none! py-0.5"
         />
         {type === "password" && (
           isSecretVisible ?
-            <RiEyeCloseLine 
+            <EyeOff
               className="cursor-pointer shrink-0 select-none"
               size={24}
-              onClick={() => setIsSecretVisible(false)} 
+              onClick={() => setIsSecretVisible(false)}
             />
-          :
-            <RiEyeLine 
+            :
+            <Eye
               className="cursor-pointer shrink-0 select-none"
               size={24}
-              onClick={() => setIsSecretVisible(true)} 
+              onClick={() => setIsSecretVisible(true)}
             />
-          )
+        )
         }
       </div>
 
-      <div className="text-[0.75rem] text-[#6b7280] transition-opacity duration-200 ease-in-out">
+      <div className="text-xs text-muted-foreground transition-opacity duration-200 ease-in-out">
         {rulesStatus.map((r, i) => {
           const classes = [
             "transition-[color,text-decoration,opacity] duration-[120ms] ease opacity-95 m-[0.125rem]",
-            r.passed ? "line-through opacity-60 text-[#10b981]" : "",
-            !r.passed && submitted ? "text-[#e53935] font-semibold opacity-100" : "",
+            r.passed ? "line-through opacity-60 text-green-500" : "",
+            !r.passed && submitted ? "text-destructive font-semibold opacity-100" : "",
           ]
             .filter(Boolean)
             .join(" ");

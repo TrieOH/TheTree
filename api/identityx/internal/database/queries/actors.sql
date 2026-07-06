@@ -1,12 +1,13 @@
 -- name: RegisterActor :one
-INSERT INTO actors (project_id, auth_method, password_hash, email, type, metadata)
+INSERT INTO actors (project_id, auth_method, password_hash, email, type, metadata, verified_at)
 VALUES (
     @project_id,
     @auth_method,
     @password_hash,
     @email,
     @type,
-    @metadata
+    @metadata,
+    @verified_at
 ) RETURNING *;
 
 -- name: GetActorByEmail :one
@@ -47,3 +48,8 @@ SET encrypted_access_token = @encrypted_access_token,
 WHERE provider = @provider
   AND subject = @subject
     RETURNING *;
+
+-- name: ListActorsFromProject :many
+SELECT *
+FROM actors
+WHERE project_id = @project_id;

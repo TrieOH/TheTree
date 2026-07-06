@@ -1,11 +1,12 @@
 import {
-  FaMobileAlt,
-  FaTabletAlt,
-  FaDesktop
-} from "react-icons/fa";
+  Smartphone,
+  Tablet,
+  Monitor,
+  type LucideIcon
+} from "lucide-react";
 
-export const deviceIconMap = {
-  mobile: FaMobileAlt,
-  tablet: FaTabletAlt,
-  desktop: FaDesktop,
+export const deviceIconMap: Record<string, LucideIcon> = {
+  mobile: Smartphone,
+  tablet: Tablet,
+  desktop: Monitor,
 };

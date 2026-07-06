@@ -17,6 +17,7 @@ func (repo *repo) Register(ctx context.Context, toRegister models.Actor) (*model
 		Email:        toRegister.Email,
 		Type:         string(toRegister.Type),
 		Metadata:     toRegister.Metadata,
+		VerifiedAt:   toRegister.VerifiedAt,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)

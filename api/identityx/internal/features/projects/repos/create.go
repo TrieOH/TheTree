@@ -15,6 +15,7 @@ func (repo *repo) Create(ctx context.Context, project models.Project) (*models.P
 		OwnerID:        project.OwnerID,
 		Name:           project.Name,
 		Domain:         project.Domain,
+		BrandSlug:      project.BrandSlug,
 		Metadata:       project.Metadata,
 	})
 	if err != nil {

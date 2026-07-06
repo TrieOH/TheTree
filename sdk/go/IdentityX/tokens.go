@@ -245,10 +245,8 @@ func (s *TokenService) VerifyAccessToken(ctx context.Context, tokenStr string) (
 	}
 
 	// Issuer validation.
-	expectedIssuer := "IdentityX"
-	if claims.Sub.ProjectID != nil {
-		expectedIssuer = claims.Sub.ProjectID.String()
-	}
+	expectedIssuer := "https://identityx.com.br"
+	// TODO: Implement url challenge for custom issuer
 	if claims.Issuer != expectedIssuer {
 		return nil, &InvalidIssuerError{Got: claims.Issuer, Expected: expectedIssuer}
 	}

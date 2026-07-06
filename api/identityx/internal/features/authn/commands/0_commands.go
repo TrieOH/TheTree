@@ -77,7 +77,7 @@ func (c *Commands) cryptoKeyFromToken(ctx context.Context, token *jwt.Token) (*m
 }
 
 func (c *Commands) issueTokens(ctx context.Context, actor *models.Actor) (*models.UserTokensOutput, error) {
-	activeKeyPair, err := c.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, nil)
+	activeKeyPair, err := c.cryptoKeys.GetActive(ctx, models.SigningCryptoKeyType, actor.ProjectID)
 	if err != nil {
 		return nil, err
 	}

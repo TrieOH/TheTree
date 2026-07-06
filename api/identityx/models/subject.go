@@ -10,12 +10,12 @@ import (
 
 // Subject represents the full 'sub' claim object
 type Subject struct {
-	ID           uuid.UUID       `json:"id"`
-	ProjectID    *uuid.UUID      `json:"project_id"`
-	Email        *string         `json:"email"`
-	Type         ActorType       `json:"type"`
-	Capabilities json.RawMessage `json:"capabilities"`
-	Metadata     json.RawMessage `json:"metadata"`
+	ID           uuid.UUID        `json:"id"`
+	ProjectID    *uuid.UUID       `json:"project_id"`
+	Email        *string          `json:"email"`
+	Type         ActorType        `json:"type"`
+	Capabilities json.RawMessage  `json:"capabilities"`
+	Metadata     *json.RawMessage `json:"metadata"`
 }
 
 func SubjectFromAccessSub(sub AccessSub) Subject {

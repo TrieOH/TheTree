@@ -1,5 +1,5 @@
 import { AuthInterceptor, type RequestOptions as InterceptorOptions } from "./interceptor";
-import type { AuthTokenClaims } from "../utils/token-utils";
+import type { AuthTokenClaims } from "../types/token-types";
 import {
   createDefaultFetchClient,
   type DefaultFetchClientConfig,

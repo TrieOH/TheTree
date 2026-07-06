@@ -1,0 +1,205 @@
+# golangci-lint v2 configuration for TheTree monorepo.
+# Run from the workspace root:  golangci-lint run
+# Go workspace (go.work) covers all 7 modules — no per-module config needed.
+
+version: "2"
+
+run:
+  modules:
+    - module: IdentityX
+      path: api/identityx
+    - module: Informd
+      path: api/informd
+    - module: Payssage
+      path: api/payssage
+    - module: Univents
+      path: api/univents
+    - module: lib
+      path: lib/go
+    - module: IdentityXSDK
+      path: sdk/go/IdentityX
+    - module: PayssageSDK
+      path: sdk/go/Payssage
+
+linters:
+  enable:
+    # --- correctness (non-negotiable) ---
+    - errcheck            # check that returned errors are handled
+    - govet               # Go vet — suspicious constructs, Printf arg mismatches, etc.
+    - ineffassign         # detect assignments to existing variables that are never read
+    - staticcheck         # static analysis — deprecated APIs, infinite recursion, redundant code
+    - unused              # flag unused constants, variables, functions, types
+
+    # --- safety & security ---
+    - gosec               # SQL injection, hardcoded creds, weak crypto, file perms
+    - bidichk             # Trojan Source — invisible unicode that flips code logic
+
+    # --- resource hygiene (critical for microservices) ---
+    - bodyclose           # HTTP response bodies must be closed
+    - sqlclosecheck        # sql.Rows, sql.Stmt, pgx.Query must be closed after use
+    - rowserrcheck         # check sql.Rows.Err after iterating rows
+
+    # --- error handling ---
+    - nilerr              # catch "return err" when err is provably nil
+    - nilnil              # don't return (nil, nil) — check both error and value
+    - errorlint           # errors.Is/As instead of ==, %w instead of %v for wrapping
+    - errname             # sentinel errors prefixed Err*, error types suffixed Error
+
+    # --- observability (the project uses OpenTelemetry) ---
+    - spancheck            # OTel span: missing End, wrong attribute types, etc.
+
+    # --- simplification & modernisation ---
+    - copyloopvar         # enforce copying loop variables (Go 1.22+ semantics — prevents closure bugs)
+    - perfsprint          # replace fmt.Sprintf with faster alternatives (strconv, string concat)
+    - unconvert           # remove unnecessary type conversions [auto-fix]
+    - intrange            # for i:=0; i<len(x); i++  →  for i := range x  [auto-fix]
+    - mirror               # bytes.Compare → bytes.Equal, strings.Contains on []byte → bytes.Contains [auto-fix]
+    - usestdlibvars        # http.MethodGet instead of "GET", time.Weekday instead of int [auto-fix]
+    - durationcheck        # time.Second * time.Second — two durations multiplied is nonsense
+    - gocritic             # huge suite: redundant code, bad patterns, micro-optimizations
+    - modernize            # interface{} → any, if → min/max, range int, etc.
+    - dupword              # "the the" in comments/strings [auto-fix]
+    - dogsled              # too many blank identifiers: x, _, _, _, _ := f()
+    - iface                # interface defined in implementation package (should be in consumer)
+    - recvcheck            # mixing pointer and value receivers on the same type
+    - wastedassign         # variable assigned then immediately overwritten before being read
+    - unparam              # function parameters never used (simplify signatures)
+    - nosprintfhostport    # fmt.Sprintf("%s:%d", host, port) → use net.JoinHostPort
+    - nolintlint           # malformed //nolint directives that silently don't work [auto-fix]
+    - gocheckcompilerdirectives  # invalid //go:build / //go:generate comments
+
+    # --- context hygiene ---
+    - fatcontext           # context.Context stored in struct or used in loop body [auto-fix]
+
+    # --- tech debt surfaces (warning-only, won't fail the build) ---
+    - godox                # FIXME / TODO / BUG left in code — surfaces tech debt
+
+    # --- performance ---
+    - prealloc             # pre-allocate slices when final size is known
+    - makezero             # slice declared with non-zero length then append'ed to (double init)
+    - exptostd             # golang.org/x/exp functions that now have faster stdlib equivalents [auto-fix]
+    - noctx                # HTTP handlers / goroutines missing context.Context (no cancellation)
+    - tagalign             # struct field ordering wastes memory — reorder to shrink [auto-fix]
+    - loggercheck           # expensive log values computed before checking log level
+
+    # --- struct hygiene ---
+    - exhaustruct           # check all struct fields are explicitly initialized
+    - embeddedstructfieldcheck  # embedded types at top of struct, blank line before regular fields
+
+    # --- test speed ---
+    - paralleltest          # tests missing t.Parallel() — sequential tests are slow
+    - tparallel             # t.Parallel() used incorrectly inside table tests (teardown races)
+    - thelper               # test helpers that don't call t.Helper() — failure points to wrong line
+
+    # --- observability conventions ---
+    - sloglint              # slog key=value consistency, wrong key types, missing keys
+    - promlinter            # Prometheus/VictoriaMetrics metric naming conventions
+    - zerologlint           # zerolog calls missing .Send() or .Msg() — runtime panic
+
+    # --- correctness extras ---
+    - reassign              # package-level variable reassigned — nearly always a bug
+    - nilnesserr            # nil check on err but returns a different nil value
+
+    # --- module hygiene ---
+    - gomoddirectives       # keep go.mod replace/retract/exclude directives clean
+
+    # --- code health ---
+    - ireturn               # accept interfaces, return concrete types
+    - interfacebloat        # too many methods on one interface — time to split it
+    - decorder              # declarations in order: types → consts → vars → funcs [auto-fix]
+    - noinlineerr           # inline error handling: if err := x(); err != nil → split lines
+
+    # --- name & length ---
+    - funlen                # max 150 lines per function
+    - nestif                # max 3 levels of nested if statements
+
+    # --- complexity (catch overgrown functions) ---
+    - gocognit             # cognitive complexity — high = hard to understand (threshold: 50)
+    - gocyclo              # cyclomatic complexity — high = too many branches (threshold: 20)
+
+    # --- style (configurable golint replacement) ---
+    - revive              # exported docs, naming conventions, etc. (see exclusions below)
+
+    # --- testing ---
+    - usetesting          # enforce t.Setenv, t.TempDir, t.Chdir over os equivalents
+    - testifylint         # common testify mistakes (require vs assert, error comparisons, etc.)
+
+  settings:
+    misspell:
+      locale: US
+    testifylint:
+      enable-all: true
+    gocritic:
+      # non-default checks added on top of defaults:
+      enabled-checks:
+        - hugeParam            # struct > 80B passed by value → should be pointer
+      settings:
+        hugeParam:
+          sizeThreshold: 80    # bytes; warn when struct argument exceeds this
+    gocognit:
+      min-complexity: 50       # cognitive complexity threshold
+    gocyclo:
+      min-complexity: 20       # cyclomatic complexity threshold
+    funlen:
+      lines: 150               # max lines per function
+    nestif:
+      min-complexity: 3         # max nested if depth
+    sloglint:
+      # enforce key=value attr pairs, no embedded objects, context as first arg
+      args-on-sep-lines: false
+      no-raw-keys: true
+      key-naming-case: snake
+      forbidden-keys:
+        - time
+        - level
+        - msg
+        - source
+    interfacebloat:
+      max: 10                   # max methods before warning
+    exhaustruct:
+      # only check structs with the `exhaustruct` comment directive, not every struct
+      include: []
+    paralleltest:
+      ignore-missing-subtests: false
+
+  exclusions:
+    # Generated code — sqlc, mockery, swag, tygo output.
+    generated: strict
+    paths:
+      - api/.*/generated/
+      - api/.*/models/models.gen.go
+      - api/.*/mocks/
+      - lib/go/.*/mocks/
+      - ".*\\.pb\\.go$"
+      - ".*_gen\\.go$"
+      - third_party$
+      - vendor$
+    rules:
+      # Don't flag missing doc comments anywhere — services opt in when ready.
+      - linters: [revive]
+        text: "exported"
+        path: ".*"
+      - linters: [revive]
+        text: "package-comments"
+        path: ".*"
+      # sqlc generates exported identifiers with long names.
+      - linters: [revive]
+        path: "api/.*/internal/database/"
+        text: "var-naming"
+      - linters: [revive]
+        path: "api/.*/internal/database/"
+        text: "unexported-return"
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  severity:
+    default: error
+    rules:
+      - linters: [godox]
+        severity: warning
+
+formatters:
+  enable:
+    - gofmt               # standard Go formatting
+    - goimports            # add missing imports, remove unused ones (no opinionated grouping)

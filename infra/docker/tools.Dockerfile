@@ -12,6 +12,9 @@ RUN --mount=type=cache,target=/go/pkg/mod,id=gomod \
 RUN --mount=type=cache,target=/go/pkg/mod,id=gomod \
     --mount=type=cache,target=/root/.cache/go-build \
     go install github.com/swaggo/swag/v2/cmd/swag@latest
+RUN --mount=type=cache,target=/go/pkg/mod,id=gomod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
 USER nobody
 

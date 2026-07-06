@@ -15,5 +15,9 @@
     "isolatedModules": false,
     "emitDeclarationOnly": false
   },
-  "include": ["src", "global.d.ts", "env.d.ts"]
+  "include": [
+    "src",
+    "global.d.ts",
+    "env.d.ts"
+  ]
 }

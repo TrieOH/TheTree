@@ -1,37 +1,29 @@
 import { useFieldContext } from "@/shared/lib/forms";
 import { BasicInputField } from "@trieoh/identityx-sdk-ts/react";
+import type { RuleStatus } from "./types";
 
 interface PropsI {
   label: string;
   placeholder: string;
   autoComplete?: string;
-  errors?: string[];
+  required?: boolean;
+  getRulesStatus?: (value: unknown) => RuleStatus[]
   submitted?: boolean;
 }
 
-export default function TextField({ label, placeholder, autoComplete, errors, submitted }: PropsI) {
+export default function TextField({ label, placeholder, autoComplete, required, getRulesStatus, submitted }: PropsI) {
   const field = useFieldContext<string>();
-
-  const currentErrors = field.state.meta.errors;
-  const hasError = currentErrors.length > 0;
-  const messageToShow = errors?.join("\n") || "";
-
   return (
-    <BasicInputField 
+    <BasicInputField
       name={field.name}
-      label={label}
+      label={required ? `${label} *` : label}
       placeholder={placeholder}
       value={field.state.value}
       onValueChange={(v) => field.handleChange(v)}
       onBlur={field.handleBlur}
       autoComplete={autoComplete}
       submitted={submitted}
-      rulesStatus={[
-        {
-          message: messageToShow,
-          passed: !hasError,
-        }
-      ]}
+      rulesStatus={getRulesStatus ? getRulesStatus(field.state.value) : []}
     />
   )
 }

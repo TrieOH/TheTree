@@ -9,28 +9,34 @@ import (
 )
 
 type Commands struct {
-	actors   ports.ActorRepo
-	apiKeys  ports.ApiKeysRepo
-	projects ports.ProjectRepo
-	logger   *zap.Logger
-	tracer   trace.Tracer
-	tx       database.TxRunner
+	hmacSecret   []byte
+	actors       ports.ActorRepo
+	apiKeys      ports.ApiKeysRepo
+	capabilities ports.CapabilityRepo
+	projects     ports.ProjectRepo
+	logger       *zap.Logger
+	tracer       trace.Tracer
+	tx           database.TxRunner
 }
 
 func NewCommands(
+	hmacSecret []byte,
 	actors ports.ActorRepo,
 	apiKeys ports.ApiKeysRepo,
+	capabilities ports.CapabilityRepo,
 	projects ports.ProjectRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
-		actors:   actors,
-		apiKeys:  apiKeys,
-		projects: projects,
-		logger:   logger,
-		tracer:   tracer,
-		tx:       tx,
+		hmacSecret:   hmacSecret,
+		actors:       actors,
+		apiKeys:      apiKeys,
+		capabilities: capabilities,
+		projects:     projects,
+		logger:       logger,
+		tracer:       tracer,
+		tx:           tx,
 	}
 }

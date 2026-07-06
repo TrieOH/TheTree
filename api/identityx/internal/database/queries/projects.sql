@@ -2,8 +2,8 @@
 SELECT * FROM projects;
 
 -- name: CreateProject :one
-INSERT INTO projects (organization_id, owner_id, name, domain, metadata)
-VALUES (@organization_id, @owner_id, @name, @domain, @metadata)
+INSERT INTO projects (organization_id, owner_id, brand_slug, name, domain, metadata)
+VALUES (@organization_id, @owner_id, @brand_slug, @name,@domain, @metadata)
 RETURNING *;
 
 -- name: GetProjectByID :one

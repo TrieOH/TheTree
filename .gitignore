@@ -23,6 +23,7 @@ dist
 .env.local
 !*.example.env
 !.*.example.env
+!.tags.env
 
 # =============================================================
 # 🪵 LOGS

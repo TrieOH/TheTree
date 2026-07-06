@@ -30,16 +30,16 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ApiKey
 
 func mapApiKey(src sqlc.ApiKey) models.ApiKey {
 	return models.ApiKey{
-		ID:         src.ID,
-		ActorID:    src.ActorID,
-		ProjectID:  src.ProjectID,
-		Name:       src.Name,
-		KeyPrefix:  src.KeyPrefix,
-		KeyHash:    src.KeyHash,
-		Metadata:   src.Metadata,
-		ExpiresAt:  src.ExpiresAt,
-		RevokedAt:  src.RevokedAt,
-		LastUsedAt: src.LastUsedAt,
-		CreatedAt:  src.CreatedAt,
+		ID:            src.ID,
+		SubjectID:     src.SubjectID,
+		Name:          src.Name,
+		DisplayPrefix: src.DisplayPrefix,
+		KeyHash:       src.KeyHash,
+		Metadata:      src.Metadata,
+		ExpiresAt:     src.ExpiresAt,
+		RevokedAt:     src.RevokedAt,
+		LastUsedAt:    src.LastUsedAt,
+		CreatedBy:     src.CreatedBy,
+		CreatedAt:     src.CreatedAt,
 	}
 }

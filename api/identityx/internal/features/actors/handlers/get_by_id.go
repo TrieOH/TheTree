@@ -14,7 +14,7 @@ import (
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} fun.Response{data=[]models.Actor}
+// @Success 200 {object} fun.Response{data=models.Actor}
 // @Failure 400 {object} fun.Response
 // @Failure 401 {object} fun.Response
 // @Failure 500 {object} fun.Response

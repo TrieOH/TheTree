@@ -2,12 +2,10 @@
 # compose.app.yml
 #
 # All TrieOH application services: Identity-X, Payssage,
-# Informd, Univents — each with their own Redis.
+# Informd, Univents. Gated behind --profile core.
 # Postgres and Caddy come from compose.base.yml.
 #
-# Usage:
-#   docker compose -f compose.base.yml -f compose.app.yml \
-#     -f compose.dev.yml up
+# Included by compose.dev.yml and compose.prod.yml.
 # =============================================================
 
 services:
@@ -17,6 +15,7 @@ services:
   # =============================================================
 
   identityx:
+    profiles: [core]
     container_name: identityx
     restart: unless-stopped
     networks:
@@ -30,7 +29,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - .identityx.env
+      - api/identityx/.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 3s
@@ -43,6 +42,7 @@ services:
   # =============================================================
 
   payssage:
+    profiles: [core]
     container_name: payssage
     restart: unless-stopped
     networks:
@@ -56,7 +56,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - .payssage.env
+      - api/payssage/.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 3s
@@ -69,6 +69,7 @@ services:
   # =============================================================
 
   informd:
+    profiles: [core]
     container_name: informd
     restart: unless-stopped
     networks:
@@ -84,7 +85,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - .informd.env
+      - api/informd/.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 3s
@@ -97,6 +98,7 @@ services:
   # =============================================================
 
   univents:
+    profiles: [core]
     container_name: univents
     restart: unless-stopped
     networks:
@@ -114,7 +116,7 @@ services:
         condition: service_healthy
     env_file:
       - .tree.env
-      - .univents.env
+      - api/univents/.env
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
       interval: 3s
@@ -122,7 +124,3 @@ services:
       retries: 5
       start_period: 2s
 
-volumes:
-  payssage-redis:
-  informd-redis:
-  univents-redis:

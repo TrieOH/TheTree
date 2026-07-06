@@ -86,9 +86,9 @@ export function SignUp({
     setLoadingSubmit(false);
   }
   return (
-    <form className="font-inter flex flex-col w-full max-w-[30rem] min-w-[15rem] max-h-[max(75dvh,32rem)] overflow-hidden gap-5 items-center bg-trieoh-neutral1 text-trieoh-neutral2 p-[1.25rem_1.5rem] shadow-[0_0.25rem_0.25rem_0_rgba(0,0,0,0.25)] transition-transform duration-150 ease-in-out rounded-[0.25rem]">
+    <form className="font-sans flex flex-col w-full max-w-120 min-w-60 max-h-[max(75dvh,32rem)] overflow-hidden gap-5 items-center bg-background text-foreground p-[1.25rem_1.5rem] shadow-[0_0.25rem_0.25rem_0_rgba(0,0,0,0.25)] transition-transform duration-150 ease-in-out rounded-lg">
       <CardAvatar mainText="Crie sua conta" subText="Insira seus dados para começar" />
-      <div className="w-full flex flex-col gap-[0.625rem] flex-[1_1_auto] overflow-y-auto mb-2">
+      <div className="w-full flex flex-col gap-2.5 flex-[1_1_auto] overflow-y-auto mb-2">
         <BasicInputField
           label="Email"
           name="email"
@@ -128,14 +128,14 @@ export function SignUp({
       </div>
       <BasicSubmitButton label="Criar Conta" onSubmit={handleSubmit} loading={loadingSubmit} />
       {loginRedirect && <>
-        <div className="flex items-center gap-[0.625rem] w-full text-trieoh-base font-semibold opacity-60">
+        <div className="flex items-center gap-2.5 w-full text-base font-semibold opacity-60">
           <hr className="flex-1" />
           OU
           <hr className="flex-1" />
         </div>
-        <span className="text-trieoh-sm font-semibold">
+        <span className="text-sm font-semibold">
           {"Já possui uma conta? "}
-          <span className="cursor-pointer text-trieoh-secondary transition-colors duration-200 hover:text-trieoh-primary" onClick={loginRedirect}>Entre</span>
+          <span className="cursor-pointer text-primary transition-colors duration-200 hover:opacity-80" onClick={loginRedirect}>Entre</span>
         </span>
       </>}
     </form>

@@ -44,6 +44,7 @@ type Config struct {
 	// Auth / crypto
 	Issuer                string        `env:"ISSUER,required"`
 	EncryptionKey         string        `env:"ENCRYPTION_KEY,required"`
+	HmacSecret            string        `env:"HMAC_SECRET,required"`
 	KeyLifetime           time.Duration `env:"IDENTITY_X_KEY_LIFETIME,required"`
 	RotateKeysJobDuration time.Duration `env:"ROTATE_KEYS_JOB_DURATION,required"`
 
@@ -53,6 +54,7 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
+	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`

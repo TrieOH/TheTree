@@ -11,38 +11,19 @@ ps:
 # =============================================================
 
 prod +SERVICES="":
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.obs.yml \
-      -f compose.prod.yml \
-      pull {{SERVICES}}
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.obs.yml \
-      -f compose.prod.yml \
-      up -d {{SERVICES}}
+    docker compose -f compose.prod.yml --env-file .tags.env --profile core --profile obs pull {{SERVICES}}
+    docker compose -f compose.prod.yml --env-file .tags.env --profile core --profile obs up -d {{SERVICES}}
 
 # =============================================================
 # 🛠️ COMPOSE HELPERS
 # =============================================================
 
 _compose +ARGS:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.app.yml \
-      -f compose.obs.yml \
-      -f compose.dev.yml \
-      {{ARGS}}
+    docker compose -f compose.dev.yml --profile core {{ARGS}}
 
 # Boot the observability stack detached
 obs:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.obs.yml \
-      -f compose.dev.yml \
-      up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
+    docker compose -f compose.obs.yml --profile obs up -d
 
 # =============================================================
 # 🚀 DEV — back + front together
@@ -103,11 +84,11 @@ front +SERVICES="identityx informd payssage univents":
 
 # Stop services. No args stops everything, or pass specific services.
 down +SERVICES="":
-    just _compose down {{SERVICES}}
+    docker compose -f compose.dev.yml --profile core --profile obs down {{SERVICES}}
 
-# Stop and remove volumes.
+# Stop and remove volumes. No args stops everything, or pass specific services.
 downv +SERVICES="":
-    just _compose down -v {{SERVICES}}
+    docker compose -f compose.dev.yml --profile core --profile obs down -v {{SERVICES}}
 
 # =============================================================
 # 🔧 GENERATE
@@ -145,26 +126,39 @@ build-tools:
     docker build -f infra/docker/tools.Dockerfile -t git.trieoh.com/trieoh/go-tools:latest .
     docker push git.trieoh.com/trieoh/go-tools:latest
 
+# Run golangci-lint across all Go modules (requires golangci-lint v2 on PATH).
+lint:
+    golangci-lint run ./...
+
+# Run lint on specific API services only (generates sqlc first so packages compile).
+# Examples:
+#   just lint-api                  → all API services
+#   just lint-api univents         → univents only
+#   just lint-api informd payssage → those two
+lint-api +SERVICES="identityx informd payssage univents":
+    #!/usr/bin/env bash
+    for svc in {{SERVICES}}; do
+      echo "🔧 generating sqlc for $svc..."
+      (cd api/$svc && sqlc generate)
+      echo "🔍 linting $svc..."
+      (cd api/$svc && golangci-lint run ./...)
+    done
+
+# Run lint inside the go-tools container — generates sqlc first, then lints all modules.
+lint-ci:
+    docker run --rm -v "$PWD:$PWD" -w "$PWD" git.trieoh.com/trieoh/go-tools:latest \
+      sh -c 'for svc in identityx informd payssage univents; do echo "🔧 $svc sqlc..."; (cd api/$$svc && sqlc generate); done && echo "🔍 linting..." && golangci-lint run ./...'
+
 # =============================================================
 # 📧 EMAIL
 # =============================================================
 
 email:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.prod.yml \
-      -f compose.server.yml \
-      --profile email \
-      up -d mox
+    docker compose -f compose.prod.yml --profile email up -d mox
 
 # =============================================================
 # 🔧 GIT
 # =============================================================
 
 git:
-    docker compose \
-      -f compose.base.yml \
-      -f compose.prod.yml \
-      -f compose.server.yml \
-      --profile git \
-      up -d forgejo forgejo-runner forgejo-dind
+    docker compose -f compose.prod.yml --profile git up -d forgejo forgejo-runner forgejo-dind

@@ -33,6 +33,7 @@ const config = defineConfig({
           // TanStack Router, Start and SSR
           if (
             id.includes('@tanstack/react-router') ||
+            id.includes('@tanstack/react-start') ||
             id.includes('@tanstack/router-plugin') ||
             id.includes('@tanstack/react-router-ssr-query')
           ) {
@@ -47,24 +48,24 @@ const config = defineConfig({
 
           // TanStack Form
           if (
-            id.includes('@tanstack/react-form') || 
+            id.includes('@tanstack/react-form') ||
             id.includes('@tanstack/react-form-start')
           ) {
             return 'vendor-forms'
           }
-          
+
           // Analytics / tracking
           if (id.includes('posthog-js')) return 'vendor-analytics'
 
           // Animations
           if (id.includes('/motion/')) return 'vendor-animations'
-          
+
           // Icons
           if (id.includes('lucide-react')) return 'vendor-icons'
 
           // UI: components and primitives
           if (
-            id.includes('radix-ui') ||
+            id.includes('@base-ui/react') ||
             id.includes('sonner') ||
             id.includes('next-themes')
           ) {
@@ -81,11 +82,11 @@ const config = defineConfig({
             return 'vendor-css-utils'
           }
 
-          // Internal SDK
-          if (id.includes('@trieoh/identityx-sdk-ts')) return 'vendor-identityx'
+          // Internal @trieoh packages (ui-base, front-core, shared-utils, api-client, models, sdk, etc.)
+          if (id.includes('@trieoh/')) return 'vendor-trieoh'
 
           // Utils Network and Infra
-          if (id.includes('@t3-oss/env-core'))  return 'vendor-infra'
+          if (id.includes('@t3-oss/env-core')) return 'vendor-infra'
         },
       },
     },

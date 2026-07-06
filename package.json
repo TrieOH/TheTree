@@ -18,7 +18,12 @@
     "typegen": "pnpm -r cf-typegen",
     "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
   },
-  "devDependencies": {
-    "typescript": "^5.7.2"
+  "pnpm": {
+    "overrides": {
+      "dompurify": ">=3.4.11",
+      "esbuild": ">=0.28.1",
+      "@opentelemetry/core": ">=2.8.0",
+      "@trieoh/identityx-sdk-ts": "^v0.12.9"
+    }
   }
 }

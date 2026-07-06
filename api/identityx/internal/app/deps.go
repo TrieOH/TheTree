@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
+	"go.uber.org/zap"
 )
 
 func SetupFUN() {
@@ -61,8 +63,10 @@ func SetupConstraintMessages() {
 		"chk_org_members_role": "organization role must be one of: owner, admin, member",
 
 		// projects
-		"uniq_projects_slug":   "a project with this slug already exists",
-		"uniq_verified_domain": "this domain is already verified by another project",
+		"uniq_projects_slug":    "a project with this slug already exists",
+		"uniq_verified_domain":  "this domain is already verified by another project",
+		"chk_brand_slug_format": "brand slug must contain only lowercase letters",
+		"chk_brand_slug_length": "brand slug length must be between 3 and 48 characters",
 
 		// project_members
 		"chk_project_members_role": "project role must be one of: owner, admin, member",
@@ -75,7 +79,10 @@ func SetupConstraintMessages() {
 		"chk_platform_roles_role": "platform role must be one of: super_admin, admin, support",
 
 		// api_keys
-		"uniq_idx_api_keys_key_prefix": "an API key with this prefix already exists",
+		"uniq_idx_api_keys_display_prefix": "an API key with this display prefix already exists",
+
+		// capabilities
+		"uniq_capability_per_scope": "a capability with this resource and action already exists for this scope",
 
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
@@ -128,7 +135,7 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 	}
 }
 
-func SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports.ApiKeysRepo, actorsRepo ports.ActorRepo) *mws.Middleware[*models.AccessClaims] {
+func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports.ApiKeysRepo, actorsRepo ports.ActorRepo, capabilitiesRepo ports.CapabilityRepo, logger *zap.Logger) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
 		token, err := crypto.OpenUnverified(tokenStr, claims)
@@ -171,32 +178,43 @@ func SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		if len(rawKey) < api_keys.ApiKeyPrefixLen {
-			return nil, fun.ErrUnauthorized("invalid api key")
-		}
-		body, err := api_keys.StripKeyHeader(rawKey)
-		if err != nil || len(body) < api_keys.ApiKeyPrefixLen {
-			return nil, fun.ErrUnauthorized("invalid api key")
-		}
-		prefix := body[:api_keys.ApiKeyPrefixLen]
-
-		apiKey, err := apiKeysRepo.GetByPrefix(ctx, prefix)
+		key, err := api_keys.ParseAPIKey(rawKey)
 		if err != nil {
-			return nil, fun.ErrUnauthorized("invalid api key")
+			logger.Warn("api key parse failed", zap.Error(err))
+			return nil, fun.ErrForbidden("invalid api key")
 		}
 
-		if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash) {
-			return nil, fun.ErrUnauthorized("invalid api key")
+		apiKey, err := apiKeysRepo.GetByPrefix(ctx, key.DisplayPrefix)
+		if err != nil {
+			logger.Warn("api key lookup failed", zap.String("prefix", key.DisplayPrefix), zap.Error(err))
+			return nil, fun.ErrForbidden("invalid api key")
+		}
+
+		if !api_keys.VerifyAPIKey(rawKey, apiKey.KeyHash, []byte(app.cfg.HmacSecret)) {
+			logger.Warn("api key hmac mismatch", zap.String("prefix", key.DisplayPrefix))
+			return nil, fun.ErrForbidden("invalid api key")
 		}
 
 		if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
-			return nil, fun.ErrUnauthorized("api key expired")
+			logger.Warn("api key expired", zap.String("prefix", key.DisplayPrefix), zap.Time("expires_at", *apiKey.ExpiresAt))
+			return nil, fun.ErrForbidden("api key expired")
 		}
 
-		actor, err := actorsRepo.GetByID(ctx, apiKey.ActorID)
+		actor, err := actorsRepo.GetByID(ctx, apiKey.SubjectID)
 		if err != nil {
-			return nil, fun.ErrUnauthorized("invalid api key")
+			logger.Warn("actor lookup failed", zap.String("prefix", key.DisplayPrefix), zap.String("subject_id", apiKey.SubjectID.String()), zap.Error(err))
+			return nil, fun.ErrForbidden("invalid api key")
 		}
+
+		caps, err := capabilitiesRepo.ListByApiKeyPrefix(ctx, key.DisplayPrefix)
+		if err != nil {
+			return nil, err
+		}
+		pairs := make([]string, len(caps))
+		for i, c := range caps {
+			pairs[i] = c.Resource + ":" + c.Action
+		}
+		capJSON, _ := json.Marshal(pairs)
 
 		ctx = models.WithIdentity(ctx, &models.Identity{
 			Sub: models.Subject{
@@ -204,8 +222,8 @@ func SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports
 				ProjectID:    actor.ProjectID,
 				Email:        actor.Email,
 				Type:         actor.Type,
-				Capabilities: nil,
-				Metadata:     nil,
+				Capabilities: capJSON,
+				Metadata:     actor.Metadata,
 			},
 			Cred: models.Credential{
 				ID:   &apiKey.ID,
@@ -213,6 +231,7 @@ func SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports
 				Raw:  rawKey,
 			},
 		})
+		logger.Debug("api key authenticated", zap.String("prefix", key.DisplayPrefix), zap.Strings("capabilities", pairs))
 		return ctx, nil
 	}
 	return mws.New[*models.AccessClaims](keyFunc, jwtHook, apiKeyHook)

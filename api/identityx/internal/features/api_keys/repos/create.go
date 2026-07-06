@@ -11,15 +11,12 @@ func (repo *repo) Create(ctx context.Context, toCreate models.ApiKey) (*models.A
 	ctx, span := database.Span(ctx, repo.tracer, "Create")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateApiKey(ctx, sqlc.CreateApiKeyParams{
-		ActorID:   toCreate.ActorID,
-		ProjectID: toCreate.ProjectID,
-		Name:      toCreate.Name,
-		KeyPrefix: toCreate.KeyPrefix,
-		KeyHash:   toCreate.KeyHash,
-		ExpiresAt: toCreate.ExpiresAt,
+		SubjectID:     toCreate.SubjectID,
+		Name:          toCreate.Name,
+		DisplayPrefix: toCreate.DisplayPrefix,
+		KeyHash:       toCreate.KeyHash,
+		CreatedBy:     toCreate.CreatedBy,
+		ExpiresAt:     toCreate.ExpiresAt,
 	})
-	if err != nil {
-		return nil, repo.dbe(err)
-	}
-	return new(mapApiKey(row)), nil
+	return new(mapApiKey(row)), repo.dbe(err)
 }

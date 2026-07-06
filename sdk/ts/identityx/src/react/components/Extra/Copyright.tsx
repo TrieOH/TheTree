@@ -3,19 +3,19 @@ export interface CopyrightProps {
 }
 
 const sizeMap = {
-  xs: 'text-trieoh-sm',
-  sm: 'text-trieoh-base',
-  md: 'text-trieoh-xl',
-  lg: 'text-trieoh-2xl',
-  xl: 'text-trieoh-3xl',
-  '2xl': 'text-trieoh-6xl',
+  xs: 'text-xs',
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+  '2xl': 'text-2xl',
 }
 
 export function Copyright({ size }: CopyrightProps) {
-  const sizeClass = size ? sizeMap[size] : 'text-trieoh-xl'
+  const sizeClass = size ? sizeMap[size] : 'text-base'
 
   return (
-    <span className={`font-inter font-medium ${sizeClass}`}>
+    <span className={`font-sans font-medium ${sizeClass}`}>
       © {new Date().getFullYear()} TrieOH
     </span>
   )

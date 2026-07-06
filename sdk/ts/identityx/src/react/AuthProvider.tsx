@@ -9,16 +9,12 @@ import {
 } from "react";
 import { Api } from "../core/api";
 import { createAuthService, type AuthCallbacks } from "../core/services";
-import {
-  getTokenClaims,
-  isRefreshSessionExpired,
-  type AuthTokenClaims
-} from "../utils/token-utils";
+import { getTokenClaims, isRefreshSessionExpired } from "../utils/token-utils";
 import { validateProjectKey } from "../utils/env-validator";
 import { configure } from "../core/env";
 import { authStore } from "../store/auth-store";
 import { logger, type DefaultFetchClientConfig } from "@trieoh/envoy-fetch-ts";
-import { cookieStorage } from "../utils/storage-adapter";
+import type { AuthTokenClaims } from "../types/token-types";
 
 type AuthContextType = {
   auth: ReturnType<typeof createAuthService>;
@@ -38,6 +34,7 @@ export function AuthProvider({
   waitSession = true,
   clientConfig,
   onLogin,
+  onSetup,
   onResetPassword,
   onRegister,
   onVerify,
@@ -87,12 +84,13 @@ export function AuthProvider({
   const auth = useMemo(
     () => createAuthService(apiInstance, {
       onLogin,
+      onSetup,
       onResetPassword,
       onRegister,
       onVerify,
       onRefresh,
     }),
-    [apiInstance, onLogin, onResetPassword, onRegister, onVerify, onRefresh],
+    [apiInstance, onLogin, onSetup, onResetPassword, onRegister, onVerify, onRefresh],
   );
 
   useEffect(() => {

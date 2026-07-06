@@ -5,12 +5,11 @@ import {
   Scripts,
 } from '@tanstack/react-router'
 import { AuthProvider, type useAuth } from '@trieoh/identityx-sdk-ts/react'
-import { AuthSynchronizer } from '@/app/providers/auth/RouterAuthSync'
-import { RouteComponentTemplate, type RouteStaticConfigI } from '@/app/model/route-types'
+import { requireSetup } from '@/features/auth/lib/route-guard'
 import appCss from '../styles.css?url'
-import Header from '@/widgets/header/ui/Header'
-import { Toaster } from '@/shared/ui/shadcn/sonner'
 import { env } from '@/env'
+import { AuthContextUpdater } from '@trieoh/front-core'
+import { Toaster } from '@trieoh/ui-base/shadcn/sonner'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -18,6 +17,7 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: requireSetup,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -38,33 +38,25 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
   shellComponent: RootDocument,
   notFoundComponent: () => { return (<p>This page doesn't exist!</p>) },
-  staticData: { components: RouteComponentTemplate }
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {    
+function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className='min-w-xs' suppressHydrationWarning>
+      <body className="font-body antialiased wrap-anywhere">
         <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
-          <AuthSynchronizer>
+          <AuthContextUpdater>
             {/* <PHProvider> */}
-              <Header />
-              {children}
+            {children}
             {/* </PHProvider> */}
-          </AuthSynchronizer>
+          </AuthContextUpdater>
         </AuthProvider>
         <Toaster />
         <Scripts />
       </body>
     </html>
   )
-}
-
-declare module '@tanstack/react-router' {
-  interface StaticDataRouteOption {
-    components: RouteStaticConfigI
-  }
 }
