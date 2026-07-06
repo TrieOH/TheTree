@@ -47,7 +47,8 @@ function RouteComponent() {
 
     return (
       capability.resource.toLowerCase().includes(search) ||
-      capability.action.toLowerCase().includes(search)
+      capability.action.toLowerCase().includes(search) ||
+      `${capability.resource}:${capability.action}`.toLowerCase().includes(search)
     )
   })
 
