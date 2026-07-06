@@ -42,6 +42,17 @@ export interface ActorExternalIdentities {
   created_at: string;
   updated_at: string;
 }
+export interface CreateActorRequest {
+  auth_method: AuthMethod;
+  type: ActorType;
+  email?: string;
+}
+export interface CreateActorInput {
+  project_id?: string;
+  auth_method: AuthMethod;
+  type: ActorType;
+  email?: string;
+}
 
 //////////
 // source: api_keys.go
