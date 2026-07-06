@@ -3,35 +3,15 @@ package app
 import (
 	"log"
 	"net/http"
-	"strings"
-	"time"
-
-	"payssage/internal/features/api_keys"
-	"payssage/internal/features/intents"
-	"payssage/internal/features/oauth"
-	"payssage/internal/features/webhooks"
-	"payssage/internal/features/workspaces"
+	"net/http/pprof"
+	"payssage/generated/docs"
+	"payssage/internal/features/orgs"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
-	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/go-chi/httprate"
-	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
-
-type HTTPDeps struct {
-	IntentsHandler    *intents.Handler
-	WorkspacesHandler *workspaces.Handler
-	ApiKeysHandler    *api_keys.Handler
-	WebhooksHandler   *webhooks.Handler
-	OauthHandler      *oauth.Handler
-	AuthMiddleware    *AuthMiddleware
-	AsynqmonHandler   http.Handler
-}
 
 // CreateRouter godoc
 // CreateRouter creates a new Chi router and registers all the routes.
@@ -71,89 +51,40 @@ type HTTPDeps struct {
 // @in header
 // @name Cookie
 // @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
-func CreateRouter(deps *HTTPDeps) http.Handler {
+func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(chimiddleware.Recoverer)
-	r.Use(chimiddleware.Timeout(60 * time.Second))
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(docs.SwaggerJSON)
+	})
 
-	if !viper.GetBool("DISABLE_RATE_LIMIT") {
-		r.Use(httprate.Limit(
-			400,
-			1*time.Minute,
-			httprate.WithKeyFuncs(httprate.KeyByRealIP),
-		))
-	}
+	r.Handle("/metrics", promhttp.Handler())
 
-	r.Use(cors.Handler(GetCORSOptions()))
+	// Routes
+	orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
 
-	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
-	r.Mount("/admin/asynq", deps.AsynqmonHandler)
-
-	r.Get("/health", fh.Health("payssage").Handle)
-
-	registerRoutes(r, deps)
-	return otelhttp.NewHandler(r, "http.server")
+	return otelhttp.NewHandler(r, "http.server",
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/health"
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return r.URL.Path != "/metrics"
+		}),
+	)
 }
 
-func splitAndCleanCSV(value string) []string {
-	if strings.TrimSpace(value) == "" {
-		return nil
-	}
-
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-
-	for _, p := range parts {
-		if v := strings.TrimSpace(p); v != "" {
-			out = append(out, v)
-		}
-	}
-
-	if len(out) == 0 {
-		return nil
-	}
-
-	return out
-}
-
-// GetCORSOptions builds a safe cors.Options configuration from environment
-// variables, applying sensible defaults and preventing invalid empty values.
-func GetCORSOptions() cors.Options {
-	allowedOrigins := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_ORIGINS"))
-	allowedMethods := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_METHODS"))
-	allowedHeaders := splitAndCleanCSV(viper.GetString("CORS_ALLOWED_HEADERS"))
-
-	// Never default origins to "*"
-	if allowedOrigins == nil {
-		log.Fatalf("No AllowedOrigins set in CORS_ALLOWED_ORIGINS")
-	}
-
-	if allowedMethods == nil {
-		allowedMethods = []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		}
-	}
-
-	if allowedHeaders == nil {
-		allowedHeaders = []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-		}
-	}
-
-	return cors.Options{
-		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   allowedMethods,
-		AllowedHeaders:   allowedHeaders,
-		AllowCredentials: true,
-		MaxAge:           300,
+func servePprof(port string) {
+	pmux := http.NewServeMux()
+	pmux.HandleFunc("/debug/pprof/", pprof.Index)
+	pmux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	pmux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	log.Printf("payssage pprof listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, pmux); err != nil {
+		log.Fatalf("payssage pprof server error: %v", err)
 	}
 }

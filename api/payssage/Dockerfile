@@ -22,7 +22,7 @@ RUN echo 'package payssage' > doc.go
 WORKDIR /app/api/payssage
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
-    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList
+    swag init -g internal/app/router.go -o generated/docs --parseInternal --parseDependency --parseGoList -ot json
 RUN rm /app/doc.go
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=go-build,target=/root/.cache/go-build,sharing=locked \
