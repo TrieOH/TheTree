@@ -1,6 +1,6 @@
 import type { ActorI } from "../model";
 import { cn } from "@/shared/lib/utils";
-import { Copy, Cpu, Fingerprint, Globe, KeyRound, Shield, User2, Github } from "lucide-react";
+import { Copy, Cpu, Fingerprint, KeyRound, Shield, User2 } from "lucide-react";
 import { toast } from "sonner";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
 
@@ -29,15 +29,11 @@ const typeConfig = {
 const authMethodLabel = {
   password: "Password",
   api_key: "API Key",
-  google_auth: "Google",
-  github_auth: "GitHub",
 } as const;
 
 const authMethodIcon = {
   password: KeyRound,
   api_key: Fingerprint,
-  google_auth: Globe,
-  github_auth: Github,
 } as const;
 
 export function ActorCard({ data }: ActorCardProps) {

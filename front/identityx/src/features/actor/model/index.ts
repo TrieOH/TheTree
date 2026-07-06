@@ -4,8 +4,6 @@ import type {
 } from "@trieoh/identityx-models";
 import {
   ApiKeyAuthMethod,
-  GithubAuthMethod,
-  GoogleAuthMethod,
   HumanActorType,
   MachineActorType,
   PasswordAuthMethod,
@@ -15,9 +13,7 @@ import z from "zod";
 
 export type ActorAuthMethodI =
   | "password"
-  | "api_key"
-  | "google_auth"
-  | "github_auth";
+  | "api_key";
 
 export type ActorTypeI =
   | "human"
@@ -28,8 +24,6 @@ export const actorCreateSchema = z.object({
   auth_method: z.enum([
     PasswordAuthMethod,
     ApiKeyAuthMethod,
-    GoogleAuthMethod,
-    GithubAuthMethod,
   ], { error: "Invalid auth method" }),
   type: z.enum([
     HumanActorType,

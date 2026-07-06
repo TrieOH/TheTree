@@ -6,7 +6,7 @@ import { FormModal } from "@/widgets/modal/FormModal";
 import { EmptyState, PaginatedContainer, useLayoutHeader } from "@trieoh/ui-base";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bot, Cpu, Fingerprint, Globe, Github, KeyRound, Plus, Shield, User2 } from "lucide-react";
+import { Bot, Cpu, Fingerprint, KeyRound, Plus, Shield, User2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -119,8 +119,6 @@ function RouteComponent() {
             options: [
               { value: 'password', label: 'Password', icon: KeyRound },
               { value: 'api_key', label: 'API Key', icon: Fingerprint },
-              { value: 'google_auth', label: 'Google', icon: Globe },
-              { value: 'github_auth', label: 'GitHub', icon: Github },
             ],
             required: true,
           },

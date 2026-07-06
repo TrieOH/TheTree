@@ -69,8 +69,9 @@ function RouteComponent() {
     <div>
       <PaginatedContainer<CapabilityI>
         items={filteredCapabilities}
-        layout="list"
+        layout="grid"
         pageSize={10}
+        minItemWidth="15rem"
         sortFields={[
           { key: 'resource', label: 'Resource' },
           { key: 'action', label: 'Action' },
