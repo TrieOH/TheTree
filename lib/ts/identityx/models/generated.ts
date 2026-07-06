@@ -42,33 +42,48 @@ export interface ActorExternalIdentities {
   created_at: string;
   updated_at: string;
 }
+export interface CreateActorRequest {
+  auth_method: AuthMethod;
+  type: ActorType;
+  email?: string;
+}
+export interface CreateActorInput {
+  project_id?: string;
+  auth_method: AuthMethod;
+  type: ActorType;
+  email?: string;
+}
 
 //////////
 // source: api_keys.go
 
 export interface ApiKey {
   id: string;
-  actor_id: string;
-  project_id?: string;
+  subject_id: string;
   name: string;
-  key_prefix: string;
-  key_hash: string;
+  display_prefix: string;
+  key_hash: string /* []byte */;
   metadata: any /* json.RawMessage */;
   expires_at?: string;
   revoked_at?: string;
   last_used_at?: string;
+  created_by: string;
   created_at: string;
 }
 export interface CreateApiKeyRequest {
+  subject_id?: string;
+  capabilities: string[];
   name: string;
+  env: string;
   expires_at?: string;
-  create_for_service_account: boolean;
 }
 export interface CreateApiKeyInput {
-  Name: string;
-  ExpiresAt?: string;
-  ProjectID: string;
-  CreateForServiceAccount: boolean;
+  subject_id?: string;
+  capabilities: string[];
+  name: string;
+  env: string;
+  expires_at?: string;
+  ProjectID?: string;
 }
 export interface CreateApiKeyResponse {
   key?: ApiKey;
@@ -130,6 +145,27 @@ export interface BlacklistEntry {
   metadata?: any /* json.RawMessage */;
   created_at: string;
   expires_at?: string;
+}
+
+//////////
+// source: capabilities.go
+
+export interface Capability {
+  id: string;
+  project_id?: string;
+  resource: string;
+  action: string;
+  created_by: string;
+  created_at: string;
+}
+export interface CreateCapabilityRequest {
+  resource: string;
+  action: string;
+}
+export interface CreateCapabilityInput {
+  resource: string;
+  action: string;
+  project_id?: string;
 }
 
 //////////
@@ -215,11 +251,13 @@ export interface RemoveOrganizationMemberInput {
 export interface CreateOrgProjectRequest {
   name: string;
   domain?: string;
+  brand_slug: string;
 }
 export interface CreateOrgProjectInput {
   OrganizationID: string;
   Name: string;
   Domain?: string;
+  brand_slug: string;
 }
 /**
  * AddOrgProjectMemberRequest is the HTTP request body for adding a member to an org-scoped project.
@@ -267,6 +305,7 @@ export interface Project {
   id: string;
   organization_id?: string;
   owner_id: string;
+  brand_slug: string;
   name: string;
   domain?: string;
   domain_verified_at?: string;
@@ -308,11 +347,13 @@ export interface ProjectOAuthProviders {
 export interface CreateProjectRequest {
   name: string;
   domain?: string;
+  brand_slug: string;
 }
 export interface CreateProjectInput {
   OrganizationID?: string;
   Name: string;
   Domain?: string;
+  BrandSlug: string;
 }
 export interface AddProjectMemberRequest {
   actor_email: string;
@@ -343,7 +384,7 @@ export interface Subject {
   email?: string;
   type: ActorType;
   capabilities: any /* json.RawMessage */;
-  metadata: any /* json.RawMessage */;
+  metadata?: any /* json.RawMessage */;
 }
 export interface Credential {
   id?: string; // Applicable for stateful credentials like api keys
@@ -363,7 +404,7 @@ export interface AccessSub {
   email?: string;
   type: ActorType;
   capabilities: any /* json.RawMessage */;
-  metadata: any /* json.RawMessage */;
+  metadata?: any /* json.RawMessage */;
 }
 export interface AccessClaims {
   sub: AccessSub;

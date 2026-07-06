@@ -93,7 +93,7 @@ export function ProjectsView({
           onCreate(data);
           setIsCreateOpen(false);
         }}
-        defaultValues={{ name: '', domain: '' }}
+        defaultValues={{ name: '', domain: '', brand_slug: '' }}
         isLoading={isCreating}
         submitLabel='Create Project'
         fields={[
@@ -101,6 +101,12 @@ export function ProjectsView({
             name: 'name',
             label: 'Project Name',
             placeholder: 'e.g. My Own Project',
+            required: true,
+          },
+          {
+            name: 'brand_slug',
+            label: 'Brand Slug',
+            placeholder: 'e.g. my-brand',
             required: true,
           },
           {
