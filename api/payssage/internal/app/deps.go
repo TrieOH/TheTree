@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"lib/database"
 	"lib/errx"
 	"lib/validator"
 	"log"
@@ -36,7 +37,37 @@ func SetupFUN(module string) {
 }
 
 func SetupConstraintMessages() {
-	//database.SetConstraintErrorRegistry(database.ConstraintRegistry{})
+	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+		// intents
+		"chk_intents_amount_cents": "amount must be greater than zero",
+		"chk_intents_status":       "invalid intent status",
+
+		// oauth_states
+		"chk_oauth_states_flow": "invalid oauth flow type",
+
+		// org_members
+		"chk_org_members_role": "invalid organization member role",
+
+		// wallets
+		"chk_wallets_fee_bps":        "fee (bps) must be non-negative",
+		"uniq_wallets_org_name":      "a wallet with this name already exists in this organization",
+		"uniq_wallets_personal_name": "a wallet with this name already exists",
+
+		// webhook_deliveries
+		"chk_webhook_deliveries_status": "invalid webhook delivery status",
+
+		// webhook_events
+		"uniq_webhook_events_external_id": "a webhook event with this external id already exists for this provider",
+
+		// organizations
+		"uniq_organizations_slug": "an organization with this slug already exists",
+
+		// provider_credentials
+		"uniq_provider_credentials_active": "credentials for this provider are already connected to this wallet",
+
+		// sellers
+		"uniq_sellers_active": "this seller is already connected to this wallet",
+	})
 }
 
 func SetupIdentityX(cfg Config) *idx.Client {
