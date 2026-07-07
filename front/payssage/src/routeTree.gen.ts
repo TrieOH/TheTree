@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TestRouteImport } from './routes/test'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -20,11 +19,6 @@ import { Route as AdminNameWebhooksRouteImport } from './routes/admin/$name/webh
 import { Route as AdminNameKeysRouteImport } from './routes/admin/$name/keys'
 import { Route as AdminNameProvidersIndexRouteImport } from './routes/admin/$name/providers/index'
 
-const TestRoute = TestRouteImport.update({
-  id: '/test',
-  path: '/test',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -74,7 +68,6 @@ const AdminNameProvidersIndexRoute = AdminNameProvidersIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/test': typeof TestRoute
   '/admin/$name': typeof AdminNameRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/test': typeof TestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
@@ -97,7 +89,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/test': typeof TestRoute
   '/admin/$name': typeof AdminNameRouteWithChildren
   '/admin/': typeof AdminIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
@@ -111,7 +102,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/test'
     | '/admin/$name'
     | '/admin/'
     | '/admin/$name/keys'
@@ -122,7 +112,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/test'
     | '/admin'
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
@@ -133,7 +122,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/test'
     | '/admin/$name'
     | '/admin/'
     | '/admin/$name/keys'
@@ -146,19 +134,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  TestRoute: typeof TestRoute
   CallbackProviderIndexRoute: typeof CallbackProviderIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/test': {
-      id: '/test'
-      path: '/test'
-      fullPath: '/test'
-      preLoaderRoute: typeof TestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -258,7 +238,6 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  TestRoute: TestRoute,
   CallbackProviderIndexRoute: CallbackProviderIndexRoute,
 }
 export const routeTree = rootRouteImport

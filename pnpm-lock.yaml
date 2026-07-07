@@ -531,6 +531,9 @@ importers:
       '@trieoh/payssage-models':
         specifier: workspace:*
         version: link:../../lib/ts/payssage
+      '@trieoh/shared-utils':
+        specifier: workspace:*
+        version: link:../../lib/ts/shared-utils
       '@trieoh/ui-base':
         specifier: workspace:*
         version: link:../../lib/ts/ui-base

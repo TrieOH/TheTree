@@ -29,6 +29,7 @@
     "@trieoh/front-core": "workspace:*",
     "@trieoh/payssage-models": "workspace:*",
     "@trieoh/identityx-sdk-ts": "catalog:",
+    "@trieoh/shared-utils": "workspace:*",
     "@trieoh/ui-base": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
