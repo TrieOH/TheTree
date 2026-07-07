@@ -6,6 +6,7 @@ import (
 	"net/http/pprof"
 	"payssage/generated/docs"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/wallets"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -27,16 +28,10 @@ import (
 // @host localhost:8080
 // @BasePath /
 // @schemes http https
-// @tag.name auth
-// @tag.description "Operations related to user authentication and authorization"
-// @tag.name events
-// @tag.description "Operations related to event management"
-// @tag.name editions
-// @tag.description "Operations related to edition management"
-// @tag.name tickets
-// @tag.description "Operations related to ticket management"
-// @tag.name system
-// @tag.description "System operations"
+// @tag.name organizations
+// @tag.description "Operations related to organizations"
+// @tag.name wallets
+// @tag.description "Operations related to wallets"
 // @produce json
 // @consumes json
 // @response 200 {object} object "Standard success response"
@@ -63,6 +58,7 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 
 	// Routes
 	orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
+	wallets.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
