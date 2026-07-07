@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"payssage/internal/database/sqlc"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/wallets"
 	"payssage/ports"
 	idx "sdk/identityx"
 	"strings"
@@ -20,7 +21,8 @@ import (
 // ── Wire types ────────────────────────────────────────────────────────────
 
 type repos struct {
-	orgs ports.OrganizationRepo
+	orgs    ports.OrganizationRepo
+	wallets ports.WalletRepo
 	//intents             ports.IntentRepository
 	//workspaces          ports.WorkspaceRepo
 	//endpoints           ports.WebhookEndpointRepo
@@ -32,7 +34,8 @@ type repos struct {
 }
 
 type queries struct {
-	orgs *orgs.Queries
+	orgs    *orgs.Queries
+	wallets *wallets.Queries
 	//webhooks   *webhooks.QueryService
 	//intents    *intents.QueryService
 	//workspaces *workspaces.QueryService
@@ -41,7 +44,8 @@ type queries struct {
 }
 
 type commands struct {
-	orgs *orgs.Commands
+	orgs    *orgs.Commands
+	wallets *wallets.Commands
 	//webhooks   *webhooks.CommandService
 	//intents    *intents.CommandService
 	//workspaces *workspaces.CommandService
@@ -61,7 +65,8 @@ type middlewares struct {
 }
 
 type handlers struct {
-	orgs *orgs.Handlers
+	orgs    *orgs.Handlers
+	wallets *wallets.Handlers
 	//intents  *intents.Handler
 	//wallets  *workspaces.Handler
 	//webhooks *webhooks.Handler
@@ -72,7 +77,8 @@ type handlers struct {
 
 func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 	return repos{
-		orgs: orgs.NewRepos(q, logger, tracer),
+		orgs:    orgs.NewRepos(q, logger, tracer),
+		wallets: wallets.NewRepos(q, logger, tracer),
 		//intents:             intents.NewIntentsRepo(q, logger, tracer),
 		//workspaces:          workspaces.NewWorkspaceRepo(q, logger, tracer),
 		//endpoints:           webhooks.NewWebhookEndpointRepo(q, logger, tracer),
@@ -86,7 +92,8 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 
 func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) queries {
 	return queries{
-		orgs: orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
+		orgs:    orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
+		wallets: wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
 		//webhooks:   webhooks.NewQueryService(r.endpoints, r.deliveries, r.events, r.workspaces, logger, tx, tracer),
 		//intents:    intents.NewQueryService(r.intents, r.workspaces, logger, tx, tracer),
 		//workspaces: workspaces.NewQueryService(r.workspaces, logger, tx, tracer),
@@ -96,7 +103,8 @@ func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRun
 
 func initCommands(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) commands {
 	return commands{
-		orgs: orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
+		orgs:    orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
+		wallets: wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
 		//webhooks:   webhooks.NewCommandService(r.endpoints, r.deliveries, r.events, r.workspaces, r.intents, r.providerCredentials, river, logger, tx, tracer),
 		//intents:    intents.NewCommandService(r.intents, r.workspaces, r.providerCredentials, r.marketplaces, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, logger, tx, tracer),
 		//workspaces: workspaces.NewCommandService(r.workspaces, logger, tx, tracer),
@@ -134,7 +142,8 @@ func initMiddlewares(logger *zap.Logger, cfg Config) middlewares {
 
 func initHandlers(c commands, q queries) handlers {
 	return handlers{
-		orgs: orgs.NewHandlers(c.orgs, q.orgs),
+		orgs:    orgs.NewHandlers(c.orgs, q.orgs),
+		wallets: wallets.NewHandlers(c.wallets, q.wallets),
 		//intents:  intents.NewHandler(c.intents, q.intents),
 		//wallets:  workspaces.NewHandler(c.workspaces, q.workspaces),
 		//webhooks: webhooks.NewHandler(c.webhooks, q.webhooks),
