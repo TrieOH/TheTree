@@ -1,66 +1,180 @@
-import type * as React from 'react'
 import { Link } from '@tanstack/react-router'
-import {
-  LayoutDashboard,
-  LogOut,
-} from 'lucide-react'
-import { Button } from '#/shared/ui/shadcn/button'
-import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
+import { ChevronLeft, ChevronRight, FolderKanban, LogOut } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '#/shared/lib/utils'
-import { env } from '#/env'
+import { Button } from '#/shared/ui/shadcn/button'
+import { Breadcrumb } from '#/shared/ui/breadcrumb'
+import { useAuthActions } from '#/features/auths/hooks/use-auth-actions'
 
-export function AdminLayout({ children }: { children: React.ReactNode }) {
+interface AdminLayoutProps {
+  children: React.ReactNode
+}
+
+export function AdminLayout({ children }: AdminLayoutProps) {
   const { handleLogout } = useAuthActions()
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const navItems = [
+    {
+      to: '/admin',
+      icon: FolderKanban,
+      label: 'Organizations',
+      exact: true,
+    },
+  ]
 
   return (
-    <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 md:px-8 lg:px-10">
-          <div className="flex items-center gap-8">
-            <Link to="/admin" className="flex items-center gap-2.5 group transition-all hover:opacity-80">
-              <div className="w-8 h-8 rounded-none bg-primary flex items-center justify-center text-primary-foreground group-hover:bg-primary/90 transition-all">
-                <LayoutDashboard className="w-4 h-4" />
-              </div>
-              <span className="font-black text-xl tracking-tighter text-foreground">
-                {env.VITE_APP_TITLE ?? "Payssage"}
-              </span>
-            </Link>
-          </div>
+    <div className="flex min-h-screen bg-background font-body selection:bg-primary/10">
+      {/* Desktop Sidebar Navigation */}
+      <aside
+        className={cn(
+          "hidden lg:flex flex-col border-r border-border/60 sticky top-0 h-screen shrink-0 bg-background z-20 transition-[width] duration-300 ease-in-out",
+          isCollapsed ? "w-15" : "w-50",
+        )}
+      >
+        <div className="p-4 flex items-center justify-between h-16 border-b border-border/60">
+          {!isCollapsed && (
+            <span className="text-xs font-bold truncate uppercase tracking-[0.3em] text-primary">
+              Payssage
+            </span>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className={cn(isCollapsed ? 'mx-auto' : 'ml-auto')}
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label="Toggle sidebar"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "hidden sm:flex items-center gap-2 text-muted-foreground",
-                "hover:text-destructive hover:bg-destructive/5 font-bold uppercase tracking-wider",
-                "rounded-sm cursor-pointer py-4"
+        <nav className="flex-1 py-4 flex flex-col">
+          {navItems.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.exact, includeSearch: false }}
+              className="flex items-center gap-3 px-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors relative group"
+            >
+              {({ isActive }) => (
+                <>
+                  <item.icon
+                    className={cn(
+                      "w-4 h-4 transition-colors duration-300 shrink-0",
+                      isCollapsed && "mx-auto",
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground",
+                    )}
+                  />
+                  {!isCollapsed && (
+                    <span
+                      className={cn(
+                        "transition-colors duration-300 truncate",
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+
+                  {/* Desktop Indicator (Right) */}
+                  <div
+                    className={cn(
+                      "absolute -right-px transition-all duration-300 ease-in-out bg-primary w-0.5",
+                      isActive
+                        ? "top-2 bottom-2 opacity-100"
+                        : "top-1/2 bottom-1/2 opacity-0",
+                    )}
+                  />
+                </>
               )}
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </Button>
+            </Link>
+          ))}
 
-            {/* Mobile Logout (Icon only) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="sm:hidden text-muted-foreground"
-              onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </header>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-auto flex items-center gap-3 px-4 py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors relative group text-muted-foreground hover:text-destructive cursor-pointer"
+          >
+            <LogOut
+              className={cn(
+                "w-4 h-4 transition-colors duration-300",
+                isCollapsed && "mx-auto",
+              )}
+            />
+            {!isCollapsed && <span className="truncate">Logout</span>}
+          </button>
+        </nav>
+      </aside>
 
-        <main className="flex-1 overflow-x-hidden">
-          <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto">
-            {children}
-          </div>
-        </main>
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 w-full pb-24 lg:pb-0">
+        <div className="sticky top-0 z-10">
+          <Breadcrumb />
+        </div>
+        <main>{children}</main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden! fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border bg-background/95 backdrop-blur-md px-4">
+        {navItems.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            activeOptions={{ exact: item.exact, includeSearch: false }}
+            className="flex flex-col items-center gap-1 px-3 relative h-full justify-center group"
+          >
+            {({ isActive }) => (
+              <>
+                <item.icon
+                  className={cn(
+                    "w-5 h-5 transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-[9px] font-bold uppercase tracking-tighter transition-colors truncate",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-foreground",
+                  )}
+                >
+                  {item.label}
+                </span>
+                {/* Mobile Indicator (Top of the bar) */}
+                <div
+                  className={cn(
+                    "absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full transition-all duration-300 ease-in-out",
+                    isActive ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0",
+                  )}
+                />
+              </>
+            )}
+          </Link>
+        ))}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex flex-col items-center gap-1 px-3 justify-center group cursor-pointer"
+        >
+          <LogOut className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
+          <span className="text-[9px] truncate font-bold uppercase tracking-tighter text-muted-foreground group-hover:text-destructive transition-colors">
+            Logout
+          </span>
+        </button>
+      </nav>
     </div>
   )
 }
