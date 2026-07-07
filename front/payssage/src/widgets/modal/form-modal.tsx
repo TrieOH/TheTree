@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Modal } from "./modal";
 import { cn, percentageToBps, clamp } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
@@ -7,8 +7,14 @@ import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
 import { AlertCircle, Percent, Info } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
-import type { ZodType } from "zod";
-import type { DefaultValues, FieldValues, Path, PathValue } from "react-hook-form";
+import type {
+  DefaultValues,
+  FieldValues,
+  Path,
+  PathValue,
+  SubmitHandler,
+  Resolver,
+} from "react-hook-form";
 
 
 export interface PropsI<T> {
@@ -21,7 +27,7 @@ export interface PropsI<T> {
   formId: string;
   defaultValues?: DefaultValues<T>;
   fields: FieldDefinition<T>[];
-  schema: ZodType<T>;
+  schema: unknown;
   disabled?: boolean;
 }
 
@@ -40,11 +46,11 @@ export default function FormModal<T extends FieldValues>({
 }: PropsI<T>) {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<T>({
-    resolver: standardSchemaResolver(schema),
+    resolver: zodResolver(schema as never) as Resolver<T>,
     defaultValues: defaultValues,
   });
 
-  const handleFormSubmit = (data: T) => {
+  const handleFormSubmit: SubmitHandler<T> = (data) => {
     onSubmit(data);
   };
 

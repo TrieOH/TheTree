@@ -7,8 +7,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import PostHogProvider from '../app/integrations/posthog/provider'
-
-import TanStackQueryProvider from '../app/integrations/tanstack-query/root-provider'
+import { Provider as TanStackQueryProvider } from '../app/integrations/tanstack-query/root-provider'
 
 import TanStackQueryDevtools from '../app/integrations/tanstack-query/devtools'
 
@@ -19,7 +18,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { AuthProvider } from '@trieoh/identityx-sdk-ts/react';
 import type { useAuth } from "@trieoh/identityx-sdk-ts/react";
 import { Toaster } from '#/shared/ui/shadcn/sonner'
-import { AuthContextUpdater } from '#/app/integrations/auth/auth-context-updater'
+import { AuthContextUpdater } from '@trieoh/front-core'
 import { env } from '#/env'
 
 interface MyRouterContext {
@@ -59,7 +58,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
         <PostHogProvider>
           <TanStackQueryProvider>
             <AuthProvider baseURL={env.VITE_AUTH_API_URL}>
