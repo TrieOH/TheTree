@@ -50,16 +50,18 @@ function MenuItems({
         }
       >
         <ExternalLink className="mr-2 size-4" />
-        View Projects
+        View Wallets
       </Item>
       <Separator />
       <Item
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           navigate({
             to: "/admin/$organizationID/members",
             params: { organizationID: data.id },
           })
-        }
+        }}
       >
         <User2 className="mr-2 size-4" />
         View Members
