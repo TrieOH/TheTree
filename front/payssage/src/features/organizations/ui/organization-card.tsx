@@ -1,85 +1,144 @@
-import { cn } from "@/shared/lib/utils"
-import { Building2, Copy, Ellipsis, Check, Users } from "lucide-react"
-import type { OrganizationI } from "../model"
-import { useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/shared/ui/shadcn/button"
+import { cn } from "@/shared/lib/utils";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/ui/shadcn/card"
+  Building2,
+  Ellipsis,
+  ExternalLink,
+  User2,
+} from "lucide-react";
+import type { OrganizationI } from "../model";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui/shadcn/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/shared/ui/shadcn/context-menu";
+import { timeAgo } from "@trieoh/shared-utils";
+import { Button } from "#/shared/ui/shadcn/button";
 
 interface PropsI {
-  data: OrganizationI
+  data: OrganizationI;
+}
+
+function MenuItems({
+  isContext = false,
+  data,
+}: {
+  isContext?: boolean;
+  data: OrganizationI;
+}) {
+  const navigate = useNavigate();
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem;
+  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator;
+
+  return (
+    <>
+      <Item
+        onClick={() =>
+          navigate({
+            to: "/admin/$organizationID",
+            params: { organizationID: data.id },
+          })
+        }
+      >
+        <ExternalLink className="mr-2 size-4" />
+        View Projects
+      </Item>
+      <Separator />
+      <Item
+        onClick={() =>
+          navigate({
+            to: "/admin/$organizationID/members",
+            params: { organizationID: data.id },
+          })
+        }
+      >
+        <User2 className="mr-2 size-4" />
+        View Members
+      </Item>
+    </>
+  );
 }
 
 export default function OrganizationCard({ data }: PropsI) {
-  const [copied, setCopied] = useState(false)
-
-  const copyId = async () => {
-    await navigator.clipboard.writeText(data.id)
-    setCopied(true)
-    toast.success("Organization ID copied")
-    setTimeout(() => setCopied(false), 1500)
-  }
-
   return (
-    <Card className="group overflow-hidden rounded-sm border border-border/70 bg-card transition-all hover:border-primary hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.08)]">
-      <CardHeader className="space-y-4 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
-              <Building2 className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <CardTitle className="truncate text-base font-bold leading-none">
-                {data.name}
-              </CardTitle>
-              <CardDescription className="mt-1 truncate font-mono text-xs">
-                @{data.slug}
-              </CardDescription>
-            </div>
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <Link
+            className={cn(
+              "bg-card rounded-sm w-full cursor-pointer",
+              "ring-1 ring-foreground/10 shadow-xs",
+              "relative py-4 hover:ring-primary hover:shadow-primary duration-150"
+            )}
+            to="/admin/$organizationID"
+            params={{ organizationID: data.id }}
+          />
+        }
+      >
+        <div className="px-4 space-y-2 pr-10">
+          <Building2 className="bg-primary/80 text-primary-foreground p-1.5 rounded-sm size-8" />
+          <div className="space-y-0.5">
+            <span className="text-sm font-bold truncate block">
+              {data.name}
+            </span>
+            <span className="text-xs text-muted-foreground truncate block">
+              @{data.slug}
+            </span>
           </div>
-
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className={cn("size-8 shrink-0 rounded-sm", copied && "text-emerald-600")}
-            onClick={copyId}
-          >
-            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3 p-4 pt-0">
-        <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <Users className="size-3.5" />
-            Owner
-          </span>
-          <span className="max-w-40 truncate font-mono text-foreground" title={data.owner_id}>
-            {data.owner_id}
-          </span>
         </div>
 
-        <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
-          <span>Created</span>
-          <span>{new Date(data.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+        <hr className="border-muted-foreground/40 mt-2" />
+
+        <div className="flex flex-col gap-1 px-4 mt-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Owner</span>
+            <span className="truncate max-w-35" title={data.owner_id}>
+              {data.owner_id}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Created</span>
+            <span>{timeAgo(data.created_at)}</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3 text-[10px] font-bold uppercase tracking-widest">
-          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-            <Ellipsis className="size-3.5" />
-            Organization
-          </span>
-          <span className="text-primary">Active</span>
+        <div className="absolute right-4 top-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground/40",
+                    "duration-150 cursor-pointer outline-0 select-none"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  <Ellipsis />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-56">
+              <MenuItems data={data} />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </CardContent>
-    </Card>
-  )
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-56">
+        <MenuItems isContext data={data} />
+      </ContextMenuContent>
+    </ContextMenu>
+  );
 }

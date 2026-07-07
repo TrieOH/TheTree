@@ -30,7 +30,7 @@ const queryParams = z.object({
   provider: z.string().optional().nullable(),
 })
 
-export const Route = createFileRoute('/admin/$name/providers/')({
+export const Route = createFileRoute('/admin/temp/$name/providers/')({
   component: RouteComponent,
   validateSearch: (search) => queryParams.parse(search)
 })

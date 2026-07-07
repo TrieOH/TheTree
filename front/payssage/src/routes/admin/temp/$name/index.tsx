@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { allWorkspacePaymentIntentsQueryOptions } from '#/features/payment-intents/api'
 import { cn } from '#/shared/lib/utils'
 
-export const Route = createFileRoute('/admin/$name/')({
+export const Route = createFileRoute('/admin/temp/$name/')({
   component: WorkspaceOverview,
 })
 

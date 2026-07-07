@@ -12,7 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyList } from '#/features/keys/ui/key-list'
 import { ApiKeyCreatedModal } from '#/features/keys/ui/api-key-created-modal'
 
-export const Route = createFileRoute('/admin/$name/keys')({
+export const Route = createFileRoute('/admin/temp/$name/keys')({
   component: RouteComponent,
 })
 

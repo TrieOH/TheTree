@@ -80,12 +80,7 @@ const config = defineConfig(() => {
             }
 
             // Internal SDK
-            if (
-              id.includes('@trieoh/identityx-sdk-ts') ||
-              id.includes('@trieoh/envoy-fetch-ts')
-            ) {
-              return 'vendor-trieoh'
-            }
+            if (id.includes('@trieoh/identityx-sdk-ts')) return 'vendor-trieoh'
 
             // Utils Network and Infra
             if (id.includes('@t3-oss/env-core')) return 'vendor-infra'

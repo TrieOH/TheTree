@@ -1,8 +1,14 @@
 import { TanStackQueryProvider, createQueryClient } from "@trieoh/front-core"
 import type { ReactNode } from "react"
 
+let context: { queryClient: ReturnType<typeof createQueryClient> } | undefined
+
 export function getContext() {
-  return { queryClient: createQueryClient() }
+  if (context) return context
+
+  context = { queryClient: createQueryClient() }
+
+  return context
 }
 
 export function Provider({ children }: { children: ReactNode }) {

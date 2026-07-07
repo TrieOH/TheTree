@@ -12,7 +12,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { WebhookList } from '#/features/webhooks/ui/webhook-list'
 import { WebhookCreatedModal } from '#/features/webhooks/ui/webhook-created-modal'
 
-export const Route = createFileRoute('/admin/$name/webhooks')({
+export const Route = createFileRoute('/admin/temp/$name/webhooks')({
   component: RouteComponent,
 })
 
