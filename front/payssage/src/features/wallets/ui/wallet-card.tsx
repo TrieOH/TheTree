@@ -1,4 +1,4 @@
-import { Building2, Check, Copy, Pencil, Sparkles, User } from "lucide-react"
+import { Check, Copy, Pencil, Sparkles, User, Wallet } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { bpsToPercentage, cn } from "#/shared/lib/utils"
@@ -44,7 +44,7 @@ export default function WalletCard({
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
-                <Building2 className="size-5" />
+                <Wallet className="size-5" />
               </div>
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold leading-tight text-foreground">

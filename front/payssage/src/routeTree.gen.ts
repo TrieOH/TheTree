@@ -17,10 +17,6 @@ import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organiz
 import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
-import { Route as AdminTempNameIndexRouteImport } from './routes/admin/temp/$name/index'
-import { Route as AdminTempNameWebhooksRouteImport } from './routes/admin/temp/$name/webhooks'
-import { Route as AdminTempNameKeysRouteImport } from './routes/admin/temp/$name/keys'
-import { Route as AdminTempNameProvidersIndexRouteImport } from './routes/admin/temp/$name/providers/index'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -64,27 +60,6 @@ const AdminOrganizationIDMembersRoute =
     path: '/members',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
-const AdminTempNameIndexRoute = AdminTempNameIndexRouteImport.update({
-  id: '/temp/$name/',
-  path: '/temp/$name/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTempNameWebhooksRoute = AdminTempNameWebhooksRouteImport.update({
-  id: '/temp/$name/webhooks',
-  path: '/temp/$name/webhooks',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTempNameKeysRoute = AdminTempNameKeysRouteImport.update({
-  id: '/temp/$name/keys',
-  path: '/temp/$name/keys',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTempNameProvidersIndexRoute =
-  AdminTempNameProvidersIndexRouteImport.update({
-    id: '/temp/$name/providers/',
-    path: '/temp/$name/providers/',
-    getParentRoute: () => AdminRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -95,10 +70,6 @@ export interface FileRoutesByFullPath {
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
-  '/admin/temp/$name/keys': typeof AdminTempNameKeysRoute
-  '/admin/temp/$name/webhooks': typeof AdminTempNameWebhooksRoute
-  '/admin/temp/$name/': typeof AdminTempNameIndexRoute
-  '/admin/temp/$name/providers/': typeof AdminTempNameProvidersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,10 +78,6 @@ export interface FileRoutesByTo {
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider': typeof CallbackProviderIndexRoute
-  '/admin/temp/$name/keys': typeof AdminTempNameKeysRoute
-  '/admin/temp/$name/webhooks': typeof AdminTempNameWebhooksRoute
-  '/admin/temp/$name': typeof AdminTempNameIndexRoute
-  '/admin/temp/$name/providers': typeof AdminTempNameProvidersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,10 +89,6 @@ export interface FileRoutesById {
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
-  '/admin/temp/$name/keys': typeof AdminTempNameKeysRoute
-  '/admin/temp/$name/webhooks': typeof AdminTempNameWebhooksRoute
-  '/admin/temp/$name/': typeof AdminTempNameIndexRoute
-  '/admin/temp/$name/providers/': typeof AdminTempNameProvidersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,10 +101,6 @@ export interface FileRouteTypes {
     | '/admin/$organizationID/members'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
-    | '/admin/temp/$name/keys'
-    | '/admin/temp/$name/webhooks'
-    | '/admin/temp/$name/'
-    | '/admin/temp/$name/providers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,10 +109,6 @@ export interface FileRouteTypes {
     | '/admin/$organizationID/members'
     | '/admin/$organizationID'
     | '/callback/$provider'
-    | '/admin/temp/$name/keys'
-    | '/admin/temp/$name/webhooks'
-    | '/admin/temp/$name'
-    | '/admin/temp/$name/providers'
   id:
     | '__root__'
     | '/'
@@ -164,10 +119,6 @@ export interface FileRouteTypes {
     | '/admin/$organizationID/members'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
-    | '/admin/temp/$name/keys'
-    | '/admin/temp/$name/webhooks'
-    | '/admin/temp/$name/'
-    | '/admin/temp/$name/providers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -234,34 +185,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
-    '/admin/temp/$name/': {
-      id: '/admin/temp/$name/'
-      path: '/temp/$name'
-      fullPath: '/admin/temp/$name/'
-      preLoaderRoute: typeof AdminTempNameIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/temp/$name/webhooks': {
-      id: '/admin/temp/$name/webhooks'
-      path: '/temp/$name/webhooks'
-      fullPath: '/admin/temp/$name/webhooks'
-      preLoaderRoute: typeof AdminTempNameWebhooksRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/temp/$name/keys': {
-      id: '/admin/temp/$name/keys'
-      path: '/temp/$name/keys'
-      fullPath: '/admin/temp/$name/keys'
-      preLoaderRoute: typeof AdminTempNameKeysRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/temp/$name/providers/': {
-      id: '/admin/temp/$name/providers/'
-      path: '/temp/$name/providers'
-      fullPath: '/admin/temp/$name/providers/'
-      preLoaderRoute: typeof AdminTempNameProvidersIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
 
@@ -282,20 +205,12 @@ interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
   AdminWalletsRoute: typeof AdminWalletsRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminTempNameKeysRoute: typeof AdminTempNameKeysRoute
-  AdminTempNameWebhooksRoute: typeof AdminTempNameWebhooksRoute
-  AdminTempNameIndexRoute: typeof AdminTempNameIndexRoute
-  AdminTempNameProvidersIndexRoute: typeof AdminTempNameProvidersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
   AdminWalletsRoute: AdminWalletsRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminTempNameKeysRoute: AdminTempNameKeysRoute,
-  AdminTempNameWebhooksRoute: AdminTempNameWebhooksRoute,
-  AdminTempNameIndexRoute: AdminTempNameIndexRoute,
-  AdminTempNameProvidersIndexRoute: AdminTempNameProvidersIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
