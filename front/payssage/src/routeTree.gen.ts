@@ -12,9 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TestRouteImport } from './routes/test'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as TestAdminRouteImport } from './routes/test/admin'
 import { Route as AdminNameRouteImport } from './routes/admin/$name'
 import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminNameIndexRouteImport } from './routes/admin/$name/index'
@@ -37,20 +35,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TestIndexRoute = TestIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TestRoute,
-} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
-} as any)
-const TestAdminRoute = TestAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => TestRoute,
 } as any)
 const AdminNameRoute = AdminNameRouteImport.update({
   id: '/$name',
@@ -86,11 +74,9 @@ const AdminNameProvidersIndexRoute = AdminNameProvidersIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/test': typeof TestRouteWithChildren
+  '/test': typeof TestRoute
   '/admin/$name': typeof AdminNameRouteWithChildren
-  '/test/admin': typeof TestAdminRoute
   '/admin/': typeof AdminIndexRoute
-  '/test/': typeof TestIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name/': typeof AdminNameIndexRoute
@@ -99,9 +85,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/test/admin': typeof TestAdminRoute
+  '/test': typeof TestRoute
   '/admin': typeof AdminIndexRoute
-  '/test': typeof TestIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name': typeof AdminNameIndexRoute
@@ -112,11 +97,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/test': typeof TestRouteWithChildren
+  '/test': typeof TestRoute
   '/admin/$name': typeof AdminNameRouteWithChildren
-  '/test/admin': typeof TestAdminRoute
   '/admin/': typeof AdminIndexRoute
-  '/test/': typeof TestIndexRoute
   '/admin/$name/keys': typeof AdminNameKeysRoute
   '/admin/$name/webhooks': typeof AdminNameWebhooksRoute
   '/admin/$name/': typeof AdminNameIndexRoute
@@ -130,9 +113,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/test'
     | '/admin/$name'
-    | '/test/admin'
     | '/admin/'
-    | '/test/'
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name/'
@@ -141,9 +122,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/test/admin'
-    | '/admin'
     | '/test'
+    | '/admin'
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name'
@@ -155,9 +135,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/test'
     | '/admin/$name'
-    | '/test/admin'
     | '/admin/'
-    | '/test/'
     | '/admin/$name/keys'
     | '/admin/$name/webhooks'
     | '/admin/$name/'
@@ -168,7 +146,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  TestRoute: typeof TestRouteWithChildren
+  TestRoute: typeof TestRoute
   CallbackProviderIndexRoute: typeof CallbackProviderIndexRoute
 }
 
@@ -195,26 +173,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/test/': {
-      id: '/test/'
-      path: '/'
-      fullPath: '/test/'
-      preLoaderRoute: typeof TestIndexRouteImport
-      parentRoute: typeof TestRoute
-    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
-    }
-    '/test/admin': {
-      id: '/test/admin'
-      path: '/admin'
-      fullPath: '/test/admin'
-      preLoaderRoute: typeof TestAdminRouteImport
-      parentRoute: typeof TestRoute
     }
     '/admin/$name': {
       id: '/admin/$name'
@@ -291,22 +255,10 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
-interface TestRouteChildren {
-  TestAdminRoute: typeof TestAdminRoute
-  TestIndexRoute: typeof TestIndexRoute
-}
-
-const TestRouteChildren: TestRouteChildren = {
-  TestAdminRoute: TestAdminRoute,
-  TestIndexRoute: TestIndexRoute,
-}
-
-const TestRouteWithChildren = TestRoute._addFileChildren(TestRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  TestRoute: TestRouteWithChildren,
+  TestRoute: TestRoute,
   CallbackProviderIndexRoute: CallbackProviderIndexRoute,
 }
 export const routeTree = rootRouteImport
