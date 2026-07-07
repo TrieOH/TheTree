@@ -45,3 +45,6 @@ export interface OrganizationMemberI
   extends Omit<OrganizationMember, "role"> {
   role: OrganizationMemberRoleI;
 }
+
+// Actor
+

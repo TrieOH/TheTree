@@ -7,6 +7,7 @@ import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
 import { AlertCircle, Percent, Info } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
+import OptionPicker from "#/shared/ui/form/option-picker";
 import type {
   DefaultValues,
   FieldValues,
@@ -58,6 +59,23 @@ export default function FormModal<T extends FieldValues>({
     const fieldName = field.name as Path<T>;
     const error = errors[fieldName];
     const value = watch(fieldName);
+
+    if (field.type === 'option-picker') {
+      return (
+        <OptionPicker
+          label={field.label}
+          value={String(value ?? '')}
+          onChange={(nextValue) => setValue(fieldName, nextValue as PathValue<T, Path<T>>)}
+          options={(field.options ?? []).map((option) => ({
+            label: option.label,
+            value: option.value,
+            icon: option.icon,
+          }))}
+          required={false}
+          error={error?.message?.toString()}
+        />
+      )
+    }
 
     if (field.type === 'percentage') {
       return (
@@ -129,23 +147,30 @@ export default function FormModal<T extends FieldValues>({
         {fields.map(field => {
           const fieldName = field.name as Path<T>;
           const error = errors[fieldName];
+          const isOptionPicker = field.type === 'option-picker';
           return (
             <div className="space-y-2" key={"t_" + field.name.toString()}>
-              <Label
-                htmlFor={fieldName}
-                className="text-[10px] font-black uppercase tracking-[0.2em]"
-              >
-                {field.label}
-              </Label>
-              {renderField(field)}
-              {error && (
-                <span className={cn(
-                  "text-[10px] font-bold text-destructive uppercase",
-                  "tracking-widest flex items-start gap-1"
-                )}>
-                  <AlertCircle className="w-3 h-3" />
-                  <span className="-mt-px">{error.message?.toString()}</span>
-                </span>
+              {isOptionPicker ? (
+                renderField(field)
+              ) : (
+                <>
+                  <Label
+                    htmlFor={fieldName}
+                    className="text-[10px] font-black uppercase tracking-[0.2em]"
+                  >
+                    {field.label}
+                  </Label>
+                  {renderField(field)}
+                  {error && (
+                    <span className={cn(
+                      "text-[10px] font-bold text-destructive uppercase",
+                      "tracking-widest flex items-start gap-1"
+                    )}>
+                      <AlertCircle className="w-3 h-3" />
+                      <span className="-mt-px">{error.message?.toString()}</span>
+                    </span>
+                  )}
+                </>
               )}
             </div>
           )
