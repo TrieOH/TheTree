@@ -23,8 +23,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import { timeAgo } from "@/shared/lib/date-utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { timeAgo } from "@trieoh/shared-utils";
 
 interface PropsI {
   data: ProjectI;

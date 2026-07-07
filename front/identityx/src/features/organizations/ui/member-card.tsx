@@ -1,8 +1,8 @@
 import { cn } from "@/shared/lib/utils";
 import { User2, Shield, Crown, UserMinus } from "lucide-react";
 import type { OrganizationMemberI } from "../model";
-import { timeAgo } from "@/shared/lib/date-utils";
 import { OrganizationRoleAdmin, OrganizationRoleMember, OrganizationRoleOwner } from "@trieoh/identityx-models";
+import { timeAgo } from "@trieoh/shared-utils";
 
 
 interface PropsI {
