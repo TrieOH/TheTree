@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
@@ -34,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWalletsRoute = AdminWalletsRouteImport.update({
+  id: '/wallets',
+  path: '/wallets',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/wallets': typeof AdminWalletsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/wallets': typeof AdminWalletsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/wallets': typeof AdminWalletsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/wallets'
     | '/admin/'
     | '/admin/$organizationID/members'
     | '/admin/$organizationID/'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/wallets'
     | '/admin'
     | '/admin/$organizationID/members'
     | '/admin/$organizationID'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/wallets'
     | '/admin/'
     | '/admin/$organizationID/members'
     | '/admin/$organizationID/'
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/wallets': {
+      id: '/admin/wallets'
+      path: '/wallets'
+      fullPath: '/admin/wallets'
+      preLoaderRoute: typeof AdminWalletsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/$organizationID': {
@@ -261,6 +280,7 @@ const AdminOrganizationIDRouteWithChildren =
 
 interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
+  AdminWalletsRoute: typeof AdminWalletsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminTempNameKeysRoute: typeof AdminTempNameKeysRoute
   AdminTempNameWebhooksRoute: typeof AdminTempNameWebhooksRoute
@@ -270,6 +290,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
+  AdminWalletsRoute: AdminWalletsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminTempNameKeysRoute: AdminTempNameKeysRoute,
   AdminTempNameWebhooksRoute: AdminTempNameWebhooksRoute,

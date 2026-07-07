@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, FolderKanban, LogOut } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FolderKanban, LogOut, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '#/shared/lib/utils'
 import { Button } from '#/shared/ui/shadcn/button'
@@ -19,6 +19,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       to: '/admin',
       icon: FolderKanban,
       label: 'Organizations',
+      exact: true,
+    },
+    {
+      to: '/admin/wallets',
+      icon: WalletCards,
+      label: 'Wallets',
       exact: true,
     },
   ]

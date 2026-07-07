@@ -121,6 +121,24 @@ export default function FormModal<T extends FieldValues>({
       );
     }
 
+    if (field.type === 'number') {
+      return (
+        <Input
+          id={fieldName}
+          type="number"
+          placeholder={field.placeholder}
+          className={cn(
+            "rounded-none border-border focus-visible:ring-0 font-bold",
+            "focus-visible:border-primary transition-colors",
+            error && "border-destructive"
+          )}
+          {...register(fieldName, {
+            valueAsNumber: true,
+          })}
+        />
+      );
+    }
+
     return (
       <Input
         id={fieldName}
