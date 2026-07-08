@@ -121,14 +121,12 @@ export const certificationQueryOptions = (
 };
 
 export const getAllCertificationsByTargetFn = createClientOnlyFn(async (
-  eventId: string,
-  editionId: string,
   targetType: string,
   targetId: string
 ) => {
   try {
     return await tanstackQueryFetcher<CertificationI[]>(
-      `/events/${eventId}/editions/${editionId}/certifications?target_type=${targetType}&target_id=${targetId}`
+      `/certifications?target_type=${targetType}&target_id=${targetId}`
     );
   } catch {
     return [];
@@ -136,38 +134,28 @@ export const getAllCertificationsByTargetFn = createClientOnlyFn(async (
 });
 
 export const certificationsByTargetQueryOptions = (
-  eventId: string,
-  editionId: string,
   targetType: string,
   targetId: string
 ) => {
   return queryOptions({
-    queryKey: ["certifications", "target", eventId, editionId, targetType, targetId],
-    queryFn: () => getAllCertificationsByTargetFn(eventId, editionId, targetType, targetId),
+    queryKey: ["certifications", "target", targetType, targetId],
+    queryFn: () => getAllCertificationsByTargetFn(targetType, targetId),
   });
 };
 
-export const getAllCertificationsByUserFn = createClientOnlyFn(async (
-  eventId: string,
-  editionId: string,
-  userId: string
-) => {
+export const getAllCertificationsByUserFn = createClientOnlyFn(async (userId: string) => {
   try {
     return await tanstackQueryFetcher<CertificationI[]>(
-      `/events/${eventId}/editions/${editionId}/users/${userId}/certifications`
+      `/users/${userId}/certifications`
     );
   } catch {
     return [];
   }
 });
 
-export const certificationsByUserQueryOptions = (
-  eventId: string,
-  editionId: string,
-  userId: string
-) => {
+export const certificationsByUserQueryOptions = (userId: string) => {
   return queryOptions({
-    queryKey: ["certifications", "user", eventId, editionId, userId],
-    queryFn: () => getAllCertificationsByUserFn(eventId, editionId, userId),
+    queryKey: ["certifications", "user", userId],
+    queryFn: () => getAllCertificationsByUserFn(userId),
   });
 };
