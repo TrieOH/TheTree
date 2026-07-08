@@ -1,0 +1,26 @@
+package handlers
+
+import (
+	"net/http"
+	"univents/contracts"
+
+	"github.com/MintzyG/fun"
+	"github.com/MintzyG/fun/bind"
+)
+
+func (h *Handlers) CreateTemplate(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+	editionID, err := req.Path("edition_id").UUID()
+	if fun.Bail(w, err) {
+		return
+	}
+	var payload contracts.CreateCertificationTemplateRequest
+	if bind.BailInto(w, req, &payload) {
+		return
+	}
+	tpl, err := h.commands.CreateTemplate(r.Context(), payload.ToInput(editionID))
+	if fun.Bail(w, err) {
+		return
+	}
+	fun.Respond(w, tpl)
+}

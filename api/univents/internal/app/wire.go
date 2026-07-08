@@ -10,6 +10,7 @@ import (
 	"time"
 	"univents/internal/database/sqlc"
 	"univents/internal/features/activities"
+	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
 	"univents/internal/features/signatures"
@@ -29,6 +30,7 @@ type repos struct {
 	editions   ports.EditionsRepository
 	activities ports.ActivitiesRepository
 	signatures ports2.SignatureRepo
+	certs      ports2.CertificationRepo
 	//checkpoints ports.CheckpointsRepository
 	//tickets     ports.TicketsRepository
 	//products    ports.ProductsRepository
@@ -40,6 +42,7 @@ type queries struct {
 	editions   *editions.QueryService
 	activities *activities.QueryService
 	signatures *signatures.Queries
+	certs      *certifications.Queries
 	//checkpoints *checkpoints.QueryService
 	//tickets     *tickets.QueryService
 	//products    *products.QueryService
@@ -51,6 +54,7 @@ type commands struct {
 	editions   *editions.CommandService
 	activities *activities.CommandService
 	signatures *signatures.Commands
+	certs      *certifications.Commands
 	//checkpoints *checkpoints.CommandService
 	//tickets     *tickets.CommandService
 	//products    *products.CommandService
@@ -77,6 +81,7 @@ type handlers struct {
 	Editions   *editions.Handler
 	Activities *activities.Handler
 	signatures *signatures.Handlers
+	certs      *certifications.Handlers
 	//Checkpoints *checkpoints.Handler
 	//Tickets     *tickets.Handler
 	//Products    *products.Handler
@@ -92,6 +97,7 @@ func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 		editions:   editions.NewRepo(q, loggr, tracer),
 		activities: activities.NewRepo(q, loggr, tracer),
 		signatures: signatures.NewRepos(q, loggr, tracer),
+		certs:      certifications.NewRepos(q, loggr, tracer),
 		//checkpoints: checkpoints.NewRepo(q, loggr, tracer),
 		//tickets:     tickets.NewRepo(q, loggr, tracer),
 		//products:    products.NewRepo(q, loggr, tracer),
@@ -105,6 +111,7 @@ func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.
 		editions:   editions.NewQueryService(r.events, r.editions, loggr, tracer, tx),
 		activities: activities.NewQueryService(r.activities, r.editions, loggr, tracer, tx),
 		signatures: signatures.NewQueries(r.signatures, r.editions, loggr, tracer, tx),
+		certs:      certifications.NewQueries(r.certs, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewQueryService(r.checkpoints, r.editions, loggr, tracer, tx),
 		//tickets:     tickets.NewQueryService(r.tickets, r.editions, loggr, tracer, tx),
 		//products:    products.NewQueryService(r.products, r.purchases, r.editions, loggr, tracer, tx),
@@ -116,8 +123,9 @@ func initCommands(r repos, obj *objectstorage.Client, tx database.TxRunner, logg
 	return commands{
 		events:     events.NewCommandService(r.events, obj, loggr, tracer, tx),
 		editions:   editions.NewCommandService(r.events, r.editions, loggr, tracer, tx),
-		activities: activities.NewCommandService(r.activities, r.editions, loggr, tracer, tx),
+		activities: activities.NewCommandService(r.activities, r.editions, r.certs, loggr, tracer, tx),
 		signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
+		certs:      certifications.NewCommands(r.certs, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewCommandService(r.checkpoints, r.editions, loggr, tracer, tx),
 		//tickets:     tickets.NewCommandService(r.editions, r.tickets, loggr, tracer, tx),
 		//products:    products.NewCommandService(r.editions, r.products, r.purchases, obj, loggr, tracer, tx),
@@ -132,6 +140,7 @@ func initHandlers(q queries, c commands) handlers {
 		Editions:   editions.NewHandler(c.editions, q.editions),
 		Activities: activities.NewHandler(c.activities, q.activities),
 		signatures: signatures.NewHandlers(c.signatures, q.signatures),
+		certs:      certifications.NewHandlers(c.certs, q.certs),
 		//Checkpoints: checkpoints.NewHandler(c.checkpoints, q.checkpoints),
 		//Tickets:     tickets.NewHandler(c.tickets, q.tickets),
 		//Products:    products.NewHandler(c.products, q.products),
