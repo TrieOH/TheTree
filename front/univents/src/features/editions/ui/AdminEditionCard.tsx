@@ -1,5 +1,5 @@
 import { motion } from "motion/react"
-import { MapPin } from "lucide-react"
+import { MapPin, Sparkles } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import type { EditionI } from "../model"
 import { StatusBadge } from "@/shared/ui"
@@ -105,13 +105,24 @@ export function AdminEditionCard({
       </div>
 
       <div className="flex gap-2 mt-4 pt-4 border-t border-border/50 flex-wrap">
+        <Link
+          to="/admin/events/$eventId/editions/$editionId/certifications"
+          params={{ eventId, editionId: edition.id }}
+          className={cn(
+            "text-xs text-muted-foreground bg-muted hover:bg-muted/80 inline-flex items-center gap-1.5",
+            "px-3 py-1.5 rounded-md transition-colors font-medium"
+          )}
+        >
+          <Sparkles className="size-3" />
+          Certificações
+        </Link>
         {links.map(({ label, to }) => (
           <Link
             key={label}
             to={to}
             params={{ eventId, editionId: edition.id }}
             className={cn(
-              "text-xs text-muted-foreground bg-muted hover:bg-muted/80",
+              "text-xs text-muted-foreground bg-muted hover:bg-muted/80 inline-flex items-center gap-1.5",
               "px-3 py-1.5 rounded-md transition-colors font-medium"
             )}
           >

@@ -14,6 +14,16 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
 
+const DESIGN_WIDTH = 1000
+const DESIGN_HEIGHT = 707
+
+function getViewportTransform(canvasWidth: number, canvasHeight: number): [number, number, number, number, number, number] {
+  const scale = Math.min(canvasWidth / DESIGN_WIDTH, canvasHeight / DESIGN_HEIGHT)
+  const tx = (canvasWidth - DESIGN_WIDTH * scale) / 2
+  const ty = (canvasHeight - DESIGN_HEIGHT * scale) / 2
+  return [scale, 0, 0, scale, tx, ty]
+}
+
 interface CanvasElementObjects {
   field: FabricRect | null
   label: Textbox
@@ -53,7 +63,10 @@ export function useCertificateCanvas({
   const elementIdsRef = useRef<string[]>([])
   const elementsRef = useRef(elements)
   const editingTextElementIdRef = useRef<string | null>(null)
+  const backgroundUrlRef = useRef(backgroundUrl)
+  const backgroundLoadTokenRef = useRef(0)
   elementsRef.current = elements
+  backgroundUrlRef.current = backgroundUrl
 
   const syncTextElementFromTextbox = useCallback((elementId: string, tb: Textbox) => {
     const currentElement = elementsRef.current.find((el) => el.id === elementId)
@@ -130,12 +143,55 @@ export function useCertificateCanvas({
     }
   }, [])
 
+  const syncBackgroundImage = useCallback(async (targetCanvas?: Canvas | null) => {
+    const canvas = targetCanvas ?? canvasRef.current
+    if (!canvas || !isReadyRef.current) return
+
+    const token = ++backgroundLoadTokenRef.current
+    const { FabricImage } = await import('fabric')
+    if (token !== backgroundLoadTokenRef.current) return
+
+    const url = backgroundUrlRef.current
+    if (!url) {
+      canvas.backgroundImage = undefined
+      canvas.renderAll()
+      return
+    }
+
+    try {
+      const img = await FabricImage.fromURL(url)
+      if (token !== backgroundLoadTokenRef.current || !canvasRef.current) return
+
+      const currentCanvas = canvasRef.current
+      const scale = Math.max(
+        DESIGN_WIDTH / (img.width || 1),
+        DESIGN_HEIGHT / (img.height || 1)
+      )
+
+      img.set({
+        left: DESIGN_WIDTH / 2,
+        top: DESIGN_HEIGHT / 2,
+        originX: 'center',
+        originY: 'center',
+        selectable: false,
+        evented: false,
+        scaleX: scale,
+        scaleY: scale,
+      })
+
+      currentCanvas.backgroundImage = img
+      currentCanvas.renderAll()
+    } catch {
+      // ignore background load errors
+    }
+  }, [])
+
   const applyStateToObjects = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas || !isReadyRef.current) return
 
-    const cw = canvas.getWidth()
-    const ch = canvas.getHeight()
+    const cw = DESIGN_WIDTH
+    const ch = DESIGN_HEIGHT
     let needsRender = false
 
     for (const element of elements) {
@@ -188,7 +244,7 @@ export function useCertificateCanvas({
       }
     }
 
-    if (needsRender) canvas.requestRenderAll()
+    if (needsRender) canvas.renderAll()
   }, [elements, updateLabelPosition])
 
   const createElementOnCanvas = useCallback((
@@ -227,6 +283,7 @@ export function useCertificateCanvas({
         lockScalingY: true,
         styles: parsed.styles,
       })
+      ;(tb as any).data = { elementId: element.id, role: 'text' }
       tb.initDimensions()
 
       tb.on('mousedblclick', () => {
@@ -252,8 +309,8 @@ export function useCertificateCanvas({
       tb.on('modified', () => {
         // Clamp text center so textbox stays within canvas
         const c = tb.getCenterPoint()
-        const cw = canvas.getWidth()
-        const ch = canvas.getHeight()
+        const cw = DESIGN_WIDTH
+        const ch = DESIGN_HEIGHT
         const hw = tb.getScaledWidth() / 2
         const hh = tb.getScaledHeight() / 2
         const xClamped = clamp(c.x, hw, cw - hw)
@@ -295,6 +352,7 @@ export function useCertificateCanvas({
       cornerColor: '#0f172a', cornerStrokeColor: '#ffffff',
       cornerSize: 14, lockRotation: true, lockScalingFlip: true,
     })
+    ;(field as any).data = { elementId: element.id, role: 'field' }
 
     const label = new Textbox(isSignature ? 'Assinatura' : 'Imagem', {
       left: x, top: y,
@@ -306,14 +364,15 @@ export function useCertificateCanvas({
       fill: '#334155', selectable: false, evented: false,
       splitByGrapheme: false,
     })
+    ;(label as any).data = { elementId: element.id, role: 'label' }
 
     field.on('scaling', () => { updateLabelPosition(element.id, element) })
-    field.on('modified', () => {
-      const c = field.getCenterPoint()
-      const cw = canvas.getWidth()
-      const ch = canvas.getHeight()
-      const fw = field.getScaledWidth()
-      const fh = field.getScaledHeight()
+      field.on('modified', () => {
+        const c = field.getCenterPoint()
+        const cw = DESIGN_WIDTH
+        const ch = DESIGN_HEIGHT
+        const fw = field.getScaledWidth()
+        const fh = field.getScaledHeight()
       const xClamped = clamp(c.x, -fw * 0.3, cw + fw * 0.3)
       const yClamped = clamp(c.y, -fh * 0.3, ch + fh * 0.3)
       if (xClamped !== c.x || yClamped !== c.y) {
@@ -354,6 +413,7 @@ export function useCertificateCanvas({
       const img = await FabricImage.fromURL(src)
       objs.preview = img
       img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
+      ;(img as any).data = { elementId, role: 'preview' }
       canvas.add(img)
       const el = elementsRef.current.find(e => e.id === elementId)
       if (el) updateLabelPosition(elementId, el)
@@ -380,8 +440,8 @@ export function useCertificateCanvas({
       }
     }
 
-    const cw = canvas.getWidth()
-    const ch = canvas.getHeight()
+    const cw = DESIGN_WIDTH
+    const ch = DESIGN_HEIGHT
 
     for (const element of elements) {
       if (map.has(element.id)) continue
@@ -396,9 +456,6 @@ export function useCertificateCanvas({
     elementIdsRef.current = elements.map(e => e.id)
   }, [elements, createElementOnCanvas, applyStateToObjects])
 
-  const applyRef = useRef(applyStateToObjects)
-  applyRef.current = applyStateToObjects
-
   useEffect(() => {
     const canvasEl = canvasElRef.current
     const hostEl = canvasHostRef.current
@@ -408,6 +465,7 @@ export function useCertificateCanvas({
     const hostElV: HTMLDivElement = hostEl
     let cancelled = false
     let instance: Canvas | null = null
+    let cleanupScroll = () => {}
 
     async function init() {
       const fabricModule = await import('fabric')
@@ -418,6 +476,7 @@ export function useCertificateCanvas({
         selection: false, preserveObjectStacking: true, renderOnAddRemove: true,
         allowTouchScrolling: true, uniformScaling: false, uniScaleKey: null,
         centeredScaling: false, stopContextMenu: false, fireRightClick: true,
+        skipOffscreen: false,
         backgroundColor: '#ffffff',
       })
 
@@ -427,43 +486,62 @@ export function useCertificateCanvas({
 
       const size = hostElV.getBoundingClientRect()
       instance.setDimensions({ width: Math.max(320, Math.round(size.width)), height: Math.max(220, Math.round(size.height)) })
-      instance.requestRenderAll()
+      instance.setViewportTransform(getViewportTransform(instance.getWidth(), instance.getHeight()))
+      instance.renderAll()
 
       const observer = new ResizeObserver(() => {
         if (!canvasRef.current || !canvasHostRef.current) return
         const ns = canvasHostRef.current.getBoundingClientRect()
-        canvasRef.current.setDimensions({ width: Math.max(320, Math.round(ns.width)), height: Math.max(220, Math.round(ns.height)) })
-        applyRef.current()
+        const width = Math.max(320, Math.round(ns.width))
+        const height = Math.max(220, Math.round(ns.height))
+        if (width < 10 || height < 10) return
+        canvasRef.current.setDimensions({ width, height })
+        canvasRef.current.setViewportTransform(getViewportTransform(width, height))
+        canvasRef.current.calcOffset()
+        void syncBackgroundImage(canvasRef.current)
+        canvasRef.current.renderAll()
       })
       observer.observe(hostElV)
+
+      let scrollFrame: number | null = null
+      const handleScroll = () => {
+        if (!canvasRef.current) return
+        if (scrollFrame !== null) return
+        scrollFrame = window.requestAnimationFrame(() => {
+          scrollFrame = null
+          if (!canvasRef.current) return
+          canvasRef.current.calcOffset()
+          canvasRef.current.renderAll()
+        })
+      }
+
+      document.addEventListener('scroll', handleScroll, true)
+      cleanupScroll = () => {
+      document.removeEventListener('scroll', handleScroll, true)
+        if (scrollFrame !== null) {
+          window.cancelAnimationFrame(scrollFrame)
+        }
+      }
       isReadyRef.current = true
       syncFull()
+      void syncBackgroundImage(instance)
     }
 
     void init()
-    return () => { cancelled = true; isReadyRef.current = false; instance?.dispose(); canvasRef.current = null; objectsRef.current.clear() }
+    return () => {
+      cancelled = true
+      isReadyRef.current = false
+      cleanupScroll()
+      instance?.dispose()
+      canvasRef.current = null
+      objectsRef.current.clear()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    const c = canvasRef.current
-    if (!c || !isReadyRef.current) return
-    let cancelled = false
-    async function updateBg() {
-      const { FabricImage } = await import('fabric')
-      if (cancelled || !canvasRef.current) return
-      const cur = canvasRef.current
-      if (!backgroundUrl) { cur.backgroundImage = undefined; cur.requestRenderAll(); return }
-      const img = await FabricImage.fromURL(backgroundUrl)
-      if (cancelled || !canvasRef.current) return
-      const s = Math.max(cur.getWidth() / (img.width || 1), cur.getHeight() / (img.height || 1))
-      img.set({ left: cur.getWidth() / 2, top: cur.getHeight() / 2, originX: 'center', originY: 'center', selectable: false, evented: false, scaleX: s, scaleY: s })
-      cur.backgroundImage = img
-      cur.requestRenderAll()
-    }
-    void updateBg()
-    return () => { cancelled = true }
-  }, [backgroundUrl])
+    void syncBackgroundImage()
+  }, [backgroundUrl, syncBackgroundImage])
 
   useEffect(() => {
     const c = canvasRef.current
@@ -485,11 +563,12 @@ export function useCertificateCanvas({
           const img = await FabricImage.fromURL(imgSrc)
           if (cancelled || !canvasRef.current) continue
           img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
+          ;(img as any).data = { elementId: id, role: 'preview' }
           objs.preview = img; cur.add(img)
           updateLabelPosition(id, el)
         } catch { /* skip */ }
       }
-      cur.requestRenderAll()
+      cur.renderAll()
     }
     void updatePreviews()
     return () => { cancelled = true }
