@@ -44,6 +44,7 @@ interface UseCertificateCanvasOptions {
   signatureUrl: string | null
   onElementsChange: (elements: CanvasElement[]) => void
   onElementSelect: (id: string | null) => void
+  previewMode?: boolean
 }
 
 export function useCertificateCanvas({
@@ -55,6 +56,7 @@ export function useCertificateCanvas({
   signatureUrl,
   onElementsChange,
   onElementSelect,
+  previewMode = false,
 }: UseCertificateCanvasOptions) {
   const canvasRef = useRef<Canvas | null>(null)
   const isReadyRef = useRef(false)
@@ -120,6 +122,8 @@ export function useCertificateCanvas({
       return
     }
 
+    if (previewMode) return
+
     const field = objs.field
     if (!field) return
     const center = field.getCenterPoint()
@@ -141,7 +145,7 @@ export function useCertificateCanvas({
       content.set({ left: center.x, top: center.y, scaleX: s, scaleY: s })
       content.setCoords()
     }
-  }, [])
+  }, [previewMode])
 
   const syncBackgroundImage = useCallback(async (targetCanvas?: Canvas | null) => {
     const canvas = targetCanvas ?? canvasRef.current
@@ -258,6 +262,67 @@ export function useCertificateCanvas({
   ) => {
     const { Rect, Textbox } = fabric
 
+    if (previewMode) {
+      if (element.type === 'text') {
+        const textEl = element as TextCanvasElement
+        const parsed = parseRichTextMarkup(textEl.content, {
+          fontFamily: textEl.fontFamily,
+          fontSize: textEl.fontSize,
+          color: textEl.color,
+        })
+        const tb = new Textbox(parsed.plainText || 'Texto', {
+          left: x,
+          top: y,
+          originX: 'center',
+          originY: 'center',
+          width: w,
+          fontFamily: textEl.fontFamily,
+          fontSize: textEl.fontSize,
+          fontWeight: textEl.fontWeight,
+          fill: textEl.color,
+          text: parsed.plainText || 'Texto',
+          textAlign: 'center',
+          splitByGrapheme: false,
+          selectable: false,
+          evented: false,
+          editable: false,
+          styles: parsed.styles,
+        })
+        tb.initDimensions()
+        canvas.add(tb)
+        return
+      }
+
+      const imgSrc =
+        element.type === 'signature'
+          ? signatureUrl
+          : (element as ImageCanvasElement).src
+
+      if (!imgSrc) {
+        return
+      }
+
+      void import('fabric').then(async ({ FabricImage }) => {
+        const img = await FabricImage.fromURL(imgSrc)
+        img.set({
+          left: x,
+          top: y,
+          originX: 'center',
+          originY: 'center',
+          selectable: false,
+          evented: false,
+          scaleX: 1,
+          scaleY: 1,
+        })
+        canvas.add(img)
+        const scale = Math.min((w || 1) / (img.width || 1), (h || 1) / (img.height || 1))
+        img.set({ scaleX: scale, scaleY: scale })
+        img.setCoords()
+        canvas.requestRenderAll()
+      })
+      return
+    }
+
     if (element.type === 'text') {
       const textEl = element as TextCanvasElement
       const parsed = parseRichTextMarkup(textEl.content, {
@@ -283,7 +348,7 @@ export function useCertificateCanvas({
         lockScalingY: true,
         styles: parsed.styles,
       })
-      ;(tb as any).data = { elementId: element.id, role: 'text' }
+        ; (tb as any).data = { elementId: element.id, role: 'text' }
       tb.initDimensions()
 
       tb.on('mousedblclick', () => {
@@ -352,7 +417,7 @@ export function useCertificateCanvas({
       cornerColor: '#0f172a', cornerStrokeColor: '#ffffff',
       cornerSize: 14, lockRotation: true, lockScalingFlip: true,
     })
-    ;(field as any).data = { elementId: element.id, role: 'field' }
+      ; (field as any).data = { elementId: element.id, role: 'field' }
 
     const label = new Textbox(isSignature ? 'Assinatura' : 'Imagem', {
       left: x, top: y,
@@ -364,15 +429,15 @@ export function useCertificateCanvas({
       fill: '#334155', selectable: false, evented: false,
       splitByGrapheme: false,
     })
-    ;(label as any).data = { elementId: element.id, role: 'label' }
+      ; (label as any).data = { elementId: element.id, role: 'label' }
 
     field.on('scaling', () => { updateLabelPosition(element.id, element) })
-      field.on('modified', () => {
-        const c = field.getCenterPoint()
-        const cw = DESIGN_WIDTH
-        const ch = DESIGN_HEIGHT
-        const fw = field.getScaledWidth()
-        const fh = field.getScaledHeight()
+    field.on('modified', () => {
+      const c = field.getCenterPoint()
+      const cw = DESIGN_WIDTH
+      const ch = DESIGN_HEIGHT
+      const fw = field.getScaledWidth()
+      const fh = field.getScaledHeight()
       const xClamped = clamp(c.x, -fw * 0.3, cw + fw * 0.3)
       const yClamped = clamp(c.y, -fh * 0.3, ch + fh * 0.3)
       if (xClamped !== c.x || yClamped !== c.y) {
@@ -401,7 +466,7 @@ export function useCertificateCanvas({
       const imgEl = element as ImageCanvasElement
       if (imgEl.src) void loadImageForElement(element.id, imgEl.src)
     }
-  }, [onElementsChange, onElementSelect, updateLabelPosition])
+  }, [onElementsChange, onElementSelect, previewMode, signatureUrl, updateLabelPosition])
 
   const loadImageForElement = useCallback(async (elementId: string, src: string) => {
     const objs = objectsRef.current.get(elementId)
@@ -413,7 +478,7 @@ export function useCertificateCanvas({
       const img = await FabricImage.fromURL(src)
       objs.preview = img
       img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
-      ;(img as any).data = { elementId, role: 'preview' }
+        ; (img as any).data = { elementId, role: 'preview' }
       canvas.add(img)
       const el = elementsRef.current.find(e => e.id === elementId)
       if (el) updateLabelPosition(elementId, el)
@@ -465,7 +530,7 @@ export function useCertificateCanvas({
     const hostElV: HTMLDivElement = hostEl
     let cancelled = false
     let instance: Canvas | null = null
-    let cleanupScroll = () => {}
+    let cleanupScroll = () => { }
 
     async function init() {
       const fabricModule = await import('fabric')
@@ -517,7 +582,7 @@ export function useCertificateCanvas({
 
       document.addEventListener('scroll', handleScroll, true)
       cleanupScroll = () => {
-      document.removeEventListener('scroll', handleScroll, true)
+        document.removeEventListener('scroll', handleScroll, true)
         if (scrollFrame !== null) {
           window.cancelAnimationFrame(scrollFrame)
         }
@@ -563,7 +628,7 @@ export function useCertificateCanvas({
           const img = await FabricImage.fromURL(imgSrc)
           if (cancelled || !canvasRef.current) continue
           img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
-          ;(img as any).data = { elementId: id, role: 'preview' }
+            ; (img as any).data = { elementId: id, role: 'preview' }
           objs.preview = img; cur.add(img)
           updateLabelPosition(id, el)
         } catch { /* skip */ }

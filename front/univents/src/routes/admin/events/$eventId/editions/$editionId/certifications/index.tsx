@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/shadcn/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
 import { Label } from '@/shared/ui/shadcn/label'
 import { cn } from '@/shared/lib/utils'
+import { CertificationTemplatePreview } from '@/features/certifications/ui/CertificationTemplatePreview'
 
 export const Route = createFileRoute('/admin/events/$eventId/editions/$editionId/certifications/')({
   beforeLoad: requireAuth,
@@ -111,10 +112,17 @@ function RouteComponent() {
                   templates.map((template) => {
                     const isSelected = template.id === selectedTemplate?.id
                     return (
-                      <button
+                      <div
                         key={template.id}
-                        type="button"
                         onClick={() => setSelectedTemplateId(template.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setSelectedTemplateId(template.id)
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
                         className={cn(
                           'flex w-full flex-col gap-3 rounded-2xl border p-4 text-left transition-colors md:flex-row md:items-center md:justify-between',
                           isSelected ? 'border-primary/40 bg-primary/5' : 'hover:bg-muted/40'
@@ -130,8 +138,10 @@ function RouteComponent() {
                             {template.url ? 'Com fundo configurado' : 'Sem fundo'}
                           </p>
                         </div>
-                        <div className="flex flex-wrap gap-2" />
-                      </button>
+                        <div className="flex flex-wrap gap-2">
+                          <CertificationTemplatePreview template={template} triggerLabel="Ver certificado" />
+                        </div>
+                      </div>
                     )
                   })
                 )}
