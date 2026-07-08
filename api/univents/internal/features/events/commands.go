@@ -1,15 +1,14 @@
 package events
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/url"
+	idx "sdk/identityx"
 	"strings"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
@@ -22,6 +21,7 @@ import (
 
 type CommandService struct {
 	events ports.EventsRepository
+	minio  *minio.Client
 	logger *zap.Logger
 	tracer trace.Tracer
 	tx     database.TxRunner
@@ -29,12 +29,14 @@ type CommandService struct {
 
 func NewCommandService(
 	events ports.EventsRepository,
+	minio *minio.Client,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		events: events,
+		minio:  minio,
 		logger: logger,
 		tracer: tracer,
 		tx:     tx,
@@ -48,32 +50,19 @@ func (uc *CommandService) CreateEvent(ctx context.Context, in contracts.CreateEv
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var validEvent *contracts.Event
-	validEvent, err = contracts.NewEvent(sub.ID, &sub.ID, in)
+	validEvent, err = contracts.NewEvent(ident.Sub.ID, &ident.Sub.ID, in)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_events"),
-		authz.Resource("platform", "global"),
-	); err != nil {
-		return nil, err
-	}
-
-	if err = authz.GrantRole(ctx, uc.az, "platform:global#event_creator@user:"+sub.ID.String()); err != nil {
-		return nil, err
-	} // FIXME Outbox this too
-
 	var created *contracts.Event
-	created, err = uc.events.CreateEvent(ctx, validEvent) // FIXME if this fails the scope must be undone (SAGA PATTERN)
+	created, err = uc.events.CreateEvent(ctx, validEvent)
 	if err != nil {
 		return nil, err
 	}
@@ -85,21 +74,8 @@ func (uc *CommandService) PublishEvent(ctx context.Context, eventID uuid.UUID) e
 	ctx, span := uc.tracer.Start(ctx, "EventService.PublishEvent")
 	defer span.End()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
 	event, err := uc.events.GetByID(ctx, eventID)
 	if err != nil {
-		return err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("publish"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return err
 	}
 
@@ -115,110 +91,13 @@ func (uc *CommandService) PublishEvent(ctx context.Context, eventID uuid.UUID) e
 	return nil
 }
 
-func (uc *CommandService) PatchEvent(ctx context.Context, in contracts.PatchEventSpec) (out *contracts.Event, warns []string, err error) {
-	ctx, span := uc.tracer.Start(ctx, "EventService.PatchEvent")
-	defer span.End()
-	defer func() {
-		span.SetAttributes(attribute.Bool("patch.success", err == nil))
-	}()
-
-	span.SetAttributes(attribute.String("event.id", in.ID.String()))
-
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var event *contracts.Event
-	event, err = uc.events.GetByID(ctx, in.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
-		return nil, nil, err
-	}
-
-	if event.Name != in.Name {
-		event.Name = in.Name
-	}
-
-	if in.Acronym != nil && (event.Acronym == nil || *in.Acronym != *event.Acronym) {
-		event.Acronym = in.Acronym
-	} else if in.Acronym == nil && event.Acronym != nil {
-		event.Acronym = in.Acronym
-	}
-
-	if event.Slug != in.Slug {
-		event.Slug = in.Slug
-	}
-
-	if in.Tagline != nil && (event.Tagline == nil || *in.Tagline != *event.Tagline) {
-		event.Tagline = in.Tagline
-	} else if in.Tagline == nil && event.Tagline != nil {
-		event.Tagline = in.Tagline
-	}
-
-	if in.Description != nil && (event.Description == nil || *in.Description != *event.Description) {
-		event.Description = in.Description
-	} else if in.Description == nil && event.Description != nil {
-		event.Description = in.Description
-	}
-
-	if event.IsSeries != in.IsSeries {
-		if !in.IsSeries && event.EditionsCount > 1 {
-			warns = append(warns, "Cannot convert to non-series when multiple editions exist")
-		} else {
-			event.IsSeries = in.IsSeries
-		}
-	}
-
-	if in.ContactEmail != nil && (event.ContactEmail == nil || *in.ContactEmail != *event.ContactEmail) {
-		event.ContactEmail = in.ContactEmail
-	} else if in.ContactEmail == nil && event.ContactEmail != nil {
-		event.ContactEmail = in.ContactEmail
-	}
-
-	if in.SocialLinks != nil && (event.SocialLinks == nil || !bytes.Equal(*in.SocialLinks, *event.SocialLinks)) {
-		event.SocialLinks = in.SocialLinks
-	} else if in.SocialLinks == nil && event.SocialLinks != nil {
-		event.SocialLinks = in.SocialLinks
-	}
-
-	var patched *contracts.Event
-	patched, err = uc.events.PatchEvent(ctx, event)
-	if err != nil {
-		return nil, warns, err
-	}
-
-	return patched, warns, nil
-}
-
 func (uc *CommandService) SetLogo(ctx context.Context, id uuid.UUID, url string) (event *contracts.Event, err error) {
 	ctx, span := uc.tracer.Start(ctx, "EventService.SetLogo")
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("set_logo.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return nil, err
 	}
 
@@ -235,11 +114,6 @@ func (uc *CommandService) UnsetLogo(ctx context.Context, id uuid.UUID) (event *c
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("unset_logo.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -247,14 +121,6 @@ func (uc *CommandService) UnsetLogo(ctx context.Context, id uuid.UUID) (event *c
 
 	if event.LogoUrl == nil {
 		return nil, errx.Invalid("event").SetMessage("already has no logo")
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
-		return nil, err
 	}
 
 	bucket, key, err := parseMinioURL(*event.LogoUrl)
@@ -279,21 +145,8 @@ func (uc *CommandService) SetBanner(ctx context.Context, id uuid.UUID, url strin
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("set_banner.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return nil, err
 	}
 
@@ -310,11 +163,6 @@ func (uc *CommandService) UnsetBanner(ctx context.Context, id uuid.UUID) (event 
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("unset_banner.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -322,14 +170,6 @@ func (uc *CommandService) UnsetBanner(ctx context.Context, id uuid.UUID) (event 
 
 	if event.BannerUrl == nil {
 		return nil, errx.Invalid("event").SetMessage("already has no banner")
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
-		return nil, err
 	}
 
 	bucket, key, err := parseMinioURL(*event.BannerUrl)
@@ -354,21 +194,8 @@ func (uc *CommandService) AddGalleryImage(ctx context.Context, id uuid.UUID, url
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("add_gallery.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return nil, err
 	}
 
@@ -385,21 +212,8 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	defer span.End()
 	defer func() { span.SetAttributes(attribute.Bool("remove_gallery.success", err == nil)) }()
 
-	sub, err := authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err = uc.events.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("edit"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return nil, err
 	}
 

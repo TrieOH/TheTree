@@ -2,9 +2,9 @@ package tickets
 
 import (
 	"context"
+	sqlc2 "univents/internal/database/sqlc"
 
 	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
@@ -16,14 +16,14 @@ import (
 )
 
 type ticketsRepo struct {
-	q      *sqlc.Queries
+	q      *sqlc2.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.TicketsRepository = (*ticketsRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.TicketsRepository {
+func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.TicketsRepository {
 	return &ticketsRepo{
 		q:      q,
 		log:    log,
@@ -31,14 +31,14 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Ticket
 	}
 }
 
-func (repo *ticketsRepo) queries(ctx context.Context) *sqlc.Queries {
+func (repo *ticketsRepo) queries(ctx context.Context) *sqlc2.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapTicketFromDB(src *sqlc.Ticket) *contracts.Ticket {
+func mapTicketFromDB(src *sqlc2.Ticket) *contracts.Ticket {
 	var dst contracts.Ticket
 	dst.ID = src.ID
 	dst.ScopeID = src.ScopeID
@@ -52,7 +52,7 @@ func mapTicketFromDB(src *sqlc.Ticket) *contracts.Ticket {
 	return &dst
 }
 
-func mapTicketPermissionFromDB(src *sqlc.TicketPermission) *contracts.TicketPermission {
+func mapTicketPermissionFromDB(src *sqlc2.TicketPermission) *contracts.TicketPermission {
 	return &contracts.TicketPermission{
 		ID:             src.ID,
 		TicketID:       src.TicketID,
@@ -68,7 +68,7 @@ func (repo *ticketsRepo) Create(ctx context.Context, toCreate contracts.Ticket) 
 	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.Create")
 	defer span.End()
 
-	sqlcTicket, err := repo.queries(ctx).CreateTicket(ctx, sqlc.CreateTicketParams{
+	sqlcTicket, err := repo.queries(ctx).CreateTicket(ctx, sqlc2.CreateTicketParams{
 		ID:          toCreate.ID,
 		EditionID:   toCreate.EditionID,
 		ScopeID:     toCreate.ScopeID,
@@ -99,10 +99,10 @@ func (repo *ticketsRepo) AddPermission(ctx context.Context, toCreate contracts.T
 	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.AddPermission")
 	defer span.End()
 
-	sqlcTicketPermission, err := repo.queries(ctx).AddTicketPermission(ctx, sqlc.AddTicketPermissionParams{
+	sqlcTicketPermission, err := repo.queries(ctx).AddTicketPermission(ctx, sqlc2.AddTicketPermissionParams{
 		ID:             toCreate.ID,
 		TicketID:       toCreate.TicketID,
-		PermissionType: sqlc.PermissionType(toCreate.PermissionType),
+		PermissionType: sqlc2.PermissionType(toCreate.PermissionType),
 		ActivityID:     toCreate.ActivityID,
 		ProductID:      toCreate.ProductID,
 		CheckpointID:   toCreate.CheckpointID,
@@ -118,7 +118,7 @@ func (repo *ticketsRepo) RemovePermission(ctx context.Context, id, ticketID uuid
 	ctx, span := repo.tracer.Start(ctx, "TicketsRepo.RemovePermission")
 	defer span.End()
 
-	err := repo.queries(ctx).RemoveTicketPermission(ctx, sqlc.RemoveTicketPermissionParams{
+	err := repo.queries(ctx).RemoveTicketPermission(ctx, sqlc2.RemoveTicketPermissionParams{
 		ID:       id,
 		TicketID: ticketID,
 	})

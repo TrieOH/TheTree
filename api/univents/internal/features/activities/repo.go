@@ -2,10 +2,10 @@ package activities
 
 import (
 	"context"
+	"lib/database"
 
-	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
+	"univents/internal/database/sqlc"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
@@ -41,7 +41,6 @@ func (repo *activitiesRepo) queries(ctx context.Context) *sqlc.Queries {
 func mapActivityFromDB(src *sqlc.Activity) *contracts.Activity {
 	return &contracts.Activity{
 		ID:                src.ID,
-		ScopeID:           src.ScopeID,
 		EditionID:         src.EditionID,
 		Title:             src.Title,
 		Description:       src.Description,
@@ -81,7 +80,6 @@ func (repo *activitiesRepo) Create(ctx context.Context, toCreate *contracts.Acti
 		RemainingCapacity: toCreate.RemainingCapacity,
 		Difficulty:        toCreate.Difficulty,
 		CreatedBy:         toCreate.CreatedBy,
-		ScopeID:           toCreate.ScopeID,
 	})
 	if err != nil {
 		return nil, errx.FromDB(err, "activity")

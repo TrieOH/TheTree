@@ -2,10 +2,10 @@ package events
 
 import (
 	"context"
+	"univents/internal/database/sqlc"
 
-	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
-	"univents/internal/shared/contracts"
+	"lib/database"
+	"univents/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
