@@ -2,11 +2,11 @@ package editions
 
 import (
 	"context"
+	"univents/internal/database/sqlc"
 
-	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
-	"univents/internal/platform/telemetry"
-	"univents/internal/shared/contracts"
+	"lib/database"
+	"lib/telemetry"
+	"univents/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 

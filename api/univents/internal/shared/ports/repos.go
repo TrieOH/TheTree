@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 
 	"github.com/google/uuid"
 )

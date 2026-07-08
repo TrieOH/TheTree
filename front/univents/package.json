@@ -34,7 +34,7 @@
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/react-store": "^0.9.3",
     "@tanstack/store": "^0.9.1",
-    "@trieoh/identityx-sdk-ts": "^0.12.0",
+    "@trieoh/identityx-sdk-ts": "^0.12.10",
     "aws4fetch": "^1.0.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -129,10 +129,6 @@ func (a *Activity) validate(edition *Edition) error {
 	)
 }
 
-func (e *Activity) AddScope(scopeID uuid.UUID) {
-	e.ScopeID = scopeID
-}
-
 const AsynqActivityStart = "activity:start"
 const AsynqActivityEnd = "activity:end"
 

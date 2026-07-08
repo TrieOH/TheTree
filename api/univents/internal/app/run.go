@@ -5,7 +5,7 @@ import (
 	"lib/telemetry"
 	"log"
 	"net/http"
-	"univents/internal/platform/database/sqlc"
+	"univents/internal/database/sqlc"
 
 	"go.opentelemetry.io/otel"
 )
@@ -20,7 +20,7 @@ func (app *Univents) run() {
 
 	repos := initRepos(q, loggr, tracer)
 	queries := initQueries(repos, tx, loggr, tracer)
-	commands := initCommands(repos, tx, loggr, tracer)
+	commands := initCommands(repos, app.objStorage, tx, loggr, tracer)
 	middlewares := initMiddlewares(loggr)
 	handlers := initHandlers(queries, commands)
 

@@ -2,23 +2,20 @@ package app
 
 import (
 	"context"
+	"lib/database"
+	"lib/errx"
+	"lib/objectstorage"
+	"lib/telemetry"
 	"lib/validator"
-	"log"
 	"net/http"
 	"time"
 
-	"lib/errx"
-	"lib/telemetry"
-
 	idx "sdk/identityx"
-	"sdk/payssage"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
 	mws "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +56,45 @@ func SetupFUN(module string) {
 }
 
 func SetupConstraintMessages() {
-	//database.SetConstraintErrorRegistry(database.ConstraintRegistry{})
+	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
+		// events
+		"chk_series_requires_single_edition": "a non-series event can only have a single edition",
+
+		// editions
+		"editions_check":  "registration close date must be after the registration open date",
+		"editions_check1": "edition end date must be after the start date",
+
+		// tickets
+		"tickets_name_edition_id_key": "a ticket with this name already exists for this edition",
+
+		// activities
+		"activities_check":  "activity end date must be after the start date",
+		"activities_check1": "capacity must be greater than zero when capacity is enabled",
+		"activities_check2": "capacity cannot be lower than the remaining capacity",
+		"activity_interest_list_activity_id_user_id_key": "user is already on the interest list for this activity",
+
+		// products
+		"chk_product_status": "invalid product status",
+		"products_check":     "a ticket-type product must reference a ticket",
+		"products_check1":    "inventory quantity must be greater than zero when inventory is enabled",
+		"products_check2":    "inventory quantity cannot be lower than the remaining inventory",
+		"product_bundle_components_component_type_check":                  "component type must be either 'ticket' or 'product'",
+		"product_bundle_components_bundle_product_id_component_type__key": "this component is already part of the bundle",
+		"product_reservations_session_id_product_id_key":                  "a reservation for this product already exists for this session",
+
+		// purchases
+		"uq_purchases_session_id": "a purchase already exists for this session",
+
+		// ticket permissions
+		"chk_type_matches_target": "the permission target does not match the selected permission type",
+
+		// tokens
+		"user_token_balances_user_id_edition_id_key": "a token balance already exists for this user in this edition",
+
+		// edition registrations / interest
+		"edition_interest_list_edition_id_user_id_key": "user is already on the interest list for this edition",
+		"edition_registrations_edition_id_user_id_key": "user is already registered for this edition",
+	})
 }
 
 func SetupIdentityX(cfg Config) *idx.Client {
@@ -84,22 +119,24 @@ func SetupIdentityX(cfg Config) *idx.Client {
 	return client
 }
 
-func SetupPayssage(cfg Config) *payssage.Client {
-	paymentsURL := cfg.PayssageURL
-	paymentsAPIKey := cfg.PayssageAPIKey
-	client := payssage.New(paymentsURL, paymentsAPIKey)
-	return client
-}
+//func SetupPayssage(cfg Config) *payssage.Client {
+//	paymentsURL := cfg.PayssageURL
+//	paymentsAPIKey := cfg.PayssageAPIKey
+//	client := payssage.New(paymentsURL, paymentsAPIKey)
+//	return client
+//}
 
-func SetupObjectStorage(cfg Config) *minio.Client {
-	client, err := minio.New(cfg.ObjStorageURL, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.ObjStorageAccessKey, cfg.ObjStorageSecretKey, ""),
-		Secure: cfg.ObjStorageUseSSL,
+func SetupObjectStorage(cfg Config) *objectstorage.Client {
+	client, err := objectstorage.New(context.Background(), objectstorage.Config{
+		Endpoint:  cfg.ObjStorageEndpoint,
+		AccessKey: cfg.ObjStorageAccessKey,
+		SecretKey: cfg.ObjStorageSecretKey,
+		UseSSL:    cfg.ObjStorageUseSSL,
+		Region:    cfg.ObjStorageRegion,
 	})
 	if err != nil {
-		errx.Exit(err, "failed to create ObjectStorage client")
+		errx.Exit(err, "failed to create object-storage client")
 	}
-	log.Println("Connected to ObjectStorage")
 	return client
 }
 
