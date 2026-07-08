@@ -9,10 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as EditorRouteImport } from './routes/editor'
 import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TempIndexRouteImport } from './routes/temp/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
@@ -27,6 +27,11 @@ import { Route as AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport
 import { Route as AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport } from './routes/admin/events/$eventId/editions/$editionId/activities/index'
 import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId/editions/$editionId/callback.payment'
 
+const EditorRoute = EditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComparativeRoute = ComparativeRouteImport.update({
   id: '/comparative',
   path: '/comparative',
@@ -40,11 +45,6 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TempIndexRoute = TempIndexRouteImport.update({
-  id: '/temp/',
-  path: '/temp/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
@@ -153,8 +153,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
+  '/editor': typeof EditorRoute
   '/events/': typeof EventsIndexRoute
-  '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
@@ -172,8 +172,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
+  '/editor': typeof EditorRoute
   '/events': typeof EventsIndexRoute
-  '/temp': typeof TempIndexRoute
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$eventId': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions': typeof EventsEventIdEditionsIndexRoute
@@ -192,8 +192,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
+  '/editor': typeof EditorRoute
   '/events/': typeof EventsIndexRoute
-  '/temp/': typeof TempIndexRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
@@ -213,8 +213,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/comparative'
+    | '/editor'
     | '/events/'
-    | '/temp/'
     | '/admin/events/'
     | '/events/$eventId/'
     | '/events/$eventId/editions/'
@@ -232,8 +232,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/comparative'
+    | '/editor'
     | '/events'
-    | '/temp'
     | '/admin/events'
     | '/events/$eventId'
     | '/events/$eventId/editions'
@@ -251,8 +251,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/comparative'
+    | '/editor'
     | '/events/'
-    | '/temp/'
     | '/admin/events/'
     | '/events/$eventId/'
     | '/events/$eventId/editions/'
@@ -271,8 +271,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   ComparativeRoute: typeof ComparativeRoute
+  EditorRoute: typeof EditorRoute
   EventsIndexRoute: typeof EventsIndexRoute
-  TempIndexRoute: typeof TempIndexRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
   EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
   EventsEventIdEditionsIndexRoute: typeof EventsEventIdEditionsIndexRoute
@@ -289,6 +289,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/editor': {
+      id: '/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof EditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comparative': {
       id: '/comparative'
       path: '/comparative'
@@ -308,13 +315,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/temp/': {
-      id: '/temp/'
-      path: '/temp'
-      fullPath: '/temp/'
-      preLoaderRoute: typeof TempIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/': {
@@ -415,8 +415,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   ComparativeRoute: ComparativeRoute,
+  EditorRoute: EditorRoute,
   EventsIndexRoute: EventsIndexRoute,
-  TempIndexRoute: TempIndexRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
   EventsEventIdIndexRoute: EventsEventIdIndexRoute,
   EventsEventIdEditionsIndexRoute: EventsEventIdEditionsIndexRoute,
