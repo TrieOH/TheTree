@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"github.com/google/uuid"
@@ -53,20 +52,6 @@ func (uc *QueryService) ListEditions(ctx context.Context, eventID uuid.UUID) (ou
 func (uc *QueryService) ListEditionsAdmin(ctx context.Context, eventID uuid.UUID) (out []contracts.Edition, err error) { // FIXME Pagination
 	ctx, span := uc.tracer.Start(ctx, "EditionsService.ListEditionsAdmin")
 	defer span.End()
-
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("view_editions"),
-		authz.Resource("event", eventID.String()),
-	); err != nil {
-		return nil, err
-	}
 
 	var outEditions []contracts.Edition
 	outEditions, err = uc.editions.ListAdmin(ctx, eventID)

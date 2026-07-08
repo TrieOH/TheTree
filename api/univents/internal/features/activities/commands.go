@@ -3,15 +3,14 @@ package activities
 import (
 	"context"
 	"errors"
+	idx "sdk/identityx"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -48,8 +47,7 @@ func (uc *CommandService) Create(ctx context.Context, in contracts.CreateActivit
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +58,8 @@ func (uc *CommandService) Create(ctx context.Context, in contracts.CreateActivit
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_activity"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
-		return nil, err
-	}
-
 	var validActivity *contracts.Activity
-	validActivity, err = contracts.NewActivity(sub.ID, in, edition)
+	validActivity, err = contracts.NewActivity(ident.Sub.ID, in, edition)
 	if err != nil {
 		return nil, err
 	}
@@ -90,23 +80,9 @@ func (uc *CommandService) Publish(ctx context.Context, id uuid.UUID) (err error)
 		span.SetAttributes(attribute.Bool("publish.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
 	var activity *contracts.Activity
 	activity, err = uc.activities.GetByID(ctx, id)
 	if err != nil {
-		return err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("publish"),
-		authz.Resource("activity", activity.ID.String()),
-	); err != nil {
 		return err
 	}
 
@@ -114,22 +90,23 @@ func (uc *CommandService) Publish(ctx context.Context, id uuid.UUID) (err error)
 		return errors.New("can't publish activities on statuses different than draft")
 	}
 
-	var task *asynq.Task
-	task, err = contracts.NewStartActivityTask(activity.ID, activity.StartsAt)
-	if err != nil {
-		return err
-	}
-	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-		return err
-	}
+	//var task *asynq.Task
+	//task, err = contracts.NewStartActivityTask(activity.ID, activity.StartsAt)
+	//if err != nil {
+	//	return err
+	//}
+	//if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+	//	return err
+	//}
+	_ = uc.activities.Start(ctx, activity.ID)
 
-	task, err = contracts.NewEndActivityTask(activity.ID, activity.EndsAt)
-	if err != nil {
-		return err
-	}
-	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-		return err
-	}
+	//task, err = contracts.NewEndActivityTask(activity.ID, activity.EndsAt)
+	//if err != nil {
+	//	return err
+	//}
+	//if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+	//	return err
+	//}
 
 	if err = uc.activities.Publish(ctx, activity.ID); err != nil {
 		return err
@@ -145,8 +122,7 @@ func (uc *CommandService) Register(ctx context.Context, id uuid.UUID) (err error
 		span.SetAttributes(attribute.Bool("register.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
@@ -158,7 +134,7 @@ func (uc *CommandService) Register(ctx context.Context, id uuid.UUID) (err error
 	}
 
 	var isRegistered bool
-	isRegistered, err = uc.activities.IsRegistered(ctx, sub.ID, activity.ID)
+	isRegistered, err = uc.activities.IsRegistered(ctx, ident.Sub.ID, activity.ID)
 	if err != nil {
 		return err
 	}
@@ -166,15 +142,7 @@ func (uc *CommandService) Register(ctx context.Context, id uuid.UUID) (err error
 		return errx.Invalid("activity").SetMessage("user already registered to activity")
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("attend"),
-		authz.Resource("activity", activity.ID.String()),
-	); err != nil {
-		return err
-	}
-
-	attendanceRecord := contracts.NewAttendanceRecord(sub.ID, activity.ID)
+	attendanceRecord := contracts.NewAttendanceRecord(ident.Sub.ID, activity.ID)
 	if _, err = uc.activities.Register(ctx, *attendanceRecord); err != nil {
 		return err
 	}
@@ -189,8 +157,7 @@ func (uc *CommandService) Unregister(ctx context.Context, id uuid.UUID) (err err
 		span.SetAttributes(attribute.Bool("unregister.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
@@ -202,7 +169,7 @@ func (uc *CommandService) Unregister(ctx context.Context, id uuid.UUID) (err err
 	}
 
 	var isRegistered bool
-	isRegistered, err = uc.activities.IsRegistered(ctx, sub.ID, activity.ID)
+	isRegistered, err = uc.activities.IsRegistered(ctx, ident.Sub.ID, activity.ID)
 	if err != nil {
 		return err
 	}
@@ -210,7 +177,7 @@ func (uc *CommandService) Unregister(ctx context.Context, id uuid.UUID) (err err
 		return errx.Invalid("activity").SetMessage("user isn't registered")
 	}
 
-	if err = uc.activities.Unregister(ctx, sub.ID, activity.ID); err != nil {
+	if err = uc.activities.Unregister(ctx, ident.Sub.ID, activity.ID); err != nil {
 		return err
 	}
 
@@ -226,23 +193,13 @@ func (uc *CommandService) MarkAttendance(ctx context.Context, activityID, record
 		span.SetAttributes(attribute.Bool("mark.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return err
 	}
 
-	var activity *contracts.Activity
-	activity, err = uc.activities.GetByID(ctx, activityID)
+	_, err = uc.activities.GetByID(ctx, activityID)
 	if err != nil {
-		return err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("mark_attendance"),
-		authz.Resource("activity", activity.ID.String()),
-	); err != nil {
 		return err
 	}
 
@@ -255,7 +212,7 @@ func (uc *CommandService) MarkAttendance(ctx context.Context, activityID, record
 		return errx.Invalid("attendance record").SetMessage("cannot mark attendance on activities on statuses different than registered")
 	}
 
-	if err = uc.activities.MarkAttendanceRecordStatus(ctx, recordID, &sub.ID, contracts.AttendanceStatusCompleted); err != nil {
+	if err = uc.activities.MarkAttendanceRecordStatus(ctx, recordID, &ident.Sub.ID, contracts.AttendanceStatusCompleted); err != nil {
 		return err
 	}
 

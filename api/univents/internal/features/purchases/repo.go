@@ -2,9 +2,9 @@ package purchases
 
 import (
 	"context"
+	sqlc2 "univents/internal/database/sqlc"
 
 	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
@@ -16,14 +16,14 @@ import (
 )
 
 type purchaseRepo struct {
-	q      *sqlc.Queries
+	q      *sqlc2.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.PurchaseRepository = (*purchaseRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.PurchaseRepository {
+func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.PurchaseRepository {
 	return &purchaseRepo{
 		q:      q,
 		log:    log,
@@ -31,14 +31,14 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Purcha
 	}
 }
 
-func (repo *purchaseRepo) queries(ctx context.Context) *sqlc.Queries {
+func (repo *purchaseRepo) queries(ctx context.Context) *sqlc2.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapPurchaseFromDB(src *sqlc.Purchase) *contracts.Purchase {
+func mapPurchaseFromDB(src *sqlc2.Purchase) *contracts.Purchase {
 	return &contracts.Purchase{
 		ID:              src.ID,
 		EditionID:       src.EditionID,
@@ -60,7 +60,7 @@ func mapPurchaseFromDB(src *sqlc.Purchase) *contracts.Purchase {
 	}
 }
 
-func mapLineItemFromDB(src *sqlc.PurchaseItem) *contracts.LineItem {
+func mapLineItemFromDB(src *sqlc2.PurchaseItem) *contracts.LineItem {
 	return &contracts.LineItem{
 		ID:                  src.ID,
 		PurchaseID:          src.PurchaseID,
@@ -82,11 +82,11 @@ func (repo *purchaseRepo) Create(ctx context.Context, toCreate contracts.Purchas
 	ctx, span := repo.tracer.Start(ctx, "PurchaseRepo.Create")
 	defer span.End()
 
-	sqlcPurchase, err := repo.queries(ctx).CreatePurchase(ctx, sqlc.CreatePurchaseParams{
+	sqlcPurchase, err := repo.queries(ctx).CreatePurchase(ctx, sqlc2.CreatePurchaseParams{
 		EditionID:       toCreate.EditionID,
 		SessionID:       toCreate.SessionID,
 		UserID:          toCreate.UserID,
-		Status:          sqlc.PurchaseStatus(toCreate.Status),
+		Status:          sqlc2.PurchaseStatus(toCreate.Status),
 		SubtotalCents:   toCreate.SubtotalCents,
 		TotalCents:      toCreate.TotalCents,
 		PaymentProvider: toCreate.PaymentProvider,
@@ -127,7 +127,7 @@ func (repo *purchaseRepo) CreateLineItem(ctx context.Context, toCreate contracts
 	ctx, span := repo.tracer.Start(ctx, "PurchaseRepo.CreateLineItem")
 	defer span.End()
 
-	sqlcLineItem, err := repo.queries(ctx).CreatePurchaseItem(ctx, sqlc.CreatePurchaseItemParams{
+	sqlcLineItem, err := repo.queries(ctx).CreatePurchaseItem(ctx, sqlc2.CreatePurchaseItemParams{
 		PurchaseID:      toCreate.PurchaseID,
 		ItemType:        toCreate.ItemType,
 		ItemID:          toCreate.ItemID,
@@ -166,7 +166,7 @@ func (repo *purchaseRepo) CancelPurchase(ctx context.Context, paymentID string) 
 	return nil
 }
 
-func mapTicketGrantFromDB(src *sqlc.GetTicketGrantsByPaymentIntentRow) *contracts.TicketGrant {
+func mapTicketGrantFromDB(src *sqlc2.GetTicketGrantsByPaymentIntentRow) *contracts.TicketGrant {
 	return &contracts.TicketGrant{
 		TicketID: src.TicketID,
 		UserID:   src.UserID,
@@ -209,7 +209,7 @@ func (repo *purchaseRepo) ListPurchaseItems(ctx context.Context, purchaseID, use
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.ListPurchaseItems")
 	defer span.End()
 
-	sqlcItems, err := repo.queries(ctx).ListPurchaseItems(ctx, sqlc.ListPurchaseItemsParams{
+	sqlcItems, err := repo.queries(ctx).ListPurchaseItems(ctx, sqlc2.ListPurchaseItemsParams{
 		PurchaseID: purchaseID,
 		UserID:     userID,
 	})

@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	idx "sdk/identityx"
 	"time"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"github.com/google/uuid"
-	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -63,29 +62,19 @@ func (uc *CommandService) createInternal(ctx context.Context, in contracts.Creat
 		span.SetAttributes(attribute.Bool("create.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var validEdition *contracts.Edition
-	validEdition, err = contracts.NewEdition(sub.ID, in)
+	validEdition, err = contracts.NewEdition(ident.Sub.ID, in)
 	if err != nil {
 		return nil, err
 	}
 
-	var event *contracts.Event
-	event, err = uc.events.GetByID(ctx, in.EventID)
+	_, err = uc.events.GetByID(ctx, in.EventID)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("create_editions"),
-		authz.Resource("event", event.ID.String()),
-	); err != nil {
 		return nil, err
 	}
 
@@ -110,23 +99,9 @@ func (uc *CommandService) Announce(ctx context.Context, editionID uuid.UUID) (er
 		span.SetAttributes(attribute.Bool("announce.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
 	var edition *contracts.Edition
 	edition, err = uc.editions.GetByID(ctx, editionID)
 	if err != nil {
-		return err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("announce"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
 		return err
 	}
 
@@ -134,34 +109,36 @@ func (uc *CommandService) Announce(ctx context.Context, editionID uuid.UUID) (er
 		return errors.New("can't announce editions on statuses different than draft")
 	}
 
-	var task *asynq.Task
+	//var task *asynq.Task
 	opensAt := edition.RegistrationOpensAt
 	if opensAt == nil {
 		opensAt = new(time.Now())
 	}
-	task, err = contracts.NewOpenEditionTask(edition.ID, *opensAt)
-	if err != nil {
-		return err
-	}
-	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-		return err
-	}
+	//task, err = contracts.NewOpenEditionTask(edition.ID, *opensAt)
+	//if err != nil {
+	//	return err
+	//}
+	//if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+	//	return err
+	//}
+	_ = uc.editions.Open(ctx, edition.ID)
 
-	task, err = contracts.NewStartEditionTask(edition.ID, edition.StartsAt)
-	if err != nil {
-		return err
-	}
-	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-		return err
-	}
+	//task, err = contracts.NewStartEditionTask(edition.ID, edition.StartsAt)
+	//if err != nil {
+	//	return err
+	//}
+	//if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+	//	return err
+	//}
+	_ = uc.editions.Start(ctx, edition.ID)
 
-	task, err = contracts.NewFinishEditionTask(edition.ID, edition.EndsAt)
-	if err != nil {
-		return err
-	}
-	if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
-		return err
-	}
+	//task, err = contracts.NewFinishEditionTask(edition.ID, edition.EndsAt)
+	//if err != nil {
+	//	return err
+	//}
+	//if _, err = uc.asynq.EnqueueContext(ctx, task); err != nil {
+	//	return err
+	//}
 
 	if err = uc.editions.Announce(ctx, editionID); err != nil {
 		return err
@@ -174,24 +151,10 @@ func (uc *CommandService) ConnectPayments(ctx context.Context, triePaymentsCrede
 	ctx, span := uc.tracer.Start(ctx, "EditionService.ConnectPayments")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
 	var edition *contracts.Edition
 	edition, err = uc.editions.GetByID(ctx, editionID)
 	if err != nil {
 		return fmt.Errorf("error getting edition: %w", err)
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("connect_payments"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
-		return err
 	}
 
 	if edition.TriePaymentsCredentialID != nil {
@@ -209,23 +172,9 @@ func (uc *CommandService) DisconnectPayments(ctx context.Context, editionID uuid
 	ctx, span := uc.tracer.Start(ctx, "EditionService.DisconnectPayments")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return err
-	}
-
 	var edition *contracts.Edition
 	edition, err = uc.editions.GetByID(ctx, editionID)
 	if err != nil {
-		return err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("disconnect_payments"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
 		return err
 	}
 

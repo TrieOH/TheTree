@@ -6,9 +6,7 @@ import (
 	"lib/telemetry"
 
 	idx "sdk/identityx"
-	"sdk/payssage"
 
-	"github.com/authzed/authzed-go/v1"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/minio/minio-go/v7"
 )
@@ -16,9 +14,7 @@ import (
 type Univents struct {
 	db        *pgxpool.Pool
 	idxClient *idx.Client
-	payssage  *payssage.Client
 	minio     *minio.Client
-	sdbClient *authzed.Client
 
 	cfg Config
 }
@@ -34,8 +30,7 @@ func Start() {
 	SetupFUN(app.cfg.AppName)
 
 	app.idxClient = SetupIdentityX(app.cfg)
-	app.payssage = SetupPayssage(app.cfg)
-	app.minio = SetupObjectStorage(app.cfg)
+	//app.minio = SetupObjectStorage(app.cfg)
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

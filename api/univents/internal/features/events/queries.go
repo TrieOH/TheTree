@@ -2,10 +2,10 @@ package events
 
 import (
 	"context"
+	idx "sdk/identityx"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"go.opentelemetry.io/otel/trace"
@@ -50,14 +50,13 @@ func (uc *QueryService) ListOwnEvents(ctx context.Context) (out []contracts.Even
 	ctx, span := uc.tracer.Start(ctx, "EventService.ListOwnEvents")
 	defer span.End()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
+	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var outEvents []contracts.Event
-	outEvents, err = uc.events.ListOwnEvents(ctx, sub.ID)
+	outEvents, err = uc.events.ListOwnEvents(ctx, ident.Sub.ID)
 	if err != nil {
 		return nil, err
 	}

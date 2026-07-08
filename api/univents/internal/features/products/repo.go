@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"time"
+	sqlc2 "univents/internal/database/sqlc"
 
 	"univents/internal/platform/database"
-	"univents/internal/platform/database/sqlc"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
@@ -18,14 +18,14 @@ import (
 )
 
 type productsRepo struct {
-	q      *sqlc.Queries
+	q      *sqlc2.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 }
 
 var _ ports.ProductsRepository = (*productsRepo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProductsRepository {
+func NewRepo(q *sqlc2.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProductsRepository {
 	return &productsRepo{
 		q:      q,
 		log:    log,
@@ -33,14 +33,14 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Produc
 	}
 }
 
-func (repo *productsRepo) queries(ctx context.Context) *sqlc.Queries {
+func (repo *productsRepo) queries(ctx context.Context) *sqlc2.Queries {
 	if tx, ok := ctx.Value(database.TxKeyValue).(pgx.Tx); ok && tx != nil {
 		return repo.q.WithTx(tx)
 	}
 	return repo.q
 }
 
-func mapProductFromDB(src *sqlc.Product) *contracts.Product {
+func mapProductFromDB(src *sqlc2.Product) *contracts.Product {
 	return &contracts.Product{
 		ID:                 src.ID,
 		ScopeID:            src.ScopeID,
@@ -69,13 +69,13 @@ func (repo *productsRepo) Create(ctx context.Context, toCreate contracts.Product
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.Create")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).CreateProduct(ctx, sqlc.CreateProductParams{
+	sqlcProduct, err := repo.queries(ctx).CreateProduct(ctx, sqlc2.CreateProductParams{
 		ID:                 toCreate.ID,
 		ScopeID:            toCreate.ScopeID,
 		EditionID:          toCreate.EditionID,
 		Name:               toCreate.Name,
 		Description:        toCreate.Description,
-		Type:               sqlc.ProductType(toCreate.Type),
+		Type:               sqlc2.ProductType(toCreate.Type),
 		PriceCents:         toCreate.PriceCents,
 		AvailableFrom:      toCreate.AvailableFrom,
 		AvailableUntil:     toCreate.AvailableUntil,
@@ -206,7 +206,7 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 
 	for _, item := range items {
 		if !item.HasInventory {
-			err := repo.queries(ctx).ReserveProductNoInventory(ctx, sqlc.ReserveProductNoInventoryParams{
+			err := repo.queries(ctx).ReserveProductNoInventory(ctx, sqlc2.ReserveProductNoInventoryParams{
 				SessionID: sessionID,
 				ProductID: item.ProductID,
 				Quantity:  item.Quantity,
@@ -220,7 +220,7 @@ func (repo *productsRepo) ReserveItems(ctx context.Context, sessionID uuid.UUID,
 			continue
 		}
 
-		row, err := repo.queries(ctx).ReserveProduct(ctx, sqlc.ReserveProductParams{
+		row, err := repo.queries(ctx).ReserveProduct(ctx, sqlc2.ReserveProductParams{
 			SessionID: sessionID,
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
@@ -301,7 +301,7 @@ func (repo *productsRepo) AddGalleryImage(ctx context.Context, id uuid.UUID, url
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.AddGalleryImage")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).AddProductGalleryImage(ctx, sqlc.AddProductGalleryImageParams{
+	sqlcProduct, err := repo.queries(ctx).AddProductGalleryImage(ctx, sqlc2.AddProductGalleryImageParams{
 		ID:  id,
 		Url: url,
 	})
@@ -316,7 +316,7 @@ func (repo *productsRepo) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.RemoveGalleryImage")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).RemoveProductGalleryImage(ctx, sqlc.RemoveProductGalleryImageParams{
+	sqlcProduct, err := repo.queries(ctx).RemoveProductGalleryImage(ctx, sqlc2.RemoveProductGalleryImageParams{
 		ID:  id,
 		Url: url,
 	})
@@ -331,7 +331,7 @@ func (repo *productsRepo) SetThumbnail(ctx context.Context, id uuid.UUID, url st
 	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.SetThumbnail")
 	defer span.End()
 
-	sqlcProduct, err := repo.queries(ctx).SetThumbnail(ctx, sqlc.SetThumbnailParams{
+	sqlcProduct, err := repo.queries(ctx).SetThumbnail(ctx, sqlc2.SetThumbnailParams{
 		ID:  id,
 		Url: url,
 	})

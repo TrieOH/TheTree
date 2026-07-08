@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"go.opentelemetry.io/otel/attribute"

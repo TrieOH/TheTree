@@ -5,16 +5,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	_ "univents/contracts"
 	"univents/internal/features/activities"
-	"univents/internal/features/checkpoints"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
-	"univents/internal/features/products"
-	"univents/internal/features/purchases"
-	"univents/internal/features/tickets"
-
-	_ "univents/generated/docs"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -77,21 +70,16 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	r.Use(middlewares.ratelimit)
 	r.Use(middlewares.cors)
 
-	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(docs.SwaggerJSON)
-	})
-
 	r.Handle("/metrics", promhttp.Handler())
 
 	//r.With(middlewares.jwt).Get("/ws/token", deps.Security.WSAuth)
 	events.Routes(r, handlers.Events, middlewares.jwt)
 	editions.Routes(r, handlers.Editions, middlewares.jwt)
-	tickets.Routes(r, handlers.Tickets, middlewares.jwt)
 	activities.Routes(r, handlers.Activities, middlewares.jwt)
-	checkpoints.Routes(r, handlers.Checkpoints, middlewares.jwt)
-	products.Routes(r, handlers.Products, middlewares.jwt)
-	purchases.Routes(r, handlers.Purchases, middlewares.jwt)
+	//tickets.Routes(r, handlers.Tickets, middlewares.jwt)
+	//checkpoints.Routes(r, handlers.Checkpoints, middlewares.jwt)
+	//products.Routes(r, handlers.Products, middlewares.jwt)
+	//purchases.Routes(r, handlers.Purchases, middlewares.jwt)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
