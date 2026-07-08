@@ -53,6 +53,7 @@ type Config struct {
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`
+	CorsAllowedHeaders string `env:"CORS_ALLOWED_HEADERS,required"`
 
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`

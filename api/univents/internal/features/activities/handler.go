@@ -34,7 +34,7 @@ func Routes(
 		r.Get("/", h.List)
 		r.With(jwt).Post("/", h.Create)
 		r.With(jwt).Get("/admin", h.ListAdmin)
-		r.With(jwt).Route("/{event_id}", func(r chi.Router) {
+		r.With(jwt).Route("/{activity_id}", func(r chi.Router) {
 			r.Post("/publish", h.Publish)
 			r.Post("/register", h.Register)
 			r.Post("/unregister", h.Unregister)
@@ -64,6 +64,9 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (handler *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
+		return
+	}
 	err = handler.commands.Publish(r.Context(), activityID)
 	if fun.Bail(w, err) {
 		return
