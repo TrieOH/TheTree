@@ -36,6 +36,7 @@ func Routes(
 		r.With(jwt).Get("/admin", h.ListAdmin)
 		r.With(jwt).Route("/{activity_id}", func(r chi.Router) {
 			r.Post("/publish", h.Publish)
+			r.Post("/complete", h.Complete)
 			r.Post("/register", h.Register)
 			r.Post("/unregister", h.Unregister)
 			r.Get("/records", h.ListRecords)
@@ -141,6 +142,19 @@ func (handler *Handler) MarkAttendance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fun.OK("Marked Attendance Successfully").Send(w)
+}
+
+func (handler *Handler) Complete(w http.ResponseWriter, r *http.Request) {
+	req := fun.From(r)
+	activityID, err := req.Path("activity_id").UUID()
+	if fun.Bail(w, err) {
+		return
+	}
+	err = handler.commands.Complete(r.Context(), activityID)
+	if fun.Bail(w, err) {
+		return
+	}
+	fun.OK("Activity completed and users certified").Send(w)
 }
 
 func (handler *Handler) ListRecords(w http.ResponseWriter, r *http.Request) {

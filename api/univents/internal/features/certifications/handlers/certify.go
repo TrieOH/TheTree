@@ -10,7 +10,6 @@ import (
 
 func (h *Handlers) Certify(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
-	// TODO: extract user_id from JWT claims
 	userID, err := req.Path("user_id").UUID()
 	if fun.Bail(w, err) {
 		return

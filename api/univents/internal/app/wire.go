@@ -123,7 +123,7 @@ func initCommands(r repos, obj *objectstorage.Client, tx database.TxRunner, logg
 	return commands{
 		events:     events.NewCommandService(r.events, obj, loggr, tracer, tx),
 		editions:   editions.NewCommandService(r.events, r.editions, loggr, tracer, tx),
-		activities: activities.NewCommandService(r.activities, r.editions, loggr, tracer, tx),
+		activities: activities.NewCommandService(r.activities, r.editions, r.certs, loggr, tracer, tx),
 		signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
 		certs:      certifications.NewCommands(r.certs, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewCommandService(r.checkpoints, r.editions, loggr, tracer, tx),
