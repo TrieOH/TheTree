@@ -1,11 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import { Eye, FileImage, FileText, X } from 'lucide-react'
 import { jsPDF } from 'jspdf'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/shadcn/dialog'
 import { Button } from '@/shared/ui/shadcn/button'
+import { Spinner } from '@/shared/ui/loader/spinner'
 import { useCertificateCanvas } from '@/features/editor/use-certificate-canvas'
 import { type CanvasElement, type ImageCanvasElement, type SignatureCanvasElement, type TextCanvasElement } from '@/features/editor/types'
 import type { CertificationTemplateI } from '@/features/certifications/model'
+import { allSignaturesQueryOptions } from '@/features/signatures/api'
 
 const CERTIFICATE_WIDTH = 1000
 const CERTIFICATE_HEIGHT = 707
@@ -38,6 +41,7 @@ function toCanvasElements(template: Pick<CertificationTemplateI, 'data' | 'id'>)
         ...base,
         type: 'signature' as const,
         title: element.title ?? 'Assinatura',
+        signatureId: element.signatureId ?? null,
       } as SignatureCanvasElement
     }
 
@@ -61,20 +65,27 @@ function triggerDownloadHref(href: string, filename: string) {
 
 function CertificationTemplatePreviewCanvas({
   template,
+  eventId,
+  editionId,
 }: {
   template: Pick<CertificationTemplateI, 'id' | 'title' | 'url' | 'data'>
+  eventId: string
+  editionId: string
 }) {
   const previewHostRef = useRef<HTMLDivElement>(null)
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const elements = useMemo(() => toCanvasElements(template), [template])
+  const { data: signatures = [] } = useQuery(allSignaturesQueryOptions(eventId, editionId))
+  const signatureUrlsById = useMemo(
+    () => Object.fromEntries(signatures.map((signature) => [signature.id, signature.url])),
+    [signatures]
+  )
 
   const { canvasRef, isReady } = useCertificateCanvas({
     canvasHostRef: previewHostRef,
-    canvasElRef: previewCanvasRef,
     backgroundUrl: template.data.background ?? template.url ?? null,
     elements,
     selectedElementId: null,
-    signatureUrl: null,
+    signatureUrlsById,
     onElementsChange: () => { },
     onElementSelect: () => { },
     previewMode: true,
@@ -130,26 +141,29 @@ function CertificationTemplatePreviewCanvas({
         </Button>
       </div>
 
-      <div
-        ref={previewHostRef}
-        className="relative aspect-1000/707 w-full overflow-hidden rounded-2xl border bg-muted/10"
-      >
-        <canvas
-          ref={previewCanvasRef}
-          className="h-full w-full pointer-events-none"
-          style={{ touchAction: 'none' }}
-        />
+      <div className="relative aspect-1000/707 w-full overflow-hidden rounded-2xl border bg-muted/10">
+        <div ref={previewHostRef} className="absolute inset-0" />
+        {!isReady && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">
+              <Spinner className="size-4" />
+              Carregando certificado
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export interface CertificationTemplatePreviewProps {
+  eventId: string
+  editionId: string
   template: Pick<CertificationTemplateI, 'id' | 'title' | 'url' | 'data'>
   triggerLabel?: string
 }
 
-export function CertificationTemplatePreview({ template, triggerLabel = 'Ver certificado' }: CertificationTemplatePreviewProps) {
+export function CertificationTemplatePreview({ eventId, editionId, template, triggerLabel = 'Ver certificado' }: CertificationTemplatePreviewProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -186,7 +200,7 @@ export function CertificationTemplatePreview({ template, triggerLabel = 'Ver cer
           </div>
 
           <div className="p-4 sm:p-6">
-            {open && <CertificationTemplatePreviewCanvas template={template} />}
+            {open && <CertificationTemplatePreviewCanvas eventId={eventId} editionId={editionId} template={template} />}
           </div>
         </DialogContent>
       </Dialog>

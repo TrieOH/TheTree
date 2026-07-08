@@ -29,6 +29,7 @@ export const certificationTemplateCreateSchema = z.object({
         widthPct: z.number(),
         heightPct: z.number(),
         title: z.string().nullable(),
+        signatureId: z.string().nullable(),
       }),
       z.object({
         type: z.literal('image'),

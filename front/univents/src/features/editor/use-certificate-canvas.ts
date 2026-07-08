@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import type { Canvas, Rect as FabricRect, Textbox, FabricImage } from 'fabric'
 import type {
   CanvasElement,
@@ -37,11 +37,12 @@ interface FabricModule {
 
 interface UseCertificateCanvasOptions {
   canvasHostRef: React.RefObject<HTMLDivElement | null>
-  canvasElRef: React.RefObject<HTMLCanvasElement | null>
+  canvasElRef?: React.RefObject<HTMLCanvasElement | null>
   backgroundUrl: string | null
   elements: CanvasElement[]
   selectedElementId: string | null
-  signatureUrl: string | null
+  signatureUrl?: string | null
+  signatureUrlsById?: Record<string, string>
   onElementsChange: (elements: CanvasElement[]) => void
   onElementSelect: (id: string | null) => void
   previewMode?: boolean
@@ -54,6 +55,7 @@ export function useCertificateCanvas({
   elements,
   selectedElementId,
   signatureUrl,
+  signatureUrlsById,
   onElementsChange,
   onElementSelect,
   previewMode = false,
@@ -67,8 +69,40 @@ export function useCertificateCanvas({
   const editingTextElementIdRef = useRef<string | null>(null)
   const backgroundUrlRef = useRef(backgroundUrl)
   const backgroundLoadTokenRef = useRef(0)
+  const [pendingAssetCount, setPendingAssetCount] = useState(0)
+  const [canvasReady, setCanvasReady] = useState(false)
   elementsRef.current = elements
   backgroundUrlRef.current = backgroundUrl
+
+  const beginAssetLoad = useCallback(() => {
+    setPendingAssetCount((count) => count + 1)
+  }, [])
+
+  const finishAssetLoad = useCallback(() => {
+    setPendingAssetCount((count) => Math.max(0, count - 1))
+  }, [])
+
+  const resolveSignatureUrl = useCallback((element: CanvasElement) => {
+    if (element.type !== 'signature') return null
+    const signatureId = element.signatureId
+    if (signatureId && signatureUrlsById?.[signatureId]) {
+      return signatureUrlsById[signatureId]
+    }
+    return signatureUrl ?? null
+  }, [signatureUrl, signatureUrlsById])
+
+  const assetLoadKey = elements
+    .map((element) => {
+      if (element.type === 'signature') {
+        return `signature:${element.id}:${element.signatureId ?? ''}:${resolveSignatureUrl(element) ?? ''}`
+      }
+      if (element.type === 'image') {
+        return `image:${element.id}:${element.src ?? ''}`
+      }
+      return null
+    })
+    .filter(Boolean)
+    .join('|')
 
   const syncTextElementFromTextbox = useCallback((elementId: string, tb: Textbox) => {
     const currentElement = elementsRef.current.find((el) => el.id === elementId)
@@ -155,15 +189,16 @@ export function useCertificateCanvas({
     const { FabricImage } = await import('fabric')
     if (token !== backgroundLoadTokenRef.current) return
 
-    const url = backgroundUrlRef.current
-    if (!url) {
-      canvas.backgroundImage = undefined
-      canvas.renderAll()
-      return
-    }
-
     try {
-      const img = await FabricImage.fromURL(url)
+      beginAssetLoad()
+      const url = backgroundUrlRef.current
+      if (!url) {
+        canvas.backgroundImage = undefined
+        canvas.renderAll()
+        return
+      }
+
+      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
       if (token !== backgroundLoadTokenRef.current || !canvasRef.current) return
 
       const currentCanvas = canvasRef.current
@@ -187,8 +222,10 @@ export function useCertificateCanvas({
       currentCanvas.renderAll()
     } catch {
       // ignore background load errors
+    } finally {
+      finishAssetLoad()
     }
-  }, [])
+  }, [beginAssetLoad, finishAssetLoad])
 
   const applyStateToObjects = useCallback(() => {
     const canvas = canvasRef.current
@@ -293,17 +330,35 @@ export function useCertificateCanvas({
         return
       }
 
-      const imgSrc =
-        element.type === 'signature'
-          ? signatureUrl
-          : (element as ImageCanvasElement).src
+      if ((element as unknown as { type: string }).type === 'line') {
+        const line = new Rect({
+          left: x,
+          top: y,
+          originX: 'center',
+          originY: 'center',
+          width: w,
+          height: 1,
+          fill: '#0f172a',
+          stroke: '#0f172a',
+          strokeWidth: 0,
+          selectable: false,
+          evented: false,
+        })
+        canvas.add(line)
+        return
+      }
+
+      const imgSrc = element.type === 'signature'
+        ? resolveSignatureUrl(element)
+        : (element as ImageCanvasElement).src
 
       if (!imgSrc) {
         return
       }
 
+      beginAssetLoad()
       void import('fabric').then(async ({ FabricImage }) => {
-        const img = await FabricImage.fromURL(imgSrc)
+        const img = await FabricImage.fromURL(imgSrc, { crossOrigin: 'anonymous' })
         img.set({
           left: x,
           top: y,
@@ -319,7 +374,7 @@ export function useCertificateCanvas({
         img.set({ scaleX: scale, scaleY: scale })
         img.setCoords()
         canvas.requestRenderAll()
-      })
+      }).finally(finishAssetLoad)
       return
     }
 
@@ -466,7 +521,7 @@ export function useCertificateCanvas({
       const imgEl = element as ImageCanvasElement
       if (imgEl.src) void loadImageForElement(element.id, imgEl.src)
     }
-  }, [onElementsChange, onElementSelect, previewMode, signatureUrl, updateLabelPosition])
+  }, [onElementsChange, onElementSelect, previewMode, resolveSignatureUrl, updateLabelPosition])
 
   const loadImageForElement = useCallback(async (elementId: string, src: string) => {
     const objs = objectsRef.current.get(elementId)
@@ -474,8 +529,9 @@ export function useCertificateCanvas({
     if (!objs || !canvas) return
     if (objs.preview) { canvas.remove(objs.preview); objs.preview = null }
     try {
+      beginAssetLoad()
       const { FabricImage } = await import('fabric')
-      const img = await FabricImage.fromURL(src)
+      const img = await FabricImage.fromURL(src, { crossOrigin: 'anonymous' })
       objs.preview = img
       img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
         ; (img as any).data = { elementId, role: 'preview' }
@@ -484,7 +540,8 @@ export function useCertificateCanvas({
       if (el) updateLabelPosition(elementId, el)
       canvas.requestRenderAll()
     } catch { /* ignore */ }
-  }, [updateLabelPosition])
+    finally { finishAssetLoad() }
+  }, [beginAssetLoad, finishAssetLoad, updateLabelPosition])
 
   const syncFull = useCallback(() => {
     const canvas = canvasRef.current
@@ -522,20 +579,26 @@ export function useCertificateCanvas({
   }, [elements, createElementOnCanvas, applyStateToObjects])
 
   useEffect(() => {
-    const canvasEl = canvasElRef.current
+    const canvasEl = canvasElRef?.current ?? null
     const hostEl = canvasHostRef.current
-    if (!canvasEl || !hostEl) return
+    if (!hostEl) return
 
-    const canvasElV: HTMLCanvasElement = canvasEl
     const hostElV: HTMLDivElement = hostEl
     let cancelled = false
     let instance: Canvas | null = null
     let cleanupScroll = () => { }
+    let ownedCanvasEl: HTMLCanvasElement | null = null
 
     async function init() {
       const fabricModule = await import('fabric')
       const { Canvas } = fabricModule
       if (cancelled) return
+
+      const canvasElV = canvasEl ?? document.createElement('canvas')
+      if (!canvasEl && canvasElV.parentElement !== hostElV) {
+        hostElV.appendChild(canvasElV)
+        ownedCanvasEl = canvasElV
+      }
 
       instance = new Canvas(canvasElV, {
         selection: false, preserveObjectStacking: true, renderOnAddRemove: true,
@@ -588,6 +651,7 @@ export function useCertificateCanvas({
         }
       }
       isReadyRef.current = true
+      setCanvasReady(true)
       syncFull()
       void syncBackgroundImage(instance)
     }
@@ -596,8 +660,12 @@ export function useCertificateCanvas({
     return () => {
       cancelled = true
       isReadyRef.current = false
+      setCanvasReady(false)
       cleanupScroll()
       instance?.dispose()
+      if (ownedCanvasEl?.parentElement === hostEl) {
+        hostEl.removeChild(ownedCanvasEl)
+      }
       canvasRef.current = null
       objectsRef.current.clear()
     }
@@ -610,35 +678,49 @@ export function useCertificateCanvas({
 
   useEffect(() => {
     const c = canvasRef.current
-    if (!c || !isReadyRef.current) return
+    if (!c || !canvasReady || !isReadyRef.current) return
     let cancelled = false
     async function updatePreviews() {
-      const { FabricImage } = await import('fabric')
-      if (cancelled || !canvasRef.current) return
-      const cur = canvasRef.current
-      for (const [, objs] of objectsRef.current) { if (objs.preview) { cur.remove(objs.preview); objs.preview = null } }
-      for (const [id, objs] of objectsRef.current) {
-        const el = elements.find(e => e.id === id)
-        if (!el) continue
-        let imgSrc: string | null = null
-        if (el.type === 'signature') imgSrc = signatureUrl
-        else if (el.type === 'image') imgSrc = (el as ImageCanvasElement).src
-        if (!imgSrc) continue
-        try {
-          const img = await FabricImage.fromURL(imgSrc)
-          if (cancelled || !canvasRef.current) continue
-          img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
-            ; (img as any).data = { elementId: id, role: 'preview' }
-          objs.preview = img; cur.add(img)
-          updateLabelPosition(id, el)
-        } catch { /* skip */ }
+      beginAssetLoad()
+      try {
+        const { FabricImage } = await import('fabric')
+        if (cancelled || !canvasRef.current) return
+        const cur = canvasRef.current
+        for (const [, objs] of objectsRef.current) { if (objs.preview) { cur.remove(objs.preview); objs.preview = null } }
+        for (const [id, objs] of objectsRef.current) {
+          const el = elements.find(e => e.id === id)
+          if (!el) continue
+          let imgSrc: string | null = null
+          if (el.type === 'signature') imgSrc = resolveSignatureUrl(el)
+          else if (el.type === 'image') imgSrc = (el as ImageCanvasElement).src
+          if (!imgSrc) continue
+          try {
+            const img = await FabricImage.fromURL(imgSrc)
+            if (cancelled || !canvasRef.current) continue
+            img.set({ selectable: false, evented: false, originX: 'center', originY: 'center' })
+              ; (img as any).data = { elementId: id, role: 'preview' }
+            objs.preview = img; cur.add(img)
+            updateLabelPosition(id, el)
+          } catch { /* skip */ }
+        }
+        cur.renderAll()
+      } finally {
+        finishAssetLoad()
       }
-      cur.renderAll()
     }
     void updatePreviews()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signatureUrl, elements, updateLabelPosition])
+  }, [assetLoadKey, beginAssetLoad, canvasReady, finishAssetLoad, updateLabelPosition])
+
+  useEffect(() => {
+    if (!canvasReady || !isReadyRef.current) return
+    const c = canvasRef.current
+    if (!c) return
+    void syncFull()
+    void syncBackgroundImage(c)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasReady])
 
   useEffect(() => {
     if (!isReadyRef.current) return
@@ -666,5 +748,11 @@ export function useCertificateCanvas({
     }
   }, [selectedElementId])
 
-  return { canvasRef, isReady: isReadyRef.current, syncFull, applyStateToObjects, loadImageForElement }
+  return {
+    canvasRef,
+    isReady: canvasReady && pendingAssetCount === 0,
+    syncFull,
+    applyStateToObjects,
+    loadImageForElement,
+  }
 }

@@ -139,7 +139,12 @@ function RouteComponent() {
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <CertificationTemplatePreview template={template} triggerLabel="Ver certificado" />
+                          <CertificationTemplatePreview
+                            eventId={eventId}
+                            editionId={editionId}
+                            template={template}
+                            triggerLabel="Ver certificado"
+                          />
                         </div>
                       </div>
                     )

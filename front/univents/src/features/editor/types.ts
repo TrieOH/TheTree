@@ -22,6 +22,7 @@ export interface TextCanvasElement extends CanvasElementBase {
 export interface SignatureCanvasElement extends CanvasElementBase {
   type: 'signature'
   title?: string
+  signatureId: string | null
 }
 
 export interface ImageCanvasElement extends CanvasElementBase {

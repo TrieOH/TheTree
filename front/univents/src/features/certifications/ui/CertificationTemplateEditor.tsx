@@ -11,7 +11,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import ImageUploadField from '@/widgets/form/ui/image-upload-field'
 import { Badge } from '@/shared/ui/shadcn/badge'
@@ -21,6 +21,7 @@ import { Input } from '@/shared/ui/shadcn/input'
 import { Label } from '@/shared/ui/shadcn/label'
 import { Separator } from '@/shared/ui/shadcn/separator'
 import { cn } from '@/shared/lib/utils'
+import { Spinner } from '@/shared/ui/loader/spinner'
 import { useCertificateCanvas } from '@/features/editor/use-certificate-canvas'
 import VariableInput from '@/features/editor/variable-input'
 import {
@@ -47,6 +48,7 @@ import {
   type CertificationTemplateCreateI,
 } from '@/features/certifications/model'
 import { uploadAndModerateFile } from '@/features/storage/api'
+import { allSignaturesQueryOptions } from '@/features/signatures/api'
 
 let elementCounter = 0
 const MIN_EDITOR_WIDTH = 1280
@@ -72,25 +74,34 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
   const [templateTitle, setTemplateTitle] = useState('Modelo de Certificado')
   const [backgroundDataUrl, setBackgroundDataUrl] = useState<string | null>(null)
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null)
+  const [imageFilesById, setImageFilesById] = useState<Record<string, File | null>>({})
   const [elements, setElements] = useState<CanvasElement[]>([])
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [showGrid, setShowGrid] = useState(true)
   const [viewportSize, setViewportSize] = useState(getViewportSize)
+  const [showInitialLoading, setShowInitialLoading] = useState(true)
 
   const canvasHostRef = useRef<HTMLDivElement>(null)
-  const canvasElRef = useRef<HTMLCanvasElement>(null)
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const { data: signatures = [] } = useQuery(allSignaturesQueryOptions(eventId, editionId))
+  const signatureUrlsById = useMemo(
+    () => Object.fromEntries(signatures.map((signature) => [signature.id, signature.url])),
+    [signatures]
+  )
 
-  const { canvasRef } = useCertificateCanvas({
+  const { canvasRef, isReady } = useCertificateCanvas({
     canvasHostRef,
-    canvasElRef,
     backgroundUrl: backgroundDataUrl,
     elements,
     selectedElementId,
-    signatureUrl: null,
+    signatureUrlsById,
     onElementsChange: setElements,
     onElementSelect: setSelectedElementId,
   })
+
+  useEffect(() => {
+    if (isReady) setShowInitialLoading(false)
+  }, [isReady])
 
   useEffect(() => {
     const updateViewportSize = () => setViewportSize(getViewportSize())
@@ -131,54 +142,86 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
     viewportSize.width >= MIN_EDITOR_WIDTH && viewportSize.height >= MIN_EDITOR_HEIGHT
   const isEditorDisabled = !isViewportAllowed
 
-  const buildTemplatePayload = useCallback((): CertificationTemplateCreateI => {
-    const uploadedBackgroundUrl = backgroundFile
-      ? null
+  const buildTemplatePayload = useCallback(async (): Promise<CertificationTemplateCreateI> => {
+    const backgroundUrl = backgroundFile
+      ? await uploadAndModerateFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
       : backgroundDataUrl
+
+    const payloadElements = await Promise.all(elements.map(async (e) => {
+      const base = {
+        xPct: e.xPct,
+        yPct: e.yPct,
+        widthPct: e.widthPct,
+        heightPct: e.heightPct,
+      }
+
+      if (e.type === 'text') {
+        return {
+          type: 'text' as const,
+          ...base,
+          content: e.content,
+        }
+      }
+
+      if (e.type === 'signature') {
+        return {
+          type: 'signature' as const,
+          ...base,
+          title: e.title ?? null,
+          signatureId: e.signatureId,
+        }
+      }
+
+      const file = imageFilesById[e.id]
+      const src = (e as ImageCanvasElement).src
+      if (src?.startsWith('blob:') || src?.startsWith('data:')) {
+        if (!file) {
+          throw new Error('A imagem do componente precisa ser reanexada antes de salvar')
+        }
+        const uploadedUrl = await uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/certifications`)
+        return {
+          type: 'image' as const,
+          ...base,
+          src: uploadedUrl,
+          fileName: file.name,
+        }
+      }
+
+      return {
+        type: 'image' as const,
+        ...base,
+        src,
+        fileName: (e as ImageCanvasElement).fileName ?? null,
+      }
+    }))
 
     const payload = {
       title: templateTitle,
-      url: uploadedBackgroundUrl,
+      url: backgroundUrl,
       data: {
-        background: uploadedBackgroundUrl,
-        elements: elements.map((e) => {
-          const base = {
-            xPct: e.xPct,
-            yPct: e.yPct,
-            widthPct: e.widthPct,
-            heightPct: e.heightPct,
-          }
-
-          if (e.type === 'text') {
-            return {
-              type: 'text',
-              ...base,
-              content: e.content,
-            }
-          }
-
-          if (e.type === 'signature') {
-            return { type: 'signature', ...base, title: e.title ?? null }
-          }
-
-          return {
-            type: 'image',
-            ...base,
-            src: (e as ImageCanvasElement).src,
-            fileName: (e as ImageCanvasElement).fileName ?? null,
-          }
-        }),
+        background: backgroundUrl,
+        elements: payloadElements,
       },
     } satisfies CertificationTemplateCreateI
 
     return certificationTemplateCreateSchema.parse(payload)
-  }, [backgroundDataUrl, backgroundFile, elements, templateTitle])
+  }, [backgroundDataUrl, backgroundFile, elements, editionId, eventId, imageFilesById, templateTitle])
 
   const getDisplayName = (el: CanvasElement) => {
     if (el.type === 'text') return 'Texto'
     if (el.type === 'image') return 'Imagem'
     return 'Assinatura'
   }
+
+  const selectedSignatureUrl =
+    selectedElement?.type === 'signature' && selectedElement.signatureId
+      ? signatureUrlsById[selectedElement.signatureId] ?? null
+      : null
+  const hasInvalidSignatureSelection = elements.some(
+    (element) =>
+      element.type === 'signature' &&
+      (!element.signatureId || !signatureUrlsById[element.signatureId])
+  )
 
   const addTextElement = () => {
     const newElement: TextCanvasElement = {
@@ -209,6 +252,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       heightPct: 10,
       zIndex: elements.length + 1,
       title: 'Assinatura',
+      signatureId: null,
     }
     setElements((prev) => [...prev, newElement])
     setSelectedElementId(newElement.id)
@@ -231,6 +275,11 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
 
   const deleteSelectedElement = () => {
     if (!selectedElementId) return
+    setImageFilesById((prev) => {
+      const next = { ...prev }
+      delete next[selectedElementId]
+      return next
+    })
     setElements((prev) => prev.filter((e) => e.id !== selectedElementId))
     setSelectedElementId(null)
   }
@@ -396,24 +445,26 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                     type="button"
                     className="w-full text-xs"
                     onClick={async () => {
-                      const payload = buildTemplatePayload()
-                      const backgroundUrl = backgroundFile
-                        ? await uploadAndModerateFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
-                        : payload.url ?? null
-
-                      void saveTemplateMutation.mutateAsync({
-                        ...payload,
-                        url: backgroundUrl ?? null,
-                        data: {
-                          ...payload.data,
-                          background: backgroundUrl ?? null,
-                        },
-                      })
+                      if (hasInvalidSignatureSelection) {
+                        toast.error('Escolha uma assinatura válida para cada componente de assinatura')
+                        return
+                      }
+                      try {
+                        const payload = await buildTemplatePayload()
+                        void saveTemplateMutation.mutateAsync(payload)
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : 'Erro ao preparar o template')
+                      }
                     }}
-                    disabled={saveTemplateMutation.isPending}
+                    disabled={saveTemplateMutation.isPending || hasInvalidSignatureSelection}
                   >
                     Salvar template
                   </Button>
+                  {hasInvalidSignatureSelection && (
+                    <p className="text-[11px] text-destructive">
+                      Escolha uma assinatura válida para cada componente antes de salvar.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </aside>
@@ -497,8 +548,8 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                 </div>
 
                 <CardContent className="p-4">
-                  <div ref={canvasHostRef} className={cn('relative overflow-hidden rounded-xl border', 'aspect-297/210 w-full bg-background')}>
-                    <canvas ref={canvasElRef} className="h-full w-full" style={{ touchAction: 'none' }} />
+                  <div className="relative aspect-297/210 w-full overflow-hidden rounded-xl border bg-background">
+                    <div ref={canvasHostRef} className="absolute inset-0" />
                     <div
                       className={cn('pointer-events-none absolute inset-0 transition-opacity duration-200', showGrid ? 'opacity-30' : 'opacity-0')}
                       style={{
@@ -507,6 +558,14 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                         backgroundSize: '50px 50px',
                       }}
                     />
+                    {showInitialLoading && (
+                      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/75 backdrop-blur-sm">
+                        <div className="flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">
+                          <Spinner className="size-4" />
+                          Carregando elementos
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -570,14 +629,47 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                     )}
 
                     {selectedElement.type === 'signature' && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Título</Label>
-                        <Input
-                          value={(selectedElement as SignatureCanvasElement).title ?? ''}
-                          onChange={(e) => updateElement(selectedElement.id, { title: e.target.value } as Partial<CanvasElement>)}
-                          className="h-7 text-xs"
-                          placeholder="Assinatura"
-                        />
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Título</Label>
+                          <Input
+                            value={(selectedElement as SignatureCanvasElement).title ?? ''}
+                            onChange={(e) => updateElement(selectedElement.id, { title: e.target.value } as Partial<CanvasElement>)}
+                            className="h-7 text-xs"
+                            placeholder="Assinatura"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Assinatura usada</Label>
+                          <select
+                            className="h-7 w-full rounded-md border border-input bg-background px-2 text-xs"
+                            value={(selectedElement as SignatureCanvasElement).signatureId ?? ''}
+                            onChange={(e) => updateElement(selectedElement.id, { signatureId: e.target.value || null } as Partial<CanvasElement>)}
+                          >
+                            <option value="">Selecione uma assinatura</option>
+                            {signatures.map((signature) => (
+                              <option key={signature.id} value={signature.id}>
+                                {signature.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {selectedSignatureUrl ? (
+                          <div className="rounded-xl border bg-muted/10 p-3">
+                            <p className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">Preview da assinatura</p>
+                            <img
+                              src={selectedSignatureUrl}
+                              alt={(selectedElement as SignatureCanvasElement).title ?? 'Assinatura'}
+                              className="max-h-24 w-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            Selecione uma assinatura salva para renderizar a imagem no template.
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -586,12 +678,22 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                         <Label className="text-xs text-muted-foreground">Imagem</Label>
                         <ImageUploadField
                           value={(selectedElement as ImageCanvasElement).src ?? undefined}
-                          onChange={(v) => { if (!v) updateElement(selectedElement.id, { src: null } as Partial<CanvasElement>) }}
+                          onChange={(v) => {
+                            if (!v) {
+                              setImageFilesById((prev) => {
+                                const next = { ...prev }
+                                delete next[selectedElement.id]
+                                return next
+                              })
+                              updateElement(selectedElement.id, { src: null, fileName: null } as Partial<CanvasElement>)
+                            }
+                          }}
                           onFileSelect={async (file) => {
                             if (!file) return
                             const nextUrl = URL.createObjectURL(file)
                             const current = selectedElement as ImageCanvasElement
                             if (current.src?.startsWith('blob:')) URL.revokeObjectURL(current.src)
+                            setImageFilesById((prev) => ({ ...prev, [selectedElement.id]: file }))
                             updateElement(selectedElement.id, {
                               src: nextUrl,
                               fileName: file.name,
