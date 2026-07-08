@@ -1,5 +1,5 @@
 import { motion } from "motion/react"
-import { MapPin, Sparkles } from "lucide-react"
+import { MapPin, PenLine, Sparkles } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 import type { EditionI } from "../model"
 import { StatusBadge } from "@/shared/ui"
@@ -115,6 +115,17 @@ export function AdminEditionCard({
         >
           <Sparkles className="size-3" />
           Certificações
+        </Link>
+        <Link
+          to="/admin/events/$eventId/editions/$editionId/signatures"
+          params={{ eventId, editionId: edition.id }}
+          className={cn(
+            "text-xs text-muted-foreground bg-muted hover:bg-muted/80 inline-flex items-center gap-1.5",
+            "px-3 py-1.5 rounded-md transition-colors font-medium"
+          )}
+        >
+          <PenLine className="size-3" />
+          Assinaturas
         </Link>
         {links.map(({ label, to }) => (
           <Link
