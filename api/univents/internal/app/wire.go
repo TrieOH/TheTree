@@ -146,6 +146,7 @@ func initMiddlewares(logger *zap.Logger) middlewares {
 	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = mws.CORS(mws.CORSConfig{
 		AllowedOrigins:   xslices.Clean(strings.Split(app.cfg.CorsAllowedOrigins, ",")),
+		AllowedHeaders:   xslices.Clean(strings.Split(app.cfg.CorsAllowedHeaders, ",")),
 		AllowCredentials: true,
 	})
 	mw.realIP = mws.RealIP()
