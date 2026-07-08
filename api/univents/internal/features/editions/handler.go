@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/validation"
 
 	fun "github.com/MintzyG/fun"
@@ -34,10 +34,9 @@ func Routes(
 ) {
 	r.Route("/events/{event_id}/editions", func(r chi.Router) {
 		r.Get("/", h.List)
-		r.Use(jwt)
-		r.Post("/", h.Create)
-		r.Get("/admin", h.ListAdmin)
-		r.Route("/{edition_id}", func(r chi.Router) {
+		r.With(jwt).Post("/", h.Create)
+		r.With(jwt).Get("/admin", h.ListAdmin)
+		r.With(jwt).Route("/{edition_id}", func(r chi.Router) {
 			r.Post("/announce", h.Announce)
 			r.Post("/payments/connect", h.ConnectPaymentAccount)
 			r.Post("/payments/disconnect", h.DisconnectPaymentAccount)
@@ -64,22 +63,6 @@ type CreateEditionRequest struct {
 	OrganizerName        *string               `json:"organizer_name"`
 }
 
-// Create godoc
-// @Summary Create a new edition
-// @Description Creates a new edition for an event.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param event_id path string true "Event ID"
-// @Param request body CreateEditionRequest true "Edition creation request"
-// @Success 201 {object} object "Edition created successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions [post]
 func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -123,17 +106,6 @@ func (handler *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	fun.Created().WithData(out).Send(w)
 }
 
-// List godoc
-// @Summary List editions for an event
-// @Description Retrieves a list of editions for a specific event.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param event_id path string true "Event ID"
-// @Success 200 {object} object "Editions retrieved successfully"
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions [get]
 func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -151,17 +123,6 @@ func (handler *Handler) List(w http.ResponseWriter, r *http.Request) {
 	fun.Created().WithData(out).Send(w)
 }
 
-// ListAdmin godoc
-// @Summary List editions for an event including draft ones
-// @Description Retrieves a list of editions for a specific event and its draft editions if you have editions:read.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param event_id path string true "Event ID"
-// @Success 200 {object} object "Editions retrieved successfully"
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions/admin [get]
 func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	eventID, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -179,22 +140,6 @@ func (handler *Handler) ListAdmin(w http.ResponseWriter, r *http.Request) {
 	fun.Created().WithData(out).Send(w)
 }
 
-// Announce godoc
-// @Summary Announce an edition
-// @Description Announces an edition making it publicly available.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param event_id path string true "Event ID"
-// @Param edition_id path string true "Edition ID"
-// @Success 200 {object} object "Edition announced successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id}/announce [post]
 func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	editionID, rs := validation.GetUUID(r, "edition_id")
 	if rs != nil {
@@ -212,24 +157,6 @@ func (handler *Handler) Announce(w http.ResponseWriter, r *http.Request) {
 	fun.OK().Send(w)
 }
 
-// ConnectPaymentAccount godoc
-// @Summary Connect a payment account to an edition
-// @Description Connects a payment provider credential to an edition.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param event_id path string true "Event ID"
-// @Param edition_id path string true "Edition ID"
-// @Param credential_id query string true "Trie Payments Credential ID (UUID)"
-// @Param provider query string true "Payment provider name"
-// @Success 200 {object} object "Payment account connected successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id}/payments/connect [post]
 func (handler *Handler) ConnectPaymentAccount(w http.ResponseWriter, r *http.Request) {
 	_, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {
@@ -277,22 +204,6 @@ func (handler *Handler) ConnectPaymentAccount(w http.ResponseWriter, r *http.Req
 	fun.OK("Payment account connected successfully").Send(w)
 }
 
-// DisconnectPaymentAccount godoc
-// @Summary Disconnect payment account from an edition
-// @Description Removes the connected payment provider credential from an edition.
-// @Tags editions
-// @Accept json
-// @Produce json
-// @Param Cookie header string true "Cookie: access_token=xxx"
-// @Security Cookie
-// @Param event_id path string true "Event ID"
-// @Param edition_id path string true "Edition ID"
-// @Success 200 {object} object "Payment account disconnected successfully"
-// @Failure 400 {object} contracts.ErrorResponse
-// @Failure 401 {object} contracts.ErrorResponse
-// @Failure 404 {object} contracts.ErrorResponse
-// @Failure 500 {object} contracts.ErrorResponse
-// @Router /events/{event_id}/editions/{edition_id}/payments/disconnect [post]
 func (handler *Handler) DisconnectPaymentAccount(w http.ResponseWriter, r *http.Request) {
 	_, rs := validation.GetUUID(r, "event_id")
 	if rs != nil {

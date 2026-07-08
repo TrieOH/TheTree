@@ -45,19 +45,5 @@ func (uc *QueryService) List(ctx context.Context, editionID uuid.UUID) (out []co
 		return nil, err
 	}
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("view_checkpoints"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
-		return nil, err
-	}
-
-	return uc.checkpoints.List(ctx, editionID)
+	return uc.checkpoints.List(ctx, edition.ID)
 }

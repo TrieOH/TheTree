@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/validation"
 
 	"github.com/MintzyG/fun"

@@ -50,6 +50,8 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 	r := chi.NewRouter()
 	r.Use(middlewares.cors)
 
+	r.Use(middlewares.cors)
+
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(docs.SwaggerJSON)

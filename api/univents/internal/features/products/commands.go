@@ -3,18 +3,15 @@ package products
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net/url"
-	"strings"
 
 	"lib/database"
+	"lib/objectstorage"
 	"univents/internal/shared/authz"
 	"univents/internal/shared/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
 	"github.com/google/uuid"
-	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -24,6 +21,7 @@ type CommandService struct {
 	editions  ports.EditionsRepository
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
+	obj       *objectstorage.Client
 	logger    *zap.Logger
 	tracer    trace.Tracer
 	tx        database.TxRunner
@@ -33,6 +31,7 @@ func NewCommandService(
 	editions ports.EditionsRepository,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
+	obj *objectstorage.Client,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
@@ -41,6 +40,7 @@ func NewCommandService(
 		editions:  editions,
 		products:  products,
 		purchases: purchases,
+		obj:       obj,
 		logger:    logger,
 		tracer:    tracer,
 		tx:        tx,
@@ -245,12 +245,12 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 		return nil, err
 	}
 
-	bucket, key, err := parseMinioURL(url)
+	bucket, key, err := objectstorage.ParseURL(url)
 	if err != nil {
 		return nil, errx.Invalid("product").SetMessage("invalid image url")
 	}
 
-	if err = uc.minio.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{}); err != nil {
+	if err = uc.obj.RemoveObject(ctx, bucket, key); err != nil {
 		return nil, errx.Internal("product").SetMessage("failed to delete image from storage: " + err.Error())
 	}
 
@@ -260,19 +260,6 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	}
 
 	return product, nil
-}
-
-func parseMinioURL(rawURL string) (bucket, key string, err error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", "", fmt.Errorf("invalid url: %w", err)
-	}
-	// path is /bucket/key/possibly/nested
-	parts := strings.SplitN(strings.TrimPrefix(u.Path, "/"), "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("url path too short, expected /bucket/key: %s", u.Path)
-	}
-	return parts[0], parts[1], nil
 }
 
 func (uc *CommandService) Delete(ctx context.Context, id uuid.UUID) (err error) {

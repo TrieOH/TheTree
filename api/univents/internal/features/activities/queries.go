@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"lib/database"
-	"univents/internal/shared/authz"
-	"univents/internal/shared/contracts"
+	"univents/contracts"
 	"univents/internal/shared/ports"
 
 	"github.com/google/uuid"
@@ -54,21 +53,7 @@ func (uc *QueryService) AdminList(ctx context.Context, editionID uuid.UUID) (out
 		return nil, err
 	}
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("view_activities"),
-		authz.Resource("edition", edition.ID.String()),
-	); err != nil {
-		return nil, err
-	}
-
-	return uc.activities.ListAdmin(ctx, editionID)
+	return uc.activities.ListAdmin(ctx, edition.ID)
 }
 
 func (uc *CommandService) ListRecords(ctx context.Context, activityID uuid.UUID) (records []contracts.AttendanceRecord, err error) {
@@ -78,28 +63,14 @@ func (uc *CommandService) ListRecords(ctx context.Context, activityID uuid.UUID)
 		span.SetAttributes(attribute.Bool("mark.success", err == nil))
 	}()
 
-	var sub *authz.UserSubject
-	sub, err = authz.RequireSubject(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	var activity *contracts.Activity
 	activity, err = uc.activities.GetByID(ctx, activityID)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = authz.Require(ctx, uc.az,
-		authz.Subject("user", sub.ID),
-		authz.Permission("view_attendance"),
-		authz.Resource("activity", activity.ID.String()),
-	); err != nil {
-		return nil, err
-	}
-
 	var attendanceRecords []contracts.AttendanceRecord
-	attendanceRecords, err = uc.activities.ListActivityAttendanceRecords(ctx, activityID)
+	attendanceRecords, err = uc.activities.ListActivityAttendanceRecords(ctx, activity.ID)
 	if err != nil {
 		return nil, err
 	}
