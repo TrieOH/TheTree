@@ -45,11 +45,12 @@ type Config struct {
 	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
 	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`
 
-	// RustFS
-	//ObjStorageURL       string `env:"OBJECT_STORAGE_ENDPOINT,required"`
-	//ObjStorageAccessKey string `env:"OBJECT_STORAGE_ACCESS_KEY,required"`
-	//ObjStorageSecretKey string `env:"OBJECT_STORAGE_SECRET_KEY,required"`
-	//ObjStorageUseSSL    bool   `env:"OBJECT_STORAGE_USE_SSL,required"`
+	// Object Storage (RustFS)
+	ObjStorageEndpoint  string `env:"OBJECT_STORAGE_ENDPOINT,required"`
+	ObjStorageAccessKey string `env:"OBJECT_STORAGE_ACCESS_KEY,required"`
+	ObjStorageSecretKey string `env:"OBJECT_STORAGE_SECRET_KEY,required"`
+	ObjStorageUseSSL    bool   `env:"OBJECT_STORAGE_USE_SSL" envDefault:"true"`
+	ObjStorageRegion    string `env:"OBJECT_STORAGE_REGION" envDefault:"us-east-1"`
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`

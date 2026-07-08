@@ -3,18 +3,18 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/objectstorage"
 	"lib/telemetry"
 
 	idx "sdk/identityx"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/minio/minio-go/v7"
 )
 
 type Univents struct {
-	db        *pgxpool.Pool
-	idxClient *idx.Client
-	minio     *minio.Client
+	db         *pgxpool.Pool
+	idxClient  *idx.Client
+	objStorage *objectstorage.Client
 
 	cfg Config
 }
@@ -30,7 +30,7 @@ func Start() {
 	SetupFUN(app.cfg.AppName)
 
 	app.idxClient = SetupIdentityX(app.cfg)
-	//app.minio = SetupObjectStorage(app.cfg)
+	app.objStorage = SetupObjectStorage(app.cfg)
 
 	app.db = database.SetupDB(app.cfg.ToDBConfig())
 	defer database.CloseDB(app.db)

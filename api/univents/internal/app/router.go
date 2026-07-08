@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
+	"univents/internal/features/signatures"
 
 	"univents/internal/features/activities"
 	"univents/internal/features/editions"
@@ -76,6 +77,7 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	events.Routes(r, handlers.Events, middlewares.jwt)
 	editions.Routes(r, handlers.Editions, middlewares.jwt)
 	activities.Routes(r, handlers.Activities, middlewares.jwt)
+	signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
 	//tickets.Routes(r, handlers.Tickets, middlewares.jwt)
 	//checkpoints.Routes(r, handlers.Checkpoints, middlewares.jwt)
 	//products.Routes(r, handlers.Products, middlewares.jwt)

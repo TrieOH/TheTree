@@ -2,18 +2,15 @@ package events
 
 import (
 	"context"
-	"fmt"
-	"net/url"
-	idx "sdk/identityx"
-	"strings"
-
 	"lib/database"
+	"lib/objectstorage"
 	"univents/contracts"
 	"univents/internal/shared/errx"
 	"univents/internal/shared/ports"
 
+	idx "sdk/identityx"
+
 	"github.com/google/uuid"
-	"github.com/minio/minio-go/v7"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -21,7 +18,7 @@ import (
 
 type CommandService struct {
 	events ports.EventsRepository
-	minio  *minio.Client
+	obj    *objectstorage.Client
 	logger *zap.Logger
 	tracer trace.Tracer
 	tx     database.TxRunner
@@ -29,14 +26,14 @@ type CommandService struct {
 
 func NewCommandService(
 	events ports.EventsRepository,
-	minio *minio.Client,
+	obj *objectstorage.Client,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *CommandService {
 	return &CommandService{
 		events: events,
-		minio:  minio,
+		obj:    obj,
 		logger: logger,
 		tracer: tracer,
 		tx:     tx,
@@ -123,12 +120,12 @@ func (uc *CommandService) UnsetLogo(ctx context.Context, id uuid.UUID) (event *c
 		return nil, errx.Invalid("event").SetMessage("already has no logo")
 	}
 
-	bucket, key, err := parseMinioURL(*event.LogoUrl)
+	bucket, key, err := objectstorage.ParseURL(*event.LogoUrl)
 	if err != nil {
 		return nil, errx.Invalid("event").SetMessage("invalid image url")
 	}
 
-	if err = uc.minio.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{}); err != nil {
+	if err = uc.obj.RemoveObject(ctx, bucket, key); err != nil {
 		return nil, errx.Internal("event").SetMessage("failed to delete image from storage: " + err.Error())
 	}
 
@@ -172,12 +169,12 @@ func (uc *CommandService) UnsetBanner(ctx context.Context, id uuid.UUID) (event 
 		return nil, errx.Invalid("event").SetMessage("already has no banner")
 	}
 
-	bucket, key, err := parseMinioURL(*event.BannerUrl)
+	bucket, key, err := objectstorage.ParseURL(*event.BannerUrl)
 	if err != nil {
 		return nil, errx.Invalid("event").SetMessage("invalid image url")
 	}
 
-	if err = uc.minio.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{}); err != nil {
+	if err = uc.obj.RemoveObject(ctx, bucket, key); err != nil {
 		return nil, errx.Internal("event").SetMessage("failed to delete image from storage: " + err.Error())
 	}
 
@@ -217,12 +214,12 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 		return nil, err
 	}
 
-	bucket, key, err := parseMinioURL(url)
+	bucket, key, err := objectstorage.ParseURL(url)
 	if err != nil {
 		return nil, errx.Invalid("event").SetMessage("invalid image url")
 	}
 
-	if err = uc.minio.RemoveObject(ctx, bucket, key, minio.RemoveObjectOptions{}); err != nil {
+	if err = uc.obj.RemoveObject(ctx, bucket, key); err != nil {
 		return nil, errx.Internal("event").SetMessage("failed to delete image from storage: " + err.Error())
 	}
 
@@ -232,17 +229,4 @@ func (uc *CommandService) RemoveGalleryImage(ctx context.Context, id uuid.UUID, 
 	}
 
 	return event, nil
-}
-
-func parseMinioURL(rawURL string) (bucket, key string, err error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", "", fmt.Errorf("invalid url: %w", err)
-	}
-	// path is /bucket/key/possibly/nested
-	parts := strings.SplitN(strings.TrimPrefix(u.Path, "/"), "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("url path too short, expected /bucket/key: %s", u.Path)
-	}
-	return parts[0], parts[1], nil
 }
