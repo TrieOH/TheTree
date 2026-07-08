@@ -48,6 +48,7 @@ import (
 // @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
 func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middlewares.cors)
 
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
