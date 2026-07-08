@@ -3,6 +3,7 @@ package app
 import (
 	"lib/database"
 	"lib/errx"
+	"lib/objectstorage"
 	"lib/xslices"
 	"net/http"
 	"strings"
@@ -11,10 +12,11 @@ import (
 	"univents/internal/features/activities"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
+	"univents/internal/features/signatures"
 	"univents/internal/shared/ports"
+	ports2 "univents/ports"
 
 	mws "github.com/MintzyG/fun/middlewares"
-	"github.com/minio/minio-go/v7"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -26,6 +28,7 @@ type repos struct {
 	events     ports.EventsRepository
 	editions   ports.EditionsRepository
 	activities ports.ActivitiesRepository
+	signatures ports2.SignatureRepo
 	//checkpoints ports.CheckpointsRepository
 	//tickets     ports.TicketsRepository
 	//products    ports.ProductsRepository
@@ -36,6 +39,7 @@ type queries struct {
 	events     *events.QueryService
 	editions   *editions.QueryService
 	activities *activities.QueryService
+	signatures *signatures.Queries
 	//checkpoints *checkpoints.QueryService
 	//tickets     *tickets.QueryService
 	//products    *products.QueryService
@@ -46,6 +50,7 @@ type commands struct {
 	events     *events.CommandService
 	editions   *editions.CommandService
 	activities *activities.CommandService
+	signatures *signatures.Commands
 	//checkpoints *checkpoints.CommandService
 	//tickets     *tickets.CommandService
 	//products    *products.CommandService
@@ -71,6 +76,7 @@ type handlers struct {
 	Events     *events.Handler
 	Editions   *editions.Handler
 	Activities *activities.Handler
+	signatures *signatures.Handlers
 	//Checkpoints *checkpoints.Handler
 	//Tickets     *tickets.Handler
 	//Products    *products.Handler
@@ -85,6 +91,7 @@ func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 		events:     events.NewRepo(q, loggr, tracer),
 		editions:   editions.NewRepo(q, loggr, tracer),
 		activities: activities.NewRepo(q, loggr, tracer),
+		signatures: signatures.NewRepos(q, loggr, tracer),
 		//checkpoints: checkpoints.NewRepo(q, loggr, tracer),
 		//tickets:     tickets.NewRepo(q, loggr, tracer),
 		//products:    products.NewRepo(q, loggr, tracer),
@@ -97,6 +104,7 @@ func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.
 		events:     events.NewQueryService(r.events, loggr, tracer, tx),
 		editions:   editions.NewQueryService(r.events, r.editions, loggr, tracer, tx),
 		activities: activities.NewQueryService(r.activities, r.editions, loggr, tracer, tx),
+		signatures: signatures.NewQueries(r.signatures, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewQueryService(r.checkpoints, r.editions, loggr, tracer, tx),
 		//tickets:     tickets.NewQueryService(r.tickets, r.editions, loggr, tracer, tx),
 		//products:    products.NewQueryService(r.products, r.purchases, r.editions, loggr, tracer, tx),
@@ -104,14 +112,15 @@ func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.
 	}
 }
 
-func initCommands(r repos, minio *minio.Client, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) commands {
+func initCommands(r repos, obj *objectstorage.Client, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
-		events:     events.NewCommandService(r.events, minio, loggr, tracer, tx),
+		events:     events.NewCommandService(r.events, obj, loggr, tracer, tx),
 		editions:   editions.NewCommandService(r.events, r.editions, loggr, tracer, tx),
 		activities: activities.NewCommandService(r.activities, r.editions, loggr, tracer, tx),
+		signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewCommandService(r.checkpoints, r.editions, loggr, tracer, tx),
 		//tickets:     tickets.NewCommandService(r.editions, r.tickets, loggr, tracer, tx),
-		//products:    products.NewCommandService(r.editions, r.products, r.purchases, loggr, tracer, tx),
+		//products:    products.NewCommandService(r.editions, r.products, r.purchases, obj, loggr, tracer, tx),
 		//purchases:   purchases.NewCommandService(r.editions, r.products, r.purchases, loggr, tracer, tx),
 	}
 }
@@ -122,6 +131,7 @@ func initHandlers(q queries, c commands) handlers {
 		Events:     events.NewHandler(c.events, q.events),
 		Editions:   editions.NewHandler(c.editions, q.editions),
 		Activities: activities.NewHandler(c.activities, q.activities),
+		signatures: signatures.NewHandlers(c.signatures, q.signatures),
 		//Checkpoints: checkpoints.NewHandler(c.checkpoints, q.checkpoints),
 		//Tickets:     tickets.NewHandler(c.tickets, q.tickets),
 		//Products:    products.NewHandler(c.products, q.products),

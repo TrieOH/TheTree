@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 	"lib/database"
+	"lib/errx"
+	"lib/objectstorage"
+	"lib/telemetry"
 	"lib/validator"
 	"net/http"
 	"time"
-
-	"lib/errx"
-	"lib/telemetry"
 
 	idx "sdk/identityx"
 
@@ -126,17 +126,19 @@ func SetupIdentityX(cfg Config) *idx.Client {
 //	return client
 //}
 
-//func SetupObjectStorage(cfg Config) *minio.Client {
-//	client, err := minio.New(cfg.ObjStorageURL, &minio.Options{
-//		Creds:  credentials.NewStaticV4(cfg.ObjStorageAccessKey, cfg.ObjStorageSecretKey, ""),
-//		Secure: cfg.ObjStorageUseSSL,
-//	})
-//	if err != nil {
-//		errx.Exit(err, "failed to create ObjectStorage client")
-//	}
-//	log.Println("Connected to ObjectStorage")
-//	return client
-//}
+func SetupObjectStorage(cfg Config) *objectstorage.Client {
+	client, err := objectstorage.New(context.Background(), objectstorage.Config{
+		Endpoint:  cfg.ObjStorageEndpoint,
+		AccessKey: cfg.ObjStorageAccessKey,
+		SecretKey: cfg.ObjStorageSecretKey,
+		UseSSL:    cfg.ObjStorageUseSSL,
+		Region:    cfg.ObjStorageRegion,
+	})
+	if err != nil {
+		errx.Exit(err, "failed to create object-storage client")
+	}
+	return client
+}
 
 func SetupAuthMiddlewares() *mws.Middleware[*idx.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
