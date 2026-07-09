@@ -11,19 +11,24 @@ ps:
 # =============================================================
 
 prod +SERVICES="":
-    docker compose -f compose.prod.yml --env-file .tags.env --profile core --profile obs pull {{SERVICES}}
-    docker compose -f compose.prod.yml --env-file .tags.env --profile core --profile obs up -d {{SERVICES}}
+    just obs-prod
+    docker compose -f compose.prod.yml --env-file .tags.env pull {{SERVICES}}
+    docker compose -f compose.prod.yml --env-file .tags.env up -d {{SERVICES}}
 
 # =============================================================
 # 🛠️ COMPOSE HELPERS
 # =============================================================
 
 _compose +ARGS:
-    docker compose -f compose.dev.yml --profile core {{ARGS}}
+    docker compose -f compose.yml {{ARGS}}
 
 # Boot the observability stack detached
 obs:
-    docker compose -f compose.obs.yml --profile obs up -d
+    docker compose -f compose.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
+
+# Boot the prod observability stack detached
+obs:
+    docker compose -f compose.prod.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
 
 # =============================================================
 # 🚀 DEV — back + front together
@@ -82,13 +87,17 @@ front +SERVICES="identityx informd payssage univents":
 # 🧹 TEARDOWN
 # =============================================================
 
-# Stop services. No args stops everything, or pass specific services.
+# Stop everything (containers + networks). Pass specific services to only
+# stop+remove those, instead of the whole project — `down` itself has no
+# concept of "just this service", so we branch to `rm -f -s` for that case.
 down +SERVICES="":
-    docker compose -f compose.dev.yml --profile core --profile obs down {{SERVICES}}
-
-# Stop and remove volumes. No args stops everything, or pass specific services.
-downv +SERVICES="":
-    docker compose -f compose.dev.yml --profile core --profile obs down -v {{SERVICES}}
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{SERVICES}}" ]; then
+      docker compose -f compose.yml --profile obs down
+    else
+      docker compose -f compose.yml --profile obs rm -f -s {{SERVICES}}
+    fi
 
 # =============================================================
 # 🔧 GENERATE
@@ -154,11 +163,11 @@ lint-ci:
 # =============================================================
 
 email:
-    docker compose -f compose.prod.yml --profile email up -d mox
+    docker compose -f compose.prod.yml up -d mox
 
 # =============================================================
 # 🔧 GIT
 # =============================================================
 
 git:
-    docker compose -f compose.prod.yml --profile git up -d forgejo forgejo-runner forgejo-dind
+    docker compose -f compose.prod.yml up -d forgejo forgejo-runner forgejo-dind
