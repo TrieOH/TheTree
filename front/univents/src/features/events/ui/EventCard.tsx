@@ -35,12 +35,11 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
       transition={{ delay: index * 0.06, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       onClick={handleClick}
       className={cn(
-        "group relative cursor-pointer min-w-72",
-        "bg-card rounded-lg",
+        "group relative cursor-pointer min-w-0",
+        "bg-card rounded-2xl overflow-hidden",
         "border border-transparent hover:border-border",
         "transition-all duration-300 ease-out",
-        "hover:shadow-lg hover:shadow-foreground/5",
-        "hover:-translate-y-1",
+        "hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1",
         className
       )}
       role="link"
@@ -51,7 +50,7 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
         }
       }}
     >
-      <div className="aspect-4/3 rounded-t-lg overflow-hidden relative bg-muted">
+      <div className="overflow-hidden relative bg-muted aspect-4/3">
         {hasVisual ? (
           <img
             src={event.banner_url ?? event.logo_url ?? ""}
@@ -71,7 +70,7 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
 
         {event.is_series && (
           <div className="absolute top-3 left-3 md:top-4 md:left-4">
-            <span className="px-2.5 py-1 bg-background/90 backdrop-blur-sm rounded-full text-[10px] font-medium text-foreground">
+            <span className="bg-background/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground">
               Série · {event.editions_count} edições
             </span>
           </div>
@@ -84,12 +83,12 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
         </div>
       </div>
 
-      <div className="p-4 md:p-5 space-y-3">
+      <div className="p-4 md:p-5 space-y-2.5">
         <div className="text-xs text-muted-foreground">
           Criado em {createdDate}
         </div>
 
-        <h3 className="font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300">
+        <h3 className="font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 text-base md:text-lg">
           {event.name}
         </h3>
 
