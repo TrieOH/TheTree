@@ -157,7 +157,7 @@ func initMiddlewares(logger *zap.Logger) middlewares {
 	mw.anyAuth = authMW.AnyAuth()
 	mw.bodySize = mws.MaxBodySize(1 << 20)
 	mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
-	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
+	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/health", "/metrics", "/admin/asynq"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")

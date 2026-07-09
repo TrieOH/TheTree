@@ -59,5 +59,6 @@ func mapEditionFromDB(src *sqlc.Edition) *contracts.Edition {
 		CreatedAt:                     src.CreatedAt,
 		UpdatedAt:                     src.UpdatedAt,
 		DeletedAt:                     src.DeletedAt,
+		CertificationTemplateID:       src.CertificationTemplateID,
 	}
 }

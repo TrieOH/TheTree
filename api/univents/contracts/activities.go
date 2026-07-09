@@ -33,24 +33,25 @@ const (
 )
 
 type Activity struct {
-	ID                uuid.UUID        `json:"id"`
-	EditionID         uuid.UUID        `json:"edition_id" validate:"required"`
-	Title             string           `json:"title"      validate:"required,min=3"`
-	Description       *string          `json:"description"`
-	Status            ActivityStatus   `json:"status"     validate:"required,oneof=draft published ongoing completed canceled"`
-	Location          string           `json:"location"`
-	StartsAt          time.Time        `json:"starts_at"  validate:"required"`
-	EndsAt            time.Time        `json:"ends_at"    validate:"required"`
-	PresenterName     *string          `json:"presenter_name"`
-	TokenCost         int              `json:"token_cost"`
-	HasCapacity       bool             `json:"has_capacity"`
-	Capacity          int              `json:"capacity"`
-	RemainingCapacity int              `json:"remaining_capacity"`
-	Difficulty        *DifficultyLevel `json:"difficulty" validate:"oneof=no_prerequisites beginner intermediate advanced expert"`
-	CreatedBy         uuid.UUID        `json:"created_by" validate:"required"`
-	CreatedAt         time.Time        `json:"created_at"`
-	UpdatedAt         time.Time        `json:"updated_at"`
-	DeletedAt         *time.Time       `json:"deleted_at"`
+	ID                      uuid.UUID        `json:"id"`
+	EditionID               uuid.UUID        `json:"edition_id" validate:"required"`
+	Title                   string           `json:"title"      validate:"required,min=3"`
+	Description             *string          `json:"description"`
+	Status                  ActivityStatus   `json:"status"     validate:"required,oneof=draft published ongoing completed canceled"`
+	Location                string           `json:"location"`
+	StartsAt                time.Time        `json:"starts_at"  validate:"required"`
+	EndsAt                  time.Time        `json:"ends_at"    validate:"required"`
+	PresenterName           *string          `json:"presenter_name"`
+	TokenCost               int              `json:"token_cost"`
+	HasCapacity             bool             `json:"has_capacity"`
+	Capacity                int              `json:"capacity"`
+	RemainingCapacity       int              `json:"remaining_capacity"`
+	CertificationTemplateID *uuid.UUID       `json:"certification_template_id"`
+	Difficulty              *DifficultyLevel `json:"difficulty" validate:"oneof=no_prerequisites beginner intermediate advanced expert"`
+	CreatedBy               uuid.UUID        `json:"created_by" validate:"required"`
+	CreatedAt               time.Time        `json:"created_at"`
+	UpdatedAt               time.Time        `json:"updated_at"`
+	DeletedAt               *time.Time       `json:"deleted_at"`
 }
 
 type CreateActivitySpec struct {
