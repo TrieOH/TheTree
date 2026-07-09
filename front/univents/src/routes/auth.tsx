@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import type { LoginFormValues, SignUpFormValues } from '@/features/auths/model';
 import { requireGuest } from '@/features/auths/lib/route-guard';
-import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
+import { useAuthActions } from '@trieoh/front-core';
 import { cn } from '@/shared/lib/utils';
 import FormInput from '@/shared/ui/form/FormInput';
 import { loginSchema, signUpSchema } from '@/features/auths/model';

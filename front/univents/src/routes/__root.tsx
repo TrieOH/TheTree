@@ -9,7 +9,7 @@ import { AuthProvider } from '@trieoh/identityx-sdk-ts/react'
 
 import PostHogProvider from '../integrations/posthog/provider'
 
-import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
+import { Provider as TanStackQueryProvider } from '../integrations/tanstack-query/root-provider'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -18,7 +18,7 @@ import type { useAuth } from '@trieoh/identityx-sdk-ts/react';
 
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
-import { AuthContextUpdater } from '@/integrations/auth/auth-context-updater'
+import { AuthContextUpdater } from '@trieoh/front-core'
 import { NavigationDock } from '@/widgets/ui/navigation-dock'
 import NotFound from '@/widgets/feedback/ui/NotFound'
 import { Toaster } from '@/shared/ui/shadcn/sonner'

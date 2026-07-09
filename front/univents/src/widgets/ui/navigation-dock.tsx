@@ -5,7 +5,8 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import type { LucideIcon } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/shadcn/tooltip';
 import { cn } from '@/shared/lib/utils';
-import { useAuthActions } from '@/features/auths/hooks/use-auth-actions';
+import { useAuthActions } from '@trieoh/front-core';
+import { useAuth } from '@trieoh/identityx-sdk-ts/react';
 
 interface NavItemType {
   id: string;
@@ -255,7 +256,8 @@ const MobileNavItem = ({
 };
 
 export const NavigationDock = memo(function ({ className }: NavigationDockProps) {
-  const { handleLogout, isAuthenticated } = useAuthActions();
+  const { handleLogout } = useAuthActions();
+  const { isAuthenticated } = useAuth()
   const location = useLocation();
   const navigate = useNavigate();
 

@@ -1,32 +1,10 @@
-import { createFetcher, createQueryFetcher } from "@trieoh/identityx-sdk-ts";
-import { createDefaultFetchClient } from "@soramux/node-fetch-sdk";
 import { env } from "@/env";
+import { createAppFetchers } from "@trieoh/api-client"
 
-/**
- * Used to handle non authenticated request
- */
-export const simpleFetcher = createDefaultFetchClient({
-  baseURL: env.VITE_API_URL,
-  credentials: "omit",
-  timeout: 10_000, // 10 seconds timeout
+const { authFetcher, queryFetcher, publicFetcher } = createAppFetchers({
+  apiURL: env.VITE_API_URL,
+  authAPIURL: env.VITE_AUTH_API_URL,
+  timeout: 10_000,
 })
 
-export const authFetcher = createFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_AUTH_API_URL,
-    clientConfig: {
-      timeout: 10_000, // 10 seconds timeout
-    }
-  }
-);
-
-export const tanstackQueryFetcher = createQueryFetcher(
-  {
-    baseURL: env.VITE_API_URL,
-    authBaseURL: env.VITE_AUTH_API_URL,
-    clientConfig: {
-      timeout: 10_000, // 10 seconds timeout
-    }
-  }
-);
+export { authFetcher, publicFetcher as simpleFetcher, queryFetcher as tanstackQueryFetcher }
