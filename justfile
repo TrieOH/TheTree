@@ -27,7 +27,7 @@ obs:
     docker compose -f compose.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
 
 # Boot the prod observability stack detached
-obs:
+obs-prod:
     docker compose -f compose.prod.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
 
 # =============================================================
