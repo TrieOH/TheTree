@@ -22,11 +22,11 @@ func NewHandlers(
 func RegisterRoutes(
 	r *chi.Mux,
 	h *Handlers,
-	jwtAuth func(http.Handler) http.Handler,
+	anyAuth func(http.Handler) http.Handler,
 	clientOnly func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Use(jwtAuth, clientOnly)
+		r.Use(anyAuth, clientOnly)
 		r.Post("/projects/{project_id}/api_keys", h.Create)
 	})
 }

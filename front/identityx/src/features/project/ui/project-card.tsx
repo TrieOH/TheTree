@@ -1,8 +1,10 @@
 import { cn } from "@/shared/lib/utils";
 import {
   BadgeCheck,
+  Component,
   Ellipsis,
   ExternalLink,
+  Fingerprint,
   FolderKanban,
   Globe,
   Users2,
@@ -23,8 +25,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import { timeAgo } from "@/shared/lib/date-utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { timeAgo } from "@trieoh/shared-utils";
 
 interface PropsI {
   data: ProjectI;
@@ -56,13 +58,43 @@ function MenuItems({
         View Project
       </Item>
       <Item
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          navigate({
+            to: "/admin/projects/$projectID/actors",
+            params: { projectID: data.id },
+            search: { organizationID: data.organization_id || undefined }
+          })
+        }}
+      >
+        <Component className="mr-2 size-4" />
+        View Actors
+      </Item>
+      <Item
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          navigate({
+            to: "/admin/projects/$projectID/capabilities",
+            params: { projectID: data.id },
+            search: { organizationID: data.organization_id || undefined }
+          })
+        }}
+      >
+        <Fingerprint className="mr-2 size-4" />
+        View Capabilities
+      </Item>
+      <Item
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           navigate({
             to: "/admin/projects/$projectID/members",
             params: { projectID: data.id },
             search: { organizationID: data.organization_id || undefined }
           })
-        }
+        }}
       >
         <Users2 className="mr-2 size-4" />
         View Members

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
@@ -10,10 +9,10 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 
 const config = defineConfig(() => {
   return {
+    resolve: { tsconfigPaths: true },
     plugins: [
       cloudflare({ viteEnvironment: { name: 'ssr' } }),
       devtools(),
-      tsconfigPaths({ projects: ['./tsconfig.json'] }),
       tailwindcss(),
       tanstackStart(),
       viteReact(),
@@ -54,8 +53,7 @@ const config = defineConfig(() => {
               return 'vendor-forms'
 
             // Analytics / tracking
-            if (id.includes('posthog-js') || id.includes('@posthog/react'))
-              return 'vendor-analytics'
+            if (id.includes('posthog-js')) return 'vendor-analytics'
 
             // Animations
             if (id.includes('/motion/')) return 'vendor-animations'
@@ -82,12 +80,7 @@ const config = defineConfig(() => {
             }
 
             // Internal SDK
-            if (
-              id.includes('@trieoh/identityx-sdk-ts') ||
-              id.includes('@trieoh/envoy-fetch-ts')
-            ) {
-              return 'vendor-trieoh'
-            }
+            if (id.includes('@trieoh/identityx-sdk-ts')) return 'vendor-trieoh'
 
             // Utils Network and Infra
             if (id.includes('@t3-oss/env-core')) return 'vendor-infra'

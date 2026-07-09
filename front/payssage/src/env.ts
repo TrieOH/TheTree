@@ -4,6 +4,7 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     SERVER_URL: z.url().optional(),
+    IDENTITYX_ACCESS_API_KEY: z.string(),
   },
 
   /**
@@ -32,6 +33,7 @@ export const env = createEnv({
   runtimeEnv: {
     ...import.meta.env,
     SERVER_URL: process.env.SERVER_URL,
+    IDENTITYX_ACCESS_API_KEY: process.env.IDENTITYX_ACCESS_API_KEY,
   },
 
   /**
