@@ -34,15 +34,11 @@ export default function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-
-    if (value && preview && value !== preview) {
+    if (!value && !selectedFile) {
       setPreview(null)
       setSelectedFile(null)
-      onFileSelect?.(null)
     }
-
-    if (!value && !selectedFile) setPreview(null)
-  }, [value, preview, selectedFile, onFileSelect])
+  }, [value, selectedFile])
 
   const validateFile = (file: File): string | null => {
     if (maxSize && file.size > maxSize) {

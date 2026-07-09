@@ -95,6 +95,21 @@ export const publishActivityFn = createClientOnlyFn((
 });
 
 /**
+ * Completes the activity if you have activities:complete on the activity
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param activityId - The activity id
+ * @returns A promise that resolves to the API null response.
+ */
+export const completeActivityFn = createClientOnlyFn((
+  eventId: string, editionId: string, activityId: string
+) => {
+  return authFetcher.post<null>(
+    `/events/${eventId}/editions/${editionId}/activities/${activityId}/complete`
+  );
+});
+
+/**
  * Lists attendance records of the activity if you have activities:manage on the activity
  * @param eventId - The event id
  * @param editionId - The edition id
@@ -128,6 +143,7 @@ export const allActivityAttendanceRecordsQueryOptions = (
  * @param eventId - The event id
  * @param editionId - The edition id
  * @param activityId - The activity id
+ * @param recordId - The attendance record id
  * @returns A promise that resolves to the API null response.
  */
 export const markAttendanceForUserInActivityFn = createClientOnlyFn((
