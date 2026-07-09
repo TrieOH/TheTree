@@ -1,19 +1,17 @@
 # =============================================================
-# compose.prod.yml  (entry point)
+# compose.yml  (dev, entry point)
 #
-# Production environment. Pulls versioned images from the
-# registry, Caddy with TLS via Cloudflare origin certs +
-# Let's Encrypt. Postgres is internal only. Fully self-
-# contained — no other compose files needed. Server profiles
-# (email, git) and obs are included but inert unless
-# explicitly activated.
+# Development environment. Builds images from local source,
+# exposes ports directly (no Caddy TLS needed locally), adds
+# Mailpit for email testing. Fully self-contained — no other
+# compose files needed. Observability services stay behind
+# --profile obs so lean runs skip them.
 #
 # Usage:
-#   docker compose -f compose.prod.yml up -d
-#   docker compose -f compose.prod.yml --profile email up -d mox
-#   docker compose -f compose.prod.yml --profile git up -d forgejo forgejo-runner forgejo-dind
+#   docker compose up --build
+#   docker compose --profile obs up -d beszel grafana ...
 #
-# Or via just: just prod, just email, just git
+# Or via just: just dev, just api <svc>, just obs
 # =============================================================
 
 networks:
@@ -33,10 +31,6 @@ volumes:
   beszel_data:
   beszel_agent_data:
   beszel_socket:
-  forgejo-data:
-  forgejo-runner-data:
-  forgejo-dind-data:
-  buildkit-cache:
 
 services:
 
@@ -50,6 +44,8 @@ services:
     restart: unless-stopped
     env_file:
       - .tree.env
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     networks:
@@ -61,26 +57,35 @@ services:
       retries: 5
 
   # =============================================================
-  # 🌐 CADDY (prod)
+  # 🌐 CADDY (dev)
   # =============================================================
 
   caddy:
     image: caddy:latest
-    container_name: caddy
+    container_name: caddy-dev
     restart: unless-stopped
     env_file:
       - .tree.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"        # API gateway
+      - "8080:8080"    # identityx
+      - "8081:8081"    # univents
+      - "8082:8082"    # payssage
+      - "8083:8083"    # informd
+      - "8090:8090"    # beszel
+      - "9000:9000"    # rustfs API
+      - "9001:9001"    # rustfs console
+      - "3000:3000"    # grafana
+      - "8025:8025"    # mailpit
+      - "8428:8428"    # victoria-metrics
+      - "9428:9428"    # victoria-logs
+      - "10428:10428"  # victoria-traces
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /etc/caddy/certs:/etc/caddy/certs:ro
     networks:
       - internal
     healthcheck:
@@ -120,15 +125,21 @@ services:
   identityx:
     container_name: identityx
     restart: unless-stopped
-    image: git.trieoh.com/trieoh/identityx:${IDENTITY_X_TAG}
+    build:
+      context: .
+      dockerfile: api/identityx/Dockerfile
     networks:
       - internal
+    ports:
+      - "6060:6060"
     depends_on:
       caddy:
         condition: service_healthy
       postgres:
         condition: service_healthy
       rustfs:
+        condition: service_healthy
+      mailpit:
         condition: service_healthy
     env_file:
       - .tree.env
@@ -147,9 +158,13 @@ services:
   payssage:
     container_name: payssage
     restart: unless-stopped
-    image: git.trieoh.com/trieoh/payssage:${PAYSSAGE_TAG}
+    build:
+      context: .
+      dockerfile: api/payssage/Dockerfile
     networks:
       - internal
+    ports:
+      - "6061:6061"
     depends_on:
       caddy:
         condition: service_healthy
@@ -174,9 +189,13 @@ services:
   informd:
     container_name: informd
     restart: unless-stopped
-    image: git.trieoh.com/trieoh/informd:${INFORMD_TAG}
+    build:
+      context: .
+      dockerfile: api/informd/Dockerfile
     networks:
       - internal
+    ports:
+      - "6062:6062"
     depends_on:
       caddy:
         condition: service_healthy
@@ -203,9 +222,13 @@ services:
   univents:
     container_name: univents
     restart: unless-stopped
-    image: git.trieoh.com/trieoh/univents:${UNIVENTS_TAG}
+    build:
+      context: .
+      dockerfile: api/univents/Dockerfile
     networks:
       - internal
+    ports:
+      - "6063:6063"
     depends_on:
       caddy:
         condition: service_healthy
@@ -226,6 +249,25 @@ services:
       timeout: 5s
       retries: 5
       start_period: 2s
+
+  # =============================================================
+  # 📧 MAILPIT
+  # =============================================================
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      caddy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8025/livez || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
 
   # =============================================================
   # 📊 BESZEL (system monitoring)
@@ -396,110 +438,3 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-
-  # =============================================================
-  # 📧 MOX (mail server)
-  #
-  # SMTP/IMAP ports are exposed directly — not HTTP, Caddy
-  # cannot proxy them.
-  # =============================================================
-
-  mox:
-    profiles: [email]
-    image: r.xmox.nl/mox:latest
-    container_name: mox
-    restart: unless-stopped
-    networks:
-      - internal
-    depends_on:
-      caddy:
-        condition: service_healthy
-    ports:
-      - "25:25"    # SMTP
-      - "465:465"  # SMTPS
-      - "587:587"  # submission
-      - "993:993"  # IMAPS
-      - "127.0.0.1:9090:9090" # Admin panel
-    volumes:
-      - ./infra/mox/config:/mox/config
-      - ./infra/mox/data:/mox/data
-      - ./infra/mox/certs:/mox/certs
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    command: mox -config /mox/config/mox.conf serve
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/webmail || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  # =============================================================
-  # 🔧 FORGEJO (git forge)
-  # =============================================================
-
-  forgejo:
-    profiles: [git]
-    image: codeberg.org/forgejo/forgejo:15
-    container_name: forgejo
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      caddy:
-        condition: service_healthy
-    env_file:
-      - ./infra/forgejo/.env
-    networks:
-      - internal
-    volumes:
-      - forgejo-data:/data
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "127.0.0.1:3000:3000"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  forgejo-runner:
-    profiles: [git]
-    image: code.forgejo.org/forgejo/runner:12
-    container_name: forgejo-runner
-    restart: unless-stopped
-    depends_on:
-      forgejo:
-        condition: service_healthy
-    environment:
-      DOCKER_HOST: tcp://forgejo-dind:2375
-    networks:
-      - internal
-    volumes:
-      - ./forgejo-runner/config.yml:/data/config.yml
-      - forgejo-runner-data:/data
-    command: /bin/sh -c "sleep 5 && forgejo-runner daemon --config /data/config.yml"
-
-  forgejo-dind:
-    profiles: [git]
-    deploy:
-      resources:
-        limits:
-          cpus: "1.5"
-          memory: "3g"
-    image: docker:dind
-    container_name: forgejo-dind
-    privileged: true
-    restart: unless-stopped
-    command: ["dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false"]
-    networks:
-      - internal
-    volumes:
-      - forgejo-dind-data:/var/lib/docker
-      - buildkit-cache:/var/cache/buildkit
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:2375/info || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
