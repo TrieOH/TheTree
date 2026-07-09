@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Input } from '@/shared/ui/shadcn/input'
 import { Label } from '@/shared/ui/shadcn/label'
 import ImageUploadField from '@/widgets/form/ui/image-upload-field'
-import { uploadAndModerateFile } from '@/features/storage/api'
+import { uploadFile } from '@/features/storage/api'
 import { createSignatureFn } from '@/features/signatures/api'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -115,7 +115,7 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
         const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
         if (!blob) throw new Error('Falha ao gerar imagem da assinatura')
         const file = new File([blob], `${Date.now()}-signature.png`, { type: 'image/png' })
-        url = await uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/signatures`)
+        url = await uploadFile(file, `events/${eventId}/editions/${editionId}/signatures`)
       }
       if (!url) throw new Error('Selecione ou desenhe uma assinatura')
       return createSignatureFn(eventId, editionId, {

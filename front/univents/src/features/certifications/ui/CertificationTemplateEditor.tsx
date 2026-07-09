@@ -47,7 +47,7 @@ import {
   certificationTemplateCreateSchema,
   type CertificationTemplateCreateI,
 } from '@/features/certifications/model'
-import { uploadAndModerateFile } from '@/features/storage/api'
+import { uploadFile } from '@/features/storage/api'
 import { allSignaturesQueryOptions } from '@/features/signatures/api'
 
 let elementCounter = 0
@@ -168,7 +168,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
 
   const buildTemplatePayload = useCallback(async (): Promise<CertificationTemplateCreateI> => {
     const backgroundUrl = backgroundFile
-      ? await uploadAndModerateFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
+      ? await uploadFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
       : backgroundDataUrl
 
     const payloadElements = await Promise.all(elements.map(async (e) => {
@@ -211,7 +211,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
         if (!file) {
           throw new Error('A imagem do componente precisa ser reanexada antes de salvar')
         }
-        const uploadedUrl = await uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/certifications`)
+        const uploadedUrl = await uploadFile(file, `events/${eventId}/editions/${editionId}/certifications`)
         return {
           type: 'image' as const,
           ...base,
