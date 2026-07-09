@@ -64,14 +64,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         />
         <HeadContent />
       </head>
-      <body>
+      <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
         <PostHogProvider>
           <TanStackQueryProvider>
             <AuthProvider
               baseURL={env.VITE_AUTH_API_URL}
-              clientConfig={{
-                timeout: 5_000
-              }}
               fallback={
                 <div className='h-screen w-screen flex items-center justify-center'>
                   <WaveSpinnerLoading text='Carregando...' />

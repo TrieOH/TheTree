@@ -77,6 +77,7 @@ function RouteComponent() {
           allAdminActivitiesQueryOptions(eventId, editionId).queryKey,
           (old) => [...(old ?? []), res.data]
         )
+        void queryClient.invalidateQueries({ queryKey: allActivitiesQueryOptions(eventId, editionId).queryKey })
         setIsCreateOpen(false)
         setEditingActivity(null)
         toast.success('Atividade salva com sucesso!')
@@ -95,12 +96,7 @@ function RouteComponent() {
             a.id === variables ? { ...a, status: 'published' as const } : a
           )
         )
-        queryClient.setQueryData<ActivityI[]>(
-          allActivitiesQueryOptions(eventId, editionId).queryKey,
-          (old = []) => old.map((a) =>
-            a.id === variables ? { ...a, status: 'published' as const } : a
-          )
-        )
+        void queryClient.invalidateQueries({ queryKey: allActivitiesQueryOptions(eventId, editionId).queryKey })
         setPublishingActivity(null)
         toast.success('Atividade publicada com sucesso!')
       } else toast.error(res.message || 'Erro ao publicar atividade')
@@ -130,10 +126,7 @@ function RouteComponent() {
           allAdminActivitiesQueryOptions(eventId, editionId).queryKey,
           (old = []) => old.map((a) => (a.id === res.data.id ? res.data : a))
         )
-        queryClient.setQueryData<ActivityI[]>(
-          allActivitiesQueryOptions(eventId, editionId).queryKey,
-          (old = []) => old.map((a) => (a.id === res.data.id ? res.data : a))
-        )
+        void queryClient.invalidateQueries({ queryKey: allActivitiesQueryOptions(eventId, editionId).queryKey })
         setEditingActivity(null) // Close the edit drawer
         toast.success('Atividade atualizada com sucesso!')
       } else toast.error(res.message || 'Erro ao atualizar atividade')
@@ -169,6 +162,7 @@ function RouteComponent() {
           allAdminActivitiesQueryOptions(eventId, editionId).queryKey,
           (old) => [...(old ?? []), res.data]
         );
+        void queryClient.invalidateQueries({ queryKey: allActivitiesQueryOptions(eventId, editionId).queryKey })
         setManagingActivity(null);
         toast.success('Atividade duplicada com sucesso!');
       } else toast.error(res.message || 'Erro ao duplicar atividade');

@@ -11,7 +11,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import ImageUploadField from '@/widgets/form/ui/image-upload-field'
 import { Badge } from '@/shared/ui/shadcn/badge'
@@ -42,6 +42,7 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import {
   createCertificationTemplateFn,
+  allCertificationTemplatesQueryOptions,
 } from '@/features/certifications/api'
 import {
   certificationTemplateCreateSchema,
@@ -90,6 +91,7 @@ export interface CertificationTemplateEditorProps {
 
 export function CertificationTemplateEditor({ eventId, editionId }: CertificationTemplateEditorProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [templateTitle, setTemplateTitle] = useState('Modelo de Certificado')
   const [backgroundDataUrl, setBackgroundDataUrl] = useState<string | null>(null)
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null)
@@ -375,6 +377,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       createCertificationTemplateFn(eventId, editionId, payload),
     onSuccess: (res) => {
       if (res.success) {
+        void queryClient.invalidateQueries({ queryKey: allCertificationTemplatesQueryOptions(eventId, editionId).queryKey })
         toast.success('Template salvo com sucesso!')
         void navigate({
           to: '/admin/events/$eventId/editions/$editionId/certifications',

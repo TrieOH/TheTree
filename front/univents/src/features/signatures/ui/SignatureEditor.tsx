@@ -6,10 +6,10 @@ import { Input } from '@/shared/ui/shadcn/input'
 import { Label } from '@/shared/ui/shadcn/label'
 import ImageUploadField from '@/widgets/form/ui/image-upload-field'
 import { uploadFile } from '@/features/storage/api'
-import { createSignatureFn } from '@/features/signatures/api'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
+import { allSignaturesQueryOptions, createSignatureFn } from '@/features/signatures/api'
 
 type Mode = 'draw' | 'upload'
 
@@ -23,6 +23,7 @@ export interface SignatureEditorProps {
 
 export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [title, setTitle] = useState('Assinatura')
   const [mode, setMode] = useState<Mode>('draw')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -125,6 +126,7 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
     },
     onSuccess: (res) => {
       if (res.success) {
+        void queryClient.invalidateQueries({ queryKey: allSignaturesQueryOptions(eventId, editionId).queryKey })
         toast.success('Assinatura criada com sucesso')
         void navigate({
           to: '/admin/events/$eventId/editions/$editionId/signatures',
