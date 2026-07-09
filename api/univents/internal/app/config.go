@@ -14,7 +14,8 @@ type Config struct {
 	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
 	AppName     string `env:"APP_NAME,required"`
 	//AppUrl      string `env:"APP_URL,required"`
-	DebugMode bool `env:"DEBUG_MODE"`
+	DebugMode  bool   `env:"DEBUG_MODE"`
+	HmacSecret string `env:"HMAC_SECRET,required"`
 
 	// Security
 	//WsJwtSecret string `env:"WS_JWT_SECRET,required"`
@@ -50,7 +51,7 @@ type Config struct {
 	ObjStorageAccessKey string `env:"OBJECT_STORAGE_ACCESS_KEY,required"`
 	ObjStorageSecretKey string `env:"OBJECT_STORAGE_SECRET_KEY,required"`
 	ObjStorageUseSSL    bool   `env:"OBJECT_STORAGE_USE_SSL" envDefault:"true"`
-	ObjStorageRegion    string `env:"OBJECT_STORAGE_REGION" envDefault:"us-east-1"`
+	ObjStorageRegion    string `env:"OBJECT_STORAGE_REGION"  envDefault:"us-east-1"`
 
 	// CORS
 	CorsAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS,required"`

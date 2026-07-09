@@ -29,21 +29,23 @@ func RegisterRoutes(
 	jwtAuth func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Use(jwtAuth)
+		r.Get("/verify/{hash}", h.Verify)
+		r.With(jwtAuth).Group(func(r chi.Router) {
+			// Templates
+			r.Post("/events/{event_id}/editions/{edition_id}/certification-templates", h.CreateTemplate)
+			r.Get("/events/{event_id}/editions/{edition_id}/certification-templates", h.ListTemplates)
+			r.Get("/events/{event_id}/editions/{edition_id}/certification-templates/{template_id}", h.GetTemplateByID)
 
-		// Templates
-		r.Post("/events/{event_id}/editions/{edition_id}/certification-templates", h.CreateTemplate)
-		r.Get("/events/{event_id}/editions/{edition_id}/certification-templates", h.ListTemplates)
-		r.Get("/events/{event_id}/editions/{edition_id}/certification-templates/{template_id}", h.GetTemplateByID)
+			// Certifications
+			r.Post("/events/{event_id}/editions/{edition_id}/certifications", h.Certify)
+			r.Get("/certifications/{cert_id}", h.GetCertByID)
+			r.Get("/users/{user_id}/certifications", h.ListByUser)
+			r.Get("/certifications", h.ListByTarget)
 
-		// Certifications
-		r.Post("/events/{event_id}/editions/{edition_id}/certifications", h.Certify)
-		r.Get("/certifications/{cert_id}", h.GetCertByID)
-		r.Get("/users/{user_id}/certifications", h.ListByUser)
-		r.Get("/certifications", h.ListByTarget)
+			// Linking
+			r.Patch("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/certification-templates/set", h.SetActivityTemplate)
+			r.Patch("/events/{event_id}/editions/{edition_id}/certification-templates/set", h.SetEditionTemplate)
+		})
 
-		// Linking
-		r.Patch("/events/{event_id}/editions/{edition_id}/activities/{activity_id}/certification-templates/set", h.SetActivityTemplate)
-		r.Patch("/events/{event_id}/editions/{edition_id}/certification-templates/set", h.SetEditionTemplate)
 	})
 }
