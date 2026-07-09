@@ -21,6 +21,7 @@ export const certificationTemplateCreateSchema = z.object({
         widthPct: z.number(),
         heightPct: z.number(),
         content: z.string(),
+        textAlign: z.enum(['left', 'center', 'right']).optional(),
       }),
       z.object({
         type: z.literal('signature'),
@@ -59,6 +60,16 @@ export interface CertificationI {
   id: string;
   user_id: string;
   target_id: string; // edition or activity id
+  target_type: CertificationTargetType;
+  certified_at: string;
+  hash: string;
+}
+
+export interface VerifyCertificationResponseI {
+  is_verified: boolean;
+  id: string;
+  user_id: string;
+  target_id: string;
   target_type: CertificationTargetType;
   certified_at: string;
 }

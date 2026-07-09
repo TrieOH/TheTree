@@ -16,7 +16,7 @@ function EditionProfilePage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 via-background to-background">
+      <section className="border-b border-border/60 bg-linear-to-b from-muted/40 via-background to-background">
         <div className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">

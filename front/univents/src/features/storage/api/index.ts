@@ -50,3 +50,34 @@ export const uploadAndModerateFile = async (file: File, path?: string): Promise<
 
   return publicUrl;
 };
+
+export const uploadFile = async (file: File, path?: string): Promise<string> => {
+  const filename = path ? `${path}/${Date.now()}-${file.name}` : `${Date.now()}-${file.name}`;
+
+  const uploadPayload: StorageUploadRequest = {
+    filename,
+    contentType: file.type,
+    size: file.size,
+  };
+
+  const uploadRes = await fetch("/storage/upload", {
+    method: "POST",
+    body: JSON.stringify(uploadPayload),
+  });
+
+  if (!uploadRes.ok) {
+    const errorData: { error?: string } = await uploadRes.json();
+    throw new Error(errorData.error ?? "Failed to get upload URL");
+  }
+  const { uploadUrl, publicUrl }: StorageUploadResponse = (await uploadRes.json());
+
+  const putRes = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type },
+  });
+
+  if (!putRes.ok) throw new Error("Failed to upload file");
+
+  return publicUrl;
+};

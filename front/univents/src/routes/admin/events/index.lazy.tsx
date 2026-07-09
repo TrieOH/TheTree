@@ -59,6 +59,7 @@ function RouteComponent() {
           ownEventsQueryOptions().queryKey,
           (old = []) => [...old, res.data]
         )
+        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
         setIsCreateOpen(false)
         toast.success('Evento criado com sucesso!')
       } else toast.error(res.message || 'Erro ao criar evento')
@@ -75,12 +76,7 @@ function RouteComponent() {
           ownEventsQueryOptions().queryKey,
           (old = []) => old.map(event => event.id === res.data.id ? res.data : event)
         )
-
-        // Update Public Cache (if it exists)
-        queryClient.setQueryData<EventI[]>(
-          eventsQueryOptions().queryKey,
-          (old = []) => old.map(event => event.id === res.data.id ? res.data : event)
-        )
+        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
 
         setEditingEvent(null)
         toast.success('Evento atualizado com sucesso!')
@@ -93,33 +89,17 @@ function RouteComponent() {
     mutationFn: publishEventFn,
     onSuccess: (res, eventId) => {
       if (res.success) {
-        let updatedEvent: EventI | undefined;
-
-        // Update Admin Cache and get the updated event object
+        // Update the admin list immediately; the public list is revalidated below.
         queryClient.setQueryData<EventI[]>(ownEventsQueryOptions().queryKey, (old = []) =>
           old.map(event => {
             if (event.id === eventId) {
-              updatedEvent = { ...event, status: 'active' as const };
-              return updatedEvent;
+              return { ...event, status: 'active' as const };
             }
             return event;
           })
         )
 
-        // Sync with Public Cache
-        queryClient.setQueryData<EventI[]>(eventsQueryOptions().queryKey, (old) => {
-          if (!updatedEvent) return old;
-
-          const publicEvents = old ?? [];
-          const index = publicEvents.findIndex(e => e.id === eventId);
-
-          if (index === -1) return [...publicEvents, updatedEvent];
-
-          const copy = [...publicEvents];
-          copy[index] = updatedEvent;
-
-          return copy;
-        });
+        void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
 
         setPublishingEvent(null)
         toast.success('Evento publicado com sucesso!')

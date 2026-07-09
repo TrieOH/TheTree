@@ -11,7 +11,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import ImageUploadField from '@/widgets/form/ui/image-upload-field'
 import { Badge } from '@/shared/ui/shadcn/badge'
@@ -42,12 +42,13 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import {
   createCertificationTemplateFn,
+  allCertificationTemplatesQueryOptions,
 } from '@/features/certifications/api'
 import {
   certificationTemplateCreateSchema,
   type CertificationTemplateCreateI,
 } from '@/features/certifications/model'
-import { uploadAndModerateFile } from '@/features/storage/api'
+import { uploadFile } from '@/features/storage/api'
 import { allSignaturesQueryOptions } from '@/features/signatures/api'
 
 let elementCounter = 0
@@ -57,6 +58,25 @@ const MIN_EDITOR_HEIGHT = 720
 function generateId(): string {
   elementCounter += 1
   return `el-${elementCounter}-${Date.now()}`
+}
+
+function createCertificateVerificationBlock(): TextCanvasElement {
+  return {
+    id: generateId(),
+    type: 'text',
+    xPct: 10,
+    yPct: 82,
+    widthPct: 80,
+    heightPct: 10,
+    zIndex: 1,
+    content: 'Hash: {{cert_hash}}\nVerifique em: {{verify_url}}',
+    fontSize: 14,
+    fontWeight: 400,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    color: '#374151',
+    textAlign: 'left',
+    fixed: true,
+  }
 }
 
 function getViewportSize() {
@@ -71,6 +91,7 @@ export interface CertificationTemplateEditorProps {
 
 export function CertificationTemplateEditor({ eventId, editionId }: CertificationTemplateEditorProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [templateTitle, setTemplateTitle] = useState('Modelo de Certificado')
   const [backgroundDataUrl, setBackgroundDataUrl] = useState<string | null>(null)
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null)
@@ -118,6 +139,11 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
     }
   }, [backgroundDataUrl])
 
+  useEffect(() => {
+    if (elements.length > 0) return
+    setElements([createCertificateVerificationBlock()])
+  }, [elements.length])
+
   const selectedElement = useMemo(
     () => elements.find((e) => e.id === selectedElementId) ?? null,
     [elements, selectedElementId]
@@ -144,7 +170,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
 
   const buildTemplatePayload = useCallback(async (): Promise<CertificationTemplateCreateI> => {
     const backgroundUrl = backgroundFile
-      ? await uploadAndModerateFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
+      ? await uploadFile(backgroundFile, `events/${eventId}/editions/${editionId}/certifications`)
       : backgroundDataUrl
 
     const payloadElements = await Promise.all(elements.map(async (e) => {
@@ -156,10 +182,19 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       }
 
       if (e.type === 'text') {
+        if (e.fixed) {
+          return {
+            type: 'text' as const,
+            ...base,
+            content: e.content,
+            textAlign: e.textAlign ?? 'left',
+          }
+        }
         return {
           type: 'text' as const,
           ...base,
           content: e.content,
+          textAlign: e.textAlign ?? 'left',
         }
       }
 
@@ -178,7 +213,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
         if (!file) {
           throw new Error('A imagem do componente precisa ser reanexada antes de salvar')
         }
-        const uploadedUrl = await uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/certifications`)
+        const uploadedUrl = await uploadFile(file, `events/${eventId}/editions/${editionId}/certifications`)
         return {
           type: 'image' as const,
           ...base,
@@ -232,11 +267,12 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       widthPct: 60,
       heightPct: 10,
       zIndex: elements.length + 1,
-      content: '{{nome}}',
+      content: '...',
       fontSize: 16,
       fontWeight: 400,
       fontFamily: 'Inter, system-ui, sans-serif',
       color: '#111827',
+      textAlign: 'center',
     }
     setElements((prev) => [...prev, newElement])
     setSelectedElementId(newElement.id)
@@ -273,23 +309,12 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
     setSelectedElementId(newElement.id)
   }
 
-  const deleteSelectedElement = () => {
-    if (!selectedElementId) return
-    setImageFilesById((prev) => {
-      const next = { ...prev }
-      delete next[selectedElementId]
-      return next
-    })
-    setElements((prev) => prev.filter((e) => e.id !== selectedElementId))
-    setSelectedElementId(null)
-  }
-
   const updateElement = (id: string, updates: Partial<CanvasElement>) => {
     setElements((prev) => prev.map((e) => (e.id === id ? ({ ...e, ...updates } as CanvasElement) : e)))
   }
 
   const updateTextContent = (content: string) => {
-    if (!selectedElement || selectedElement.type !== 'text') return
+    if (!selectedElement || selectedElement.type !== 'text' || selectedElement.fixed) return
     updateElement(selectedElement.id, { content } as Partial<CanvasElement>)
   }
 
@@ -352,6 +377,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       createCertificationTemplateFn(eventId, editionId, payload),
     onSuccess: (res) => {
       if (res.success) {
+        void queryClient.invalidateQueries({ queryKey: allCertificationTemplatesQueryOptions(eventId, editionId).queryKey })
         toast.success('Template salvo com sucesso!')
         void navigate({
           to: '/admin/events/$eventId/editions/$editionId/certifications',
@@ -577,9 +603,26 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold">
                       <span>{getDisplayName(selectedElement)}</span>
-                      <Button type="button" variant="ghost" size="icon" className="size-6 text-muted-foreground hover:text-destructive" onClick={deleteSelectedElement}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      {!selectedElement.fixed && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            if (!selectedElementId) return
+                            setImageFilesById((prev) => {
+                              const next = { ...prev }
+                              delete next[selectedElementId]
+                              return next
+                            })
+                            setElements((prev) => prev.filter((e) => e.id !== selectedElementId))
+                            setSelectedElementId(null)
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -617,15 +660,45 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
                     </div>
 
                     {selectedElement.type === 'text' && (
-                      <VariableInput
-                        id={`text-${selectedElement.id}`}
-                        label="Conteúdo"
-                        value={(selectedElement as TextCanvasElement).content}
-                        onChange={(v) => updateElement(selectedElement.id, { content: v } as Partial<CanvasElement>)}
-                        placeholder="Use **negrito**, *itálico*, __sublinhado__, [color=#22c55e], [size=24]"
-                        multiline
-                        textareaRef={contentTextareaRef}
-                      />
+                      <div className="space-y-3">
+                        {selectedElement.fixed ? (
+                          <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                            Bloco fixo de validação do certificado.
+                          </div>
+                        ) : (
+                          <VariableInput
+                            id={`text-${selectedElement.id}`}
+                            label="Conteúdo"
+                            value={(selectedElement as TextCanvasElement).content}
+                            onChange={(v) => updateElement(selectedElement.id, { content: v } as Partial<CanvasElement>)}
+                            placeholder="Use **negrito**, *itálico*, __sublinhado__, [color=#22c55e], [size=24]"
+                            multiline
+                            textareaRef={contentTextareaRef}
+                          />
+                        )}
+
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Alinhamento</Label>
+                          <select
+                            className="h-7 w-full rounded-md border border-input bg-background px-2 text-xs"
+                            value={(selectedElement as TextCanvasElement).textAlign ?? 'center'}
+                            onChange={(e) => updateElement(
+                              selectedElement.id,
+                              { textAlign: e.target.value as TextCanvasElement['textAlign'] } as Partial<CanvasElement>
+                            )}
+                          >
+                            <option value="left">Esquerda</option>
+                            <option value="center">Centralizado</option>
+                            <option value="right">Direita</option>
+                          </select>
+                        </div>
+
+                        {selectedElement.fixed && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Hash e URL de verificação são fixos.
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     {selectedElement.type === 'signature' && (

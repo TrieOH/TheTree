@@ -39,6 +39,7 @@ export interface ActivityI {
   capacity: number;
   remaining_capacity: number;
   difficulty: DifficultyType;
+  certification_template_id?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

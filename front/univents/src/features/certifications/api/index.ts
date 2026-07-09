@@ -6,8 +6,9 @@ import type {
   CertificationTemplateCreateI,
   CertificationTemplateI,
   SetCertificationTemplateRequestI,
+  VerifyCertificationResponseI,
 } from "../model";
-import { authFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 export const createCertificationTemplateFn = createClientOnlyFn((
   eventId: string,
@@ -18,6 +19,10 @@ export const createCertificationTemplateFn = createClientOnlyFn((
     `/events/${eventId}/editions/${editionId}/certification-templates`,
     templateData
   );
+});
+
+export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
+  return simpleFetcher.get<VerifyCertificationResponseI>(`/verify/${hash}`);
 });
 
 export const getAllCertificationTemplatesFn = createClientOnlyFn(async (

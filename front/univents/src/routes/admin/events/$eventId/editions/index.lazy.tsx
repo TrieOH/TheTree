@@ -21,6 +21,7 @@ import { cn } from '@/shared/lib/utils'
 import { FormDrawer } from '@/widgets/form/ui/form-drawer'
 import {
   allAdminEditionsQueryOptions,
+  allEditionsQueryOptions,
   createEditionFn,
   disconnectPaymentAccountToEditionFn,
   publishEditionFn,
@@ -62,6 +63,7 @@ function RouteComponent() {
           allAdminEditionsQueryOptions(eventId).queryKey,
           (old = []) => [...old, res.data]
         )
+        void queryClient.invalidateQueries({ queryKey: allEditionsQueryOptions(eventId).queryKey })
         setIsCreateOpen(false)
         toast.success('Edição criada com sucesso!')
       } else toast.error(res.message || 'Erro ao criar edição')
@@ -80,6 +82,7 @@ function RouteComponent() {
             ed.id === variables.editionId ? { ...ed, status: 'announced' as const } : ed
           )
         )
+        void queryClient.invalidateQueries({ queryKey: allEditionsQueryOptions(eventId).queryKey })
         setPublishingEdition(null)
         toast.success('Edição publicada com sucesso!')
       } else toast.error(res.message || 'Erro ao publicar edição')
@@ -123,6 +126,7 @@ function RouteComponent() {
             : ed
         )
       )
+      void queryClient.invalidateQueries({ queryKey: allEditionsQueryOptions(eventId).queryKey })
       toast.success('Conta desconectada com sucesso!')
     }
   }
@@ -287,4 +291,3 @@ function RouteComponent() {
     </div>
   )
 }
-
