@@ -52,6 +52,7 @@ export interface EditionI {
   trie_payments_credential_id: string | null;
   trie_payments_provider: string | null;
   trie_payments_provider_public_key: string | null;
+  certification_template_id?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

@@ -33,6 +33,7 @@ function toCanvasElements(template: Pick<CertificationTemplateI, 'data' | 'id'>)
         fontWeight: 400,
         fontFamily: 'Inter, system-ui, sans-serif',
         color: '#111827',
+        textAlign: element.textAlign ?? 'left',
       } as TextCanvasElement
     }
 
@@ -52,6 +53,21 @@ function toCanvasElements(template: Pick<CertificationTemplateI, 'data' | 'id'>)
       fileName: element.fileName ?? undefined,
     } as ImageCanvasElement
   })
+}
+
+function extractVerifyUrl(template: Pick<CertificationTemplateI, 'data' | 'id'>) {
+  for (const element of template.data.elements) {
+    if (element.type !== 'text') continue
+    const match = element.content.match(/https?:\/\/[^\s]+/i)
+    if (match?.[0]) return {
+      url: match[0],
+      xPct: element.xPct,
+      yPct: element.yPct,
+      widthPct: element.widthPct,
+      heightPct: element.heightPct,
+    }
+  }
+  return null
 }
 
 function triggerDownloadHref(href: string, filename: string) {
@@ -74,6 +90,7 @@ function CertificationTemplatePreviewCanvas({
 }) {
   const previewHostRef = useRef<HTMLDivElement>(null)
   const elements = useMemo(() => toCanvasElements(template), [template])
+  const verifyLink = useMemo(() => extractVerifyUrl(template), [template])
   const { data: signatures = [] } = useQuery(allSignaturesQueryOptions(eventId, editionId))
   const signatureUrlsById = useMemo(
     () => Object.fromEntries(signatures.map((signature) => [signature.id, signature.url])),
@@ -117,12 +134,12 @@ function CertificationTemplatePreviewCanvas({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => {
-            const fabricCanvas = canvasRef.current as any
-            if (!fabricCanvas) return
-            const pngDataUrl = fabricCanvas.toDataURL({
-              format: 'png',
-              multiplier: 2,
+        onClick={() => {
+          const fabricCanvas = canvasRef.current as any
+          if (!fabricCanvas) return
+          const pngDataUrl = fabricCanvas.toDataURL({
+            format: 'png',
+            multiplier: 2,
             })
             const pdf = new jsPDF({
               orientation: 'landscape',
@@ -131,6 +148,13 @@ function CertificationTemplatePreviewCanvas({
               compress: true,
             })
             pdf.addImage(pngDataUrl, 'PNG', 0, 0, CERTIFICATE_WIDTH, CERTIFICATE_HEIGHT)
+            if (verifyLink?.url) {
+              const textX = (verifyLink.xPct / 100) * CERTIFICATE_WIDTH
+              const textY = (verifyLink.yPct / 100) * CERTIFICATE_HEIGHT
+              const textW = (verifyLink.widthPct / 100) * CERTIFICATE_WIDTH
+              const textH = (verifyLink.heightPct / 100) * CERTIFICATE_HEIGHT
+              pdf.link(textX, textY, textW, textH, { url: verifyLink.url })
+            }
             pdf.save(`${template.title}.pdf`)
           }}
           disabled={!isReady}
@@ -143,6 +167,21 @@ function CertificationTemplatePreviewCanvas({
 
       <div className="relative aspect-1000/707 w-full overflow-hidden rounded-2xl border bg-muted/10">
         <div ref={previewHostRef} className="absolute inset-0" />
+        {verifyLink && (
+          <a
+            href={verifyLink.url}
+            target="_blank"
+            rel="noreferrer"
+            className="absolute z-20 block rounded-sm outline-none ring-0"
+            style={{
+              left: `${verifyLink.xPct}%`,
+              top: `${verifyLink.yPct}%`,
+              width: `${verifyLink.widthPct}%`,
+              height: `${verifyLink.heightPct}%`,
+            }}
+            aria-label="Abrir link de verificação"
+          />
+        )}
         {!isReady && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">

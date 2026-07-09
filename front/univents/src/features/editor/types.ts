@@ -8,6 +8,7 @@ export interface CanvasElementBase {
   widthPct: number
   heightPct: number
   zIndex: number
+  fixed?: boolean
 }
 
 export interface TextCanvasElement extends CanvasElementBase {

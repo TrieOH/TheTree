@@ -2,18 +2,39 @@ import { useMemo } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Award, CalendarDays, Layers3, Search, Sparkles } from 'lucide-react'
 import { Badge } from '@/shared/ui/shadcn/badge'
+import { Button } from '@/shared/ui/shadcn/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
-import { certificationsByUserQueryOptions } from '@/features/certifications/api'
+import { certificationsByUserQueryOptions, certificationTemplateQueryOptions } from '@/features/certifications/api'
+import { CertificationTemplatePreview } from '@/features/certifications/ui/CertificationTemplatePreview'
+import type { CertificationTemplateI } from '@/features/certifications/model'
+import { eventsQueryOptions } from '@/features/events/api'
 import { allEditionsQueryOptions } from '@/features/editions/api'
 import { allActivitiesQueryOptions } from '@/features/activities/api'
+import type { ActivityI } from '@/features/activities/model'
+import type { EditionI } from '@/features/editions/model'
 
 type UserCertificationsSectionProps = {
   userId: string
   title?: string
   subtitle?: string
-  eventId?: string
-  editionId?: string
-  onlyCurrentEvent?: boolean
+}
+
+type RenderedCertification = {
+  id: string
+  target_type: 'edition' | 'activity'
+  target_id: string
+  certified_at: string
+  hash: string
+  event_id: string | null
+  edition_id: string | null
+  template: CertificationTemplateI | null
+}
+
+type TemplateQueryKey = {
+  key: string
+  eventId: string
+  editionId: string
+  templateId: string
 }
 
 function formatCertifiedAt(value: string) {
@@ -26,49 +47,159 @@ function formatCertifiedAt(value: string) {
   })
 }
 
+function getOrigin() {
+  if (typeof window !== 'undefined' && window.location?.origin)
+    return window.location.origin
+
+  return 'http://localhost:3002'
+}
+
+function substituteText(text: string, values: Record<string, string>) {
+  return text.replace(/\{\{(\w+)\}\}/g, (_, key: string) => values[key] ?? `{{${key}}}`)
+}
+
+function applyTemplateVariables(
+  template: CertificationTemplateI,
+  values: Record<string, string>
+): CertificationTemplateI {
+  return {
+    ...template,
+    data: {
+      ...template.data,
+      elements: template.data.elements.map((element) => {
+        if (element.type !== 'text') return element
+        return {
+          ...element,
+          content: substituteText(element.content, values),
+        }
+      }),
+    },
+  }
+}
+
 export function UserCertificationsSection({
   userId,
   title = 'Certificados',
   subtitle = 'Veja os certificados emitidos para sua conta.',
-  eventId,
-  editionId,
-  onlyCurrentEvent = false,
 }: UserCertificationsSectionProps) {
   const { data: certifications = [] } = useQuery(certificationsByUserQueryOptions(userId))
-  const { data: editions = [] } = useQuery({
-    ...allEditionsQueryOptions(eventId ?? ''),
-    enabled: !!eventId,
+  const { data: events = [] } = useQuery(eventsQueryOptions())
+
+  const editionQueries = useQueries({
+    queries: events.flatMap((event) => ([
+      {
+        ...allEditionsQueryOptions(event.id),
+        enabled: !!event.id,
+      },
+    ])),
   })
 
-  const activitiesQueries = useQueries({
-    queries: (eventId ? editions : []).map((edition) => ({
-      ...allActivitiesQueryOptions(eventId!, edition.id),
-      enabled: !!eventId,
+  const editionLookup = useMemo(() => {
+    const editions = new Map<string, EditionI>()
+    editionQueries.forEach((query) => {
+      for (const edition of (query.data ?? []) as EditionI[]) {
+        editions.set(edition.id, edition)
+      }
+    })
+    return editions
+  }, [editionQueries])
+
+  const activityQueries = useQueries({
+    queries: [...editionLookup.values()].flatMap((edition) => ([
+      {
+        ...allActivitiesQueryOptions(edition.event_id, edition.id),
+        enabled: !!edition.event_id,
+      },
+    ])),
+  })
+
+  const activityLookup = useMemo(() => {
+    const activities = new Map<string, ActivityI>()
+    activityQueries.forEach((query) => {
+      for (const activity of (query.data ?? []) as ActivityI[]) {
+        activities.set(activity.id, activity)
+      }
+    })
+    return activities
+  }, [activityQueries])
+
+  const templateQueryKeys = useMemo<TemplateQueryKey[]>(() => {
+    const unique = new Map<string, TemplateQueryKey>()
+
+    certifications.forEach((cert) => {
+      const activity = cert.target_type === 'activity' ? activityLookup.get(cert.target_id) ?? null : null
+      const editionId = cert.target_type === 'edition'
+        ? cert.target_id
+        : activity?.edition_id ?? null
+      const edition = editionId ? editionLookup.get(editionId) ?? null : null
+      const templateId = activity?.certification_template_id ?? edition?.certification_template_id ?? null
+
+      if (!templateId || !edition?.event_id || !edition?.id) return
+
+      const key = `${edition.event_id}:${edition.id}:${templateId}`
+      if (!unique.has(key)) {
+        unique.set(key, {
+          key,
+          eventId: edition.event_id,
+          editionId: edition.id,
+          templateId,
+        })
+      }
+    })
+
+    return [...unique.values()]
+  }, [activityLookup, certifications, editionLookup])
+
+  const templateQueries = useQueries({
+    queries: templateQueryKeys.map((item) => ({
+      ...certificationTemplateQueryOptions(item.eventId, item.editionId, item.templateId),
+      enabled: true,
     })),
   })
 
-  const filteredCertifications = useMemo(() => {
-    if (!eventId || (!editionId && !onlyCurrentEvent)) {
-      return certifications
-    }
+  const templateByKey = useMemo(() => {
+    const map = new Map<string, CertificationTemplateI>()
+    templateQueries.forEach((query, index) => {
+      const item = templateQueryKeys[index]
+      if (item && query.data) map.set(item.key, query.data)
+    })
+    return map
+  }, [templateQueries, templateQueryKeys])
 
-    const editionSet = new Set<string>(editionId ? [editionId] : editions.map((edition) => edition.id))
-    const activityEditionMap = new Map<string, string>()
-    activitiesQueries.forEach((query) => {
-      for (const activity of (query.data ?? []) as Array<{ id: string; edition_id: string }>) {
-        activityEditionMap.set(activity.id, activity.edition_id)
+  const finalCerts = useMemo<RenderedCertification[]>(() => {
+    return certifications.map((cert) => {
+      const activity = cert.target_type === 'activity' ? activityLookup.get(cert.target_id) ?? null : null
+      const editionId = cert.target_type === 'edition'
+        ? cert.target_id
+        : activity?.edition_id ?? null
+      const edition = editionId ? editionLookup.get(editionId) ?? null : null
+      const templateId = activity?.certification_template_id ?? edition?.certification_template_id ?? null
+      const templateKey =
+        templateId && edition?.event_id && edition?.id
+          ? `${edition.event_id}:${edition.id}:${templateId}`
+          : null
+      const template = templateKey ? templateByKey.get(templateKey) ?? null : null
+
+      const filledTemplate = template
+        ? applyTemplateVariables(template, {
+          activity_name:
+            cert.target_type === 'edition'
+              ? edition?.edition_name ?? ''
+              : activity?.title ?? edition?.edition_name ?? '',
+          certified_at: formatCertifiedAt(cert.certified_at),
+          cert_hash: cert.hash,
+          verify_url: `${getOrigin()}/verify/${cert.hash}`,
+        })
+        : null
+
+      return {
+        ...cert,
+        event_id: edition?.event_id ?? null,
+        edition_id: edition?.id ?? null,
+        template: filledTemplate,
       }
     })
-
-    return certifications.filter((cert) => {
-      if (cert.target_type === 'edition') return editionSet.has(cert.target_id)
-      if (cert.target_type === 'activity') {
-        const activityEditionId = activityEditionMap.get(cert.target_id)
-        return activityEditionId ? editionSet.has(activityEditionId) : false
-      }
-      return true
-    })
-  }, [activitiesQueries, certifications, editionId, editions, eventId, onlyCurrentEvent])
+  }, [activityLookup, certifications, editionLookup, templateByKey])
 
   return (
     <section className="space-y-4">
@@ -82,9 +213,9 @@ export function UserCertificationsSection({
         </CardHeader>
 
         <CardContent className="p-4">
-          {filteredCertifications.length > 0 ? (
+          {finalCerts.length > 0 ? (
             <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-              {filteredCertifications.map((cert) => {
+              {finalCerts.map((cert) => {
                 const targetLabel = cert.target_type === 'edition' ? 'Edição' : 'Atividade'
 
                 return (
@@ -104,12 +235,8 @@ export function UserCertificationsSection({
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          Certificado emitido
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatCertifiedAt(cert.certified_at)}
-                        </p>
+                        <p className="text-sm font-semibold text-foreground">Certificado emitido</p>
+                        <p className="text-xs text-muted-foreground">{formatCertifiedAt(cert.certified_at)}</p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -118,6 +245,19 @@ export function UserCertificationsSection({
                           {cert.target_type === 'edition' ? 'Vinculado à edição' : 'Vinculado à atividade'}
                         </span>
                       </div>
+
+                      {cert.template && cert.event_id && cert.edition_id ? (
+                        <CertificationTemplatePreview
+                          eventId={cert.event_id}
+                          editionId={cert.edition_id}
+                          template={cert.template}
+                          triggerLabel="Abrir certificado"
+                        />
+                      ) : (
+                        <Button type="button" variant="outline" size="sm" disabled className="w-fit">
+                          Carregando certificado
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )

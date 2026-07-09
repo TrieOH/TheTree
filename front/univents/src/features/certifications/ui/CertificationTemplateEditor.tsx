@@ -185,12 +185,14 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
             type: 'text' as const,
             ...base,
             content: e.content,
+            textAlign: e.textAlign ?? 'left',
           }
         }
         return {
           type: 'text' as const,
           ...base,
           content: e.content,
+          textAlign: e.textAlign ?? 'left',
         }
       }
 

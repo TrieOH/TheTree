@@ -21,6 +21,7 @@ export const certificationTemplateCreateSchema = z.object({
         widthPct: z.number(),
         heightPct: z.number(),
         content: z.string(),
+        textAlign: z.enum(['left', 'center', 'right']).optional(),
       }),
       z.object({
         type: z.literal('signature'),
