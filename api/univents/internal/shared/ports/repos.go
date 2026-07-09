@@ -11,11 +11,10 @@ import (
 
 type EventsRepository interface {
 	CreateEvent(ctx context.Context, toCreate *contracts.Event) (*contracts.Event, error)
-	PatchEvent(ctx context.Context, toPatch *contracts.Event) (*contracts.Event, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Event, error)
-	ListEvents(ctx context.Context) ([]contracts.Event, error)
-	ListOwnEvents(ctx context.Context, ownerID uuid.UUID) ([]contracts.Event, error)
-	PublishEvent(ctx context.Context, id uuid.UUID) error
+	List(ctx context.Context) ([]contracts.Event, error)
+	ListOwn(ctx context.Context, ownerID uuid.UUID) ([]contracts.Event, error)
+	Publish(ctx context.Context, id uuid.UUID) error
 	AddEdition(ctx context.Context, eventID uuid.UUID) error
 	AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)
 	RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)

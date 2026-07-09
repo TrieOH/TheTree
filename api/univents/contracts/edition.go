@@ -281,3 +281,41 @@ func NewFinishEditionTask(editionID uuid.UUID, endsAt time.Time) (*asynq.Task, e
 		asynq.Retention(7*24*time.Hour),
 	), nil
 }
+
+type CreateEditionRequest struct {
+	Type                 EditionType `json:"type"`
+	EditionName          string      `json:"edition_name" validate:"required,min=3,max=256"`
+	Tagline              *string     `json:"tagline" validate:"omitempty,max=512"`
+	Description          *string     `json:"description" validate:"omitempty,max=8000"`
+	RegistrationOpensAt  *time.Time  `json:"registration_opens_at"`
+	RegistrationClosesAt *time.Time  `json:"registration_closes_at"`
+	StartsAt             time.Time   `json:"starts_at"`
+	EndsAt               time.Time   `json:"ends_at"`
+	Timezone             string      `json:"timezone"`
+	LocationName         string      `json:"location_name"`
+	LocationAddress      string      `json:"location_address"`
+	LogoUrl              *string     `json:"logo_url" validate:"omitempty,url"`
+	BannerUrl            *string     `json:"banner_url" validate:"omitempty,url"`
+	ContactEmail         *string     `json:"contact_email" validate:"omitempty,email"`
+	ContactPhone         *string     `json:"contact_phone"`
+	OrganizerName        *string     `json:"organizer_name"`
+}
+
+type CreateEditionInput struct {
+	Type                 EditionType
+	EditionName          string
+	Tagline              *string
+	Description          *string
+	RegistrationOpensAt  *time.Time
+	RegistrationClosesAt *time.Time
+	StartsAt             time.Time
+	EndsAt               time.Time
+	Timezone             string
+	LocationName         string
+	LocationAddress      string
+	LogoUrl              *string
+	BannerUrl            *string
+	ContactEmail         *string
+	ContactPhone         *string
+	OrganizerName        *string
+}

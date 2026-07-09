@@ -15,8 +15,6 @@ func (repo *repo) Add(ctx context.Context, toAdd contracts.Signature) (*contract
 		EditionID: toAdd.EditionID,
 		Title:     toAdd.Title,
 		Url:       toAdd.URL,
-		PosX:      toAdd.PosX,
-		PosY:      toAdd.PosY,
 	})
 	if err != nil {
 		return nil, repo.dbe(err)
