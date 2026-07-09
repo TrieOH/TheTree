@@ -17,7 +17,7 @@ func (handler *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req contracts.CreateEditionRequest
-	if bind.BailInto(w, fun.From(r), req) {
+	if bind.BailInto(w, fun.From(r), &req) {
 		return
 	}
 
