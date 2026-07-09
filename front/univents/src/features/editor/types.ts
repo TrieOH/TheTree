@@ -17,6 +17,8 @@ export interface TextCanvasElement extends CanvasElementBase {
   fontWeight: number | string
   fontFamily: string
   color: string
+  textAlign?: 'left' | 'center' | 'right'
+  fixed?: boolean
 }
 
 export interface SignatureCanvasElement extends CanvasElementBase {
@@ -49,6 +51,8 @@ export interface ValidationError {
 export const DEFAULT_VARIABLES: VariableDefinition[] = [
   { key: 'activity_name', label: 'Nome da atividade/edição', description: 'Nome da atividade ou edição', defaultValue: 'XXXXX' },
   { key: 'certified_at', label: 'Data de certificação', description: 'Data em que o certificado foi emitido', defaultValue: '' },
+  { key: 'cert_hash', label: 'Hash do certificado', description: 'Identificador único para validação do certificado', defaultValue: 'HASH' },
+  { key: 'verify_url', label: 'URL de verificação', description: 'Endereço público para validar o certificado', defaultValue: 'http://localhost:3002/verify/HASH' },
 ]
 
 export function extractVariables(text: string): string[] {
