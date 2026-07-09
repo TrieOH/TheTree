@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useServerFn } from "@tanstack/react-start"
 import { toast } from "sonner"
 import { Key, Copy, Check, Plus } from "lucide-react"
 import { useAuth } from "@trieoh/identityx-sdk-ts/react"
@@ -8,8 +9,8 @@ import { Button } from "#/shared/ui/shadcn/button"
 import { Card, CardContent } from "#/shared/ui/shadcn/card"
 import { Badge } from "#/shared/ui/shadcn/badge"
 import { Input } from "#/shared/ui/shadcn/input"
-import { identityXAccessClient as accessClient } from "#/shared/lib/api/fetch"
 import { cn } from "#/shared/lib/utils"
+import { createApiKeyServerFn, listCapabilitiesServerFn } from "#/features/keys/api"
 
 export const Route = createFileRoute("/admin/keys")({
   component: RouteComponent,
@@ -29,14 +30,12 @@ function RouteComponent() {
   const [name, setName] = useState("")
   const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([])
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const listCapabilities = useServerFn(listCapabilitiesServerFn)
+  const createApiKey = useServerFn(createApiKeyServerFn)
 
   const { data: capabilities = [] } = useQuery({
     queryKey: ["identityx", projectId, "capabilities"],
-    queryFn: async () => {
-      const response = await accessClient.capabilities.list(projectId ?? "")
-      if (!response.success) return []
-      return response.data
-    },
+    queryFn: () => listCapabilities({ data: { projectId: projectId ?? "" } }),
     enabled: !!projectId,
   })
   const [capabilitySearch, setCapabilitySearch] = useState("")
@@ -44,18 +43,17 @@ function RouteComponent() {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!projectId) throw new Error("Missing project id")
-      return accessClient.apiKeys.create(projectId, {
-        name,
-        capabilities: selectedCapabilities,
-        env: "production",
+      return createApiKey({
+        data: {
+          projectId,
+          payload: {
+            name,
+            capabilities: selectedCapabilities,
+          },
+        },
       })
     },
-    onSuccess: (response) => {
-      if (!response.success) {
-        toast.error("Failed to create API key")
-        return
-      }
-      const { data } = response
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["identityx", projectId, "api_keys"] })
       toast.success("API key created")
       setName("")
@@ -66,7 +64,7 @@ function RouteComponent() {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  const apiKey = createMutation.data?.success ? createMutation.data.data.key : undefined
+  const apiKey = createMutation.data?.key
 
   const normalizedCapabilities = useMemo(() => {
     return capabilities
@@ -244,7 +242,7 @@ function RouteComponent() {
               </h2>
             </div>
             <div className="rounded-none border border-border bg-muted/40 p-4 font-mono text-sm break-all">
-              {createMutation.data?.success ? createMutation.data.data.raw_key : null}
+              {createMutation.data?.raw_key}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <Badge variant="outline" className="rounded-none">
@@ -259,7 +257,7 @@ function RouteComponent() {
                 variant="outline"
                 className="rounded-none ml-auto gap-2"
                 onClick={() => {
-                  const rawKey = createMutation.data?.success ? createMutation.data.data.raw_key : null
+                  const rawKey = createMutation.data?.raw_key ?? null
                   if (!rawKey) return
                   navigator.clipboard.writeText(rawKey)
                   setCopiedId(apiKey.id)

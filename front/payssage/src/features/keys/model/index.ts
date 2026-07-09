@@ -3,6 +3,7 @@ import z from "zod";
 export const apiKeyCreateSchema = z.object({
   name: z.string({ error: "Name is required" })
     .min(3, "Name must be at least 3 characters long"),
+  capabilities: z.array(z.string()).default([]),
 });
 
 export type ApiKeyCreateI = z.infer<typeof apiKeyCreateSchema>;
