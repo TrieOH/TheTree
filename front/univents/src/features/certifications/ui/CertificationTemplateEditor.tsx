@@ -232,7 +232,7 @@ export function CertificationTemplateEditor({ eventId, editionId }: Certificatio
       widthPct: 60,
       heightPct: 10,
       zIndex: elements.length + 1,
-      content: '{{nome}}',
+      content: '...',
       fontSize: 16,
       fontWeight: 400,
       fontFamily: 'Inter, system-ui, sans-serif',

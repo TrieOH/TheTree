@@ -47,12 +47,8 @@ export interface ValidationError {
 }
 
 export const DEFAULT_VARIABLES: VariableDefinition[] = [
-  { key: 'nome', label: 'Nome do participante', description: 'Nome completo do participante', defaultValue: 'Nome do Participante' },
-  { key: 'evento', label: 'Nome do evento', description: 'Nome do evento/curso', defaultValue: 'Nome do Evento' },
-  { key: 'data', label: 'Data de conclusão', description: 'Data de conclusão formatada', defaultValue: '01 de Janeiro de 2026' },
-  { key: 'carga_horaria', label: 'Carga horária', description: 'Carga horária total', defaultValue: '40 horas' },
-  { key: 'edicao', label: 'Edição do evento', description: 'Número/ano da edição', defaultValue: '1ª Edição' },
-  { key: 'orgao', label: 'Órgão realizador', description: 'Nome da instituição/órgão', defaultValue: 'Univents' },
+  { key: 'activity_name', label: 'Nome da atividade/edição', description: 'Nome da atividade ou edição', defaultValue: 'XXXXX' },
+  { key: 'certified_at', label: 'Data de certificação', description: 'Data em que o certificado foi emitido', defaultValue: '' },
 ]
 
 export function extractVariables(text: string): string[] {
