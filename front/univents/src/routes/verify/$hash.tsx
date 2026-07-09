@@ -13,7 +13,7 @@ import { allActivitiesQueryOptions } from '@/features/activities/api'
 import type { EditionI } from '@/features/editions/model'
 import type { ActivityI } from '@/features/activities/model'
 import { substituteTemplateVariables } from '@/features/certifications/ui/CertificationTemplatePreview'
-import type { CanvasElement, TextCanvasElement } from '@/features/editor/types'
+import type { CertificationTemplateI } from '@/features/certifications/model'
 
 export const Route = createFileRoute('/verify/$hash')({
   component: VerifyCertificationPage,
@@ -34,6 +34,77 @@ function getOrigin() {
     return window.location.origin
 
   return 'http://localhost:3002'
+}
+
+type VerifiedTemplateSectionProps = {
+  hash: string
+  templateQuery: {
+    query: ReturnType<typeof certificationTemplateQueryOptions>
+    eventId: string
+    editionId: string
+  }
+  payload: {
+    target_type: 'edition' | 'activity'
+    target_id: string
+    certified_at: string
+  }
+  activityLookup: Map<string, ActivityI>
+  editionLookup: Map<string, EditionI>
+}
+
+function VerifiedTemplateSection({
+  hash,
+  templateQuery,
+  payload,
+  activityLookup,
+  editionLookup,
+}: VerifiedTemplateSectionProps) {
+  const { data: templateData } = useQuery(templateQuery.query)
+
+  const filledTemplate = useMemo(() => {
+    if (!templateData) return null
+
+    const activity = payload.target_type === 'activity' ? activityLookup.get(payload.target_id) ?? null : null
+    const editionId = payload.target_type === 'edition'
+      ? payload.target_id
+      : activity?.edition_id ?? null
+    const edition = editionId ? editionLookup.get(editionId) ?? null : null
+
+    return {
+      ...templateData,
+      data: {
+        ...templateData.data,
+        elements: templateData.data.elements.map((element) => {
+          if (element.type !== 'text') return element
+
+          return {
+            ...element,
+            content: substituteTemplateVariables(element.content, {
+              activity_name:
+                payload.target_type === 'edition'
+                  ? edition?.edition_name ?? ''
+                  : activity?.title ?? edition?.edition_name ?? '',
+              certified_at: formatCertifiedAt(payload.certified_at),
+              cert_hash: hash,
+              verify_url: `${getOrigin()}/verify/${hash}`,
+            }),
+          }
+        }),
+      },
+    } satisfies CertificationTemplateI
+  }, [activityLookup, editionLookup, hash, payload, templateData])
+
+  if (!filledTemplate) return null
+
+  return (
+    <div className="mb-6">
+      <CertificationTemplateStaticView
+        eventId={templateQuery.eventId}
+        editionId={templateQuery.editionId}
+        template={filledTemplate}
+      />
+    </div>
+  )
 }
 
 function VerifyCertificationPage() {
@@ -101,45 +172,6 @@ function VerifyCertificationPage() {
     }
   }, [activityLookup, editionLookup, payload])
 
-  const { data: templateData } = useQuery({
-    queryKey: templateQuery?.query.queryKey ?? ['certifications', 'template', 'missing'],
-    queryFn: templateQuery?.query.queryFn as () => Promise<any>,
-    enabled: !!templateQuery,
-  })
-
-  const filledTemplate = useMemo(() => {
-    if (!templateData || !payload) return null
-
-    const activity = payload.target_type === 'activity' ? activityLookup.get(payload.target_id) ?? null : null
-    const editionId = payload.target_type === 'edition'
-      ? payload.target_id
-      : activity?.edition_id ?? null
-    const edition = editionId ? editionLookup.get(editionId) ?? null : null
-
-    return {
-      ...templateData,
-      data: {
-        ...templateData.data,
-        elements: templateData.data.elements.map((element: CanvasElement): CanvasElement => {
-          if (element.type !== 'text') return element
-
-          return {
-            ...element,
-            content: substituteTemplateVariables(element.content, {
-              activity_name:
-                payload.target_type === 'edition'
-                  ? edition?.edition_name ?? ''
-                  : activity?.title ?? edition?.edition_name ?? '',
-              certified_at: formatCertifiedAt(payload.certified_at),
-              cert_hash: hash,
-              verify_url: `${getOrigin()}/verify/${hash}`,
-            }),
-          } as TextCanvasElement
-        }),
-      },
-    }
-  }, [activityLookup, editionLookup, payload, templateData])
-
   return (
     <main className="min-h-screen bg-background">
       <section className="border-b border-border/60 bg-linear-to-b from-muted/40 via-background to-background">
@@ -158,14 +190,14 @@ function VerifyCertificationPage() {
       </section>
 
       <div className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-8">
-        {filledTemplate && templateQuery && (
-          <div className="mb-6">
-            <CertificationTemplateStaticView
-              eventId={templateQuery.eventId}
-              editionId={templateQuery.editionId}
-              template={filledTemplate}
-            />
-          </div>
+        {templateQuery && payload && (
+          <VerifiedTemplateSection
+            hash={hash}
+            templateQuery={templateQuery}
+            payload={payload}
+            activityLookup={activityLookup}
+            editionLookup={editionLookup}
+          />
         )}
 
         <Card className="overflow-hidden border-border/60 bg-card shadow-sm">
