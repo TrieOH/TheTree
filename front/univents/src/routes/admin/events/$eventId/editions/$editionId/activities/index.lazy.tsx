@@ -31,6 +31,8 @@ import { getActivityFields } from '@/features/activities/model/field'
 import {
   allAdminActivitiesQueryOptions,
   createActivityFn,
+  completeActivityFn,
+  markAttendanceForUserInActivityFn,
   publishActivityFn,
   updateActivityFn,
   allActivityAttendanceRecordsQueryOptions,
@@ -62,7 +64,10 @@ function RouteComponent() {
 
   const { data: activities = [] } = useQuery(allAdminActivitiesQueryOptions(eventId, editionId))
 
-  const { data: attendanceRecords = [] } = useQuery(allActivityAttendanceRecordsQueryOptions(eventId, editionId, viewingAttendance?.id ?? ""))
+  const { data: attendanceRecords = [] } = useQuery({
+    ...allActivityAttendanceRecordsQueryOptions(eventId, editionId, viewingAttendance?.id ?? ''),
+    enabled: !!viewingAttendance,
+  })
 
   const createMutation = useMutation({
     mutationFn: (data: ActivityCreateI) => createActivityFn(data, eventId, editionId),
@@ -103,6 +108,19 @@ function RouteComponent() {
     onError: () => toast.error('Erro ao conectar com o servidor')
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (activityId: string) => completeActivityFn(eventId, editionId, activityId),
+    onSuccess: (res) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: allAdminActivitiesQueryOptions(eventId, editionId).queryKey })
+        queryClient.invalidateQueries({ queryKey: allActivitiesQueryOptions(eventId, editionId).queryKey })
+        setManagingActivity(null)
+        toast.success('Atividade concluída com sucesso!')
+      } else toast.error(res.message || 'Erro ao concluir atividade')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: Partial<ActivityI> }) =>
       updateActivityFn(id, data, eventId, editionId),
@@ -119,6 +137,20 @@ function RouteComponent() {
         setEditingActivity(null) // Close the edit drawer
         toast.success('Atividade atualizada com sucesso!')
       } else toast.error(res.message || 'Erro ao atualizar atividade')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor')
+  });
+
+  const markAttendanceMutation = useMutation({
+    mutationFn: ({ activityId, recordId }: { activityId: string; recordId: string }) =>
+      markAttendanceForUserInActivityFn(eventId, editionId, activityId, recordId),
+    onSuccess: (res, variables) => {
+      if (res.success) {
+        queryClient.invalidateQueries({
+          queryKey: allActivityAttendanceRecordsQueryOptions(eventId, editionId, variables.activityId).queryKey,
+        })
+        toast.success('Presença registrada com sucesso!')
+      } else toast.error(res.message || 'Erro ao registrar presença')
     },
     onError: () => toast.error('Erro ao conectar com o servidor')
   });
@@ -170,7 +202,13 @@ function RouteComponent() {
     publishMutation.mutate(publishingActivity.id)
   }
 
-  const loading = createMutation.isPending || publishMutation.isPending || updateMutation.isPending || duplicateMutation.isPending
+  const loading =
+    createMutation.isPending ||
+    publishMutation.isPending ||
+    completeMutation.isPending ||
+    markAttendanceMutation.isPending ||
+    updateMutation.isPending ||
+    duplicateMutation.isPending
 
   const groupedActivities = useMemo(() => {
     const sorted = [...activities].sort((a, b) =>
@@ -413,14 +451,34 @@ function RouteComponent() {
                             {record.checked_in_at ? `Check-in: ${new Date(record.checked_in_at).toLocaleTimeString()}` : 'Aguardando'}
                           </span>
                         </div>
-                        <span className={cn(
-                          "text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md",
-                          record.status === 'checked_in' && "bg-emerald-50 text-emerald-600 border border-emerald-100",
-                          record.status === 'registered' && "bg-blue-50 text-blue-600 border border-blue-100",
-                          record.status === 'cancelled' && "bg-red-50 text-red-600 border border-red-100",
-                        )}>
-                          {record.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md",
+                            record.status === 'checked_in' && "bg-emerald-50 text-emerald-600 border border-emerald-100",
+                            record.status === 'registered' && "bg-blue-50 text-blue-600 border border-blue-100",
+                            record.status === 'cancelled' && "bg-red-50 text-red-600 border border-red-100",
+                          )}>
+                            {record.status}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={markAttendanceMutation.isPending || record.status !== 'registered'}
+                            onClick={() => {
+                              markAttendanceMutation.mutate({
+                                activityId: viewingAttendance.id,
+                                recordId: record.id,
+                              })
+                            }}
+                            className={cn(
+                              "rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors",
+                              record.status === 'registered'
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "cursor-not-allowed bg-muted text-muted-foreground"
+                            )}
+                          >
+                            Registrar
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -468,6 +526,28 @@ function RouteComponent() {
                 <UserCheck className="w-5 h-5 text-blue-600" />
               </div>
               <span className="font-bold text-sm">Lista de presença</span>
+            </button>
+
+            <button
+              onClick={() => { completeMutation.mutate(managingActivity.id) }}
+              disabled={completeMutation.isPending || managingActivity.status === 'completed'}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-4 rounded-2xl transition-colors",
+                managingActivity.status === 'completed'
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "hover:bg-emerald-50 active:bg-emerald-100"
+              )}
+            >
+              <div className={cn(
+                "w-9 h-9 rounded-xl flex items-center justify-center",
+                managingActivity.status === 'completed' ? "bg-muted-foreground/10" : "bg-emerald-100"
+              )}>
+                <CheckSquare className={cn(
+                  "w-5 h-5",
+                  managingActivity.status === 'completed' ? "text-muted-foreground" : "text-emerald-600"
+                )} />
+              </div>
+              <span className="font-bold text-sm">Completar atividade</span>
             </button>
 
             <div className="grid grid-cols-2 gap-2 mt-2 pt-4 border-t border-border/50">

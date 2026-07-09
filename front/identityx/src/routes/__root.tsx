@@ -10,6 +10,8 @@ import appCss from '../styles.css?url'
 import { env } from '@/env'
 import { AuthContextUpdater } from '@trieoh/front-core'
 import { Toaster } from '@trieoh/ui-base/shadcn/sonner'
+import { Provider as TanStackQueryProvider } from '@/app/providers/tanstack-query/RootProvider'
+import { PHProvider } from '@/app/providers/posthog/RootProvider'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -47,13 +49,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-body antialiased wrap-anywhere">
-        <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
-          <AuthContextUpdater>
-            {/* <PHProvider> */}
-            {children}
-            {/* </PHProvider> */}
-          </AuthContextUpdater>
-        </AuthProvider>
+        <PHProvider>
+          <TanStackQueryProvider>
+            <AuthProvider baseURL={env.VITE_API_URL} isProjectMode={false}>
+              <AuthContextUpdater>
+                {children}
+              </AuthContextUpdater>
+            </AuthProvider>
+          </TanStackQueryProvider>
+        </PHProvider>
         <Toaster />
         <Scripts />
       </body>

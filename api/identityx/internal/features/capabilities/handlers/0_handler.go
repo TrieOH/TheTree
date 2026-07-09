@@ -27,11 +27,11 @@ func RegisterRoutes(
 	r *chi.Mux,
 	h *Handlers,
 	jwtAuth func(http.Handler) http.Handler,
+	anyAuth func(http.Handler) http.Handler,
 	clientOnly func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Use(jwtAuth, clientOnly)
-		r.Get("/projects/{project_id}/capabilities", h.List)
-		r.Post("/projects/{project_id}/capabilities", h.Create)
+		r.With(anyAuth).Get("/projects/{project_id}/capabilities", h.List)
+		r.With(jwtAuth, clientOnly).Post("/projects/{project_id}/capabilities", h.Create)
 	})
 }

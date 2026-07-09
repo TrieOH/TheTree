@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Modal } from "./modal";
 import { cn, percentageToBps, clamp } from "#/shared/lib/utils";
 import { Input } from "#/shared/ui/shadcn/input";
@@ -7,8 +7,15 @@ import { Label } from "#/shared/ui/shadcn/label";
 import { Button } from "#/shared/ui/shadcn/button";
 import { AlertCircle, Percent, Info } from "lucide-react";
 import type { FieldDefinition } from "#/shared/model/form-types";
-import type { ZodType } from "zod";
-import type { DefaultValues, FieldValues, Path, PathValue } from "react-hook-form";
+import OptionPicker from "#/shared/ui/form/option-picker";
+import type {
+  DefaultValues,
+  FieldValues,
+  Path,
+  PathValue,
+  SubmitHandler,
+  Resolver,
+} from "react-hook-form";
 
 
 export interface PropsI<T> {
@@ -21,7 +28,7 @@ export interface PropsI<T> {
   formId: string;
   defaultValues?: DefaultValues<T>;
   fields: FieldDefinition<T>[];
-  schema: ZodType<T>;
+  schema: unknown;
   disabled?: boolean;
 }
 
@@ -40,11 +47,11 @@ export default function FormModal<T extends FieldValues>({
 }: PropsI<T>) {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<T>({
-    resolver: standardSchemaResolver(schema),
+    resolver: zodResolver(schema as never) as Resolver<T>,
     defaultValues: defaultValues,
   });
 
-  const handleFormSubmit = (data: T) => {
+  const handleFormSubmit: SubmitHandler<T> = (data) => {
     onSubmit(data);
   };
 
@@ -52,6 +59,23 @@ export default function FormModal<T extends FieldValues>({
     const fieldName = field.name as Path<T>;
     const error = errors[fieldName];
     const value = watch(fieldName);
+
+    if (field.type === 'option-picker') {
+      return (
+        <OptionPicker
+          label={field.label}
+          value={String(value ?? '')}
+          onChange={(nextValue) => setValue(fieldName, nextValue as PathValue<T, Path<T>>)}
+          options={(field.options ?? []).map((option) => ({
+            label: option.label,
+            value: option.value,
+            icon: option.icon,
+          }))}
+          required={false}
+          error={error?.message?.toString()}
+        />
+      )
+    }
 
     if (field.type === 'percentage') {
       return (
@@ -97,6 +121,24 @@ export default function FormModal<T extends FieldValues>({
       );
     }
 
+    if (field.type === 'number') {
+      return (
+        <Input
+          id={fieldName}
+          type="number"
+          placeholder={field.placeholder}
+          className={cn(
+            "rounded-none border-border focus-visible:ring-0 font-bold",
+            "focus-visible:border-primary transition-colors",
+            error && "border-destructive"
+          )}
+          {...register(fieldName, {
+            valueAsNumber: true,
+          })}
+        />
+      );
+    }
+
     return (
       <Input
         id={fieldName}
@@ -123,23 +165,30 @@ export default function FormModal<T extends FieldValues>({
         {fields.map(field => {
           const fieldName = field.name as Path<T>;
           const error = errors[fieldName];
+          const isOptionPicker = field.type === 'option-picker';
           return (
             <div className="space-y-2" key={"t_" + field.name.toString()}>
-              <Label
-                htmlFor={fieldName}
-                className="text-[10px] font-black uppercase tracking-[0.2em]"
-              >
-                {field.label}
-              </Label>
-              {renderField(field)}
-              {error && (
-                <span className={cn(
-                  "text-[10px] font-bold text-destructive uppercase",
-                  "tracking-widest flex items-start gap-1"
-                )}>
-                  <AlertCircle className="w-3 h-3" />
-                  <span className="-mt-px">{error.message?.toString()}</span>
-                </span>
+              {isOptionPicker ? (
+                renderField(field)
+              ) : (
+                <>
+                  <Label
+                    htmlFor={fieldName}
+                    className="text-[10px] font-black uppercase tracking-[0.2em]"
+                  >
+                    {field.label}
+                  </Label>
+                  {renderField(field)}
+                  {error && (
+                    <span className={cn(
+                      "text-[10px] font-bold text-destructive uppercase",
+                      "tracking-widest flex items-start gap-1"
+                    )}>
+                      <AlertCircle className="w-3 h-3" />
+                      <span className="-mt-px">{error.message?.toString()}</span>
+                    </span>
+                  )}
+                </>
               )}
             </div>
           )
