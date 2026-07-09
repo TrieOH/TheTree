@@ -16,6 +16,7 @@ type CertificationRepo interface {
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]contracts.Certification, error)
 	ListByTarget(ctx context.Context, targetType string, targetID uuid.UUID) ([]contracts.Certification, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Certification, error)
+	GetByHash(ctx context.Context, hash string) (*contracts.Certification, error)
 
 	SetActivityTemplate(ctx context.Context, activityID uuid.UUID, templateID *uuid.UUID) error
 	SetEditionTemplate(ctx context.Context, editionID uuid.UUID, templateID *uuid.UUID) error
