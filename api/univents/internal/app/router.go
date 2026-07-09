@@ -4,12 +4,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
-	"univents/internal/features/certifications"
-	"univents/internal/features/signatures"
-
 	"univents/internal/features/activities"
+	"univents/internal/features/certifications"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
+	"univents/internal/features/signatures"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -18,47 +17,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// CreateRouter godoc
-// @title Univents API
-// @version 1.0.0
-// @description API for managing events, editions, and tickets.
-// @termsOfService https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/univents/LICENSE
-// @contact.name TrieOH
-// @contact.url https://trieoh.com
-// @contact.email support@trieoh.com
-// @license.name TSAL License
-// @license.url https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/univents/LICENSE
-// @host univents.com.br
-// @BasePath /
-// @schemes http https
-// @tag.name auth
-// @tag.description "Operations related to user authentication and authorization"
-// @tag.name events
-// @tag.description "Operations related to event management"
-// @tag.name editions
-// @tag.description "Operations related to edition management"
-// @tag.name tickets
-// @tag.description "Operations related to ticket management"
-// @tag.name system
-// @tag.description "System operations"
-// @produce json
-// @consumes json
-// @response 200 {object} object "Standard success response"
-// @response 400 {object} fun.Response "Standard error response for bad requests"
-// @response 401 {object} fun.Response "Standard error response for unauthorized requests"
-// @response 403 {object} fun.Response "Standard error response for forbidden requests"
-// @response 404 {object} fun.Response "Standard error response for not found errors"
-// @response 413 {object} fun.Response "Standard error response for payload too large 1MB"
-// @response 429 {object} fun.Response "Standard error response for too many requests"
-// @response 500 {object} fun.Response "Standard error response for internal server errors"
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and the access token
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name X-API-KEY
-// @description API key for service-to-service authentication
 func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) http.Handler {
 	r := chi.NewRouter()
 
@@ -75,9 +33,9 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	r.Handle("/metrics", promhttp.Handler())
 
 	//r.With(middlewares.jwt).Get("/ws/token", deps.Security.WSAuth)
-	events.Routes(r, handlers.Events, middlewares.jwt)
-	editions.Routes(r, handlers.Editions, middlewares.jwt)
-	activities.Routes(r, handlers.Activities, middlewares.jwt)
+	events.RegisterRoutes(r, handlers.Events, middlewares.jwt)
+	editions.RegisterRoutes(r, handlers.Editions, middlewares.jwt)
+	activities.RegisterRoutes(r, handlers.Activities, middlewares.jwt)
 	signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
 	certifications.RegisterRoutes(r, handlers.certs, middlewares.jwt)
 	//tickets.Routes(r, handlers.Tickets, middlewares.jwt)

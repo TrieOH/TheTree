@@ -94,6 +94,9 @@ func SetupConstraintMessages() {
 		// edition registrations / interest
 		"edition_interest_list_edition_id_user_id_key": "user is already on the interest list for this edition",
 		"edition_registrations_edition_id_user_id_key": "user is already registered for this edition",
+
+		// certifications
+		"chk_target_type_valid": "the target type must be either 'activity' or 'edition'",
 	})
 }
 

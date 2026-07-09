@@ -38,9 +38,9 @@ type repos struct {
 }
 
 type queries struct {
-	events     *events.QueryService
-	editions   *editions.QueryService
-	activities *activities.QueryService
+	events     *events.Queries
+	editions   *editions.Queries
+	activities *activities.Queries
 	signatures *signatures.Queries
 	certs      *certifications.Queries
 	//checkpoints *checkpoints.QueryService
@@ -50,9 +50,9 @@ type queries struct {
 }
 
 type commands struct {
-	events     *events.CommandService
-	editions   *editions.CommandService
-	activities *activities.CommandService
+	events     *events.Commands
+	editions   *editions.Commands
+	activities *activities.Commands
 	signatures *signatures.Commands
 	certs      *certifications.Commands
 	//checkpoints *checkpoints.CommandService
@@ -77,9 +77,9 @@ type middlewares struct {
 }
 
 type handlers struct {
-	Events     *events.Handler
-	Editions   *editions.Handler
-	Activities *activities.Handler
+	Events     *events.Handlers
+	Editions   *editions.Handlers
+	Activities *activities.Handlers
 	signatures *signatures.Handlers
 	certs      *certifications.Handlers
 	//Checkpoints *checkpoints.Handler
@@ -93,9 +93,9 @@ type handlers struct {
 
 func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 	return repos{
-		events:     events.NewRepo(q, loggr, tracer),
-		editions:   editions.NewRepo(q, loggr, tracer),
-		activities: activities.NewRepo(q, loggr, tracer),
+		events:     events.NewRepos(q, loggr, tracer),
+		editions:   editions.NewRepos(q, loggr, tracer),
+		activities: activities.NewRepos(q, loggr, tracer),
 		signatures: signatures.NewRepos(q, loggr, tracer),
 		certs:      certifications.NewRepos(q, loggr, tracer),
 		//checkpoints: checkpoints.NewRepo(q, loggr, tracer),
@@ -107,9 +107,9 @@ func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 
 func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
-		events:     events.NewQueryService(r.events, loggr, tracer, tx),
-		editions:   editions.NewQueryService(r.events, r.editions, loggr, tracer, tx),
-		activities: activities.NewQueryService(r.activities, r.editions, loggr, tracer, tx),
+		events:     events.NewQueries(r.events, loggr, tracer, tx),
+		editions:   editions.NewQueries(r.events, r.editions, loggr, tracer, tx),
+		activities: activities.NewQueries(r.activities, r.editions, loggr, tracer, tx),
 		signatures: signatures.NewQueries(r.signatures, r.editions, loggr, tracer, tx),
 		certs:      certifications.NewQueries(r.certs, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewQueryService(r.checkpoints, r.editions, loggr, tracer, tx),
@@ -121,9 +121,9 @@ func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.
 
 func initCommands(r repos, obj *objectstorage.Client, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
-		events:     events.NewCommandService(r.events, obj, loggr, tracer, tx),
-		editions:   editions.NewCommandService(r.events, r.editions, loggr, tracer, tx),
-		activities: activities.NewCommandService(r.activities, r.editions, r.certs, loggr, tracer, tx),
+		events:     events.NewCommands(r.events, obj, loggr, tracer, tx),
+		editions:   editions.NewCommands(r.events, r.editions, loggr, tracer, tx),
+		activities: activities.NewCommands(r.activities, r.editions, r.certs, loggr, tracer, tx),
 		signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
 		certs:      certifications.NewCommands(r.certs, r.editions, loggr, tracer, tx),
 		//checkpoints: checkpoints.NewCommandService(r.checkpoints, r.editions, loggr, tracer, tx),
@@ -136,9 +136,9 @@ func initCommands(r repos, obj *objectstorage.Client, tx database.TxRunner, logg
 func initHandlers(q queries, c commands) handlers {
 	return handlers{
 		//Security: security.NewHandler(rt.wsRegistry)
-		Events:     events.NewHandler(c.events, q.events),
-		Editions:   editions.NewHandler(c.editions, q.editions),
-		Activities: activities.NewHandler(c.activities, q.activities),
+		Events:     events.NewHandlers(c.events, q.events),
+		Editions:   editions.NewHandlers(c.editions, q.editions),
+		Activities: activities.NewHandlers(c.activities, q.activities),
 		signatures: signatures.NewHandlers(c.signatures, q.signatures),
 		certs:      certifications.NewHandlers(c.certs, q.certs),
 		//Checkpoints: checkpoints.NewHandler(c.checkpoints, q.checkpoints),

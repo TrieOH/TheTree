@@ -7,9 +7,6 @@ CREATE TABLE signatures (
     title TEXT NOT NULL,
     url TEXT NOT NULL,
 
-    pos_x INT NOT NULL,
-    pos_y INT NOT NULL,
-
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

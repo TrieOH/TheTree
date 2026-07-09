@@ -34,7 +34,5 @@ func mapSignature(src sqlc.Signature) contracts.Signature {
 		EditionID: src.EditionID,
 		Title:     src.Title,
 		URL:       src.Url,
-		PosX:      src.PosY,
-		PosY:      src.PosX,
 	}
 }
