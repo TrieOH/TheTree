@@ -55,6 +55,7 @@ type Edition struct {
 	MonetaryType                  EditionMonetaryType `json:"monetary_type"`
 	RegistrationOpensAt           *time.Time          `json:"registration_opens_at"`
 	RegistrationClosesAt          *time.Time          `json:"registration_closes_at"`
+	CertificationTemplateID       *uuid.UUID          `json:"certification_template_id"`
 	StartsAt                      time.Time           `json:"starts_at"`
 	EndsAt                        time.Time           `json:"ends_at"`
 	Timezone                      string              `json:"timezone"`

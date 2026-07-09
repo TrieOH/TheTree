@@ -11,8 +11,7 @@ WHERE edition_id = @edition_id;
 -- name: GetCertificationTemplateByID :one
 SELECT *
 FROM certification_templates
-WHERE id = @id
-  AND edition_id = @edition_id;
+WHERE id = @id;
 
 -- name: Certify :one
 INSERT INTO certifications (id, user_id, target_id, target_type, hash)
