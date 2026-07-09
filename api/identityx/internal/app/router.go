@@ -103,11 +103,11 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 	r.Handle("/metrics", promhttp.Handler())
 
 	actors.RegisterRoutes(r, handlers.Actors, middlewares.jwtAuth, middlewares.clientOnly)
-	api_keys.RegisterRoutes(r, handlers.ApiKeys, middlewares.jwtAuth, middlewares.clientOnly)
+	api_keys.RegisterRoutes(r, handlers.ApiKeys, middlewares.anyAuth, middlewares.clientOnly)
 	authn.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
 	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
 	projects.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
-	capabilities.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.clientOnly)
+	capabilities.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.anyAuth, middlewares.clientOnly)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

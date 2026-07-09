@@ -13,8 +13,6 @@ func (c *Commands) Add(ctx context.Context, payload contracts.AddSignatureInput)
 		EditionID: payload.EditionID,
 		Title:     payload.Title,
 		URL:       payload.URL,
-		PosX:      payload.PosX,
-		PosY:      payload.PosY,
 	}
 
 	return c.signatures.Add(ctx, sig)

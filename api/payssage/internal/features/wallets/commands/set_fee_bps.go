@@ -42,7 +42,7 @@ func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput)
 	if err != nil {
 		return err
 	}
-	if org != nil && wallet.OrganizationID != &org.ID {
+	if org != nil && *wallet.OrganizationID != org.ID {
 		return fun.ErrForbidden("insufficient permissions")
 	}
 	if org == nil && wallet.OwnerID != ident.Sub.ID {

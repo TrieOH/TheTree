@@ -4,8 +4,10 @@ import (
 	"IdentityX/models"
 	"context"
 	"lib/api_keys"
+	"lib/telemetry"
 
 	"github.com/MintzyG/fun"
+	"go.uber.org/zap"
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateApiKeyInput) (*models.ApiKey, string, error) {
@@ -14,6 +16,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateApiKeyInput)
 
 	project, err := c.projects.GetByID(ctx, *payload.ProjectID)
 	if err != nil {
+		telemetry.Log().Info("Create api key", zap.String("project_id", payload.ProjectID.String()))
 		return nil, "", err
 	}
 

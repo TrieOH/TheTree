@@ -1,7 +1,7 @@
 import { cn } from '@/shared/lib/utils'
 import { Layers3 } from 'lucide-react'
 import type { CapabilityI } from '../model'
-import { timeAgo } from '@/shared/lib/date-utils'
+import { timeAgo } from '@trieoh/shared-utils'
 
 interface PropsI {
   data: CapabilityI

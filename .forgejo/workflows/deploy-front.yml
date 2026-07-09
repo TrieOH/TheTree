@@ -106,6 +106,7 @@ jobs:
           VITE_POSTHOG_HOST: ${{ vars.PAYSSAGE_POSTHOG_HOST }}
           VITE_TRIEOH_AUTH_PROJECT_ID: ${{ secrets.PAYSSAGE_AUTH_PROJECT_ID }}
           VITE_MERCADO_PAGO_CALLBACK_URL: ${{ vars.PAYSSAGE_MERCADO_PAGO_CALLBACK_URL }}
+          VITE_SUPPORTED_PROVIDERS : ${{ vars.PAYSSAGE_SUPPORTED_PROVIDERS }}
 
       - name: Deploy Payssage
         if: ${{ steps.filter.outputs.payssage == 'true' }}

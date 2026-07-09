@@ -21,8 +21,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/shadcn/context-menu";
-import { timeAgo } from "@/shared/lib/date-utils";
 import { ShadowButton } from "@/shared/ui/buttons/ShadowButton";
+import { timeAgo } from "@trieoh/shared-utils";
 
 interface PropsI {
   data: OrganizationI;
@@ -54,12 +54,14 @@ function MenuItems({
       </Item>
       <Separator />
       <Item
-        onClick={() =>
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
           navigate({
             to: "/admin/$organizationID/members",
             params: { organizationID: data.id },
           })
-        }
+        }}
       >
         <User2 className="mr-2 size-4" />
         View Members
