@@ -87,12 +87,14 @@ function RouteComponent() {
         fields={[
           {
             name: "name",
-            label: "e.g. My Team Organization",
+            label: "Organization Name",
+            placeholder: "e.g. My Team Organization",
             type: "text",
           },
           {
             name: "slug",
-            label: "e.g. my-team",
+            label: "Slug",
+            placeholder: "e.g. my-team",
             type: "text",
           }
         ]}

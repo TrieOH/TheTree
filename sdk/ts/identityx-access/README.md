@@ -19,5 +19,11 @@ const client = createIdentityXAccessClient({
 });
 
 const keys = await client.apiKeys.list("project-id");
+const response = await client.apiKeys.create("project-id", {
+  name: "Production key",
+  capabilities: [],
+  env: "prod",
+});
+
 const capabilities = await client.capabilities.list("project-id");
 ```
