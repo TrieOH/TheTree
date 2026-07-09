@@ -1,10 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { BadgeCheck, FileX2, Hash, Loader2, ShieldCheck } from 'lucide-react'
-import { verifyCertificationHashFn } from '@/features/certifications/api'
+import { certificationTemplateQueryOptions, verifyCertificationHashFn } from '@/features/certifications/api'
+import { CertificationTemplateStaticView } from '@/features/certifications/ui/CertificationTemplatePreview'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
 import { Badge } from '@/shared/ui/shadcn/badge'
 import { Separator } from '@/shared/ui/shadcn/separator'
+import { eventsQueryOptions } from '@/features/events/api'
+import { allEditionsQueryOptions } from '@/features/editions/api'
+import { allActivitiesQueryOptions } from '@/features/activities/api'
+import type { EditionI } from '@/features/editions/model'
+import type { ActivityI } from '@/features/activities/model'
+import { substituteTemplateVariables } from '@/features/certifications/ui/CertificationTemplatePreview'
+import type { CanvasElement, TextCanvasElement } from '@/features/editor/types'
 
 export const Route = createFileRoute('/verify/$hash')({
   component: VerifyCertificationPage,
@@ -20,6 +29,13 @@ function formatCertifiedAt(value: string) {
   })
 }
 
+function getOrigin() {
+  if (typeof window !== 'undefined' && window.location?.origin)
+    return window.location.origin
+
+  return 'http://localhost:3002'
+}
+
 function VerifyCertificationPage() {
   const { hash } = Route.useParams()
   const { data, isLoading, isError } = useQuery({
@@ -30,6 +46,99 @@ function VerifyCertificationPage() {
 
   const verified = data?.success && data.data?.is_verified
   const payload = data?.success ? data.data : null
+
+  const { data: events = [] } = useQuery(eventsQueryOptions())
+  const editionQueries = useQueries({
+    queries: events.map((event) => ({
+      ...allEditionsQueryOptions(event.id),
+      enabled: !!event.id,
+    })),
+  })
+
+  const editionLookup = useMemo(() => {
+    const editions = new Map<string, EditionI>()
+    editionQueries.forEach((query) => {
+      for (const edition of (query.data ?? []) as EditionI[]) {
+        editions.set(edition.id, edition)
+      }
+    })
+    return editions
+  }, [editionQueries])
+
+  const activityQueries = useQueries({
+    queries: [...editionLookup.values()].map((edition) => ({
+      ...allActivitiesQueryOptions(edition.event_id, edition.id),
+      enabled: !!edition.event_id,
+    })),
+  })
+
+  const activityLookup = useMemo(() => {
+    const activities = new Map<string, ActivityI>()
+    activityQueries.forEach((query) => {
+      for (const activity of (query.data ?? []) as ActivityI[]) {
+        activities.set(activity.id, activity)
+      }
+    })
+    return activities
+  }, [activityQueries])
+
+  const templateQuery = useMemo(() => {
+    if (!payload) return null
+
+    const activity = payload.target_type === 'activity' ? activityLookup.get(payload.target_id) ?? null : null
+    const editionId = payload.target_type === 'edition'
+      ? payload.target_id
+      : activity?.edition_id ?? null
+    const edition = editionId ? editionLookup.get(editionId) ?? null : null
+    const templateId = activity?.certification_template_id ?? edition?.certification_template_id ?? null
+
+    if (!templateId || !edition?.event_id || !edition?.id) return null
+
+    return {
+      query: certificationTemplateQueryOptions(edition.event_id, edition.id, templateId),
+      eventId: edition.event_id,
+      editionId: edition.id,
+    }
+  }, [activityLookup, editionLookup, payload])
+
+  const { data: templateData } = useQuery({
+    queryKey: templateQuery?.query.queryKey ?? ['certifications', 'template', 'missing'],
+    queryFn: templateQuery?.query.queryFn as () => Promise<any>,
+    enabled: !!templateQuery,
+  })
+
+  const filledTemplate = useMemo(() => {
+    if (!templateData || !payload) return null
+
+    const activity = payload.target_type === 'activity' ? activityLookup.get(payload.target_id) ?? null : null
+    const editionId = payload.target_type === 'edition'
+      ? payload.target_id
+      : activity?.edition_id ?? null
+    const edition = editionId ? editionLookup.get(editionId) ?? null : null
+
+    return {
+      ...templateData,
+      data: {
+        ...templateData.data,
+        elements: templateData.data.elements.map((element: CanvasElement): CanvasElement => {
+          if (element.type !== 'text') return element
+
+          return {
+            ...element,
+            content: substituteTemplateVariables(element.content, {
+              activity_name:
+                payload.target_type === 'edition'
+                  ? edition?.edition_name ?? ''
+                  : activity?.title ?? edition?.edition_name ?? '',
+              certified_at: formatCertifiedAt(payload.certified_at),
+              cert_hash: hash,
+              verify_url: `${getOrigin()}/verify/${hash}`,
+            }),
+          } as TextCanvasElement
+        }),
+      },
+    }
+  }, [activityLookup, editionLookup, payload, templateData])
 
   return (
     <main className="min-h-screen bg-background">
@@ -49,6 +158,16 @@ function VerifyCertificationPage() {
       </section>
 
       <div className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-8">
+        {filledTemplate && templateQuery && (
+          <div className="mb-6">
+            <CertificationTemplateStaticView
+              eventId={templateQuery.eventId}
+              editionId={templateQuery.editionId}
+              template={filledTemplate}
+            />
+          </div>
+        )}
+
         <Card className="overflow-hidden border-border/60 bg-card shadow-sm">
           <CardHeader className="border-b border-border/60">
             <CardTitle className="flex items-center gap-2 text-base">

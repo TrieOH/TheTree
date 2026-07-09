@@ -87,6 +87,10 @@ function styleToCss(style: RichTextStyle | null | undefined) {
   } as const
 }
 
+export function substituteTemplateVariables(text: string, values: Record<string, string>) {
+  return text.replace(/\{\{(\w+)\}\}/g, (_, key: string) => values[key] ?? `{{${key}}}`)
+}
+
 function buildRuns(lineText: string, lineStyles: Record<string, RichTextStyle> | undefined) {
   const runs: Array<{ text: string; style: RichTextStyle | null }> = []
   let currentStyle: RichTextStyle | null = null
@@ -325,14 +329,16 @@ function drawTemplateTextOnPdf(pdf: jsPDF, template: Pick<CertificationTemplateI
   })
 }
 
-function CertificationTemplatePreviewCanvas({
+export function CertificationTemplateStaticView({
   template,
   eventId,
   editionId,
+  className,
 }: {
   template: Pick<CertificationTemplateI, 'id' | 'title' | 'url' | 'data'>
   eventId: string
   editionId: string
+  className?: string
 }) {
   const previewHostRef = useRef<HTMLDivElement>(null)
   const elements = useMemo(() => toCanvasElements(template), [template])
@@ -365,7 +371,7 @@ function CertificationTemplatePreviewCanvas({
   }, [canvasRef, isReady])
 
   return (
-    <div className="space-y-3">
+    <div className={className ?? 'space-y-3'}>
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -471,8 +477,8 @@ export function CertificationTemplatePreview({ eventId, editionId, template, tri
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            {open && <CertificationTemplatePreviewCanvas eventId={eventId} editionId={editionId} template={template} />}
+      <div className="p-4 sm:p-6">
+            {open && <CertificationTemplateStaticView eventId={eventId} editionId={editionId} template={template} />}
           </div>
         </DialogContent>
       </Dialog>
