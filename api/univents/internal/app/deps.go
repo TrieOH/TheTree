@@ -96,7 +96,8 @@ func SetupConstraintMessages() {
 		"edition_registrations_edition_id_user_id_key": "user is already registered for this edition",
 
 		// certifications
-		"chk_target_type_valid": "the target type must be either 'activity' or 'edition'",
+		"chk_target_type_valid":       "the target type must be either 'activity' or 'edition'",
+		"uniq_hash_per_certification": "a certification hash needs to be unique",
 	})
 }
 

@@ -46,5 +46,6 @@ func mapCertification(src sqlc.Certification) contracts.Certification {
 		TargetID:    src.TargetID,
 		TargetType:  src.TargetType,
 		CertifiedAt: src.CertifiedAt,
+		Hash:        src.Hash,
 	}
 }

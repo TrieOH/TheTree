@@ -22,6 +22,18 @@ type Certification struct {
 	TargetID    uuid.UUID `json:"target_id"`
 	TargetType  string    `json:"target_type"`
 	CertifiedAt time.Time `json:"certified_at"`
+	Hash        *string   `json:"hash"`
+}
+
+// ── Verify ────────────────────────────────────────────────────────────────
+
+type VerifyCertificationResponse struct {
+	IsVerified  bool      `json:"is_verified"`
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
+	TargetID    uuid.UUID `json:"target_id"`
+	TargetType  string    `json:"target_type"`
+	CertifiedAt time.Time `json:"certified_at"`
 }
 
 // ── Create Certification Template ─────────────────────────────────────────

@@ -15,9 +15,14 @@ WHERE id = @id
   AND edition_id = @edition_id;
 
 -- name: Certify :one
-INSERT INTO certifications (user_id, target_id, target_type)
-VALUES (@user_id, @target_id, @target_type)
+INSERT INTO certifications (id, user_id, target_id, target_type, hash)
+VALUES (@id, @user_id, @target_id, @target_type, @hash)
 RETURNING *;
+
+-- name: GetCertificationByHash :one
+SELECT *
+FROM certifications
+WHERE hash = @hash;
 
 -- name: ListUserCertifications :many
 SELECT *
