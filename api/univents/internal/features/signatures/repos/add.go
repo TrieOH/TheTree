@@ -11,7 +11,6 @@ func (repo *repo) Add(ctx context.Context, toAdd contracts.Signature) (*contract
 	ctx, span := database.Span(ctx, repo.tracer, "Add")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).AddSignatureToEdition(ctx, sqlc.AddSignatureToEditionParams{
-		ID:        toAdd.ID,
 		EditionID: toAdd.EditionID,
 		Title:     toAdd.Title,
 		Url:       toAdd.URL,
