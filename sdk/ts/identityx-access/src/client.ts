@@ -1,7 +1,7 @@
 import { createDefaultFetchClient } from "@trieoh/envoy-fetch-ts";
 import type {
   ApiKeyCreateResponseI,
-  ApiKeyI,
+  // ApiKeyI,
   CapabilityI,
   CreateIdentityXAccessClientConfig,
   CreateApiKeyRequest,

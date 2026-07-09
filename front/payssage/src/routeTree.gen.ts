@@ -13,6 +13,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
+import { Route as AdminKeysRouteImport } from './routes/admin/keys'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
@@ -36,6 +37,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminWalletsRoute = AdminWalletsRouteImport.update({
   id: '/wallets',
   path: '/wallets',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminKeysRoute = AdminKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/keys': typeof AdminKeysRoute
   '/admin/wallets': typeof AdminWalletsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/keys': typeof AdminKeysRoute
   '/admin/wallets': typeof AdminWalletsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/keys': typeof AdminKeysRoute
   '/admin/wallets': typeof AdminWalletsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/keys'
     | '/admin/wallets'
     | '/admin/'
     | '/admin/$organizationID/members'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/keys'
     | '/admin/wallets'
     | '/admin'
     | '/admin/$organizationID/members'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/keys'
     | '/admin/wallets'
     | '/admin/'
     | '/admin/$organizationID/members'
@@ -155,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/wallets'
       fullPath: '/admin/wallets'
       preLoaderRoute: typeof AdminWalletsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/keys': {
+      id: '/admin/keys'
+      path: '/keys'
+      fullPath: '/admin/keys'
+      preLoaderRoute: typeof AdminKeysRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/$organizationID': {
@@ -203,12 +222,14 @@ const AdminOrganizationIDRouteWithChildren =
 
 interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
+  AdminKeysRoute: typeof AdminKeysRoute
   AdminWalletsRoute: typeof AdminWalletsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
+  AdminKeysRoute: AdminKeysRoute,
   AdminWalletsRoute: AdminWalletsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
