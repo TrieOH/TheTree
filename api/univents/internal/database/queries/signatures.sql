@@ -1,6 +1,6 @@
 -- name: AddSignatureToEdition :one
-INSERT INTO signatures (id, edition_id, title, url)
-VALUES (@id, @edition_id, @title, @url)
+INSERT INTO signatures (edition_id, title, url)
+VALUES (@edition_id, @title, @url)
 RETURNING *;
 
 -- name: RemoveSignatureFromEdition :exec
