@@ -14,6 +14,7 @@ import { Route as ComparativeRouteImport } from './routes/comparative'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdProfileRouteImport } from './routes/events/$eventId/profile'
@@ -58,6 +59,11 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/events/index.lazy').then((d) => d.Route))
+const VerifyHashRoute = VerifyHashRouteImport.update({
+  id: '/verify/$hash',
+  path: '/verify/$hash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
   id: '/events/$eventId/',
   path: '/events/$eventId/',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/profile': typeof ProfileRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/profile': typeof ProfileRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
   '/admin/events': typeof AdminEventsIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/comparative': typeof ComparativeRoute
   '/profile': typeof ProfileRoute
+  '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
   '/admin/events/': typeof AdminEventsIndexRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/comparative'
     | '/profile'
+    | '/verify/$hash'
     | '/events/'
     | '/events/$eventId/profile'
     | '/admin/events/'
@@ -298,6 +308,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/comparative'
     | '/profile'
+    | '/verify/$hash'
     | '/events'
     | '/events/$eventId/profile'
     | '/admin/events'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/comparative'
     | '/profile'
+    | '/verify/$hash'
     | '/events/'
     | '/events/$eventId/profile'
     | '/admin/events/'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ComparativeRoute: typeof ComparativeRoute
   ProfileRoute: typeof ProfileRoute
+  VerifyHashRoute: typeof VerifyHashRoute
   EventsIndexRoute: typeof EventsIndexRoute
   EventsEventIdProfileRoute: typeof EventsEventIdProfileRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
@@ -405,6 +418,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$hash': {
+      id: '/verify/$hash'
+      path: '/verify/$hash'
+      fullPath: '/verify/$hash'
+      preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/$eventId/': {
@@ -541,6 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ComparativeRoute: ComparativeRoute,
   ProfileRoute: ProfileRoute,
+  VerifyHashRoute: VerifyHashRoute,
   EventsIndexRoute: EventsIndexRoute,
   EventsEventIdProfileRoute: EventsEventIdProfileRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,

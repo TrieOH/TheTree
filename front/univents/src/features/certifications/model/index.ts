@@ -61,6 +61,16 @@ export interface CertificationI {
   target_id: string; // edition or activity id
   target_type: CertificationTargetType;
   certified_at: string;
+  hash: string;
+}
+
+export interface VerifyCertificationResponseI {
+  is_verified: boolean;
+  id: string;
+  user_id: string;
+  target_id: string;
+  target_type: CertificationTargetType;
+  certified_at: string;
 }
 
 export interface SetCertificationTemplateRequestI {

@@ -99,7 +99,7 @@ export function UserCertificationsSection({
                           {targetLabel}
                         </Badge>
                         <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-wider">
-                          {cert.target_id.slice(0, 8)}
+                          {cert.hash}
                         </Badge>
                       </div>
 
