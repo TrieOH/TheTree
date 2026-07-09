@@ -13,6 +13,9 @@ import { useNavigate } from '@tanstack/react-router'
 
 type Mode = 'draw' | 'upload'
 
+const SIGNATURE_CANVAS_WIDTH = 1200
+const SIGNATURE_CANVAS_HEIGHT = 420
+
 export interface SignatureEditorProps {
   eventId: string
   editionId: string
@@ -26,30 +29,25 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef(false)
   const lastPointRef = useRef<{ x: number; y: number } | null>(null)
+  const canvasReadyRef = useRef(false)
 
   const syncCanvasSize = () => {
     const canvas = canvasRef.current
     if (!canvas || mode !== 'draw') return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const dpr = window.devicePixelRatio || 1
-    const width = canvas.clientWidth
-    const height = canvas.clientHeight
-    const nextWidth = Math.floor(width * dpr)
-    const nextHeight = Math.floor(height * dpr)
+    const nextWidth = SIGNATURE_CANVAS_WIDTH
+    const nextHeight = SIGNATURE_CANVAS_HEIGHT
     if (canvas.width === nextWidth && canvas.height === nextHeight) return
-    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height)
     canvas.width = nextWidth
     canvas.height = nextHeight
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.strokeStyle = '#111827'
-    ctx.clearRect(0, 0, width, height)
-    if (snapshot.width > 0 && snapshot.height > 0) {
-      ctx.putImageData(snapshot, 0, 0)
-    }
+    ctx.clearRect(0, 0, nextWidth, nextHeight)
+    canvasReadyRef.current = true
   }
 
   useLayoutEffect(() => {
@@ -67,14 +65,17 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
     const canvas = canvasRef.current
     if (!canvas) return null
     const rect = canvas.getBoundingClientRect()
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    }
   }
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const point = getPoint(e)
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
-    if (!point || !ctx) return
+    if (!point || !ctx || !canvasReadyRef.current) return
     drawingRef.current = true
     lastPointRef.current = point
     ctx.beginPath()
@@ -198,7 +199,10 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                 <div className="w-full rounded-2xl border bg-muted/10 p-2">
                   <canvas
                     ref={canvasRef}
-                    className="h-56 w-full min-w-full touch-none rounded-xl bg-white"
+                    className="h-40 w-full min-w-full touch-none rounded-xl bg-white"
+                    style={{
+                      aspectRatio: `${SIGNATURE_CANVAS_WIDTH} / ${SIGNATURE_CANVAS_HEIGHT}`,
+                    }}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={stopDrawing}
