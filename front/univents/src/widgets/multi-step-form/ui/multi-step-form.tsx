@@ -46,7 +46,9 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
               >
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <span className={index === stepIndex ? "text-foreground" : undefined}>{step.label}</span>
+              <span className={index === stepIndex ? "hidden text-foreground sm:inline" : "hidden sm:inline"}>
+                {step.label}
+              </span>
             </span>
             {index < steps.length - 1 ? <ChevronRight className="size-3 text-border" /> : null}
           </li>
