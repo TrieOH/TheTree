@@ -1,0 +1,36 @@
+meta {
+  name: Upsert Platform Schema
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{identityx_url}}/profile-schema
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "display_name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "avatar_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["display_name"]
+    },
+    "active": true
+  }
+}
