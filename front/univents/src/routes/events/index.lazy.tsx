@@ -5,7 +5,7 @@ import { motion } from 'motion/react'
 import { useQuery } from '@tanstack/react-query'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { CreateEventCard } from '@/features/events/ui/CreateEventCard'
-import { allOwnEventsQueryOptions } from '@/features/events/api'
+import { allOwnEventsQueryOptions, allPublicEventsQueryOptions } from '@/features/events/api'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/shadcn/button'
 import {
@@ -22,7 +22,7 @@ import {
 } from '@/shared/lib/ui-preferences'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import type { EventI } from '@/features/events/model'
-import { useCreateEventMutation, usePatchEventMutation } from '@/features/events/api/mutations'
+import { useCreateEventMutation, usePatchEventMutation, usePublishEventMutation } from '@/features/events/api/mutations'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -41,7 +41,6 @@ const editFilterOptions = [
 type FilterValue = (typeof filterOptions)[number]['value'] | (typeof editFilterOptions)[number]['value']
 
 function EventsPage() {
-  const publicEvents = Route.useLoaderData()
   const [isEditMode, setIsEditMode] = useState(false)
   const [inplaceEditEnabled, setInplaceEditEnabled] = useState(readInplaceEditPreference)
   const [filter, setFilter] = useState<FilterValue>('all')
@@ -49,6 +48,12 @@ function EventsPage() {
   const [modalState, setModalState] = useState<{ open: boolean; event?: EventI }>({ open: false });
   const createMutation = useCreateEventMutation()
   const patchMutation = usePatchEventMutation()
+  const publishMutation = usePublishEventMutation()
+
+  const { data: publicEvents = [] } = useQuery({
+    ...allPublicEventsQueryOptions(),
+    enabled: !isEditMode
+  })
 
   const { data: ownEvents, isFetching: isFetchingOwnEvents } = useQuery({
     ...allOwnEventsQueryOptions(),
@@ -216,6 +221,7 @@ function EventsPage() {
                 event={event}
                 index={idx}
                 showEditAction={isEditMode}
+                onPublish={isEditMode ? (event) => publishMutation.mutate(event.id) : undefined}
                 onEdit={() => { setModalState({ open: true, event: event }) }}
               />
             ))}

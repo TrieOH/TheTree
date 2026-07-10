@@ -1,14 +1,16 @@
 import { motion } from 'motion/react'
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowUpRight, Pencil } from 'lucide-react'
+import { ArrowUpRight, Eye, Pencil } from 'lucide-react'
 import type { EventI } from '../model'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/shadcn/button'
 
 interface EventCardProps {
   event: EventI
   index?: number
   className?: string
   onEdit?: (event: EventI) => void
+  onPublish?: (event: EventI) => void
   showEditAction?: boolean
 }
 
@@ -17,6 +19,7 @@ export function EventCard({
   index = 0,
   className,
   onEdit,
+  onPublish,
   showEditAction = false,
 }: EventCardProps) {
   const navigate = useNavigate()
@@ -120,6 +123,21 @@ export function EventCard({
           <div className="text-xs text-muted-foreground">
             Criado em {createdDate}
           </div>
+          {event.status === "draft" && onPublish ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation()
+                onPublish(event)
+              }}
+            >
+              <Eye className="size-3.5" />
+              Publicar
+            </Button>
+          ) : null}
         </div>
 
         <h3 className="font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 text-base md:text-lg">

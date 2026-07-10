@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { EventI } from "../model";
-import { createEventFn, patchEventFn } from "./index";
+import { createEventFn, patchEventFn, publishEventFn } from "./index";
 import { eventKeys } from "./query-keys";
 
 type PatchEventInput = {
@@ -37,6 +37,18 @@ function syncEventCaches(queryClient: QueryClient, event: EventI) {
   });
 }
 
+function syncEventStatusInCaches(queryClient: QueryClient, eventId: string, status: EventI["status"]) {
+  const ownEvent = queryClient.getQueryData<EventI[]>(eventKeys.ownLists())?.find((event) => event.id === eventId);
+
+  if (!ownEvent) return;
+
+  const nextEvent = { ...ownEvent, status };
+
+  queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) => upsertById(old, nextEvent));
+
+  queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) => upsertById(old, nextEvent));
+}
+
 export function useCreateEventMutation() {
   const queryClient = useQueryClient();
 
@@ -68,6 +80,24 @@ export function usePatchEventMutation() {
 
       syncEventCaches(queryClient, res.data);
       toast.success("Evento atualizado com sucesso!");
+    },
+    onError: () => toast.error("Erro ao conectar com o servidor"),
+  });
+}
+
+export function usePublishEventMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (eventId: string) => publishEventFn(eventId),
+    onSuccess: (res, eventId) => {
+      if (!res.success) {
+        toast.error(res.message || "Erro ao publicar evento");
+        return;
+      }
+
+      syncEventStatusInCaches(queryClient, eventId, "active");
+      toast.success("Evento publicado com sucesso!");
     },
     onError: () => toast.error("Erro ao conectar com o servidor"),
   });
