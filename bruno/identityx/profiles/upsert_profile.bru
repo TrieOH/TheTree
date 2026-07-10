@@ -1,0 +1,26 @@
+meta {
+  name: Upsert Profile
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{identityx_url}}/projects/:project_id/actors/:actor_id/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "profile": {
+      "display_name": "John Smith",
+      "department": "Engineering",
+      "timezone": "America/Sao_Paulo",
+      "custom_field": "any value"
+    }
+  }
+}

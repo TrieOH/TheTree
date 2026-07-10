@@ -84,6 +84,9 @@ func SetupConstraintMessages() {
 		// capabilities
 		"uniq_capability_per_scope": "a capability with this resource and action already exists for this scope",
 
+		// profile schemas
+		"uniq_project_profile_schema_project_id": "a profile schema already exists for this project",
+
 		// crypto_keys
 		"chk_crypto_keys_type":   "crypto key type must be one of: encryption, signing",
 		"chk_crypto_keys_status": "crypto key status must be one of: active, retiring, retired, revoked",

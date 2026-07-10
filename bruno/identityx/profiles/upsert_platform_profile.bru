@@ -1,0 +1,25 @@
+meta {
+  name: Upsert Platform Profile
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{identityx_url}}/actors/:actor_id/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "profile": {
+      "display_name": "Jane Doe",
+      "avatar_url": "https://example.com/avatar.png",
+      "bio": "Platform administrator"
+    }
+  }
+}
