@@ -1,7 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EditionCreateI, EditionI } from "../model";
-import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, publicQueryFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 /**
  * Creates a new Edition on the server.
@@ -17,14 +17,7 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
  * @returns A promise that resolves to an array of Edition objects.
  */
 export const getAllEditionsFn = async (eventId: string) => {
-  try {
-    // FIXME: Use a alternative version like tanstackQuerySimpleFetcher
-    const res = await simpleFetcher.get<EditionI[]>(`/events/${eventId}/editions`);
-    if (res.success) return res.data
-    return []
-  } catch {
-    return [];
-  }
+  return publicQueryFetcher<EditionI[]>(`/events/${eventId}/editions`);
 };
 
 /**

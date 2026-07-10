@@ -833,15 +833,15 @@ importers:
       '@trieoh/identityx-sdk-ts':
         specifier: 'catalog:'
         version: 0.12.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@trieoh/ui-base':
+        specifier: workspace:*
+        version: link:../../lib/ts/ui-base
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       date-fns:
         specifier: ^4.1.0
         version: 4.4.0
@@ -884,9 +884,6 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.6.0
-      tw-animate-css:
-        specifier: 'catalog:'
-        version: 1.4.0
       vaul:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -897,9 +894,6 @@ importers:
       '@cloudflare/vite-plugin':
         specifier: 'catalog:'
         version: 1.39.2(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0))(workerd@1.20260601.1)(wrangler@4.97.0)
-      '@tailwindcss/typography':
-        specifier: ^0.5.16
-        version: 0.5.19(tailwindcss@4.3.0)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.0(vite@8.0.16(@types/node@22.19.19)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0))
@@ -996,21 +990,12 @@ importers:
 
   lib/ts/ui-base:
     dependencies:
-      class-variance-authority:
-        specifier: 'catalog:'
-        version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       next-themes:
         specifier: 'catalog:'
         version: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
@@ -1018,6 +1003,12 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.17)
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      clsx:
+        specifier: 'catalog:'
+        version: 2.1.1
       lucide-react:
         specifier: 'catalog:'
         version: 0.544.0(react@19.2.7)
@@ -1027,6 +1018,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.7(react@19.2.7)
+      tailwind-merge:
+        specifier: 'catalog:'
+        version: 3.6.0
 
   sdk/ts/identityx-access:
     dependencies:

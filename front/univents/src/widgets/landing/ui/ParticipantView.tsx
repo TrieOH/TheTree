@@ -1,10 +1,12 @@
 import { motion } from 'motion/react'
-import { useNavigate, Link, useRouteContext } from '@tanstack/react-router'
+import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { FAQSection } from './FAQSection'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { eventsQueryOptions } from '@/features/events/api'
-import { Skeleton } from '@/shared/ui/shadcn/skeleton'
+import { Button } from '@/shared/ui/shadcn/button'
+import { CardSkeleton, CardsStateGrid, EmptyState } from '@trieoh/ui-base'
+import { CalendarX } from 'lucide-react'
 
 const features = [
   {
@@ -66,21 +68,8 @@ const faqs = [
   },
 ]
 
-function EventCardSkeleton() {
-  return (
-    <div className="space-y-3 md:space-y-4">
-      <Skeleton className="aspect-4/3 rounded-xl md:rounded-2xl" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 md:h-5 w-3/4" />
-        <Skeleton className="h-3 md:h-4 w-1/2" />
-        <Skeleton className="h-3 w-1/3" />
-      </div>
-    </div>
-  )
-}
-
 export function ParticipantView() {
-  const isAuthenticated = useRouteContext({ from: "/" }).auth?.isAuthenticated
+  const isAuthenticated = useRouteContext({ from: "/" }).auth?.isAuthenticated ?? false
   const navigate = useNavigate()
 
   const { data: events = [], isLoading } = useQuery(eventsQueryOptions());
@@ -90,9 +79,8 @@ export function ParticipantView() {
     else void navigate({ to: '/auth' })
   }
 
-  const handleExplore = () => {
-    document.getElementById('trending')?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const ctaLabel = isAuthenticated ? 'Continuar explorando' : 'Entrar para ver eventos'
+  const footerCtaLabel = isAuthenticated ? 'Ver eventos' : 'Criar conta grátis'
 
   return (
     <div className="max-w-5xl mx-auto space-y-20 md:space-y-32">
@@ -102,44 +90,58 @@ export function ParticipantView() {
           Encontre os melhores eventos perto de você, compre ingressos com segurança
           e aproveite cada momento sem complicação.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center pt-2 md:pt-4">
-          <button
+        <div className="flex justify-center pt-2 md:pt-4">
+          <Button
             onClick={handleGetStarted}
-            className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+            size="xl"
+            className="rounded-full px-6"
           >
-            Criar conta grátis
-          </button>
-          <button
-            onClick={handleExplore}
-            className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors"
-          >
-            Explorar eventos
-          </button>
+            {ctaLabel}
+          </Button>
         </div>
       </section>
 
       <section id="trending" className="space-y-6 md:space-y-8 scroll-mt-20">
-        <div className="flex justify-between items-end border-b border-border pb-3 md:pb-4">
-          <h2 className="text-lg md:text-2xl font-medium text-foreground">Em Alta</h2>
-          <Link
-            to="/events"
-            className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Ver Todos
-          </Link>
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Em alta agora</p>
+          <h2 className="text-lg md:text-2xl font-medium text-foreground">Eventos em destaque</h2>
+          <p className="max-w-2xl text-sm md:text-base text-muted-foreground">
+            Uma seleção curta dos eventos mais recentes e relevantes para você começar sem ruído.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, idx) => (
-              <EventCardSkeleton key={idx} />
-            ))
-          ) : (
-            events.map((event, idx) => (
-              <EventCard key={event.id} event={event} index={idx} />
-            ))
+        <CardsStateGrid
+          items={events.slice(0, 4)}
+          isLoading={isLoading}
+          count={4}
+          columns={4}
+          className="gap-4 xl:gap-6"
+          renderEmpty={
+            <EmptyState
+              icon={CalendarX}
+              eyebrow="Em destaque"
+              title="Nenhum evento em destaque agora"
+              description="Assim que novos eventos forem publicados, eles aparecem aqui."
+              className="sm:col-span-2 xl:col-span-4"
+            />
+          }
+          renderSkeleton={() => (
+            <CardSkeleton
+              showDescription={false}
+              rows={0}
+              mediaClassName="aspect-[4/3]"
+              footerClassName="space-y-2"
+            />
           )}
-        </div>
+          renderItem={(event: (typeof events)[number], idx: number) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              index={idx}
+              className="min-w-0 border border-border/70 bg-card shadow-sm"
+            />
+          )}
+        />
       </section>
 
       {/* Features */}
@@ -209,18 +211,12 @@ export function ParticipantView() {
         <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
           Crie sua conta gratuita e descubra eventos incríveis acontecendo perto de você.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+        <div className="flex justify-center pt-2">
           <button
             onClick={handleGetStarted}
             className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
           >
-            Criar conta grátis
-          </button>
-          <button
-            onClick={handleExplore}
-            className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors"
-          >
-            Explorar eventos
+            {footerCtaLabel}
           </button>
         </div>
         <p className="text-xs text-muted-foreground/70">100% gratuito. Sem cartão de crédito.</p>

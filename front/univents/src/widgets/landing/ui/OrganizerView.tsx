@@ -89,15 +89,9 @@ export function OrganizerView() {
           Planeje, organize e execute eventos de qualquer escala.
           Do briefing ao pós-evento, tudo em uma única plataforma.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center pt-2 md:pt-4">
-          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
-            Começar gratuitamente
-          </button>
-          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors">
-            Ver demonstração
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground/70">Comece sem custo. Pague apenas uma pequena taxa sobre suas vendas.</p>
+        <p className="text-xs text-muted-foreground/70">
+          Comece sem custo. Pague apenas uma pequena taxa sobre suas vendas.
+        </p>
       </section>
 
       {/* Calendario Visual */}
@@ -219,33 +213,18 @@ export function OrganizerView() {
         </div>
       </section>
 
-      {/* FAQ com Collapsible */}
+      {/* FAQ com Accordion */}
       <section className="max-w-2xl mx-auto space-y-6 md:space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl md:text-3xl font-semibold text-foreground">Perguntas frequentes</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+            Perguntas frequentes
+          </h2>
           <p className="text-sm text-muted-foreground">Tire suas dúvidas</p>
         </div>
 
         <FAQSection items={faqs} />
       </section>
 
-      <section className="bg-muted rounded-2xl md:rounded-3xl p-6 md:p-12 lg:p-16 text-center space-y-4 md:space-y-6">
-        <h2 className="text-xl md:text-3xl font-semibold text-foreground">
-          Seu próximo evento começa aqui
-        </h2>
-        <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto">
-          Crie sua conta gratuita e descubra como simplificar toda a gestão dos seus eventos.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <button className="px-5 py-2.5 md:px-6 md:py-3 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
-            Começar gratuitamente
-          </button>
-          <button className="px-5 py-2.5 md:px-6 md:py-3 border border-border text-foreground rounded-full text-sm font-medium hover:border-foreground/50 transition-colors">
-            Falar com vendas
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground/70">Sem cartão de crédito. Cancele quando quiser.</p>
-      </section>
     </div>
   )
 }

@@ -6,6 +6,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AuthProvider } from '@trieoh/identityx-sdk-ts/react'
+import { ThemeProvider } from 'next-themes'
 
 import PostHogProvider from '../integrations/posthog/provider'
 
@@ -67,32 +68,34 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="min-w-[320px] font-sans antialiased wrap:anywhere selection:bg-primary/10">
         <PostHogProvider>
           <TanStackQueryProvider>
-            <AuthProvider
-              baseURL={env.VITE_AUTH_API_URL}
-              fallback={
-                <div className='h-screen w-screen flex items-center justify-center'>
-                  <WaveSpinnerLoading text='Carregando...' />
-                </div>
-              }
-            >
-              <AuthContextUpdater>
-                {children}
-                <NavigationDock />
-                <TanStackDevtools
-                  config={{
-                    position: 'bottom-right',
-                  }}
-                  plugins={[
-                    {
-                      name: 'Tanstack Router',
-                      render: <TanStackRouterDevtoolsPanel />,
-                    },
-                    TanStackQueryDevtools,
-                  ]}
-                />
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <AuthProvider
+                baseURL={env.VITE_AUTH_API_URL}
+                fallback={
+                  <div className='h-screen w-screen flex items-center justify-center'>
+                    <WaveSpinnerLoading text='Carregando...' />
+                  </div>
+                }
+              >
+                <AuthContextUpdater>
+                  {children}
+                  <NavigationDock />
+                  <TanStackDevtools
+                    config={{
+                      position: 'bottom-right',
+                    }}
+                    plugins={[
+                      {
+                        name: 'Tanstack Router',
+                        render: <TanStackRouterDevtoolsPanel />,
+                      },
+                      TanStackQueryDevtools,
+                    ]}
+                  />
 
-              </AuthContextUpdater>
-            </AuthProvider>
+                </AuthContextUpdater>
+              </AuthProvider>
+            </ThemeProvider>
           </TanStackQueryProvider>
         </PostHogProvider>
         <Toaster />

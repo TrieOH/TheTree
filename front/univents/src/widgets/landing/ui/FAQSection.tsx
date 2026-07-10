@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/shared/ui/shadcn/collapsible'
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/shared/ui/shadcn/accordion'
 
 interface FAQItem {
   question: string
@@ -16,51 +16,28 @@ interface FAQSectionProps {
 }
 
 export function FAQSection({ items }: FAQSectionProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [openValues, setOpenValues] = useState<string[]>([])
 
   return (
-    <div className="space-y-0">
+    <Accordion
+      value={openValues}
+      onValueChange={(value) => { setOpenValues(Array.isArray(value) ? value : [value]) }}
+      className="space-y-0"
+    >
       {items.map((item, idx) => (
-        <Collapsible
-          key={idx}
-          open={openIndex === idx}
-          onOpenChange={(open) => { setOpenIndex(open ? idx : null) }}
+        <AccordionItem
+          key={idx} value={String(idx)}
+          className="border-b border-border last:border-b-0"
         >
-          <div className="border-b border-border">
-            <CollapsibleTrigger render={
-              <button className="w-full py-4 md:py-5 flex justify-between items-center text-left group">
-                <span className="text-sm md:text-base font-medium text-foreground group-hover:text-muted-foreground transition-colors pr-4">
-                  {item.question}
-                </span>
-                <motion.span
-                  animate={{ rotate: openIndex === idx ? 45 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-muted-foreground text-lg md:text-xl shrink-0"
-                >
-                  +
-                </motion.span>
-              </button>
-            } />
+          <AccordionTrigger className="hover:no-underline">
+            {item.question}
+          </AccordionTrigger>
 
-            <CollapsibleContent render={
-              <motion.div
-                initial={false}
-                animate={{
-                  height: openIndex === idx ? 'auto' : 0,
-                  opacity: openIndex === idx ? 1 : 0
-                }}
-                transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="pb-4 md:pb-5 text-sm text-muted-foreground leading-relaxed max-w-3xl">
-                  {item.answer}
-                </div>
-              </motion.div>
-            } />
-          </div>
-        </Collapsible>
-      ))
-      }
-    </div >
+          <AccordionContent className="text-sm text-muted-foreground">
+            {item.answer}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
   )
 }

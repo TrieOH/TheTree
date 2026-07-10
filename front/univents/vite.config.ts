@@ -74,13 +74,7 @@ const config = defineConfig(() => {
             }
 
             // Utils CSS
-            if (
-              id.includes('class-variance-authority') ||
-              id.includes('tailwind-merge') ||
-              id.includes('clsx')
-            ) {
-              return 'vendor-css-utils'
-            }
+            if (id.includes('class-variance-authority')) return 'vendor-css-utils'
 
             // Payments
             if (id.includes('@mercadopago/sdk-js')) return 'vendor-payments'
