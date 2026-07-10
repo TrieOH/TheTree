@@ -210,24 +210,24 @@ function EventsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 md:gap-8">
-            {isEditMode &&
-              <CreateEventCard onClick={() => setModalState({ open: true, event: undefined })} />
-            }
-            {filteredEvents.map((event, idx) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                index={idx}
-                showEditAction={isEditMode}
-                onPublish={isEditMode ? (event) => publishMutation.mutate(event.id) : undefined}
-                onEdit={() => { setModalState({ open: true, event: event }) }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-24 md:py-32 space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 md:gap-8">
+          {isEditMode && (
+            <CreateEventCard onClick={() => setModalState({ open: true, event: undefined })} />
+          )}
+          {filteredEvents.map((event, idx) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              index={idx}
+              showEditAction={isEditMode}
+              onPublish={isEditMode ? (event) => publishMutation.mutate(event.id) : undefined}
+              onEdit={() => { setModalState({ open: true, event: event }) }}
+            />
+          ))}
+        </div>
+
+        {!isEditMode && filteredEvents.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 md:py-16 space-y-6">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <Search className="w-8 h-8 text-muted-foreground/40" />
             </div>
