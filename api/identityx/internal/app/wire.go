@@ -10,6 +10,8 @@ import (
 	"IdentityX/internal/features/crypto_keys"
 	"IdentityX/internal/features/organizations"
 	"IdentityX/internal/features/platform_roles"
+	"IdentityX/internal/features/profile_schemas"
+	"IdentityX/internal/features/profiles"
 	"IdentityX/internal/features/projects"
 	"IdentityX/ports"
 	"lib/database"
@@ -36,23 +38,29 @@ type repos struct {
 	externalIdentities ports.ExternalIdentitiesRepo
 	orgs               ports.OrganizationRepo
 	projects           ports.ProjectRepo
+	profileSchemas     ports.ProfileSchemaRepo
+	profiles           ports.ProfileRepo
 }
 
 type queries struct {
-	authn        *authn.Queries
-	orgs         *organizations.Queries
-	projects     *projects.Queries
-	actors       *actors.Queries
-	capabilities *capabilities.Queries
+	authn          *authn.Queries
+	orgs           *organizations.Queries
+	projects       *projects.Queries
+	actors         *actors.Queries
+	capabilities   *capabilities.Queries
+	profiles       *profiles.Queries
+	profileSchemas *profile_schemas.Queries
 }
 
 type commands struct {
-	authn        *authn.Commands
-	actors       *actors.Commands
-	apiKeys      *apikeys.Commands
-	capabilities *capabilities.Commands
-	orgs         *organizations.Commands
-	projects     *projects.Commands
+	authn          *authn.Commands
+	actors         *actors.Commands
+	apiKeys        *apikeys.Commands
+	capabilities   *capabilities.Commands
+	orgs           *organizations.Commands
+	projects       *projects.Commands
+	profiles       *profiles.Commands
+	profileSchemas *profile_schemas.Commands
 }
 
 type middlewares struct {
@@ -67,12 +75,14 @@ type middlewares struct {
 }
 
 type handlers struct {
-	Actors       *actors.Handlers
-	ApiKeys      *apikeys.Handlers
-	Authn        *authn.Handlers
-	Orgs         *organizations.Handlers
-	Projects     *projects.Handlers
-	Capabilities *capabilities.Handlers
+	Actors         *actors.Handlers
+	ApiKeys        *apikeys.Handlers
+	Authn          *authn.Handlers
+	Orgs           *organizations.Handlers
+	Projects       *projects.Handlers
+	Capabilities   *capabilities.Handlers
+	Profiles       *profiles.Handlers
+	ProfileSchemas *profile_schemas.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -88,27 +98,33 @@ func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trac
 		externalIdentities: authn.NewRepo(q, logger, tracer),
 		orgs:               organizations.NewRepo(q, logger, tracer),
 		projects:           projects.NewRepos(q, logger, tracer),
+		profileSchemas:     profile_schemas.NewRepo(q, logger, tracer),
+		profiles:           profiles.NewRepo(q, logger, tracer),
 	}
 }
 
 func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
-		actors:       actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
-		authn:        authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
-		orgs:         organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
-		projects:     projects.NewQueries(r.projects, logger, tracer, tx),
-		capabilities: capabilities.NewQueries(r.capabilities, r.projects, logger, tracer, tx),
+		actors:         actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
+		authn:          authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
+		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
+		projects:       projects.NewQueries(r.projects, logger, tracer, tx),
+		capabilities:   capabilities.NewQueries(r.capabilities, r.projects, logger, tracer, tx),
+		profiles:       profiles.NewQueries(r.profiles, r.projects, logger, tracer, tx),
+		profileSchemas: profile_schemas.NewQueries(r.profileSchemas, r.projects, logger, tracer, tx),
 	}
 }
 
 func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
-		authn:        authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
-		actors:       actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
-		apiKeys:      apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, logger, tracer, tx),
-		orgs:         organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
-		projects:     projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
-		capabilities: capabilities.NewCommands(r.actors, r.capabilities, r.projects, logger, tracer, tx),
+		authn:          authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
+		actors:         actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
+		apiKeys:        apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, logger, tracer, tx),
+		orgs:           organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
+		projects:       projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
+		capabilities:   capabilities.NewCommands(r.actors, r.capabilities, r.projects, logger, tracer, tx),
+		profiles:       profiles.NewCommands(r.profiles, r.profileSchemas, r.projects, logger, tracer, tx),
+		profileSchemas: profile_schemas.NewCommands(r.profileSchemas, r.projects, logger, tracer, tx),
 	}
 }
 
@@ -144,11 +160,13 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 
 func (app *IdentityX) initHandlers(q queries, c commands) handlers {
 	return handlers{
-		Actors:       actors.NewHandlers(q.actors, c.actors),
-		ApiKeys:      apikeys.NewHandlers(c.apiKeys),
-		Authn:        authn.NewHandlers(c.authn, q.authn),
-		Orgs:         organizations.NewHandlers(c.orgs, q.orgs),
-		Projects:     projects.NewHandlers(c.projects, q.projects),
-		Capabilities: capabilities.NewHandlers(c.capabilities, q.capabilities),
+		Actors:         actors.NewHandlers(q.actors, c.actors),
+		ApiKeys:        apikeys.NewHandlers(c.apiKeys),
+		Authn:          authn.NewHandlers(c.authn, q.authn),
+		Orgs:           organizations.NewHandlers(c.orgs, q.orgs),
+		Projects:       projects.NewHandlers(c.projects, q.projects),
+		Capabilities:   capabilities.NewHandlers(c.capabilities, q.capabilities),
+		Profiles:       profiles.NewHandlers(q.profiles, c.profiles),
+		ProfileSchemas: profile_schemas.NewHandlers(q.profileSchemas, c.profileSchemas),
 	}
 }
