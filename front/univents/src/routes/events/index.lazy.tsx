@@ -22,6 +22,7 @@ import {
 } from '@/shared/lib/ui-preferences'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import type { EventI } from '@/features/events/model'
+import { useCreateEventMutation, usePatchEventMutation } from '@/features/events/api/mutations'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -46,6 +47,8 @@ function EventsPage() {
   const [filter, setFilter] = useState<FilterValue>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [modalState, setModalState] = useState<{ open: boolean; event?: EventI }>({ open: false });
+  const createMutation = useCreateEventMutation()
+  const patchMutation = usePatchEventMutation()
 
   const { data: ownEvents, isFetching: isFetchingOwnEvents } = useQuery({
     ...allOwnEventsQueryOptions(),
@@ -84,9 +87,7 @@ function EventsPage() {
 
       if (!next) {
         setFilter((currentFilter) => (
-          currentFilter === 'active' || currentFilter === 'draft'
-            ? 'all'
-            : currentFilter
+          currentFilter === 'active' || currentFilter === 'draft' ? 'all' : currentFilter
         ))
       }
 
@@ -94,23 +95,12 @@ function EventsPage() {
     })
   }
 
-  // const handleEventEdit = (eventId: string) => {
-  //   // TODO: abrir drawer/modal de edição do evento selecionado.
-  //   void eventId
-  // }
-
-  // const handleCreateEvent = () => {
-  //   // TODO: abrir fluxo de criação de evento.
-  // }
-
   useEffect(() => {
     const syncPreferences = () => {
       const enabled = readInplaceEditPreference()
       setInplaceEditEnabled(enabled)
 
-      if (!enabled) {
-        setIsEditMode(false)
-      }
+      if (!enabled) setIsEditMode(false)
     }
 
     syncPreferences()
@@ -250,12 +240,28 @@ function EventsPage() {
           open={modalState.open}
           onOpenChange={(open) => setModalState((prev) => ({ ...prev, open }))}
           event={modalState.event}
-          onCreate={async (values) => {
-            console.log("criar evento", values);
-          }}
-          onUpdate={async (id, values) => {
-            console.log("atualizar evento", id, values);
-          }}
+          onCreate={(values): Promise<boolean> =>
+            createMutation.mutateAsync(values).then(
+              (res) => {
+                if (!res.success) return false
+
+                setModalState({ open: false, event: undefined })
+                return true
+              },
+              () => false,
+            )
+          }
+          onUpdate={(id, values): Promise<boolean> =>
+            patchMutation.mutateAsync({ id, data: values }).then(
+              (res) => {
+                if (!res.success) return false
+
+                setModalState({ open: false, event: undefined })
+                return true
+              },
+              () => false,
+            )
+          }
         />
       </main>
 

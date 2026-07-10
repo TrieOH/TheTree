@@ -14,7 +14,7 @@ export interface MultiStepFormController<TInput extends FieldValues, TOutput = T
   isFirstStep: boolean;
   isLastStep: boolean;
   visibleFields: FieldConfig<TInput>[];
-  goNext: () => Promise<void>;
+  goNext: () => Promise<boolean>;
   goBack: () => void;
   goToStep: (index: number) => void;
   isSubmitting: boolean;
@@ -49,7 +49,11 @@ export interface UseMultiStepFormOptions<TInput extends FieldValues, TOutput> {
    * has actually changed. Has no effect on create forms.
    */
   requireDirtyToSubmit?: boolean;
-  onSubmit: (values: TOutput) => void | Promise<void>;
+  onSubmit: (values: TOutput) => boolean | void | Promise<boolean | void>;
+  /** Optional values to restore after a successful submit (useful for create flows). */
+  resetOnSuccessValues?: DefaultValues<TInput>;
+  /** Called after a successful submit, after any optional reset. */
+  onSubmitSuccess?: () => void | Promise<void>;
   /**
    * When errors show up. "onChange" gives instant feedback on every
    * keystroke (revalidation is always "onChange" regardless of this
@@ -67,6 +71,8 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
   values,
   requireDirtyToSubmit = false,
   onSubmit,
+  resetOnSuccessValues,
+  onSubmitSuccess,
   validationMode = "onChange",
 }: UseMultiStepFormOptions<TInput, TOutput>): MultiStepFormController<TInput, TOutput> {
   const form = useForm<TInput, unknown, TOutput>({
@@ -81,7 +87,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
 
   // Whenever the edited record changes (a new `values` reference lands),
   // jump the wizard back to the first step instead of leaving the user
-  // stranded on step 3 of a completely different record.
+  // stranded on step 'n' of a completely different record.
   useEffect(() => {
     setStepIndex(0);
   }, [values]);
@@ -99,16 +105,31 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
   const isDirty = form.formState.isDirty;
   const canSubmit = !requireDirtyToSubmit || isDirty;
 
-  const handleSubmit = form.handleSubmit(async (submittedValues) => {
-    setIsSubmitting(true);
-    try {
-      await onSubmit(submittedValues);
-    } finally {
-      setIsSubmitting(false);
-    }
-  });
+  const handleSubmit = async (): Promise<boolean> => {
+    let didSucceed = false;
 
-  const goNext = async () => {
+    await form.handleSubmit(async (submittedValues) => {
+      setIsSubmitting(true);
+      const result = await onSubmit(submittedValues);
+      setIsSubmitting(false);
+
+      if (result === false) return;
+
+      if (resetOnSuccessValues) {
+        form.reset(resetOnSuccessValues);
+        setStepIndex(0);
+      }
+
+      await onSubmitSuccess?.();
+      didSucceed = true;
+    })().catch(() => {
+      setIsSubmitting(false);
+    });
+
+    return didSucceed;
+  };
+
+  const goNext = async (): Promise<boolean> => {
     const fieldNamesToValidate = visibleFields
       .filter((field) => field.kind === "text")
       .map((field) => field.name);
@@ -116,15 +137,15 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
     const isStepValid =
       fieldNamesToValidate.length > 0 ? await form.trigger(fieldNamesToValidate) : true;
 
-    if (!isStepValid) return;
+    if (!isStepValid) return false;
 
     if (isLastStep) {
-      if (!canSubmit) return;
-      await handleSubmit();
-      return;
+      if (!canSubmit) return false;
+      return await handleSubmit();
     }
 
     setStepIndex((index) => Math.min(index + 1, steps.length - 1));
+    return true;
   };
 
   const goBack = () => {

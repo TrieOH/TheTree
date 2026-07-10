@@ -9,8 +9,8 @@ export interface ManageEventModalProps {
   onOpenChange: (open: boolean) => void;
   /** Omit for create mode. Pass the record being edited for edit mode. */
   event?: EventI;
-  onCreate?: (values: EventCreateOutputI) => void | Promise<void>;
-  onUpdate?: (id: string, values: EventCreateOutputI) => void | Promise<void>;
+  onCreate?: (values: EventCreateOutputI) => Promise<boolean> | boolean;
+  onUpdate?: (id: string, values: EventCreateOutputI) => Promise<boolean> | boolean;
 }
 
 const emptyDefaultValues: EventCreateInputI = {
@@ -68,17 +68,21 @@ export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate
     schema: eventCreateSchema,
     steps: eventFormSteps,
     defaultValues: emptyDefaultValues,
+    resetOnSuccessValues: isEditing ? undefined : emptyDefaultValues,
     // Only pass `values` in edit mode - RHF resets/re-syncs the form to
     // this object whenever its reference changes (e.g. a different
     // event gets picked, or fresh data comes back from a refetch).
     values: editValues,
     // Blocks the submit button until something actually changed only meaningful while editing.
     requireDirtyToSubmit: isEditing,
-    onSubmit: async (values) => {
-      if (event) await onUpdate?.(event.id, values);
-      else await onCreate?.(values);
-      onOpenChange(false);
+    onSubmit: async (values): Promise<boolean> => {
+      const result = event
+        ? await onUpdate?.(event.id, values)
+        : await onCreate?.(values);
+
+      return result !== false;
     },
+    onSubmitSuccess: () => onOpenChange(false),
   });
 
   const name = controller.form.watch("name");
