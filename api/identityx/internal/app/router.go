@@ -11,6 +11,8 @@ import (
 
 	"IdentityX/internal/features/authn"
 	"IdentityX/internal/features/organizations"
+	"IdentityX/internal/features/profile_schemas"
+	"IdentityX/internal/features/profiles"
 	"IdentityX/internal/features/projects"
 	_ "IdentityX/models"
 
@@ -47,6 +49,10 @@ import (
 // @tag.description "Operations related to capabilities management"
 // @tag.name actors
 // @tag.description "Operations related to actors management"
+// @tag.name profiles
+// @tag.description "Operations related to actor profile management"
+// @tag.name profile_schemas
+// @tag.description "Operations related to profile schema management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
@@ -108,6 +114,8 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
 	projects.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
 	capabilities.RegisterRoutes(r, handlers.Capabilities, middlewares.jwtAuth, middlewares.anyAuth, middlewares.clientOnly)
+	profiles.RegisterRoutes(r, handlers.Profiles, middlewares.jwtAuth, middlewares.clientOnly)
+	profile_schemas.RegisterRoutes(r, handlers.ProfileSchemas, middlewares.jwtAuth, middlewares.clientOnly)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

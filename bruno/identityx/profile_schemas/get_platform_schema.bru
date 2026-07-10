@@ -1,0 +1,15 @@
+meta {
+  name: Get Platform Schema
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{identityx_url}}/profile-schema
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
