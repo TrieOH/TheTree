@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { Search, Settings, SlidersHorizontal } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import { useQuery } from '@tanstack/react-query'
 import { EventCard } from '@/features/events/ui/EventCard'
@@ -16,6 +16,10 @@ import {
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
 import { FABMenu } from '@/widgets/ui/fab-menu'
+import {
+  UI_PREFERENCES_CHANGE_EVENT,
+  readInplaceEditPreference,
+} from '@/shared/lib/ui-preferences'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -36,6 +40,7 @@ type FilterValue = (typeof filterOptions)[number]['value'] | (typeof editFilterO
 function EventsPage() {
   const publicEvents = Route.useLoaderData()
   const [isEditMode, setIsEditMode] = useState(false)
+  const [inplaceEditEnabled, setInplaceEditEnabled] = useState(readInplaceEditPreference)
   const [filter, setFilter] = useState<FilterValue>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
@@ -69,6 +74,8 @@ function EventsPage() {
   }
 
   const handleEditToggle = () => {
+    if (!inplaceEditEnabled) return
+
     setIsEditMode((current) => {
       const next = !current
 
@@ -92,6 +99,24 @@ function EventsPage() {
   const handleCreateEvent = () => {
     // TODO: abrir fluxo de criação de evento.
   }
+
+  useEffect(() => {
+    const syncPreferences = () => {
+      const enabled = readInplaceEditPreference()
+      setInplaceEditEnabled(enabled)
+
+      if (!enabled) {
+        setIsEditMode(false)
+      }
+    }
+
+    syncPreferences()
+    window.addEventListener(UI_PREFERENCES_CHANGE_EVENT, syncPreferences)
+
+    return () => {
+      window.removeEventListener(UI_PREFERENCES_CHANGE_EVENT, syncPreferences)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background relative pb-24">
@@ -217,13 +242,15 @@ function EventsPage() {
         )}
       </main>
 
-      <FABMenu
-        mode="action"
-        icon={Settings}
-        onClick={handleEditToggle}
-        active={isEditMode}
-        ariaLabel={isEditMode ? 'Sair do modo de edição' : 'Ativar modo de edição'}
-      />
+      {inplaceEditEnabled && (
+        <FABMenu
+          mode="action"
+          icon={Settings}
+          onClick={handleEditToggle}
+          active={isEditMode}
+          ariaLabel={isEditMode ? 'Sair do modo de edição' : 'Ativar modo de edição'}
+        />
+      )}
     </div>
   )
 }
