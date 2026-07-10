@@ -20,6 +20,8 @@ import {
   UI_PREFERENCES_CHANGE_EVENT,
   readInplaceEditPreference,
 } from '@/shared/lib/ui-preferences'
+import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
+import type { EventI } from '@/features/events/model'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -43,6 +45,7 @@ function EventsPage() {
   const [inplaceEditEnabled, setInplaceEditEnabled] = useState(readInplaceEditPreference)
   const [filter, setFilter] = useState<FilterValue>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [modalState, setModalState] = useState<{ open: boolean; event?: EventI }>({ open: false });
 
   const { data: ownEvents, isFetching: isFetchingOwnEvents } = useQuery({
     ...allOwnEventsQueryOptions(),
@@ -91,14 +94,14 @@ function EventsPage() {
     })
   }
 
-  const handleEventEdit = (eventId: string) => {
-    // TODO: abrir drawer/modal de edição do evento selecionado.
-    void eventId
-  }
+  // const handleEventEdit = (eventId: string) => {
+  //   // TODO: abrir drawer/modal de edição do evento selecionado.
+  //   void eventId
+  // }
 
-  const handleCreateEvent = () => {
-    // TODO: abrir fluxo de criação de evento.
-  }
+  // const handleCreateEvent = () => {
+  //   // TODO: abrir fluxo de criação de evento.
+  // }
 
   useEffect(() => {
     const syncPreferences = () => {
@@ -214,14 +217,16 @@ function EventsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 md:gap-8">
-            {isEditMode && <CreateEventCard onClick={handleCreateEvent} />}
+            {isEditMode &&
+              <CreateEventCard onClick={() => setModalState({ open: true, event: undefined })} />
+            }
             {filteredEvents.map((event, idx) => (
               <EventCard
                 key={event.id}
                 event={event}
                 index={idx}
                 showEditAction={isEditMode}
-                onEdit={() => { handleEventEdit(event.id) }}
+                onEdit={() => { setModalState({ open: true, event: event }) }}
               />
             ))}
           </div>
@@ -240,6 +245,18 @@ function EventsPage() {
             </div>
           </div>
         )}
+        <ManageEventModal
+          key={modalState.event?.id ?? "event-create"}
+          open={modalState.open}
+          onOpenChange={(open) => setModalState((prev) => ({ ...prev, open }))}
+          event={modalState.event}
+          onCreate={async (values) => {
+            console.log("criar evento", values);
+          }}
+          onUpdate={async (id, values) => {
+            console.log("atualizar evento", id, values);
+          }}
+        />
       </main>
 
       {inplaceEditEnabled && (

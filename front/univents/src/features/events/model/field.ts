@@ -1,8 +1,8 @@
 import type { FormFieldI } from "@/shared/model/field";
-import type { EventCreateI } from ".";
+import type { EventCreateOutputI } from ".";
 import { uploadAndModerateFile } from "@/features/storage/api";
 
-export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateI>[] => [
+export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateOutputI>[] => [
   { name: 'name' as const, label: 'Nome', type: 'text' as const, required: true, placeholder: 'Ex: TechConf', autocomplete: 'organization', autoFocus: true },
   { name: 'slug' as const, label: 'Slug', type: 'text' as const, required: true, placeholder: 'tech-conf' },
   { name: 'acronym' as const, label: 'Sigla', type: 'text' as const, placeholder: 'TC' },

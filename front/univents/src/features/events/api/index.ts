@@ -1,6 +1,6 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { EventCreateI, EventI } from "../model";
+import type { EventCreateOutputI, EventI } from "../model";
 import {
   authFetcher,
   publicQueryFetcher,
@@ -14,7 +14,7 @@ import type { ImageURLUploadI } from "@/shared/model/generic";
  * @param eventData - The data for the new event.
  * @returns A promise that resolves to the API response containing the newly created event.
  */
-export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
+export const createEventFn = createClientOnlyFn((eventData: EventCreateOutputI) => {
   return authFetcher.post<EventI>("/events", eventData);
 });
 
