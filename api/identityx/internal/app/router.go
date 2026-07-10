@@ -49,6 +49,10 @@ import (
 // @tag.description "Operations related to capabilities management"
 // @tag.name actors
 // @tag.description "Operations related to actors management"
+// @tag.name profiles
+// @tag.description "Operations related to actor profile management"
+// @tag.name profile_schemas
+// @tag.description "Operations related to profile schema management"
 // @produce json
 // @consumes json
 // @response 200 {object} fun.Response "Standard success response"
