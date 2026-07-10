@@ -6,7 +6,7 @@
  * Usage:
  *   import { createAppFetchers } from "@trieoh/api-client"
  *
- *   const { authFetcher, queryFetcher, publicFetcher } = createAppFetchers({
+ *   const { authFetcher, authQueryFetcher, publicFetcher, publicQueryFetcher } = createAppFetchers({
  *     apiURL: env.VITE_API_URL,
  *     authAPIURL: env.VITE_AUTH_API_URL,
  *   })
@@ -32,10 +32,12 @@ export interface AppFetcherConfig {
 export interface AppFetchers {
   /** Authenticated fetcher (auto-attaches Bearer token, handles refresh). */
   authFetcher: ReturnType<typeof createFetcher>
-  /** Fetcher that returns raw data (for TanStack Query). */
-  queryFetcher: ReturnType<typeof createQueryFetcher>
+  /** Authenticated fetcher for TanStack Query. */
+  authQueryFetcher: ReturnType<typeof createQueryFetcher>
   /** Public/unauthenticated fetcher (no auth headers). */
   publicFetcher: ReturnType<typeof createDefaultFetchClient>
+  /** Public fetcher for TanStack Query. */
+  publicQueryFetcher: <T>(path: string) => Promise<T>
 }
 
 /**
@@ -56,7 +58,7 @@ export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
     clientConfig,
   })
 
-  const queryFetcher = createQueryFetcher({
+  const authQueryFetcher = createQueryFetcher({
     baseURL: apiURL,
     authBaseURL: authAPIURL,
     clientConfig,
@@ -68,5 +70,11 @@ export function createAppFetchers(config: AppFetcherConfig): AppFetchers {
     timeout,
   })
 
-  return { authFetcher, queryFetcher, publicFetcher }
+  const publicQueryFetcher = async <T>(path: string): Promise<T> => {
+    const result = await publicFetcher.get<T>(path)
+    if (!result.success) throw result
+    return result.data
+  }
+
+  return { authFetcher, authQueryFetcher, publicFetcher, publicQueryFetcher }
 }

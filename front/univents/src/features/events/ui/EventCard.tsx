@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Pencil } from 'lucide-react'
 import type { EventI } from '../model'
 import { cn } from '@/shared/lib/utils'
 
@@ -8,9 +8,17 @@ interface EventCardProps {
   event: EventI
   index?: number
   className?: string
+  onEdit?: (event: EventI) => void
+  showEditAction?: boolean
 }
 
-export function EventCard({ event, index = 0, className }: EventCardProps) {
+export function EventCard({
+  event,
+  index = 0,
+  className,
+  onEdit,
+  showEditAction = false,
+}: EventCardProps) {
   const navigate = useNavigate()
 
   const handleClick = () => {
@@ -39,7 +47,9 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
         "bg-card rounded-2xl overflow-hidden",
         "border border-transparent hover:border-border",
         "transition-all duration-300 ease-out",
-        "hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1",
+        "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+        showEditAction && "hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 hover:rotate-[0.35deg]",
+        !showEditAction && "hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1",
         className
       )}
       role="link"
@@ -81,11 +91,35 @@ export function EventCard({ event, index = 0, className }: EventCardProps) {
             <ArrowUpRight className="w-4 h-4 text-foreground" />
           </div>
         </div>
+
+        {showEditAction && onEdit && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(event)
+            }}
+            className={cn(
+              'absolute inset-0 flex items-center justify-center',
+              'bg-foreground/0 opacity-0 transition-all duration-300',
+              'group-hover:bg-foreground/20 group-hover:opacity-100',
+              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+              'focus-visible:bg-foreground/20 focus-visible:opacity-100',
+            )}
+            aria-label={`Editar ${event.name}`}
+          >
+            <span className="flex size-14 items-center justify-center rounded-full border border-white/20 bg-background/80 text-foreground shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:scale-100 scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0">
+              <Pencil className="size-6" />
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="p-4 md:p-5 space-y-2.5">
-        <div className="text-xs text-muted-foreground">
-          Criado em {createdDate}
+        <div className="flex items-start justify-between gap-2">
+          <div className="text-xs text-muted-foreground">
+            Criado em {createdDate}
+          </div>
         </div>
 
         <h3 className="font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 text-base md:text-lg">
