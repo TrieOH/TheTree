@@ -1,5 +1,5 @@
 import type { FieldValues } from "react-hook-form";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import { createFieldRegistry, renderField } from "./field-registry";
 import type { MultiStepFormController } from "../hooks/use-multi-step-form";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -38,7 +38,7 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
             <span className="flex items-center gap-1.5">
               <span
                 className={
-                  "flex h-5 w-6 items-center justify-center rounded border text-[10px] " +
+                  "flex size-6 aspect-square items-center justify-center rounded-md border text-[10px] leading-none " +
                   (index === stepIndex
                     ? "border-foreground bg-foreground text-background"
                     : "border-border text-muted-foreground")
@@ -48,7 +48,7 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
               </span>
               <span className={index === stepIndex ? "text-foreground" : undefined}>{step.label}</span>
             </span>
-            {index < steps.length - 1 ? <span className="text-border">{"\u203A"}</span> : null}
+            {index < steps.length - 1 ? <ChevronRight className="size-3 text-border" /> : null}
           </li>
         ))}
       </ol>

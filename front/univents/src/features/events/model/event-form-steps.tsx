@@ -1,6 +1,6 @@
 import type { StepConfig } from "@/widgets/multi-step-form/model/types";
-import type { EventCreateInputI } from ".";
 import { SocialLinksField } from "../ui/field/SocialLinkField";
+import type { EventCreateInputI } from ".";
 
 export const eventFormSteps: StepConfig<EventCreateInputI>[] = [
   {
@@ -13,7 +13,6 @@ export const eventFormSteps: StepConfig<EventCreateInputI>[] = [
         name: "slug",
         label: "Slug",
         placeholder: "tech-summit-2026",
-        optional: true,
       },
       {
         kind: "text",

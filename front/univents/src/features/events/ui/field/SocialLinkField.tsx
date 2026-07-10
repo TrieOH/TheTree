@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { FieldFormApi } from "@/widgets/multi-step-form/model/types";
 import type { EventCreateInputI, SocialPlatform } from "../../model";
+import { Button } from "@/shared/ui/shadcn/button";
+import { Input } from "@/shared/ui/shadcn/input";
+import { Label } from "@/shared/ui/shadcn/label";
 
 const socialPlatformMeta: Record<SocialPlatform, { label: string; placeholder: string }> = {
   website: { label: "Website", placeholder: "https://seu-evento.com" },
@@ -31,35 +34,30 @@ export function SocialLinksField({ form }: { form: FieldFormApi<EventCreateInput
           {(Object.keys(socialPlatformMeta) as SocialPlatform[]).map((platform) => {
             const isActive = platform === selected;
             return (
-              <button
+              <Button
                 key={platform}
                 type="button"
+                variant={isActive ? "default" : "outline"}
+                size="sm"
                 onClick={() => setSelected(platform)}
-                className={
-                  "rounded-md border px-3 py-1.5 text-sm font-medium " +
-                  (isActive
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-input text-muted-foreground hover:text-foreground")
-                }
               >
                 {socialPlatformMeta[platform].label}
-              </button>
+              </Button>
             );
           })}
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <label
+        <Label
           htmlFor={fieldName}
           className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {meta.label} URL
-        </label>
-        <input
+        </Label>
+        <Input
           id={fieldName}
           placeholder={meta.placeholder}
-          className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           {...form.register(fieldName)}
         />
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
