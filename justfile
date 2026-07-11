@@ -7,28 +7,86 @@ ps:
     docker ps
 
 # =============================================================
-# 🚀 PROD
+# 🚀 PROD — Swarm stack commands
 # =============================================================
 
+# One-time bootstrap on fresh server
+bootstrap +TAGS="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker swarm init 2>/dev/null || echo "Swarm already initialized"
+    {{TAGS}}
+    docker stack deploy -c stack.prod.yml trieoh
+
+# Deploy full core stack (initial or infrastructure changes)
+prod-all:
+    docker stack deploy -c stack.prod.yml trieoh
+
+# Deploy core services (uses current env vars or stack defaults)
 prod +SERVICES="":
-    just obs-prod
-    docker compose -f compose.prod.yml --env-file .tags.env pull {{SERVICES}}
-    docker compose -f compose.prod.yml --env-file .tags.env up -d {{SERVICES}}
+    docker stack deploy -c stack.prod.yml trieoh
+
+# Deploy a specific version to production
+deploy SVC TAG:
+    docker service update \
+        --detach=false \
+        --image git.trieoh.com/trieoh/{{SVC}}:{{TAG}} \
+        trieoh_{{SVC}}
+
+# Show what's running in production
+status:
+    docker service ls --filter name=trieoh --format 'table {{.Name}}\t{{.Image}}\t{{.Replicas}}'
+
+# Rollback a service to its previous version (Swarm-native)
+rollback SVC:
+    docker service rollback trieoh_{{SVC}}
 
 # =============================================================
-# 🛠️ COMPOSE HELPERS
+# 📊 OBSERVABILITY
+# =============================================================
+
+# Dev observability (regular Compose)
+obs:
+    docker compose -f compose.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
+
+# Prod observability (Swarm stack)
+obs-prod:
+    docker stack deploy -c stack.obs.yml trieoh
+
+# =============================================================
+# 📧 EMAIL (Swarm — migrated from Compose)
+# =============================================================
+
+email-swarm:
+    docker stack deploy -c stack.prod.yml trieoh
+
+# =============================================================
+# 📧 EMAIL (Compose fallback)
+# =============================================================
+
+email-compose:
+    docker compose -f compose.prod.yml up -d mox
+
+# =============================================================
+# 🔧 GIT (Compose fallback)
+# =============================================================
+
+git-compose:
+    docker compose -f compose.prod.yml up -d forgejo forgejo-runner forgejo-dind
+
+# =============================================================
+# 🔧 GIT (Swarm — migrated from Compose)
+# =============================================================
+
+git-swarm:
+    docker stack deploy -c stack.prod.yml trieoh
+
+# =============================================================
+# 🛠️ COMPOSE HELPERS (fallback)
 # =============================================================
 
 _compose +ARGS:
     docker compose -f compose.yml {{ARGS}}
-
-# Boot the observability stack detached
-obs:
-    docker compose -f compose.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
-
-# Boot the prod observability stack detached
-obs-prod:
-    docker compose -f compose.prod.yml up -d beszel beszel-agent victoria-metrics victoria-logs victoria-traces vector grafana
 
 # =============================================================
 # 🚀 DEV — back + front together
@@ -86,10 +144,10 @@ front +SERVICES="identityx informd payssage univents":
 # =============================================================
 # 🧹 TEARDOWN
 # =============================================================
-
 # Stop everything (containers + networks). Pass specific services to only
 # stop+remove those, instead of the whole project — `down` itself has no
 # concept of "just this service", so we branch to `rm -f -s` for that case.
+
 down +SERVICES="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -112,7 +170,6 @@ generate +SERVICES="identityx informd payssage univents":
 # =============================================================
 # 🛠️ TESTS
 # =============================================================
-
 # Run tests for all or specific services.
 # Examples:
 #   just test                  → all services
@@ -129,8 +186,8 @@ test +SERVICES="identityx informd payssage univents":
 # =============================================================
 # 🛠️ GO TOOLS
 # =============================================================
-
 # Build and push go-tools image to Forgejo
+
 build-tools:
     docker build -f infra/docker/tools.Dockerfile -t git.trieoh.com/trieoh/go-tools:latest .
     docker push git.trieoh.com/trieoh/go-tools:latest
@@ -157,17 +214,3 @@ lint-api +SERVICES="identityx informd payssage univents":
 lint-ci:
     docker run --rm -v "$PWD:$PWD" -w "$PWD" git.trieoh.com/trieoh/go-tools:latest \
       sh -c 'for svc in identityx informd payssage univents; do echo "🔧 $svc sqlc..."; (cd api/$$svc && sqlc generate); done && echo "🔍 linting..." && golangci-lint run ./...'
-
-# =============================================================
-# 📧 EMAIL
-# =============================================================
-
-email:
-    docker compose -f compose.prod.yml up -d mox
-
-# =============================================================
-# 🔧 GIT
-# =============================================================
-
-git:
-    docker compose -f compose.prod.yml up -d forgejo forgejo-runner forgejo-dind

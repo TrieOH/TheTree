@@ -1,0 +1,350 @@
+# =============================================================
+# stack.prod.yml — Core Production Stack (Docker Swarm)
+#
+# Deploy to a Swarm-managed server. Images are pulled from the
+# registry; versions are managed via `docker service update`,
+# not via this file (the `${VAR:-latest}` defaults are for
+# initial bootstrap only).
+#
+# Bootstrap:
+#   docker swarm init
+#   IDENTITY_X_TAG=v0.21.1 PAYSSAGE_TAG=v0.1.0 ... \
+#     docker stack deploy -c stack.prod.yml trieoh
+#
+# Day-to-day:
+#   docker service update --image git.trieoh.com/trieoh/identityx:v0.21.2 trieoh_identityx
+#   docker service rollback trieoh_identityx
+#   docker service ls --filter name=trieoh
+# =============================================================
+
+networks:
+  internal:
+    driver: overlay
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+  rustfs_data:
+  rustfs_logs:
+  forgejo-data:
+  forgejo-runner-data:
+  forgejo-dind-data:
+  buildkit-cache:
+
+services:
+
+  # =============================================================
+  # 🗄️ POSTGRES
+  # =============================================================
+
+  postgres:
+    image: postgres:18
+    env_file:
+      - .tree.env
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U TheTree -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  # =============================================================
+  # 🌐 CADDY
+  # =============================================================
+
+  caddy:
+    image: caddy:latest
+    env_file:
+      - .tree.env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/caddy/certs:/etc/caddy/certs:ro
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:2019/"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  # =============================================================
+  # 📂 RUSTFS (S3-compatible object storage)
+  # =============================================================
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    env_file:
+      - .tree.env
+    volumes:
+      - rustfs_data:/data
+      - rustfs_logs:/logs
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health && wget -qO- http://localhost:9001/rustfs/console/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  # =============================================================
+  # 🔐 IDENTITY-X
+  # =============================================================
+
+  identityx:
+    image: git.trieoh.com/trieoh/identityx:${IDENTITY_X_TAG:-latest}
+    networks:
+      - internal
+    env_file:
+      - .tree.env
+      - api/identityx/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+
+  # =============================================================
+  # 💳 PAYSSAGE
+  # =============================================================
+
+  payssage:
+    image: git.trieoh.com/trieoh/payssage:${PAYSSAGE_TAG:-latest}
+    networks:
+      - internal
+    env_file:
+      - .tree.env
+      - api/payssage/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+
+  # =============================================================
+  # 📢 INFORMD
+  # =============================================================
+
+  informd:
+    image: git.trieoh.com/trieoh/informd:${INFORMD_TAG:-latest}
+    networks:
+      - internal
+    env_file:
+      - .tree.env
+      - api/informd/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+
+  # =============================================================
+  # 🎟️ UNIVENTS
+  # =============================================================
+
+  univents:
+    image: git.trieoh.com/trieoh/univents:${UNIVENTS_TAG:-latest}
+    networks:
+      - internal
+    env_file:
+      - .tree.env
+      - api/univents/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+      start_period: 2s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+
+  # =============================================================
+  # 📧 MOX (mail server)
+  #
+  # SMTP/IMAP ports exposed directly — not HTTP, Caddy cannot
+  # proxy them. Admin panel on 127.0.0.1:9090.
+  # =============================================================
+
+  mox:
+    image: r.xmox.nl/mox:latest
+    networks:
+      - internal
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./infra/mox/config:/mox/config
+      - ./infra/mox/data:/mox/data
+      - ./infra/mox/certs:/mox/certs
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command: mox -config /mox/config/mox.conf serve
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/webmail || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  # =============================================================
+  # 🔧 FORGEJO (git forge)
+  # =============================================================
+
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:15
+    env_file:
+      - ./infra/forgejo/.env
+    networks:
+      - internal
+    volumes:
+      - forgejo-data:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  forgejo-runner:
+    image: code.forgejo.org/forgejo/runner:12
+    depends_on:
+      - forgejo
+    environment:
+      DOCKER_HOST: tcp://forgejo-dind:2375
+    networks:
+      - internal
+    volumes:
+      - ./forgejo-runner/config.yml:/data/config.yml
+      - forgejo-runner-data:/data
+    command: /bin/sh -c "sleep 5 && forgejo-runner daemon --config /data/config.yml"
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
+
+  forgejo-dind:
+    image: docker:dind
+    privileged: true
+    command: ["dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false"]
+    networks:
+      - internal
+    volumes:
+      - forgejo-dind-data:/var/lib/docker
+      - buildkit-cache:/var/cache/buildkit
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:2375/info || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        monitor: 30s
+        order: stop-first
