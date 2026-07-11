@@ -1,133 +1,181 @@
 #!/usr/bin/env bash
 # =============================================================
-# migrate-forgejo.sh — Compose → Swarm volume migration
+# migrate-forgejo.sh — Compose → Swarm data migration
 #
-# Moves Forgejo data from the existing Compose deployment to
-# the new Swarm stack. Keeps Compose volumes intact as fallback.
+# Step-by-step interactive migration. Reads each step's command
+# and description, asks for confirmation, executes.
 #
-# Prerequisites:
-#   - Compose forgejo is running (for DB access)
-#   - Docker Swarm is initialized
-#   - Source and dest volume names match this script
+# Compose volumes are NEVER deleted — emergency rollback is
+# always one command away.
 #
 # Usage:
 #   chmod +x infra/scripts/migrate-forgejo.sh
 #   ./infra/scripts/migrate-forgejo.sh
 #
-# After migration:
-#   docker stack deploy -c stack.prod.yml trieoh
-#
-# Rollback:
-#   docker compose -f compose.prod.yml --profile git up -d
+# Skip confirmation for scripting:
+#   ./infra/scripts/migrate-forgejo.sh --yes
 # =============================================================
 
 set -euo pipefail
 
-# ── Volume names ──────────────────────────────────────────────
 SRC_PREFIX="thetree"
 DST_PREFIX="trieoh"
+AUTO_YES="${1:-}"
 
-VOLUMES=(
-  "forgejo-data"
-  "forgejo-runner-data"
-  "forgejo-dind-data"
-  "buildkit-cache"
-)
+# ── Helpers ───────────────────────────────────────────────────
 
-# ── Safety check ──────────────────────────────────────────────
-echo "=== Forgejo Compose → Swarm migration ==="
-echo ""
-echo "This will:"
-echo "  1. Stop Compose forgejo services"
-echo "  2. Dump the Forgejo PostgreSQL database"
-echo "  3. Copy Forgejo volumes to Swarm equivalents"
-echo "  4. Start Swarm stack with Forgejo"
-echo "  5. Restore the Forgejo database"
-echo ""
-echo "Compose volumes are NEVER deleted — you can rollback anytime."
-echo ""
+confirm() {
+    local desc="$1"
+    local cmd="$2"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  $desc"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "  $ $cmd"
+    echo ""
 
-if [[ "${1:-}" != "--yes" ]]; then
-    read -rp "Type 'yes' to proceed: " CONFIRM
-    if [[ "$CONFIRM" != "yes" ]]; then
-        echo "Aborted."
-        exit 0
+    if [[ "$AUTO_YES" == "--yes" ]]; then
+        echo "  → running (--yes)..."
+        eval "$cmd"
+        return 0
     fi
+
+    read -rp "  Run this? [y/N] " REPLY
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+        eval "$cmd"
+    else
+        echo "  Skipped."
+        return 1
+    fi
+}
+
+# ── Banner ────────────────────────────────────────────────────
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║     Forgejo  —  Compose → Swarm  Data Migration             ║"
+echo "║                                                            ║"
+echo "║  Copies:                                                    ║"
+echo "║    thetree_forgejo-data        → trieoh_forgejo-data        ║"
+echo "║    thetree_forgejo-runner-data → trieoh_forgejo-runner-data ║"
+echo "║    thetree_forgejo-dind-data   → trieoh_forgejo-dind-data   ║"
+echo "║    thetree_buildkit-cache      → trieoh_buildkit-cache      ║"
+echo "║    Forgejo PostgreSQL database → backup file                ║"
+echo "║                                                            ║"
+echo "║  Compose volumes are NEVER touched — safe rollback.        ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+if [[ "$AUTO_YES" != "--yes" ]]; then
+    read -rp "Press Enter to begin..."
 fi
 
-# ── Step 1: Stop Compose forgejo ──────────────────────────────
-echo ""
-echo "=== Step 1: Stopping Compose forgejo ==="
-docker compose -f compose.prod.yml --profile git stop forgejo forgejo-runner forgejo-dind || true
-echo "Forgejo stopped."
+# ── Step 1: Stop Compose Forgejo ──────────────────────────────
+
+confirm \
+    "Step 1/6 — Stop Compose Forgejo" \
+    "docker compose -f compose.prod.yml --profile git stop forgejo forgejo-runner forgejo-dind" \
+    || true
+
+echo "  Compose Forgejo stopped. Postgres and Caddy are still running."
 
 # ── Step 2: Dump Forgejo database ─────────────────────────────
-echo ""
-echo "=== Step 2: Dumping Forgejo database ==="
-# Forgejo uses its own database within the shared postgres instance.
-# The database name is typically 'forgejo' — check infra/forgejo/.env.
+
 BACKUP_FILE="/tmp/forgejo-db-$(date +%Y%m%d-%H%M%S).sql"
-docker compose -f compose.prod.yml --profile git exec -T postgres \
-    pg_dump -U TheTree forgejo > "$BACKUP_FILE" 2>/dev/null || {
-    echo "WARNING: Could not dump forgejo database."
-    echo "If forgejo uses a different DB name, update this script."
-    echo "Continuing with volume copy only..."
+
+confirm \
+    "Step 2/6 — Dump Forgejo database from Compose Postgres" \
+    "docker compose -f compose.prod.yml --profile git exec -T postgres pg_dump -U TheTree forgejo > ${BACKUP_FILE}" && {
+    if [[ -s "$BACKUP_FILE" ]]; then
+        echo "  ✓ Dumped $(wc -l < "$BACKUP_FILE") lines → $BACKUP_FILE"
+    else
+        echo "  ✗ Dump failed or database is empty."
+        echo "    Check the database name in infra/forgejo/.env"
+        echo "    It may not be 'forgejo' — update this script and re-run."
+        BACKUP_FILE=""
+    fi
+} || {
+    echo "  ✗ pg_dump failed. Is the Compose postgres running?"
     BACKUP_FILE=""
 }
-if [[ -n "$BACKUP_FILE" ]] && [[ -s "$BACKUP_FILE" ]]; then
-    echo "Database dumped to $BACKUP_FILE"
-fi
 
 # ── Step 3: Copy volumes ──────────────────────────────────────
-echo ""
-echo "=== Step 3: Copying volumes ==="
-for vol in "${VOLUMES[@]}"; do
+
+for vol in forgejo-data forgejo-runner-data forgejo-dind-data buildkit-cache; do
     SRC="${SRC_PREFIX}_${vol}"
     DST="${DST_PREFIX}_${vol}"
-    echo "  $SRC → $DST"
 
     # Check source exists
     if ! docker volume inspect "$SRC" &>/dev/null; then
-        echo "    WARNING: $SRC not found, skipping"
+        echo ""
+        echo "  ⚠ $SRC not found — skipping."
         continue
     fi
 
-    # Copy data
-    docker run --rm \
-        -v "${SRC}:/src" \
-        -v "${DST}:/dst" \
-        alpine cp -a /src/. /dst/ 2>/dev/null || {
-        echo "    ERROR: copy failed for $vol"
+    confirm \
+        "Step 3/6 — Copy volume: $SRC → $DST" \
+        "docker run --rm -v ${SRC}:/src -v ${DST}:/dst alpine cp -va /src/. /dst/" && {
+        echo "  ✓ Copied $vol"
+    } || {
+        echo "  ✗ Copy failed for $vol — aborting."
         exit 1
     }
-    echo "    OK"
 done
 
-# ── Step 4: Deploy Swarm stack ────────────────────────────────
-echo ""
-echo "=== Step 4: Deploying Swarm stack with Forgejo ==="
-docker stack deploy -c stack.prod.yml trieoh
-echo "Stack deployed. Waiting for forgejo to be ready..."
-sleep 10
+# ── Step 4: Verify volumes ────────────────────────────────────
 
-# ── Step 5: Restore database ──────────────────────────────────
-if [[ -n "$BACKUP_FILE" ]] && [[ -s "$BACKUP_FILE" ]]; then
+confirm \
+    "Step 4/6 — Verify Swarm volumes exist and have data" \
+    "docker run --rm -v trieoh_forgejo-data:/data alpine ls -la /data" || true
+
+# ── Step 5: Deploy Swarm stack ────────────────────────────────
+
+echo ""
+echo "  ⚠ Step 5 deploys the ENTIRE stack — app services too."
+echo "    If this is your first time, that's expected."
+echo "    If app services are already running, this is a no-op update."
+
+confirm \
+    "Step 5/6 — Deploy Swarm stack (all services)" \
+    "docker stack deploy -c stack.prod.yml trieoh" || {
+    echo "  Skipped stack deploy. Run manually:"
+    echo "    docker stack deploy -c stack.prod.yml trieoh"
+}
+
+# ── Step 6: Restore database ──────────────────────────────────
+
+if [[ -n "${BACKUP_FILE:-}" ]] && [[ -s "${BACKUP_FILE:-}" ]]; then
+
     echo ""
-    echo "=== Step 5: Restoring Forgejo database ==="
-    docker exec -i "$(docker ps -qf 'name=trieoh_postgres')" \
-        psql -U TheTree -d forgejo < "$BACKUP_FILE" 2>/dev/null && {
-        echo "Database restored."
+    echo "  Waiting for Swarm postgres to be ready..."
+    sleep 5
+
+    confirm \
+        "Step 6/6 — Restore Forgejo database into Swarm Postgres" \
+        "docker exec -i \$(docker ps -qf 'name=trieoh_postgres') psql -U TheTree -d forgejo < ${BACKUP_FILE}" && {
+        echo "  ✓ Database restored."
     } || {
-        echo "WARNING: Database restore failed. You may need to run:"
-        echo "  docker exec -i \$(docker ps -qf 'name=trieoh_postgres') psql -U TheTree -d forgejo < $BACKUP_FILE"
+        echo "  ✗ Restore failed. You may need to run manually:"
+        echo "    docker exec -i \$(docker ps -qf 'name=trieoh_postgres') psql -U TheTree -d forgejo < ${BACKUP_FILE}"
     }
+else
+    echo ""
+    echo "  ⚠ No database backup found — skipping restore."
 fi
 
 # ── Done ──────────────────────────────────────────────────────
+
 echo ""
-echo "=== Migration complete ==="
-echo ""
-echo "Verify:   docker service ls --filter name=trieoh"
-echo "Rollback: docker compose -f compose.prod.yml --profile git up -d"
-echo ""
-echo "Compose volumes ($SRC_PREFIX_*) are untouched and safe."
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  Migration complete.                                        ║"
+echo "║                                                            ║"
+echo "║  Verify:  docker service ls --filter name=trieoh            ║"
+echo "║  Logs:    docker service logs trieoh_forgejo                ║"
+echo "║  Check:   curl -I https://git.trieoh.com                    ║"
+echo "║                                                            ║"
+echo "║  Emergency rollback:                                        ║"
+echo "║    docker service rm trieoh_forgejo trieoh_forgejo-runner \\║"
+echo "║                  trieoh_forgejo-dind                        ║"
+echo "║    docker compose -f compose.prod.yml --profile git up -d   ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
