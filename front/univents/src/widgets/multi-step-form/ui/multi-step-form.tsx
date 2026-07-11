@@ -1,5 +1,5 @@
 import type { FieldValues } from "react-hook-form";
-import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Loader2 } from "lucide-react";
 import { createFieldRegistry, renderField } from "./field-registry";
 import type { MultiStepFormController } from "../hooks/use-multi-step-form";
 import { Button } from "@/shared/ui/shadcn/button";
@@ -29,8 +29,10 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
     goNext,
     goBack,
     isSubmitting,
+    isProcessingUploads,
     canSubmit,
   } = controller;
+  const isBusy = isSubmitting || isProcessingUploads;
 
   const registry = createFieldRegistry<TInput>();
   const fieldRows = groupStepFields(visibleFields);
@@ -43,7 +45,7 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
 
   return (
     <ImageUploadStateProvider>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-full min-h-0 flex-1 flex-col">
         <ol className="mb-6 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {steps.map((step, index) => (
             <li key={step.id} className="flex items-center gap-2">
@@ -72,41 +74,56 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
             event.preventDefault();
             void goNext();
           }}
+          aria-busy={isBusy}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
-            {fieldRows.map((row) => (
+          <div className="relative min-h-0 flex-1 overflow-hidden">
+            <div
+              className={
+                "h-full min-h-0 space-y-4 overflow-y-auto px-1 pr-2 " +
+                (isBusy ? "pointer-events-none select-none opacity-60" : "")
+              }
+            >
+              {fieldRows.map((row) => (
+                <div
+                  key={row.map((field) => field.name).join("-")}
+                  className={row.length > 1 ? "grid grid-cols-1 gap-4 md:grid-cols-2" : undefined}
+                >
+                  {row.map((field) => (
+                    <div key={field.name}>{renderField(field, form, registry)}</div>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {isBusy ? (
               <div
-                key={row.map((field) => field.name).join("-")}
-                className={row.length > 1 ? "grid grid-cols-1 gap-4 md:grid-cols-2" : undefined}
-              >
-                {row.map((field) => (
-                  <div key={field.name}>{renderField(field, form, registry)}</div>
-                ))}
-              </div>
-            ))}
+                className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-background/35 backdrop-blur-[1px]"
+                aria-hidden="true"
+              />
+            ) : null}
           </div>
 
           <div className="mt-6 flex shrink-0 items-center justify-between border-t pt-4">
             {!isFirstStep ? (
-              <Button
-                type="button"
-                onClick={goBack}
-                disabled={isSubmitting}
-                variant="ghost"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
+                <Button
+                  type="button"
+                  onClick={goBack}
+                  disabled={isBusy}
+                  variant="ghost"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
                 <ArrowLeft className="size-4" />
                 Voltar
               </Button>
             ) : onCancel ? (
-              <Button
-                type="button"
-                onClick={onCancel}
-                disabled={isSubmitting}
-                variant="ghost"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
+                <Button
+                  type="button"
+                  onClick={onCancel}
+                  disabled={isBusy}
+                  variant="ghost"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
                 Cancelar
               </Button>
             ) : (
@@ -115,12 +132,22 @@ export function MultiStepForm<TInput extends FieldValues, TOutput = TInput>({
 
             <Button
               type="submit"
-              disabled={isSubmitting || (isLastStep && !canSubmit)}
+              disabled={isBusy || (isLastStep && !canSubmit)}
               title={isLastStep && !canSubmit ? "Nenhuma alteração para salvar" : undefined}
+              aria-busy={isBusy}
               className="p-4 text-sm font-semibold"
             >
-              {isLastStep ? submitLabel : "Avançar"}
-              {!isLastStep ? <ArrowRight className="size-4" /> : null}
+              {isBusy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>{isLastStep ? "Salvando..." : "Processando..."}</span>
+                </>
+              ) : (
+                <>
+                  <span>{isLastStep ? submitLabel : "Avançar"}</span>
+                  {!isLastStep ? <ArrowRight className="size-4" /> : null}
+                </>
+              )}
             </Button>
           </div>
         </form>

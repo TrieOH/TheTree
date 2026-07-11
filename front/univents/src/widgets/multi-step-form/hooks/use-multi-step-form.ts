@@ -20,6 +20,7 @@ export interface MultiStepFormController<TInput extends FieldValues, TOutput = T
   goBack: () => void;
   goToStep: (index: number) => void;
   isSubmitting: boolean;
+  isProcessingUploads: boolean;
   /** True once any field differs from its default/edited value. */
   isDirty: boolean;
   /**
@@ -86,6 +87,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
 
   const [stepIndex, setStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingUploads, setIsProcessingUploads] = useState(false);
 
   // Whenever the edited record changes (a new `values` reference lands),
   // jump the wizard back to the first step instead of leaving the user
@@ -144,11 +146,14 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
     if (isLastStep) {
       if (!canSubmit) return false;
       try {
+        setIsProcessingUploads(true);
         await flushImageUploadTasks();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Falha ao processar imagens");
+        setIsProcessingUploads(false);
         return false;
       }
+      setIsProcessingUploads(false);
       return await handleSubmit();
     }
 
@@ -176,6 +181,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
     goBack,
     goToStep,
     isSubmitting,
+    isProcessingUploads,
     isDirty,
     canSubmit,
   };
