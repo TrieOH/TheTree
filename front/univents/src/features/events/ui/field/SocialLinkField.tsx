@@ -1,9 +1,8 @@
 import { useState } from "react";
-import type { FieldFormApi } from "@/widgets/multi-step-form/model/types";
+import type { FieldFormApi, UrlFieldConfig } from "@/widgets/multi-step-form/model/types";
 import type { EventCreateInputI, SocialPlatform } from "../../model";
 import { Button } from "@/shared/ui/shadcn/button";
-import { Input } from "@/shared/ui/shadcn/input";
-import { Label } from "@/shared/ui/shadcn/label";
+import { UrlFieldRenderer } from "@/widgets/multi-step-form/ui/fields/url-field";
 
 const socialPlatformMeta: Record<SocialPlatform, { label: string; placeholder: string }> = {
   website: { label: "Website", placeholder: "https://seu-evento.com" },
@@ -22,7 +21,13 @@ export function SocialLinksField({ form }: { form: FieldFormApi<EventCreateInput
   const [selected, setSelected] = useState<SocialPlatform>("instagram");
   const meta = socialPlatformMeta[selected];
   const fieldName = `social_links.${selected}` as const;
-  const error = form.formState.errors.social_links?.[selected]?.message;
+  const field = {
+    kind: "url",
+    name: fieldName,
+    label: `${meta.label} URL`,
+    placeholder: meta.placeholder,
+    autoPrependScheme: true,
+  } satisfies UrlFieldConfig<EventCreateInputI>;
 
   return (
     <div className="space-y-4">
@@ -48,20 +53,7 @@ export function SocialLinksField({ form }: { form: FieldFormApi<EventCreateInput
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label
-          htmlFor={fieldName}
-          className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-        >
-          {meta.label} URL
-        </Label>
-        <Input
-          id={fieldName}
-          placeholder={meta.placeholder}
-          {...form.register(fieldName)}
-        />
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
-      </div>
+      <UrlFieldRenderer key={fieldName} field={field} form={form} />
     </div>
   );
 }

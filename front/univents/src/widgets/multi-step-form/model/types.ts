@@ -48,6 +48,19 @@ export interface TextFieldConfig<TFieldValues extends FieldValues> extends BaseF
   disabled?: boolean;
 }
 
+export interface UrlFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
+  kind: "url";
+  name: FieldPath<TFieldValues>;
+  label: string;
+  placeholder?: string;
+  description?: string;
+  optional?: boolean;
+  disabled?: boolean;
+  /** Prepend `https://` automatically when the user leaves the field
+   * without a scheme. Defaults to `true`. */
+  autoPrependScheme?: boolean;
+}
+
 export interface CustomFieldRenderArgs<TFieldValues extends FieldValues> {
   form: FieldFormApi<TFieldValues>;
 }
@@ -94,6 +107,7 @@ export interface GalleryFieldConfig<TFieldValues extends FieldValues> extends Ba
 
 export type FieldConfig<TFieldValues extends FieldValues> =
   | TextFieldConfig<TFieldValues>
+  | UrlFieldConfig<TFieldValues>
   | CustomFieldConfig<TFieldValues>
   | ImageFieldConfig<TFieldValues>
   | GalleryFieldConfig<TFieldValues>;

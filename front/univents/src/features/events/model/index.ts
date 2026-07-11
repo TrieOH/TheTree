@@ -9,6 +9,40 @@ export interface SocialLinks {
 
 export type SocialPlatform = 'website' | 'instagram' | 'linkedin' | 'twitter'
 
+const socialPlatformHosts: Record<Exclude<SocialPlatform, 'website'>, string[]> = {
+  twitter: ['x.com', 'twitter.com'],
+  instagram: ['instagram.com'],
+  linkedin: ['linkedin.com'],
+}
+
+function normalizeHost(value: string) {
+  return value.toLowerCase().replace(/^www\./, '')
+}
+
+function isAllowedSocialUrl(value: string, platform: Exclude<SocialPlatform, 'website'>) {
+  try {
+    const host = normalizeHost(new URL(value).hostname)
+    return socialPlatformHosts[platform].some((allowedHost) => {
+      const normalizedAllowed = normalizeHost(allowedHost)
+      return host === normalizedAllowed || host.endsWith(`.${normalizedAllowed}`)
+    })
+  } catch {
+    return false
+  }
+}
+
+function socialUrlSchema(platform: Exclude<SocialPlatform, 'website'>, label: string) {
+  return z
+    .url(`${label} link must be a valid URL`)
+    .optional()
+    .nullable()
+    .or(z.literal(''))
+    .transform(v => v === '' ? null : v)
+    .refine((value) => value == null || isAllowedSocialUrl(value, platform), {
+      message: `${label} link must point to ${socialPlatformHosts[platform].join(' or ')}`,
+    })
+}
+
 export const eventCreateSchema = z.object({
   organization_id: z.uuid().optional().nullable(),
   name: z.string({ error: 'Name is required' })
@@ -24,9 +58,9 @@ export const eventCreateSchema = z.object({
   gallery_urls: z.array(z.string()).nullish().transform(val => val ?? []),
   contact_email: z.email(),
   social_links: z.object({
-    twitter: z.url('Twitter link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-    instagram: z.url('Instagram link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
-    linkedin: z.url('LinkedIn link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
+    twitter: socialUrlSchema('twitter', 'Twitter'),
+    instagram: socialUrlSchema('instagram', 'Instagram'),
+    linkedin: socialUrlSchema('linkedin', 'LinkedIn'),
     website: z.url('Website link must be a valid URL').optional().nullable().or(z.literal('')).transform(v => v === '' ? null : v),
   }).partial().optional().nullable(),
 })

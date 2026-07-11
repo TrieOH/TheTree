@@ -5,6 +5,7 @@ import { TextFieldRenderer } from "./fields/text-field";
 import { CustomFieldRenderer } from "./fields/custom-field";
 import { ImageFieldRenderer } from "./fields/image-field";
 import { GalleryFieldRenderer } from "./fields/gallery-field";
+import { UrlFieldRenderer } from "./fields/url-field";
 
 export type FieldRenderer<TFieldValues extends FieldValues> = (props: {
   field: FieldConfig<TFieldValues>;
@@ -22,6 +23,7 @@ export type FieldRegistry<TFieldValues extends FieldValues> = Record<FieldKind, 
 export function createFieldRegistry<TFieldValues extends FieldValues>(): FieldRegistry<TFieldValues> {
   return {
     text: TextFieldRenderer,
+    url: UrlFieldRenderer,
     custom: CustomFieldRenderer,
     image: ImageFieldRenderer,
     gallery: GalleryFieldRenderer,
