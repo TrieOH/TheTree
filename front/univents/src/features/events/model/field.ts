@@ -1,6 +1,6 @@
 import type { FormFieldI } from "@/shared/model/field";
 import type { EventCreateOutputI } from ".";
-import { uploadAndModerateFile } from "@/features/storage/api";
+import { preprocessImageUpload } from "@/features/storage/api";
 
 export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateOutputI>[] => [
   { name: 'name' as const, label: 'Nome', type: 'text' as const, required: true, placeholder: 'Ex: TechConf', autocomplete: 'organization', autoFocus: true },
@@ -20,7 +20,7 @@ export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateOutpu
     span: 'full',
     accept: 'image/png,image/jpeg,image/webp',
     maxSize: 2 * 1024 * 1024,
-    uploadFn: (file) => uploadAndModerateFile(file, `events/${id}`),
+    uploadFn: (file) => preprocessImageUpload(file, `events/${id}`),
   },
   {
     name: 'banner_url' as const,
@@ -29,7 +29,7 @@ export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateOutpu
     span: 'full',
     accept: 'image/png,image/jpeg,image/webp',
     maxSize: 5 * 1024 * 1024,
-    uploadFn: (file) => uploadAndModerateFile(file, `events/${id}`),
+    uploadFn: (file) => preprocessImageUpload(file, `events/${id}`),
   },
   { name: 'is_series' as const, label: 'É série', type: 'checkbox' as const, placeholder: 'É uma série de eventos', span: 'full' as const },
   {
@@ -39,7 +39,7 @@ export const getEventFields = (id: string = 'temp'): FormFieldI<EventCreateOutpu
     span: 'full',
     accept: 'image/png,image/jpeg,image/webp',
     maxSize: 5 * 1024 * 1024,
-    uploadFn: (file) => uploadAndModerateFile(file, `events/${id}`),
+    uploadFn: (file) => preprocessImageUpload(file, `events/${id}`),
     itemActions: [
       {
         label: 'Definir como Logo',

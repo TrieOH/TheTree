@@ -7,8 +7,11 @@ export const env = createEnv({
     TRIEOH_PAY_SECRET_KEY: z.string(),
     TRIEOH_PAY_BASE_URL: z.url().optional(),
 
-    TRIEOH_AUTHZED_URL: z.string(),
-    TRIEOH_AUTHZED_TOKEN: z.string(),
+    STORAGE_IMAGE_ALLOWED_TYPES: z.string().optional(),
+    STORAGE_IMAGE_MAX_SIZE_BYTES: z.string().optional(),
+    STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS: z.string().optional(),
+    STORAGE_IMAGE_MODERATION_MODEL: z.string().optional(),
+    STORAGE_IMAGE_MODERATION_PROMPT: z.string().optional(),
   },
 
   /**
@@ -35,8 +38,11 @@ export const env = createEnv({
     SERVER_URL: process.env.SERVER_URL,
     TRIEOH_PAY_SECRET_KEY: process.env.TRIEOH_PAY_SECRET_KEY,
     TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
-    TRIEOH_AUTHZED_URL: process.env.TRIEOH_AUTHZED_URL,
-    TRIEOH_AUTHZED_TOKEN: process.env.TRIEOH_AUTHZED_TOKEN
+    STORAGE_IMAGE_ALLOWED_TYPES: process.env.STORAGE_IMAGE_ALLOWED_TYPES,
+    STORAGE_IMAGE_MAX_SIZE_BYTES: process.env.STORAGE_IMAGE_MAX_SIZE_BYTES,
+    STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS: process.env.STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS,
+    STORAGE_IMAGE_MODERATION_MODEL: process.env.STORAGE_IMAGE_MODERATION_MODEL,
+    STORAGE_IMAGE_MODERATION_PROMPT: process.env.STORAGE_IMAGE_MODERATION_PROMPT
   },
   onValidationError: (issues) => {
     console.error("Invalid or missing environment variables:")

@@ -22,7 +22,7 @@ import { env } from '@/env'
 import { AuthContextUpdater } from '@trieoh/front-core'
 import { NavigationDock } from '@/widgets/ui/navigation-dock'
 import NotFound from '@/widgets/feedback/ui/NotFound'
-import { Toaster } from '@/shared/ui/shadcn/sonner'
+import { Toaster } from '@trieoh/ui-base/shadcn/sonner'
 import WaveSpinnerLoading from '@/shared/ui/loader/WaveSpinnerLoading'
 
 interface MyRouterContext {

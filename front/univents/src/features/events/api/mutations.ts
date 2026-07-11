@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { EventI } from "../model";
 import { createEventFn, patchEventFn, publishEventFn } from "./index";

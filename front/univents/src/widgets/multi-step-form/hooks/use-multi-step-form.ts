@@ -3,8 +3,10 @@ import { useForm } from "react-hook-form";
 import type { DefaultValues, FieldValues, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ZodType } from "zod";
+import { toast } from "sonner";
 import type { FieldConfig, StepConfig } from "../model/types";
 import { isFieldVisible } from "../model/visibility";
+import { flushImageUploadTasks } from "./use-image-upload-queue";
 
 export interface MultiStepFormController<TInput extends FieldValues, TOutput = TInput> {
   form: UseFormReturn<TInput, unknown, TOutput>;
@@ -141,6 +143,12 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
 
     if (isLastStep) {
       if (!canSubmit) return false;
+      try {
+        await flushImageUploadTasks();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Falha ao processar imagens");
+        return false;
+      }
       return await handleSubmit();
     }
 

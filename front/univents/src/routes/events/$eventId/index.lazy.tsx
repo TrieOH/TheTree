@@ -25,7 +25,7 @@ import {
   setEventLogoFn,
   unsetEventLogoFn,
 } from '@/features/events/api'
-import { uploadAndModerateFile } from '@/features/storage/api'
+import { preprocessImageUpload } from '@/features/storage/api'
 import { InfoRow, SectionCard, SocialChip } from '@/features/events/ui/EventDetailComponents'
 // import { usePermissions } from '@/features/auths/hooks/use-permissions'
 // import { canEditEvent } from '@/features/events/model/permissions'
@@ -109,8 +109,6 @@ function RouteComponent() {
         slug: current.slug,
         is_series: current.is_series,
         contact_email: current.contact_email,
-        logo_url: current.logo_url,
-        banner_url: current.banner_url,
       }))
 
       if ('logo_url' in changes)
@@ -227,7 +225,7 @@ function RouteComponent() {
           isEditing={editingField === 'banner_url'}
           onStartEdit={() => { setEditingField('banner_url'); }}
           onFinishEdit={() => { setEditingField(null); }}
-          onUpload={(file) => uploadAndModerateFile(file, `events/${eventId}`)}
+          onUpload={(file) => preprocessImageUpload(file, `events/${eventId}`)}
           renderDisplay={(url) => (
             <div className="relative w-full h-40 sm:h-52 md:h-64">
               {url
@@ -252,7 +250,7 @@ function RouteComponent() {
                 onStartEdit={() => { setEditingField('logo_url'); }}
                 onFinishEdit={() => { setEditingField(null); }}
                 className="h-16 w-16 sm:h-20 sm:w-20 shrink-0"
-                onUpload={(file) => uploadAndModerateFile(file, `events/${eventId}`)}
+                onUpload={(file) => preprocessImageUpload(file, `events/${eventId}`)}
                 renderDisplay={(url) => (
                   <div className="h-full w-full rounded-xl bg-primary shadow-lg flex items-center justify-center overflow-hidden ring-4 ring-card">
                     {url
@@ -427,7 +425,7 @@ function RouteComponent() {
                 value={eventData.gallery_urls ?? []}
                 onChange={(urls) => { updateField('gallery_urls', urls); }}
                 isEditEnabled={edit}
-                onUpload={(file) => uploadAndModerateFile(file, `events/${eventId}`)}
+                onUpload={(file) => preprocessImageUpload(file, `events/${eventId}`)}
                 itemActions={galleryItemActions}
               />
             </SectionCard>

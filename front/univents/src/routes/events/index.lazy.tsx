@@ -214,14 +214,14 @@ function EventsPage() {
           {isEditMode && (
             <CreateEventCard onClick={() => setModalState({ open: true, event: undefined })} />
           )}
-          {filteredEvents.map((event, idx) => (
+          {filteredEvents.map((eventItem, idx) => (
             <EventCard
-              key={event.id}
-              event={event}
+              key={eventItem.id}
+              event={eventItem}
               index={idx}
               showEditAction={isEditMode}
-              onPublish={isEditMode ? (event) => publishMutation.mutate(event.id) : undefined}
-              onEdit={() => { setModalState({ open: true, event: event }) }}
+              onPublish={isEditMode ? (selectedEvent) => publishMutation.mutate(selectedEvent.id) : undefined}
+              onEdit={() => { setModalState({ open: true, event: eventItem }) }}
             />
           ))}
         </div>
@@ -244,27 +244,24 @@ function EventsPage() {
         <ManageEventModal
           key={modalState.event?.id ?? "event-create"}
           open={modalState.open}
-          onOpenChange={(open) => setModalState((prev) => ({ ...prev, open }))}
-          event={modalState.event}
-          onCreate={(values): Promise<boolean> =>
-            createMutation.mutateAsync(values).then(
-              (res) => {
-                if (!res.success) return false
+          onOpenChange={(open) => {
+            if (open) {
+              setModalState((prev) => ({ ...prev, open }))
+              return
+            }
 
-                setModalState({ open: false, event: undefined })
-                return true
-              },
+            setModalState({ open: false, event: undefined })
+          }}
+          event={modalState.event}
+          onCreate={(values) =>
+            createMutation.mutateAsync(values).then(
+              (res) => (res.success ? res.data : false),
               () => false,
             )
           }
-          onUpdate={(id, values): Promise<boolean> =>
+          onUpdate={(id, values) =>
             patchMutation.mutateAsync({ id, data: values }).then(
-              (res) => {
-                if (!res.success) return false
-
-                setModalState({ open: false, event: undefined })
-                return true
-              },
+              (res) => (res.success ? res.data : false),
               () => false,
             )
           }

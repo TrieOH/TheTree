@@ -3,6 +3,8 @@ import type { ReactElement } from "react";
 import type { FieldConfig, FieldFormApi, FieldKind } from "../model/types";
 import { TextFieldRenderer } from "./fields/text-field";
 import { CustomFieldRenderer } from "./fields/custom-field";
+import { ImageFieldRenderer } from "./fields/image-field";
+import { GalleryFieldRenderer } from "./fields/gallery-field";
 
 export type FieldRenderer<TFieldValues extends FieldValues> = (props: {
   field: FieldConfig<TFieldValues>;
@@ -21,6 +23,8 @@ export function createFieldRegistry<TFieldValues extends FieldValues>(): FieldRe
   return {
     text: TextFieldRenderer,
     custom: CustomFieldRenderer,
+    image: ImageFieldRenderer,
+    gallery: GalleryFieldRenderer,
   };
 }
 
@@ -30,5 +34,5 @@ export function renderField<TFieldValues extends FieldValues>(
   registry: FieldRegistry<TFieldValues>,
 ): ReactElement | null {
   const Renderer = registry[field.kind];
-  return <Renderer field={field} form={form} key={field.name} />;
+  return <Renderer field={field} form={form} />;
 }

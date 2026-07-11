@@ -1,6 +1,6 @@
 import type { FormFieldI } from '@/shared/model/field'
 import type { ProductCreateI } from '.'
-import { uploadAndModerateFile } from '@/features/storage/api'
+import { preprocessImageUpload } from '@/features/storage/api'
 
 export const getProductFields = (eventId: string = 'temp', editionId: string = 'temp', productId: string = 'temp'): FormFieldI<ProductCreateI>[] => [
   {
@@ -23,7 +23,7 @@ export const getProductFields = (eventId: string = 'temp', editionId: string = '
     span: 'full',
     accept: 'image/png,image/jpeg,image/webp',
     maxSize: 2 * 1024 * 1024,
-    uploadFn: (file) => uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
+    uploadFn: (file) => preprocessImageUpload(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
   },
   {
     name: 'gallery_urls',
@@ -32,7 +32,7 @@ export const getProductFields = (eventId: string = 'temp', editionId: string = '
     span: 'full',
     accept: 'image/png,image/jpeg,image/webp',
     maxSize: 5 * 1024 * 1024,
-    uploadFn: (file) => uploadAndModerateFile(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
+    uploadFn: (file) => preprocessImageUpload(file, `events/${eventId}/editions/${editionId}/products/${productId}`),
     itemActions: [
       {
         label: 'Definir como Thumbnail',

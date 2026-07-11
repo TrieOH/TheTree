@@ -33,6 +33,7 @@ export const eventCreateSchema = z.object({
 
 export type EventCreateInputI = z.input<typeof eventCreateSchema>
 export type EventCreateOutputI = z.output<typeof eventCreateSchema>
+export type EventCreateSubmitI = Omit<EventCreateOutputI, 'logo_url' | 'banner_url' | 'gallery_urls'>
 
 export type EventStatusI = 'draft' | 'active' | 'archived' | 'discontinued'
 

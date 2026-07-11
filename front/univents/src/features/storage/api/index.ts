@@ -1,55 +1,77 @@
-import type {
-  StorageUploadRequest,
-  StorageUploadResponse,
-  StorageModerateRequest,
-  StorageModerateResponse
-} from "../model";
+import type { StoragePreprocessResponse, StorageUploadRequest, StorageUploadResponse } from "../model";
 
-export const uploadAndModerateFile = async (file: File, path?: string): Promise<string> => {
-  // 1. Get signed URL
-  const filename = path ? `${path}/${Date.now()}-${file.name}` : `${Date.now()}-${file.name}`;
+const MODERATION_MAX_EDGE = 448;
+const MODERATION_WEBP_QUALITY = 0.82;
 
-  const uploadPayload: StorageUploadRequest = {
-    filename,
-    contentType: file.type,
-    size: file.size,
-  };
+async function resizeImageForModeration(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
 
-  const uploadRes = await fetch("/storage/upload", {
-    method: "POST",
-    body: JSON.stringify(uploadPayload),
-  });
+  if (typeof createImageBitmap !== "function") return file;
+  if (typeof document === "undefined") return file;
 
-  if (!uploadRes.ok) {
-    const errorData: { error?: string } = await uploadRes.json();
-    throw new Error(errorData.error ?? "Failed to get upload URL");
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MODERATION_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const targetWidth = Math.max(1, Math.round(bitmap.width * scale));
+    const targetHeight = Math.max(1, Math.round(bitmap.height * scale));
+
+    if (targetWidth === bitmap.width && targetHeight === bitmap.height && file.type === "image/webp") {
+      bitmap.close();
+      return file;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      bitmap.close();
+      return file;
+    }
+
+    context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
+    bitmap.close();
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((nextBlob) => resolve(nextBlob), "image/webp", MODERATION_WEBP_QUALITY);
+    });
+
+    if (!blob || blob.size >= file.size) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    return new File([blob], `${baseName}.webp`, {
+      type: "image/webp",
+      lastModified: file.lastModified,
+    });
+  } catch {
+    return file;
   }
-  const { uploadUrl, key, publicUrl }: StorageUploadResponse = (await uploadRes.json());
+}
 
-  // 2. Upload to MinIO
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type },
-  });
+export async function preprocessImageUpload(file: File, path?: string): Promise<string> {
+  const optimizedFile = await resizeImageForModeration(file);
+  const formData = new FormData();
+  formData.append("file", optimizedFile);
+  if (path) formData.append("path", path);
 
-  if (!putRes.ok) throw new Error("Failed to upload file");
-
-  // 3. Moderate
-  const moderatePayload: StorageModerateRequest = { key };
-  const modRes = await fetch("/storage/moderate", {
+  const res = await fetch("/storage/image/preprocess", {
     method: "POST",
-    body: JSON.stringify(moderatePayload),
+    body: formData,
   });
 
-  if (!modRes.ok) throw new Error("Failed to moderate file");
+  if (!res.ok) {
+    const errorData: { error?: string } = await res.json();
+    throw new Error(errorData.error ?? "Failed to preprocess image");
+  }
 
-  const { approved }: StorageModerateResponse = (await modRes.json());
+  const data: StoragePreprocessResponse = await res.json();
+  if (!data.approved || !data.publicUrl) {
+    throw new Error("Image not approved by moderation");
+  }
 
-  if (!approved) throw new Error("Image not approved by moderation");
-
-  return publicUrl;
-};
+  return data.publicUrl;
+}
 
 export const uploadFile = async (file: File, path?: string): Promise<string> => {
   const filename = path ? `${path}/${Date.now()}-${file.name}` : `${Date.now()}-${file.name}`;
@@ -70,6 +92,7 @@ export const uploadFile = async (file: File, path?: string): Promise<string> => 
     throw new Error(errorData.error ?? "Failed to get upload URL");
   }
   const { uploadUrl, publicUrl }: StorageUploadResponse = (await uploadRes.json());
+
 
   const putRes = await fetch(uploadUrl, {
     method: "PUT",

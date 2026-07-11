@@ -1,16 +1,29 @@
 import { useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMultiStepForm } from "@/widgets/multi-step-form/hooks/use-multi-step-form";
-import { eventCreateSchema, type EventCreateInputI, type EventCreateOutputI, type EventI } from "../model";
+import { eventCreateSchema } from "../model";
+import type { EventCreateInputI, EventCreateOutputI, EventCreateSubmitI, EventI } from "../model";
 import { MultiStepFormModal } from "@/widgets/multi-step-form/ui/multi-step-form-modal";
-import { eventFormSteps } from "../model/event-form-steps";
+import { createEventFormSteps } from "../model/event-form-steps";
+import { useImageFieldTracking } from "@/widgets/multi-step-form/hooks/use-image-field-tracking";
+import {
+  addImageToTheEventGalleryFn,
+  removeImageToTheEventGalleryFn,
+  setEventBannerFn,
+  unsetEventBannerFn,
+  setEventLogoFn,
+  unsetEventLogoFn,
+} from "../api";
+import { eventKeys } from "../api/query-keys";
 
 export interface ManageEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Omit for create mode. Pass the record being edited for edit mode. */
   event?: EventI;
-  onCreate?: (values: EventCreateOutputI) => Promise<boolean> | boolean;
-  onUpdate?: (id: string, values: EventCreateOutputI) => Promise<boolean> | boolean;
+  onCreate?: (values: EventCreateSubmitI) => Promise<EventI | null | boolean> | EventI | null | boolean;
+  onUpdate?: (id: string, values: EventCreateSubmitI) => Promise<EventI | null | boolean> | EventI | null | boolean;
 }
 
 const emptyDefaultValues: EventCreateInputI = {
@@ -29,6 +42,7 @@ function toFormValues(event: EventI): EventCreateInputI {
     tagline: event.tagline ?? "",
     logo_url: event.logo_url ?? "",
     banner_url: event.banner_url ?? "",
+    gallery_urls: event.gallery_urls ?? [],
     contact_email: event.contact_email,
     social_links: {
       twitter: event.social_links?.twitter ?? "",
@@ -54,33 +68,80 @@ function toAcronym(value: string): string {
     .trim()
     .split(/\s+/)
     .filter((word) => word.length > 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
+    .map((word) => word.charAt(0).toUpperCase())
     .join("");
 }
 
 export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate }: ManageEventModalProps) {
   const isEditing = Boolean(event);
+  const queryClient = useQueryClient();
   const editValues = useMemo(() => (event ? toFormValues(event) : undefined), [event]);
   const autoAcronymRef = useRef("");
   const autoSlugRef = useRef("");
 
+  const { track, getChanges, reset: resetImageTracking } = useImageFieldTracking();
+  const steps = useMemo(() => createEventFormSteps(track), [track]);
+
+  async function syncEventMedia(eventId: string, values: EventCreateOutputI) {
+    const logoChanges = getChanges("logo_url");
+    const bannerChanges = getChanges("banner_url");
+    const galleryChanges = getChanges("gallery_urls");
+
+    if (galleryChanges.removed.length > 0) {
+      for (const image of galleryChanges.removed) {
+        await removeImageToTheEventGalleryFn(eventId, { url: image.url });
+      }
+    }
+
+    if (galleryChanges.added.length > 0) {
+      for (const image of galleryChanges.added) {
+        await addImageToTheEventGalleryFn(eventId, { url: image.url });
+      }
+    }
+
+    if (bannerChanges.added.length > 0) {
+      await setEventBannerFn(eventId, { url: bannerChanges.added.at(-1)?.url ?? values.banner_url ?? "" });
+    } else if (bannerChanges.removed.length > 0) await unsetEventBannerFn(eventId);
+
+    if (logoChanges.added.length > 0) {
+      await setEventLogoFn(eventId, { url: logoChanges.added.at(-1)?.url ?? values.logo_url ?? "" });
+    } else if (logoChanges.removed.length > 0) await unsetEventLogoFn(eventId);
+  }
+
   const controller = useMultiStepForm({
     schema: eventCreateSchema,
-    steps: eventFormSteps,
+    steps: steps,
     defaultValues: emptyDefaultValues,
     resetOnSuccessValues: isEditing ? undefined : emptyDefaultValues,
-    // Only pass `values` in edit mode - RHF resets/re-syncs the form to
-    // this object whenever its reference changes (e.g. a different
-    // event gets picked, or fresh data comes back from a refetch).
     values: editValues,
     // Blocks the submit button until something actually changed only meaningful while editing.
     requireDirtyToSubmit: isEditing,
     onSubmit: async (values): Promise<boolean> => {
-      const result = event
-        ? await onUpdate?.(event.id, values)
-        : await onCreate?.(values);
+      const { logo_url: _logoUrl, banner_url: _bannerUrl, gallery_urls: _galleryUrls, ...submitValues } = values;
+      const payload: EventCreateSubmitI = submitValues;
 
-      return result !== false;
+      const result = event
+        ? await onUpdate?.(event.id, payload)
+        : await onCreate?.(payload);
+
+      if (!result) return false;
+
+      const persistedEvent = typeof result === "object" ? result : event;
+      if (!persistedEvent) return false;
+
+      try {
+        await syncEventMedia(persistedEvent.id, values);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: eventKeys.publicLists() }),
+          queryClient.invalidateQueries({ queryKey: eventKeys.ownLists() }),
+        ]);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao sincronizar imagens do evento");
+        return false;
+      }
+
+      resetImageTracking();
+      return true;
     },
     onSubmitSuccess: () => onOpenChange(false),
   });
@@ -92,8 +153,8 @@ export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      const currentAcronym = controller.form.getValues("acronym") ?? "";
-      const currentSlug = controller.form.getValues("slug") ?? "";
+      const currentAcronym = controller.form.getValues("acronym");
+      const currentSlug = controller.form.getValues("slug");
 
       if (currentAcronym === "" || currentAcronym === autoAcronymRef.current) {
         controller.form.setValue("acronym", "", {
@@ -118,8 +179,8 @@ export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate
 
     const nextAcronym = toAcronym(trimmedName);
     const nextSlug = toSlug(trimmedName);
-    const currentAcronym = controller.form.getValues("acronym") ?? "";
-    const currentSlug = controller.form.getValues("slug") ?? "";
+    const currentAcronym = controller.form.getValues("acronym");
+    const currentSlug = controller.form.getValues("slug");
 
     const acronymIsAuto = currentAcronym === "" || currentAcronym === autoAcronymRef.current;
     const slugIsAuto = currentSlug === "" || currentSlug === autoSlugRef.current;
