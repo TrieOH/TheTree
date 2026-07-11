@@ -1,21 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { useMultiStepForm } from "@/widgets/multi-step-form/hooks/use-multi-step-form";
 import { eventCreateSchema } from "../model";
-import type { EventCreateInputI, EventCreateOutputI, EventCreateSubmitI, EventI } from "../model";
+import type { EventCreateInputI, EventCreateSubmitI, EventI } from "../model";
 import { MultiStepFormModal } from "@/widgets/multi-step-form/ui/multi-step-form-modal";
 import { createEventFormSteps } from "../model/event-form-steps";
 import { useImageFieldTracking } from "@/widgets/multi-step-form/hooks/use-image-field-tracking";
-import {
-  addImageToTheEventGalleryFn,
-  removeImageToTheEventGalleryFn,
-  setEventBannerFn,
-  unsetEventBannerFn,
-  setEventLogoFn,
-  unsetEventLogoFn,
-} from "../api";
-import { eventKeys } from "../api/query-keys";
+import { useSyncEventMediaMutation } from "../api/mutations";
 
 export interface ManageEventModalProps {
   open: boolean;
@@ -31,6 +21,8 @@ const emptyDefaultValues: EventCreateInputI = {
   slug: "",
   contact_email: "",
 };
+
+const MEDIA_FIELD_KEYS = new Set(["logo_url", "banner_url", "gallery_urls"] as const);
 
 /** Maps an API record (which uses `null` for "empty") to the form's
  * input shape (which uses `""`, since that's what a text input holds). */
@@ -72,41 +64,30 @@ function toAcronym(value: string): string {
     .join("");
 }
 
+function hasDirtyFieldsOutsideMedia(dirtyFields: unknown): boolean {
+  if (!dirtyFields || dirtyFields === false) return false;
+  if (dirtyFields === true) return true;
+  if (Array.isArray(dirtyFields)) return dirtyFields.some((entry) => hasDirtyFieldsOutsideMedia(entry));
+  if (typeof dirtyFields !== "object") return false;
+
+  return Object.entries(dirtyFields as Record<string, unknown>).some(([key, value]) => {
+    if (MEDIA_FIELD_KEYS.has(key as (typeof MEDIA_FIELD_KEYS extends Set<infer T> ? T : never))) {
+      return false;
+    }
+
+    return hasDirtyFieldsOutsideMedia(value);
+  });
+}
+
 export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate }: ManageEventModalProps) {
   const isEditing = Boolean(event);
-  const queryClient = useQueryClient();
   const editValues = useMemo(() => (event ? toFormValues(event) : undefined), [event]);
   const autoAcronymRef = useRef("");
   const autoSlugRef = useRef("");
 
   const { track, getChanges, reset: resetImageTracking } = useImageFieldTracking();
   const steps = useMemo(() => createEventFormSteps(track), [track]);
-
-  async function syncEventMedia(eventId: string, values: EventCreateOutputI) {
-    const logoChanges = getChanges("logo_url");
-    const bannerChanges = getChanges("banner_url");
-    const galleryChanges = getChanges("gallery_urls");
-
-    if (galleryChanges.removed.length > 0) {
-      for (const image of galleryChanges.removed) {
-        await removeImageToTheEventGalleryFn(eventId, { url: image.url });
-      }
-    }
-
-    if (galleryChanges.added.length > 0) {
-      for (const image of galleryChanges.added) {
-        await addImageToTheEventGalleryFn(eventId, { url: image.url });
-      }
-    }
-
-    if (bannerChanges.added.length > 0) {
-      await setEventBannerFn(eventId, { url: bannerChanges.added.at(-1)?.url ?? values.banner_url ?? "" });
-    } else if (bannerChanges.removed.length > 0) await unsetEventBannerFn(eventId);
-
-    if (logoChanges.added.length > 0) {
-      await setEventLogoFn(eventId, { url: logoChanges.added.at(-1)?.url ?? values.logo_url ?? "" });
-    } else if (logoChanges.removed.length > 0) await unsetEventLogoFn(eventId);
-  }
+  const syncEventMediaMutation = useSyncEventMediaMutation();
 
   const controller = useMultiStepForm({
     schema: eventCreateSchema,
@@ -119,25 +100,44 @@ export function ManageEventModal({ open, onOpenChange, event, onCreate, onUpdate
     onSubmit: async (values): Promise<boolean> => {
       const { logo_url: _logoUrl, banner_url: _bannerUrl, gallery_urls: _galleryUrls, ...submitValues } = values;
       const payload: EventCreateSubmitI = submitValues;
+      const hasNonMediaChanges = hasDirtyFieldsOutsideMedia(controller.form.formState.dirtyFields);
 
-      const result = event
-        ? await onUpdate?.(event.id, payload)
-        : await onCreate?.(payload);
+      let persistedEvent = event;
 
-      if (!result) return false;
+      if (!isEditing || hasNonMediaChanges) {
+        const result = event
+          ? await onUpdate?.(event.id, payload)
+          : await onCreate?.(payload);
 
-      const persistedEvent = typeof result === "object" ? result : event;
+        if (!result) return false;
+
+        persistedEvent = typeof result === "object" ? result : event;
+      }
+
       if (!persistedEvent) return false;
 
-      try {
-        await syncEventMedia(persistedEvent.id, values);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: eventKeys.publicLists() }),
-          queryClient.invalidateQueries({ queryKey: eventKeys.ownLists() }),
-        ]);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Erro ao sincronizar imagens do evento");
-        return false;
+      const logoChanges = getChanges("logo_url");
+      const bannerChanges = getChanges("banner_url");
+      const galleryChanges = getChanges("gallery_urls");
+
+      const mediaChangesWereMade =
+        logoChanges.added.length > 0 ||
+        logoChanges.removed.length > 0 ||
+        bannerChanges.added.length > 0 ||
+        bannerChanges.removed.length > 0 ||
+        galleryChanges.added.length > 0 ||
+        galleryChanges.removed.length > 0;
+
+      if (mediaChangesWereMade) {
+        const syncedEvent = await syncEventMediaMutation.mutateAsync({
+          eventId: persistedEvent.id,
+          values,
+          logoChanges,
+          bannerChanges,
+          galleryChanges,
+        });
+
+        if (!syncedEvent) return false;
       }
 
       resetImageTracking();
