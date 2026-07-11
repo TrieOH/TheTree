@@ -1,17 +1,20 @@
-import { createClientOnlyFn, createServerFn } from "@tanstack/react-start";
+import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { EventCreateI, EventI } from "../model";
-import type { Permission } from "@soramux/node-perm-sdk"
+import type { EventCreateOutputI, EventI } from "../model";
+import {
+  authFetcher,
+  publicQueryFetcher,
+  authQueryFetcher
+} from "@/shared/lib/api/fetch";
+import { eventKeys } from "./query-keys";
 import type { ImageURLUploadI } from "@/shared/model/generic";
-import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
-import { serverPerm } from "@/features/auths/lib/server-auth";
 
 /**
  * Creates a new Event on the server.
  * @param eventData - The data for the new event.
  * @returns A promise that resolves to the API response containing the newly created event.
  */
-export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
+export const createEventFn = createClientOnlyFn((eventData: EventCreateOutputI) => {
   return authFetcher.post<EventI>("/events", eventData);
 });
 
@@ -23,6 +26,48 @@ export const createEventFn = createClientOnlyFn((eventData: EventCreateI) => {
 export const patchEventFn = createClientOnlyFn((id: string, eventData: Partial<EventI>) => {
   return authFetcher.patch<EventI>(`/events/${id}`, eventData);
 });
+
+/**
+ * Fetches all public events from the server.
+ * @returns A promise that resolves to an array of Event objects.
+ */
+export const getPublicEventsFn = async () => {
+  return publicQueryFetcher<EventI[]>("/events");
+};
+
+/**
+ * Query options for fetching events, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching events.
+ */
+export const allPublicEventsQueryOptions = () => {
+  return queryOptions({
+    queryKey: eventKeys.publicLists(),
+    queryFn: getPublicEventsFn,
+  })
+}
+
+/**
+ * Fetches all own events from the server.
+ * @returns A promise that resolves to an array of Event objects.
+ */
+export const getOwnEventsFn = createClientOnlyFn(async () => {
+  return authQueryFetcher<EventI[]>("/events/own");
+});
+
+/**
+ * Query options for fetching own events, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching own events.
+ */
+export const allOwnEventsQueryOptions = () => {
+  return queryOptions({
+    queryKey: eventKeys.ownLists(),
+    queryFn: getOwnEventsFn,
+  })
+}
+
+
+
+// FIXME: I NEED TO DELETE EVERYTHING BELOW THIS LINE AND REPLACE IT
 
 /**
  * Fetches a single own event from the server by filtering the list.
@@ -46,18 +91,6 @@ export const ownEventQueryOptions = (id: string) => {
     queryFn: () => getOwnEventFn(id),
   })
 }
-
-/**
- * Fetches all own events from the server.
- * @returns A promise that resolves to an array of Event objects.
- */
-export const getOwnEventsFn = createClientOnlyFn(async () => {
-  try {
-    return await tanstackQueryFetcher<EventI[]>("/events/own");
-  } catch {
-    return [];
-  }
-});
 
 /**
  * Query options for fetching own events, using TanStack Query.
@@ -98,14 +131,7 @@ export const eventQueryOptions = (id: string) => {
  * @returns A promise that resolves to an array of Event objects.
  */
 export const getEventsFn = async () => {
-  try {
-    // FIXME: Use a alternative version like tanstackQuerySimpleFetcher
-    const res = await simpleFetcher.get<EventI[]>("/events");
-    if (res.success) return res.data
-    return []
-  } catch {
-    return [];
-  }
+  return publicQueryFetcher<EventI[]>("/events");
 };
 
 /**
@@ -196,15 +222,3 @@ export const unsetEventLogoFn = createClientOnlyFn((
 ) => {
   return authFetcher.delete<EventI>(`/events/${eventId}/logo`);
 });
-
-// Server
-export const checkAdminPermissionFn = createServerFn({ method: "POST" })
-  .inputValidator((data: Permission.CheckPermissionRequestI) => {
-    return data
-  })
-  .handler(async ({ data }) => {
-    const result = await serverPerm.check(data)
-    if (result.success) return { success: true, data: result.data }
-    return { success: false, message: result.message }
-  });
-

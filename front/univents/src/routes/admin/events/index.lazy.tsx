@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { EventCreateI, EventI } from '@/features/events/model';
+import type { EventCreateOutputI, EventI } from '@/features/events/model';
 import {
   Drawer,
   DrawerContent,
@@ -108,11 +108,11 @@ function RouteComponent() {
     onError: () => toast.error('Erro ao conectar com o servidor')
   })
 
-  const handleCreate = (data: EventCreateI) => {
+  const handleCreate = (data: EventCreateOutputI) => {
     createMutation.mutate(data)
   }
 
-  const updateEventMedia = async (id: string, data: EventCreateI, original: EventI, changes: Partial<EventCreateI>) => {
+  const updateEventMedia = async (id: string, data: EventCreateOutputI, original: EventI, changes: Partial<EventCreateOutputI>) => {
     // Gallery
     if (changes.gallery_urls !== undefined) {
       const currentGallery = original.gallery_urls ?? []
@@ -139,10 +139,10 @@ function RouteComponent() {
     }
   }
 
-  const handleEdit = async (data: EventCreateI) => {
+  const handleEdit = async (data: EventCreateOutputI) => {
     if (!editingEvent) return
 
-    const changes = getDirtyFields(data, editingEvent as EventCreateI, [
+    const changes = getDirtyFields(data, editingEvent as EventCreateOutputI, [
       'name', 'slug', 'acronym', 'tagline', 'description',
       'is_series', 'contact_email', 'social_links', 'logo_url', 'banner_url', 'gallery_urls'
     ])
@@ -162,7 +162,7 @@ function RouteComponent() {
     publishMutation.mutate(publishingEvent.id)
   }
 
-  const getInitialData = (event: EventI | null): Partial<EventCreateI> => event ? {
+  const getInitialData = (event: EventI | null): Partial<EventCreateOutputI> => event ? {
     name: event.name,
     slug: event.slug,
     acronym: event.acronym,

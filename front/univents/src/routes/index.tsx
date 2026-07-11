@@ -21,6 +21,7 @@ export type Mode = 'guest' | 'host'
 function Index() {
   const { as } = Route.useSearch()
   const navigate = Route.useNavigate()
+  const isAuthenticated = Route.useRouteContext().auth?.isAuthenticated ?? false
 
   const setMode = (mode: Mode) => {
     if (mode === as) return;
@@ -41,7 +42,7 @@ function Index() {
       <div className="px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="pb-4 md:pb-10">
           <div className="max-w-5xl mx-auto">
-            <ModeSelector current={as} onChange={setMode} />
+            <ModeSelector current={as} onChange={setMode} isAuthenticated={isAuthenticated} />
           </div>
         </div>
 
