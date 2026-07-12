@@ -42,7 +42,12 @@ export function GalleryFieldRenderer<TFieldValues extends FieldValues>({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{field.label}</Label>
+      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {field.label}
+        {field.optional ? (
+          <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+        ) : null}
+      </Label>
 
       <div
         onDragEnter={(event) => {

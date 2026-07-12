@@ -26,6 +26,7 @@ export type FieldFormApi<TFieldValues extends FieldValues> = Pick<
 export interface BaseFieldConfig<TFieldValues extends FieldValues> {
   visibleIf?: VisibilityRule<TFieldValues>;
   layout?: "full" | "half";
+  optional?: boolean;
 }
 
 
@@ -44,7 +45,6 @@ export interface TextFieldConfig<TFieldValues extends FieldValues> extends BaseF
   placeholder?: string;
   description?: string;
   inputType?: TextFieldInputType;
-  optional?: boolean;
   disabled?: boolean;
 }
 
@@ -54,7 +54,6 @@ export interface UrlFieldConfig<TFieldValues extends FieldValues> extends BaseFi
   label: string;
   placeholder?: string;
   description?: string;
-  optional?: boolean;
   disabled?: boolean;
   /** Prepend `https://` automatically when the user leaves the field
    * without a scheme. Defaults to `true`. */
@@ -79,7 +78,6 @@ export interface ComboboxFieldConfig<TFieldValues extends FieldValues> extends B
   label: string;
   placeholder?: string;
   description?: string;
-  optional?: boolean;
   disabled?: boolean;
   emptyMessage?: string;
   options: ComboboxOption[] | ((query: string) => Promise<ComboboxOption[]>);
@@ -112,7 +110,6 @@ export interface ImageFieldConfig<TFieldValues extends FieldValues> extends Base
   hint?: string;
   accept?: string;
   maxSizeMB?: number;
-  optional?: boolean;
   /** Fires with the running added/removed sets so you can call your
    * own save/remove endpoints at submit time (see README). */
   onTrackingChange?: (change: ImageFieldChange) => void;

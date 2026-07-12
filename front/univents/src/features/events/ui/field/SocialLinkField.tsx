@@ -17,7 +17,7 @@ const socialPlatformMeta: Record<SocialPlatform, { label: string; placeholder: s
  * field, so it's registered as a "custom" field instead of forcing the
  * generic engine to understand toggle groups.
  */
-export function SocialLinksField({ form }: { form: FieldFormApi<EventCreateInputI> }) {
+export function SocialLinksField({ form, optional = false }: { form: FieldFormApi<EventCreateInputI>; optional?: boolean }) {
   const [selected, setSelected] = useState<SocialPlatform>("instagram");
   const meta = socialPlatformMeta[selected];
   const fieldName = `social_links.${selected}` as const;
@@ -34,6 +34,9 @@ export function SocialLinksField({ form }: { form: FieldFormApi<EventCreateInput
       <div>
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Redes sociais
+          {optional ? (
+            <span className="ml-1 font-normal normal-case text-muted-foreground/70">(opcional)</span>
+          ) : null}
         </span>
         <div className="mt-2 flex flex-wrap gap-2">
           {(Object.keys(socialPlatformMeta) as SocialPlatform[]).map((platform) => {

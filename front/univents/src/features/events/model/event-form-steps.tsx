@@ -67,6 +67,7 @@ export function createEventFormSteps(
           accept: "image/jpeg,image/png",
           maxSizeMB: 2,
           maxItems: 10,
+          optional: true,
           onTrackingChange: track("gallery_urls"),
         },
       ],
@@ -84,8 +85,9 @@ export function createEventFormSteps(
         },
         {
           kind: "custom",
+          optional: true,
           name: "social-links-picker",
-          render: ({ form }) => <SocialLinksField form={form} />,
+          render: ({ form }) => <SocialLinksField form={form} optional />,
         },
       ],
     },
