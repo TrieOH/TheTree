@@ -17,33 +17,34 @@ interface BeforeLoadArgs {
 }
 
 interface RedirectOptions {
+  onRedirect?: (location: ParsedLocation<AnySchema>) => never | void
   authRoute?: string
   setupRoute?: string
 }
 
 /**
  * Requires the user to be authenticated.
- * Redirects to `/` if not authenticated, preserving the original path as a redirect param.
+ * Calls the provided redirect handler if not authenticated.
  */
-export const requireAuth = ({ context, location }: BeforeLoadArgs) => {
+export const requireAuth = (
+  { context, location }: BeforeLoadArgs,
+  options: RedirectOptions = {},
+) => {
   if (context.auth?.isAuthenticated === false) {
-    throw redirect({
-      to: "/",
-      search: { redirect: location.pathname },
-    })
+    return options.onRedirect?.(location)
   }
 }
 
 /**
  * Requires the user to be a guest (not authenticated).
- * Redirects to `/admin` if already authenticated.
+ * Calls the provided redirect handler if already authenticated.
  */
-export const requireGuest = ({ context, location }: BeforeLoadArgs) => {
+export const requireGuest = (
+  { context, location }: BeforeLoadArgs,
+  options: RedirectOptions = {},
+) => {
   if (context.auth?.isAuthenticated === true) {
-    throw redirect({
-      to: "/admin",
-      search: { redirect: location.pathname },
-    })
+    return options.onRedirect?.(location)
   }
 }
 
@@ -76,7 +77,7 @@ export async function requireSetup({
   if (!authService) return
 
   const res = await authService.isSetupDone()
-  if (res.success) throw redirect({ to: setupRoute as never })
+  if (res.success) throw redirect({ to: setupRoute })
   markSetupComplete()
 }
 
@@ -88,7 +89,7 @@ export async function requireSetupNotDone({
   context,
 }: BeforeLoadArgs, options: RedirectOptions = {}): Promise<void> {
   const authRoute = options.authRoute ?? "/auth"
-  if (isSetupCached()) throw redirect({ to: authRoute as never })
+  if (isSetupCached()) throw redirect({ to: authRoute })
 
   const authService = context.auth?.auth
   if (!authService) return
@@ -96,6 +97,6 @@ export async function requireSetupNotDone({
   const res = await authService.isSetupDone()
   if (!res.success) {
     markSetupComplete()
-    throw redirect({ to: authRoute as never })
+    throw redirect({ to: authRoute })
   }
 }
