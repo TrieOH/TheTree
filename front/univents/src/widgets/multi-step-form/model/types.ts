@@ -61,6 +61,32 @@ export interface UrlFieldConfig<TFieldValues extends FieldValues> extends BaseFi
   autoPrependScheme?: boolean;
 }
 
+export interface ComboboxOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+/**
+ * Searchable single-select. `options` can be a static list or an async
+ * loader (e.g. hitting your API as the user types) — same field kind
+ * either way, the renderer just debounces calls to the loader.
+ */
+export interface ComboboxFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
+  kind: "combobox";
+  /** Dot-path holding the selected option's `value` (a string). */
+  name: FieldPath<TFieldValues>;
+  label: string;
+  placeholder?: string;
+  description?: string;
+  optional?: boolean;
+  disabled?: boolean;
+  emptyMessage?: string;
+  options: ComboboxOption[] | ((query: string) => Promise<ComboboxOption[]>);
+  /** Debounce (ms) applied when `options` is a loader function. Defaults to 250. */
+  debounceMs?: number;
+}
+
 export interface CustomFieldRenderArgs<TFieldValues extends FieldValues> {
   form: FieldFormApi<TFieldValues>;
 }
@@ -108,6 +134,7 @@ export interface GalleryFieldConfig<TFieldValues extends FieldValues> extends Ba
 export type FieldConfig<TFieldValues extends FieldValues> =
   | TextFieldConfig<TFieldValues>
   | UrlFieldConfig<TFieldValues>
+  | ComboboxFieldConfig<TFieldValues>
   | CustomFieldConfig<TFieldValues>
   | ImageFieldConfig<TFieldValues>
   | GalleryFieldConfig<TFieldValues>;
