@@ -6,6 +6,7 @@ import {
   Award,
   CalendarDays,
   CreditCard,
+  Eye,
   FileText,
   MapPin,
   MoreVertical,
@@ -133,7 +134,7 @@ function MenuItems({
       <Separator />
       {edition.status === 'draft' && onPublish && (
         <Item onClick={stop(onPublish)}>
-          <ArrowUpRight className="size-4" />
+          <Eye className="size-4" />
           <span>Publicar</span>
         </Item>
       )}

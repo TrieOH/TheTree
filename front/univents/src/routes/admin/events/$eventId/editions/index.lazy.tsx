@@ -42,8 +42,9 @@ function EditionsRoute() {
     field: 'starts_at',
     direction: 'desc',
   })
-  const [isManageOpen, setIsManageOpen] = useState(false)
-  const [editingEdition, setEditingEdition] = useState<EditionI | null>(null)
+  const [modalState, setModalState] = useState<{ open: boolean; edition?: EditionI }>({
+    open: false,
+  })
   const [publishingEdition, setPublishingEdition] = useState<EditionI | null>(null)
 
   const filteredEditions = [...editions]
@@ -109,10 +110,7 @@ function EditionsRoute() {
         headerActions={
           <Button
             type="button"
-            onClick={() => {
-              setEditingEdition(null)
-              setIsManageOpen(true)
-            }}
+            onClick={() => setModalState({ open: true, edition: undefined })}
             className="h-9 gap-2"
           >
             <Plus className="size-4" />
@@ -135,10 +133,7 @@ function EditionsRoute() {
               edition={edition}
               eventId={eventId}
               index={idx}
-              onEdit={(currentEdition) => {
-                setEditingEdition(currentEdition)
-                setIsManageOpen(true)
-              }}
+              onEdit={(currentEdition) => setModalState({ open: true, edition: currentEdition })}
               onPublish={edition.status === 'draft' ? () => setPublishingEdition(edition) : undefined}
             />
           ))
@@ -146,11 +141,16 @@ function EditionsRoute() {
       />
 
       <ManageEditionModal
-        open={isManageOpen}
-        edition={editingEdition ?? undefined}
+        key={modalState.edition?.id ?? 'edition-create'}
+        open={modalState.open}
+        edition={modalState.edition}
         onOpenChange={(open) => {
-          setIsManageOpen(open)
-          if (!open) setEditingEdition(null)
+          if (open) {
+            setModalState((prev) => ({ ...prev, open }))
+            return
+          }
+
+          setModalState({ open: false, edition: undefined })
         }}
         onCreate={async (values) => {
           const res = await createEditionMutation.mutateAsync({
