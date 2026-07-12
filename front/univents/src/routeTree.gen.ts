@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -22,6 +24,7 @@ import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdProfileRouteImport } from './routes/events/$eventId/profile'
+import { Route as AdminEventsEventIdRouteImport } from './routes/admin/events/$eventId'
 import { Route as EventsEventIdEditionsIndexRouteImport } from './routes/events/$eventId/editions/index'
 import { Route as EventsEventIdEditionsEditionIdIndexRouteImport } from './routes/events/$eventId/editions/$editionId/index'
 import { Route as AdminEventsEventIdEditionsIndexRouteImport } from './routes/admin/events/$eventId/editions/index'
@@ -37,6 +40,10 @@ import { Route as AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport 
 import { Route as AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport } from './routes/admin/events/$eventId/editions/$editionId/signatures/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport } from './routes/admin/events/$eventId/editions/$editionId/certifications/editor'
 import { Route as AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport } from './routes/admin/events/$eventId/editions/$editionId/callback.payment'
+
+const AdminEventsEventIdIndexLazyRouteImport = createFileRoute(
+  '/admin/events/$eventId/',
+)()
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -107,6 +114,19 @@ const EventsEventIdProfileRoute = EventsEventIdProfileRouteImport.update({
   path: '/events/$eventId/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEventsEventIdRoute = AdminEventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsEventIdIndexLazyRoute =
+  AdminEventsEventIdIndexLazyRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminEventsEventIdRoute,
+  } as any).lazy(() =>
+    import('./routes/admin/events/$eventId/index.lazy').then((d) => d.Route),
+  )
 const EventsEventIdEditionsIndexRoute =
   EventsEventIdEditionsIndexRouteImport.update({
     id: '/events/$eventId/editions/',
@@ -127,9 +147,9 @@ const EventsEventIdEditionsEditionIdIndexRoute =
   )
 const AdminEventsEventIdEditionsIndexRoute =
   AdminEventsEventIdEditionsIndexRouteImport.update({
-    id: '/events/$eventId/editions/',
-    path: '/events/$eventId/editions/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/',
+    path: '/editions/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any).lazy(() =>
     import('./routes/admin/events/$eventId/editions/index.lazy').then(
       (d) => d.Route,
@@ -165,15 +185,15 @@ const EventsEventIdEditionsEditionIdActivitiesIndexRoute =
   )
 const AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute =
   AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/signatures/',
-    path: '/events/$eventId/editions/$editionId/signatures/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/signatures/',
+    path: '/editions/$editionId/signatures/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
   AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/products/',
-    path: '/events/$eventId/editions/$editionId/products/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/products/',
+    path: '/editions/$editionId/products/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any).lazy(() =>
     import('./routes/admin/events/$eventId/editions/$editionId/products/index.lazy').then(
       (d) => d.Route,
@@ -181,21 +201,21 @@ const AdminEventsEventIdEditionsEditionIdProductsIndexRoute =
   )
 const AdminEventsEventIdEditionsEditionIdCheckpointsIndexRoute =
   AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/checkpoints/',
-    path: '/events/$eventId/editions/$editionId/checkpoints/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/checkpoints/',
+    path: '/editions/$editionId/checkpoints/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdCertificationsIndexRoute =
   AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/certifications/',
-    path: '/events/$eventId/editions/$editionId/certifications/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/certifications/',
+    path: '/editions/$editionId/certifications/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute =
   AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/activities/',
-    path: '/events/$eventId/editions/$editionId/activities/',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/activities/',
+    path: '/editions/$editionId/activities/',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any).lazy(() =>
     import('./routes/admin/events/$eventId/editions/$editionId/activities/index.lazy').then(
       (d) => d.Route,
@@ -203,21 +223,21 @@ const AdminEventsEventIdEditionsEditionIdActivitiesIndexRoute =
   )
 const AdminEventsEventIdEditionsEditionIdSignaturesEditorRoute =
   AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/signatures/editor',
-    path: '/events/$eventId/editions/$editionId/signatures/editor',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/signatures/editor',
+    path: '/editions/$editionId/signatures/editor',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute =
   AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/certifications/editor',
-    path: '/events/$eventId/editions/$editionId/certifications/editor',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/certifications/editor',
+    path: '/editions/$editionId/certifications/editor',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 const AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute =
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport.update({
-    id: '/events/$eventId/editions/$editionId/callback/payment',
-    path: '/events/$eventId/editions/$editionId/callback/payment',
-    getParentRoute: () => AdminRoute,
+    id: '/editions/$editionId/callback/payment',
+    path: '/editions/$editionId/callback/payment',
+    getParentRoute: () => AdminEventsEventIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -231,10 +251,12 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
+  '/admin/events/$eventId': typeof AdminEventsEventIdRouteWithChildren
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
+  '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
@@ -265,6 +287,7 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsIndexRoute
   '/events/$eventId': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions': typeof EventsEventIdEditionsIndexRoute
+  '/admin/events/$eventId': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
@@ -292,10 +315,12 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
+  '/admin/events/$eventId': typeof AdminEventsEventIdRouteWithChildren
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
   '/admin/events/': typeof AdminEventsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/events/$eventId/editions/': typeof EventsEventIdEditionsIndexRoute
+  '/admin/events/$eventId/': typeof AdminEventsEventIdIndexLazyRoute
   '/events/$eventId/editions/$editionId/checkout': typeof EventsEventIdEditionsEditionIdCheckoutRoute
   '/events/$eventId/editions/$editionId/products': typeof EventsEventIdEditionsEditionIdProductsRoute
   '/events/$eventId/editions/$editionId/profile': typeof EventsEventIdEditionsEditionIdProfileRoute
@@ -324,10 +349,12 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verify/$hash'
     | '/events/'
+    | '/admin/events/$eventId'
     | '/events/$eventId/profile'
     | '/admin/events/'
     | '/events/$eventId/'
     | '/events/$eventId/editions/'
+    | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/editions/$editionId/profile'
@@ -358,6 +385,7 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/events/$eventId'
     | '/events/$eventId/editions'
+    | '/admin/events/$eventId'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/editions/$editionId/profile'
@@ -384,10 +412,12 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verify/$hash'
     | '/events/'
+    | '/admin/events/$eventId'
     | '/events/$eventId/profile'
     | '/admin/events/'
     | '/events/$eventId/'
     | '/events/$eventId/editions/'
+    | '/admin/events/$eventId/'
     | '/events/$eventId/editions/$editionId/checkout'
     | '/events/$eventId/editions/$editionId/products'
     | '/events/$eventId/editions/$editionId/profile'
@@ -518,6 +548,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/events/$eventId': {
+      id: '/admin/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/admin/events/$eventId'
+      preLoaderRoute: typeof AdminEventsEventIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events/$eventId/': {
+      id: '/admin/events/$eventId/'
+      path: '/'
+      fullPath: '/admin/events/$eventId/'
+      preLoaderRoute: typeof AdminEventsEventIdIndexLazyRouteImport
+      parentRoute: typeof AdminEventsEventIdRoute
+    }
     '/events/$eventId/editions/': {
       id: '/events/$eventId/editions/'
       path: '/events/$eventId/editions'
@@ -534,10 +578,10 @@ declare module '@tanstack/react-router' {
     }
     '/admin/events/$eventId/editions/': {
       id: '/admin/events/$eventId/editions/'
-      path: '/events/$eventId/editions'
+      path: '/editions'
       fullPath: '/admin/events/$eventId/editions/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/events/$eventId/editions/$editionId/profile': {
       id: '/events/$eventId/editions/$editionId/profile'
@@ -569,65 +613,65 @@ declare module '@tanstack/react-router' {
     }
     '/admin/events/$eventId/editions/$editionId/signatures/': {
       id: '/admin/events/$eventId/editions/$editionId/signatures/'
-      path: '/events/$eventId/editions/$editionId/signatures'
+      path: '/editions/$editionId/signatures'
       fullPath: '/admin/events/$eventId/editions/$editionId/signatures/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/products/': {
       id: '/admin/events/$eventId/editions/$editionId/products/'
-      path: '/events/$eventId/editions/$editionId/products'
+      path: '/editions/$editionId/products'
       fullPath: '/admin/events/$eventId/editions/$editionId/products/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdProductsIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/checkpoints/': {
       id: '/admin/events/$eventId/editions/$editionId/checkpoints/'
-      path: '/events/$eventId/editions/$editionId/checkpoints'
+      path: '/editions/$editionId/checkpoints'
       fullPath: '/admin/events/$eventId/editions/$editionId/checkpoints/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCheckpointsIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/certifications/': {
       id: '/admin/events/$eventId/editions/$editionId/certifications/'
-      path: '/events/$eventId/editions/$editionId/certifications'
+      path: '/editions/$editionId/certifications'
       fullPath: '/admin/events/$eventId/editions/$editionId/certifications/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/activities/': {
       id: '/admin/events/$eventId/editions/$editionId/activities/'
-      path: '/events/$eventId/editions/$editionId/activities'
+      path: '/editions/$editionId/activities'
       fullPath: '/admin/events/$eventId/editions/$editionId/activities/'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdActivitiesIndexRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/signatures/editor': {
       id: '/admin/events/$eventId/editions/$editionId/signatures/editor'
-      path: '/events/$eventId/editions/$editionId/signatures/editor'
+      path: '/editions/$editionId/signatures/editor'
       fullPath: '/admin/events/$eventId/editions/$editionId/signatures/editor'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesEditorRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/certifications/editor': {
       id: '/admin/events/$eventId/editions/$editionId/certifications/editor'
-      path: '/events/$eventId/editions/$editionId/certifications/editor'
+      path: '/editions/$editionId/certifications/editor'
       fullPath: '/admin/events/$eventId/editions/$editionId/certifications/editor'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
     '/admin/events/$eventId/editions/$editionId/callback/payment': {
       id: '/admin/events/$eventId/editions/$editionId/callback/payment'
-      path: '/events/$eventId/editions/$editionId/callback/payment'
+      path: '/editions/$editionId/callback/payment'
       fullPath: '/admin/events/$eventId/editions/$editionId/callback/payment'
       preLoaderRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof AdminEventsEventIdRoute
     }
   }
 }
 
-interface AdminRouteChildren {
-  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+interface AdminEventsEventIdRouteChildren {
+  AdminEventsEventIdIndexLazyRoute: typeof AdminEventsEventIdIndexLazyRoute
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute: typeof AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute
   AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute: typeof AdminEventsEventIdEditionsEditionIdCertificationsEditorRoute
@@ -639,8 +683,8 @@ interface AdminRouteChildren {
   AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute: typeof AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute
 }
 
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminEventsIndexRoute: AdminEventsIndexRoute,
+const AdminEventsEventIdRouteChildren: AdminEventsEventIdRouteChildren = {
+  AdminEventsEventIdIndexLazyRoute: AdminEventsEventIdIndexLazyRoute,
   AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,
   AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute:
     AdminEventsEventIdEditionsEditionIdCallbackPaymentRoute,
@@ -658,6 +702,19 @@ const AdminRouteChildren: AdminRouteChildren = {
     AdminEventsEventIdEditionsEditionIdProductsIndexRoute,
   AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute:
     AdminEventsEventIdEditionsEditionIdSignaturesIndexRoute,
+}
+
+const AdminEventsEventIdRouteWithChildren =
+  AdminEventsEventIdRoute._addFileChildren(AdminEventsEventIdRouteChildren)
+
+interface AdminRouteChildren {
+  AdminEventsEventIdRoute: typeof AdminEventsEventIdRouteWithChildren
+  AdminEventsIndexRoute: typeof AdminEventsIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminEventsEventIdRoute: AdminEventsEventIdRouteWithChildren,
+  AdminEventsIndexRoute: AdminEventsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
