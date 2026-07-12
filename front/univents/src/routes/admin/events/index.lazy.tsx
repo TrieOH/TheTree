@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Calendar, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { PaginatedContainer } from '@trieoh/ui-base'
+import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import type { EventCreateSubmitI, EventI } from '@/features/events/model'
 import {
@@ -178,26 +178,24 @@ function RouteComponent() {
           </Button>
         }
         emptyState={
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex size-16 items-center justify-center rounded-2xl border border-border bg-muted/40">
-              <Calendar className="size-8 text-muted-foreground/40" />
-            </div>
-            <h3 className="text-base font-medium text-foreground">
-              Nenhum evento encontrado
-            </h3>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              Crie um evento para começar a organizar o dashboard do admin.
-            </p>
-            <Button
-              type="button"
-              onClick={() => setModalState({ open: true, event: undefined })}
-              size="sm"
-              className="mt-5 rounded-sm gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Criar evento
-            </Button>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            eyebrow="Eventos"
+            title="Nenhum evento encontrado"
+            description="Crie um evento para começar a organizar o dashboard do admin."
+            className="border-0 bg-transparent px-0 py-4 shadow-none"
+            action={
+              <Button
+                type="button"
+                onClick={() => setModalState({ open: true, event: undefined })}
+                size="sm"
+                className="mt-0.5 h-9 rounded-sm gap-2 px-4 text-sm shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Criar evento
+              </Button>
+            }
+          />
         }
         renderItems={(slice) =>
           slice.map((event, idx) => (
