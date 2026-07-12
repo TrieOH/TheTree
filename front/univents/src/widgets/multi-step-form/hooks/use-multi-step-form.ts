@@ -135,7 +135,7 @@ export function useMultiStepForm<TInput extends FieldValues, TOutput>({
 
   const goNext = async (): Promise<boolean> => {
     const fieldNamesToValidate = visibleFields
-      .filter((field) => field.kind === "text")
+      .filter((field) => field.kind !== "custom")
       .map((field) => field.name);
 
     const isStepValid =

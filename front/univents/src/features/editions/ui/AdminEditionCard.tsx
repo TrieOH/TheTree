@@ -10,6 +10,7 @@ import {
   MapPin,
   MoreVertical,
   Package,
+  Pencil,
   ShieldCheck,
 } from 'lucide-react'
 import type { EditionI } from '../model'
@@ -33,6 +34,7 @@ interface EditionCardProps {
   edition: EditionI
   eventId: string
   index: number
+  onEdit: (edition: EditionI) => void
   onPublish?: () => void
   onConnect?: () => void
   onDisconnect?: () => void
@@ -84,6 +86,7 @@ const statusConfig: Record<EditionI['status'], { label: string; dot: string; pil
 function MenuItems({
   isContext = false,
   edition,
+  onEdit,
   eventId,
   onPublish,
   onConnect,
@@ -91,6 +94,7 @@ function MenuItems({
 }: {
   isContext?: boolean
   edition: EditionI
+  onEdit: () => void
   eventId: string
   onPublish?: () => void
   onConnect?: () => void
@@ -121,6 +125,10 @@ function MenuItems({
       <Item onClick={stop(openEdition)}>
         <ArrowUpRight className="size-4" />
         <span>Abrir edição</span>
+      </Item>
+      <Item onClick={stop(onEdit)}>
+        <Pencil className="size-4" />
+        <span>Editar</span>
       </Item>
       <Separator />
       {edition.status === 'draft' && onPublish && (
@@ -166,6 +174,7 @@ export function AdminEditionCard({
   edition,
   eventId,
   index,
+  onEdit,
   onPublish,
   onConnect,
   onDisconnect,
@@ -186,6 +195,7 @@ export function AdminEditionCard({
       params: { eventId, editionId: edition.id },
     })
   }
+  const handleEdit = () => onEdit(edition)
 
   return (
     <ContextMenu>
@@ -203,6 +213,15 @@ export function AdminEditionCard({
               'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
               'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
             )}
+            role="button"
+            tabIndex={0}
+            onClick={handleEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleEdit()
+              }
+            }}
           >
             <div className="relative aspect-video overflow-hidden bg-muted">
               {hasVisual ? (
@@ -259,6 +278,7 @@ export function AdminEditionCard({
                   <DropdownMenuContent align="end" className="w-56">
                     <MenuItems
                       edition={edition}
+                      onEdit={handleEdit}
                       eventId={eventId}
                       onPublish={onPublish}
                       onConnect={onConnect}
@@ -324,6 +344,7 @@ export function AdminEditionCard({
         <MenuItems
           isContext
           edition={edition}
+          onEdit={handleEdit}
           eventId={eventId}
           onPublish={onPublish}
           onConnect={onConnect}

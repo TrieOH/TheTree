@@ -1,6 +1,6 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
-import type { EditionCreateI, EditionI } from "../model";
+import type { EditionCreateOutputI, EditionI } from "../model";
 import { authFetcher, publicQueryFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 import { editionKeys } from "./query-keys";
 
@@ -9,7 +9,7 @@ import { editionKeys } from "./query-keys";
  * @param editionData - The data for the new edition.
  * @returns A promise that resolves to the API response containing the newly created edition.
  */
-export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, eventId: string) => {
+export const createEditionFn = createClientOnlyFn((editionData: EditionCreateOutputI, eventId: string) => {
   return authFetcher.post<EditionI>(`/events/${eventId}/editions`, editionData);
 });
 
@@ -20,7 +20,7 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
  * @param editionData - The updated edition data.
  * @returns A promise that resolves to the API response containing the updated edition.
  */
-export const patchEditionFn = createClientOnlyFn((eventId: string, editionId: string, editionData: EditionCreateI) => {
+export const patchEditionFn = createClientOnlyFn((eventId: string, editionId: string, editionData: EditionCreateOutputI) => {
   return authFetcher.patch<EditionI>(`/events/${eventId}/editions/${editionId}`, editionData);
 });
 

@@ -1,14 +1,20 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { Calendar, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
+import { Button } from '@/shared/ui/shadcn/button'
 import { AlertModal } from '@/widgets/ui/alert-modal'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
-import { usePublishEditionMutation } from '@/features/editions/api/mutations'
+import {
+  useCreateEditionMutation,
+  usePublishEditionMutation,
+  useUpdateEditionMutation,
+} from '@/features/editions/api/mutations'
 import type { EditionI } from '@/features/editions/model'
 import { AdminEditionCard } from '@/features/editions/ui/AdminEditionCard'
+import { ManageEditionModal } from '@/features/editions/ui/ManageEditionModal'
 
 const STATUS_SORT_ORDER: Record<EditionI['status'], number> = {
   draft: 0,
@@ -28,12 +34,16 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/editions/')({
 function EditionsRoute() {
   const { eventId } = Route.useParams()
   const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
+  const createEditionMutation = useCreateEditionMutation()
+  const updateEditionMutation = useUpdateEditionMutation()
   const publishEditionMutation = usePublishEditionMutation()
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortState<EditionI>>({
     field: 'starts_at',
     direction: 'desc',
   })
+  const [isManageOpen, setIsManageOpen] = useState(false)
+  const [editingEdition, setEditingEdition] = useState<EditionI | null>(null)
   const [publishingEdition, setPublishingEdition] = useState<EditionI | null>(null)
 
   const filteredEditions = [...editions]
@@ -96,6 +106,19 @@ function EditionsRoute() {
         onFilterChange={setFilter}
         filterPlaceholder="Buscar por nome, local ou status..."
         itemLabel="edições"
+        headerActions={
+          <Button
+            type="button"
+            onClick={() => {
+              setEditingEdition(null)
+              setIsManageOpen(true)
+            }}
+            className="h-9 gap-2"
+          >
+            <Plus className="size-4" />
+            Nova edição
+          </Button>
+        }
         emptyState={
           <EmptyState
             icon={Calendar}
@@ -112,10 +135,40 @@ function EditionsRoute() {
               edition={edition}
               eventId={eventId}
               index={idx}
+              onEdit={(currentEdition) => {
+                setEditingEdition(currentEdition)
+                setIsManageOpen(true)
+              }}
               onPublish={edition.status === 'draft' ? () => setPublishingEdition(edition) : undefined}
             />
           ))
         }
+      />
+
+      <ManageEditionModal
+        open={isManageOpen}
+        edition={editingEdition ?? undefined}
+        onOpenChange={(open) => {
+          setIsManageOpen(open)
+          if (!open) setEditingEdition(null)
+        }}
+        onCreate={async (values) => {
+          const res = await createEditionMutation.mutateAsync({
+            eventId,
+            data: values,
+          })
+
+          return res.success ? res.data : false
+        }}
+        onUpdate={async (editionId, values) => {
+          const res = await updateEditionMutation.mutateAsync({
+            eventId,
+            editionId,
+            data: values,
+          })
+
+          return res.success ? res.data : false
+        }}
       />
 
       <AlertModal

@@ -116,7 +116,7 @@ export interface CustomFieldConfig<TFieldValues extends FieldValues> extends Bas
  * string-valued path (e.g. `logo_url`). */
 export interface ImageFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
   kind: "image";
-  name: FieldPathByValue<TFieldValues, string | null | undefined>;
+  name: FieldPath<TFieldValues>;
   label: string;
   hint?: string;
   accept?: string;
@@ -130,7 +130,7 @@ export interface ImageFieldConfig<TFieldValues extends FieldValues> extends Base
  * (e.g. `gallery_urls`). */
 export interface GalleryFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
   kind: "gallery";
-  name: FieldPathByValue<TFieldValues, string[] | null | undefined>;
+  name: FieldPath<TFieldValues>;
   label: string;
   hint?: string;
   accept?: string;

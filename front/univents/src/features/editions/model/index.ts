@@ -4,27 +4,39 @@ const editionTypeSchema = z
   .enum(["year", "season", "number", "ordinal", "custom"], { error: "Invalid edition type" }).default("year")
 type EditionType = z.infer<typeof editionTypeSchema>
 
+const optionalNullableText = (schema: z.ZodType<string>) =>
+  schema.optional().nullable().or(z.literal('')).transform((value) => (value === '' ? null : value))
+
+const optionalNullableDatetime = () =>
+  z.iso.datetime({ message: 'Data inválida' }).optional().nullable().or(z.literal('')).transform((value) => (value === '' ? null : value))
+
+const requiredDatetime = (label: string) =>
+  z.string({ error: `${label} é obrigatória` })
+    .min(1, { message: `${label} é obrigatória` })
+    .pipe(z.iso.datetime({ message: `${label} inválida` }))
+
 export const editionCreateSchema = z.object({
   type: editionTypeSchema,
-  edition_name: z.string().min(3).max(256),
-  tagline: z.string().max(512).optional().nullable(),
-  description: z.string().max(8000).optional().nullable(),
-  registration_opens_at: z.iso.datetime().optional().nullable(),
-  registration_closes_at: z.iso.datetime().optional().nullable(),
-  starts_at: z.iso.datetime(),
-  ends_at: z.iso.datetime(),
-  timezone: z.string(),
-  location_name: z.string(),
-  location_address: z.string(),
-  logo_url: z.url().optional().nullable(),
-  banner_url: z.url().optional().nullable(),
-  contact_email: z.email().optional().nullable(),
-  contact_phone: z.string().optional().nullable(),
-  organizer_name: z.string().optional().nullable(),
+  edition_name: z.string().min(3, 'Nome da edição precisa ter pelo menos 3 caracteres').max(256),
+  tagline: optionalNullableText(z.string().max(512)),
+  description: optionalNullableText(z.string().max(8000)),
+  registration_opens_at: optionalNullableDatetime(),
+  registration_closes_at: optionalNullableDatetime(),
+  starts_at: requiredDatetime('Data de início'),
+  ends_at: requiredDatetime('Data de término'),
+  timezone: z.string().min(1, 'Fuso horário é obrigatório'),
+  location_name: z.string().min(1, 'Nome do local é obrigatório'),
+  location_address: z.string().min(1, 'Endereço é obrigatório'),
+  logo_url: optionalNullableText(z.url('Logo deve ser uma URL válida')),
+  banner_url: optionalNullableText(z.url('Banner deve ser uma URL válida')),
+  contact_email: optionalNullableText(z.email('E-mail de contato deve ser válido')),
+  contact_phone: optionalNullableText(z.string()),
+  organizer_name: optionalNullableText(z.string()),
 })
 
-export type EditionCreateI = z.infer<typeof editionCreateSchema>
-
+export type EditionCreateInputI = z.input<typeof editionCreateSchema>
+export type EditionCreateOutputI = z.output<typeof editionCreateSchema>
+export type EditionCreateSubmitI = Omit<EditionCreateOutputI, 'logo_url' | 'banner_url'>
 
 export interface EditionI {
   id: string;

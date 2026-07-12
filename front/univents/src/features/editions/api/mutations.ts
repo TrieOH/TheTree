@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { QueryClient } from '@tanstack/react-query'
-import type { EditionCreateI, EditionI } from '../model'
+import type { EditionCreateOutputI, EditionI } from '../model'
 import {
   connectPaymentAccountToEditionFn,
   createEditionFn,
@@ -13,7 +13,7 @@ import { editionKeys } from './query-keys'
 
 type CreateEditionInput = {
   eventId: string
-  data: EditionCreateI
+  data: EditionCreateOutputI
 }
 
 type PublishEditionInput = {
@@ -24,7 +24,7 @@ type PublishEditionInput = {
 type UpdateEditionInput = {
   eventId: string
   editionId: string
-  data: EditionCreateI
+  data: EditionCreateOutputI
 }
 
 type ConnectPaymentInput = {
