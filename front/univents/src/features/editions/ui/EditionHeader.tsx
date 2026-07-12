@@ -71,7 +71,13 @@ export function EditionHeader({ edition, eventId }: EditionHeaderProps) {
         </div>
         <div className="flex items-center gap-2">
           <Ticket className="w-4 h-4" />
-          <span className="capitalize">{edition.monetary_type === 'free' ? 'Gratuito' : edition.monetary_type === 'paid' ? 'Pago' : 'Misto'}</span>
+          <span className="capitalize">
+            {edition.monetary_type === 'free'
+              ? 'Gratuito'
+              : edition.monetary_type === 'paid'
+                ? 'Pago'
+                : 'Inscrições gratuitas e pagas'}
+          </span>
         </div>
       </div>
     </div>

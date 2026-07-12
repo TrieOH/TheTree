@@ -12,7 +12,6 @@ import {
   Sparkles,
   ChevronRight,
   CalendarClock,
-  BadgeInfo,
   CalendarX,
 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -92,6 +91,27 @@ const statusConfig = {
     dot: 'bg-rose-500',
   },
 } as const
+
+const editionStatusHint: Record<string, string> = {
+  draft: 'Ainda em edição',
+  announced: 'Pronta para divulgação',
+  published: 'Visível ao público',
+  canceled: 'Cancelada',
+}
+
+const editionTypeLabel: Record<string, string> = {
+  year: 'Anual',
+  season: 'Por temporada',
+  number: 'Numerada',
+  ordinal: 'Ordinal',
+  custom: 'Personalizada',
+}
+
+const editionMonetaryLabel: Record<string, string> = {
+  free: 'Gratuita',
+  paid: 'Paga',
+  mixed: 'Inscrições gratuitas e pagas',
+}
 
 export const Route = createLazyFileRoute('/admin/events/$eventId/')({
   component: EventOverviewRoute,
@@ -309,81 +329,89 @@ function EventOverviewRoute() {
           </Card>
 
           <Card className="border-border/60 bg-card/95 shadow-sm">
-            <CardHeader className="border-b border-border/60">
+            <CardHeader className="border-b border-border/60 pb-3">
               <CardTitle>Edição recente</CardTitle>
               <CardDescription>
                 Última edição cadastrada no admin.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 py-5">
+            <CardContent className="space-y-4 py-4">
               {latestEdition ? (
                 <>
-                  <div className="rounded-2xl border border-border/60 bg-muted/15 p-4">
+                  <div className="rounded-2xl border border-border/60 bg-muted/10 px-4 py-4">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 space-y-2">
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline" className="rounded-full px-2.5">
                             <CalendarClock className="size-3.5" />
                             Última edição
                           </Badge>
-                          <Badge variant="secondary" className="rounded-full px-2.5">
-                            {latestEdition.status}
-                          </Badge>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                            <span className="size-1.5 rounded-full bg-primary/70" />
+                            {editionMonetaryLabel[latestEdition.monetary_type]}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+                            {editionStatusHint[latestEdition.status] ?? 'Status interno da edição'}
+                          </span>
                         </div>
-                        <div className="space-y-1">
-                          <h3 className="truncate text-lg font-semibold text-foreground">
+
+                        <div className="space-y-1.5">
+                          <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
                             {latestEdition.edition_name}
                           </h3>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
                             {latestEdition.tagline ?? latestEdition.description ?? latestEdition.location_name}
                           </p>
                         </div>
                       </div>
-                      <BadgeInfo className="size-5 text-muted-foreground/35" />
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-border/60 bg-muted/15 px-4 py-3">
+                  <div className="grid gap-2.5 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                         Data
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-foreground">
+                      <p className="mt-1.5 text-sm font-semibold text-foreground">
                         {recentEditionDate}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/15 px-4 py-3">
+                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
                         Local
                       </p>
-                      <p className="mt-2 truncate text-sm font-semibold text-foreground">
+                      <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
                         {latestEdition.location_name}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/15 px-4 py-3">
+                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Tipo
+                        Frequência
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-foreground">
-                        {latestEdition.type} · {latestEdition.monetary_type}
+                      <p className="mt-1.5 text-sm font-semibold text-foreground">
+                        {editionTypeLabel[latestEdition.type] ?? latestEdition.type}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/15 px-4 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Timezone
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-foreground">
-                        {latestEdition.timezone}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/15 px-4 py-3 sm:col-span-2">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Organizador
-                      </p>
-                      <p className="mt-2 truncate text-sm font-semibold text-foreground">
-                        {latestEdition.organizer_name ?? latestEdition.contact_email ?? '—'}
-                      </p>
-                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+                      <span className="size-1.5 rounded-full bg-primary/70" />
+                      {latestEdition.timezone}
+                    </span>
+                    {latestEdition.organizer_name || latestEdition.contact_email ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+                        <span className="size-1.5 rounded-full bg-primary/70" />
+                        {latestEdition.organizer_name
+                          ? `Organizador: ${latestEdition.organizer_name}`
+                          : `Contato: ${latestEdition.contact_email}`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700">
+                        <span className="size-1.5 rounded-full bg-amber-500" />
+                        Organizador e contato não definidos
+                      </span>
+                    )}
                   </div>
                 </>
               ) : (
