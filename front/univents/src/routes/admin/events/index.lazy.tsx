@@ -1,18 +1,16 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Calendar, Plus } from 'lucide-react'
-import { toast } from 'sonner'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import type { EventCreateSubmitI, EventI } from '@/features/events/model'
+import { ownEventsQueryOptions } from '@/features/events/api'
 import {
-  createEventFn,
-  eventsQueryOptions,
-  ownEventsQueryOptions,
-  patchEventFn,
-  publishEventFn,
-} from '@/features/events/api'
+  useCreateEventMutation,
+  usePatchEventMutation,
+  usePublishEventMutation,
+} from '@/features/events/api/mutations'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import { AlertModal } from '@/widgets/ui/alert-modal'
@@ -30,7 +28,6 @@ const STATUS_SORT_ORDER: Record<EventI['status'], number> = {
 }
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortState<EventI>>({
     field: 'created_at',
@@ -42,65 +39,9 @@ function RouteComponent() {
   const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
 
   const { data: events = [] } = useQuery(ownEventsQueryOptions())
-
-  const createMutation = useMutation({
-    mutationFn: createEventFn,
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao criar evento')
-        return
-      }
-
-      queryClient.setQueryData<EventI[]>(
-        ownEventsQueryOptions().queryKey,
-        (old = []) => [res.data, ...old],
-      )
-      void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
-      toast.success('Evento criado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-
-  const patchMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EventCreateSubmitI> }) =>
-      patchEventFn(id, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao atualizar evento')
-        return
-      }
-
-      queryClient.setQueryData<EventI[]>(
-        ownEventsQueryOptions().queryKey,
-        (old = []) => old.map((event) => (event.id === res.data.id ? res.data : event)),
-      )
-      void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
-      toast.success('Evento atualizado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-
-  const publishMutation = useMutation({
-    mutationFn: publishEventFn,
-    onSuccess: (res, eventId) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao publicar evento')
-        return
-      }
-
-      queryClient.setQueryData<EventI[]>(
-        ownEventsQueryOptions().queryKey,
-        (old = []) =>
-          old.map((event) =>
-            event.id === eventId ? { ...event, status: 'active' as const } : event,
-          ),
-      )
-      void queryClient.invalidateQueries({ queryKey: eventsQueryOptions().queryKey })
-      setPublishingEvent(null)
-      toast.success('Evento publicado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
+  const createMutation = useCreateEventMutation()
+  const patchMutation = usePatchEventMutation()
+  const publishEventMutation = usePublishEventMutation()
 
   const filteredEvents = [...events]
     .filter((event) => {
@@ -229,7 +170,7 @@ function RouteComponent() {
           )
         }
         onUpdate={(id, values) =>
-          patchMutation.mutateAsync({ id, data: values }).then(
+          patchMutation.mutateAsync({ id, data: values as Partial<EventCreateSubmitI> }).then(
             (res) => (res.success ? res.data : false),
             () => false,
           )
@@ -244,10 +185,10 @@ function RouteComponent() {
         confirmLabel="Publicar"
         onConfirm={() => {
           if (!publishingEvent) return
-          publishMutation.mutate(publishingEvent.id)
+          publishEventMutation.mutate(publishingEvent.id)
         }}
         variant="success"
-        loading={publishMutation.isPending}
+        loading={publishEventMutation.isPending}
       />
     </div>
   )

@@ -14,7 +14,7 @@ import {
   CalendarClock,
   CalendarX,
 } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -30,9 +30,12 @@ import {
 import { EmptyState } from '@trieoh/ui-base'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import { AlertModal } from '@/widgets/ui/alert-modal'
-import { ownEventsQueryOptions, patchEventFn, publishEventFn } from '@/features/events/api'
+import { ownEventsQueryOptions } from '@/features/events/api'
+import {
+  usePatchEventMutation,
+  usePublishEventMutation,
+} from '@/features/events/api/mutations'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
-import type { EventCreateSubmitI, EventI } from '@/features/events/model'
 import { cn } from '@/shared/lib/utils'
 
 function QuickAction({
@@ -118,7 +121,6 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/')({
 })
 
 function EventOverviewRoute() {
-  const queryClient = useQueryClient()
   const { eventId } = Route.useParams()
   const { data: events = [] } = useQuery(ownEventsQueryOptions())
   const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
@@ -129,6 +131,9 @@ function EventOverviewRoute() {
   const isPublished = event?.status === 'active'
   const status = event ? statusConfig[event.status] : statusConfig.draft
 
+  const publishEventMutation = usePublishEventMutation()
+  const patchMutation = usePatchEventMutation()
+
   const copyLink = () => {
     if (!event) return
     void navigator.clipboard.writeText(`${window.location.origin}/events/${event.id}`)
@@ -137,46 +142,8 @@ function EventOverviewRoute() {
 
   const handlePublishEvent = () => {
     if (!event || isPublished) return
-    publishEventMutation.mutate()
+    publishEventMutation.mutate(eventId)
   }
-
-  const publishEventMutation = useMutation({
-    mutationFn: () => publishEventFn(eventId),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao publicar evento')
-        return
-      }
-
-      queryClient.setQueryData(
-        ownEventsQueryOptions().queryKey,
-        (old: typeof events = []) => old.map((item) => (
-          item.id === eventId ? { ...item, status: 'active' as const } : item
-        )),
-      )
-      toast.success('Evento publicado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-
-  const patchMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EventCreateSubmitI> }) =>
-      patchEventFn(id, data),
-    onSuccess: (res) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao atualizar evento')
-        return
-      }
-
-      queryClient.setQueryData<EventI[]>(
-        ownEventsQueryOptions().queryKey,
-        (old = []) => old.map((item) => (item.id === res.data.id ? res.data : item)),
-      )
-      toast.success('Evento atualizado com sucesso!')
-      setEditModalOpen(false)
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
 
   const metrics = [
     {
