@@ -19,7 +19,7 @@ interface GenericFormProps<T extends FieldValues> {
   idPrefix?: string
   fields: readonly FormFieldI<T>[]
   schema: ZodType<T>
-  onSubmit: (data: T) => void | Promise<void>
+  onSubmit: (data: T) => void | boolean | Promise<void | boolean>
   onCancel: () => void
   defaultValues?: DefaultValues<T>
   submitLabel?: string
@@ -111,9 +111,12 @@ export function GenericForm<T extends FieldValues>({
         }
       }
 
-      await onSubmit(getValues())
-      setPendingFiles({})
-      reset()
+      const result = await onSubmit(getValues())
+
+      if (result !== false) {
+        setPendingFiles({})
+        reset()
+      }
     } catch (error) {
       console.error("Erro no submit:", error)
       toast.error(

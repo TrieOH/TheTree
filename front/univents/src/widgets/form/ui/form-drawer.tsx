@@ -18,7 +18,7 @@ interface FormDrawerProps<T extends FieldValues> {
   description?: string
   fields: readonly FormFieldI<T>[]
   schema: ZodType<T>
-  onSubmit: (data: T) => void | Promise<void>
+  onSubmit: (data: T) => void | boolean | Promise<void | boolean>
   defaultValues?: DefaultValues<T>
   submitLabel?: string
   loading?: boolean
@@ -40,8 +40,8 @@ export function FormDrawer<T extends FieldValues>({
   closeOnSubmit = true,
 }: FormDrawerProps<T>) {
   const handleFormSubmit = async (data: T) => {
-    await onSubmit(data)
-    if (closeOnSubmit) onOpenChange(false)
+    const result = await onSubmit(data)
+    if (closeOnSubmit && result !== false) onOpenChange(false)
   }
 
   const handleCancel = () => {

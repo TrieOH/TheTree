@@ -1,235 +1,289 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
+import type React from 'react'
 import { motion } from 'motion/react'
 import {
-  Pencil,
-  MoreVertical,
-  Eye,
-  Users,
-  ChevronRight,
   ArrowUpRight,
+  CalendarDays,
+  Copy,
+  Eye,
+  MoreVertical,
+  Pencil,
+  Sparkles,
+  Users,
 } from 'lucide-react'
 import type { EventI, EventStatusI } from '@/features/events/model'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/shared/ui/shadcn/drawer'
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/shared/ui/shadcn/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/shadcn/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
+import { toast } from 'sonner'
 
 const statusConfig: Record<EventStatusI, {
-  label: string;
-  dot: string;
+  label: string
+  dot: string
+  pill: string
 }> = {
   draft: {
     label: 'Rascunho',
-    dot: 'bg-muted-foreground'
+    dot: 'bg-muted-foreground',
+    pill: 'bg-muted text-muted-foreground',
   },
   active: {
     label: 'Ativo',
-    dot: 'bg-primary'
+    dot: 'bg-primary',
+    pill: 'bg-primary/10 text-primary',
   },
   archived: {
     label: 'Arquivado',
-    dot: 'bg-muted-foreground'
+    dot: 'bg-muted-foreground',
+    pill: 'bg-muted text-muted-foreground',
   },
   discontinued: {
     label: 'Descontinuado',
-    dot: 'bg-destructive'
+    dot: 'bg-destructive',
+    pill: 'bg-destructive/10 text-destructive',
   },
 }
 
 interface AdminEventCardProps {
   event: EventI
-  index: number
+  index?: number
   onEdit: (event: EventI) => void
-  // onDelete: (event: EventI) => void
   onPublish: (event: EventI) => void
+}
+
+function MenuItems({
+  event,
+  isContext = false,
+  onEdit,
+  onPublish,
+  onOpenEditions,
+}: {
+  event: EventI
+  isContext?: boolean
+  onEdit: () => void
+  onPublish: () => void
+  onOpenEditions: () => void
+}) {
+  const Item = isContext ? ContextMenuItem : DropdownMenuItem
+  const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
+  const stop = (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    action()
+  }
+  const copyLink = () => {
+    const url = `${window.location.origin}/events/${event.id}`
+    void navigator.clipboard.writeText(url)
+    toast.success("Link copied to clipboard");
+  }
+
+  return (
+    <>
+      <Item onClick={stop(onEdit)}>
+        <Pencil className="size-4" />
+        <span>Editar</span>
+      </Item>
+      {event.status === 'draft' && (
+        <Item onClick={stop(onPublish)}>
+          <Eye className="size-4" />
+          <span>Publicar</span>
+        </Item>
+      )}
+      <Item onClick={stop(copyLink)}>
+        <Copy className="size-4" />
+        <span>Copiar link</span>
+      </Item>
+      <Separator />
+      <Item onClick={stop(onOpenEditions)}>
+        <ArrowUpRight className="size-4" />
+        <span>Ver edições</span>
+      </Item>
+    </>
+  )
 }
 
 export default function AdminEventCard({
   event,
-  index,
+  index = 0,
   onEdit,
-  onPublish
+  onPublish,
 }: AdminEventCardProps) {
-  const isDraft = event.status === 'draft'
+  const navigate = useNavigate()
   const status = statusConfig[event.status]
+  const hasVisual = Boolean(event.banner_url ?? event.logo_url)
+  const handleEdit = () => onEdit(event)
+  const handlePublish = () => onPublish(event)
+  const handleOpenEditions = () => {
+    void navigate({
+      to: '/admin/events/$eventId/editions',
+      params: { eventId: event.id },
+    })
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.25 }}
-      className={cn(
-        "group bg-card rounded-xl border p-4",
-        "hover:border-foreground/20 hover:shadow-sm",
-        "transition-all duration-200"
-      )}
-    >
-      <div className="flex gap-3 items-center">
-        <div className={cn(
-          "w-12 h-12 rounded-lg shrink-0 overflow-hidden",
-          "bg-muted ring-1 ring-border shadow-sm",
-          "flex items-center justify-center",
-          event.logo_url ? "bg-white" : "bg-secondary/30"
-        )}>
-          {event.logo_url ? (
-            <img
-              src={event.logo_url}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-sm font-bold text-secondary-foreground/50">
-              {event.acronym?.slice(0, 2).toUpperCase() ?? event.name.slice(0, 2).toUpperCase()}
-            </span>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0 flex flex-col justify-center h-12">
-          <h3 className="font-semibold text-foreground text-sm leading-tight truncate">
-            {event.name}
-          </h3>
-
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              status.dot
-            )} />
-            <span className="text-[11px] text-muted-foreground">
-              {status.label} · {event.editions_count} {event.editions_count === 1 ? 'edição' : 'edições'}
-            </span>
-            {event.is_series && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-medium">
-                <Users className="w-3 h-3" />
-                Série
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <code className="text-[11px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded">
-          {event.slug}
-        </code>
-      </div>
-
-      <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-border/50">
-        <div className="hidden sm:flex items-center gap-1">
-          {isDraft ? (
-            <button
-              onClick={() => { onPublish(event); }}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-md",
-                "bg-primary text-primary-foreground hover:bg-primary/90",
-                "text-xs font-medium",
-                "active:scale-95 transition-all"
-              )}
-            >
-              <Eye className="w-3 h-3" />
-              Publicar
-            </button>
-          ) : (
-            <span className="text-[11px] text-muted-foreground">
-              {event.editions_count} {event.editions_count === 1 ? 'edição' : 'edições'}
-            </span>
-          )}
-        </div>
-
-        <div className="hidden sm:flex items-center gap-0.5 ml-auto">
-          <button
-            onClick={() => { onEdit(event); }}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Editar"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-
-
-          <Link
-            to="/admin/events/$eventId/editions"
-            params={{ eventId: event.id }}
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <motion.article
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
             className={cn(
-              "ml-1 flex items-center gap-1 px-2.5 py-1 rounded-md",
-              "bg-secondary/50 text-secondary-foreground hover:bg-secondary",
-              "text-xs font-medium",
-              "transition-colors"
+              'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left',
+              'ring-1 ring-foreground/10 shadow-xs',
+              'transform-gpu will-change-transform',
+              'transition-all duration-300 ease-out',
+              'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
+              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
             )}
+            role="button"
+            tabIndex={0}
+            onClick={handleEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleEdit()
+              }
+            }}
           >
-            Edições
-            <ChevronRight className="w-3 h-3" />
-          </Link>
-        </div>
-
-        <div className="sm:hidden flex items-center justify-between w-full">
-          {isDraft ? (
-            <button
-              onClick={() => { onPublish(event); }}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 rounded-md",
-                "bg-primary text-primary-foreground",
-                "text-xs font-medium"
+            <div className="relative aspect-video overflow-hidden bg-muted">
+              {hasVisual ? (
+                <img
+                  src={event.banner_url ?? event.logo_url ?? ''}
+                  alt="Representação Visual do Evento"
+                  className={cn(
+                    "h-full w-full object-cover transition-transform",
+                    "duration-700 ease-out group-hover:scale-105",
+                  )}
+                  loading={index < 4 ? 'eager' : 'lazy'}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted via-background to-muted/40">
+                  <div className="flex size-20 items-center justify-center rounded-full border border-border/70 bg-background/80 shadow-sm backdrop-blur-sm">
+                    <span className="text-2xl font-semibold text-muted-foreground/40">
+                      {event.acronym ?? event.name.charAt(0)}
+                    </span>
+                  </div>
+                </div>
               )}
-            >
-              <Eye className="w-3 h-3" />
-              Publicar
-            </button>
-          ) : (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)} />
-              {status.label}
-            </span>
-          )}
 
-          <Drawer>
-            <DrawerTrigger asChild>
-              <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-            </DrawerTrigger>
-            <DrawerContent className="z-50 rounded-t-2xl">
-              <DrawerHeader className="border-b pb-4">
-                <DrawerTitle className="text-base font-semibold line-clamp-1">
-                  {event.name}
-                </DrawerTitle>
-              </DrawerHeader>
-              <div className="p-3 space-y-1">
-                {isDraft && (
-                  <button
-                    onClick={() => { onPublish(event); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
-                  >
-                    <Eye className="w-5 h-5" />
-                    <span className="font-medium">Publicar evento</span>
-                  </button>
+              <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
+                <span className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
+                  status.pill,
+                )}>
+                  <span className={cn('size-1.5 rounded-full', status.dot)} />
+                  {status.label}
+                </span>
+
+                {event.is_series && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium text-foreground backdrop-blur-sm">
+                    <Sparkles className="size-3.5 text-primary" />
+                    Série
+                  </span>
                 )}
-
-                <Link
-                  to="/admin/events/$eventId/editions"
-                  params={{ eventId: event.id }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted active:bg-muted/80 transition-colors"
-                >
-                  <ArrowUpRight className="w-5 h-5 text-muted-foreground" />
-                  <span className="font-medium">Ver edições</span>
-                </Link>
-
-                <button
-                  onClick={() => { onEdit(event); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted active:bg-muted/80 transition-colors"
-                >
-                  <Pencil className="w-5 h-5 text-muted-foreground" />
-                  <span className="font-medium">Editar evento</span>
-                </button>
-
-                <div className="h-px bg-border my-2" />
               </div>
-            </DrawerContent>
-          </Drawer>
-        </div>
-      </div>
-    </motion.div>
+
+              <div className="absolute right-4 top-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button
+                        type="button"
+                        onClick={(e) => e.stopPropagation()}
+                        className={cn(
+                          'inline-flex size-9 items-center justify-center rounded-full',
+                          'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
+                          'transition-colors hover:bg-background',
+                        )}
+                        aria-label={`Abrir ações de ${event.name}`}
+                      >
+                        <MoreVertical className="size-4" />
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-56">
+                    <MenuItems
+                      event={event}
+                      onEdit={handleEdit}
+                      onPublish={handlePublish}
+                      onOpenEditions={handleOpenEditions}
+                    />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
+                <div className="min-w-0 space-y-1">
+                  <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary sm:text-xl">
+                    {event.name}
+                  </h3>
+                  {event.tagline && (
+                    <p className="line-clamp-2 max-w-2xl text-xs text-muted-foreground">
+                      {event.tagline}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 p-4 pt-3 sm:p-5 sm:pt-4">
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarDays className="size-3.5" />
+                    {event.editions_count} {event.editions_count === 1 ? 'edição' : 'edições'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 truncate">
+                    <Users className="size-3.5" />
+                    {event.contact_email}
+                  </span>
+                </div>
+                <code className="block truncate text-[11px] font-mono text-muted-foreground/80">
+                  {event.slug}
+                </code>
+              </div>
+
+              <Link
+                to="/admin/events/$eventId/editions"
+                params={{ eventId: event.id }}
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium',
+                  'bg-secondary/60 text-secondary-foreground transition-colors hover:bg-secondary',
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Edições
+                <ArrowUpRight className="size-3.5" />
+              </Link>
+            </div>
+          </motion.article>
+        }
+      >
+      </ContextMenuTrigger>
+
+      <ContextMenuContent align="end" className="w-56">
+        <MenuItems
+          event={event}
+          isContext
+          onEdit={handleEdit}
+          onPublish={handlePublish}
+          onOpenEditions={handleOpenEditions}
+        />
+      </ContextMenuContent>
+
+    </ContextMenu>
   )
 }

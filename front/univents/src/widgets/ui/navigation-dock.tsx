@@ -46,7 +46,7 @@ const getNavItems = (
 ): NavItemType[] => [
   { id: 'home', label: 'Home', icon: Home, href: '/' },
   { id: 'events', label: 'Evento', icon: Calendar, href: '/events' },
-  { id: 'admin', label: 'Admin', icon: LayoutGrid, href: '/admin' },
+  { id: 'admin', label: 'Admin', icon: LayoutGrid, href: '/admin/events' },
   { id: 'profile', label: 'Perfil', icon: User, href: getProfileHref(pathname), authRequired: true },
   { id: 'logout', label: 'Logout', icon: LogOut, onClick: actions.logout, authRequired: true },
   { id: 'login', label: 'Entrar', icon: LogIn, href: '/auth', hideIfAuthenticated: true },
