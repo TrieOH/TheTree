@@ -38,6 +38,7 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
 
   const isAsync = typeof field.options === "function";
   const debouncedQuery = useDebouncedValue(query, field.debounceMs ?? 250);
+  const normalizedQuery = useMemo(() => query.trim().toLowerCase(), [query]);
 
   // Static options: filter client-side. Async options: fetched below.
   const staticOptions = useMemo(
@@ -64,14 +65,19 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
     };
   }, [isAsync, isOpen, debouncedQuery, field.options]);
 
-  const visibleOptions = isAsync
-    ? asyncOptions
-    : staticOptions.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()));
+  const visibleOptions = useMemo(
+    () => (
+      isAsync
+        ? asyncOptions
+        : staticOptions.filter((option) => option.label.toLowerCase().includes(normalizedQuery))
+    ),
+    [asyncOptions, isAsync, normalizedQuery, staticOptions],
+  );
 
   const selectedOption = useMemo(() => {
     if (typeof selectedValue !== "string" || selectedValue.length === 0) return undefined;
-    return [...staticOptions, ...asyncOptions].find((option) => option.value === selectedValue);
-  }, [selectedValue, staticOptions, asyncOptions]);
+    return (isAsync ? asyncOptions : staticOptions).find((option) => option.value === selectedValue);
+  }, [selectedValue, staticOptions, asyncOptions, isAsync]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -123,8 +129,8 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
         </button>
 
         {isOpen ? (
-          <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
-            <div className="flex items-center gap-2 border-b px-3 py-2">
+          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border/60 bg-popover shadow-md">
+            <div className="flex items-center gap-2 border-b border-border/60 bg-background/70 px-3 py-2.5">
               <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <input
                 autoFocus
@@ -170,8 +176,8 @@ export function ComboboxFieldRenderer<TFieldValues extends FieldValues>({
                       onMouseEnter={() => setHighlightedIndex(index)}
                       onClick={() => selectOption(option)}
                       className={
-                        "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm " +
-                        (index === highlightedIndex ? "bg-muted" : "")
+                        "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors " +
+                        (index === highlightedIndex ? "bg-primary/10" : "hover:bg-accent/10")
                       }
                     >
                       <span>
