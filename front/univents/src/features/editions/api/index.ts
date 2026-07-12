@@ -2,6 +2,7 @@ import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EditionCreateI, EditionI } from "../model";
 import { authFetcher, publicQueryFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { editionKeys } from "./query-keys";
 
 /**
  * Creates a new Edition on the server.
@@ -13,77 +14,55 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
 });
 
 /**
+ * Publish a Edition on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @returns A promise that resolves to the API null response.
+ */
+export const publishEditionFn = createClientOnlyFn((eventId: string, editionId: string) => {
+  return authFetcher.post<null>(`/events/${eventId}/editions/${editionId}/announce`);
+});
+
+/**
  * Fetches all event editions from the server.
+ * @param eventId - The event id
  * @returns A promise that resolves to an array of Edition objects.
  */
-export const getAllEditionsFn = async (eventId: string) => {
+export const getAllPublicEditionsFn = async (eventId: string) => {
   return publicQueryFetcher<EditionI[]>(`/events/${eventId}/editions`);
 };
 
 /**
  * Query options for fetching all event editions, using TanStack Query.
+ * @param eventId - The event id
  * @returns An object containing the query key and query function for fetching all event editions.
  */
-export const allEditionsQueryOptions = (eventId: string) => {
+export const allPublicEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
-    queryKey: ['editions', 'public', eventId],
-    queryFn: () => getAllEditionsFn(eventId),
+    queryKey: editionKeys.publicListByEvent(eventId),
+    queryFn: () => getAllPublicEditionsFn(eventId),
   })
 }
-
-/**
- * Query options for fetching a specific event edition, using TanStack Query.
- * If the list of all editions is already in cache, it uses that data.
- * Otherwise, it fetches the list and filters for the specific ID.
- * @returns An object containing the query key and query function for fetching a specific event edition.
- */
-export const editionQueryOptions = (eventId: string, editionId: string) => {
-  return queryOptions({
-    queryKey: ['editions', 'public', eventId, editionId],
-    queryFn: async () => {
-      const editions = await getAllEditionsFn(eventId);
-      return editions.find(e => e.id === editionId) ?? null;
-    },
-  })
-}
-
 
 /**
  * Fetches all admin event editions from the server.
  * @returns A promise that resolves to an array of Edition objects.
  */
 export const getAllAdminEditionsFn = createClientOnlyFn(async (eventId: string) => {
-  try {
-    return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions/admin`);
-  } catch {
-    return [];
-  }
+  return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions/admin`);
 });
 
 /**
  * Query options for fetching all admin event editions, using TanStack Query.
+ * @param eventId - The event id
  * @returns An object containing the query key and query function for fetching all admin event editions.
  */
 export const allAdminEditionsQueryOptions = (eventId: string) => {
   return queryOptions({
-    queryKey: ['editions', 'admin', eventId],
+    queryKey: editionKeys.adminListByEvent(eventId),
     queryFn: () => getAllAdminEditionsFn(eventId),
   })
 };
-
-/**
- * Publish a Edition on the server.
- * @param eventId - The event id
- * @param editionId - The edition id
- * @returns A promise that resolves to the API null response.
- */
-export const publishEditionFn = createClientOnlyFn((
-  eventId: string, editionId: string
-) => {
-  return authFetcher.post<null>(
-    `/events/${eventId}/editions/${editionId}/announce`
-  );
-});
 
 /**
  * Connect Payment Account a Edition on the server.
@@ -114,3 +93,23 @@ export const disconnectPaymentAccountToEditionFn = createClientOnlyFn((
     `/events/${eventId}/editions/${editionId}/payments/disconnect`
   );
 });
+
+
+// FIXME: I NEED TO DELETE EVERYTHING BELOW THIS LINE AND REPLACE IT
+
+
+/**
+ * Query options for fetching a specific event edition, using TanStack Query.
+ * If the list of all editions is already in cache, it uses that data.
+ * Otherwise, it fetches the list and filters for the specific ID.
+ * @returns An object containing the query key and query function for fetching a specific event edition.
+ */
+export const editionQueryOptions = (eventId: string, editionId: string) => {
+  return queryOptions({
+    queryKey: ['editions', 'public', eventId, editionId],
+    queryFn: async () => {
+      const editions = await getAllPublicEditionsFn(eventId);
+      return editions.find(e => e.id === editionId) ?? null;
+    },
+  })
+}

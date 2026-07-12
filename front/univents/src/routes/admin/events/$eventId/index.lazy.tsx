@@ -186,14 +186,13 @@ function EventOverviewRoute() {
   ]
 
   return (
-    <div className="relative overflow-hidden p-2">
-
+    <>
       <div className="relative space-y-6">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.03),0_20px_40px_-24px_rgba(15,23,42,0.24)]"
+          className="overflow-hidden rounded-md border border-border/60 bg-card shadow-[0_1px_0_0_rgba(255,255,255,0.03),0_20px_40px_-24px_rgba(15,23,42,0.24)]"
         >
           <div className="relative flex flex-col gap-6 p-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
@@ -466,6 +465,6 @@ function EventOverviewRoute() {
           setPublishConfirmOpen(false)
         }}
       />
-    </div>
+    </>
   )
 }

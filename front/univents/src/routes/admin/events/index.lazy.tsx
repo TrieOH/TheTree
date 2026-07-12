@@ -5,7 +5,7 @@ import { Calendar, Plus } from 'lucide-react'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import type { EventCreateSubmitI, EventI } from '@/features/events/model'
-import { ownEventsQueryOptions } from '@/features/events/api'
+import { allOwnEventsQueryOptions } from '@/features/events/api'
 import {
   useCreateEventMutation,
   usePatchEventMutation,
@@ -38,7 +38,7 @@ function RouteComponent() {
   })
   const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
 
-  const { data: events = [] } = useQuery(ownEventsQueryOptions())
+  const { data: events = [] } = useQuery(allOwnEventsQueryOptions())
   const createMutation = useCreateEventMutation()
   const patchMutation = usePatchEventMutation()
   const publishEventMutation = usePublishEventMutation()
@@ -75,7 +75,7 @@ function RouteComponent() {
     })
 
   return (
-    <div className="flex flex-wrap p-4">
+    <div className="flex flex-wrap p-6">
       <PaginatedContainer<EventI>
         items={filteredEvents}
         layout="grid"

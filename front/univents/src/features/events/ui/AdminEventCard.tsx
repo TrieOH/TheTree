@@ -271,7 +271,7 @@ export default function AdminEventCard({
               </div>
 
               <Link
-                to="/admin/events/$eventId/editions"
+                to="/admin/events/$eventId"
                 params={{ eventId: event.id }}
                 className={cn(
                   'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium',
@@ -279,7 +279,7 @@ export default function AdminEventCard({
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
-                Edições
+                Painel
                 <ArrowUpRight className="size-3.5" />
               </Link>
             </div>
