@@ -36,23 +36,23 @@ const statusConfig: Record<EventStatusI, {
 }> = {
   draft: {
     label: 'Rascunho',
-    dot: 'bg-muted-foreground',
-    pill: 'bg-muted text-muted-foreground',
+    dot: 'bg-amber-500',
+    pill: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
   },
   active: {
     label: 'Ativo',
-    dot: 'bg-primary',
-    pill: 'bg-primary/10 text-primary',
+    dot: 'bg-emerald-500',
+    pill: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
   },
   archived: {
     label: 'Arquivado',
-    dot: 'bg-muted-foreground',
-    pill: 'bg-muted text-muted-foreground',
+    dot: 'bg-slate-500',
+    pill: 'bg-slate-500/10 text-slate-700 border-slate-500/20',
   },
   discontinued: {
     label: 'Descontinuado',
-    dot: 'bg-destructive',
-    pill: 'bg-destructive/10 text-destructive',
+    dot: 'bg-rose-500',
+    pill: 'bg-rose-500/10 text-rose-700 border-rose-500/20',
   },
 }
 
@@ -69,12 +69,14 @@ function MenuItems({
   onEdit,
   onPublish,
   onOpenEditions,
+  onOpenDashboard,
 }: {
   event: EventI
   isContext?: boolean
   onEdit: () => void
   onPublish: () => void
   onOpenEditions: () => void
+  onOpenDashboard: () => void
 }) {
   const Item = isContext ? ContextMenuItem : DropdownMenuItem
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
@@ -95,6 +97,11 @@ function MenuItems({
         <Pencil className="size-4" />
         <span>Editar</span>
       </Item>
+      <Item onClick={stop(onOpenDashboard)}>
+        <ArrowUpRight className="size-4" />
+        <span>Ver dashboard</span>
+      </Item>
+      <Separator />
       {event.status === 'draft' && (
         <Item onClick={stop(onPublish)}>
           <Eye className="size-4" />
@@ -125,6 +132,12 @@ export default function AdminEventCard({
   const hasVisual = Boolean(event.banner_url ?? event.logo_url)
   const handleEdit = () => onEdit(event)
   const handlePublish = () => onPublish(event)
+  const handleOpenDashboard = () => {
+    void navigate({
+      to: '/admin/events/$eventId',
+      params: { eventId: event.id },
+    })
+  }
   const handleOpenEditions = () => {
     void navigate({
       to: '/admin/events/$eventId/editions',
@@ -181,7 +194,7 @@ export default function AdminEventCard({
 
               <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
                 <span className={cn(
-                  'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
+                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
                   status.pill,
                 )}>
                   <span className={cn('size-1.5 rounded-full', status.dot)} />
@@ -219,6 +232,7 @@ export default function AdminEventCard({
                       event={event}
                       onEdit={handleEdit}
                       onPublish={handlePublish}
+                      onOpenDashboard={handleOpenDashboard}
                       onOpenEditions={handleOpenEditions}
                     />
                   </DropdownMenuContent>
@@ -280,6 +294,7 @@ export default function AdminEventCard({
           isContext
           onEdit={handleEdit}
           onPublish={handlePublish}
+          onOpenDashboard={handleOpenDashboard}
           onOpenEditions={handleOpenEditions}
         />
       </ContextMenuContent>

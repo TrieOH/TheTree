@@ -11,7 +11,7 @@ function EventAdminLayout() {
 
   const tabs = [
     {
-      label: 'Dashboard',
+      label: 'Overview',
       to: '/admin/events/$eventId',
       params: { eventId },
       icon: LayoutGrid,
