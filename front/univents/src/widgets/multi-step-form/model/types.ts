@@ -60,6 +60,17 @@ export interface UrlFieldConfig<TFieldValues extends FieldValues> extends BaseFi
   autoPrependScheme?: boolean;
 }
 
+export interface DateTimeFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
+  kind: "datetime";
+  name: FieldPathByValue<TFieldValues, string | null | undefined>;
+  label: string;
+  placeholder?: string;
+  description?: string;
+  disabled?: boolean;
+  min?: string;
+  max?: string;
+}
+
 export interface ComboboxOption {
   value: string;
   label: string;
@@ -131,6 +142,7 @@ export interface GalleryFieldConfig<TFieldValues extends FieldValues> extends Ba
 export type FieldConfig<TFieldValues extends FieldValues> =
   | TextFieldConfig<TFieldValues>
   | UrlFieldConfig<TFieldValues>
+  | DateTimeFieldConfig<TFieldValues>
   | ComboboxFieldConfig<TFieldValues>
   | CustomFieldConfig<TFieldValues>
   | ImageFieldConfig<TFieldValues>

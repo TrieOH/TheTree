@@ -14,6 +14,17 @@ export const createEditionFn = createClientOnlyFn((editionData: EditionCreateI, 
 });
 
 /**
+ * Update an Edition on the server.
+ * @param eventId - The event id
+ * @param editionId - The edition id
+ * @param editionData - The updated edition data.
+ * @returns A promise that resolves to the API response containing the updated edition.
+ */
+export const patchEditionFn = createClientOnlyFn((eventId: string, editionId: string, editionData: EditionCreateI) => {
+  return authFetcher.patch<EditionI>(`/events/${eventId}/editions/${editionId}`, editionData);
+});
+
+/**
  * Publish a Edition on the server.
  * @param eventId - The event id
  * @param editionId - The edition id

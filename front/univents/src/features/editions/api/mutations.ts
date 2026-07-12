@@ -6,6 +6,7 @@ import {
   connectPaymentAccountToEditionFn,
   createEditionFn,
   disconnectPaymentAccountToEditionFn,
+  patchEditionFn,
   publishEditionFn,
 } from './index'
 import { editionKeys } from './query-keys'
@@ -18,6 +19,12 @@ type CreateEditionInput = {
 type PublishEditionInput = {
   eventId: string
   editionId: string
+}
+
+type UpdateEditionInput = {
+  eventId: string
+  editionId: string
+  data: EditionCreateI
 }
 
 type ConnectPaymentInput = {
@@ -121,6 +128,25 @@ export function usePublishEditionMutation() {
 
       syncEditionStatusInCaches(queryClient, variables.eventId, variables.editionId, 'announced')
       toast.success('Edição publicada com sucesso!')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor'),
+  })
+}
+
+export function useUpdateEditionMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ eventId, editionId, data }: UpdateEditionInput) =>
+      patchEditionFn(eventId, editionId, data),
+    onSuccess: (res) => {
+      if (!res.success) {
+        toast.error(res.message || 'Erro ao atualizar edição')
+        return
+      }
+
+      syncEditionCaches(queryClient, res.data)
+      toast.success('Edição atualizada com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })
