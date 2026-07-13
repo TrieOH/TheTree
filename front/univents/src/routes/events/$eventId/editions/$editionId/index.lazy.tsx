@@ -12,6 +12,7 @@ import {
   User,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/shared/ui/shadcn/button'
 import type { EditionI } from '@/features/editions/model'
 import { formatDateRange } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
@@ -103,15 +104,15 @@ function RouteComponent() {
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-primary/20" />
+          <div className="absolute inset-0 bg-linear-to-br from-muted via-primary/25 to-secondary/25" />
         )}
-        <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/60 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-muted/20 via-primary/10 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-background/85 via-secondary/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-background to-transparent" />
 
         {/* header actions */}
         <div className="absolute top-4 sm:top-5 inset-x-4 flex justify-between items-center">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider border bg-black/20 backdrop-blur-md border-white/20 text-white">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold tracking-wider border bg-background/80 backdrop-blur-md border-border/20 text-foreground">
             <span
               className={cn(
                 'w-1.5 h-1.5 rounded-full shrink-0',
@@ -121,26 +122,28 @@ function RouteComponent() {
             />
             {status.label.toUpperCase()}
           </span>
-          <button
+          <Button
             onClick={() => void handleShare()}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white active:scale-90 transition-transform"
+            variant="outline"
+            size="icon"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-background/80 backdrop-blur-md border-border/20 text-foreground active:scale-90 transition-transform"
           >
             <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
+          </Button>
         </div>
 
         {/* title */}
         <div className="absolute bottom-6 left-0 right-0 px-4 sm:px-6">
-          <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase text-white/60 mb-1.5 sm:mb-2">
+          <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] uppercase text-foreground/60 mb-1.5 sm:mb-2">
             {edition.type === 'year'
               ? `Edição ${new Date(edition.starts_at).getFullYear()}`
               : edition.edition_name}
           </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-[1.1] mb-2 sm:mb-3">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground leading-[1.1] mb-2 sm:mb-3">
             {edition.edition_name}
           </h1>
           {edition.tagline && (
-            <p className="text-xs sm:text-sm font-medium text-white/80 leading-relaxed max-w-[95%] sm:max-w-[85%]">
+            <p className="text-xs sm:text-sm font-medium text-foreground/80 leading-relaxed max-w-[95%] sm:max-w-[85%]">
               {edition.tagline}
             </p>
           )}

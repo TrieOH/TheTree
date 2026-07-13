@@ -74,6 +74,29 @@ export const allOwnEventsQueryOptions = () => {
   })
 }
 
+/**
+ * Fetches a single public event from the server by filtering the list.
+ * @param id - The event id
+ * @returns A promise that resolves to the Event object.
+ * @throws Error if not found.
+ */
+export const getPublicEventFn = async (id: string) => {
+  const events = await getEventsFn();
+  const event = events.find(e => e.id === id);
+  if (event) return event;
+  throw new Error("Failed to find event in list")
+};
+
+/**
+ * Query options for fetching a single public event.
+ */
+export const publicEventQueryOptions = (id: string) => {
+  return queryOptions({
+    queryKey: ['events', 'public', id],
+    queryFn: () => getPublicEventFn(id),
+  })
+}
+
 // Gallery
 
 /**
@@ -176,29 +199,6 @@ export const ownEventsQueryOptions = () => {
   return queryOptions({
     queryKey: ['events', 'own'],
     queryFn: getOwnEventsFn,
-  })
-}
-
-/**
- * Fetches a single public event from the server by filtering the list.
- * @param id - The event id
- * @returns A promise that resolves to the Event object.
- * @throws Error if not found.
- */
-export const getEventFn = async (id: string) => {
-  const events = await getEventsFn();
-  const event = events.find(e => e.id === id);
-  if (event) return event;
-  throw new Error("Failed to find event in list")
-};
-
-/**
- * Query options for fetching a single public event.
- */
-export const eventQueryOptions = (id: string) => {
-  return queryOptions({
-    queryKey: ['events', 'public', id],
-    queryFn: () => getEventFn(id),
   })
 }
 
