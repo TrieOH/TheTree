@@ -43,7 +43,7 @@ import AdminActivityCard from '@/features/activities/ui/AdminActivityCard'
 import { getDirtyFields } from '@/shared/lib/diff'
 
 export const Route = createLazyFileRoute(
-  '/admin/events/$eventId/editions/$editionId/activities/'
+  '/admin/events/$eventId_/editions/$editionId/activities/'
 )({
   component: RouteComponent,
 })

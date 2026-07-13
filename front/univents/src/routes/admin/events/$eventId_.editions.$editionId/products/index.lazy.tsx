@@ -38,7 +38,7 @@ import { getProductFields } from '@/features/products/model/field'
 import { AdminProductCard } from '@/features/products/ui/AdminProductCard'
 import { getDirtyFields } from '@/shared/lib/diff'
 
-export const Route = createLazyFileRoute('/admin/events/$eventId/editions/$editionId/products/')({
+export const Route = createLazyFileRoute('/admin/events/$eventId_/editions/$editionId/products/')({
   component: RouteComponent,
 })
 

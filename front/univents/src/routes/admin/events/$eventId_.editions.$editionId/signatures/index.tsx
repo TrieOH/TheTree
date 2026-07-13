@@ -9,7 +9,7 @@ import { Button } from '@/shared/ui/shadcn/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
 import { Badge } from '@/shared/ui/shadcn/badge'
 
-export const Route = createFileRoute('/admin/events/$eventId/editions/$editionId/signatures/')({
+export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/signatures/')({
   beforeLoad: requireAuth,
   component: RouteComponent,
 })

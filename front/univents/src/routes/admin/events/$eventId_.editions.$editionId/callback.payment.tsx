@@ -17,7 +17,7 @@ const queryParams = z.object({
 })
 
 export const Route = createFileRoute(
-  '/admin/events/$eventId/editions/$editionId/callback/payment',
+  '/admin/events/$eventId_/editions/$editionId/callback/payment',
 )({
   validateSearch: (search) => queryParams.parse(search),
   component: PaymentCallbackComponent,

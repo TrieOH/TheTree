@@ -7,7 +7,7 @@ import { editionQueryOptions } from '@/features/editions/api'
 import { Skeleton } from '@/shared/ui/shadcn/skeleton'
 
 export const Route = createFileRoute(
-  '/admin/events/$eventId/editions/$editionId/checkpoints/',
+  '/admin/events/$eventId_/editions/$editionId/checkpoints/',
 )({
   component: CheckpointsPage,
 })

@@ -18,7 +18,7 @@ import { Label } from '@/shared/ui/shadcn/label'
 import { cn } from '@/shared/lib/utils'
 import { CertificationTemplatePreview } from '@/features/certifications/ui/CertificationTemplatePreview'
 
-export const Route = createFileRoute('/admin/events/$eventId/editions/$editionId/certifications/')({
+export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/certifications/')({
   beforeLoad: requireAuth,
   component: RouteComponent,
 })

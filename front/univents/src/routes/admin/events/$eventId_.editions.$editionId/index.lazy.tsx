@@ -1,6 +1,13 @@
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
-import { CalendarDays, CreditCard, MapPin, Share2, Ticket, Users } from 'lucide-react'
+import {
+  CalendarDays,
+  CreditCard,
+  MapPin,
+  Share2,
+  Ticket,
+  Users,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/shared/ui/shadcn/badge'
 import { Button } from '@/shared/ui/shadcn/button'
@@ -19,7 +26,7 @@ const statusConfig: Record<string, { label: string; dot: string }> = {
   postponed: { label: 'Adiada', dot: 'bg-orange-500' },
 }
 
-export const Route = createLazyFileRoute('/admin/events/$eventId/editions/$editionId/')({
+export const Route = createLazyFileRoute('/admin/events/$eventId_/editions/$editionId/')({
   component: AdminEditionDetailRoute,
 })
 
@@ -40,9 +47,8 @@ function AdminEditionDetailRoute() {
   }
 
   const status = statusConfig[edition.status] ?? statusConfig.draft
-
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6">
       <Card className="border-border/60 bg-card/95 shadow-sm">
         <CardHeader className="border-b border-border/60 pb-4">
           <div className="space-y-3">
@@ -103,15 +109,15 @@ function AdminEditionDetailRoute() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
               <Users className="size-3.5" />
               {edition.organizer_name ?? edition.contact_email ?? 'Organizador não definido'}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
               <CreditCard className="size-3.5" />
               {edition.trie_payments_credential_id ? 'Pagamento conectado' : 'Pagamento não conectado'}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
               <MapPin className="size-3.5" />
               {edition.timezone}
             </span>
@@ -147,7 +153,7 @@ function AdminEditionDetailRoute() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" className="gap-2">
+        <Button type="button" variant="outline" className="gap-2 bg-background/80 backdrop-blur-md border-border/20 text-foreground">
           <Share2 className="size-4" />
           Compartilhar
         </Button>
