@@ -1,7 +1,7 @@
 import { createClientOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import type { EditionCreateOutputI, EditionI } from "../model";
-import { authFetcher, publicQueryFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, publicQueryFetcher, authQueryFetcher } from "@/shared/lib/api/fetch";
 import { editionKeys } from "./query-keys";
 
 /**
@@ -60,7 +60,7 @@ export const allPublicEditionsQueryOptions = (eventId: string) => {
  * @returns A promise that resolves to an array of Edition objects.
  */
 export const getAllAdminEditionsFn = createClientOnlyFn(async (eventId: string) => {
-  return await tanstackQueryFetcher<EditionI[]>(`/events/${eventId}/editions/admin`);
+  return await authQueryFetcher<EditionI[]>(`/events/${eventId}/editions/admin`);
 });
 
 /**

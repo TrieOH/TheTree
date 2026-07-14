@@ -7,20 +7,33 @@ const difficultyTypeSchema = z
   ).default("no_prerequisites")
 type DifficultyType = z.infer<typeof difficultyTypeSchema>
 
+const requiredText = (label: string) =>
+  z.string({ error: `${label} é obrigatório` }).trim().min(1, { message: `${label} é obrigatório` })
+
+const requiredDateTime = (label: string) =>
+  z.string({ error: `${label} é obrigatório` })
+    .trim()
+    .min(1, { message: `${label} é obrigatório` })
+    .pipe(z.iso.datetime({ message: `${label} inválida` }))
+
+const optionalText = () =>
+  z.string().optional().nullable().or(z.literal('')).transform((value) => (value === '' ? null : value))
+
 export const activityCreateSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().optional().nullable(),
-  location: z.string(),
-  starts_at: z.iso.datetime(),
-  ends_at: z.iso.datetime(),
-  presenter_name: z.string().optional().nullable(),
-  token_cost: z.int().nonnegative(),
+  title: requiredText('Título').min(3, { message: 'Título precisa ter pelo menos 3 caracteres' }),
+  description: optionalText(),
+  location: requiredText('Local'),
+  starts_at: requiredDateTime('Data de início'),
+  ends_at: requiredDateTime('Data de término'),
+  presenter_name: optionalText(),
+  token_cost: z.coerce.number({ error: 'Custo em tokens é obrigatório' }).int({ message: 'Custo em tokens precisa ser um número inteiro' }).nonnegative({ message: 'Custo em tokens não pode ser negativo' }),
   has_capacity: z.boolean().default(false),
-  capacity: z.int().nonnegative().default(0),
+  capacity: z.coerce.number({ error: 'Capacidade é obrigatória' }).int({ message: 'Capacidade precisa ser um número inteiro' }).nonnegative({ message: 'Capacidade não pode ser negativa' }).default(0),
   difficulty: difficultyTypeSchema,
 })
 
-export type ActivityCreateI = z.infer<typeof activityCreateSchema>
+export type ActivityCreateInputI = z.input<typeof activityCreateSchema>
+export type ActivityCreateOutputI = z.output<typeof activityCreateSchema>
 
 
 export interface ActivityI {
