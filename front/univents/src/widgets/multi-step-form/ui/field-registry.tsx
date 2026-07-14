@@ -8,6 +8,7 @@ import { GalleryFieldRenderer } from "./fields/gallery-field";
 import { UrlFieldRenderer } from "./fields/url-field";
 import { ComboboxFieldRenderer } from "./fields/combobox-field";
 import { DateTimeFieldRenderer } from "./fields/datetime-field";
+import { ToggleFieldRenderer } from "./fields/toggle-field";
 
 export type FieldRenderer<TFieldValues extends FieldValues> = (props: {
   field: FieldConfig<TFieldValues>;
@@ -27,6 +28,7 @@ export function createFieldRegistry<TFieldValues extends FieldValues>(): FieldRe
     text: TextFieldRenderer,
     url: UrlFieldRenderer,
     datetime: DateTimeFieldRenderer,
+    toggle: ToggleFieldRenderer,
     combobox: ComboboxFieldRenderer,
     custom: CustomFieldRenderer,
     image: ImageFieldRenderer,

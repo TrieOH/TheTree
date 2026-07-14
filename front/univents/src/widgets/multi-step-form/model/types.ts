@@ -60,6 +60,14 @@ export interface UrlFieldConfig<TFieldValues extends FieldValues> extends BaseFi
   autoPrependScheme?: boolean;
 }
 
+export interface ToggleFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
+  kind: "toggle";
+  name: FieldPathByValue<TFieldValues, boolean | null | undefined>;
+  label: string;
+  description?: string;
+  disabled?: boolean;
+}
+
 export interface DateTimeFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
   kind: "datetime";
   name: FieldPathByValue<TFieldValues, string | null | undefined>;
@@ -142,6 +150,7 @@ export interface GalleryFieldConfig<TFieldValues extends FieldValues> extends Ba
 export type FieldConfig<TFieldValues extends FieldValues> =
   | TextFieldConfig<TFieldValues>
   | UrlFieldConfig<TFieldValues>
+  | ToggleFieldConfig<TFieldValues>
   | DateTimeFieldConfig<TFieldValues>
   | ComboboxFieldConfig<TFieldValues>
   | CustomFieldConfig<TFieldValues>
