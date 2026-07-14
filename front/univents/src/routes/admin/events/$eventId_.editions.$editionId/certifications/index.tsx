@@ -3,7 +3,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { FileText, Link2, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { requireAuth } from '@/features/auths/lib/route-guard'
 import { allAdminActivitiesQueryOptions } from '@/features/activities/api'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import {
@@ -19,7 +18,6 @@ import { cn } from '@/shared/lib/utils'
 import { CertificationTemplatePreview } from '@/features/certifications/ui/CertificationTemplatePreview'
 
 export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/certifications/')({
-  beforeLoad: requireAuth,
   component: RouteComponent,
 })
 

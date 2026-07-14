@@ -1,6 +1,3 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { requireAuth } from '@/features/auths/lib/route-guard'
 
-export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/')({
-  beforeLoad: requireAuth,
-})
+export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/')({})

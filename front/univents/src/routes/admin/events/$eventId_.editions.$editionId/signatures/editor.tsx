@@ -1,9 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { requireAuth } from '@/features/auths/lib/route-guard'
 import { SignatureEditor } from '@/features/signatures/ui/SignatureEditor'
 
 export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/signatures/editor')({
-  beforeLoad: requireAuth,
   component: RouteComponent,
 })
 

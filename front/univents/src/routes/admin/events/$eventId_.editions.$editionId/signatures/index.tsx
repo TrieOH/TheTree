@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PenLine, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { requireAuth } from '@/features/auths/lib/route-guard'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import { allSignaturesQueryOptions, removeSignatureFn } from '@/features/signatures/api'
 import { Button } from '@/shared/ui/shadcn/button'
@@ -10,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/ui/shadcn/badge'
 
 export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/signatures/')({
-  beforeLoad: requireAuth,
   component: RouteComponent,
 })
 
