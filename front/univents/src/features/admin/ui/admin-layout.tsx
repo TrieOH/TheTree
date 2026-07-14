@@ -1,19 +1,41 @@
+import { SidebarProvider, useSidebar } from '@/widgets/sidebar/hooks/use-sidebar'
+import { MobileTopbar } from '@/widgets/sidebar/ui/mobile-topbar'
+import { Sidebar } from '@/widgets/sidebar/ui/sidebar'
 import { Breadcrumb } from '@/shared/ui/breadcrumb'
 
 interface AdminLayoutProps {
   children: React.ReactNode
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+function AppShell({ children }: { children: React.ReactNode }) {
+  const { collapsed } = useSidebar()
+
   return (
-    <div className="flex min-h-screen bg-background font-body selection:bg-primary/10">
-      {/* Main Content Area */}
-      <div className="flex-1 min-w-0 w-full pb-24">
-        <div className="sticky top-0 z-50">
+    <div className="min-h-dvh bg-background">
+      <Sidebar />
+
+      <div
+        className={
+          'flex min-h-dvh flex-col transition-[padding] duration-300 ease-in-out ' +
+          (collapsed ? 'lg:pl-18' : 'lg:pl-72')
+        }
+      >
+        <MobileTopbar />
+        <div className="sticky top-0 z-30 hidden bg-card/95 shadow-sm shadow-black/5 lg:block">
           <Breadcrumb />
         </div>
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
       </div>
     </div>
+  )
+}
+
+export function AdminLayout({ children }: AdminLayoutProps) {
+  return (
+    <SidebarProvider>
+      <AppShell>
+        {children}
+      </AppShell>
+    </SidebarProvider>
   )
 }
