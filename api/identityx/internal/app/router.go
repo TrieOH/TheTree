@@ -136,7 +136,8 @@ func servePprof(port string) {
 	pmux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	pmux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	log.Printf("identityx pprof listening on :%s", port)
-	if err := http.ListenAndServe(":"+port, pmux); err != nil {
+	err := http.ListenAndServe(":"+port, pmux)
+	if err != nil {
 		log.Fatalf("identityx pprof server error: %v", err)
 	}
 }

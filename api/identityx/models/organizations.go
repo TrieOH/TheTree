@@ -9,9 +9,9 @@ import (
 
 type Organization struct {
 	ID        uuid.UUID        `json:"id"`
-	OwnerID   uuid.UUID        `json:"owner_id" validate:"required"`
-	Name      string           `json:"name" validate:"required,min=3"`
-	Slug      string           `json:"slug" validate:"required,min=2"`
+	OwnerID   uuid.UUID        `json:"owner_id"   validate:"required"`
+	Name      string           `json:"name"       validate:"required,min=3"`
+	Slug      string           `json:"slug"       validate:"required,min=2"`
 	Metadata  *json.RawMessage `json:"metadata"`
 	CreatedAt time.Time        `json:"created_at"`
 	DeletedAt *time.Time       `json:"deleted_at"`

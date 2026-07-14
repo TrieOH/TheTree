@@ -44,7 +44,8 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 		return nil, err
 	}
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
+		err = resp.Body.Close()
+		if err != nil {
 			telemetry.Log().Warn("failed to close response body", zap.Error(err))
 		}
 	}()

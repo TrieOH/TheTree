@@ -11,15 +11,15 @@ import (
 
 type Config struct {
 	// Server
-	Port        string `env:"PORT" envDefault:"8080"`
-	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
+	Port        string `env:"PORT"              envDefault:"8080"`
+	ProfilePort string `env:"PROFILE_PORT"      envDefault:"6060"`
 	AppName     string `env:"APP_NAME,required"`
 	AppURL      string `env:"APP_URL,required"`
 	DebugMode   bool   `env:"DEBUG_MODE"`
 
 	// Postgres (own DB)
 	PostgresHost     string `env:"IDX_POSTGRES_HOST,required"`
-	PostgresPort     string `env:"IDX_POSTGRES_PORT" envDefault:"5432"`
+	PostgresPort     string `env:"IDX_POSTGRES_PORT"              envDefault:"5432"`
 	PostgresDB       string `env:"IDX_POSTGRES_DB,required"`
 	PostgresUser     string `env:"IDX_POSTGRES_USER,required"`
 	PostgresPassword string `env:"IDX_POSTGRES_PASSWORD,required"`
@@ -30,7 +30,7 @@ type Config struct {
 	// Postgres (root — from .env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
 	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
-	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`
+	RootPostgresDB       string `env:"POSTGRES_DB"                envDefault:"postgres"`
 
 	// SMTP
 	SMTPHost     string `env:"SMTP_HOST,required"`

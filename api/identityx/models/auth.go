@@ -10,7 +10,7 @@ const (
 )
 
 type IDXRegisterRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
+	Email    string `json:"email"    validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
 }
 
@@ -29,7 +29,7 @@ func (r IDXRegisterRequest) ToInput(projectID *uuid.UUID) IDXRegisterInput {
 }
 
 type IDXLoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
+	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required,passwd,min=8"`
 }
 

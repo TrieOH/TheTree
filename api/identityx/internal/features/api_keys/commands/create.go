@@ -92,7 +92,8 @@ func (c *Commands) createInternal(ctx context.Context, project models.Project, p
 	}
 
 	if len(payload.Capabilities) > 0 {
-		if err = c.capabilities.AssignToAPIKey(ctx, created.ID, payload.Capabilities, ident.Sub.ID); err != nil {
+		err = c.capabilities.AssignToAPIKey(ctx, created.ID, payload.Capabilities, ident.Sub.ID)
+		if err != nil {
 			return nil, nil, err
 		}
 	}

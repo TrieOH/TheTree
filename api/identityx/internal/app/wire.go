@@ -134,7 +134,7 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	//mw.bodySize = mws.MaxBodySize(1 << 20)
+	// mw.bodySize = mws.MaxBodySize(1 << 20)
 	//mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
@@ -147,12 +147,12 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 		AllowedHeaders:   xslices.Clean(strings.Split(cfg.CorsAllowedHeaders, ",")),
 		AllowCredentials: true,
 	})
-	//mw.realIP = mws.RealIP()
-	//mw.recover = mws.Recover(logger)
-	//mw.timeout = mws.Timeout(60 * time.Second)
-	//mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-	//	KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	//})
+	// mw.realIP = mws.RealIP()
+	// mw.recover = mws.Recover(logger)
+	// mw.timeout = mws.Timeout(60 * time.Second)
+	// mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
+	//	 KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
+	// })
 	mw.clientOnly = ClientOnly()
 	mw.projectClientOnly = ProjectClientOnly()
 	return mw
