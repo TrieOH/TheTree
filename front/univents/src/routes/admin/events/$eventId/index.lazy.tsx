@@ -187,7 +187,7 @@ function EventOverviewRoute() {
 
   return (
     <>
-      <div className="relative space-y-6">
+      <div className="relative space-y-6 p-6 pb-28!">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

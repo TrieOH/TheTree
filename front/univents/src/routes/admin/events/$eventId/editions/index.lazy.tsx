@@ -80,7 +80,7 @@ function EditionsRoute() {
     })
 
   return (
-    <div className="flex flex-wrap">
+    <div className="flex flex-wrap p-6 pb-28!">
       <PaginatedContainer<EditionI>
         items={filteredEditions}
         layout="grid"

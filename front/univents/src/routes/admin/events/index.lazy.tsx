@@ -75,12 +75,12 @@ function RouteComponent() {
     })
 
   return (
-    <div className="flex flex-wrap p-6">
+    <div className="flex flex-wrap p-6 pb-28!">
       <PaginatedContainer<EventI>
         items={filteredEvents}
         layout="grid"
         minItemWidth="16rem"
-        pageSize={4}
+        pageSize={8}
         gap="6"
         sort={sort}
         onSortChange={setSort}
