@@ -6,17 +6,17 @@ TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of doma
 
 ## Repository Layout
 
-| Directory | Language | Purpose |
-|-----------|----------|---------|
-| `api/` | Go | Four backend microservices (IdentityX, Payssage, Informd, Univents) |
-| `front/` | TypeScript/React | Five front-end SPAs targeting Cloudflare Workers |
-| `lib/go/` | Go | Shared Go library (authz, crypto, database, telemetry, OAuth, utils) |
-| `lib/ts/` | TypeScript | TypeScript type bindings (tygo-generated from Go models) |
-| `sdk/go/` | Go | Public SDKs for IdentityX and Payssage |
-| `sdk/ts/` | TypeScript | Public TypeScript SDKs for IdentityX and Payssage |
-| `docs/` | MDX/TypeScript | Documentation site (Fumadocs, deployed to Cloudflare) |
-| `infra/` | Config | Grafana dashboards, VictoriaMetrics scrape configs, Vector pipeline, Docker tooling |
-| `bruno/` | JSON | API client collections (Bruno — Postman alternative) |
+| Directory | Language         | Purpose                                                                             |
+|-----------|------------------|-------------------------------------------------------------------------------------|
+| `api/`    | Go               | Four backend microservices (IdentityX, Payssage, Informd, Univents)                 |
+| `front/`  | TypeScript/React | Five front-end SPAs targeting Cloudflare Workers                                    |
+| `lib/go/` | Go               | Shared Go library (authz, crypto, database, telemetry, OAuth, utils)                |
+| `lib/ts/` | TypeScript       | TypeScript type bindings (tygo-generated from Go models)                            |
+| `sdk/go/` | Go               | Public SDKs for IdentityX and Payssage                                              |
+| `sdk/ts/` | TypeScript       | Public TypeScript SDKs for IdentityX and Payssage                                   |
+| `docs/`   | MDX/TypeScript   | Documentation site (Fumadocs, deployed to Cloudflare)                               |
+| `infra/`  | Config           | Grafana dashboards, VictoriaMetrics scrape configs, Vector pipeline, Docker tooling |
+| `bruno/`  | JSON             | API client collections (Bruno — Postman alternative)                                |
 
 ## Backend Services (Go 1.26)
 
@@ -64,26 +64,26 @@ All services follow a consistent internal structure:
 
 All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind CSS v4**, and deployed to **Cloudflare Workers** via Wrangler. Shared dependencies: `@trieoh/identityx-sdk-ts` for auth, `lucide-react` icons, `motion` animations, `sonner` toasts, `posthog-js` analytics.
 
-| App | Dev Port | Notes |
-|-----|----------|-------|
-| `front/identityx` | 3000 | BIOME formatter/linter; Radix UI primitives |
-| `front/payssage` | 3002 | React Hook Form; Base UI components |
-| `front/univents` | 3001 | Leaflet maps; React Day Picker; MercadoPago SDK; Vaul drawers |
-| `front/informd` | 3004 | React Hook Form; Base UI; React Compiler (experimental) |
-| `front/spicedb` | — | SpiceDB admin UI or local playground |
+| App               | Dev Port | Notes                                                         |
+|-------------------|----------|---------------------------------------------------------------|
+| `front/identityx` | 3000     | BIOME formatter/linter; Radix UI primitives                   |
+| `front/payssage`  | 3002     | React Hook Form; Base UI components                           |
+| `front/univents`  | 3001     | Leaflet maps; React Day Picker; MercadoPago SDK; Vaul drawers |
+| `front/informd`   | 3004     | React Hook Form; Base UI; React Compiler (experimental)       |
+| `front/spicedb`   | —        | SpiceDB admin UI or local playground                          |
 
 ## Infrastructure (Docker Compose)
 
 Compose files are layered — never run alone:
 
-| File | Role |
-|------|------|
-| `compose.base.yml` | Foundation: Postgres 18, Caddy, RustFS (S3-compatible storage) |
-| `compose.app.yml` | Application services with health-check dependency chains |
-| `compose.obs.yml` | Full observability stack: Beszel, VictoriaMetrics/Logs/Traces, Vector, Grafana |
-| `compose.prod.yml` | Production: versioned GHCR images, TLS, port exposure |
-| `compose.server.yml` | Server infra: Mox (SMTP/IMAP), Forgejo (git forge + CI runners) |
-| `compose.dev.yml` | Dev: hot-reload, dev Caddyfile, Mailpit for email testing |
+| File                 | Role                                                                           |
+|----------------------|--------------------------------------------------------------------------------|
+| `compose.base.yml`   | Foundation: Postgres 18, Caddy, RustFS (S3-compatible storage)                 |
+| `compose.app.yml`    | Application services with health-check dependency chains                       |
+| `compose.obs.yml`    | Full observability stack: Beszel, VictoriaMetrics/Logs/Traces, Vector, Grafana |
+| `compose.prod.yml`   | Production: versioned GHCR images, TLS, port exposure                          |
+| `compose.server.yml` | Server infra: Mox (SMTP/IMAP), Forgejo (git forge + CI runners)                |
+| `compose.dev.yml`    | Dev: hot-reload, dev Caddyfile, Mailpit for email testing                      |
 
 **Startup dependency chain:** Postgres → Caddy → RustFS → IdentityX → (Payssage, Informd, Univents). Univents also depends on Payssage.
 

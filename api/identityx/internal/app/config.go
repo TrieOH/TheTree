@@ -27,7 +27,7 @@ type Config struct {
 	// Migration
 	MigrationPath string `env:"MIGRATION_PATH,required" envDefault:"./internal/database/migrations"`
 
-	// Postgres (root — from .tree.env)
+	// Postgres (root — from .env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
 	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
 	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`

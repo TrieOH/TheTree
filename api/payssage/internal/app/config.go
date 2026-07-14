@@ -24,7 +24,7 @@ type Config struct {
 	PostgresUser     string `env:"PAYSSAGE_POSTGRES_USER,required"`
 	PostgresPassword string `env:"PAYSSAGE_POSTGRES_PASSWORD,required"`
 
-	// Postgres (root — from .tree.env)
+	// Postgres (root — from .env)
 	RootPostgresUser     string `env:"POSTGRES_USER,required"`
 	RootPostgresPassword string `env:"POSTGRES_PASSWORD,required"`
 	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`
