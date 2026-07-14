@@ -51,7 +51,7 @@ type UserTokensResponse struct {
 	Domain             string    `json:"domain"`
 }
 
-func (r UserTokensOutput) ToResponse() UserTokensResponse {
+func (r *UserTokensOutput) ToResponse() UserTokensResponse {
 	return UserTokensResponse{
 		AccessTokenString:  r.AccessToken,
 		RefreshTokenString: r.RefreshToken,
@@ -61,7 +61,7 @@ func (r UserTokensOutput) ToResponse() UserTokensResponse {
 	}
 }
 
-func (r RefreshClaims) ToRefreshBlacklistEntry() BlacklistEntry {
+func (r *RefreshClaims) ToRefreshBlacklistEntry() BlacklistEntry {
 	return BlacklistEntry{
 		CreatedByActorID: &r.Sub.ID,
 		ProjectID:        r.Sub.ProjectID,
@@ -73,7 +73,7 @@ func (r RefreshClaims) ToRefreshBlacklistEntry() BlacklistEntry {
 	}
 }
 
-func (r RefreshClaims) ToAccessBlacklistEntry() BlacklistEntry {
+func (r *RefreshClaims) ToAccessBlacklistEntry() BlacklistEntry {
 	return BlacklistEntry{
 		CreatedByActorID: &r.Sub.ID,
 		ProjectID:        r.Sub.ProjectID,

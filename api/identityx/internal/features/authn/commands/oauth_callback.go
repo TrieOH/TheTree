@@ -57,7 +57,8 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	c.logger.Info("userinfo response", zap.String("provider", provider), zap.String("body", string(body)))
 
 	var info oauth.UserInfo
-	if err = json.Unmarshal(body, &info); err != nil {
+	err = json.Unmarshal(body, &info)
+	if err != nil {
 		return nil, err
 	}
 

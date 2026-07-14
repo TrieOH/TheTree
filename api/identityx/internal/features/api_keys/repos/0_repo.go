@@ -17,7 +17,7 @@ type Repo struct {
 	dbe    database.ErrorHandler
 }
 
-var _ ports.ApiKeysRepo = (*Repo)(nil)
+var _ ports.APIKeysRepo = (*Repo)(nil)
 
 func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
 	return &Repo{

@@ -41,7 +41,8 @@ func (h *Handlers) JWKS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=7200")
 	w.WriteHeader(http.StatusOK)
-	if _, err = w.Write(data); err != nil {
+	_, err = w.Write(data)
+	if err != nil {
 		telemetry.Log().Error("failed to write JWKS response", zap.Error(err))
 	}
 }

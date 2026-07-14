@@ -6,7 +6,7 @@ type CredentialType string
 
 const (
 	TokenCredentialType  CredentialType = "token"
-	ApiKeyCredentialType CredentialType = "api_key"
+	APIKeyCredentialType CredentialType = "api_key"
 )
 
 type IDXRegisterRequest struct {

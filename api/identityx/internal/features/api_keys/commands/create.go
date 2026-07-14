@@ -22,10 +22,11 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateAPIKeyInput)
 
 	var created *models.APIKey
 	var generated *api_keys.GeneratedAPIKey
-	if err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, generated, err = c.createInternal(ctx, *project, payload)
 		return err
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, "", err
 	}
 

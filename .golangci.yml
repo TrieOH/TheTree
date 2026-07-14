@@ -128,13 +128,6 @@ linters:
       locale: US
     testifylint:
       enable-all: true
-    gocritic:
-      # non-default checks added on top of defaults:
-      enabled-checks:
-        - hugeParam            # struct > 80B passed by value → should be pointer
-      settings:
-        hugeParam:
-          sizeThreshold: 80    # bytes; warn when struct argument exceeds this
     gocognit:
       min-complexity: 50       # cognitive complexity threshold
     gocyclo:

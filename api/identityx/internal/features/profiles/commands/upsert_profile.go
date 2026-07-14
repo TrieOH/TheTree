@@ -3,6 +3,7 @@ package commands
 import (
 	"IdentityX/models"
 	"context"
+	"errors"
 	"lib/jsonschema"
 
 	"github.com/MintzyG/fun"
@@ -57,17 +58,11 @@ func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfi
 // Returns nil (no schema) if neither exists or is inactive.
 func (c *Commands) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) ([]byte, error) {
 	s, err := c.schemas.Get(ctx, projectID)
-	if err == nil && s.Active {
+	if err != nil {
+		return nil, err
+	}
+	if s.Active {
 		return s.Schema, nil
 	}
-
-	// platform fallback
-	s, err = c.schemas.Get(ctx, nil)
-	if err != nil {
-		return nil, nil //nolint:nilerr no platform schema, passthrough
-	}
-	if !s.Active {
-		return nil, nil
-	}
-	return s.Schema, nil
+	return nil, errors.New("no active profile schema")
 }

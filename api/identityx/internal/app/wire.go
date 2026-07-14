@@ -30,7 +30,7 @@ import (
 
 type repos struct {
 	actors             ports.ActorRepo
-	apiKeys            ports.ApiKeysRepo
+	apiKeys            ports.APIKeysRepo
 	capabilities       ports.CapabilityRepo
 	platformRoles      ports.PlatformRolesRepo
 	cryptoKeys         ports.CryptoKeysRepo
@@ -87,8 +87,8 @@ type handlers struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
-	return repos{
+func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) *repos {
+	return &repos{
 		actors:             actors.NewRepo(q, logger, tracer),
 		apiKeys:            apikeys.NewRepo(q, logger, tracer),
 		capabilities:       capabilities.NewRepos(q, logger, tracer),
@@ -103,7 +103,7 @@ func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trac
 	}
 }
 
-func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
+func (app *IdentityX) initQueries(r *repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
 		actors:         actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
 		authn:          authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
@@ -115,7 +115,7 @@ func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Log
 	}
 }
 
-func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
+func (app *IdentityX) initCommands(r *repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
 		authn:          authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
 		actors:         actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
@@ -128,14 +128,14 @@ func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Lo
 	}
 }
 
-func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) middlewares {
+func (app *IdentityX) initMiddlewares(r *repos, logger *zap.Logger, cfg Config) middlewares {
 	var mw middlewares
 	authMW := app.SetupAuthMiddlewares(r.cryptoKeys, r.apiKeys, r.actors, r.capabilities, logger)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
 	// mw.bodySize = mws.MaxBodySize(1 << 20)
-	//mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
+	// mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
