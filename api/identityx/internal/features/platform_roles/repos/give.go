@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) Give(ctx context.Context, actorID uuid.UUID, role models.PlatformRole, metadata *json.RawMessage) (*models.PlatformRoleRelation, error) {
+func (repo *Repo) Give(ctx context.Context, actorID uuid.UUID, role models.PlatformRole, metadata *json.RawMessage) (*models.PlatformRoleRelation, error) {
 	ctx, span := repo.tracer.Start(ctx, "Give")
 	defer span.End()
 	sqlcPlatformRole, err := database.Queries(ctx, repo.q).GivePlatformRole(ctx, sqlc.GivePlatformRoleParams{

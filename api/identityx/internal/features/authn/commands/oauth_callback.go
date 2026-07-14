@@ -7,6 +7,7 @@ import (
 	"io"
 	"lib/crypto"
 	"lib/oauth"
+	"lib/telemetry"
 	"net/http"
 	"time"
 
@@ -42,7 +43,11 @@ func (c *Commands) OAuthCallback(ctx context.Context, provider, code string) (*m
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			telemetry.Log().Warn("failed to close response body", zap.Error(err))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

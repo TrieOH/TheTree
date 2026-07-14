@@ -10,17 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type repo struct {
+type Repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.PlatformRolesRepo = (*repo)(nil)
+var _ ports.PlatformRolesRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.PlatformRolesRepo {
-	return &repo{
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,

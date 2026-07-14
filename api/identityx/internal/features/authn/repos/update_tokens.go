@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) UpdateTokens(ctx context.Context, identity models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
+func (repo *Repo) UpdateTokens(ctx context.Context, identity models.ActorExternalIdentities) (*models.ActorExternalIdentities, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "UpdateTokens")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).UpdateExternalIdentityTokens(ctx, sqlc.UpdateExternalIdentityTokensParams{

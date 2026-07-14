@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Project, error) {
+func (repo *Repo) ListOwned(ctx context.Context, userID uuid.UUID) ([]models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ListOwned")
 	defer span.End()
 	sqlcProjects, err := database.Queries(ctx, repo.q).ListOwnedProjects(ctx, userID)

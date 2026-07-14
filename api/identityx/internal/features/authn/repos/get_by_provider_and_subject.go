@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) GetByProviderAndSubject(ctx context.Context, provider, subject string) (*models.ActorExternalIdentities, error) {
+func (repo *Repo) GetByProviderAndSubject(ctx context.Context, provider, subject string) (*models.ActorExternalIdentities, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "GetByProviderAndSubject")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).GetExternalIdentityByProviderAndSubject(ctx, sqlc.GetExternalIdentityByProviderAndSubjectParams{

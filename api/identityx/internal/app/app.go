@@ -56,10 +56,16 @@ func Start() {
 			&river.PeriodicJobOpts{RunOnStart: true},
 		),
 	})
-	if err = app.river.Start(ctx); err != nil {
+	err = app.river.Start(ctx)
+	if err != nil {
 		errx.Exit(err, "failed to start river client")
 	}
-	defer app.river.Stop(ctx)
+	defer func() {
+		err = app.river.Stop(ctx)
+		if err != nil {
+			telemetry.Log().Info("failed to stop river client")
+		}
+	}()
 
 	EnsureKeysExist(ctx, app.db, app.river)
 

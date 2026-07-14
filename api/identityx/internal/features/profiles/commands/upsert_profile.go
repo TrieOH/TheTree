@@ -41,7 +41,8 @@ func (c *Commands) UpsertProfile(ctx context.Context, payload models.UpsertProfi
 	}
 
 	if schema != nil {
-		if err := jsonschema.Validate(schema, payload.Profile); err != nil {
+		err := jsonschema.Validate(schema, payload.Profile)
+		if err != nil {
 			return nil, fun.ErrValidation(err.Error())
 		}
 	}
@@ -63,7 +64,7 @@ func (c *Commands) loadActiveSchema(ctx context.Context, projectID *uuid.UUID) (
 	// platform fallback
 	s, err = c.schemas.Get(ctx, nil)
 	if err != nil {
-		return nil, nil // no platform schema, passthrough
+		return nil, nil //nolint:nilerr no platform schema, passthrough
 	}
 	if !s.Active {
 		return nil, nil

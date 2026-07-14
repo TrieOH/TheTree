@@ -14,7 +14,7 @@ type Config struct {
 	Port        string `env:"PORT" envDefault:"8080"`
 	ProfilePort string `env:"PROFILE_PORT" envDefault:"6060"`
 	AppName     string `env:"APP_NAME,required"`
-	AppUrl      string `env:"APP_URL,required"`
+	AppURL      string `env:"APP_URL,required"`
 	DebugMode   bool   `env:"DEBUG_MODE"`
 
 	// Postgres (own DB)
@@ -33,13 +33,13 @@ type Config struct {
 	RootPostgresDB       string `env:"POSTGRES_DB" envDefault:"postgres"`
 
 	// SMTP
-	SmtpHost     string `env:"SMTP_HOST,required"`
-	SmtpPort     string `env:"SMTP_PORT,required"`
-	SmtpUser     string `env:"SMTP_USERNAME"`
-	SmtpPass     string `env:"SMTP_PASSWORD"`
-	SmtpFrom     string `env:"SMTP_FROM,required"`
-	SmtpTls      bool   `env:"SMTP_TLS"`
-	SmtpStartTls bool   `env:"SMTP_STARTTLS"`
+	SMTPHost     string `env:"SMTP_HOST,required"`
+	SMTPPort     string `env:"SMTP_PORT,required"`
+	SMTPUser     string `env:"SMTP_USERNAME"`
+	SMTPPass     string `env:"SMTP_PASSWORD"`
+	SMTPFrom     string `env:"SMTP_FROM,required"`
+	SMTPTLS      bool   `env:"SMTP_TLS"`
+	SMTPStartTLS bool   `env:"SMTP_STARTTLS"`
 
 	// Auth / crypto
 	Issuer                string        `env:"ISSUER,required"`
@@ -60,7 +60,7 @@ type Config struct {
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 }
 
-func (cfg Config) ToDBConfig() database.Config {
+func (cfg *Config) ToDBConfig() database.Config {
 	return database.Config{
 		Host:          cfg.PostgresHost,
 		Port:          cfg.PostgresPort,

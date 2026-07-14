@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (r *schemaRepo) Upsert(ctx context.Context, schema models.ProjectProfileSchema) (*models.ProjectProfileSchema, error) {
+func (r *Repo) Upsert(ctx context.Context, schema models.ProjectProfileSchema) (*models.ProjectProfileSchema, error) {
 	ctx, span := database.Span(ctx, r.tracer, "UpsertProfileSchema")
 	defer span.End()
 	result, err := database.Queries(ctx, r.q).UpsertProfileSchema(ctx, sqlc.UpsertProfileSchemaParams{

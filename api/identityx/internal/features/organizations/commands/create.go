@@ -20,7 +20,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateOrganizationInput
 	}
 
 	var created *models.Organization
-	if err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = c.orgs.Create(ctx, *org)
 		if err != nil {
 			return err
@@ -33,9 +33,9 @@ func (c *Commands) Create(ctx context.Context, in models.CreateOrganizationInput
 		}
 
 		return c.orgs.AddMember(ctx, owner)
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
-
 	return created, err
 }

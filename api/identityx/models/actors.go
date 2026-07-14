@@ -11,7 +11,7 @@ type AuthMethod string
 
 const (
 	PasswordAuthMethod AuthMethod = "password"
-	ApiKeyAuthMethod   AuthMethod = "api_key"
+	APIKeyAuthMethod   AuthMethod = "api_key"
 	GoogleAuthMethod   AuthMethod = "google_auth"
 	GithubAuthMethod   AuthMethod = "github_auth"
 )

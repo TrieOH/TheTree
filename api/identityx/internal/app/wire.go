@@ -76,7 +76,7 @@ type middlewares struct {
 
 type handlers struct {
 	Actors         *actors.Handlers
-	ApiKeys        *apikeys.Handlers
+	APIKeys        *apikeys.Handlers
 	Authn          *authn.Handlers
 	Orgs           *organizations.Handlers
 	Projects       *projects.Handlers
@@ -161,7 +161,7 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 func (app *IdentityX) initHandlers(q queries, c commands) handlers {
 	return handlers{
 		Actors:         actors.NewHandlers(q.actors, c.actors),
-		ApiKeys:        apikeys.NewHandlers(c.apiKeys),
+		APIKeys:        apikeys.NewHandlers(c.apiKeys),
 		Authn:          authn.NewHandlers(c.authn, q.authn),
 		Orgs:           organizations.NewHandlers(c.orgs, q.orgs),
 		Projects:       projects.NewHandlers(c.projects, q.projects),

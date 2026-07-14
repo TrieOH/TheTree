@@ -209,7 +209,7 @@ func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, 
 			return nil, fun.ErrForbidden("invalid api key")
 		}
 
-		caps, err := capabilitiesRepo.ListByApiKeyPrefix(ctx, key.DisplayPrefix)
+		caps, err := capabilitiesRepo.ListByAPIKeyPrefix(ctx, key.DisplayPrefix)
 		if err != nil {
 			return nil, err
 		}

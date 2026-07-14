@@ -53,10 +53,7 @@ type SetupInput struct {
 }
 
 func (r IDXLoginRequest) ToSetupInput() SetupInput {
-	return SetupInput{
-		Email:    r.Email,
-		Password: r.Password,
-	}
+	return SetupInput(r)
 }
 
 type LogoutInput struct {

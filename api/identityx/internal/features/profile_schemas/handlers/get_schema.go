@@ -47,7 +47,8 @@ func (h *Handlers) GetSchema(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 
 	var projectID *uuid.UUID
-	if pid, err := req.Path("project_id").UUID(); err == nil {
+	pid, err := req.Path("project_id").UUID()
+	if err == nil {
 		projectID = &pid
 	}
 

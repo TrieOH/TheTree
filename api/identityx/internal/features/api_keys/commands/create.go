@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (c *Commands) Create(ctx context.Context, payload models.CreateApiKeyInput) (*models.ApiKey, string, error) {
+func (c *Commands) Create(ctx context.Context, payload models.CreateAPIKeyInput) (*models.APIKey, string, error) {
 	ctx, span := c.tracer.Start(ctx, "Create")
 	defer span.End()
 
@@ -20,7 +20,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateApiKeyInput)
 		return nil, "", err
 	}
 
-	var created *models.ApiKey
+	var created *models.APIKey
 	var generated *api_keys.GeneratedAPIKey
 	if err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, generated, err = c.createInternal(ctx, *project, payload)
@@ -32,7 +32,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateApiKeyInput)
 	return created, generated.Raw, nil
 }
 
-func (c *Commands) createInternal(ctx context.Context, project models.Project, payload models.CreateApiKeyInput) (*models.ApiKey, *api_keys.GeneratedAPIKey, error) {
+func (c *Commands) createInternal(ctx context.Context, project models.Project, payload models.CreateAPIKeyInput) (*models.APIKey, *api_keys.GeneratedAPIKey, error) {
 	ctx, span := c.tracer.Start(ctx, "createInternal")
 	defer span.End()
 
@@ -76,7 +76,7 @@ func (c *Commands) createInternal(ctx context.Context, project models.Project, p
 		return nil, nil, fun.ErrInternal(err.Error())
 	}
 
-	apiKey := models.ApiKey{
+	apiKey := models.APIKey{
 		SubjectID:     actorID,
 		Name:          payload.Name,
 		DisplayPrefix: generated.DisplayPrefix,
@@ -85,14 +85,14 @@ func (c *Commands) createInternal(ctx context.Context, project models.Project, p
 		CreatedBy:     ident.Sub.ID,
 	}
 
-	var created *models.ApiKey
+	var created *models.APIKey
 	created, err = c.apiKeys.Create(ctx, apiKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if len(payload.Capabilities) > 0 {
-		if err = c.capabilities.AssignToApiKey(ctx, created.ID, payload.Capabilities, ident.Sub.ID); err != nil {
+		if err = c.capabilities.AssignToAPIKey(ctx, created.ID, payload.Capabilities, ident.Sub.ID); err != nil {
 			return nil, nil, err
 		}
 	}

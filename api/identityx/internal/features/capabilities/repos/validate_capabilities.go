@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ValidateCapabilities(ctx context.Context, projectID *uuid.UUID, capabilities []uuid.UUID) (bool, error) {
+func (repo *Repo) ValidateCapabilities(ctx context.Context, projectID *uuid.UUID, capabilities []uuid.UUID) (bool, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "ValidateCapabilities")
 	defer span.End()
 	valid, err := database.Queries(ctx, repo.q).ValidateCapabilities(ctx, sqlc.ValidateCapabilitiesParams{

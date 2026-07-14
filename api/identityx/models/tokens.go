@@ -18,8 +18,9 @@ type AccessSub struct {
 }
 
 type AccessClaims struct {
-	Sub AccessSub `json:"sub"`
 	jwt.RegisteredClaims
+
+	Sub AccessSub `json:"sub"`
 }
 
 type RefreshSub struct {
@@ -29,8 +30,9 @@ type RefreshSub struct {
 }
 
 type RefreshClaims struct {
-	Sub RefreshSub `json:"sub"`
 	jwt.RegisteredClaims
+
+	Sub RefreshSub `json:"sub"`
 }
 
 type UserTokensOutput struct {

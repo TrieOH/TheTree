@@ -14,7 +14,6 @@ import (
 	"IdentityX/internal/features/profile_schemas"
 	"IdentityX/internal/features/profiles"
 	"IdentityX/internal/features/projects"
-	_ "IdentityX/models"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -75,33 +74,33 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 		}),
 	))
 
-	//r.Use(deps.RealIP)
-	//r.Use(deps.RequestID)
+	// r.Use(deps.RealIP)
+	// r.Use(deps.RequestID)
 	r.Use(middlewares.logger)
 	r.Use(middlewares.metrics)
-	//r.Use(deps.Recover)
-	//r.Use(deps.Timeout)
-	//r.Use(deps.BodySize)
-	//r.Use(deps.RateLimit)
+	// r.Use(deps.Recover)
+	// r.Use(deps.Timeout)
+	// r.Use(deps.BodySize)
+	// r.Use(deps.RateLimit)
 	r.Use(middlewares.cors)
 
-	//endpoints := riverui.NewEndpoints(app.river, nil)
+	// endpoints := riverui.NewEndpoints(app.river, nil)
 	//
-	//handler, err := riverui.NewHandler(&riverui.HandlerOpts{
-	//	Endpoints: endpoints,
-	//	Logger:    slog.Default(),
-	//	Prefix:    "/riverui",
-	//})
-	//if err != nil {
-	//	errx.Exit(err, "failed to create river handler")
-	//}
-	//err = handler.Start(context.Background())
-	//if err != nil {
-	//	errx.Exit(err, "failed to start river handler")
-	//}
-	//r.Mount("/riverui", handler)
+	// handler, err := riverui.NewHandler(&riverui.HandlerOpts{
+	//	 Endpoints: endpoints,
+	//	 Logger:    slog.Default(),
+	//	 Prefix:    "/riverui",
+	// })
+	// if err != nil {
+	// 	 errx.Exit(err, "failed to create river handler")
+	// }
+	// err = handler.Start(context.Background())
+	// if err != nil {
+	//	 errx.Exit(err, "failed to start river handler")
+	// }
+	// r.Mount("/riverui", handler)
 
-	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/swagger/doc.json", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(docs.SwaggerJSON)
 	})
@@ -109,7 +108,7 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 	r.Handle("/metrics", promhttp.Handler())
 
 	actors.RegisterRoutes(r, handlers.Actors, middlewares.jwtAuth, middlewares.clientOnly)
-	api_keys.RegisterRoutes(r, handlers.ApiKeys, middlewares.anyAuth, middlewares.clientOnly)
+	api_keys.RegisterRoutes(r, handlers.APIKeys, middlewares.anyAuth, middlewares.clientOnly)
 	authn.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
 	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
 	projects.RegisterRoutes(r, handlers.Projects, middlewares.anyAuth, middlewares.clientOnly)
