@@ -16,6 +16,10 @@ type Wallet struct {
 	CreatedAt      time.Time  `json:"created_at"`
 }
 
+func (w *Wallet) OwnedBy(id uuid.UUID) bool {
+	return w.OwnerID == id
+}
+
 type CreateWalletRequest struct {
 	Name           string     `json:"name"`
 	OrganizationID *uuid.UUID `json:"organization_id"`

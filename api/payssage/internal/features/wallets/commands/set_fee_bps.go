@@ -4,8 +4,6 @@ import (
 	"context"
 	"payssage/models"
 	idx "sdk/identityx"
-
-	"github.com/MintzyG/fun"
 )
 
 func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput) error {
@@ -23,18 +21,10 @@ func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput)
 		if err != nil {
 			return err
 		}
-	}
 
-	if org != nil && org.OwnerID != ident.Sub.ID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return err
-		}
+		err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
 		if err != nil {
-			return fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return fun.ErrForbidden("insufficient permissions")
+			return err
 		}
 	}
 
@@ -42,11 +32,10 @@ func (c *Commands) SetFeeBPS(ctx context.Context, payload models.SetFeeBPSInput)
 	if err != nil {
 		return err
 	}
-	if org != nil && *wallet.OrganizationID != org.ID {
-		return fun.ErrForbidden("insufficient permissions")
-	}
-	if org == nil && wallet.OwnerID != ident.Sub.ID {
-		return fun.ErrForbidden("insufficient permissions")
+
+	err = c.checkWalletAccess(wallet, ident.Sub.ID, org)
+	if err != nil {
+		return err
 	}
 
 	return c.wallets.SetFeeBPS(ctx, wallet.ID, payload.FeeBps)
