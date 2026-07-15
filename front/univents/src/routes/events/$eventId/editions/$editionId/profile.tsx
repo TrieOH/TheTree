@@ -12,7 +12,6 @@ export const Route = createFileRoute('/events/$eventId/editions/$editionId/profi
 function EditionProfilePage() {
   const { auth } = useAuth()
   const profile = auth.profile()
-  const { eventId, editionId } = Route.useParams()
 
   return (
     <main className="min-h-screen bg-background">
@@ -36,9 +35,6 @@ function EditionProfilePage() {
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
         <UserCertificationsSection
           userId={profile?.id ?? ''}
-          eventId={eventId}
-          editionId={editionId}
-          onlyCurrentEvent
           title="Certificados da edição"
           subtitle="Mostra apenas certificados emitidos para esta edição e suas atividades."
         />

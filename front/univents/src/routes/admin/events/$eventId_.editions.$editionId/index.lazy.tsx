@@ -128,7 +128,6 @@ function QuickAction({
   | '/events/$eventId/editions/$editionId'
   | '/admin/events/$eventId/editions/$editionId/activities'
   | '/admin/events/$eventId/editions/$editionId/products'
-  | '/admin/events/$eventId/editions/$editionId/checkpoints'
   | '/admin/events/$eventId/editions/$editionId/certifications'
   | '/admin/events/$eventId/editions/$editionId/signatures'
   params: { eventId: string; editionId: string }
@@ -565,12 +564,6 @@ function AdminEditionDetailRoute() {
             <span className="text-sm font-medium text-foreground">Abrir produtos</span>
             <ChevronRight className="size-4 text-muted-foreground" />
           </QuickAction>
-
-          <QuickAction to="/admin/events/$eventId/editions/$editionId/checkpoints" params={{ eventId, editionId }}>
-            <span className="text-sm font-medium text-foreground">Abrir checkpoints</span>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </QuickAction>
-
         </CardContent>
       </Card>
 

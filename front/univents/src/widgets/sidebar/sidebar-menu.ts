@@ -1,7 +1,6 @@
 import {
   Activity,
   CalendarDays,
-  CheckSquare,
   FileText,
   LayoutDashboard,
   LayoutGrid,
@@ -73,14 +72,6 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             to: '/admin/events/$eventId/editions/$editionId/products',
             params: { eventId, editionId },
             icon: Ticket,
-            exact: false,
-          },
-          {
-            id: 'edition-checkpoints',
-            label: 'Checkpoints',
-            to: '/admin/events/$eventId/editions/$editionId/checkpoints',
-            params: { eventId, editionId },
-            icon: CheckSquare,
             exact: false,
           },
           {

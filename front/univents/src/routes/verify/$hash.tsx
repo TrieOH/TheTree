@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Badge } from '@/shared/ui/shadcn/badge'
 import { Separator } from '@/shared/ui/shadcn/separator'
 import { eventsQueryOptions } from '@/features/events/api'
-import { allEditionsQueryOptions } from '@/features/editions/api'
+import { allPublicEditionsQueryOptions } from '@/features/editions/api'
 import { allActivitiesQueryOptions } from '@/features/activities/api'
 import type { EditionI } from '@/features/editions/model'
 import type { ActivityI } from '@/features/activities/model'
@@ -121,7 +121,7 @@ function VerifyCertificationPage() {
   const { data: events = [] } = useQuery(eventsQueryOptions())
   const editionQueries = useQueries({
     queries: events.map((event) => ({
-      ...allEditionsQueryOptions(event.id),
+      ...allPublicEditionsQueryOptions(event.id),
       enabled: !!event.id,
     })),
   })

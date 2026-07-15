@@ -12,11 +12,10 @@ export const Route = createFileRoute('/events/$eventId/profile')({
 function EventProfilePage() {
   const { auth } = useAuth()
   const profile = auth.profile()
-  const { eventId } = Route.useParams()
 
   return (
     <main className="min-h-screen bg-background">
-      <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 via-background to-background">
+      <section className="border-b border-border/60 bg-linear-to-b from-muted/40 via-background to-background">
         <div className="mx-auto max-w-6xl px-4 py-10 md:px-6 md:py-14">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
@@ -36,8 +35,6 @@ function EventProfilePage() {
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
         <UserCertificationsSection
           userId={profile?.id ?? ''}
-          eventId={eventId}
-          onlyCurrentEvent
           title="Certificados do evento"
           subtitle="Mostra apenas certificados emitidos para edições e atividades deste evento."
         />

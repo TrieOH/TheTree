@@ -156,14 +156,15 @@ function RouteComponent() {
 
             <div className="flex items-center gap-2">
               <Drawer open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <DrawerTrigger asChild>
+                <DrawerTrigger render={
                   <button className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-muted transition-colors relative">
                     <Filter className="w-4 h-4 text-muted-foreground" />
                     {difficultyFilter !== 'all' && (
                       <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
                     )}
                   </button>
-                </DrawerTrigger>
+                }
+                />
                 <DrawerContent className="z-60 rounded-t-2xl">
                   <DrawerHeader className="pb-4 border-b">
                     <DrawerTitle className="text-base font-semibold">Filtrar por nível</DrawerTitle>

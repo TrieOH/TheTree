@@ -1,7 +1,7 @@
 import type { FieldValues } from "react-hook-form";
 import type { FieldConfig, FieldFormApi } from "../../model/types";
 import { getFieldError } from "../../utils/get-field-error";
-import { DateTimePicker } from "@/widgets/form/ui/date-time-picker";
+import { DateTimePicker } from "@/widgets/multi-step-form/ui/fields/helper/date-time-picker";
 import { Label } from "@/shared/ui/shadcn/label";
 
 export interface DateTimeFieldRendererProps<TFieldValues extends FieldValues> {
