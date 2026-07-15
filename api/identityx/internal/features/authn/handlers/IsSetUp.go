@@ -20,5 +20,5 @@ func (h *Handlers) IsSetup(w http.ResponseWriter, _ *http.Request) {
 		fun.ServiceUnavailable("setup already complete").Send(w)
 		return
 	}
-	fun.OK().Send(w)
+	fun.NoContent().Send(w)
 }
