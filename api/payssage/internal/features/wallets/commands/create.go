@@ -5,7 +5,6 @@ import (
 	"payssage/models"
 	idx "sdk/identityx"
 
-	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
@@ -24,18 +23,10 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateWalletInput)
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	if org != nil && org.OwnerID != ident.Sub.ID {
-		member, err := c.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
-		if err != nil && !fun.Is(err, fun.CodeNotFound) {
-			return nil, err
-		}
+		err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
 		if err != nil {
-			return nil, fun.ErrForbidden("insufficient permissions")
-		}
-		if member.Role != models.OrganizationRoleAdmin {
-			return nil, fun.ErrForbidden("insufficient permissions")
+			return nil, err
 		}
 	}
 

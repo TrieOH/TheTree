@@ -23,21 +23,22 @@ func (q *Queries) GetByID(ctx context.Context, walletID uuid.UUID) (*models.Wall
 		return nil, err
 	}
 
-	if wallet.OwnerID != ident.Sub.ID && wallet.OrganizationID == nil {
-		return nil, fun.ErrForbidden("insufficient permissions")
-	}
-
 	if wallet.OrganizationID != nil {
 		org, err := q.orgs.GetByID(ctx, *wallet.OrganizationID)
 		if err != nil {
 			return nil, err
 		}
-		if ident.Sub.ID != org.OwnerID {
-			_, err = q.orgs.GetMember(ctx, ident.Sub.ID, org.ID)
-			if err != nil {
-				return nil, err
-			}
+
+		err = q.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleMember)
+		if err != nil {
+			return nil, err
 		}
+
+		return wallet, nil
+	}
+
+	if !wallet.OwnedBy(ident.Sub.ID) {
+		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
 	return wallet, nil
