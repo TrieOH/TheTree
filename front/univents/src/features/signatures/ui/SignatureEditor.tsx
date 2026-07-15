@@ -1,15 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { PenLine, Upload, Eraser } from 'lucide-react'
+import { PenLine, Eraser, Upload } from 'lucide-react'
 import { Button } from '@/shared/ui/shadcn/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
 import { Input } from '@/shared/ui/shadcn/input'
 import { Label } from '@/shared/ui/shadcn/label'
-import ImageUploadField from '@/widgets/form/ui/image-upload-field'
 import { uploadFile } from '@/features/storage/api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
-import { allSignaturesQueryOptions, createSignatureFn } from '@/features/signatures/api'
+import { useCreateSignatureMutation } from '@/features/signatures/api/mutations'
+import { SignatureImageSelector } from '@/features/signatures/ui/SignatureImageSelector'
 
 type Mode = 'draw' | 'upload'
 
@@ -23,10 +22,9 @@ export interface SignatureEditorProps {
 
 export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [title, setTitle] = useState('Assinatura')
   const [mode, setMode] = useState<Mode>('draw')
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [importedFile, setImportedFile] = useState<File | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawingRef = useRef(false)
   const lastPointRef = useRef<{ x: number; y: number } | null>(null)
@@ -107,101 +105,151 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
   }
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      let url = imagePreview
-      if (mode === 'draw') {
-        const canvas = canvasRef.current
-        if (!canvas) throw new Error('Canvas indisponível')
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-        if (!blob) throw new Error('Falha ao gerar imagem da assinatura')
-        const file = new File([blob], `${Date.now()}-signature.png`, { type: 'image/png' })
-        url = await uploadFile(file, `events/${eventId}/editions/${editionId}/signatures`)
-      }
-      if (!url) throw new Error('Selecione ou desenhe uma assinatura')
-      return createSignatureFn(eventId, editionId, {
-        title,
-        url,
-      })
-    },
-    onSuccess: (res) => {
-      if (res.success) {
-        void queryClient.invalidateQueries({ queryKey: allSignaturesQueryOptions(eventId, editionId).queryKey })
-        toast.success('Assinatura criada com sucesso')
-        void navigate({
-          to: '/admin/events/$eventId/editions/$editionId/signatures',
-          params: { eventId, editionId },
-        })
-      } else {
-        toast.error(res.message || 'Erro ao criar assinatura')
-      }
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
+  const saveMutation = useCreateSignatureMutation()
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10">
+    <div className="mx-auto max-w-6xl px-4 py-6 pb-28!">
       <div className="mb-6 space-y-1">
         <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Admin</p>
         <h1 className="text-2xl font-semibold">Nova assinatura</h1>
-        <p className="text-sm text-muted-foreground">
-          Desenhe no canvas ou importe uma imagem. O resultado final vira a assinatura salva.
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Crie uma assinatura desenhando no canvas ou importando uma imagem pronta.
         </p>
       </div>
 
-      <div className="w-full gap-6">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+        <Card className="h-fit">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Dados</CardTitle>
-            <CardDescription className="text-xs">Título e origem da assinatura.</CardDescription>
+            <CardTitle className="text-sm font-semibold">Configuração</CardTitle>
+            <CardDescription className="text-xs">Nome e origem da assinatura.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Título</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Assinatura do responsável" />
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Assinatura do responsável"
+              />
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Modo</Label>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant={mode === 'draw' ? 'default' : 'outline'} onClick={() => setMode('draw')}>
+                <Button
+                  type="button"
+                  variant={mode === 'draw' ? 'default' : 'outline'}
+                  className="h-9 gap-2"
+                  onClick={() => setMode('draw')}
+                >
                   <PenLine className="size-4" />
                   Desenhar
                 </Button>
-                <Button type="button" variant={mode === 'upload' ? 'default' : 'outline'} onClick={() => setMode('upload')}>
+                <Button
+                  type="button"
+                  variant={mode === 'upload' ? 'default' : 'outline'}
+                  className="h-9 gap-2"
+                  onClick={() => setMode('upload')}
+                >
                   <Upload className="size-4" />
                   Importar
                 </Button>
               </div>
             </div>
 
-            {mode === 'upload' ? (
-              <ImageUploadField
-                value={imagePreview ?? undefined}
-                onChange={(url) => setImagePreview(url || null)}
-                onFileSelect={async (file) => {
-                  if (!file) {
-                    setImagePreview(null)
+            <div className="rounded-2xl border bg-muted/20 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Dica</p>
+              <p className="mt-1">
+                Use uma imagem com fundo limpo para melhor legibilidade ou desenhe diretamente aqui.
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              className="h-9 w-full gap-2"
+              onClick={async () => {
+                try {
+                  const trimmedTitle = title.trim()
+                  if (!trimmedTitle) {
+                    toast.error('Título é obrigatório')
                     return
                   }
-                  const preview = URL.createObjectURL(file)
-                  setImagePreview(preview)
-                }}
-                accept="image/png,image/jpeg,image/webp"
-                placeholder="Selecionar assinatura"
-              />
+
+                  let url: string | null = null
+                  if (mode === 'draw') {
+                    const canvas = canvasRef.current
+                    if (!canvas) throw new Error('Canvas indisponível')
+                    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+                    if (!blob) throw new Error('Falha ao gerar imagem da assinatura')
+                    const file = new File([blob], `${Date.now()}-signature.png`, { type: 'image/png' })
+                    url = await uploadFile(file, `events/${eventId}/editions/${editionId}/signatures`)
+                  } else if (importedFile) {
+                    url = await uploadFile(importedFile, `events/${eventId}/editions/${editionId}/signatures`)
+                  }
+
+                  if (!url) {
+                    toast.error('Selecione ou desenhe uma assinatura')
+                    return
+                  }
+
+                  const res = await saveMutation.mutateAsync({
+                    eventId,
+                    editionId,
+                    data: {
+                      title: trimmedTitle,
+                      url,
+                    },
+                  })
+
+                  if (res.success) {
+                    toast.success('Assinatura criada com sucesso')
+                    void navigate({
+                      to: '/admin/events/$eventId/editions/$editionId/signatures',
+                      params: { eventId, editionId },
+                    })
+                    return
+                  }
+
+                  toast.error(res.message || 'Erro ao criar assinatura')
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : 'Erro ao criar assinatura')
+                }
+              }}
+              disabled={saveMutation.isPending}
+            >
+              Salvar assinatura
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Prévia</CardTitle>
+            <CardDescription className="text-xs">
+              Veja o que vai ser salvo antes de concluir.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {mode === 'upload' ? (
+              <SignatureImageSelector file={importedFile} onChange={setImportedFile} />
             ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-foreground">Desenho</p>
+                    <p className="text-xs text-muted-foreground">
+                      Use o mouse ou toque para assinar no quadro abaixo.
+                    </p>
+                  </div>
                   <Button type="button" variant="outline" size="sm" onClick={clearCanvas}>
                     <Eraser className="size-4" />
                     Limpar
                   </Button>
                 </div>
-                <div className="w-full rounded-2xl border bg-muted/10 p-2">
+                <div className="rounded-2xl border bg-muted/10 p-2">
                   <canvas
                     ref={canvasRef}
-                    className="h-40 w-full min-w-full touch-none rounded-xl bg-white"
+                    className="h-44 w-full min-w-full touch-none rounded-xl bg-white"
                     style={{
                       aspectRatio: `${SIGNATURE_CANVAS_WIDTH} / ${SIGNATURE_CANVAS_HEIGHT}`,
                     }}
@@ -212,22 +260,6 @@ export function SignatureEditor({ eventId, editionId }: SignatureEditorProps) {
                     onPointerCancel={stopDrawing}
                   />
                 </div>
-              </div>
-            )}
-
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => { void saveMutation.mutateAsync() }}
-              disabled={saveMutation.isPending}
-            >
-              Salvar assinatura
-            </Button>
-
-            {mode === 'upload' && imagePreview && (
-              <div className="rounded-2xl border bg-muted/10 p-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Preview</p>
-                <img src={imagePreview} alt={title} className="max-h-56 w-full object-contain" />
               </div>
             )}
           </CardContent>

@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import { PenLine, Plus, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { allAdminEditionsQueryOptions } from '@/features/editions/api'
-import { allSignaturesQueryOptions, removeSignatureFn } from '@/features/signatures/api'
+import { useQuery } from '@tanstack/react-query'
+import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
+import { AlertModal } from '@/widgets/ui/alert-modal'
 import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
 import { Badge } from '@/shared/ui/shadcn/badge'
+import { allSignaturesQueryOptions } from '@/features/signatures/api'
+import { useRemoveSignatureMutation } from '@/features/signatures/api/mutations'
+import type { SignatureI } from '@/features/signatures/model'
+import { cn } from '@/shared/lib/utils'
 
 export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/signatures/')({
   component: RouteComponent,
@@ -14,93 +17,131 @@ export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionI
 
 function RouteComponent() {
   const { eventId, editionId } = Route.useParams()
-  const queryClient = useQueryClient()
-
-  const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
-  const edition = editions.find((item) => item.id === editionId) ?? null
-
   const { data: signatures = [] } = useQuery(allSignaturesQueryOptions(eventId, editionId))
+  const removeSignatureMutation = useRemoveSignatureMutation()
+  const [filter, setFilter] = useState('')
+  const [removingSignature, setRemovingSignature] = useState<SignatureI | null>(null)
 
-  const removeMutation = useMutation({
-    mutationFn: (sigId: string) => removeSignatureFn(eventId, editionId, sigId),
-    onSuccess: (res) => {
-      if (res.success) {
-        void queryClient.invalidateQueries({ queryKey: allSignaturesQueryOptions(eventId, editionId).queryKey })
-        toast.success('Assinatura removida')
-      } else {
-        toast.error(res.message || 'Erro ao remover assinatura')
-      }
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
+  const filteredSignatures = useMemo(() => {
+    const search = filter.trim().toLowerCase()
+    if (!search) return signatures
+
+    return signatures.filter((signature) => (
+      [signature.title, signature.url].some((value) => value.toLowerCase().includes(search))
+    ))
+  }, [filter, signatures])
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Admin</p>
-            <h1 className="text-2xl font-semibold">Assinaturas</h1>
-            <p className="text-sm text-muted-foreground">
-              Biblioteca de assinaturas para {edition?.edition_name ?? 'esta edição'}.
-            </p>
-          </div>
+    <div className="flex flex-wrap p-6 pb-28!">
+      <PaginatedContainer<SignatureI>
+        items={filteredSignatures}
+        layout="grid"
+        minItemWidth="16rem"
+        pageSize={6}
+        gap="6"
+        filterValue={filter}
+        onFilterChange={setFilter}
+        filterPlaceholder="Buscar por título ou URL..."
+        itemLabel="assinaturas"
+        headerActions={
           <Link
             to="/admin/events/$eventId/editions/$editionId/signatures/editor"
             params={{ eventId, editionId }}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 md:w-auto"
+            className={cn(
+              'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium',
+              'bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90',
+              'sm:min-w-44 sm:px-5',
+            )}
           >
-            <Plus className="size-4" />
-            Nova assinatura
+            <Plus className="size-4 shrink-0" />
+            <span className="whitespace-nowrap">Nova assinatura</span>
           </Link>
-        </div>
-
-        <div className="mt-6 grid gap-6">
-          <Card>
-            <CardHeader className="border-b pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                <PenLine className="size-4 text-muted-foreground" />
-                Assinaturas salvas
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Desenhos ou imagens prontos para serem usados nas certificações.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4">
-              {signatures.length === 0 ? (
-                <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-                  Nenhuma assinatura cadastrada ainda.
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {signatures.map((signature) => (
-                    <div key={signature.id} className="rounded-2xl border bg-card p-4">
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="font-medium">{signature.title}</p>
-                          <Badge variant="outline">Assinatura</Badge>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => { void removeMutation.mutateAsync(signature.id) }}
-                          disabled={removeMutation.isPending}
-                        >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                      <div className="rounded-xl border bg-muted/10 p-3">
-                        <img src={signature.url} alt={signature.title} className="h-28 w-full object-contain" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        }
+        emptyState={
+          <EmptyState
+            icon={PenLine}
+            eyebrow="Assinaturas"
+            title="Nenhuma assinatura encontrada"
+            description="Crie a primeira assinatura para usar nas certificações dessa edição."
+            className="border-0 bg-transparent px-0 py-4 shadow-none"
+          />
+        }
+        renderItems={(slice) =>
+          slice.map((signature, index) => (
+            <article
+              key={signature.id}
+              className={cn(
+                'group relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left',
+                'ring-1 ring-foreground/10 shadow-xs',
+                'transform-gpu will-change-transform',
+                'transition-all duration-300 ease-out',
+                'hover:-translate-y-0.5 hover:ring-foreground/20 hover:shadow-sm',
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            >
+              <div className="relative aspect-video overflow-hidden bg-muted">
+                <img
+                  src={signature.url}
+                  alt={signature.title}
+                  className={cn(
+                    'h-full w-full object-contain bg-background transition-transform duration-700 ease-out',
+                    'group-hover:scale-[1.03]',
+                  )}
+                  loading={index < 4 ? 'eager' : 'lazy'}
+                />
+
+                <div className="absolute inset-0 bg-linear-to-t from-background/85 via-background/20 to-transparent" />
+
+                <div className="absolute left-3 top-3">
+                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+                    Assinatura
+                  </Badge>
+                </div>
+
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary sm:text-xl">
+                      {signature.title}
+                    </h3>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-9 shrink-0 bg-background/85 backdrop-blur-sm"
+                    onClick={() => setRemovingSignature(signature)}
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      />
+
+      <AlertModal
+        open={Boolean(removingSignature)}
+        onOpenChange={() => setRemovingSignature(null)}
+        title="Remover assinatura?"
+        description={
+          removingSignature
+            ? `A assinatura "${removingSignature.title}" será removida da biblioteca.`
+            : undefined
+        }
+        confirmLabel="Remover assinatura"
+        variant="destructive"
+        loading={removeSignatureMutation.isPending}
+        onConfirm={async () => {
+          if (!removingSignature) return
+          await removeSignatureMutation.mutateAsync({
+            eventId,
+            editionId,
+            signatureId: removingSignature.id,
+          })
+          setRemovingSignature(null)
+        }}
+      />
     </div>
   )
 }

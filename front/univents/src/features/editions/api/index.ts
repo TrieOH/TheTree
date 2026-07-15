@@ -57,6 +57,7 @@ export const allPublicEditionsQueryOptions = (eventId: string) => {
 
 /**
  * Fetches all admin event editions from the server.
+ * @param eventId - The event id
  * @returns A promise that resolves to an array of Edition objects.
  */
 export const getAllAdminEditionsFn = createClientOnlyFn(async (eventId: string) => {
