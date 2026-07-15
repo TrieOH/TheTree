@@ -8,49 +8,52 @@ const productTypeSchema = z
 
 export type ProductType = z.infer<typeof productTypeSchema>
 
+const optionalNullableText = (schema: z.ZodType<string>) =>
+  schema.optional().nullable().or(z.literal('')).transform((value) => (value === '' ? null : value))
+
+const optionalNullableDatetime = () =>
+  z.iso.datetime({ message: 'Data inválida' }).optional().nullable().or(z.literal('')).transform((value) => (value === '' ? null : value))
+
 export const productCreateSchema = z.object({
   edition_scope_id: z.uuid(),
-  name: z.string({
-    error: "Nome é obrigatório",
-  }).min(3, {
-    message: "O nome deve ter pelo menos 3 caracteres",
-  }),
-  description: z.string().nullable().optional(),
+  name: z.string().min(3, 'Nome da edição precisa ter pelo menos 3 caracteres').max(256),
+  description: optionalNullableText(z.string().max(8000)),
   type: productTypeSchema,
   ticket_id: z.preprocess(
-    (val) => val === "" ? null : val,
+    (val) => val === '' ? null : val,
     z.uuid({
-      message: "ID do ticket inválido",
+      message: 'ID do ticket inválido',
     }).nullable().optional()
   ),
-  price_cents: z.int({
-    message: "O preço deve ser um número inteiro",
-  }).nonnegative({
-    message: "O preço não pode ser negativo",
-  }),
-  available_from: z.preprocess(
-    (val) => val === "" ? null : val,
-    z.iso.datetime({
-      message: "Data de início inválida",
-    }).nullable().optional()
+  price_cents: z.preprocess(
+    (value) => (value === '' || value === null || value === undefined ? undefined : value),
+    z.coerce.number({ error: 'O preço é obrigatório' }).int({
+      message: 'O preço deve ser um número inteiro',
+    }).nonnegative({
+      message: 'O preço não pode ser negativo',
+    }),
   ),
-  available_until: z.preprocess(
-    (val) => val === "" ? null : val,
-    z.iso.datetime({
-      message: "Data de término inválida",
-    }).nullable().optional()
-  ),
-  thumbnail_url: z.string().optional().nullable().transform(val => val === "" ? null : val),
+  available_from: optionalNullableDatetime(),
+  available_until: optionalNullableDatetime(),
+  thumbnail_url: optionalNullableText(z.url('Thumbnail deve ser uma URL válida')),
   gallery_urls: z.array(z.string()).nullish().transform(val => val ?? []),
   has_inventory: z.boolean().default(false),
-  inventory_quantity: z.int({
-    message: "Quantidade de estoque deve ser um número inteiro",
-  }).nonnegative({
-    message: "Quantidade de estoque não pode ser negativa",
-  }).default(0),
+  inventory_quantity: z.preprocess(
+    (value) => (value === '' || value === null || value === undefined ? undefined : value),
+    z.coerce.number({ error: 'Quantidade de estoque é obrigatória' }).int({ message: 'Quantidade de estoque precisa ser um número inteiro' }).nonnegative({ message: 'Quantidade de estoque não pode ser negativa' }),
+  ).optional(),
+}).superRefine((values, ctx) => {
+  if (values.has_inventory && values.inventory_quantity === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['inventory_quantity'],
+      message: 'Quantidade de estoque é obrigatória',
+    })
+  }
 })
 
-export type ProductCreateI = z.infer<typeof productCreateSchema>
+export type ProductCreateInputI = z.input<typeof productCreateSchema>
+export type ProductCreateOutputI = z.output<typeof productCreateSchema>
 
 export const buyRequestItemSchema = z.object({
   product_id: z.uuid(),
