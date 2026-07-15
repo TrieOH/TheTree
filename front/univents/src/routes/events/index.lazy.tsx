@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { Search, Settings, SlidersHorizontal } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'motion/react'
 import { useQuery } from '@tanstack/react-query'
 import { EventCard } from '@/features/events/ui/EventCard'
@@ -16,10 +16,6 @@ import {
   DrawerTrigger,
 } from '@/shared/ui/shadcn/drawer'
 import { FABMenu } from '@/widgets/ui/fab-menu'
-import {
-  UI_PREFERENCES_CHANGE_EVENT,
-  readInplaceEditPreference,
-} from '@/shared/lib/ui-preferences'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import type { EventI } from '@/features/events/model'
 import { useCreateEventMutation, usePatchEventMutation, usePublishEventMutation } from '@/features/events/api/mutations'
@@ -42,7 +38,7 @@ type FilterValue = (typeof filterOptions)[number]['value'] | (typeof editFilterO
 
 function EventsPage() {
   const [isEditMode, setIsEditMode] = useState(false)
-  const [inplaceEditEnabled, setInplaceEditEnabled] = useState(readInplaceEditPreference)
+  const [inplaceEditEnabled, _setInplaceEditEnabled] = useState(true)
   const [filter, setFilter] = useState<FilterValue>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [modalState, setModalState] = useState<{ open: boolean; event?: EventI }>({ open: false });
@@ -99,22 +95,6 @@ function EventsPage() {
       return next
     })
   }
-
-  useEffect(() => {
-    const syncPreferences = () => {
-      const enabled = readInplaceEditPreference()
-      setInplaceEditEnabled(enabled)
-
-      if (!enabled) setIsEditMode(false)
-    }
-
-    syncPreferences()
-    window.addEventListener(UI_PREFERENCES_CHANGE_EVENT, syncPreferences)
-
-    return () => {
-      window.removeEventListener(UI_PREFERENCES_CHANGE_EVENT, syncPreferences)
-    }
-  }, [])
 
   return (
     <div className="min-h-screen bg-background relative pb-24">

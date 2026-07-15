@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ActivityCreateOutputI, ActivityI } from '../model'
-import { createActivityFn, publishActivityFn, updateActivityFn } from './index'
+import { completeActivityFn, createActivityFn, publishActivityFn, updateActivityFn } from './index'
 import { activityKeys } from './query-keys'
 
 type CreateActivityInput = {
@@ -18,6 +18,12 @@ type UpdateActivityInput = {
 }
 
 type PublishActivityInput = {
+  eventId: string
+  editionId: string
+  activityId: string
+}
+
+type CompleteActivityInput = {
   eventId: string
   editionId: string
   activityId: string
@@ -77,7 +83,6 @@ export function useCreateActivityMutation() {
       }
 
       syncActivityCaches(queryClient, variables.eventId, variables.editionId, res.data)
-      void queryClient.invalidateQueries({ queryKey: activityKeys.adminListByEdition(variables.eventId, variables.editionId) })
       toast.success('Atividade criada com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
@@ -97,7 +102,6 @@ export function useUpdateActivityMutation() {
       }
 
       syncActivityCaches(queryClient, variables.eventId, variables.editionId, res.data)
-      void queryClient.invalidateQueries({ queryKey: activityKeys.adminListByEdition(variables.eventId, variables.editionId) })
       toast.success('Atividade atualizada com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
@@ -124,6 +128,31 @@ export function usePublishActivityMutation() {
         'published',
       )
       toast.success('Atividade publicada com sucesso!')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor'),
+  })
+}
+
+export function useCompleteActivityMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ eventId, editionId, activityId }: CompleteActivityInput) =>
+      completeActivityFn(eventId, editionId, activityId),
+    onSuccess: (res, variables) => {
+      if (!res.success) {
+        toast.error(res.message || 'Erro ao concluir atividade')
+        return
+      }
+
+      syncActivityStatusInCaches(
+        queryClient,
+        variables.eventId,
+        variables.editionId,
+        variables.activityId,
+        'completed',
+      )
+      toast.success('Atividade concluída com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })

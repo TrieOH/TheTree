@@ -8,6 +8,7 @@ import { Button } from '@/shared/ui/shadcn/button'
 import { AlertModal } from '@/widgets/ui/alert-modal'
 import { allAdminActivitiesQueryOptions } from '@/features/activities/api'
 import {
+  useCompleteActivityMutation,
   useCreateActivityMutation,
   usePublishActivityMutation,
   useUpdateActivityMutation,
@@ -34,6 +35,7 @@ function RouteComponent() {
   const createActivityMutation = useCreateActivityMutation()
   const updateActivityMutation = useUpdateActivityMutation()
   const publishActivityMutation = usePublishActivityMutation()
+  const completeActivityMutation = useCompleteActivityMutation()
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortState<ActivityI>>({
     field: 'starts_at',
@@ -43,8 +45,12 @@ function RouteComponent() {
     open: false,
   })
   const [publishingActivity, setPublishingActivity] = useState<ActivityI | null>(null)
+  const [completingActivity, setCompletingActivity] = useState<ActivityI | null>(null)
   const handlePublishActivity = (currentActivity: ActivityI) => {
     setPublishingActivity(currentActivity)
+  }
+  const handleCompleteActivity = (currentActivity: ActivityI) => {
+    setCompletingActivity(currentActivity)
   }
 
   const filteredActivities = [...activities]
@@ -84,7 +90,7 @@ function RouteComponent() {
         items={filteredActivities}
         layout="grid"
         minItemWidth="16rem"
-        pageSize={4}
+        pageSize={8}
         gap="6"
         sort={sort}
         onSortChange={setSort}
@@ -133,7 +139,8 @@ function RouteComponent() {
               activity={activity}
               index={idx}
               onManage={(currentActivity) => setModalState({ open: true, activity: currentActivity })}
-              onPublish={handlePublishActivity}
+              onPublish={activity.status === 'draft' ? handlePublishActivity : undefined}
+              onComplete={activity.status === 'ongoing' ? handleCompleteActivity : undefined}
             />
           ))
         }
@@ -192,6 +199,29 @@ function RouteComponent() {
             activityId: publishingActivity.id,
           })
           setPublishingActivity(null)
+        }}
+      />
+
+      <AlertModal
+        open={Boolean(completingActivity)}
+        onOpenChange={() => setCompletingActivity(null)}
+        title="Concluir atividade?"
+        description={
+          completingActivity
+            ? `Ao concluir "${completingActivity.title}", ela ficará marcada como finalizada.`
+            : undefined
+        }
+        confirmLabel="Concluir atividade"
+        variant="default"
+        loading={completeActivityMutation.isPending}
+        onConfirm={async () => {
+          if (!completingActivity) return
+          await completeActivityMutation.mutateAsync({
+            eventId,
+            editionId,
+            activityId: completingActivity.id,
+          })
+          setCompletingActivity(null)
         }}
       />
     </div>
