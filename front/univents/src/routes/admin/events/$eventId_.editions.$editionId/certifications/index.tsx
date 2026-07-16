@@ -1,15 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { FileText, Link2, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 import { allAdminActivitiesQueryOptions } from '@/features/activities/api'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
+import { allCertificationTemplatesQueryOptions } from '@/features/certifications/api'
 import {
-  allCertificationTemplatesQueryOptions,
-  setActivityCertificationTemplateFn,
-  setEditionCertificationTemplateFn,
-} from '@/features/certifications/api'
+  useSetActivityCertificationTemplateMutation,
+  useSetEditionCertificationTemplateMutation,
+} from '@/features/certifications/api/mutations'
 import { Badge } from '@/shared/ui/shadcn/badge'
 import { Button } from '@/shared/ui/shadcn/button'
 import {
@@ -54,39 +53,8 @@ function RouteComponent() {
     [selectedTemplateId, templates],
   )
 
-  const editionTemplateMutation = useMutation({
-    mutationFn: () => {
-      if (!selectedTemplate) throw new Error('Selecione um template')
-      return setEditionCertificationTemplateFn(eventId, editionId, {
-        certification_template_id: selectedTemplate.id,
-      })
-    },
-    onSuccess: (res) => {
-      if (res.success) toast.success('Template definido para a edição')
-      else toast.error(res.message || 'Erro ao definir template da edição')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-
-  const activityTemplateMutation = useMutation({
-    mutationFn: () => {
-      if (!selectedTemplate || !selectedActivityId)
-        throw new Error('Selecione template e atividade')
-      return setActivityCertificationTemplateFn(
-        eventId,
-        editionId,
-        selectedActivityId,
-        {
-          certification_template_id: selectedTemplate.id,
-        },
-      )
-    },
-    onSuccess: (res) => {
-      if (res.success) toast.success('Template definido para a atividade')
-      else toast.error(res.message || 'Erro ao definir template da atividade')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
+  const editionTemplateMutation = useSetEditionCertificationTemplateMutation()
+  const activityTemplateMutation = useSetActivityCertificationTemplateMutation()
 
   const isPending =
     editionTemplateMutation.isPending || activityTemplateMutation.isPending
@@ -244,7 +212,14 @@ function RouteComponent() {
                     className="flex-1"
                     disabled={!selectedTemplate || isPending}
                     onClick={() => {
-                      void editionTemplateMutation.mutateAsync()
+                      if (!selectedTemplate) return
+                      editionTemplateMutation.mutate({
+                        eventId,
+                        editionId,
+                        data: {
+                          certification_template_id: selectedTemplate.id,
+                        },
+                      })
                     }}
                   >
                     Definir para a edição
@@ -257,7 +232,15 @@ function RouteComponent() {
                       !selectedTemplate || !selectedActivityId || isPending
                     }
                     onClick={() => {
-                      void activityTemplateMutation.mutateAsync()
+                      if (!selectedTemplate || !selectedActivityId) return
+                      activityTemplateMutation.mutate({
+                        eventId,
+                        editionId,
+                        activityId: selectedActivityId,
+                        data: {
+                          certification_template_id: selectedTemplate.id,
+                        },
+                      })
                     }}
                   >
                     Definir para a atividade
