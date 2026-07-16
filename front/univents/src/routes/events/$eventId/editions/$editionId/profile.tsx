@@ -1,15 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '@trieoh/identityx-sdk-ts/react'
 import { Layers3 } from 'lucide-react'
-import { requireAuth } from '@/features/auths/lib/route-guard'
 import { UserCertificationsSection } from '@/features/certifications/ui/UserCertificationsSection'
 
-export const Route = createFileRoute('/events/$eventId/editions/$editionId/profile')({
-  beforeLoad: requireAuth,
+export const Route = createFileRoute(
+  '/events/$eventId/editions/$editionId/profile',
+)({
   component: EditionProfilePage,
 })
 
 function EditionProfilePage() {
+  const { eventId, editionId } = Route.useParams()
   const { auth } = useAuth()
   const profile = auth.profile()
 
@@ -23,9 +24,13 @@ function EditionProfilePage() {
               Edição
             </div>
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight">Certificados da edição</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">
+                Certificados da edição
+              </h1>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                {profile?.email ? `Usuário ${profile.email}` : 'Certificados vinculados à edição atual.'}
+                {profile?.email
+                  ? `Usuário ${profile.email}`
+                  : 'Certificados vinculados à edição atual.'}
               </p>
             </div>
           </div>
@@ -34,6 +39,8 @@ function EditionProfilePage() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
         <UserCertificationsSection
+          eventId={eventId}
+          editionId={editionId}
           userId={profile?.id ?? ''}
           title="Certificados da edição"
           subtitle="Mostra apenas certificados emitidos para esta edição e suas atividades."
