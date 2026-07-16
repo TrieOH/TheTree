@@ -1,21 +1,14 @@
-import { createLazyFileRoute, Link } from '@tanstack/react-router'
+import { createLazyFileRoute } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   CalendarX,
   ChevronDown,
   SlidersHorizontal,
   X,
-  ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { EditionCard } from '@/features/editions/ui/EditionCard'
-// import { usePermissions } from '@/features/auths/hooks/use-permissions'
-// import {
-//   canCreateEdition,
-//   canAnnounceEdition,
-//   canReadEdition
-// } from '@/features/editions/model/permissions'
 
 const statusFilters = [
   { value: 'all', label: 'Todos' },
@@ -40,14 +33,6 @@ export const Route = createLazyFileRoute('/events/$eventId/editions/')({
 
 function RouteComponent() {
   const { eventId } = Route.useParams()
-  // const auth = Route.useRouteContext().auth?.auth
-  // const userProfile = auth?.profile()
-  // const { some: somePerms } = usePermissions(
-  //   { canCreateEdition, canReadEdition, canAnnounceEdition },
-  //   userProfile?.id
-  // )
-  const isAdmin = true
-  // const isAdmin = somePerms('canCreateEdition', 'canReadEdition', 'canAnnounceEdition')
 
   const editions = Route.useLoaderData()
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -95,32 +80,6 @@ function RouteComponent() {
                   isFilterOpen && "rotate-180"
                 )} />
               </button>
-              {isAdmin && (
-                <Link
-                  to="/admin/events/$eventId/editions"
-                  params={{ eventId }}
-                  className={cn(
-                    "group relative flex items-center justify-center",
-                    "w-9 h-9 rounded-lg transition-all duration-200",
-                    "text-muted-foreground hover:text-foreground",
-                    "hover:bg-muted active:bg-muted/60",
-                    "shrink-0"
-                  )}
-                  aria-label="Painel administrativo"
-                >
-                  <ShieldCheck className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-                  <span className={cn(
-                    "pointer-events-none absolute -bottom-9 right-0",
-                    "whitespace-nowrap rounded-md px-2 py-1",
-                    "bg-popover text-popover-foreground border border-border",
-                    "text-xs shadow-md",
-                    "opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0",
-                    "transition-all duration-150"
-                  )}>
-                    Modo admin
-                  </span>
-                </Link>
-              )}
             </div>
           </div>
         </div>

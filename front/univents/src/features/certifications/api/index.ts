@@ -8,7 +8,7 @@ import type {
   SetCertificationTemplateRequestI,
   VerifyCertificationResponseI,
 } from "../model";
-import { authFetcher, simpleFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
+import { authFetcher, publicQueryFetcher, tanstackQueryFetcher } from "@/shared/lib/api/fetch";
 
 export const createCertificationTemplateFn = createClientOnlyFn((
   eventId: string,
@@ -22,20 +22,16 @@ export const createCertificationTemplateFn = createClientOnlyFn((
 });
 
 export const verifyCertificationHashFn = createClientOnlyFn((hash: string) => {
-  return simpleFetcher.get<VerifyCertificationResponseI>(`/verify/${hash}`);
+  return publicQueryFetcher<VerifyCertificationResponseI>(`/verify/${hash}`);
 });
 
 export const getAllCertificationTemplatesFn = createClientOnlyFn(async (
   eventId: string,
   editionId: string
 ) => {
-  try {
-    return await tanstackQueryFetcher<CertificationTemplateI[]>(
-      `/events/${eventId}/editions/${editionId}/certification-templates`
-    );
-  } catch {
-    return [];
-  }
+  return tanstackQueryFetcher<CertificationTemplateI[]>(
+    `/events/${eventId}/editions/${editionId}/certification-templates`
+  );
 });
 
 export const allCertificationTemplatesQueryOptions = (
@@ -129,13 +125,9 @@ export const getAllCertificationsByTargetFn = createClientOnlyFn(async (
   targetType: string,
   targetId: string
 ) => {
-  try {
-    return await tanstackQueryFetcher<CertificationI[]>(
-      `/certifications?target_type=${targetType}&target_id=${targetId}`
-    );
-  } catch {
-    return [];
-  }
+  return tanstackQueryFetcher<CertificationI[]>(
+    `/certifications?target_type=${targetType}&target_id=${targetId}`
+  );
 });
 
 export const certificationsByTargetQueryOptions = (
@@ -149,13 +141,9 @@ export const certificationsByTargetQueryOptions = (
 };
 
 export const getAllCertificationsByUserFn = createClientOnlyFn(async (userId: string) => {
-  try {
-    return await tanstackQueryFetcher<CertificationI[]>(
-      `/users/${userId}/certifications`
-    );
-  } catch {
-    return [];
-  }
+  return tanstackQueryFetcher<CertificationI[]>(
+    `/users/${userId}/certifications`
+  );
 });
 
 export const certificationsByUserQueryOptions = (userId: string) => {
