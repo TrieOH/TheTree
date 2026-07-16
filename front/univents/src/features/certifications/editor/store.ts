@@ -115,7 +115,9 @@ export const certificateEditorActions = {
       !Number.isFinite(canvas.width) ||
       !Number.isFinite(canvas.height) ||
       canvas.width < 320 ||
-      canvas.height < 320
+      canvas.height < 320 ||
+      canvas.width > 6000 ||
+      canvas.height > 6000
     ) {
       return
     }
