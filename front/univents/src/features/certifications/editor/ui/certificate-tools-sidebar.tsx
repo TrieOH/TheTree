@@ -11,19 +11,24 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { CertificationTemplateElement } from '../../model'
-import { CERTIFICATE_CANVAS_PRESETS } from '../constants'
+import {
+  CERTIFICATE_CANVAS_PRESETS,
+  CERTIFICATE_IMAGE_ACCEPT,
+} from '../constants'
 import {
   createImageElement,
   createSignatureElement,
   createTextElement,
 } from '../factories'
 import { certificateEditorActions, useCertificateEditorState } from '../store'
-import { loadCertificateImageDimensions, readCertificateFile } from '../utils'
+import {
+  isSupportedCertificateImage,
+  loadCertificateImageDimensions,
+  readCertificateFile,
+} from '../utils'
 import { Button } from '@/shared/ui/shadcn/button'
 import { Input } from '@/shared/ui/shadcn/input'
 import { Separator } from '@/shared/ui/shadcn/separator'
-
-const ACCEPTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
 
 const LAYER_ICON: Record<CertificationTemplateElement['type'], typeof Type> = {
   hash: Fingerprint,
@@ -135,7 +140,7 @@ export function CertificateToolsSidebar() {
     event.target.value = ''
     if (!file) return
 
-    if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+    if (!isSupportedCertificateImage(file)) {
       setImageError('Use uma imagem PNG, JPEG ou WebP.')
       return
     }
@@ -162,7 +167,7 @@ export function CertificateToolsSidebar() {
     event.target.value = ''
     if (!file) return
 
-    if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+    if (!isSupportedCertificateImage(file)) {
       setBackgroundError('Use uma imagem PNG, JPEG ou WebP.')
       return
     }
@@ -210,7 +215,7 @@ export function CertificateToolsSidebar() {
           <input
             ref={imageInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={CERTIFICATE_IMAGE_ACCEPT}
             className="hidden"
             onChange={(event) => void addImage(event)}
           />
@@ -294,7 +299,7 @@ export function CertificateToolsSidebar() {
         <input
           ref={backgroundInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept={CERTIFICATE_IMAGE_ACCEPT}
           className="hidden"
           onChange={(event) => void setBackground(event)}
         />

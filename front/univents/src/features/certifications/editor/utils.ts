@@ -1,3 +1,9 @@
+import { CERTIFICATE_IMAGE_MIME_TYPES } from './constants'
+
+export function isSupportedCertificateImage(file: File): boolean {
+  return CERTIFICATE_IMAGE_MIME_TYPES.has(file.type)
+}
+
 export function createCertificateElementId(prefix: string): string {
   const random =
     typeof crypto !== 'undefined' && 'randomUUID' in crypto

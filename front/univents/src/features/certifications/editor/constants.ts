@@ -90,3 +90,10 @@ export const CERTIFICATE_FONT_FAMILIES = [
 
 export const DEFAULT_CERTIFICATE_FONT = CERTIFICATE_FONT_FAMILIES[0].value
 export const MIN_CERTIFICATE_ELEMENT_SIZE = { width: 24, height: 24 }
+
+export const CERTIFICATE_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp'
+export const CERTIFICATE_IMAGE_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+])
