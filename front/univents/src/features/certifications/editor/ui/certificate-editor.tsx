@@ -88,7 +88,7 @@ export function CertificateEditor({
   }
 
   return (
-    <div className="h-[calc(100dvh-4rem)] min-h-0 bg-background text-foreground">
+    <div className="h-dvh min-h-0 bg-background text-foreground">
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center lg:hidden!">
         <Monitor className="size-10 text-muted-foreground" />
         <p className="max-w-xs text-sm text-muted-foreground">

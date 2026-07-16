@@ -1,4 +1,8 @@
-import { SidebarProvider, useSidebar } from '@/widgets/sidebar/hooks/use-sidebar'
+import { useLocation } from '@tanstack/react-router'
+import {
+  SidebarProvider,
+  useSidebar,
+} from '@/widgets/sidebar/hooks/use-sidebar'
 import { MobileTopbar } from '@/widgets/sidebar/ui/mobile-topbar'
 import { Sidebar } from '@/widgets/sidebar/ui/sidebar'
 import { Breadcrumb } from '@/shared/ui/breadcrumb'
@@ -9,6 +13,12 @@ interface AdminLayoutProps {
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar()
+  const { pathname } = useLocation()
+  const isCertificateEditor = pathname.endsWith('/certifications/editor')
+
+  if (isCertificateEditor) {
+    return <div className="h-dvh overflow-hidden bg-background">{children}</div>
+  }
 
   return (
     <div className="min-h-dvh bg-background">
@@ -33,9 +43,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SidebarProvider>
-      <AppShell>
-        {children}
-      </AppShell>
+      <AppShell>{children}</AppShell>
     </SidebarProvider>
   )
 }
