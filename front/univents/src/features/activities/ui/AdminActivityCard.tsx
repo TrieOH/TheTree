@@ -99,7 +99,7 @@ function MenuItems({
         </Item>
       )}
 
-      {activity.status === 'ongoing' && onComplete && (
+      {onComplete && (
         <Item onClick={stop(onComplete)}>
           <CheckCircle2 className="size-4" />
           <span>Concluir atividade</span>

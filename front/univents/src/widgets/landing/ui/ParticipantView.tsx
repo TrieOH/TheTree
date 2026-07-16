@@ -3,7 +3,7 @@ import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { FAQSection } from './FAQSection'
 import { EventCard } from '@/features/events/ui/EventCard'
-import { eventsQueryOptions } from '@/features/events/api'
+import { allPublicEventsQueryOptions } from '@/features/events/api'
 import { Button } from '@/shared/ui/shadcn/button'
 import { CardSkeleton, CardsStateGrid, EmptyState } from '@trieoh/ui-base'
 import { CalendarX } from 'lucide-react'
@@ -72,7 +72,7 @@ export function ParticipantView() {
   const isAuthenticated = useRouteContext({ from: "/" }).auth?.isAuthenticated ?? false
   const navigate = useNavigate()
 
-  const { data: events = [], isLoading } = useQuery(eventsQueryOptions());
+  const { data: events = [], isLoading } = useQuery(allPublicEventsQueryOptions());
 
   const handleGetStarted = () => {
     if (isAuthenticated) void navigate({ to: '/events' })

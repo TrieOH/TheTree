@@ -30,7 +30,7 @@ import {
 import { EmptyState } from '@trieoh/ui-base'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import { AlertModal } from '@/widgets/ui/alert-modal'
-import { ownEventsQueryOptions } from '@/features/events/api'
+import { allOwnEventsQueryOptions } from '@/features/events/api'
 import {
   usePatchEventMutation,
   usePublishEventMutation,
@@ -122,7 +122,7 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/')({
 
 function EventOverviewRoute() {
   const { eventId } = Route.useParams()
-  const { data: events = [] } = useQuery(ownEventsQueryOptions())
+  const { data: events = [] } = useQuery(allOwnEventsQueryOptions())
   const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)

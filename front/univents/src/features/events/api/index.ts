@@ -81,7 +81,7 @@ export const allOwnEventsQueryOptions = () => {
  * @throws Error if not found.
  */
 export const getPublicEventFn = async (id: string) => {
-  const events = await getEventsFn();
+  const events = await getPublicEventsFn();
   const event = events.find(e => e.id === id);
   if (event) return event;
   throw new Error("Failed to find event in list")
@@ -164,77 +164,3 @@ export const setEventLogoFn = createClientOnlyFn((
 export const unsetEventLogoFn = createClientOnlyFn((eventId: string) => {
   return authFetcher.delete<EventI>(`/events/${eventId}/logo`);
 });
-
-
-// FIXME: I NEED TO DELETE EVERYTHING BELOW THIS LINE AND REPLACE IT
-
-/**
- * Fetches a single own event from the server by filtering the list.
- * @param id - The event id
- * @returns A promise that resolves to the Event object.
- * @throws Error if not found.
- */
-export const getOwnEventFn = createClientOnlyFn(async (id: string) => {
-  const events = await getOwnEventsFn();
-  const event = events.find(e => e.id === id);
-  if (event) return event;
-  throw new Error("Failed to find own event in list")
-});
-
-/**
- * Query options for fetching a single own event.
- */
-export const ownEventQueryOptions = (id: string) => {
-  return queryOptions({
-    queryKey: ['events', 'own', id],
-    queryFn: () => getOwnEventFn(id),
-  })
-}
-
-/**
- * Query options for fetching own events, using TanStack Query.
- * @returns An object containing the query key and query function for fetching own events.
- */
-export const ownEventsQueryOptions = () => {
-  return queryOptions({
-    queryKey: ['events', 'own'],
-    queryFn: getOwnEventsFn,
-  })
-}
-
-/**
- * Fetches all events from the server.
- * @returns A promise that resolves to an array of Event objects.
- */
-export const getEventsFn = async () => {
-  return publicQueryFetcher<EventI[]>("/events");
-};
-
-/**
- * Query options for fetching events, using TanStack Query.
- * @returns An object containing the query key and query function for fetching events.
- */
-export const eventsQueryOptions = () => {
-  return queryOptions({
-    queryKey: ['events', 'public'],
-    queryFn: getEventsFn,
-  })
-}
-
-
-
-
-
-
-/**
- * Removes a URL from the event's gallery_urls array and deletes the object from MinIO.
- * @param eventId - The event id
- * @returns A promise that resolves to the API EventI response.
- */
-export const removeImageToTheEventGalleryFn = createClientOnlyFn((
-  eventId: string, urlData: ImageURLUploadI
-) => {
-  return authFetcher.delete<EventI>(`/events/${eventId}/gallery`, urlData);
-});
-
-
