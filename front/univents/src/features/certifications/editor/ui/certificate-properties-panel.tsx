@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import type { CertificationTemplateElement } from '../../model'
 import {
-  CERTIFICATE_FONT_FAMILIES,
   CERTIFICATE_IMAGE_ACCEPT,
   CERTIFICATE_VARIABLES,
   DEFAULT_CERTIFICATE_FONT,
@@ -393,27 +392,16 @@ function updateText(
 }
 
 function TextProperties({ element }: { element: TextCertificateElement }) {
-  type TextRun = TextCertificateElement['paragraphs'][number]['runs'][number]
-
-  function patchRun(
-    paragraphIndex: number,
-    runIndex: number,
-    patch: Partial<TextRun>,
-  ) {
-    const paragraphs = element.paragraphs.map((paragraph, index) =>
-      index === paragraphIndex
-        ? {
-            ...paragraph,
-            runs: paragraph.runs.map((run, itemRunIndex) =>
-              itemRunIndex === runIndex ? { ...run, ...patch } : run,
-            ),
-          }
-        : paragraph,
-    )
-    updateText(element.id, { paragraphs })
-  }
+  const controller = useCertificateEditorState(
+    (state) => state.richTextController,
+  )
 
   function insertVariable(token: string) {
+    if (controller?.elementId === element.id) {
+      controller.insertText(token)
+      return
+    }
+
     const paragraphs = element.paragraphs.map((paragraph, paragraphIndex) => {
       if (paragraphIndex !== element.paragraphs.length - 1) return paragraph
       if (paragraph.runs.length === 0) {
@@ -448,113 +436,9 @@ function TextProperties({ element }: { element: TextCertificateElement }) {
   return (
     <div className="space-y-4">
       <p className="rounded-md bg-muted p-2.5 text-xs leading-relaxed text-muted-foreground">
-        Edite cada trecho preservando sua formatação. A edição visual completa
-        será habilitada diretamente no canvas.
+        Dê um duplo clique no texto para editar. A formatação da seleção aparece
+        na barra acima do canvas.
       </p>
-      {element.paragraphs.map((paragraph, paragraphIndex) => (
-        <div key={paragraphIndex} className="space-y-2 rounded-md border p-2">
-          <Field label={`Parágrafo ${paragraphIndex + 1}`}>
-            <select
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
-              value={paragraph.align}
-              onChange={(event) => {
-                const paragraphs = element.paragraphs.map((item, index) =>
-                  index === paragraphIndex
-                    ? {
-                        ...item,
-                        align: event.target
-                          .value as TextCertificateElement['paragraphs'][number]['align'],
-                      }
-                    : item,
-                )
-                updateText(element.id, { paragraphs })
-              }}
-            >
-              <option value="left">Esquerda</option>
-              <option value="center">Centro</option>
-              <option value="right">Direita</option>
-              <option value="justify">Justificado</option>
-            </select>
-          </Field>
-          {paragraph.runs.map((run, runIndex) => (
-            <div
-              key={runIndex}
-              className="space-y-2 border-t pt-2 first:border-0 first:pt-0"
-            >
-              <textarea
-                aria-label={`Texto do trecho ${runIndex + 1}`}
-                value={run.text}
-                rows={2}
-                className="w-full resize-y rounded-md border bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
-                onChange={(event) =>
-                  patchRun(paragraphIndex, runIndex, {
-                    text: event.target.value,
-                  })
-                }
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  aria-label="Fonte"
-                  value={run.fontFamily}
-                  className="h-9 rounded-md border bg-background px-2 text-xs"
-                  onChange={(event) =>
-                    patchRun(paragraphIndex, runIndex, {
-                      fontFamily: event.target.value,
-                    })
-                  }
-                >
-                  {CERTIFICATE_FONT_FAMILIES.map((font) => (
-                    <option key={font.value} value={font.value}>
-                      {font.label}
-                    </option>
-                  ))}
-                </select>
-                <Input
-                  aria-label="Cor do texto"
-                  type="color"
-                  value={run.color.slice(0, 7)}
-                  className="h-9 p-1"
-                  onChange={(event) =>
-                    patchRun(paragraphIndex, runIndex, {
-                      color: event.target.value,
-                    })
-                  }
-                />
-              </div>
-              <NumberProperty
-                label="Tamanho da fonte"
-                value={run.fontSize}
-                min={6}
-                max={400}
-                onCommit={(fontSize) =>
-                  patchRun(paragraphIndex, runIndex, { fontSize })
-                }
-              />
-              <div className="flex gap-1">
-                {(['bold', 'italic', 'underline'] as const).map((style) => (
-                  <Button
-                    key={style}
-                    type="button"
-                    size="sm"
-                    variant={run[style] ? 'secondary' : 'outline'}
-                    onClick={() =>
-                      patchRun(paragraphIndex, runIndex, {
-                        [style]: !run[style],
-                      })
-                    }
-                  >
-                    {style === 'bold'
-                      ? 'Negrito'
-                      : style === 'italic'
-                        ? 'Itálico'
-                        : 'Sublinhado'}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
       <div className="space-y-2">
         <p className="text-xs font-medium">Inserir informação dinâmica</p>
         {CERTIFICATE_VARIABLES.map((variable) => (

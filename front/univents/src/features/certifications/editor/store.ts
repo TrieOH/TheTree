@@ -10,12 +10,39 @@ export interface AvailableCertificateSignature {
   name: string
 }
 
+export interface CertificateRichTextController {
+  elementId: string
+  commit: () => void
+  toggleBold: () => void
+  toggleItalic: () => void
+  toggleUnderline: () => void
+  setAlign: (align: 'left' | 'center' | 'right' | 'justify') => void
+  setLineHeight: (lineHeight: number) => void
+  setColor: (color: string) => void
+  setFontSize: (fontSize: number) => void
+  setFontFamily: (fontFamily: string) => void
+  insertText: (text: string) => void
+}
+
+export interface CertificateTextSelectionStyles {
+  bold: boolean | null
+  italic: boolean | null
+  underline: boolean | null
+  align: 'left' | 'center' | 'right' | 'justify' | null
+  lineHeight: number | null
+  color: string | null
+  fontSize: number | null
+  fontFamily: string | null
+}
+
 export interface CertificateEditorState {
   draft: CertificationTemplateDraft
   canvas: CertificateCanvasSize
   availableSignatures: AvailableCertificateSignature[]
   selectedElementId: string | null
   editingElementId: string | null
+  richTextController: CertificateRichTextController | null
+  textSelectionStyles: CertificateTextSelectionStyles | null
 }
 
 function createInitialDraft(): CertificationTemplateDraft {
@@ -36,6 +63,8 @@ function createInitialState(): CertificateEditorState {
     availableSignatures: [],
     selectedElementId: null,
     editingElementId: null,
+    richTextController: null,
+    textSelectionStyles: null,
   }
 }
 
@@ -62,6 +91,24 @@ function updateState(
   certificateEditorStore.setState(updater)
 }
 
+function normalizeLoadedElement(
+  element: CertificationTemplateElement,
+): CertificationTemplateElement {
+  if (element.type === 'hash') {
+    return { ...element, hash: '{{cert_hash}}', url: '{{verify_url}}' }
+  }
+  if (element.type === 'text') {
+    return {
+      ...element,
+      paragraphs: element.paragraphs.map((paragraph) => ({
+        ...paragraph,
+        lineHeight: (paragraph as { lineHeight?: number }).lineHeight ?? 1.25,
+      })),
+    }
+  }
+  return { ...element }
+}
+
 export const certificateEditorActions = {
   loadDraft(draft: CertificationTemplateDraft): void {
     updateState((state) => ({
@@ -70,15 +117,13 @@ export const certificateEditorActions = {
         ...draft,
         data: {
           ...draft.data,
-          elements: draft.data.elements.map((element) =>
-            element.type === 'hash'
-              ? { ...element, hash: '{{cert_hash}}', url: '{{verify_url}}' }
-              : { ...element },
-          ),
+          elements: draft.data.elements.map(normalizeLoadedElement),
         },
       },
       selectedElementId: null,
       editingElementId: null,
+      richTextController: null,
+      textSelectionStyles: null,
     }))
   },
 
@@ -207,6 +252,8 @@ export const certificateEditorActions = {
   },
 
   removeElement(id: string): void {
+    const controller = certificateEditorStore.state.richTextController
+    if (controller?.elementId === id) controller.commit()
     updateState((state) => {
       const target = state.draft.data.elements.find(
         (element) => element.id === id,
@@ -222,6 +269,14 @@ export const certificateEditorActions = {
           state.selectedElementId === id ? null : state.selectedElementId,
         editingElementId:
           state.editingElementId === id ? null : state.editingElementId,
+        richTextController:
+          state.richTextController?.elementId === id
+            ? null
+            : state.richTextController,
+        textSelectionStyles:
+          state.richTextController?.elementId === id
+            ? null
+            : state.textSelectionStyles,
       }
     })
   },
@@ -239,7 +294,25 @@ export const certificateEditorActions = {
   },
 
   stopEditing(): void {
-    updateState((state) => ({ ...state, editingElementId: null }))
+    certificateEditorStore.state.richTextController?.commit()
+    updateState((state) => ({
+      ...state,
+      editingElementId: null,
+      richTextController: null,
+      textSelectionStyles: null,
+    }))
+  },
+
+  setRichTextController(
+    richTextController: CertificateRichTextController | null,
+  ): void {
+    updateState((state) => ({ ...state, richTextController }))
+  },
+
+  setTextSelectionStyles(
+    textSelectionStyles: CertificateTextSelectionStyles | null,
+  ): void {
+    updateState((state) => ({ ...state, textSelectionStyles }))
   },
 
   moveElement(id: string, targetIndex: number): void {

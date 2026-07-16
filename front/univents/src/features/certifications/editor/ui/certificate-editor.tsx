@@ -12,6 +12,7 @@ import { allSignaturesQueryOptions } from '../../../signatures/api'
 import { certificateEditorActions, useCertificateEditorState } from '../store'
 import { CertificateCanvas } from './certificate-canvas'
 import { CertificatePropertiesPanel } from './certificate-properties-panel'
+import { CertificateTextToolbar } from './certificate-text-toolbar'
 import { CertificateToolsSidebar } from './certificate-tools-sidebar'
 import { Button } from '@/shared/ui/shadcn/button'
 import { Input } from '@/shared/ui/shadcn/input'
@@ -134,7 +135,10 @@ export function CertificateEditor({
 
         <div className="flex min-h-0 flex-1">
           <CertificateToolsSidebar />
-          <CertificateCanvas />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <CertificateTextToolbar />
+            <CertificateCanvas />
+          </div>
           <CertificatePropertiesPanel />
         </div>
       </div>

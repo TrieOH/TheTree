@@ -34,6 +34,7 @@ const richTextRunSchema = z.object({
 
 const richTextParagraphSchema = z.object({
   align: z.enum(['left', 'center', 'right', 'justify']),
+  lineHeight: z.number().min(0.5).max(4).default(1.25),
   runs: z.array(richTextRunSchema),
 })
 

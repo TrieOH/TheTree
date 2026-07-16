@@ -223,7 +223,10 @@ export function CertificateCanvas() {
                 certificateEditorActions.removeElement(element.id)
               }
             >
-              <CertificateElementView element={element} />
+              <CertificateElementView
+                element={element}
+                editing={editingElementId === element.id}
+              />
             </CertificateElementFrame>
           ))}
         </div>

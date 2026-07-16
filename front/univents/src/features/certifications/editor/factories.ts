@@ -45,6 +45,7 @@ export function createTextElement(
     paragraphs: [
       {
         align: 'center',
+        lineHeight: 1.25,
         runs: [
           {
             text: 'Clique duas vezes para editar este texto',
