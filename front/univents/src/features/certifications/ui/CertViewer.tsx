@@ -135,7 +135,7 @@ export const CertificateTemplateStaticView = forwardRef<
   canvasRef,
 ) {
   const { ref, size } = useElementSize<HTMLDivElement>()
-  const canvas = DEFAULT_CERTIFICATE_CANVAS
+  const canvas = template.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS
   const scale = Math.max(
     0,
     Math.min(size.width / canvas.width, size.height / canvas.height),

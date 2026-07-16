@@ -1,6 +1,5 @@
 import { toBlob } from 'html-to-image'
 import { jsPDF } from 'jspdf'
-import { DEFAULT_CERTIFICATE_CANVAS } from '../editor/constants'
 
 export type CertificateExportFormat = 'png' | 'pdf'
 
@@ -24,7 +23,7 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 export async function createCertificatePng(canvas: HTMLElement): Promise<Blob> {
-  const { width, height } = DEFAULT_CERTIFICATE_CANVAS
+  const { width, height } = readCanvasSize(canvas)
   const blob = await toBlob(canvas, {
     width,
     height,
@@ -41,7 +40,7 @@ export async function createCertificatePng(canvas: HTMLElement): Promise<Blob> {
 }
 
 export async function createCertificatePdf(canvas: HTMLElement): Promise<Blob> {
-  const { width, height } = DEFAULT_CERTIFICATE_CANVAS
+  const { width, height } = readCanvasSize(canvas)
   const links = readCanvasLinks(canvas, width, height)
   const png = await createCertificatePng(canvas)
   const imageUrl = await blobToDataUrl(png)
@@ -56,6 +55,15 @@ export async function createCertificatePdf(canvas: HTMLElement): Promise<Blob> {
     pdf.link(link.x, link.y, link.width, link.height, { url: link.url })
   })
   return pdf.output('blob')
+}
+
+function readCanvasSize(canvas: HTMLElement) {
+  const width = canvas.offsetWidth
+  const height = canvas.offsetHeight
+  if (width <= 0 || height <= 0) {
+    throw new Error('O canvas do certificado não possui um tamanho válido.')
+  }
+  return { width, height }
 }
 
 export async function downloadCertificate(

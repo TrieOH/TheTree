@@ -85,6 +85,12 @@ export const certificationTemplateCreateSchema = z.object({
     .nullable()
     .transform((val) => (val === '' ? null : val)),
   data: z.object({
+    canvas: z
+      .object({
+        width: z.number().min(320).max(6000),
+        height: z.number().min(320).max(6000),
+      })
+      .optional(),
     background: z.string().nullable(),
     elements: z.array(certificationTemplateElementSchema),
   }),

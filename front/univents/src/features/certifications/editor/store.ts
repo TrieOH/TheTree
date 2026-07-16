@@ -50,6 +50,7 @@ function createInitialDraft(): CertificationTemplateDraft {
     title: 'Certificado sem título',
     url: null,
     data: {
+      canvas: { ...DEFAULT_CERTIFICATE_CANVAS },
       background: null,
       elements: [createHashElement(DEFAULT_CERTIFICATE_CANVAS)],
     },
@@ -111,15 +112,18 @@ function normalizeLoadedElement(
 
 export const certificateEditorActions = {
   loadDraft(draft: CertificationTemplateDraft): void {
+    const canvas = draft.data.canvas ?? DEFAULT_CERTIFICATE_CANVAS
     updateState((state) => ({
       ...state,
       draft: {
         ...draft,
         data: {
           ...draft.data,
+          canvas: { ...canvas },
           elements: draft.data.elements.map(normalizeLoadedElement),
         },
       },
+      canvas: { ...canvas },
       selectedElementId: null,
       editingElementId: null,
       richTextController: null,
@@ -204,7 +208,16 @@ export const certificateEditorActions = {
       })
 
       return {
-        ...setElements(state, elements),
+        ...setElements(
+          {
+            ...state,
+            draft: {
+              ...state.draft,
+              data: { ...state.draft.data, canvas: { ...canvas } },
+            },
+          },
+          elements,
+        ),
         canvas: { ...canvas },
       }
     })
