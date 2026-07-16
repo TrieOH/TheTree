@@ -12,12 +12,20 @@ import {
 } from '@/features/certifications/api'
 import { Badge } from '@/shared/ui/shadcn/badge'
 import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/shadcn/card'
 import { Label } from '@/shared/ui/shadcn/label'
 import { cn } from '@/shared/lib/utils'
-import { CertificationTemplatePreview } from '@/features/certifications/ui/CertificationTemplatePreview'
+import { CertViewer } from '@/features/certifications/ui/CertViewer'
 
-export const Route = createFileRoute('/admin/events/$eventId_/editions/$editionId/certifications/')({
+export const Route = createFileRoute(
+  '/admin/events/$eventId_/editions/$editionId/certifications/',
+)({
   component: RouteComponent,
 })
 
@@ -26,15 +34,24 @@ function RouteComponent() {
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [selectedActivityId, setSelectedActivityId] = useState('')
 
-  const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  )
   const edition = editions.find((item) => item.id === editionId) ?? null
 
-  const { data: templates = [] } = useQuery(allCertificationTemplatesQueryOptions(eventId, editionId))
-  const { data: activities = [] } = useQuery(allAdminActivitiesQueryOptions(eventId, editionId))
+  const { data: templates = [] } = useQuery(
+    allCertificationTemplatesQueryOptions(eventId, editionId),
+  )
+  const { data: activities = [] } = useQuery(
+    allAdminActivitiesQueryOptions(eventId, editionId),
+  )
 
   const selectedTemplate = useMemo(
-    () => templates.find((template) => template.id === selectedTemplateId) ?? templates[0] ?? null,
-    [selectedTemplateId, templates]
+    () =>
+      templates.find((template) => template.id === selectedTemplateId) ??
+      templates[0] ??
+      null,
+    [selectedTemplateId, templates],
   )
 
   const editionTemplateMutation = useMutation({
@@ -53,10 +70,16 @@ function RouteComponent() {
 
   const activityTemplateMutation = useMutation({
     mutationFn: () => {
-      if (!selectedTemplate || !selectedActivityId) throw new Error('Selecione template e atividade')
-      return setActivityCertificationTemplateFn(eventId, editionId, selectedActivityId, {
-        certification_template_id: selectedTemplate.id,
-      })
+      if (!selectedTemplate || !selectedActivityId)
+        throw new Error('Selecione template e atividade')
+      return setActivityCertificationTemplateFn(
+        eventId,
+        editionId,
+        selectedActivityId,
+        {
+          certification_template_id: selectedTemplate.id,
+        },
+      )
     },
     onSuccess: (res) => {
       if (res.success) toast.success('Template definido para a atividade')
@@ -65,18 +88,24 @@ function RouteComponent() {
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })
 
-  const isPending = editionTemplateMutation.isPending || activityTemplateMutation.isPending
-  const activityOptions = activities.filter((activity) => activity.status !== 'canceled')
+  const isPending =
+    editionTemplateMutation.isPending || activityTemplateMutation.isPending
+  const activityOptions = activities.filter(
+    (activity) => activity.status !== 'canceled',
+  )
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1">
-            <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Admin</p>
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">
+              Admin
+            </p>
             <h1 className="text-2xl font-semibold">Certificações</h1>
             <p className="text-sm text-muted-foreground">
-              Templates e vínculos de certificados para {edition?.edition_name ?? 'esta edição'}.
+              Templates e vínculos de certificados para{' '}
+              {edition?.edition_name ?? 'esta edição'}.
             </p>
           </div>
           <Link
@@ -123,7 +152,9 @@ function RouteComponent() {
                         tabIndex={0}
                         className={cn(
                           'flex w-full flex-col gap-3 rounded-2xl border p-4 text-left transition-colors md:flex-row md:items-center md:justify-between',
-                          isSelected ? 'border-primary/40 bg-primary/5' : 'hover:bg-muted/40'
+                          isSelected
+                            ? 'border-primary/40 bg-primary/5'
+                            : 'hover:bg-muted/40',
                         )}
                       >
                         <div className="space-y-1">
@@ -133,13 +164,13 @@ function RouteComponent() {
                             {isSelected && <Badge>Selecionado</Badge>}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {template.url ? 'Com fundo configurado' : 'Sem fundo'}
+                            {template.url
+                              ? 'Com fundo configurado'
+                              : 'Sem fundo'}
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <CertificationTemplatePreview
-                            eventId={eventId}
-                            editionId={editionId}
+                          <CertViewer
                             template={template}
                             triggerLabel="Ver certificado"
                           />
@@ -164,7 +195,9 @@ function RouteComponent() {
               <CardContent className="space-y-4 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Template</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Template
+                    </Label>
                     <select
                       className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                       value={selectedTemplate?.id ?? ''}
@@ -180,7 +213,9 @@ function RouteComponent() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Atividade</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Atividade
+                    </Label>
                     <select
                       className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                       value={selectedActivityId}
@@ -201,7 +236,9 @@ function RouteComponent() {
                     type="button"
                     className="flex-1"
                     disabled={!selectedTemplate || isPending}
-                    onClick={() => { void editionTemplateMutation.mutateAsync() }}
+                    onClick={() => {
+                      void editionTemplateMutation.mutateAsync()
+                    }}
                   >
                     Definir para a edição
                   </Button>
@@ -209,8 +246,12 @@ function RouteComponent() {
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    disabled={!selectedTemplate || !selectedActivityId || isPending}
-                    onClick={() => { void activityTemplateMutation.mutateAsync() }}
+                    disabled={
+                      !selectedTemplate || !selectedActivityId || isPending
+                    }
+                    onClick={() => {
+                      void activityTemplateMutation.mutateAsync()
+                    }}
                   >
                     Definir para a atividade
                   </Button>
