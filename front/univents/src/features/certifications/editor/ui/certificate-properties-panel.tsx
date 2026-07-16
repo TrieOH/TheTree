@@ -3,8 +3,6 @@ import type { ChangeEvent, ReactNode } from 'react'
 import type { CertificationTemplateElement } from '../../model'
 import {
   CERTIFICATE_IMAGE_ACCEPT,
-  CERTIFICATE_VARIABLES,
-  DEFAULT_CERTIFICATE_FONT,
   MIN_CERTIFICATE_ELEMENT_SIZE,
 } from '../constants'
 import { certificateEditorActions, useCertificateEditorState } from '../store'
@@ -382,84 +380,14 @@ function SignatureProperties({
   )
 }
 
-function updateText(
-  id: string,
-  patch: Partial<Omit<TextCertificateElement, 'id' | 'type'>>,
-) {
-  certificateEditorActions.updateElement(id, (element) =>
-    element.type === 'text' ? { ...element, ...patch } : element,
-  )
-}
-
 function TextProperties({ element }: { element: TextCertificateElement }) {
-  const controller = useCertificateEditorState(
-    (state) => state.richTextController,
-  )
-
-  function insertVariable(token: string) {
-    if (controller?.elementId === element.id) {
-      controller.insertText(token)
-      return
-    }
-
-    const paragraphs = element.paragraphs.map((paragraph, paragraphIndex) => {
-      if (paragraphIndex !== element.paragraphs.length - 1) return paragraph
-      if (paragraph.runs.length === 0) {
-        return {
-          ...paragraph,
-          runs: [
-            {
-              text: token,
-              bold: false,
-              italic: false,
-              underline: false,
-              color: '#111827',
-              fontSize: 24,
-              fontFamily: DEFAULT_CERTIFICATE_FONT,
-            },
-          ],
-        }
-      }
-
-      return {
-        ...paragraph,
-        runs: paragraph.runs.map((run, runIndex) =>
-          runIndex === paragraph.runs.length - 1
-            ? { ...run, text: run.text + token }
-            : run,
-        ),
-      }
-    })
-    updateText(element.id, { paragraphs })
-  }
-
   return (
     <div className="space-y-4">
       <p className="rounded-md bg-muted p-2.5 text-xs leading-relaxed text-muted-foreground">
         Dê um duplo clique no texto para editar. A formatação da seleção aparece
-        na barra acima do canvas.
+        na barra acima do canvas, onde também é possível inserir informações
+        dinâmicas.
       </p>
-      <div className="space-y-2">
-        <p className="text-xs font-medium">Inserir informação dinâmica</p>
-        {CERTIFICATE_VARIABLES.map((variable) => (
-          <Button
-            key={variable.key}
-            type="button"
-            variant="outline"
-            className="h-auto w-full justify-start px-2.5 py-2 text-left"
-            onClick={() => insertVariable(variable.token)}
-          >
-            <span>
-              <span className="block text-xs font-medium">
-                {variable.label}
-              </span>
-              <span className="block text-[10px] font-normal text-muted-foreground">
-                {variable.description}
-              </span>
-            </span>
-          </Button>
-        ))}
-      </div>
       <Separator />
       <PositionSizeProperties element={element} />
     </div>
