@@ -46,6 +46,7 @@
     "class-variance-authority": "catalog:",
     "date-fns": "^4.1.0",
     "fabric": "^7.4.0",
+    "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "catalog:",

@@ -173,6 +173,13 @@ function RouteComponent() {
                           <CertViewer
                             template={template}
                             triggerLabel="Ver certificado"
+                            variables={{
+                              activity_name:
+                                edition?.edition_name ?? 'Nome da edição',
+                              certified_at: 'DD/MM/AAAA',
+                              cert_hash: 'HASH-DE-EXEMPLO',
+                              verify_url: window.location.href,
+                            }}
                           />
                         </div>
                       </div>

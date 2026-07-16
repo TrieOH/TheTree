@@ -27,7 +27,7 @@ export function HashElementView({ element }: HashElementViewProps) {
       <a
         href={url}
         onClick={(event) => event.preventDefault()}
-        title={`No certificado exportado, este link abre: ${url}`}
+        title={`Este link abre: ${url}`}
         className="inline-flex items-center gap-1 truncate font-medium underline decoration-current underline-offset-2"
         style={{
           justifyContent:
