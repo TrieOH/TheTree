@@ -10,6 +10,7 @@ import {
 import { certificationTemplateCreateSchema } from '../../model'
 import { allSignaturesQueryOptions } from '../../../signatures/api'
 import { certificateEditorActions, useCertificateEditorState } from '../store'
+import { uploadCertificateAssets } from '../upload-assets'
 import { CertificateCanvas } from './certificate-canvas'
 import { CertificatePropertiesPanel } from './certificate-properties-panel'
 import { CertificateTextToolbar } from './certificate-text-toolbar'
@@ -51,7 +52,11 @@ export function CertificateEditor({
   const createTemplate = useMutation({
     mutationFn: (
       payload: ReturnType<typeof certificateEditorActions.getDraft>,
-    ) => createCertificationTemplateFn(eventId, editionId, payload),
+    ) =>
+      uploadCertificateAssets(payload, eventId, editionId).then(
+        (uploadedPayload) =>
+          createCertificationTemplateFn(eventId, editionId, uploadedPayload),
+      ),
     onSuccess: async (response) => {
       if (!response.success) {
         toast.error(response.message || 'Não foi possível salvar o template')

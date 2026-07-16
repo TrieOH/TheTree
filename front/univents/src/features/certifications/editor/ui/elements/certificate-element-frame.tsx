@@ -22,6 +22,7 @@ interface CertificateElementFrameProps {
   type: CertificateElementType
   bounds: ElementBounds
   scale: number
+  zIndex: number
   canvas: { width: number; height: number }
   selected: boolean
   editing: boolean
@@ -37,6 +38,7 @@ export function CertificateElementFrame({
   type,
   bounds,
   scale,
+  zIndex,
   canvas,
   selected,
   editing,
@@ -62,7 +64,6 @@ export function CertificateElementFrame({
       data-certificate-element={type}
       className={cn(
         'absolute select-none',
-        selected ? 'z-20' : 'z-10',
         !editing && (selected ? 'cursor-move' : 'cursor-pointer'),
       )}
       style={{
@@ -70,6 +71,7 @@ export function CertificateElementFrame({
         top: bounds.y,
         width: bounds.width,
         height: bounds.height,
+        zIndex,
       }}
       onPointerDown={(event) => {
         onSelect()

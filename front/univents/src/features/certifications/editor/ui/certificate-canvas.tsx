@@ -195,12 +195,13 @@ export function CertificateCanvas() {
           className="relative overflow-hidden"
           style={canvasStyle}
         >
-          {elements.map((element) => (
+          {elements.map((element, elementIndex) => (
             <CertificateElementFrame
               key={element.id}
               type={element.type}
               bounds={element}
               scale={scale}
+              zIndex={elementIndex + 1}
               canvas={canvas}
               selected={selectedElementId === element.id}
               editing={editingElementId === element.id}
