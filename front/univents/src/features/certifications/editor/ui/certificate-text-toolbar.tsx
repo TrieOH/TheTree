@@ -221,9 +221,13 @@ export function CertificateTextToolbar() {
           onChange={(event) => controller?.setColor(event.target.value)}
         />
         {controller && selectionStyles?.color === null ? (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-background/75 text-xs text-muted-foreground">
-            —
-          </span>
+          <span
+            className="pointer-events-none absolute inset-1 rounded-sm border border-border"
+            style={{
+              background:
+                'conic-gradient(#cbd5e1 0 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0)',
+            }}
+          />
         ) : null}
       </div>
       <ToolbarCombobox

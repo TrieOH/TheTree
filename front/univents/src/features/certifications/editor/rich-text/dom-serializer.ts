@@ -23,13 +23,27 @@ export function paragraphsToHtml(
   paragraphs: TextCertificateElement['paragraphs'],
 ): string {
   return paragraphs
-    .map((paragraph) => {
-      const content = paragraph.runs
-        .map(
-          (run) =>
-            `<span style="${runStyle(run)}">${escapeHtml(run.text) || '\u200b'}</span>`,
-        )
-        .join('')
+    .map((paragraph, paragraphIndex) => {
+      const nearestRun =
+        paragraph.runs[0] ??
+        paragraphs
+          .slice(0, paragraphIndex)
+          .reverse()
+          .find((candidate) => candidate.runs.length > 0)
+          ?.runs.at(-1) ??
+        paragraphs
+          .slice(paragraphIndex + 1)
+          .find((candidate) => candidate.runs.length > 0)?.runs[0]
+      const content =
+        paragraph.runs
+          .map(
+            (run) =>
+              `<span style="${runStyle(run)}">${escapeHtml(run.text) || '\u200b'}</span>`,
+          )
+          .join('') ||
+        (nearestRun
+          ? `<span style="${runStyle(nearestRun)}">\u200b</span>`
+          : '\u200b')
       return `<p style="text-align:${paragraph.align};line-height:${paragraph.lineHeight};margin:0;min-height:1.25em">${content}</p>`
     })
     .join('')
