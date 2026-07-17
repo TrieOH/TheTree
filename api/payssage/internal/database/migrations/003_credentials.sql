@@ -3,7 +3,7 @@ CREATE TABLE oauth_states (
     state              TEXT PRIMARY KEY,
     wallet_id          UUID REFERENCES wallets(id) ON DELETE CASCADE,
     organization_id    UUID REFERENCES organizations(id) ON DELETE SET NULL,
-    owner_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    owner_id           UUID NOT NULL,
     provider           TEXT NOT NULL,
     flow               TEXT NOT NULL,
     final_redirect_url      TEXT NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE oauth_states (
 
 CREATE TABLE collectors (
     id               UUID PRIMARY KEY DEFAULT uuidv7(),
-    owner_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    owner_id         UUID NOT NULL,
     organization_id  UUID REFERENCES organizations(id) ON DELETE SET NULL,
     provider         TEXT NOT NULL,
     provider_user_id TEXT NOT NULL,
