@@ -6,22 +6,15 @@ import (
 	"log"
 	"net/http"
 	"payssage/internal/database/sqlc"
-	"payssage/ports"
 
 	"go.opentelemetry.io/otel"
 )
-
-type paymentProviders struct {
-	oauth    map[string]ports.OAuthProvider
-	payments map[string]ports.PaymentAbstractionLayer
-}
 
 func (app *Payssage) run() {
 	q := sqlc.New(app.db)
 	loggr := telemetry.Log()
 	tx := database.NewPGXTxRunner(app.db, loggr)
 	tracer := otel.Tracer(app.cfg.AppName)
-	//paymentProviders := setupPaymentProviders(app.cfg)
 
 	repos := initRepos(q, loggr, tracer)
 
@@ -35,7 +28,7 @@ func (app *Payssage) run() {
 
 	queries := initQueries(repos, app.idxClient, loggr, tx, tracer)
 	commands := initCommands(repos, app.idxClient, loggr, tx, tracer)
-	middlewares := initMiddlewares(loggr, app.cfg)
+	middlewares := app.initMiddlewares(loggr, app.cfg)
 	handlers := initHandlers(commands, queries)
 
 	if app.cfg.ProfilePort != "" {

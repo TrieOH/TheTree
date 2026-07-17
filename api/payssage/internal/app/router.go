@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"payssage/generated/docs"
+	"payssage/internal/features/oauth"
 	"payssage/internal/features/orgs"
 	"payssage/internal/features/wallets"
 
@@ -62,6 +63,7 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 	// Routes
 	orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
 	wallets.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
+	oauth.RegisterRoutes(r, handlers.oauth, middlewares.apiKeyAuth)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

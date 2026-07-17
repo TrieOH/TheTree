@@ -25,6 +25,7 @@ func Start() {
 	SetupConstraintMessages()
 
 	app.cfg = LoadConfig()
+	setupProviders(app.cfg)
 
 	SetupFUN(app.cfg.AppName)
 

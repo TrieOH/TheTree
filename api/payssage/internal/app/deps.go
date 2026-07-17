@@ -4,10 +4,10 @@ import (
 	"context"
 	"lib/database"
 	"lib/errx"
+	"lib/telemetry"
 	"lib/validator"
-	"log"
 	"net/http"
-	"payssage/internal/platform/providers"
+	"payssage/internal/providers"
 	"payssage/ports"
 	"time"
 
@@ -17,6 +17,8 @@ import (
 	"github.com/MintzyG/fun/bind"
 	fm "github.com/MintzyG/fun/middlewares"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+	"resty.dev/v3"
 )
 
 func SetupFUN(module string) {
@@ -75,7 +77,7 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
 		ProjectID: cfg.IdxProjectID,
-		Debug:     cfg.DebugMode,
+		Debug:     true,
 	})
 	if err != nil {
 		errx.Exit(err, "error creating identity_x client")
@@ -91,9 +93,8 @@ func SetupIdentityX(cfg Config) *idx.Client {
 	return client
 }
 
-func setupPaymentProviders(cfg Config) paymentProviders {
-	var pp paymentProviders
-	mpProvider, err := providers.NewMercadoPagoProvider(
+func setupProviders(cfg Config) {
+	mercadoPago, err := providers.NewMercadoPagoProvider(
 		cfg.MpClientID,
 		cfg.MpAccessToken,
 		cfg.MpClientSecret,
@@ -101,21 +102,19 @@ func setupPaymentProviders(cfg Config) paymentProviders {
 		cfg.MpWebhookSecret,
 	)
 	if err != nil {
-		log.Fatalf("Error creating mercado pago provider: %s", err.Error())
+		errx.Exit(err, "error setting up mercado pago")
 	}
 
-	pp.oauth = map[string]ports.OAuthProvider{
-		"mercadopago": mpProvider,
+	providers.PayssageProviders.OAuth = map[providers.AvailableProviders]ports.OAuthProvider{
+		providers.MercadoPagoProvider: mercadoPago,
 	}
 
-	pp.payments = map[string]ports.PaymentAbstractionLayer{
-		"mercadopago": mpProvider,
+	providers.PayssageProviders.Payments = map[providers.AvailableProviders]ports.PaymentAbstractionLayer{
+		providers.MercadoPagoProvider: mercadoPago,
 	}
-
-	return pp
 }
 
-func setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
+func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*idx.AccessClaims, error) {
 		return app.idxClient.Tokens.VerifyAccessToken(ctx, tokenStr)
 	}
@@ -137,7 +136,17 @@ func setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	}
 
 	apiKeyHook := func(ctx context.Context, rawKey string) (context.Context, error) {
-		return nil, fun.ErrNotImplemented("api keys are not yet supported")
+		var ident idx.Identity
+		_, err := resty.New().R().
+			WithContext(ctx).
+			SetHeader("X-API-KEY", rawKey).
+			SetResult(&ident).
+			Get("http://identityx:8080/auth/introspect")
+		if err != nil {
+			telemetry.Log().Error("error fetching identity", zap.Error(err))
+			return ctx, err
+		}
+		return idx.WithIdentity(ctx, &ident), nil
 	}
 
 	return fm.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)

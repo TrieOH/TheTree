@@ -36,6 +36,7 @@ func mapWallet(src sqlc.Wallet) models.Wallet {
 		Name:           src.Name,
 		Sandbox:        src.Sandbox,
 		FeeBps:         src.FeeBps,
+		CollectorID:    src.CollectorID,
 		CreatedAt:      src.CreatedAt,
 	}
 }
