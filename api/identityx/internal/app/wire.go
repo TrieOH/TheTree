@@ -106,7 +106,7 @@ func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trac
 func (app *IdentityX) initQueries(r *repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
 		actors:         actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
-		authn:          authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
+		authn:          authn.NewQueries(r.projects, r.cryptoKeys, logger, tracer, tx),
 		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
 		projects:       projects.NewQueries(r.projects, logger, tracer, tx),
 		capabilities:   capabilities.NewQueries(r.capabilities, r.projects, logger, tracer, tx),
