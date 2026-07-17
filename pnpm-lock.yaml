@@ -531,6 +531,9 @@ importers:
       '@trieoh/payssage-models':
         specifier: workspace:*
         version: link:../../lib/ts/payssage
+      '@trieoh/payssage-sdk-ts':
+        specifier: file:../../sdk/ts/payssage
+        version: file:sdk/ts/payssage
       '@trieoh/shared-utils':
         specifier: workspace:*
         version: link:../../lib/ts/shared-utils
@@ -3748,6 +3751,9 @@ packages:
     peerDependencies:
       react: ^19.2.0
       react-dom: ^19.2.0
+
+  '@trieoh/payssage-sdk-ts@file:sdk/ts/payssage':
+    resolution: {directory: sdk/ts/payssage, type: directory}
 
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
@@ -10287,6 +10293,10 @@ snapshots:
       zod: 4.4.3
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
+
+  '@trieoh/payssage-sdk-ts@file:sdk/ts/payssage':
+    dependencies:
+      '@trieoh/envoy-fetch-ts': 0.1.5
 
   '@ts-morph/common@0.27.0':
     dependencies:

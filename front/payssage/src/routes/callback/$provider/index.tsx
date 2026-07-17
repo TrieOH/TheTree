@@ -37,18 +37,7 @@ export const Route = createFileRoute('/callback/$provider/')({
 
       if (!res.success) return { ok: false, message: 'Failed to connect provider.' }
 
-      const callbackURL = new URL(res.data.url)
-      const redirect_url = callbackURL.searchParams.get('redirect_url')
-
-      if (!redirect_url) return { ok: false, message: 'Missing redirect URL.' }
-
-      const target = new URL(redirect_url)
-
-      callbackURL.searchParams.forEach((value, key) => {
-        if (key !== 'redirect_url') target.searchParams.set(key, value)
-      })
-
-      return { ok: true, redirectTo: target.toString() }
+      return { ok: true, redirectTo: res.data }
     } catch {
       return { ok: false, message: 'Unexpected error while connecting provider.' }
     }

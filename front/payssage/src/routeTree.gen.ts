@@ -14,10 +14,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
 import { Route as AdminKeysRouteImport } from './routes/admin/keys'
+import { Route as AdminCollectorsRouteImport } from './routes/admin/collectors'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
 import { Route as CallbackProviderIndexRouteImport } from './routes/callback/$provider/index'
 import { Route as AdminOrganizationIDIndexRouteImport } from './routes/admin/$organizationID/index'
+import { Route as AdminWalletsWalletIDRouteImport } from './routes/admin/wallets/$walletID'
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
+import { Route as AdminOrganizationIDCollectorsRouteImport } from './routes/admin/$organizationID/collectors'
+import { Route as AdminWalletsWalletIDIndexRouteImport } from './routes/admin/wallets/$walletID/index'
+import { Route as AdminWalletsWalletIDSellersRouteImport } from './routes/admin/wallets/$walletID/sellers'
+import { Route as AdminWalletsWalletIDConnectSellerRouteImport } from './routes/admin/wallets/$walletID/connect-seller'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -44,6 +50,11 @@ const AdminKeysRoute = AdminKeysRouteImport.update({
   path: '/keys',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCollectorsRoute = AdminCollectorsRouteImport.update({
+  id: '/collectors',
+  path: '/collectors',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrganizationIDRoute = AdminOrganizationIDRouteImport.update({
   id: '/$organizationID',
   path: '/$organizationID',
@@ -60,44 +71,90 @@ const AdminOrganizationIDIndexRoute =
     path: '/',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminWalletsWalletIDRoute = AdminWalletsWalletIDRouteImport.update({
+  id: '/$walletID',
+  path: '/$walletID',
+  getParentRoute: () => AdminWalletsRoute,
+} as any)
 const AdminOrganizationIDMembersRoute =
   AdminOrganizationIDMembersRouteImport.update({
     id: '/members',
     path: '/members',
     getParentRoute: () => AdminOrganizationIDRoute,
   } as any)
+const AdminOrganizationIDCollectorsRoute =
+  AdminOrganizationIDCollectorsRouteImport.update({
+    id: '/collectors',
+    path: '/collectors',
+    getParentRoute: () => AdminOrganizationIDRoute,
+  } as any)
+const AdminWalletsWalletIDIndexRoute =
+  AdminWalletsWalletIDIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
+const AdminWalletsWalletIDSellersRoute =
+  AdminWalletsWalletIDSellersRouteImport.update({
+    id: '/sellers',
+    path: '/sellers',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
+const AdminWalletsWalletIDConnectSellerRoute =
+  AdminWalletsWalletIDConnectSellerRouteImport.update({
+    id: '/connect-seller',
+    path: '/connect-seller',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
-  '/admin/wallets': typeof AdminWalletsRoute
+  '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$organizationID/collectors': typeof AdminOrganizationIDCollectorsRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/admin/wallets/$walletID': typeof AdminWalletsWalletIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
+  '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
+  '/admin/wallets/$walletID/': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
-  '/admin/wallets': typeof AdminWalletsRoute
+  '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin': typeof AdminIndexRoute
+  '/admin/$organizationID/collectors': typeof AdminOrganizationIDCollectorsRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
   '/admin/$organizationID': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
+  '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
+  '/admin/wallets/$walletID': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
+  '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
-  '/admin/wallets': typeof AdminWalletsRoute
+  '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/admin/$organizationID/collectors': typeof AdminOrganizationIDCollectorsRoute
   '/admin/$organizationID/members': typeof AdminOrganizationIDMembersRoute
+  '/admin/wallets/$walletID': typeof AdminWalletsWalletIDRouteWithChildren
   '/admin/$organizationID/': typeof AdminOrganizationIDIndexRoute
   '/callback/$provider/': typeof CallbackProviderIndexRoute
+  '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
+  '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
+  '/admin/wallets/$walletID/': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -105,32 +162,49 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/collectors'
     | '/admin/keys'
     | '/admin/wallets'
     | '/admin/'
+    | '/admin/$organizationID/collectors'
     | '/admin/$organizationID/members'
+    | '/admin/wallets/$walletID'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
+    | '/admin/wallets/$walletID/connect-seller'
+    | '/admin/wallets/$walletID/sellers'
+    | '/admin/wallets/$walletID/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/collectors'
     | '/admin/keys'
     | '/admin/wallets'
     | '/admin'
+    | '/admin/$organizationID/collectors'
     | '/admin/$organizationID/members'
     | '/admin/$organizationID'
     | '/callback/$provider'
+    | '/admin/wallets/$walletID/connect-seller'
+    | '/admin/wallets/$walletID/sellers'
+    | '/admin/wallets/$walletID'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/admin/$organizationID'
+    | '/admin/collectors'
     | '/admin/keys'
     | '/admin/wallets'
     | '/admin/'
+    | '/admin/$organizationID/collectors'
     | '/admin/$organizationID/members'
+    | '/admin/wallets/$walletID'
     | '/admin/$organizationID/'
     | '/callback/$provider/'
+    | '/admin/wallets/$walletID/connect-seller'
+    | '/admin/wallets/$walletID/sellers'
+    | '/admin/wallets/$walletID/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKeysRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/collectors': {
+      id: '/admin/collectors'
+      path: '/collectors'
+      fullPath: '/admin/collectors'
+      preLoaderRoute: typeof AdminCollectorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/$organizationID': {
       id: '/admin/$organizationID'
       path: '/$organizationID'
@@ -197,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDIndexRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
+    '/admin/wallets/$walletID': {
+      id: '/admin/wallets/$walletID'
+      path: '/$walletID'
+      fullPath: '/admin/wallets/$walletID'
+      preLoaderRoute: typeof AdminWalletsWalletIDRouteImport
+      parentRoute: typeof AdminWalletsRoute
+    }
     '/admin/$organizationID/members': {
       id: '/admin/$organizationID/members'
       path: '/members'
@@ -204,15 +292,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrganizationIDMembersRouteImport
       parentRoute: typeof AdminOrganizationIDRoute
     }
+    '/admin/$organizationID/collectors': {
+      id: '/admin/$organizationID/collectors'
+      path: '/collectors'
+      fullPath: '/admin/$organizationID/collectors'
+      preLoaderRoute: typeof AdminOrganizationIDCollectorsRouteImport
+      parentRoute: typeof AdminOrganizationIDRoute
+    }
+    '/admin/wallets/$walletID/': {
+      id: '/admin/wallets/$walletID/'
+      path: '/'
+      fullPath: '/admin/wallets/$walletID/'
+      preLoaderRoute: typeof AdminWalletsWalletIDIndexRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
+    '/admin/wallets/$walletID/sellers': {
+      id: '/admin/wallets/$walletID/sellers'
+      path: '/sellers'
+      fullPath: '/admin/wallets/$walletID/sellers'
+      preLoaderRoute: typeof AdminWalletsWalletIDSellersRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
+    '/admin/wallets/$walletID/connect-seller': {
+      id: '/admin/wallets/$walletID/connect-seller'
+      path: '/connect-seller'
+      fullPath: '/admin/wallets/$walletID/connect-seller'
+      preLoaderRoute: typeof AdminWalletsWalletIDConnectSellerRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
   }
 }
 
 interface AdminOrganizationIDRouteChildren {
+  AdminOrganizationIDCollectorsRoute: typeof AdminOrganizationIDCollectorsRoute
   AdminOrganizationIDMembersRoute: typeof AdminOrganizationIDMembersRoute
   AdminOrganizationIDIndexRoute: typeof AdminOrganizationIDIndexRoute
 }
 
 const AdminOrganizationIDRouteChildren: AdminOrganizationIDRouteChildren = {
+  AdminOrganizationIDCollectorsRoute: AdminOrganizationIDCollectorsRoute,
   AdminOrganizationIDMembersRoute: AdminOrganizationIDMembersRoute,
   AdminOrganizationIDIndexRoute: AdminOrganizationIDIndexRoute,
 }
@@ -220,17 +338,47 @@ const AdminOrganizationIDRouteChildren: AdminOrganizationIDRouteChildren = {
 const AdminOrganizationIDRouteWithChildren =
   AdminOrganizationIDRoute._addFileChildren(AdminOrganizationIDRouteChildren)
 
+interface AdminWalletsWalletIDRouteChildren {
+  AdminWalletsWalletIDConnectSellerRoute: typeof AdminWalletsWalletIDConnectSellerRoute
+  AdminWalletsWalletIDSellersRoute: typeof AdminWalletsWalletIDSellersRoute
+  AdminWalletsWalletIDIndexRoute: typeof AdminWalletsWalletIDIndexRoute
+}
+
+const AdminWalletsWalletIDRouteChildren: AdminWalletsWalletIDRouteChildren = {
+  AdminWalletsWalletIDConnectSellerRoute:
+    AdminWalletsWalletIDConnectSellerRoute,
+  AdminWalletsWalletIDSellersRoute: AdminWalletsWalletIDSellersRoute,
+  AdminWalletsWalletIDIndexRoute: AdminWalletsWalletIDIndexRoute,
+}
+
+const AdminWalletsWalletIDRouteWithChildren =
+  AdminWalletsWalletIDRoute._addFileChildren(AdminWalletsWalletIDRouteChildren)
+
+interface AdminWalletsRouteChildren {
+  AdminWalletsWalletIDRoute: typeof AdminWalletsWalletIDRouteWithChildren
+}
+
+const AdminWalletsRouteChildren: AdminWalletsRouteChildren = {
+  AdminWalletsWalletIDRoute: AdminWalletsWalletIDRouteWithChildren,
+}
+
+const AdminWalletsRouteWithChildren = AdminWalletsRoute._addFileChildren(
+  AdminWalletsRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
+  AdminCollectorsRoute: typeof AdminCollectorsRoute
   AdminKeysRoute: typeof AdminKeysRoute
-  AdminWalletsRoute: typeof AdminWalletsRoute
+  AdminWalletsRoute: typeof AdminWalletsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
+  AdminCollectorsRoute: AdminCollectorsRoute,
   AdminKeysRoute: AdminKeysRoute,
-  AdminWalletsRoute: AdminWalletsRoute,
+  AdminWalletsRoute: AdminWalletsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
