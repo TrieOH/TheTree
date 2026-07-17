@@ -10,7 +10,7 @@ export interface AuthTokens {
 // export type ActorType = "human" | "service" | "machine";
 
 // export interface TokenClaims {
-//   sub: {
+//   subject: {
 //     id: string;
 //     project_id: string | null;
 //     email: string | null;
@@ -25,7 +25,7 @@ export interface AuthTokens {
 // }
 
 export interface TokenClaims {
-  sub: {
+  subject: {
     id: string;
     email: string;
     session_id: string;
