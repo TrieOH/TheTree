@@ -2,13 +2,12 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
 
 	"github.com/MintzyG/fun"
-	"go.uber.org/zap"
 )
 
 func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr string) (string, error) {
@@ -34,16 +33,40 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		return "", err
 	}
 
+	var credentialID string
 	switch state.Flow {
 	case models.OAuthFlowCollector:
-		// Create Collector
+		collector, err := c.collectors.Create(ctx, models.Collector{
+			Provider:       providerStr,
+			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			Credentials:    marshalCredentials(credentialData),
+		})
+		if err != nil {
+			return "", err
+		}
+		credentialID = collector.ID.String()
 	case models.OAuthFlowSeller:
-		// Create Seller tied to Wallet
+		if state.WalletID == nil {
+			return "", fun.ErrBadRequest("wallet_id is required for seller flow")
+		}
+		seller, err := c.sellers.Create(ctx, models.Seller{
+			WalletID:       *state.WalletID,
+			Provider:       providerStr,
+			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
+			Credentials:    marshalCredentials(credentialData),
+		})
+		if err != nil {
+			return "", err
+		}
+		credentialID = seller.ID.String()
 	default:
 		return "", fun.ErrBadRequest("invalid flow")
 	}
 
-	telemetry.Log().Info("credential data", zap.Any("credentials", credentialData))
+	return fmt.Sprintf("%s&credential_id=%s&public_key=%s", state.FinalRedirectUrl, credentialID, credentialData.PublicKey), nil
+}
 
-	return fmt.Sprintf("%s&credential_id=%s&public_key=%s", state.FinalRedirectUrl, "bogus", credentialData.PublicKey), nil
+func marshalCredentials(data models.ProviderCredentialData) []byte {
+	b, _ := json.Marshal(data)
+	return b
 }

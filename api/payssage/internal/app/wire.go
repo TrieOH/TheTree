@@ -6,8 +6,10 @@ import (
 	"lib/xslices"
 	"net/http"
 	"payssage/internal/database/sqlc"
+	"payssage/internal/features/collectors"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
 	"payssage/ports"
 	idx "sdk/identityx"
@@ -22,9 +24,11 @@ import (
 // ── Wire types ────────────────────────────────────────────────────────────
 
 type repos struct {
-	orgs    ports.OrganizationRepo
-	wallets ports.WalletRepo
-	oauth   ports.OAuthStateRepo
+	orgs       ports.OrganizationRepo
+	wallets    ports.WalletRepo
+	oauth      ports.OAuthStateRepo
+	collectors ports.CollectorRepo
+	sellers    ports.SellerRepo
 	//intents             ports.IntentRepository
 	//workspaces          ports.WorkspaceRepo
 	//endpoints           ports.WebhookEndpointRepo
@@ -81,9 +85,11 @@ type handlers struct {
 
 func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 	return repos{
-		orgs:    orgs.NewRepos(q, logger, tracer),
-		wallets: wallets.NewRepos(q, logger, tracer),
-		oauth:   oauth.NewRepos(q, logger, tracer),
+		orgs:       orgs.NewRepos(q, logger, tracer),
+		wallets:    wallets.NewRepos(q, logger, tracer),
+		oauth:      oauth.NewRepos(q, logger, tracer),
+		collectors: collectors.NewRepos(q, logger, tracer),
+		sellers:    sellers.NewRepos(q, logger, tracer),
 		//intents:             intents.NewIntentsRepo(q, logger, tracer),
 		//workspaces:          workspaces.NewWorkspaceRepo(q, logger, tracer),
 		//endpoints:           webhooks.NewWebhookEndpointRepo(q, logger, tracer),
@@ -110,7 +116,7 @@ func initCommands(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRu
 	return commands{
 		orgs:    orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
 		wallets: wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
-		oauth:   oauth.NewCommands(r.wallets, r.orgs, r.oauth, logger, tracer, tx),
+		oauth:   oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
 		//webhooks:   webhooks.NewCommandService(r.endpoints, r.deliveries, r.events, r.workspaces, r.intents, r.providerCredentials, river, logger, tx, tracer),
 		//intents:    intents.NewCommandService(r.intents, r.workspaces, r.providerCredentials, r.marketplaces, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, logger, tx, tracer),
 		//workspaces: workspaces.NewCommandService(r.workspaces, logger, tx, tracer),

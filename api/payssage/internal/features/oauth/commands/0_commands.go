@@ -16,29 +16,35 @@ import (
 )
 
 type Commands struct {
-	wallets ports.WalletRepo
-	orgs    ports.OrganizationRepo
-	oauth   ports.OAuthStateRepo
-	logger  *zap.Logger
-	tracer  trace.Tracer
-	tx      database.TxRunner
+	wallets    ports.WalletRepo
+	orgs       ports.OrganizationRepo
+	oauth      ports.OAuthStateRepo
+	collectors ports.CollectorRepo
+	sellers    ports.SellerRepo
+	logger     *zap.Logger
+	tracer     trace.Tracer
+	tx         database.TxRunner
 }
 
 func NewCommands(
 	wallets ports.WalletRepo,
 	orgs ports.OrganizationRepo,
 	oauth ports.OAuthStateRepo,
+	collectors ports.CollectorRepo,
+	sellers ports.SellerRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
 ) *Commands {
 	return &Commands{
-		wallets: wallets,
-		orgs:    orgs,
-		oauth:   oauth,
-		logger:  logger,
-		tracer:  tracer,
-		tx:      tx,
+		wallets:    wallets,
+		orgs:       orgs,
+		oauth:      oauth,
+		collectors: collectors,
+		sellers:    sellers,
+		logger:     logger,
+		tracer:     tracer,
+		tx:         tx,
 	}
 }
 

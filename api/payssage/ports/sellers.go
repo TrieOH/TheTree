@@ -1,4 +1,14 @@
 package ports
 
+import (
+	"context"
+	"payssage/models"
+
+	"github.com/google/uuid"
+)
+
 type SellerRepo interface {
+	Create(ctx context.Context, toCreate models.Seller) (*models.Seller, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Seller, error)
+	List(ctx context.Context) ([]models.Seller, error)
 }

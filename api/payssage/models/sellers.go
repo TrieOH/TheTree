@@ -7,8 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type Collector struct {
+type Seller struct {
 	ID             uuid.UUID       `json:"id"`
+	WalletID       uuid.UUID       `json:"wallet_id"`
 	Provider       string          `json:"provider"`
 	ProviderUserID string          `json:"provider_user_id"`
 	Credentials    json.RawMessage `json:"credentials"`

@@ -17,20 +17,21 @@ type repo struct {
 	dbe    database.ErrorHandler
 }
 
-var _ ports.CollectorRepo = (*repo)(nil)
+var _ ports.SellerRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.CollectorRepo {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.SellerRepo {
 	return &repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,
-		dbe:    database.NewErrorHandler("collector"),
+		dbe:    database.NewErrorHandler("seller"),
 	}
 }
 
-func mapCollector(src sqlc.Collector) models.Collector {
-	return models.Collector{
+func mapSeller(src sqlc.Seller) models.Seller {
+	return models.Seller{
 		ID:             src.ID,
+		WalletID:       src.WalletID,
 		Provider:       src.Provider,
 		ProviderUserID: src.ProviderUserID,
 		Credentials:    src.Credentials,
