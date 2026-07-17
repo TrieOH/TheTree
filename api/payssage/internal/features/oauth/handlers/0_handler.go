@@ -26,8 +26,7 @@ func RegisterRoutes(
 	jwtAuth func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Use(jwtAuth)
-		r.Post("/providers/{provider}/connect", h.Connect)
+		r.With(jwtAuth).Post("/providers/{provider}/connect", h.Connect)
 		r.Get("/providers/{provider}/callback", h.Callback)
 	})
 }
