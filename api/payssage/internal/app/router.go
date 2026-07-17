@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"payssage/generated/docs"
+	"payssage/internal/features/collectors"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
 
 	fh "github.com/MintzyG/fun/handlers"
@@ -63,6 +65,8 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 	// Routes
 	orgs.RegisterRoutes(r, handlers.orgs, middlewares.jwtAuth)
 	wallets.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
+	collectors.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
+	sellers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
 	oauth.RegisterRoutes(r, handlers.oauth, middlewares.apiKeyAuth)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)

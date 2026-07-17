@@ -40,8 +40,10 @@ type repos struct {
 }
 
 type queries struct {
-	orgs    *orgs.Queries
-	wallets *wallets.Queries
+	orgs       *orgs.Queries
+	wallets    *wallets.Queries
+	collectors *collectors.Queries
+	sellers    *sellers.Queries
 	//webhooks   *webhooks.QueryService
 	//intents    *intents.QueryService
 	//workspaces *workspaces.QueryService
@@ -72,9 +74,11 @@ type middlewares struct {
 }
 
 type handlers struct {
-	orgs    *orgs.Handlers
-	wallets *wallets.Handlers
-	oauth   *oauth.Handlers
+	orgs       *orgs.Handlers
+	wallets    *wallets.Handlers
+	oauth      *oauth.Handlers
+	collectors *collectors.Handlers
+	sellers    *sellers.Handlers
 	//intents  *intents.Handler
 	//wallets  *workspaces.Handler
 	//webhooks *webhooks.Handler
@@ -103,8 +107,10 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 
 func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) queries {
 	return queries{
-		orgs:    orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
-		wallets: wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
+		orgs:       orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
+		wallets:    wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
+		collectors: collectors.NewQueries(r.collectors, r.orgs, logger, tracer, tx),
+		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, logger, tracer, tx),
 		//webhooks:   webhooks.NewQueryService(r.endpoints, r.deliveries, r.events, r.workspaces, logger, tx, tracer),
 		//intents:    intents.NewQueryService(r.intents, r.workspaces, logger, tx, tracer),
 		//workspaces: workspaces.NewQueryService(r.workspaces, logger, tx, tracer),
@@ -154,9 +160,11 @@ func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg Config) middlewares
 
 func initHandlers(c commands, q queries) handlers {
 	return handlers{
-		orgs:    orgs.NewHandlers(c.orgs, q.orgs),
-		wallets: wallets.NewHandlers(c.wallets, q.wallets),
-		oauth:   oauth.NewHandlers(c.oauth),
+		orgs:       orgs.NewHandlers(c.orgs, q.orgs),
+		wallets:    wallets.NewHandlers(c.wallets, q.wallets),
+		oauth:      oauth.NewHandlers(c.oauth),
+		collectors: collectors.NewHandlers(q.collectors),
+		sellers:    sellers.NewHandlers(q.sellers),
 		//intents:  intents.NewHandler(c.intents, q.intents),
 		//wallets:  workspaces.NewHandler(c.workspaces, q.workspaces),
 		//webhooks: webhooks.NewHandler(c.webhooks, q.webhooks),

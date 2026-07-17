@@ -11,3 +11,14 @@ WHERE id = @id;
 -- name: ListCollectors :many
 SELECT *
 FROM collectors;
+
+-- name: ListCollectorsByOwner :many
+SELECT *
+FROM collectors
+WHERE owner_id = @owner_id
+  AND organization_id IS NULL;
+
+-- name: ListCollectorsByOrg :many
+SELECT *
+FROM collectors
+WHERE organization_id = @organization_id;

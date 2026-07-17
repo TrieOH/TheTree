@@ -11,3 +11,8 @@ WHERE id = @id;
 -- name: ListSellers :many
 SELECT *
 FROM sellers;
+
+-- name: ListSellersByWallet :many
+SELECT *
+FROM sellers
+WHERE wallet_id = @wallet_id;
