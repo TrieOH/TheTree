@@ -4,7 +4,8 @@ CREATE TABLE oauth_states (
     wallet_id          UUID REFERENCES wallets(id) ON DELETE CASCADE,
     provider           TEXT NOT NULL,
     flow               TEXT NOT NULL,
-    final_redirect_url TEXT NOT NULL,
+    final_redirect_url      TEXT NOT NULL,
+    provider_redirect_url  TEXT NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at         TIMESTAMPTZ NOT NULL,
 

@@ -1,7 +1,7 @@
 package oauth
 
+// import (
 //
-//import (
 //	"context"
 //	"crypto/rand"
 //	"encoding/hex"
@@ -19,20 +19,22 @@ package oauth
 //	"github.com/google/uuid"
 //	"go.opentelemetry.io/otel/trace"
 //	"go.uber.org/zap"
-//)
 //
-//type CommandService struct {
-//	intents     ports.IntentRepository
-//	workspaces  ports.WorkspaceRepo
-//	oauthStates ports.OAuthStateRepo
-//	credentials ports.ProviderCredentialRepo
-//	marketplace ports.MarketplaceConfigRepo
-//	providers   map[string]ports.OAuthProvider
-//	tx          database.TxRunner
-//	tracer      trace.Tracer
-//}
+// )
 //
-//func NewCommandService(
+//	type CommandService struct {
+//		intents     ports.IntentRepository
+//		workspaces  ports.WorkspaceRepo
+//		oauthStates ports.OAuthStateRepo
+//		credentials ports.ProviderCredentialRepo
+//		marketplace ports.MarketplaceConfigRepo
+//		providers   map[string]ports.OAuthProvider
+//		tx          database.TxRunner
+//		tracer      trace.Tracer
+//	}
+//
+// func NewCommandService(
+//
 //	intents ports.IntentRepository,
 //	workspaces ports.WorkspaceRepo,
 //	oauthStates ports.OAuthStateRepo,
@@ -41,19 +43,19 @@ package oauth
 //	providers map[string]ports.OAuthProvider,
 //	tx database.TxRunner,
 //	tracer trace.Tracer,
-//) *CommandService {
-//	return &CommandService{
-//		intents:     intents,
-//		workspaces:  workspaces,
-//		oauthStates: oauthStates,
-//		credentials: credentials,
-//		marketplace: marketplace,
-//		providers:   providers,
-//		tx:          tx,
-//		tracer:      tracer,
-//	}
-//}
 //
+//	) *CommandService {
+//		return &CommandService{
+//			intents:     intents,
+//			workspaces:  workspaces,
+//			oauthStates: oauthStates,
+//			credentials: credentials,
+//			marketplace: marketplace,
+//			providers:   providers,
+//			tx:          tx,
+//			tracer:      tracer,
+//		}
+//	}
 //func (uc *CommandService) CompleteOAuth(ctx context.Context, provider, stateToken, code, redirectURI string) (string, error) {
 //	ctx, span := uc.tracer.Start(ctx, "CommandService.CompleteOAuth")
 //	defer span.End()
@@ -152,6 +154,7 @@ package oauth
 //		return FinalRedirectURL, nil
 //	}
 //}
+
 //
 //type ConnectSellerInput struct {
 //	WorkspaceName       string

@@ -11,12 +11,13 @@ func (repo *repo) Create(ctx context.Context, state models.OAuthState) (*models.
 	ctx, span := repo.tracer.Start(ctx, "Create")
 	defer span.End()
 	sqlcState, err := database.Queries(ctx, repo.q).CreateOAuthState(ctx, sqlc.CreateOAuthStateParams{
-		State:            state.State,
-		WalletID:         state.WalletID,
-		Provider:         state.Provider,
-		Flow:             state.Flow.String(),
-		FinalRedirectUrl: state.FinalRedirectUrl,
-		ExpiresAt:        state.ExpiresAt,
+		State:               state.State,
+		WalletID:            state.WalletID,
+		Provider:            state.Provider,
+		Flow:                state.Flow.String(),
+		FinalRedirectUrl:    state.FinalRedirectUrl,
+		ProviderRedirectUrl: state.ProviderRedirectUrl,
+		ExpiresAt:           state.ExpiresAt,
 	})
 	return new(mapState(sqlcState)), repo.dbe(err)
 }

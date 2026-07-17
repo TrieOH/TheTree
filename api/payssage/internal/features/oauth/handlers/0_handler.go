@@ -28,5 +28,6 @@ func RegisterRoutes(
 	r.Group(func(r chi.Router) {
 
 		r.With(apiKey).Post("/providers/{provider}/connect", h.Connect)
+		r.Get("/providers/{provider}/callback", h.Callback)
 	})
 }

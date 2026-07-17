@@ -1,7 +1,7 @@
 package oauth
 
+// import (
 //
-//import (
 //	"lib/telemetry"
 //	"net/http"
 //
@@ -14,22 +14,25 @@ package oauth
 //	"github.com/go-chi/chi/v5"
 //	"github.com/google/uuid"
 //	"go.uber.org/zap"
-//)
 //
-//type Handler struct {
-//	commands *CommandService
-//	queries  *QueryService
-//}
+// )
 //
-//func NewHandler(
+//	type Handler struct {
+//		commands *CommandService
+//		queries  *QueryService
+//	}
+//
+// func NewHandler(
+//
 //	commands *CommandService,
 //	queries *QueryService,
-//) *Handler {
-//	return &Handler{
-//		commands: commands,
-//		queries:  queries,
+//
+//	) *Handler {
+//		return &Handler{
+//			commands: commands,
+//			queries:  queries,
+//		}
 //	}
-//}
 //
 //// CompleteOAuth godoc
 //// @Summary OAuth callback from provider
@@ -63,6 +66,7 @@ package oauth
 //		"url": finalURL,
 //	}).Send(w)
 //}
+
 //
 //type ConnectSellerRequest struct {
 //	ProviderRedirectURL string `json:"provider_redirect_url" validate:"required,url"`

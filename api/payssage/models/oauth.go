@@ -27,13 +27,14 @@ func (f OAuthFlow) String() string {
 }
 
 type OAuthState struct {
-	State            string     `json:"state"`
-	WalletID         *uuid.UUID `json:"wallet_id"`
-	Provider         string     `json:"provider"`
-	Flow             OAuthFlow  `json:"flow"`
-	FinalRedirectUrl string     `json:"final_redirect_url"`
-	CreatedAt        time.Time  `json:"created_at"`
-	ExpiresAt        time.Time  `json:"expires_at"`
+	State               string     `json:"state"`
+	WalletID            *uuid.UUID `json:"wallet_id"`
+	Provider            string     `json:"provider"`
+	Flow                OAuthFlow  `json:"flow"`
+	FinalRedirectUrl    string     `json:"final_redirect_url"`
+	ProviderRedirectUrl string     `json:"provider_redirect_url"`
+	CreatedAt           time.Time  `json:"created_at"`
+	ExpiresAt           time.Time  `json:"expires_at"`
 }
 
 type ProviderCredential struct {

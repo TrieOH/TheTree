@@ -8,7 +8,6 @@ import (
 	"github.com/MintzyG/fun/bind"
 )
 
-// @Router /providers/{provider}/connect [post]
 func (h *Handlers) Connect(w http.ResponseWriter, r *http.Request) {
 	req := fun.From(r)
 	provider, err := req.Path("provider").StringRequired()

@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (string, error) {
-	ctx, span := c.tracer.Start(ctx, "ConnectCollector")
+	ctx, span := c.tracer.Start(ctx, "Connect")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -59,12 +59,13 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 	}
 
 	_, err = c.oauth.Create(ctx, models.OAuthState{
-		State:            stateToken,
-		WalletID:         walletID,
-		Provider:         provider.String(),
-		Flow:             payload.Flow,
-		FinalRedirectUrl: payload.FinalRedirectURL,
-		ExpiresAt:        time.Now().Add(5 * time.Minute),
+		State:               stateToken,
+		WalletID:            walletID,
+		Provider:            provider.String(),
+		Flow:                payload.Flow,
+		FinalRedirectUrl:    payload.FinalRedirectURL,
+		ProviderRedirectUrl: payload.ProviderRedirectURL,
+		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	})
 	if err != nil {
 		return "", err
