@@ -13,6 +13,7 @@ type Wallet struct {
 	Name           string     `json:"name"`
 	Sandbox        bool       `json:"sandbox"`
 	FeeBps         int        `json:"fee_bps"`
+	CollectorID    *uuid.UUID `json:"collector_id"`
 	CreatedAt      time.Time  `json:"created_at"`
 }
 

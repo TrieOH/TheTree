@@ -9,6 +9,13 @@ import (
 )
 
 func (c *Queries) JWKS(ctx context.Context, projectID *uuid.UUID) (map[string]any, error) {
+	if projectID != nil {
+		_, err := c.projects.GetByID(ctx, *projectID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	keys, err := c.cryptoKeys.GetActiveSigningKeys(ctx, projectID)
 	if err != nil {
 		return nil, err

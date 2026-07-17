@@ -1,51 +1,6 @@
 package app
 
 //
-//import (
-//	"payssage/internal/features/api_keys"
-//	"payssage/internal/features/intents"
-//	"payssage/internal/features/oauth"
-//	"payssage/internal/features/webhooks"
-//	"payssage/internal/features/workspaces"
-//
-//	"github.com/go-chi/chi/v5"
-//)
-//
-//func registerRoutes(r *chi.Mux, deps *handlers) {
-//	registerIntentsRoutes(r, deps.intents, deps.AuthMiddleware)
-//	registerWorkspacesRoutes(r, deps.wallets, deps.AuthMiddleware)
-//	registerApiKeysRoutes(r, deps.ApiKeysHandler, deps.AuthMiddleware)
-//	registerWebhookRoutes(r, deps.webhooks, deps.AuthMiddleware)
-//	registerOAuthRoutes(r, deps.oauth, deps.AuthMiddleware)
-//}
-//
-//func registerWorkspacesRoutes(
-//	r *chi.Mux,
-//	h *workspaces.Handler,
-//	authMW *AuthMiddleware,
-//) {
-//	r.Group(func(r chi.Router) {
-//		r.Use(authMW.Auth())
-//		r.Post("/workspaces", h.Create)
-//		r.Get("/workspaces", h.List)
-//		r.Post("/workspaces/{name}/sandbox/enable", h.EnableSandbox)
-//		r.Post("/workspaces/{name}/sandbox/disable", h.DisableSandbox)
-//	})
-//}
-//
-//func registerApiKeysRoutes(
-//	r *chi.Mux,
-//	h *api_keys.Handler,
-//	authMW *AuthMiddleware,
-//) {
-//	r.Group(func(r chi.Router) {
-//		r.Use(authMW.Auth())
-//		r.Post("/workspaces/{name}/keys", h.Create)
-//		r.Get("/workspaces/{name}/keys", h.ListAPIKeys)
-//		r.Delete("/workspaces/{name}/keys/{id}", h.RevokeAPIKey)
-//	})
-//}
-//
 //func registerIntentsRoutes(
 //	r *chi.Mux,
 //	h *intents.Handler,

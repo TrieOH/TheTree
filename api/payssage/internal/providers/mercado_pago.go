@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"payssage/ports"
 	"strconv"
 	"strings"
@@ -23,7 +24,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/oauth"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -77,7 +77,7 @@ func (p *MercadoPagoImpl) ExchangeCode(ctx context.Context, code, redirectURI st
 		"client_secret": p.clientSecret,
 		"code":          code,
 		"redirect_uri":  redirectURI,
-		"test_token":    viper.GetString("TEST_MODE"),
+		"test_token":    os.Getenv("TEST_MODE"),
 	})
 	if err != nil {
 		telemetry.Log().Error("error marshaling MP exchange code request body", zap.Error(err))

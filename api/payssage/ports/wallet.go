@@ -14,4 +14,6 @@ type WalletRepo interface {
 	ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wallet, error)
 	SetSandboxState(ctx context.Context, walletID uuid.UUID, state bool) error
 	SetFeeBPS(ctx context.Context, walletID uuid.UUID, feeBPS int) error
+	BindCollector(ctx context.Context, walletID, collectorID uuid.UUID) error
+	UnbindCollector(ctx context.Context, walletID uuid.UUID) error
 }
