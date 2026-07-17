@@ -37,5 +37,7 @@ func RegisterRoutes(
 		r.Patch("/wallets/{wallet_id}/fee", h.SetFeeBPS)
 		r.Patch("/wallets/{wallet_id}/sandbox", h.SetSandboxState)
 		r.Get("/organizations/{organization_id}/wallets", h.ListFromOrg)
+		r.Post("/wallets/{wallet_id}/collector", h.BindCollector)
+		r.Delete("/wallets/{wallet_id}/collector", h.UnbindCollector)
 	})
 }

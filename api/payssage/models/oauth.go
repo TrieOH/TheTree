@@ -82,3 +82,22 @@ type ConnectInput struct {
 	WalletID            *uuid.UUID
 	OrganizationID      *uuid.UUID
 }
+
+type RevokeRequest struct {
+	Flow OAuthFlow `json:"flow" validate:"required"`
+	ID   uuid.UUID `json:"id"   validate:"required"`
+}
+
+func (r RevokeRequest) ToInput(p string) RevokeInput {
+	return RevokeInput{
+		Flow:     r.Flow,
+		ID:       r.ID,
+		Provider: p,
+	}
+}
+
+type RevokeInput struct {
+	Flow     OAuthFlow
+	ID       uuid.UUID
+	Provider string
+}

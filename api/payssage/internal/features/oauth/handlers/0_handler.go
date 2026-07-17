@@ -27,6 +27,7 @@ func RegisterRoutes(
 ) {
 	r.Group(func(r chi.Router) {
 		r.With(jwtAuth).Post("/providers/{provider}/connect", h.Connect)
+		r.With(jwtAuth).Post("/providers/{provider}/revoke", h.Revoke)
 		r.Get("/providers/{provider}/callback", h.Callback)
 	})
 }

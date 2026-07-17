@@ -22,3 +22,10 @@ WHERE owner_id = @owner_id
 SELECT *
 FROM collectors
 WHERE organization_id = @organization_id;
+
+-- name: RevokeCollector :exec
+UPDATE collectors
+SET revoked_at = NOW(),
+    credentials = '{}'
+WHERE id = @id
+  AND revoked_at IS NULL;

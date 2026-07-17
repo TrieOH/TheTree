@@ -34,10 +34,12 @@ CREATE TABLE sellers (
     provider_user_id TEXT NOT NULL,
     credentials      JSONB NOT NULL,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    revoked_at       TIMESTAMPTZ,
-
-    CONSTRAINT uniq_sellers_active UNIQUE (wallet_id, provider_user_id)
+    revoked_at       TIMESTAMPTZ
 );
+
+CREATE UNIQUE INDEX uniq_sellers_active
+    ON sellers (wallet_id, provider_user_id)
+    WHERE revoked_at IS NULL;
 
 CREATE INDEX idx_sellers_wallet_id ON sellers (wallet_id);
 
