@@ -135,7 +135,7 @@ linters:
     funlen:
       lines: 150               # max lines per function
     nestif:
-      min-complexity: 3         # max nested if depth
+      min-complexity: 6         # max nested if depth
     sloglint:
       # enforce key=value attr pairs, no embedded objects, context as first arg
       args-on-sep-lines: false

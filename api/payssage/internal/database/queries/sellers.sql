@@ -16,3 +16,10 @@ FROM sellers;
 SELECT *
 FROM sellers
 WHERE wallet_id = @wallet_id;
+
+-- name: RevokeSeller :exec
+UPDATE sellers
+SET revoked_at = NOW(),
+    credentials = '{}'
+WHERE id = @id
+  AND revoked_at IS NULL;
