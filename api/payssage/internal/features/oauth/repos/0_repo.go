@@ -32,6 +32,8 @@ func mapState(src sqlc.OauthState) models.OAuthState {
 	return models.OAuthState{
 		State:               src.State,
 		WalletID:            src.WalletID,
+		OrganizationID:      src.OrganizationID,
+		OwnerID:             src.OwnerID,
 		Provider:            src.Provider,
 		Flow:                models.OAuthFlow(src.Flow),
 		FinalRedirectUrl:    src.FinalRedirectUrl,

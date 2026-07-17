@@ -12,6 +12,8 @@ func (repo *repo) Create(ctx context.Context, toCreate models.Collector) (*model
 	defer span.End()
 
 	sqlcCollector, err := database.Queries(ctx, repo.q).CreateCollector(ctx, sqlc.CreateCollectorParams{
+		OwnerID:        toCreate.OwnerID,
+		OrganizationID: toCreate.OrganizationID,
 		Provider:       toCreate.Provider,
 		ProviderUserID: toCreate.ProviderUserID,
 		Credentials:    toCreate.Credentials,

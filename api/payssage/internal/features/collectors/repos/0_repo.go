@@ -31,6 +31,8 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Collec
 func mapCollector(src sqlc.Collector) models.Collector {
 	return models.Collector{
 		ID:             src.ID,
+		OwnerID:        src.OwnerID,
+		OrganizationID: src.OrganizationID,
 		Provider:       src.Provider,
 		ProviderUserID: src.ProviderUserID,
 		Credentials:    src.Credentials,

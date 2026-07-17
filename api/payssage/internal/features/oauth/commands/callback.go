@@ -37,6 +37,8 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 	switch state.Flow {
 	case models.OAuthFlowCollector:
 		collector, err := c.collectors.Create(ctx, models.Collector{
+			OwnerID:        state.OwnerID,
+			OrganizationID: state.OrganizationID,
 			Provider:       providerStr,
 			ProviderUserID: fmt.Sprintf("%d", credentialData.ProviderUserID),
 			Credentials:    marshalCredentials(credentialData),

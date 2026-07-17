@@ -21,7 +21,10 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 	}
 
 	var walletID *uuid.UUID
-	if payload.Flow == models.OAuthFlowSeller {
+	var organizationID *uuid.UUID
+
+	switch payload.Flow {
+	case models.OAuthFlowSeller:
 		if ident.Cred.Type != idx.ApiKeyCredentialType {
 			return "", fun.ErrForbidden("only api keys may connect sellers")
 		}
@@ -46,6 +49,23 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 			return "", err
 		}
 		walletID = &wallet.ID
+
+	case models.OAuthFlowCollector:
+		if payload.OrganizationID != nil {
+			var org *models.Organization
+			org, err = c.orgs.GetByID(ctx, *payload.OrganizationID)
+			if err != nil {
+				return "", err
+			}
+			err = c.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleAdmin)
+			if err != nil {
+				return "", err
+			}
+			organizationID = payload.OrganizationID
+		}
+
+	default:
+		return "", fun.ErrBadRequest("invalid flow")
 	}
 
 	provider, err := providers.FromString(payload.Provider)
@@ -61,6 +81,8 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 	_, err = c.oauth.Create(ctx, models.OAuthState{
 		State:               stateToken,
 		WalletID:            walletID,
+		OrganizationID:      organizationID,
+		OwnerID:             ident.Sub.ID,
 		Provider:            provider.String(),
 		Flow:                payload.Flow,
 		FinalRedirectUrl:    payload.FinalRedirectURL,

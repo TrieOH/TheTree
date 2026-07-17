@@ -29,6 +29,8 @@ func (f OAuthFlow) String() string {
 type OAuthState struct {
 	State               string     `json:"state"`
 	WalletID            *uuid.UUID `json:"wallet_id"`
+	OrganizationID      *uuid.UUID `json:"organization_id"`
+	OwnerID             uuid.UUID  `json:"owner_id"`
 	Provider            string     `json:"provider"`
 	Flow                OAuthFlow  `json:"flow"`
 	FinalRedirectUrl    string     `json:"final_redirect_url"`
@@ -58,6 +60,7 @@ type ConnectRequest struct {
 	ProviderRedirectURL string     `json:"provider_redirect_url" validate:"required,url"`
 	FinalRedirectURL    string     `json:"final_redirect_url"    validate:"required,url"`
 	WalletID            *uuid.UUID `json:"wallet_id"`
+	OrganizationID      *uuid.UUID `json:"organization_id"`
 }
 
 func (r *ConnectRequest) ToInput(p string) ConnectInput {
@@ -67,6 +70,7 @@ func (r *ConnectRequest) ToInput(p string) ConnectInput {
 		ProviderRedirectURL: r.ProviderRedirectURL,
 		FinalRedirectURL:    r.FinalRedirectURL,
 		WalletID:            r.WalletID,
+		OrganizationID:      r.OrganizationID,
 	}
 }
 
@@ -76,4 +80,5 @@ type ConnectInput struct {
 	ProviderRedirectURL string
 	FinalRedirectURL    string
 	WalletID            *uuid.UUID
+	OrganizationID      *uuid.UUID
 }

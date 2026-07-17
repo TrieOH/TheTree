@@ -1,6 +1,6 @@
 -- name: CreateCollector :one
-INSERT INTO collectors (provider, provider_user_id, credentials)
-VALUES (@provider, @provider_user_id, @credentials)
+INSERT INTO collectors (owner_id, organization_id, provider, provider_user_id, credentials)
+VALUES (@owner_id, @organization_id, @provider, @provider_user_id, @credentials)
 RETURNING *;
 
 -- name: GetCollectorByID :one
