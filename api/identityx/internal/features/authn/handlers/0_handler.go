@@ -40,7 +40,7 @@ func RegisterRoutes(
 		r.Post("/auth/refresh", h.Refresh)
 		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Get("/auth/{provider}/connect", h.OAuthConnect)
 		r.Get("/auth/{provider}/callback", h.OAuthCallback)
-		r.With(middlewares.WithParams[models.ProjectIDQueryParam]()).Get("/.well-known/jwks.json", h.JWKS)
+		r.Get("/.well-known/jwks.json", h.JWKS)
 		r.With(anyAuth).Get("/auth/introspect", h.Introspect)
 	})
 }
