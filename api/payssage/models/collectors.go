@@ -13,7 +13,7 @@ type Collector struct {
 	OrganizationID *uuid.UUID      `json:"organization_id"`
 	Provider       string          `json:"provider"`
 	ProviderUserID string          `json:"provider_user_id"`
-	Credentials    json.RawMessage `json:"credentials"`
+	Credentials    json.RawMessage `json:"-"`
 	CreatedAt      time.Time       `json:"created_at"`
 	RevokedAt      *time.Time      `json:"revoked_at"`
 }
