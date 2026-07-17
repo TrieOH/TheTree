@@ -25,9 +25,6 @@ func (c *Commands) Connect(ctx context.Context, payload models.ConnectInput) (st
 
 	switch payload.Flow {
 	case models.OAuthFlowSeller:
-		if ident.Cred.Type != idx.ApiKeyCredentialType {
-			return "", fun.ErrForbidden("only api keys may connect sellers")
-		}
 		var wallet *models.Wallet
 		wallet, err = c.wallets.GetByID(ctx, *payload.WalletID)
 		if err != nil {

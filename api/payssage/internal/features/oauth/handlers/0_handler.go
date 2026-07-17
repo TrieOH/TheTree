@@ -23,11 +23,11 @@ func NewHandlers(
 func RegisterRoutes(
 	r *chi.Mux,
 	h *Handlers,
-	apiKey func(http.Handler) http.Handler,
+	jwtAuth func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-
-		r.With(apiKey).Post("/providers/{provider}/connect", h.Connect)
+		r.Use(jwtAuth)
+		r.Post("/providers/{provider}/connect", h.Connect)
 		r.Get("/providers/{provider}/callback", h.Callback)
 	})
 }

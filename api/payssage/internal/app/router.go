@@ -67,7 +67,7 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 	wallets.RegisterRoutes(r, handlers.wallets, middlewares.jwtAuth)
 	collectors.RegisterRoutes(r, handlers.collectors, middlewares.jwtAuth)
 	sellers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
-	oauth.RegisterRoutes(r, handlers.oauth, middlewares.apiKeyAuth)
+	oauth.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 
