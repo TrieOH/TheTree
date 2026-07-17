@@ -22,8 +22,7 @@ func (h *Handlers) Revoke(w http.ResponseWriter, r *http.Request) {
 		fun.BadRequest("invalid flow, either collector or seller").Send(w)
 		return
 	}
-	_ = provider // future: validate against stored provider
-	if fun.Bail(w, h.commands.Revoke(r.Context(), payload.ToInput())) {
+	if fun.Bail(w, h.commands.Revoke(r.Context(), payload.ToInput(provider))) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

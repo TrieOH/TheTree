@@ -24,6 +24,9 @@ func (c *Commands) Revoke(ctx context.Context, input models.RevokeInput) error {
 		if err != nil {
 			return err
 		}
+		if collector.Provider != input.Provider {
+			return fun.ErrBadRequest("provider mismatch")
+		}
 		if collector.OrganizationID != nil {
 			var org *models.Organization
 			org, err = c.orgs.GetByID(ctx, *collector.OrganizationID)
@@ -44,6 +47,9 @@ func (c *Commands) Revoke(ctx context.Context, input models.RevokeInput) error {
 		seller, err = c.sellers.GetByID(ctx, input.ID)
 		if err != nil {
 			return err
+		}
+		if seller.Provider != input.Provider {
+			return fun.ErrBadRequest("provider mismatch")
 		}
 		var wallet *models.Wallet
 		wallet, err = c.wallets.GetByID(ctx, seller.WalletID)

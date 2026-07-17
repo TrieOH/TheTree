@@ -88,14 +88,16 @@ type RevokeRequest struct {
 	ID   uuid.UUID `json:"id"   validate:"required"`
 }
 
-func (r RevokeRequest) ToInput() RevokeInput {
+func (r RevokeRequest) ToInput(p string) RevokeInput {
 	return RevokeInput{
-		Flow: r.Flow,
-		ID:   r.ID,
+		Flow:     r.Flow,
+		ID:       r.ID,
+		Provider: p,
 	}
 }
 
 type RevokeInput struct {
-	Flow OAuthFlow
-	ID   uuid.UUID
+	Flow     OAuthFlow
+	ID       uuid.UUID
+	Provider string
 }
