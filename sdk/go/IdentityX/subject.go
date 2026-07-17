@@ -43,7 +43,7 @@ type Credential struct {
 }
 
 type Identity struct {
-	Sub  Subject    `json:"sub"`
+	Sub  Subject    `json:"subject"`
 	Cred Credential `json:"cred"`
 }
 

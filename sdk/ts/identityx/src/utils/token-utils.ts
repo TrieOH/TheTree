@@ -147,7 +147,7 @@ export function getUserInfo() {
   const claims = getTokenClaims();
   if (!claims) return null;
 
-  return claims.access_data.sub
+  return claims.access_data.subject
 }
 
 export function decodeJwtExp(token: string): number | null {
