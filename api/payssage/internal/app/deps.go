@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"crypto/subtle"
 	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/validator"
 	"net/http"
+	"os"
 	"payssage/internal/config"
 	"time"
 
@@ -56,9 +58,10 @@ func SetupConstraintMessages() {
 		"uniq_wallets_personal_name": "a wallet with this name already exists",
 
 		// webhook_deliveries
-		"chk_webhook_deliveries_status": "invalid webhook delivery status",
+		"chk_webhook_deliveries_status":          "invalid webhook delivery status",
+		"uniq_webhook_deliveries_event_endpoint": "a delivery for this event and endpoint already exists",
 
-		// webhook_events
+		// webhook_events.sql
 		"uniq_webhook_events_external_id": "a webhook event with this external id already exists for this provider",
 
 		// organizations
@@ -133,4 +136,31 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	}
 
 	return fm.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+}
+
+// basicAuth gates a handler behind HTTP Basic Auth using credentials from
+// SIMPLE_AUTH_USER / SIMPLE_AUTH_PASS. Intended for internal-only surfaces
+// like the River UI dashboard — not tenant-scoped, so anyone with these
+// credentials sees data across all wallets/orgs.
+func basicAuth(next http.Handler) http.Handler {
+	user := os.Getenv("SIMPLE_AUTH_USER")
+	pass := os.Getenv("SIMPLE_AUTH_PASS")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if user == "" || pass == "" {
+			http.Error(w, "basic auth not configured", http.StatusServiceUnavailable)
+			return
+		}
+
+		reqUser, reqPass, ok := r.BasicAuth()
+		if !ok ||
+			subtle.ConstantTimeCompare([]byte(reqUser), []byte(user)) != 1 ||
+			subtle.ConstantTimeCompare([]byte(reqPass), []byte(pass)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

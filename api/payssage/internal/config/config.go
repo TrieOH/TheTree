@@ -43,6 +43,10 @@ type Config struct {
 	// Profiling
 	ProfilePort string `env:"PROFILE_PORT"`
 
+	// Simple auth (e.g. River UI dashboard)
+	SimpleAuthUser     string `env:"SIMPLE_AUTH_USER,required"`
+	SimpleAuthPassword string `env:"SIMPLE_AUTH_PASS,required"`
+
 	// Feature flags
 	DisableRateLimit bool `env:"DISABLE_RATE_LIMIT"`
 }

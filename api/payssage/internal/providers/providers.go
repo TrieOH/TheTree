@@ -1,8 +1,9 @@
 package providers
 
 import (
-	"fmt"
 	"payssage/ports"
+
+	"github.com/MintzyG/fun"
 )
 
 type AvailableProviders string
@@ -20,13 +21,14 @@ func FromString(s string) (AvailableProviders, error) {
 	case "mercadopago":
 		return MercadoPagoProvider, nil
 	default:
-		return "", fmt.Errorf("unsupported provider %s", s)
+		return "", fun.Errf("unsupported provider %s", s).BadRequest()
 	}
 }
 
 type PaymentProviders struct {
 	OAuth    map[AvailableProviders]ports.OAuthProvider
 	Payments map[AvailableProviders]ports.PaymentAbstractionLayer
+	Webhooks map[AvailableProviders]ports.WebhookProvider
 }
 
 var PayssageProviders PaymentProviders

@@ -55,3 +55,9 @@ SET status = @status,
     updated_at = NOW()
 WHERE id = @id
     RETURNING *;
+
+-- name: GetIntentByProviderTransactionID :one
+SELECT *
+FROM intents
+WHERE provider = @provider
+  AND provider_data->>'transaction_id' = @transaction_id::text;

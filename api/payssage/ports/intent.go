@@ -14,4 +14,5 @@ type IntentRepo interface {
 	ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error)
 	ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Intent, error)
 	ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.Intent, error)
+	GetByProviderTransactionID(ctx context.Context, provider string, transactionID string) (*models.Intent, error)
 }
