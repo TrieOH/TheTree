@@ -29,6 +29,11 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Intent
 }
 
 func mapIntent(src sqlc.Intent) models.Intent {
+	var statusDetail *models.IntentStatusDetail
+	if src.StatusDetail != nil {
+		statusDetail = new(models.IntentStatusDetail(*src.StatusDetail))
+	}
+
 	return models.Intent{
 		ID:           src.ID,
 		WalletID:     src.WalletID,
@@ -39,6 +44,7 @@ func mapIntent(src sqlc.Intent) models.Intent {
 		Sandbox:      src.Sandbox,
 		Provider:     src.Provider,
 		Status:       models.IntentStatus(src.Status),
+		StatusDetail: statusDetail,
 		ProviderData: src.ProviderData,
 		Metadata:     src.Metadata,
 		CreatedAt:    src.CreatedAt,

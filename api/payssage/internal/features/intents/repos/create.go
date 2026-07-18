@@ -11,6 +11,11 @@ func (repo *repo) Create(ctx context.Context, toCreate models.Intent) (*models.I
 	ctx, span := repo.tracer.Start(ctx, "IntentRepo.Create")
 	defer span.End()
 
+	var statusDetail *string
+	if toCreate.StatusDetail != nil {
+		statusDetail = new(string(*toCreate.StatusDetail))
+	}
+
 	sqlcIntent, err := database.Queries(ctx, repo.q).CreateIntent(ctx, sqlc.CreateIntentParams{
 		ID:           toCreate.ID,
 		WalletID:     toCreate.WalletID,
@@ -21,6 +26,7 @@ func (repo *repo) Create(ctx context.Context, toCreate models.Intent) (*models.I
 		Sandbox:      toCreate.Sandbox,
 		Provider:     toCreate.Provider,
 		Status:       string(toCreate.Status),
+		StatusDetail: statusDetail,
 		ProviderData: toCreate.ProviderData,
 		Metadata:     toCreate.Metadata,
 	})

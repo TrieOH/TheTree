@@ -33,6 +33,7 @@ func RegisterRoutes(
 		r.Use(jwtAuth)
 		r.Get("/intents", h.ListByProfile)
 		r.Get("/intents/{intent_id}", h.GetByID)
+		r.Post("/intents/{intent_id}/cancel", h.Cancel)
 		r.Get("/wallets/{wallet_id}/intents", h.ListByWallet)
 		r.Get("/organizations/{organization_id}/intents", h.ListByOrg)
 		r.Post("/wallets/{wallet_id}/intents", h.Checkout)
