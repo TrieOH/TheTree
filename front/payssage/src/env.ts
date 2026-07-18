@@ -28,6 +28,7 @@ export const env = createEnv({
     VITE_API_URL: z.url(),
     VITE_AUTH_API_URL: z.url(),
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
+    VITE_INTENT_TEST_MODE: z.string().default('false'),
 
     VITE_SUPPORTED_PROVIDERS: supportedProvidersSchema,
   },
