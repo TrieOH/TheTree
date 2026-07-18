@@ -70,6 +70,33 @@ func (c *Commands) checkRole(ctx context.Context, org *models.Organization, subI
 	return nil
 }
 
+func (c *Commands) checkAdminAccess(ctx context.Context, walletID, subID uuid.UUID) error {
+	wallet, err := c.wallets.GetByID(ctx, walletID)
+	if err != nil {
+		return err
+	}
+
+	// personal wallet: owner is admin
+	if wallet.OrganizationID == nil {
+		if wallet.OwnerID != subID {
+			return fun.ErrForbidden("insufficient permissions")
+		}
+		return nil
+	}
+
+	// org wallet: check org admin role
+	org, err := c.orgs.GetByID(ctx, *wallet.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	if err := c.checkRole(ctx, org, subID, models.OrganizationRoleAdmin); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Commands) checkWalletAccess(wallet *models.Wallet, subID uuid.UUID, org ...*models.Organization) error {
 	if wallet == nil {
 		return fun.ErrForbidden("insufficient permissions")
