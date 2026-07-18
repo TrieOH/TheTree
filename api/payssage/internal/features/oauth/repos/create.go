@@ -13,6 +13,8 @@ func (repo *repo) Create(ctx context.Context, state models.OAuthState) (*models.
 	sqlcState, err := database.Queries(ctx, repo.q).CreateOAuthState(ctx, sqlc.CreateOAuthStateParams{
 		State:               state.State,
 		WalletID:            state.WalletID,
+		OrganizationID:      state.OrganizationID,
+		OwnerID:             state.OwnerID,
 		Provider:            state.Provider,
 		Flow:                state.Flow.String(),
 		FinalRedirectUrl:    state.FinalRedirectUrl,
