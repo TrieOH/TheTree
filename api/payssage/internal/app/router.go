@@ -11,6 +11,9 @@ import (
 	"payssage/internal/features/orgs"
 	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
+	"payssage/internal/features/webhook_deliveries"
+	"payssage/internal/features/webhook_endpoints"
+	"payssage/internal/features/webhook_events"
 	"payssage/internal/features/webhooks"
 
 	fh "github.com/MintzyG/fun/handlers"
@@ -73,6 +76,9 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares, ri
 	intents.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
 	oauth.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
 	webhooks.RegisterRoutes(r, handlers.webhooks)
+	webhook_endpoints.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
+	webhook_events.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
+	webhook_deliveries.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
 
 	// River UI — internal ops dashboard, gated behind basic auth
 	// (SIMPLE_AUTH_USER / SIMPLE_AUTH_PASS), not tenant-scoped JWT auth.

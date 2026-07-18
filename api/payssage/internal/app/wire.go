@@ -51,14 +51,18 @@ type queries struct {
 	collectors *collectors.Queries
 	sellers    *sellers.Queries
 	intents    *intents.Queries
+	endpoints  *webhook_endpoints.Queries
+	events     *webhook_events.Queries
+	deliveries *webhook_deliveries.Queries
 }
 
 type commands struct {
-	orgs     *orgs.Commands
-	wallets  *wallets.Commands
-	oauth    *oauth.Commands
-	intents  *intents.Commands
-	webhooks *webhooks.Commands
+	orgs      *orgs.Commands
+	wallets   *wallets.Commands
+	oauth     *oauth.Commands
+	intents   *intents.Commands
+	webhooks  *webhooks.Commands
+	endpoints *webhook_endpoints.Commands
 }
 
 type middlewares struct {
@@ -80,6 +84,9 @@ type handlers struct {
 	sellers    *sellers.Handlers
 	intents    *intents.Handlers
 	webhooks   *webhooks.Handlers
+	endpoints  *webhook_endpoints.Handlers
+	events     *webhook_events.Handlers
+	deliveries *webhook_deliveries.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -121,16 +128,20 @@ func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRun
 		collectors: collectors.NewQueries(r.collectors, r.orgs, logger, tracer, tx),
 		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, logger, tracer, tx),
 		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, logger, tracer, tx),
+		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
+		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs, logger, tracer, tx),
+		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
 	}
 }
 
 func initCommands(river *river.Client[pgx.Tx], r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) commands {
 	return commands{
-		orgs:     orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
-		wallets:  wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
-		oauth:    oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
-		intents:  intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, logger, tracer, tx),
-		webhooks: webhooks.NewCommands(river, r.events, r.endpoints, r.deliveries, logger, tracer, tx),
+		orgs:      orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
+		wallets:   wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
+		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
+		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, logger, tracer, tx),
+		webhooks:  webhooks.NewCommands(river, r.events, r.endpoints, r.deliveries, logger, tracer, tx),
+		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
 	}
 }
 
@@ -171,5 +182,8 @@ func initHandlers(c commands, q queries) handlers {
 		sellers:    sellers.NewHandlers(q.sellers),
 		intents:    intents.NewHandlers(c.intents, q.intents),
 		webhooks:   webhooks.NewHandlers(c.webhooks),
+		endpoints:  webhook_endpoints.NewHandlers(c.endpoints, q.endpoints),
+		events:     webhook_events.NewHandlers(q.events),
+		deliveries: webhook_deliveries.NewHandlers(q.deliveries),
 	}
 }

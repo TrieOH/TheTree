@@ -74,3 +74,22 @@ type UpdateDeliveryParams struct {
 	ResponseStatus  *int
 	ResponseBody    *string
 }
+
+type CreateWebhookEndpointRequest struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func (r CreateWebhookEndpointRequest) ToInput(walletID uuid.UUID) CreateWebhookEndpointInput {
+	return CreateWebhookEndpointInput{
+		WalletID: walletID,
+		Name:     r.Name,
+		URL:      r.URL,
+	}
+}
+
+type CreateWebhookEndpointInput struct {
+	WalletID uuid.UUID
+	Name     string
+	URL      string
+}
