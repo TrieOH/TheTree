@@ -1,0 +1,96 @@
+---
+title: Mercado Pago
+description: Generate Mercado Pago card tokens in test and production environments
+---
+
+# Mercado Pago card tokens
+
+Use this endpoint to create a Mercado Pago card token.
+
+## Test and production environments
+
+| Environment | Credentials | Card and cardholder data | Transactions |
+| --- | --- | --- | --- |
+| Test | Mercado Pago test credentials | Mercado Pago test cards and test payer data | Simulated; no real charge |
+| Production | Mercado Pago production credentials | Real card and cardholder data | Real payment; the cardholder may be charged |
+
+> In production, use production credentials and real card and cardholder data. The test values shown below are only for test mode.
+
+See the official Mercado Pago documentation for [credentials](https://www.mercadopago.com.br/developers/en/docs/your-integrations/credentials) and [test cards](https://www.mercadopago.com.br/developers/en/docs/checkout-api-orders/integration-test/cards).
+
+---
+
+## Create card token
+
+Creates a temporary token from card and cardholder information.
+
+```http
+POST https://api.mercadopago.com/v1/card_tokens
+```
+
+### Authentication
+
+Send the Mercado Pago Access Token for the selected environment as a Bearer token.
+
+```http
+Authorization: Bearer ACCESS_TOKEN
+```
+
+### Headers
+
+| Header | Type | Required | Description |
+| --- | --- | --- | --- |
+| `Authorization` | string | Yes | Bearer Access Token for the current environment. |
+| `Content-Type` | string | Yes | Must be `application/json`. |
+
+### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `card_number` | string | Yes | Card number. |
+| `expiration_year` | string | Yes | Expiration year. |
+| `expiration_month` | string | Yes | Expiration month. |
+| `security_code` | string | Yes | Security code. |
+| `cardholder` | object | Yes | Cardholder information. |
+| `cardholder.name` | string | Yes | Cardholder name. |
+| `cardholder.identification` | object | Yes | Cardholder identification document. |
+| `cardholder.identification.type` | string | Yes | Identification type. |
+| `cardholder.identification.number` | string | Yes | Identification number. |
+
+### Test request
+
+Set a test Access Token in your shell:
+
+```bash
+export MERCADO_PAGO_ACCESS_TOKEN="replace-with-test-access-token"
+```
+
+Create a card token using Mercado Pago test data:
+
+```bash
+curl --request POST \
+  --url https://api.mercadopago.com/v1/card_tokens \
+  --header "Authorization: Bearer ${MERCADO_PAGO_ACCESS_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "card_number": "5031433215406351",
+    "expiration_year": "2030",
+    "expiration_month": "11",
+    "security_code": "123",
+    "cardholder": {
+      "name": "APRO",
+      "identification": {
+        "type": "CPF",
+        "number": "12345678909"
+      }
+    }
+  }'
+```
+
+### Production request
+
+The endpoint and request structure are the same in production. Replace the test Access Token and all test values with production credentials and real card and cardholder data.
+
+```bash
+export MERCADO_PAGO_ACCESS_TOKEN="replace-with-production-access-token"
+```
