@@ -65,7 +65,7 @@ func (c *Commands) Callback(ctx context.Context, providerStr, code, stateStr str
 		return "", fun.ErrBadRequest("invalid flow")
 	}
 
-	return fmt.Sprintf("%s&credential_id=%s&public_key=%s", state.FinalRedirectUrl, credentialID, credentialData.PublicKey), nil
+	return fmt.Sprintf("%s?credential_id=%s&public_key=%s", state.FinalRedirectUrl, credentialID, credentialData.PublicKey), nil
 }
 
 func marshalCredentials(data models.ProviderCredentialData) []byte {
