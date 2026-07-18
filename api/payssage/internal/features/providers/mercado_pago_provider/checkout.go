@@ -9,6 +9,7 @@ import (
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
 	"strconv"
+	"time"
 
 	"lib/telemetry"
 
@@ -46,11 +47,11 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	// TODO: check token expiry / refresh via creds.RefreshToken before use
 	// once MP token TTL tracking is added to Credentials.
 
+	isPix := checkoutData.PaymentMethodID == "pix"
+
 	body := map[string]any{
 		"transaction_amount":   json.Number(formatAmount(intent.AmountCents)),
 		"application_fee":      json.Number(formatAmount(calcApplicationFee(intent.AmountCents, checkoutData.MarketplaceFeeBPS))),
-		"installments":         checkoutData.Installments,
-		"token":                checkoutData.Token,
 		"payment_method_id":    checkoutData.PaymentMethodID,
 		"external_reference":   intent.ID.String(),
 		"statement_descriptor": cmp.Or(checkoutData.StatementDescriptor, "payssage"),
@@ -64,10 +65,17 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		"additional_info": buildAdditionalInfo(checkoutData.AdditionalInfo, intent.AmountCents),
 	}
 
+	if isPix {
+		loc := time.FixedZone("BRT", -3*60*60)
+		body["date_of_expiration"] = time.Now().In(loc).Add(30 * time.Minute).Format("2006-01-02T15:04:05.000-07:00")
+	} else {
+		body["installments"] = checkoutData.Installments
+		body["token"] = checkoutData.Token
+	}
+
 	telemetry.Log().Info("MP Create Payment Request", zap.Any("body", body))
 
 	// TODO remember to use external group feature we made
-
 	// TODO: fix the idemp key not being actual idemp
 	idempotencyKey, err := uuid.NewV7()
 	if err != nil {
@@ -80,9 +88,15 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	defer client.Close()
 
 	var mpResp struct {
-		ID           int    `json:"id"`
-		Status       string `json:"status"`
-		StatusDetail string `json:"status_detail"`
+		ID                 int64  `json:"id"`
+		Status             string `json:"status"`
+		StatusDetail       string `json:"status_detail"`
+		PointOfInteraction struct {
+			TransactionData struct {
+				QRCode       string `json:"qr_code"`
+				QRCodeBase64 string `json:"qr_code_base64"`
+			} `json:"transaction_data"`
+		} `json:"point_of_interaction"`
 	}
 	var mpErr map[string]any
 
@@ -104,13 +118,21 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		return nil, fmt.Errorf("mercadopago create payment error %d: %v", resp.StatusCode(), resp.ResultError())
 	}
 
+	// TODO: Rejected here needs to alter the intent status outside this method, maybe also return status?
+
 	providerData := &models.MercadoPagoIntentData{
-		OrderID:           strconv.Itoa(mpResp.ID),
-		TransactionID:     strconv.Itoa(mpResp.ID),
+		OrderID:           strconv.FormatInt(mpResp.ID, 10),
+		TransactionID:     strconv.FormatInt(mpResp.ID, 10),
 		OrderStatus:       mpResp.Status,
 		OrderStatusDetail: mpResp.StatusDetail,
 		PaymentMethodID:   checkoutData.PaymentMethodID,
 	}
+	if isPix {
+		providerData.PaymentMethodType = "bank_transfer"
+		providerData.PixQRCode = mpResp.PointOfInteraction.TransactionData.QRCode
+		providerData.PixQRCodeB64 = mpResp.PointOfInteraction.TransactionData.QRCodeBase64
+	}
+
 	providerDataBytes, err := json.Marshal(providerData)
 	if err != nil {
 		return nil, err

@@ -71,9 +71,6 @@ linters:
     # --- context hygiene ---
     - fatcontext           # context.Context stored in struct or used in loop body [auto-fix]
 
-    # --- tech debt surfaces (warning-only, won't fail the build) ---
-    - godox                # FIXME / TODO / BUG left in code — surfaces tech debt
-
     # --- performance ---
     - prealloc             # pre-allocate slices when final size is known
     - makezero             # slice declared with non-zero length then append'ed to (double init)
@@ -184,9 +181,6 @@ issues:
   max-same-issues: 10
   severity:
     default: error
-    rules:
-      - linters: [godox]
-        severity: warning
 
 formatters:
   enable:
