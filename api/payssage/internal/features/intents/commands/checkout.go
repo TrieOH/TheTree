@@ -2,15 +2,14 @@ package commands
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"payssage/internal/providers"
 	"payssage/models"
-	"payssage/ports"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
+
+// TODO: make the authz checks for wallet access
 
 func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInput) (*models.Intent, error) {
 	ctx, span := c.tracer.Start(ctx, "Checkout")
@@ -25,7 +24,6 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 	if err != nil {
 		return nil, err
 	}
-
 	if seller.WalletID != wallet.ID {
 		return nil, fun.ErrBadRequest("seller does not belong to wallet")
 	}
@@ -46,17 +44,15 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 	if err != nil {
 		return nil, err
 	}
-
-	payssageProvider, ok := providers.PayssageProviders.Payments[providerEnum]
+	provider, ok := providers.PayssageProviders.Payments[providerEnum]
 	if !ok {
-		return nil, fun.ErrBadRequest("invalid provider")
+		return nil, fun.ErrBadRequest("provider not implemented")
 	}
 
 	id, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
-
 	intent := &models.Intent{
 		ID:          id,
 		WalletID:    wallet.ID,
@@ -70,17 +66,8 @@ func (c *Commands) Checkout(ctx context.Context, payload models.CreateIntentInpu
 		Metadata:    payload.Metadata,
 	}
 
-	var providerData json.RawMessage
-	switch provider := payssageProvider.(type) {
-	case ports.MercadoPagoProvider:
-		providerData, err = provider.Checkout(ctx, intent, payload.CheckoutData)
-		if err != nil {
-			return nil, err
-		}
-		intent.ProviderData = providerData
-
-	default:
-		return nil, fmt.Errorf("unknown provider type: %T", provider)
+	if err := provider.Checkout(ctx, intent, payload.CheckoutData); err != nil {
+		return nil, err
 	}
 
 	created, err := c.intents.Create(ctx, *intent)

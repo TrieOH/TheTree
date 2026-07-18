@@ -104,47 +104,26 @@ type WebhookEvent struct {
 }
 
 // PaymentAbstractionLayer is the single contract every provider must fulfill.
+//
+// All methods take *models.Intent and mutate it directly (updating
+// ProviderData and any other relevant fields) rather than returning new
+// state. Callers are responsible for persisting intent after a successful
+// call. This keeps the interface stable across providers that return very
+// different shapes of data for the same logical operation — the intent
+// itself is the one common surface every provider writes back to.
+//
+// A non-nil error means the intent was NOT mutated (or, if mutated, should
+// not be trusted/persisted) — implementations must not partially mutate
+// intent before returning an error.
 type PaymentAbstractionLayer interface {
-	Checkout(ctx context.Context, intent *models.Intent, checkoutData json.RawMessage) (json.RawMessage, error)
+	// Checkout initiates a payment for intent using providerCheckoutData
+	// (provider-specific fields, e.g. card token or Pix config). On success,
+	// intent.ProviderData is updated with the provider's response state.
+	Checkout(ctx context.Context, intent *models.Intent, checkoutData json.RawMessage) error
 
-	// Charge performs a direct server-side charge.
-	// Use for server-to-server flows where you already have a payment method token.
-	Charge(ctx context.Context, intent *models.Intent) (*models.Intent, error)
-
-	// Refund issues a full or partial refund against a prior transaction.
-	Refund(ctx context.Context, intent *models.Intent) (*models.Intent, error)
-}
-
-// ResolveProvider returns the appropriate PaymentAbstractionLayer for the given request.
-// Currently, routes all traffic to MercadoPago as it is the only implemented provider.
-//
-// When new providers are added, routing logic should consider:
-//   - Payment method: Pix above R$80,00 → AbacatePay (flat R$0,80 fee beats MP's 0,99%)
-//   - Currency: non-BRL → Stripe
-//   - Payment method: card, boleto → MercadoPago
-//
-// Example future routing:
-//
-//	if slices.Contains(methods, MethodPix) && amount >= 8000 {
-//	    return abacatePayImpl
-//	}
-//	if currency != "BRL" {
-//	    return stripeImpl
-//	}
-//func ResolveProvider(method PaymentMethod, amount int64, currency string) PaymentAbstractionLayer {
-//	return mercadoPagoImpl
-//}
-
-type MercadoPagoProvider interface {
-	PaymentAbstractionLayer
-
-	// InitiatePixCheckout builds a Pix-specific order payload.
-	// Different payment_method structure — no token, no installments.
-	// Populates PixQRCode and PixQRCodeB64 on the returned data.
-	//InitiatePixCheckout(ctx context.Context, int) (*models.Intent, error)
-	//
-	//CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error
-	//
-	//// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
-	//NormalizeStatus(status string, statusDetail string) models.IntentStatus
+	// CancelPendingPayment cancels a still-pending payment tied to intent.
+	// The provider-specific reference (e.g. MercadoPago transaction ID) is
+	// read from intent.ProviderData. On success, intent.ProviderData is
+	// updated to reflect the canceled state.
+	CancelPendingPayment(ctx context.Context, intent *models.Intent) error
 }

@@ -25,6 +25,14 @@ CREATE TABLE collectors (
     revoked_at       TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX uniq_collectors_org_active
+    ON collectors (organization_id, provider, provider_user_id)
+    WHERE revoked_at IS NULL AND organization_id IS NOT NULL;
+
+CREATE UNIQUE INDEX uniq_collectors_personal_active
+    ON collectors (owner_id, provider, provider_user_id)
+    WHERE revoked_at IS NULL AND organization_id IS NULL;
+
 ALTER TABLE wallets ADD COLUMN collector_id UUID REFERENCES collectors(id) ON DELETE SET NULL;
 
 CREATE TABLE sellers (
@@ -47,5 +55,7 @@ CREATE INDEX idx_sellers_wallet_id ON sellers (wallet_id);
 DROP INDEX IF EXISTS idx_sellers_wallet_id;
 DROP TABLE IF EXISTS sellers;
 ALTER TABLE wallets DROP COLUMN collector_id;
+DROP INDEX IF EXISTS uniq_collectors_personal_active;
+DROP INDEX IF EXISTS uniq_collectors_org_active;
 DROP TABLE IF EXISTS collectors;
 DROP TABLE IF EXISTS oauth_states;

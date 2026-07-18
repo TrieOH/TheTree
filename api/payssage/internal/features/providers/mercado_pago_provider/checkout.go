@@ -4,8 +4,6 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"payssage/internal/providers/mercado_pago"
 	"payssage/models"
 	"strconv"
@@ -13,35 +11,35 @@ import (
 
 	"lib/telemetry"
 
+	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"resty.dev/v3"
 )
 
-func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, providerCheckoutData json.RawMessage) (json.RawMessage, error) {
+func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, providerCheckoutData json.RawMessage) error {
 	checkoutData, err := mercado_pago.ParseCheckoutData(providerCheckoutData)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	seller, err := p.sellers.GetByID(ctx, intent.SellerID)
 	if err != nil {
-		return nil, fmt.Errorf("resolve seller: %w", err)
+		return fun.Errf("resolve seller: %v", err).NotFound()
 	}
 	if seller.RevokedAt != nil {
-		return nil, fmt.Errorf("seller %s has revoked provider access", seller.ID)
+		return fun.Errf("seller %s has revoked provider access", seller.ID).Forbidden()
 	}
 	if seller.Provider != "mercadopago" {
-		return nil, fmt.Errorf("seller %s is not a mercadopago seller (got %q)", seller.ID, seller.Provider)
+		return fun.Errf("seller %s is not a mercadopago seller (got %q)", seller.ID, seller.Provider).Conflict()
 	}
 
 	var creds models.MercadoPagoCredentials
-	err = json.Unmarshal(seller.Credentials, &creds)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal seller credentials: %w", err)
+	if err := json.Unmarshal(seller.Credentials, &creds); err != nil {
+		return fun.Errf("unmarshal seller credentials: %v", err).Internal()
 	}
 	if creds.AccessToken == "" {
-		return nil, fmt.Errorf("seller %s missing mercadopago access token", seller.ID)
+		return fun.Errf("seller %s missing mercadopago access token", seller.ID).Internal()
 	}
 
 	// TODO: check token expiry / refresh via creds.RefreshToken before use
@@ -79,7 +77,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	// TODO: fix the idemp key not being actual idemp
 	idempotencyKey, err := uuid.NewV7()
 	if err != nil {
-		return nil, err
+		return fun.Errf("generate idempotency key: %v", err).Internal()
 	}
 
 	// TODO: hoist this into a shared *resty.Client on Provider (constructed once,
@@ -109,16 +107,14 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 		SetResultError(&mpErr).
 		Post("https://api.mercadopago.com/v1/payments")
 	if err != nil {
-		return nil, fmt.Errorf("mercadopago create payment request: %w", err)
+		return fun.Errf("mercadopago create payment request: %v", err).BadGateway()
 	}
 
 	telemetry.Log().Info("MP Create Payment Request Raw Body", zap.String("body", resp.String()))
 
 	if resp.IsStatusFailure() {
-		return nil, mapMPError(resp.StatusCode(), resp.ResultError())
+		return mapMPError(resp.StatusCode(), resp.ResultError())
 	}
-
-	// TODO: Rejected here needs to alter the intent status outside this method, maybe also return status?
 
 	providerData := &models.MercadoPagoIntentData{
 		OrderID:           strconv.FormatInt(mpResp.ID, 10),
@@ -135,18 +131,11 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 
 	providerDataBytes, err := json.Marshal(providerData)
 	if err != nil {
-		return nil, err
+		return fun.Errf("marshal provider data: %v", err).Internal()
 	}
-	return providerDataBytes, nil
-}
+	intent.ProviderData = providerDataBytes
+	intent.Status = p.NormalizeStatus(mpResp.Status)
+	intent.StatusDetail = p.MapStatusDetail(mpResp.StatusDetail)
 
-// Charge performs a direct server-side charge.
-// Use for server-to-server flows where you already have a payment method token.
-func (p *Provider) Charge(ctx context.Context, intent *models.Intent) (*models.Intent, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Refund issues a full or partial refund against a prior transaction.
-func (p *Provider) Refund(ctx context.Context, intent *models.Intent) (*models.Intent, error) {
-	return nil, errors.New("not implemented")
+	return nil
 }

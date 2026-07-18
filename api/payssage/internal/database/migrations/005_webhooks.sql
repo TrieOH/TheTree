@@ -11,7 +11,7 @@ CREATE TABLE webhook_endpoints (
 CREATE TABLE webhook_events (
     id          UUID PRIMARY KEY DEFAULT uuidv7(),
     wallet_id   UUID REFERENCES wallets(id) ON DELETE SET NULL,
-    intent_id   TEXT REFERENCES intents(id) ON DELETE SET NULL,
+    intent_id   UUID REFERENCES intents(id) ON DELETE SET NULL,
     provider    TEXT NOT NULL,
     external_id TEXT,
     event_type  TEXT NOT NULL,

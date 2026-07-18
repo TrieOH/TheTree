@@ -40,8 +40,9 @@ func SetupFUN(module string) {
 func SetupConstraintMessages() {
 	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
 		// intents
-		"chk_intents_amount_cents": "amount must be greater than zero",
-		"chk_intents_status":       "invalid intent status",
+		"chk_intents_amount_cents":  "amount must be greater than zero",
+		"chk_intents_status":        "invalid intent status",
+		"chk_intents_status_detail": "invalid intent status detail",
 
 		// oauth_states
 		"chk_oauth_states_flow": "invalid oauth flow type",
@@ -65,6 +66,10 @@ func SetupConstraintMessages() {
 
 		// provider_credentials
 		"uniq_provider_credentials_active": "credentials for this provider are already connected to this wallet",
+
+		// collectors
+		"uniq_collectors_org_active":      "this collector is already connected to this organization",
+		"uniq_collectors_personal_active": "this collector is already connected to your account",
 
 		// sellers
 		"uniq_sellers_active": "this seller is already connected to this wallet",
