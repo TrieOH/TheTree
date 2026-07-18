@@ -26,22 +26,6 @@ export interface Intent {
   updated_at: string
 }
 
-export const intentSchema = z.object({
-  id: z.string(),
-  wallet_id: z.string(),
-  seller_id: z.string(),
-  collector_id: z.string(),
-  sandbox: z.boolean(),
-  amount_cents: z.number().int().positive('Amount must be greater than zero'),
-  currency: z.string().length(3),
-  status: z.enum(intentStatuses),
-  provider: z.string(),
-  provider_data: z.record(z.string(), z.unknown()),
-  metadata: z.record(z.string(), z.unknown()),
-  created_at: z.string(),
-  updated_at: z.string(),
-}) satisfies z.ZodType<Intent>
-
 export interface CreateIntentRequest {
   seller_id: string
   currency: string
@@ -83,3 +67,66 @@ export const createIntentSchema = z.object({
       }
     }, 'Provider data must be a valid JSON object'),
 }) satisfies z.ZodType<CreateIntentFormValues>
+
+export interface CreateTestModeIntentRequest {
+  wallet_id: string
+  seller_id: string
+  collector_id?: string
+  amount_cents: number
+  currency: string
+  sandbox: boolean
+  provider: string
+  status: IntentStatus
+  provider_data: Record<string, unknown>
+  metadata?: Record<string, unknown>
+}
+
+export interface CreateTestModeIntentFormValues {
+  wallet_id: string
+  seller_id: string
+  collector_id: string
+  amount_cents: number
+  currency: string
+  sandbox: boolean
+  provider: string
+  status: IntentStatus
+  provider_data: string
+  metadata: string
+}
+
+const jsonObjectString = (label: string) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => {
+      try {
+        const parsed: unknown = JSON.parse(value)
+        return (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          !Array.isArray(parsed)
+        )
+      } catch {
+        return false
+      }
+    }, `${label} must be a valid JSON object`)
+
+export const createTestModeIntentSchema = z.object({
+  wallet_id: z.uuid('Wallet must be selected'),
+  seller_id: z.uuid('Seller must be selected'),
+  collector_id: z.union([
+    z.literal(''),
+    z.uuid('Collector must be a valid UUID'),
+  ]),
+  amount_cents: z.number().int().positive('Amount must be greater than zero'),
+  currency: z
+    .string()
+    .trim()
+    .length(3, 'Currency must have exactly 3 characters')
+    .transform((value) => value.toUpperCase()),
+  sandbox: z.boolean(),
+  provider: z.string().trim().min(1, 'Provider is required'),
+  status: z.enum(intentStatuses),
+  provider_data: jsonObjectString('Provider data'),
+  metadata: jsonObjectString('Metadata'),
+}) satisfies z.ZodType<CreateTestModeIntentFormValues>

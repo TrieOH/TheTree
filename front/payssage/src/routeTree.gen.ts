@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminWalletsRouteImport } from './routes/admin/wallets'
 import { Route as AdminTransactionsRouteImport } from './routes/admin/transactions'
+import { Route as AdminTestModeIntentsRouteImport } from './routes/admin/test-mode-intents'
 import { Route as AdminKeysRouteImport } from './routes/admin/keys'
 import { Route as AdminCollectorsRouteImport } from './routes/admin/collectors'
 import { Route as AdminOrganizationIDRouteImport } from './routes/admin/$organizationID'
@@ -51,6 +52,11 @@ const AdminWalletsRoute = AdminWalletsRouteImport.update({
 const AdminTransactionsRoute = AdminTransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTestModeIntentsRoute = AdminTestModeIntentsRouteImport.update({
+  id: '/test-mode-intents',
+  path: '/test-mode-intents',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminKeysRoute = AdminKeysRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
+  '/admin/test-mode-intents': typeof AdminTestModeIntentsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
+  '/admin/test-mode-intents': typeof AdminTestModeIntentsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin': typeof AdminIndexRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/admin/$organizationID': typeof AdminOrganizationIDRouteWithChildren
   '/admin/collectors': typeof AdminCollectorsRoute
   '/admin/keys': typeof AdminKeysRoute
+  '/admin/test-mode-intents': typeof AdminTestModeIntentsRoute
   '/admin/transactions': typeof AdminTransactionsRoute
   '/admin/wallets': typeof AdminWalletsRouteWithChildren
   '/admin/': typeof AdminIndexRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/$organizationID'
     | '/admin/collectors'
     | '/admin/keys'
+    | '/admin/test-mode-intents'
     | '/admin/transactions'
     | '/admin/wallets'
     | '/admin/'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/collectors'
     | '/admin/keys'
+    | '/admin/test-mode-intents'
     | '/admin/transactions'
     | '/admin/wallets'
     | '/admin'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/admin/$organizationID'
     | '/admin/collectors'
     | '/admin/keys'
+    | '/admin/test-mode-intents'
     | '/admin/transactions'
     | '/admin/wallets'
     | '/admin/'
@@ -286,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/admin/transactions'
       preLoaderRoute: typeof AdminTransactionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/test-mode-intents': {
+      id: '/admin/test-mode-intents'
+      path: '/test-mode-intents'
+      fullPath: '/admin/test-mode-intents'
+      preLoaderRoute: typeof AdminTestModeIntentsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/keys': {
@@ -433,6 +452,7 @@ interface AdminRouteChildren {
   AdminOrganizationIDRoute: typeof AdminOrganizationIDRouteWithChildren
   AdminCollectorsRoute: typeof AdminCollectorsRoute
   AdminKeysRoute: typeof AdminKeysRoute
+  AdminTestModeIntentsRoute: typeof AdminTestModeIntentsRoute
   AdminTransactionsRoute: typeof AdminTransactionsRoute
   AdminWalletsRoute: typeof AdminWalletsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -442,6 +462,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrganizationIDRoute: AdminOrganizationIDRouteWithChildren,
   AdminCollectorsRoute: AdminCollectorsRoute,
   AdminKeysRoute: AdminKeysRoute,
+  AdminTestModeIntentsRoute: AdminTestModeIntentsRoute,
   AdminTransactionsRoute: AdminTransactionsRoute,
   AdminWalletsRoute: AdminWalletsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
