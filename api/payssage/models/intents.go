@@ -39,7 +39,6 @@ const (
 type IntentStatusDetail string
 
 const (
-	StatusDetailNone                IntentStatusDetail = ""
 	StatusDetailInsufficientFunds   IntentStatusDetail = "insufficient_funds"
 	StatusDetailHighRisk            IntentStatusDetail = "high_risk"
 	StatusDetailInvalidCard         IntentStatusDetail = "invalid_card"
