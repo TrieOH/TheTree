@@ -8,12 +8,12 @@
     "installments": {
       "type": "integer",
       "minimum": 1,
-      "description": "Number of installments for the payment"
+      "description": "Number of installments for the payment. Required for card payments, unused for pix"
     },
     "token": {
       "type": "string",
       "minLength": 1,
-      "description": "MercadoPago card token (mp_card_token)"
+      "description": "MercadoPago card token (mp_card_token). Required for card payments, unused for pix"
     },
     "payment_method_id": {
       "type": "string",
@@ -84,10 +84,26 @@
     }
   },
   "required": [
-    "installments",
-    "token",
     "payment_method_id",
     "payer"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "payment_method_id": { "const": "pix" }
+        }
+      },
+      "then": {
+        "properties": {
+          "token": false,
+          "installments": false
+        }
+      },
+      "else": {
+        "required": ["token", "installments"]
+      }
+    }
+  ]
 }
