@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Ban, CheckCircle2, CircleGauge, Clock3, FlaskConical, ReceiptText, TrendingUp, XCircle } from "lucide-react"
 import { PaginatedContainer } from "@trieoh/ui-base"
 import type { SortState } from "@trieoh/ui-base"
@@ -7,11 +7,17 @@ import { Button } from "#/shared/ui/shadcn/button"
 import { cn } from "#/shared/lib/utils"
 import type { Intent, IntentStatus } from "../model"
 import { intentStatuses } from "../model"
-import { mockIntents } from "../model/mock"
+// import { mockIntents } from "../model/mock"
 
 const statusDetails: Record<IntentStatus, { label: string; icon: typeof Clock3; className: string; dot: string }> = {
   processing: {
     label: "Processing",
+    icon: Clock3,
+    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  pending: {
+    label: "Pending",
     icon: Clock3,
     className: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
     dot: "bg-amber-500",
@@ -96,10 +102,14 @@ function IntentCard({ intent }: { intent: Intent }) {
   )
 }
 
-export function TransactionsDashboard({ title = "Transactions", description = "Payment activity across your wallets.", walletId }: {
+export function TransactionsDashboard({
+  title = "Transactions",
+  description = "Payment activity across your wallets.",
+  intents
+}: {
   title?: string
   description?: string
-  walletId?: string
+  intents: Intent[]
 }) {
   const [statusFilter, setStatusFilter] = useState<IntentStatus | "all">("all")
   const [environmentFilter, setEnvironmentFilter] = useState<"all" | "production" | "test">("all")
@@ -108,12 +118,6 @@ export function TransactionsDashboard({ title = "Transactions", description = "P
     field: "created_at",
     direction: "desc",
   })
-  const intents = useMemo(
-    () => walletId
-      ? mockIntents.map((intent) => ({ ...intent, wallet_id: walletId }))
-      : mockIntents,
-    [walletId],
-  )
   const succeeded = intents.filter((intent) => intent.status === "succeeded")
   const volume = succeeded.reduce((total, intent) => total + intent.amount_cents, 0)
   const productionVolume = succeeded
