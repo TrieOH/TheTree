@@ -60,3 +60,16 @@ type CreateIntentInput struct {
 	CheckoutData json.RawMessage
 	Metadata     *json.RawMessage
 }
+
+type HardCreateIntentRequest struct {
+	WalletID     uuid.UUID        `json:"wallet_id"`
+	SellerID     uuid.UUID        `json:"seller_id"`
+	CollectorID  *uuid.UUID       `json:"collector_id"`
+	AmountCents  int64            `json:"amount_cents"`
+	Currency     string           `json:"currency"`
+	Sandbox      bool             `json:"sandbox"`
+	Provider     string           `json:"provider"`
+	Status       IntentStatus     `json:"status"`
+	ProviderData json.RawMessage  `json:"provider_data"`
+	Metadata     *json.RawMessage `json:"metadata"`
+}

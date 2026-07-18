@@ -36,5 +36,6 @@ func RegisterRoutes(
 		r.Get("/wallets/{wallet_id}/intents", h.ListByWallet)
 		r.Get("/organizations/{organization_id}/intents", h.ListByOrg)
 		r.Post("/wallets/{wallet_id}/intents", h.Checkout)
+		r.Post("/testmode/intents/create", h.HardCreate)
 	})
 }
