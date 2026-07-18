@@ -115,7 +115,7 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	telemetry.Log().Info("MP Create Payment Request Raw Body", zap.String("body", resp.String()))
 
 	if resp.IsStatusFailure() {
-		return nil, fmt.Errorf("mercadopago create payment error %d: %v", resp.StatusCode(), resp.ResultError())
+		return nil, mapMPError(resp.StatusCode(), resp.ResultError())
 	}
 
 	// TODO: Rejected here needs to alter the intent status outside this method, maybe also return status?
