@@ -16,12 +16,6 @@ type CallbackLoaderData =
 
 const cleanRedirectUrl = (redirectTo: string) => {
   const url = new URL(redirectTo)
-
-  const credentialPathIndex = url.pathname.indexOf('&credential_id=')
-  if (credentialPathIndex !== -1) {
-    url.pathname = url.pathname.slice(0, credentialPathIndex)
-  }
-
   url.searchParams.delete('credential_id')
   url.searchParams.delete('public_key')
   return url.toString()

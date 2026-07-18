@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
-import { Link2, Store, WalletCards } from "lucide-react"
+import { Link2, Receipt, Store, WalletCards } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useLayoutHeader } from "@trieoh/ui-base"
 import { walletByIdQueryOptions } from "#/features/wallets/api"
@@ -21,6 +21,7 @@ function WalletLayout() {
 
   const tabs = [
     { label: "Collector", to: "/admin/wallets/$walletID", icon: Link2, exact: true },
+    { label: "Transactions", to: "/admin/wallets/$walletID/transactions", icon: Receipt, exact: true },
     { label: "Sellers", to: "/admin/wallets/$walletID/sellers", icon: WalletCards, exact: true },
     { label: "Connect seller", to: "/admin/wallets/$walletID/connect-seller", icon: Store, exact: true },
   ] as const

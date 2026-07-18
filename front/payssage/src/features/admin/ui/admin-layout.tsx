@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, CircleDollarSign, FolderKanban, KeyRound, LogOut, WalletCards } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleDollarSign, FolderKanban, KeyRound, LogOut, Receipt, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '#/shared/lib/utils'
 import { Button } from '#/shared/ui/shadcn/button'
@@ -31,6 +31,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       to: '/admin/collectors',
       icon: CircleDollarSign,
       label: 'Collectors',
+      exact: true,
+    },
+    {
+      to: '/admin/transactions',
+      icon: Receipt,
+      label: 'Transactions',
       exact: true,
     },
     {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { CircleDollarSign, LucideWalletCards, Users2 } from 'lucide-react'
+import { CircleDollarSign, LucideWalletCards, Receipt, Users2 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { LayoutContext } from '@trieoh/ui-base'
 
@@ -33,6 +33,13 @@ function NamespaceLayout() {
       to: '/admin/$organizationID/collectors',
       params: { organizationID },
       icon: CircleDollarSign,
+      exact: true,
+    },
+    {
+      label: 'Transactions',
+      to: '/admin/$organizationID/transactions',
+      params: { organizationID },
+      icon: Receipt,
       exact: true,
     },
   ]
