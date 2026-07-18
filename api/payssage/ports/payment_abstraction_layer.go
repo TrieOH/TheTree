@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"payssage/models"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // PaymentStatus is a normalized status across providers.
@@ -21,67 +19,30 @@ const (
 	StatusRefunded   PaymentStatus = "refunded"
 )
 
-// Payer is required by MP, optional for Stripe.
-// Always populate it — the PAL passes it through regardless.
-type Payer struct {
-	Email     string
-	FirstName string
-	LastName  string
-	// Document is required in some MP countries (CPF in Brazil).
-	DocumentType   string // "CPF", "CNPJ", etc.
-	DocumentNumber string
-}
-
-// ChargeRequest is the normalized input for any payment operation.
-type ChargeRequest struct {
-	Intent models.Intent
-	// Amount in the smallest currency unit (cents / centavos).
-	// Each provider impl is responsible for converting if needed.
-	Amount   int64
-	Currency string // ISO 4217: "BRL", "USD"
-
-	PaymentMethod PaymentMethod
-
-	Description       string
-	ExternalReference string // your internal order/cart ID — maps to metadata in Stripe, external_reference in MP
-
-	Payer Payer
-
-	// RedirectURLs are used by MP's hosted checkout.
-	// Stripe ignores these.
-	RedirectURLs *RedirectURLs
-
-	// PaymentMethod hints — each provider maps these to its own enum.
-	// Leave nil to allow all methods.
-	AllowedMethods []PaymentMethod
-
-	MPSellerToken string
-}
-
-type InitiateCheckoutRequest struct {
-	WorkspaceID        uuid.UUID
-	SellerCredentialID uuid.UUID
-	Amount             int64
-	Currency           string
-	Provider           string
-	Metadata           json.RawMessage
-
-	Payer Payer
-
-	Installments int
-
-	IdentificationNumber string
-	IdentificationType   string
-
-	// Provider Specifics //
-
-	// Mercado Pago //
-	MPSellerToken       string
-	MPMarketplaceFeeBPS int
-	MPPaymentMethodID   string
-	MPPaymentMethodType string
-	MPCardToken         string
-}
+//type ChargeRequest struct {
+//	Intent models.Intent
+//	// Amount in the smallest currency unit (cents / centavos).
+//	// Each provider impl is responsible for converting if needed.
+//	Amount   int64
+//	Currency string // ISO 4217: "BRL", "USD"
+//
+//	PaymentMethod PaymentMethod
+//
+//	Description       string
+//	ExternalReference string // your internal order/cart ID — maps to metadata in Stripe, external_reference in MP
+//
+//	Payer Payer
+//
+//	// RedirectURLs are used by MP's hosted checkout.
+//	// Stripe ignores these.
+//	RedirectURLs *RedirectURLs
+//
+//	// PaymentMethod hints — each provider maps these to its own enum.
+//	// Leave nil to allow all methods.
+//	AllowedMethods []PaymentMethod
+//
+//	MPSellerToken string
+//}
 
 type RedirectURLs struct {
 	Success string
@@ -144,17 +105,14 @@ type WebhookEvent struct {
 
 // PaymentAbstractionLayer is the single contract every provider must fulfill.
 type PaymentAbstractionLayer interface {
-	// InitiateCheckout starts a provider-specific checkout session.
-	// Stripe returns a ClientSecret for Elements.
-	// MP returns a RedirectURL for Checkout Pro.
-	InitiateCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*models.Intent, error)
+	Checkout(ctx context.Context, intent *models.Intent, checkoutData json.RawMessage) (json.RawMessage, error)
 
 	// Charge performs a direct server-side charge.
 	// Use for server-to-server flows where you already have a payment method token.
-	Charge(ctx context.Context, request *ChargeRequest) (*models.Intent, error)
+	Charge(ctx context.Context, intent *models.Intent) (*models.Intent, error)
 
 	// Refund issues a full or partial refund against a prior transaction.
-	Refund(ctx context.Context, request *RefundRequest) (*models.Intent, error)
+	Refund(ctx context.Context, intent *models.Intent) (*models.Intent, error)
 }
 
 // ResolveProvider returns the appropriate PaymentAbstractionLayer for the given request.
@@ -183,10 +141,10 @@ type MercadoPagoProvider interface {
 	// InitiatePixCheckout builds a Pix-specific order payload.
 	// Different payment_method structure — no token, no installments.
 	// Populates PixQRCode and PixQRCodeB64 on the returned data.
-	InitiatePixCheckout(ctx context.Context, request *InitiateCheckoutRequest) (*models.Intent, error)
-
-	CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error
-
-	// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
-	NormalizeStatus(status string, statusDetail string) models.IntentStatus
+	//InitiatePixCheckout(ctx context.Context, int) (*models.Intent, error)
+	//
+	//CancelPixCode(ctx context.Context, paymentID string, sellerToken string) error
+	//
+	//// NormalizeStatus maps MP's order status and status_detail to PaymentStatus.
+	//NormalizeStatus(status string, statusDetail string) models.IntentStatus
 }

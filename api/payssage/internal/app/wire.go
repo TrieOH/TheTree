@@ -5,12 +5,16 @@ import (
 	"lib/errx"
 	"lib/xslices"
 	"net/http"
+	"payssage/internal/config"
 	"payssage/internal/database/sqlc"
 	"payssage/internal/features/collectors"
+	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/providers"
 	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
+	providers2 "payssage/internal/providers"
 	"payssage/ports"
 	idx "sdk/identityx"
 	"strings"
@@ -29,7 +33,7 @@ type repos struct {
 	oauth      ports.OAuthStateRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
-	//intents             ports.IntentRepository
+	intents    ports.IntentRepo
 	//workspaces          ports.WorkspaceRepo
 	//endpoints           ports.WebhookEndpointRepo
 	//deliveries          ports.WebhookDeliveryRepo
@@ -44,8 +48,8 @@ type queries struct {
 	wallets    *wallets.Queries
 	collectors *collectors.Queries
 	sellers    *sellers.Queries
+	intents    *intents.Queries
 	//webhooks   *webhooks.QueryService
-	//intents    *intents.QueryService
 	//workspaces *workspaces.QueryService
 	//apiKeys    *api_keys.QueryService
 	//oauth      *oauth.QueryService
@@ -55,6 +59,7 @@ type commands struct {
 	orgs    *orgs.Commands
 	wallets *wallets.Commands
 	oauth   *oauth.Commands
+	intents *intents.Commands
 	//webhooks   *webhooks.CommandService
 	//intents    *intents.CommandService
 	//workspaces *workspaces.CommandService
@@ -79,7 +84,7 @@ type handlers struct {
 	oauth      *oauth.Handlers
 	collectors *collectors.Handlers
 	sellers    *sellers.Handlers
-	//intents  *intents.Handler
+	intents    *intents.Handlers
 	//wallets  *workspaces.Handler
 	//webhooks *webhooks.Handler
 	//oauth    *oauth.Handler
@@ -94,7 +99,7 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 		oauth:      oauth.NewRepos(q, logger, tracer),
 		collectors: collectors.NewRepos(q, logger, tracer),
 		sellers:    sellers.NewRepos(q, logger, tracer),
-		//intents:             intents.NewIntentsRepo(q, logger, tracer),
+		intents:    intents.NewRepos(q, logger, tracer),
 		//workspaces:          workspaces.NewWorkspaceRepo(q, logger, tracer),
 		//endpoints:           webhooks.NewWebhookEndpointRepo(q, logger, tracer),
 		//deliveries:          webhooks.NewWebhookDeliveryRepo(q, logger, tracer),
@@ -105,14 +110,26 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 	}
 }
 
+func initProviders(cfg config.MercadoPagoConfig, r repos, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) {
+	mercadoPago := providers.NewMercadoPago(cfg, r.collectors, r.sellers, r.wallets, logger, tracer, tx)
+
+	providers2.PayssageProviders.OAuth = map[providers2.AvailableProviders]ports.OAuthProvider{
+		providers2.MercadoPagoProvider: mercadoPago,
+	}
+
+	providers2.PayssageProviders.Payments = map[providers2.AvailableProviders]ports.PaymentAbstractionLayer{
+		providers2.MercadoPagoProvider: mercadoPago,
+	}
+}
+
 func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) queries {
 	return queries{
 		orgs:       orgs.NewQueries(r.orgs, idx, logger, tracer, tx),
 		wallets:    wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
 		collectors: collectors.NewQueries(r.collectors, r.orgs, logger, tracer, tx),
 		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, logger, tracer, tx),
+		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, logger, tracer, tx),
 		//webhooks:   webhooks.NewQueryService(r.endpoints, r.deliveries, r.events, r.workspaces, logger, tx, tracer),
-		//intents:    intents.NewQueryService(r.intents, r.workspaces, logger, tx, tracer),
 		//workspaces: workspaces.NewQueryService(r.workspaces, logger, tx, tracer),
 		//oauth:      oauth.NewQueryService(r.workspaces, r.marketplaces, logger, tx, tracer),
 	}
@@ -123,6 +140,7 @@ func initCommands(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRu
 		orgs:    orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
 		wallets: wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
 		oauth:   oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
+		intents: intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, logger, tracer, tx),
 		//webhooks:   webhooks.NewCommandService(r.endpoints, r.deliveries, r.events, r.workspaces, r.intents, r.providerCredentials, river, logger, tx, tracer),
 		//intents:    intents.NewCommandService(r.intents, r.workspaces, r.providerCredentials, r.marketplaces, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, logger, tx, tracer),
 		//workspaces: workspaces.NewCommandService(r.workspaces, logger, tx, tracer),
@@ -130,7 +148,7 @@ func initCommands(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRu
 	}
 }
 
-func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg Config) middlewares {
+func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg config.Config) middlewares {
 	var mw middlewares
 	authMW := app.setupAuthMiddlewares()
 	mw.jwtAuth = authMW.JWT()
@@ -165,7 +183,7 @@ func initHandlers(c commands, q queries) handlers {
 		oauth:      oauth.NewHandlers(c.oauth),
 		collectors: collectors.NewHandlers(q.collectors),
 		sellers:    sellers.NewHandlers(q.sellers),
-		//intents:  intents.NewHandler(c.intents, q.intents),
+		intents:    intents.NewHandlers(c.intents, q.intents),
 		//wallets:  workspaces.NewHandler(c.workspaces, q.workspaces),
 		//webhooks: webhooks.NewHandler(c.webhooks, q.webhooks),
 		//oauth:    oauth.NewHandler(c.oauth, q.oauth),

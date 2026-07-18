@@ -29,7 +29,7 @@ type CommandService struct {
 	deliveries  ports.WebhookDeliveryRepo
 	events      ports.WebhookEventRepo
 	workspaces  ports.WorkspaceRepo
-	intents     ports.IntentRepository
+	intents     ports.IntentRepo
 	credentials ports.ProviderCredentialRepo
 	river       *river.Client[pgx.Tx]
 	az          *authzed.Client
@@ -42,7 +42,7 @@ func NewCommandService(
 	deliveries ports.WebhookDeliveryRepo,
 	events ports.WebhookEventRepo,
 	workspaces ports.WorkspaceRepo,
-	intents ports.IntentRepository,
+	intents ports.IntentRepo,
 	credentials ports.ProviderCredentialRepo,
 	riverClient *river.Client[pgx.Tx],
 	az *authzed.Client,

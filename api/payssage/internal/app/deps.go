@@ -7,8 +7,7 @@ import (
 	"lib/telemetry"
 	"lib/validator"
 	"net/http"
-	"payssage/internal/providers"
-	"payssage/ports"
+	"payssage/internal/config"
 	"time"
 
 	idx "sdk/identityx"
@@ -72,7 +71,7 @@ func SetupConstraintMessages() {
 	})
 }
 
-func SetupIdentityX(cfg Config) *idx.Client {
+func SetupIdentityX(cfg config.Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
@@ -91,27 +90,6 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		}
 	}()
 	return client
-}
-
-func setupProviders(cfg Config) {
-	mercadoPago, err := providers.NewMercadoPagoProvider(
-		cfg.MpClientID,
-		cfg.MpAccessToken,
-		cfg.MpClientSecret,
-		cfg.MpRedirectURI,
-		cfg.MpWebhookSecret,
-	)
-	if err != nil {
-		errx.Exit(err, "error setting up mercado pago")
-	}
-
-	providers.PayssageProviders.OAuth = map[providers.AvailableProviders]ports.OAuthProvider{
-		providers.MercadoPagoProvider: mercadoPago,
-	}
-
-	providers.PayssageProviders.Payments = map[providers.AvailableProviders]ports.PaymentAbstractionLayer{
-		providers.MercadoPagoProvider: mercadoPago,
-	}
 }
 
 func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {

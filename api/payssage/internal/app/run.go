@@ -17,6 +17,7 @@ func (app *Payssage) run() {
 	tracer := otel.Tracer(app.cfg.AppName)
 
 	repos := initRepos(q, loggr, tracer)
+	initProviders(app.cfg.MercadoPagoConfig, repos, loggr, tx, tracer)
 
 	//river := libriver.NewClient(app.db, libriver.NewWorkers(
 	//	libriver.Register[jobs.DeliverWebhookArgs](jobs.NewDeliverWebhookWorker(repos.deliveries)),
