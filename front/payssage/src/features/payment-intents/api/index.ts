@@ -50,3 +50,7 @@ export const createWalletIntentFn = createClientOnlyFn(
   (walletId: string, payload: CreateIntentRequest) =>
     authFetcher.post<Intent>(`/wallets/${walletId}/intents`, payload),
 )
+
+export const cancelIntentFn = createClientOnlyFn((intentId: string) =>
+  authFetcher.post<Intent>(`/intents/${intentId}/cancel`),
+)
