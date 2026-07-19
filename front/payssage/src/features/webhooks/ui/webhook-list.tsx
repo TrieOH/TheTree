@@ -1,4 +1,4 @@
-import { Webhook, Copy, Check, Trash2 } from 'lucide-react'
+import { Webhook, Copy, Check, Trash2, Send } from 'lucide-react'
 import { Button } from '#/shared/ui/shadcn/button'
 import { Card, CardContent } from '#/shared/ui/shadcn/card'
 import { Badge } from '#/shared/ui/shadcn/badge'
@@ -10,9 +10,15 @@ interface WebhookListProps {
   webhooks: WebhookI[]
   isLoading: boolean
   onDelete: (id: string) => void
+  onViewDeliveries: (webhook: WebhookI) => void
 }
 
-export function WebhookList({ webhooks, isLoading, onDelete }: WebhookListProps) {
+export function WebhookList({
+  webhooks,
+  isLoading,
+  onDelete,
+  onViewDeliveries,
+}: WebhookListProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const copyToClipboard = (id: string) => {
@@ -33,7 +39,10 @@ export function WebhookList({ webhooks, isLoading, onDelete }: WebhookListProps)
   return (
     <div className="grid gap-4">
       {webhooks.map((webhook) => (
-        <Card key={webhook.id} className="rounded-none border-border bg-card transition-colors">
+        <Card
+          key={webhook.id}
+          className="rounded-none border-border bg-card transition-colors"
+        >
           <CardContent className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1 w-full">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
@@ -41,12 +50,19 @@ export function WebhookList({ webhooks, isLoading, onDelete }: WebhookListProps)
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
-                  <Badge variant="outline" className="rounded-none text-[8px] sm:text-[9px] uppercase font-black tracking-widest px-1.5 h-4 border-primary/30 text-primary">POST</Badge>
+                  <Badge
+                    variant="outline"
+                    className="rounded-none text-[8px] sm:text-[9px] uppercase font-black tracking-widest px-1.5 h-4 border-primary/30 text-primary"
+                  >
+                    POST
+                  </Badge>
                   <button
                     onClick={() => copyToClipboard(webhook.id)}
                     className="flex items-center gap-1 group/id min-w-0"
                   >
-                    <span className="text-[8px] sm:text-[10px] text-muted-foreground font-mono uppercase tracking-widest group-hover/id:text-primary transition-colors truncate">ID: {webhook.id}</span>
+                    <span className="text-[8px] sm:text-[10px] text-muted-foreground font-mono uppercase tracking-widest group-hover/id:text-primary transition-colors truncate">
+                      ID: {webhook.id}
+                    </span>
                     {copiedId === webhook.id ? (
                       <Check className="w-3 h-3 text-emerald-500 shrink-0" />
                     ) : (
@@ -57,6 +73,7 @@ export function WebhookList({ webhooks, isLoading, onDelete }: WebhookListProps)
                 <p className="font-mono text-[10px] sm:text-xs md:text-sm font-bold truncate text-foreground/80 tracking-tight">
                   {webhook.url}
                 </p>
+                <p className="mt-1 text-xs font-semibold">{webhook.name}</p>
               </div>
             </div>
 
@@ -68,11 +85,23 @@ export function WebhookList({ webhooks, isLoading, onDelete }: WebhookListProps)
                 </span>
                 <span className="hidden xs:inline-block border-l border-border h-4" />
                 <span className="shrink-0">
-                  {new Date(webhook.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(webhook.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
                 </span>
               </div>
 
               <div className="flex items-center justify-center md:justify-end gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none h-8 gap-2 text-[9px] sm:text-[10px] uppercase font-black tracking-[0.2em]"
+                  onClick={() => onViewDeliveries(webhook)}
+                >
+                  <Send /> Deliveries
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -95,7 +124,10 @@ function WebhookListSkeleton() {
   return (
     <div className="grid gap-4">
       {[1, 2].map((i) => (
-        <Card key={i} className="rounded-none border-border bg-card animate-pulse">
+        <Card
+          key={i}
+          className="rounded-none border-border bg-card animate-pulse"
+        >
           <CardContent className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-4 flex-1 w-full">
               <div className="w-12 h-12 bg-muted shrink-0" />
@@ -122,9 +154,12 @@ function WebhookListEmpty() {
         <Webhook className="w-8 h-8 text-muted-foreground/50" />
       </div>
       <div className="text-center space-y-1">
-        <h3 className="text-lg font-black uppercase tracking-tighter">No Webhooks found</h3>
+        <h3 className="text-lg font-black uppercase tracking-tighter">
+          No Webhooks found
+        </h3>
         <p className="text-muted-foreground text-xs uppercase tracking-widest font-bold max-w-70">
-          Add your first webhook endpoint to receive real-time notifications about payment events.
+          Add your first webhook endpoint to receive real-time notifications
+          about payment events.
         </p>
       </div>
     </div>

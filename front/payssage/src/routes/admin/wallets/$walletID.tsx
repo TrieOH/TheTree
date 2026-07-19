@@ -1,29 +1,62 @@
-import { useMemo } from "react"
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
-import { Link2, Receipt, Store, WalletCards } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
-import { useLayoutHeader } from "@trieoh/ui-base"
-import { walletByIdQueryOptions } from "#/features/wallets/api"
-import { cn } from "#/shared/lib/utils"
+import { useMemo } from 'react'
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { Link2, Receipt, Store, WalletCards, Webhook } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { useLayoutHeader } from '@trieoh/ui-base'
+import { walletByIdQueryOptions } from '#/features/wallets/api'
+import { cn } from '#/shared/lib/utils'
 
-export const Route = createFileRoute("/admin/wallets/$walletID")({ component: WalletLayout })
+export const Route = createFileRoute('/admin/wallets/$walletID')({
+  component: WalletLayout,
+})
 
 function WalletLayout() {
   const { walletID } = Route.useParams()
   const { data: wallet } = useQuery(walletByIdQueryOptions(walletID))
-  const header = useMemo(() => (
-    <div>
-      <h1 className="text-lg font-semibold">{wallet?.name ?? "Wallet"}</h1>
-      <p className="text-sm text-muted-foreground">Manage this wallet's collector and seller accounts.</p>
-    </div>
-  ), [wallet?.name])
+  const header = useMemo(
+    () => (
+      <div>
+        <h1 className="text-lg font-semibold">{wallet?.name ?? 'Wallet'}</h1>
+        <p className="text-sm text-muted-foreground">
+          Manage this wallet's collector and seller accounts.
+        </p>
+      </div>
+    ),
+    [wallet?.name],
+  )
   useLayoutHeader(header)
 
   const tabs = [
-    { label: "Collector", to: "/admin/wallets/$walletID", icon: Link2, exact: true },
-    { label: "Transactions", to: "/admin/wallets/$walletID/transactions", icon: Receipt, exact: true },
-    { label: "Sellers", to: "/admin/wallets/$walletID/sellers", icon: WalletCards, exact: true },
-    { label: "Connect seller", to: "/admin/wallets/$walletID/connect-seller", icon: Store, exact: true },
+    {
+      label: 'Collector',
+      to: '/admin/wallets/$walletID',
+      icon: Link2,
+      exact: true,
+    },
+    {
+      label: 'Transactions',
+      to: '/admin/wallets/$walletID/transactions',
+      icon: Receipt,
+      exact: true,
+    },
+    {
+      label: 'Sellers',
+      to: '/admin/wallets/$walletID/sellers',
+      icon: WalletCards,
+      exact: true,
+    },
+    {
+      label: 'Connect seller',
+      to: '/admin/wallets/$walletID/connect-seller',
+      icon: Store,
+      exact: true,
+    },
+    {
+      label: 'Webhooks',
+      to: '/admin/wallets/$walletID/webhooks',
+      icon: Webhook,
+      exact: true,
+    },
   ] as const
 
   return (
@@ -40,9 +73,26 @@ function WalletLayout() {
             >
               {({ isActive }) => (
                 <>
-                  <tab.icon className={cn("size-3.5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                  <span className={isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}>{tab.label}</span>
-                  {isActive && <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />}
+                  <tab.icon
+                    className={cn(
+                      'size-3.5',
+                      isActive
+                        ? 'text-primary'
+                        : 'text-muted-foreground group-hover:text-foreground',
+                    )}
+                  />
+                  <span
+                    className={
+                      isActive
+                        ? 'text-foreground'
+                        : 'text-muted-foreground group-hover:text-foreground'
+                    }
+                  >
+                    {tab.label}
+                  </span>
+                  {isActive && (
+                    <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary" />
+                  )}
                 </>
               )}
             </Link>

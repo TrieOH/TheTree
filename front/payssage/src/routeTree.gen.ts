@@ -25,6 +25,7 @@ import { Route as AdminOrganizationIDTransactionsRouteImport } from './routes/ad
 import { Route as AdminOrganizationIDMembersRouteImport } from './routes/admin/$organizationID/members'
 import { Route as AdminOrganizationIDCollectorsRouteImport } from './routes/admin/$organizationID/collectors'
 import { Route as AdminWalletsWalletIDIndexRouteImport } from './routes/admin/wallets/$walletID/index'
+import { Route as AdminWalletsWalletIDWebhooksRouteImport } from './routes/admin/wallets/$walletID/webhooks'
 import { Route as AdminWalletsWalletIDTransactionsRouteImport } from './routes/admin/wallets/$walletID/transactions'
 import { Route as AdminWalletsWalletIDSellersRouteImport } from './routes/admin/wallets/$walletID/sellers'
 import { Route as AdminWalletsWalletIDConnectSellerRouteImport } from './routes/admin/wallets/$walletID/connect-seller'
@@ -114,6 +115,12 @@ const AdminWalletsWalletIDIndexRoute =
     path: '/',
     getParentRoute: () => AdminWalletsWalletIDRoute,
   } as any)
+const AdminWalletsWalletIDWebhooksRoute =
+  AdminWalletsWalletIDWebhooksRouteImport.update({
+    id: '/webhooks',
+    path: '/webhooks',
+    getParentRoute: () => AdminWalletsWalletIDRoute,
+  } as any)
 const AdminWalletsWalletIDTransactionsRoute =
   AdminWalletsWalletIDTransactionsRouteImport.update({
     id: '/transactions',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
+  '/admin/wallets/$walletID/webhooks': typeof AdminWalletsWalletIDWebhooksRoute
   '/admin/wallets/$walletID/': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRoutesByTo {
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
+  '/admin/wallets/$walletID/webhooks': typeof AdminWalletsWalletIDWebhooksRoute
   '/admin/wallets/$walletID': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRoutesById {
@@ -192,6 +201,7 @@ export interface FileRoutesById {
   '/admin/wallets/$walletID/connect-seller': typeof AdminWalletsWalletIDConnectSellerRoute
   '/admin/wallets/$walletID/sellers': typeof AdminWalletsWalletIDSellersRoute
   '/admin/wallets/$walletID/transactions': typeof AdminWalletsWalletIDTransactionsRoute
+  '/admin/wallets/$walletID/webhooks': typeof AdminWalletsWalletIDWebhooksRoute
   '/admin/wallets/$walletID/': typeof AdminWalletsWalletIDIndexRoute
 }
 export interface FileRouteTypes {
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
+    | '/admin/wallets/$walletID/webhooks'
     | '/admin/wallets/$walletID/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
+    | '/admin/wallets/$walletID/webhooks'
     | '/admin/wallets/$walletID'
   id:
     | '__root__'
@@ -254,6 +266,7 @@ export interface FileRouteTypes {
     | '/admin/wallets/$walletID/connect-seller'
     | '/admin/wallets/$walletID/sellers'
     | '/admin/wallets/$walletID/transactions'
+    | '/admin/wallets/$walletID/webhooks'
     | '/admin/wallets/$walletID/'
   fileRoutesById: FileRoutesById
 }
@@ -377,6 +390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletsWalletIDIndexRouteImport
       parentRoute: typeof AdminWalletsWalletIDRoute
     }
+    '/admin/wallets/$walletID/webhooks': {
+      id: '/admin/wallets/$walletID/webhooks'
+      path: '/webhooks'
+      fullPath: '/admin/wallets/$walletID/webhooks'
+      preLoaderRoute: typeof AdminWalletsWalletIDWebhooksRouteImport
+      parentRoute: typeof AdminWalletsWalletIDRoute
+    }
     '/admin/wallets/$walletID/transactions': {
       id: '/admin/wallets/$walletID/transactions'
       path: '/transactions'
@@ -422,6 +442,7 @@ interface AdminWalletsWalletIDRouteChildren {
   AdminWalletsWalletIDConnectSellerRoute: typeof AdminWalletsWalletIDConnectSellerRoute
   AdminWalletsWalletIDSellersRoute: typeof AdminWalletsWalletIDSellersRoute
   AdminWalletsWalletIDTransactionsRoute: typeof AdminWalletsWalletIDTransactionsRoute
+  AdminWalletsWalletIDWebhooksRoute: typeof AdminWalletsWalletIDWebhooksRoute
   AdminWalletsWalletIDIndexRoute: typeof AdminWalletsWalletIDIndexRoute
 }
 
@@ -430,6 +451,7 @@ const AdminWalletsWalletIDRouteChildren: AdminWalletsWalletIDRouteChildren = {
     AdminWalletsWalletIDConnectSellerRoute,
   AdminWalletsWalletIDSellersRoute: AdminWalletsWalletIDSellersRoute,
   AdminWalletsWalletIDTransactionsRoute: AdminWalletsWalletIDTransactionsRoute,
+  AdminWalletsWalletIDWebhooksRoute: AdminWalletsWalletIDWebhooksRoute,
   AdminWalletsWalletIDIndexRoute: AdminWalletsWalletIDIndexRoute,
 }
 

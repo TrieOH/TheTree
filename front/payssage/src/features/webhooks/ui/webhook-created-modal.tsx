@@ -1,6 +1,12 @@
 import { Check, Copy, AlertTriangle } from 'lucide-react'
 import { Button } from '#/shared/ui/shadcn/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '#/shared/ui/shadcn/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/shared/ui/shadcn/dialog'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { WebhookCreateResponseI } from '../model'
@@ -11,7 +17,11 @@ interface WebhookCreatedModalProps {
   onClose: () => void
 }
 
-export function WebhookCreatedModal({ webhook, isOpen, onClose }: WebhookCreatedModalProps) {
+export function WebhookCreatedModal({
+  webhook,
+  isOpen,
+  onClose,
+}: WebhookCreatedModalProps) {
   const [copied, setCopied] = useState(false)
 
   const copyToClipboard = () => {
@@ -33,7 +43,8 @@ export function WebhookCreatedModal({ webhook, isOpen, onClose }: WebhookCreated
             Webhook Created
           </DialogTitle>
           <DialogDescription className="text-xs uppercase tracking-widest font-bold opacity-70">
-            Please copy your webhook secret now. You won't be able to see it again.
+            Please copy your webhook secret now. You won't be able to see it
+            again.
           </DialogDescription>
         </DialogHeader>
 
@@ -41,14 +52,20 @@ export function WebhookCreatedModal({ webhook, isOpen, onClose }: WebhookCreated
           <div className="relative group">
             <div className="absolute -inset-1 bg-linear-to-r from-primary/20 to-primary/10 blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
             <div className="relative flex items-center gap-2 bg-muted/50 p-4 border border-border font-mono text-sm break-all">
-              <code className="flex-1 text-primary font-bold">{webhook.secret}</code>
+              <code className="flex-1 text-primary font-bold">
+                {webhook.secret}
+              </code>
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={copyToClipboard}
                 className="shrink-0 hover:bg-primary/10 rounded-none"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="w-4 h-4 text-emerald-500" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -56,9 +73,12 @@ export function WebhookCreatedModal({ webhook, isOpen, onClose }: WebhookCreated
           <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-none">
             <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">Security Warning</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">
+                Security Warning
+              </p>
               <p className="text-[10px] font-bold text-amber-800/80 leading-relaxed uppercase tracking-tight">
-                Store this secret securely. It is used to verify that the webhooks are indeed sent from our platform.
+                Store this secret securely. It is used to verify that the
+                webhooks are indeed sent from our platform.
               </p>
             </div>
           </div>
