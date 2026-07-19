@@ -9,12 +9,11 @@ TheTree is the monorepo for **TrieOH**, a SaaS platform built as a suite of doma
 | Directory | Language         | Purpose                                                                             |
 |-----------|------------------|-------------------------------------------------------------------------------------|
 | `api/`    | Go               | Four backend microservices (IdentityX, Payssage, Informd, Univents)                 |
-| `front/`  | TypeScript/React | Five front-end SPAs targeting Cloudflare Workers                                    |
+| `front/`  | TypeScript/React | Four front-end SPAs targeting Cloudflare Workers                                    |
 | `lib/go/` | Go               | Shared Go library (authz, crypto, database, telemetry, OAuth, utils)                |
 | `lib/ts/` | TypeScript       | TypeScript type bindings (tygo-generated from Go models)                            |
 | `sdk/go/` | Go               | Public SDKs for IdentityX and Payssage                                              |
 | `sdk/ts/` | TypeScript       | Public TypeScript SDKs for IdentityX and Payssage                                   |
-| `docs/`   | MDX/TypeScript   | Documentation site (Fumadocs, deployed to Cloudflare)                               |
 | `infra/`  | Config           | Grafana dashboards, VictoriaMetrics scrape configs, Vector pipeline, Docker tooling |
 | `bruno/`  | JSON             | API client collections (Bruno — Postman alternative)                                |
 
@@ -70,7 +69,6 @@ All front-ends use **TanStack Start** (Router + Query), styled with **Tailwind C
 | `front/payssage`  | 3002     | React Hook Form; Base UI components                           |
 | `front/univents`  | 3001     | Leaflet maps; React Day Picker; MercadoPago SDK; Vaul drawers |
 | `front/informd`   | 3004     | React Hook Form; Base UI; React Compiler (experimental)       |
-| `front/spicedb`   | —        | SpiceDB admin UI or local playground                          |
 
 ## Infrastructure (Docker Compose)
 

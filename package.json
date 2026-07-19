@@ -5,7 +5,6 @@
     "identityx": "pnpm -F identityx",
     "informd": "pnpm -F informd",
     "payssage": "pnpm -F payssage",
-    "spicedb": "pnpm -F spicedb-ui",
     "univents": "pnpm -F univents",
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",

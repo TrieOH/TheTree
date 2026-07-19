@@ -2,7 +2,6 @@ packages:
   - 'front/*'
   - 'lib/ts/*'
   - 'sdk/ts/identityx-access'
-  - 'docs'
 
 catalog:
   # === @trieoh ===

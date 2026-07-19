@@ -17,6 +17,9 @@ const config = defineConfig(() => {
       tanstackStart(),
       viteReact(),
     ],
+    server: {
+      allowedHosts: ['.ngrok-free.dev'],
+    },
     build: {
       rollupOptions: {
         output: {
