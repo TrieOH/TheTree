@@ -50,8 +50,13 @@ func (c *Commands) dispatchDeliveries(ctx context.Context, event *models.Webhook
 		}
 
 		for _, endpoint := range endpoints {
+			v7, err := uuid.NewV7()
+			if err != nil {
+				return fun.ErrInternal(err.Error())
+			}
+
 			delivery := models.WebhookDelivery{
-				ID:         uuid.Must(uuid.NewV7()),
+				ID:         v7,
 				EndpointID: endpoint.ID,
 				EventID:    event.ID,
 				Status:     models.WebhookDeliveryStatusPending,
