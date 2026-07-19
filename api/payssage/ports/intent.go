@@ -2,21 +2,17 @@ package ports
 
 import (
 	"context"
-
 	"payssage/models"
 
 	"github.com/google/uuid"
 )
 
-type IntentRepository interface {
+type IntentRepo interface {
 	Create(ctx context.Context, toCreate models.Intent) (*models.Intent, error)
+	Update(ctx context.Context, toUpdate models.Intent) (*models.Intent, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Intent, error)
-	List(ctx context.Context) ([]models.Intent, error)
-	ListIntentsByWorkspace(ctx context.Context, workspaceID uuid.UUID) ([]models.Intent, error)
-	Cancel(ctx context.Context, id uuid.UUID) (*models.Intent, error)
-	Confirm(ctx context.Context, id uuid.UUID) (*models.Intent, error)
-	Fail(ctx context.Context, id uuid.UUID) (*models.Intent, error)
-	UpdateProviderData(ctx context.Context, intent models.Intent) (*models.Intent, error)
-	GetByMPOrderID(ctx context.Context, orderID string) (*models.Intent, error)
-	GetByMPTransactionID(ctx context.Context, transactionID string) (*models.Intent, error)
+	ListByWallet(ctx context.Context, walletID uuid.UUID) ([]models.Intent, error)
+	ListByOwner(ctx context.Context, ownerID uuid.UUID) ([]models.Intent, error)
+	ListByOrg(ctx context.Context, orgID uuid.UUID) ([]models.Intent, error)
+	GetByProviderTransactionID(ctx context.Context, provider string, transactionID string) (*models.Intent, error)
 }

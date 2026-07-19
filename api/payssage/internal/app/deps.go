@@ -2,13 +2,14 @@ package app
 
 import (
 	"context"
+	"crypto/subtle"
 	"lib/database"
 	"lib/errx"
 	"lib/telemetry"
 	"lib/validator"
 	"net/http"
-	"payssage/internal/providers"
-	"payssage/ports"
+	"os"
+	"payssage/internal/config"
 	"time"
 
 	idx "sdk/identityx"
@@ -41,8 +42,9 @@ func SetupFUN(module string) {
 func SetupConstraintMessages() {
 	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
 		// intents
-		"chk_intents_amount_cents": "amount must be greater than zero",
-		"chk_intents_status":       "invalid intent status",
+		"chk_intents_amount_cents":  "amount must be greater than zero",
+		"chk_intents_status":        "invalid intent status",
+		"chk_intents_status_detail": "invalid intent status detail",
 
 		// oauth_states
 		"chk_oauth_states_flow": "invalid oauth flow type",
@@ -56,9 +58,10 @@ func SetupConstraintMessages() {
 		"uniq_wallets_personal_name": "a wallet with this name already exists",
 
 		// webhook_deliveries
-		"chk_webhook_deliveries_status": "invalid webhook delivery status",
+		"chk_webhook_deliveries_status":          "invalid webhook delivery status",
+		"uniq_webhook_deliveries_event_endpoint": "a delivery for this event and endpoint already exists",
 
-		// webhook_events
+		// webhook_events.sql
 		"uniq_webhook_events_external_id": "a webhook event with this external id already exists for this provider",
 
 		// organizations
@@ -67,12 +70,16 @@ func SetupConstraintMessages() {
 		// provider_credentials
 		"uniq_provider_credentials_active": "credentials for this provider are already connected to this wallet",
 
+		// collectors
+		"uniq_collectors_org_active":      "this collector is already connected to this organization",
+		"uniq_collectors_personal_active": "this collector is already connected to your account",
+
 		// sellers
 		"uniq_sellers_active": "this seller is already connected to this wallet",
 	})
 }
 
-func SetupIdentityX(cfg Config) *idx.Client {
+func SetupIdentityX(cfg config.Config) *idx.Client {
 	client, err := idx.NewClient(idx.Config{
 		BaseURL:   cfg.IdxURL,
 		APIKey:    cfg.IdxAPIKey,
@@ -91,27 +98,6 @@ func SetupIdentityX(cfg Config) *idx.Client {
 		}
 	}()
 	return client
-}
-
-func setupProviders(cfg Config) {
-	mercadoPago, err := providers.NewMercadoPagoProvider(
-		cfg.MpClientID,
-		cfg.MpAccessToken,
-		cfg.MpClientSecret,
-		cfg.MpRedirectURI,
-		cfg.MpWebhookSecret,
-	)
-	if err != nil {
-		errx.Exit(err, "error setting up mercado pago")
-	}
-
-	providers.PayssageProviders.OAuth = map[providers.AvailableProviders]ports.OAuthProvider{
-		providers.MercadoPagoProvider: mercadoPago,
-	}
-
-	providers.PayssageProviders.Payments = map[providers.AvailableProviders]ports.PaymentAbstractionLayer{
-		providers.MercadoPagoProvider: mercadoPago,
-	}
 }
 
 func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
@@ -150,4 +136,31 @@ func (app *Payssage) setupAuthMiddlewares() *fm.Middleware[*idx.AccessClaims] {
 	}
 
 	return fm.New[*idx.AccessClaims](keyFunc, jwtHook, apiKeyHook)
+}
+
+// basicAuth gates a handler behind HTTP Basic Auth using credentials from
+// SIMPLE_AUTH_USER / SIMPLE_AUTH_PASS. Intended for internal-only surfaces
+// like the River UI dashboard — not tenant-scoped, so anyone with these
+// credentials sees data across all wallets/orgs.
+func basicAuth(next http.Handler) http.Handler {
+	user := os.Getenv("SIMPLE_AUTH_USER")
+	pass := os.Getenv("SIMPLE_AUTH_PASS")
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if user == "" || pass == "" {
+			http.Error(w, "basic auth not configured", http.StatusServiceUnavailable)
+			return
+		}
+
+		reqUser, reqPass, ok := r.BasicAuth()
+		if !ok ||
+			subtle.ConstantTimeCompare([]byte(reqUser), []byte(user)) != 1 ||
+			subtle.ConstantTimeCompare([]byte(reqPass), []byte(pass)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="restricted"`)
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

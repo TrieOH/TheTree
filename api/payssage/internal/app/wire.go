@@ -5,18 +5,28 @@ import (
 	"lib/errx"
 	"lib/xslices"
 	"net/http"
+	"payssage/internal/config"
 	"payssage/internal/database/sqlc"
 	"payssage/internal/features/collectors"
+	"payssage/internal/features/intents"
 	"payssage/internal/features/oauth"
 	"payssage/internal/features/orgs"
+	"payssage/internal/features/providers"
 	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
+	"payssage/internal/features/webhook_deliveries"
+	"payssage/internal/features/webhook_endpoints"
+	"payssage/internal/features/webhook_events"
+	"payssage/internal/features/webhooks"
+	providers2 "payssage/internal/providers"
 	"payssage/ports"
 	idx "sdk/identityx"
 	"strings"
 
 	mws "github.com/MintzyG/fun/middlewares"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/riverqueue/river"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -29,14 +39,10 @@ type repos struct {
 	oauth      ports.OAuthStateRepo
 	collectors ports.CollectorRepo
 	sellers    ports.SellerRepo
-	//intents             ports.IntentRepository
-	//workspaces          ports.WorkspaceRepo
-	//endpoints           ports.WebhookEndpointRepo
-	//deliveries          ports.WebhookDeliveryRepo
-	//events              ports.WebhookEventRepo
-	//oauthStates         ports.OAuthStateRepo
-	//providerCredentials ports.ProviderCredentialRepo
-	//marketplaces        ports.MarketplaceConfigRepo
+	intents    ports.IntentRepo
+	endpoints  ports.WebhookEndpointRepo
+	deliveries ports.WebhookDeliveryRepo
+	events     ports.WebhookEventRepo
 }
 
 type queries struct {
@@ -44,22 +50,19 @@ type queries struct {
 	wallets    *wallets.Queries
 	collectors *collectors.Queries
 	sellers    *sellers.Queries
-	//webhooks   *webhooks.QueryService
-	//intents    *intents.QueryService
-	//workspaces *workspaces.QueryService
-	//apiKeys    *api_keys.QueryService
-	//oauth      *oauth.QueryService
+	intents    *intents.Queries
+	endpoints  *webhook_endpoints.Queries
+	events     *webhook_events.Queries
+	deliveries *webhook_deliveries.Queries
 }
 
 type commands struct {
-	orgs    *orgs.Commands
-	wallets *wallets.Commands
-	oauth   *oauth.Commands
-	//webhooks   *webhooks.CommandService
-	//intents    *intents.CommandService
-	//workspaces *workspaces.CommandService
-	//apiKeys    *api_keys.CommandService
-	//oauth      *oauth.CommandService
+	orgs      *orgs.Commands
+	wallets   *wallets.Commands
+	oauth     *oauth.Commands
+	intents   *intents.Commands
+	webhooks  *webhooks.Commands
+	endpoints *webhook_endpoints.Commands
 }
 
 type middlewares struct {
@@ -79,10 +82,11 @@ type handlers struct {
 	oauth      *oauth.Handlers
 	collectors *collectors.Handlers
 	sellers    *sellers.Handlers
-	//intents  *intents.Handler
-	//wallets  *workspaces.Handler
-	//webhooks *webhooks.Handler
-	//oauth    *oauth.Handler
+	intents    *intents.Handlers
+	webhooks   *webhooks.Handlers
+	endpoints  *webhook_endpoints.Handlers
+	events     *webhook_events.Handlers
+	deliveries *webhook_deliveries.Handlers
 }
 
 // ── Init functions ────────────────────────────────────────────────────────
@@ -94,14 +98,26 @@ func initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
 		oauth:      oauth.NewRepos(q, logger, tracer),
 		collectors: collectors.NewRepos(q, logger, tracer),
 		sellers:    sellers.NewRepos(q, logger, tracer),
-		//intents:             intents.NewIntentsRepo(q, logger, tracer),
-		//workspaces:          workspaces.NewWorkspaceRepo(q, logger, tracer),
-		//endpoints:           webhooks.NewWebhookEndpointRepo(q, logger, tracer),
-		//deliveries:          webhooks.NewWebhookDeliveryRepo(q, logger, tracer),
-		//events:              webhooks.NewWebhookEventRepo(q, logger, tracer),
-		//oauthStates:         oauth.NewOAuthStatesRepo(q, logger, tracer),
-		//providerCredentials: oauth.NewProviderCredentialsRepo(q, logger, tracer),
-		//marketplaces:        oauth.NewMarketplaceConfigRepo(q, logger, tracer),
+		intents:    intents.NewRepos(q, logger, tracer),
+		endpoints:  webhook_endpoints.NewRepos(q, logger, tracer),
+		deliveries: webhook_deliveries.NewRepos(q, logger, tracer),
+		events:     webhook_events.NewRepos(q, logger, tracer),
+	}
+}
+
+func initProviders(cfg config.MercadoPagoConfig, r repos, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) {
+	mercadoPago := providers.NewMercadoPago(cfg, r.intents, r.collectors, r.sellers, r.wallets, logger, tracer, tx)
+
+	providers2.PayssageProviders.OAuth = map[providers2.AvailableProviders]ports.OAuthProvider{
+		providers2.MercadoPagoProvider: mercadoPago,
+	}
+
+	providers2.PayssageProviders.Payments = map[providers2.AvailableProviders]ports.PaymentAbstractionLayer{
+		providers2.MercadoPagoProvider: mercadoPago,
+	}
+
+	providers2.PayssageProviders.Webhooks = map[providers2.AvailableProviders]ports.WebhookProvider{
+		providers2.MercadoPagoProvider: mercadoPago,
 	}
 }
 
@@ -111,26 +127,25 @@ func initQueries(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRun
 		wallets:    wallets.NewQueries(r.wallets, r.orgs, logger, tracer, tx),
 		collectors: collectors.NewQueries(r.collectors, r.orgs, logger, tracer, tx),
 		sellers:    sellers.NewQueries(r.sellers, r.wallets, r.orgs, logger, tracer, tx),
-		//webhooks:   webhooks.NewQueryService(r.endpoints, r.deliveries, r.events, r.workspaces, logger, tx, tracer),
-		//intents:    intents.NewQueryService(r.intents, r.workspaces, logger, tx, tracer),
-		//workspaces: workspaces.NewQueryService(r.workspaces, logger, tx, tracer),
-		//oauth:      oauth.NewQueryService(r.workspaces, r.marketplaces, logger, tx, tracer),
+		intents:    intents.NewQueries(r.intents, r.wallets, r.orgs, logger, tracer, tx),
+		endpoints:  webhook_endpoints.NewQueries(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
+		events:     webhook_events.NewQueries(r.events, r.wallets, r.orgs, logger, tracer, tx),
+		deliveries: webhook_deliveries.NewQueries(r.deliveries, r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
 	}
 }
 
-func initCommands(r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) commands {
+func initCommands(river *river.Client[pgx.Tx], r repos, idx *idx.Client, logger *zap.Logger, tx database.TxRunner, tracer trace.Tracer) commands {
 	return commands{
-		orgs:    orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
-		wallets: wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
-		oauth:   oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
-		//webhooks:   webhooks.NewCommandService(r.endpoints, r.deliveries, r.events, r.workspaces, r.intents, r.providerCredentials, river, logger, tx, tracer),
-		//intents:    intents.NewCommandService(r.intents, r.workspaces, r.providerCredentials, r.marketplaces, cmd.webhooks, rt.paymentProviders.oauth, rt.paymentProviders.payments, logger, tx, tracer),
-		//workspaces: workspaces.NewCommandService(r.workspaces, logger, tx, tracer),
-		//oauth:      oauth.NewCommandService(r.intents, r.workspaces, r.oauthStates, r.providerCredentials, r.marketplaces, rt.paymentProviders.oauth, logger, tx, tracer),
+		orgs:      orgs.NewCommands(r.orgs, idx, logger, tracer, tx),
+		wallets:   wallets.NewCommands(r.wallets, r.orgs, logger, tracer, tx),
+		oauth:     oauth.NewCommands(r.wallets, r.orgs, r.oauth, r.collectors, r.sellers, logger, tracer, tx),
+		intents:   intents.NewCommands(r.intents, r.wallets, r.orgs, r.collectors, r.sellers, logger, tracer, tx),
+		webhooks:  webhooks.NewCommands(river, r.events, r.endpoints, r.deliveries, logger, tracer, tx),
+		endpoints: webhook_endpoints.NewCommands(r.endpoints, r.wallets, r.orgs, logger, tracer, tx),
 	}
 }
 
-func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg Config) middlewares {
+func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg config.Config) middlewares {
 	var mw middlewares
 	authMW := app.setupAuthMiddlewares()
 	mw.jwtAuth = authMW.JWT()
@@ -139,11 +154,11 @@ func (app *Payssage) initMiddlewares(logger *zap.Logger, cfg Config) middlewares
 	//mw.bodySize = mws.MaxBodySize(1 << 20)
 	//mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
-	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
+	promCollectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
 		errx.Exit(err, "Failed to create collectors")
 	}
-	mw.metrics = mws.Metrics(collectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
+	mw.metrics = mws.Metrics(promCollectors, mws.MetricsConfig{SkipPrefixes: []string{"/metrics", "/health"}})
 	mw.cors = mws.CORS(mws.CORSConfig{
 		AllowedOrigins:   xslices.Clean(strings.Split(cfg.CorsAllowedOrigins, ",")),
 		AllowedHeaders:   xslices.Clean(strings.Split(cfg.CorsAllowedHeaders, ",")),
@@ -165,9 +180,10 @@ func initHandlers(c commands, q queries) handlers {
 		oauth:      oauth.NewHandlers(c.oauth),
 		collectors: collectors.NewHandlers(q.collectors),
 		sellers:    sellers.NewHandlers(q.sellers),
-		//intents:  intents.NewHandler(c.intents, q.intents),
-		//wallets:  workspaces.NewHandler(c.workspaces, q.workspaces),
-		//webhooks: webhooks.NewHandler(c.webhooks, q.webhooks),
-		//oauth:    oauth.NewHandler(c.oauth, q.oauth),
+		intents:    intents.NewHandlers(c.intents, q.intents),
+		webhooks:   webhooks.NewHandlers(c.webhooks),
+		endpoints:  webhook_endpoints.NewHandlers(c.endpoints, q.endpoints),
+		events:     webhook_events.NewHandlers(q.events),
+		deliveries: webhook_deliveries.NewHandlers(q.deliveries),
 	}
 }

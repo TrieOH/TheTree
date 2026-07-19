@@ -3,6 +3,7 @@
 CREATE TABLE webhook_endpoints (
     id         UUID PRIMARY KEY DEFAULT uuidv7(),
     wallet_id  UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
     url        TEXT NOT NULL,
     secret     TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -10,8 +11,8 @@ CREATE TABLE webhook_endpoints (
 
 CREATE TABLE webhook_events (
     id          UUID PRIMARY KEY DEFAULT uuidv7(),
-    wallet_id   UUID REFERENCES wallets(id) ON DELETE SET NULL,
-    intent_id   TEXT REFERENCES intents(id) ON DELETE SET NULL,
+    wallet_id   UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+    intent_id   UUID NOT NULL REFERENCES intents(id) ON DELETE CASCADE,
     provider    TEXT NOT NULL,
     external_id TEXT,
     event_type  TEXT NOT NULL,
@@ -26,8 +27,11 @@ CREATE TABLE webhook_deliveries (
     status            TEXT NOT NULL DEFAULT 'pending',
     attempts          INT NOT NULL DEFAULT 0,
     last_attempted_at TIMESTAMPTZ,
+    response_status   INT,
+    response_body     TEXT,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
+    CONSTRAINT uniq_webhook_deliveries_event_endpoint UNIQUE (event_id, endpoint_id),
     CONSTRAINT chk_webhook_deliveries_status CHECK (status IN ('pending', 'delivered', 'failed'))
 );
 
