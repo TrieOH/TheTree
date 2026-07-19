@@ -30,6 +30,7 @@ CREATE TABLE webhook_deliveries (
     response_status   INT,
     response_body     TEXT,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ,
 
     CONSTRAINT uniq_webhook_deliveries_event_endpoint UNIQUE (event_id, endpoint_id),
     CONSTRAINT chk_webhook_deliveries_status CHECK (status IN ('pending', 'delivered', 'failed'))

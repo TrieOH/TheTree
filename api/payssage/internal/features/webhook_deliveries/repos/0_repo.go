@@ -39,5 +39,6 @@ func mapWebhookDelivery(src sqlc.WebhookDelivery) models.WebhookDelivery {
 		ResponseStatus:  src.ResponseStatus,
 		ResponseBody:    src.ResponseBody,
 		CreatedAt:       src.CreatedAt,
+		UpdatedAt:       src.UpdatedAt,
 	}
 }
