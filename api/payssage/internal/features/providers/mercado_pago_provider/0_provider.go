@@ -16,6 +16,7 @@ var _ ports.PaymentAbstractionLayer = (*Provider)(nil)
 
 type Provider struct {
 	cfg         config.MercadoPagoConfig
+	intents     ports.IntentRepo
 	collectors  ports.CollectorRepo
 	sellers     ports.SellerRepo
 	wallets     ports.WalletRepo
@@ -27,6 +28,7 @@ type Provider struct {
 
 func NewProvider(
 	cfg config.MercadoPagoConfig,
+	intents ports.IntentRepo,
 	collectors ports.CollectorRepo,
 	sellers ports.SellerRepo,
 	wallets ports.WalletRepo,
@@ -40,6 +42,7 @@ func NewProvider(
 	}
 	return &Provider{
 		cfg:         cfg,
+		intents:     intents,
 		collectors:  collectors,
 		sellers:     sellers,
 		wallets:     wallets,

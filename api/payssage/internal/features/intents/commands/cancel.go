@@ -5,6 +5,7 @@ import (
 	"lib/telemetry"
 	"payssage/internal/providers"
 	"payssage/models"
+	idx "sdk/identityx"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
@@ -19,14 +20,21 @@ var cancellableStatuses = map[models.IntentStatus]bool{
 	models.IntentStatusProcessing: true,
 }
 
-// TODO: make the authz checks for wallet access
-
 func (c *Commands) Cancel(ctx context.Context, intentID uuid.UUID) (*models.Intent, error) {
 	ctx, span := c.tracer.Start(ctx, "CancelIntent")
 	defer span.End()
 
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	intent, err := c.intents.GetByID(ctx, intentID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := c.checkAdminAccess(ctx, intent.WalletID, ident.Sub.ID); err != nil {
 		return nil, err
 	}
 

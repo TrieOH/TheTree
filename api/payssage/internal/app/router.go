@@ -11,11 +11,16 @@ import (
 	"payssage/internal/features/orgs"
 	"payssage/internal/features/sellers"
 	"payssage/internal/features/wallets"
+	"payssage/internal/features/webhook_deliveries"
+	"payssage/internal/features/webhook_endpoints"
+	"payssage/internal/features/webhook_events"
+	"payssage/internal/features/webhooks"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"riverqueue.com/riverui"
 )
 
 // CreateRouter godoc
@@ -50,7 +55,7 @@ import (
 // @in header
 // @name Cookie
 // @description Type "Cookie" followed by a cookie in the format "access_token=xxx; refresh_token=yyy"
-func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) http.Handler {
+func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares, riverUIHandler *riverui.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middlewares.logger)
@@ -70,6 +75,17 @@ func (app *Payssage) CreateRouter(handlers handlers, middlewares middlewares) ht
 	sellers.RegisterRoutes(r, handlers.sellers, middlewares.jwtAuth)
 	intents.RegisterRoutes(r, handlers.intents, middlewares.jwtAuth)
 	oauth.RegisterRoutes(r, handlers.oauth, middlewares.jwtAuth)
+	webhooks.RegisterRoutes(r, handlers.webhooks)
+	webhook_endpoints.RegisterRoutes(r, handlers.endpoints, middlewares.jwtAuth)
+	webhook_events.RegisterRoutes(r, handlers.events, middlewares.jwtAuth)
+	webhook_deliveries.RegisterRoutes(r, handlers.deliveries, middlewares.jwtAuth)
+
+	// River UI — internal ops dashboard, gated behind basic auth
+	// (SIMPLE_AUTH_USER / SIMPLE_AUTH_PASS), not tenant-scoped JWT auth.
+	r.Group(func(r chi.Router) {
+		r.Use(basicAuth)
+		r.Mount("/riverui", riverUIHandler)
+	})
 
 	r.Get("/health", fh.Health(app.cfg.AppName).Handle)
 

@@ -35,7 +35,8 @@ func (p *Provider) Checkout(ctx context.Context, intent *models.Intent, provider
 	}
 
 	var creds models.MercadoPagoCredentials
-	if err := json.Unmarshal(seller.Credentials, &creds); err != nil {
+	err = json.Unmarshal(seller.Credentials, &creds)
+	if err != nil {
 		return fun.Errf("unmarshal seller credentials: %v", err).Internal()
 	}
 	if creds.AccessToken == "" {

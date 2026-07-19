@@ -43,7 +43,12 @@ CREATE INDEX idx_intents_wallet_id ON intents (wallet_id);
 CREATE INDEX idx_intents_seller_id ON intents (seller_id);
 CREATE INDEX idx_intents_collector_id ON intents (collector_id);
 CREATE INDEX idx_intents_status ON intents (status);
+
+CREATE INDEX idx_intents_provider_transaction_id
+    ON intents ((provider_data->>'transaction_id'));
+
 -- +goose Down
+DROP INDEX IF EXISTS idx_intents_provider_transaction_id;
 DROP INDEX IF EXISTS idx_intents_status;
 DROP INDEX IF EXISTS idx_intents_collector_id;
 DROP INDEX IF EXISTS idx_intents_seller_id;
