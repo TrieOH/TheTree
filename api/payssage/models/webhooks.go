@@ -46,6 +46,7 @@ type WebhookDelivery struct {
 	ResponseStatus  *int                  `json:"response_status"`
 	ResponseBody    *string               `json:"response_body"`
 	CreatedAt       time.Time             `json:"created_at"`
+	UpdatedAt       *time.Time            `json:"updated_at"`
 }
 
 type WebhookParseResult struct {
