@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*models.CryptoKey, error) {
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.CryptoKey, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "GetByID")
 	defer span.End()
 	sqlcKeyPair, err := database.Queries(ctx, repo.q).GetCryptoKeyByID(ctx, id)

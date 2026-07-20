@@ -1,1 +1,1 @@
-OLA, me salva!
+OLA, me salva! de novo que eu falei que nao queria escrever mas se voce ta lendo isso infelizmente algo catastrofico aconteceu, mil perdoes!

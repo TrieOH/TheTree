@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (r *profileRepo) Upsert(ctx context.Context, profile models.ActorProfile) (*models.ActorProfile, error) {
+func (r *Repo) Upsert(ctx context.Context, profile models.ActorProfile) (*models.ActorProfile, error) {
 	ctx, span := database.Span(ctx, r.tracer, "UpsertProfile")
 	defer span.End()
 	result, err := database.Queries(ctx, r.q).UpsertActorProfile(ctx, sqlc.UpsertActorProfileParams{

@@ -10,17 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type schemaRepo struct {
+type Repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.ProfileSchemaRepo = (*schemaRepo)(nil)
+var _ ports.ProfileSchemaRepo = (*Repo)(nil)
 
-func NewSchemaRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProfileSchemaRepo {
-	return &schemaRepo{
+func NewSchemaRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,

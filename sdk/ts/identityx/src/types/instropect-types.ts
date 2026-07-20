@@ -18,5 +18,5 @@ export interface IntrospectSubject {
 
 export interface IntrospectResponse {
   cred: IntrospectCredential;
-  sub: IntrospectSubject;
+  subject: IntrospectSubject;
 }

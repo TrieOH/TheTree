@@ -4,85 +4,88 @@ import (
 	"encoding/json"
 	"time"
 
-	"payssage/internal/shared/errx"
-	"payssage/internal/shared/validation"
-
 	"github.com/google/uuid"
 )
 
 type Intent struct {
-	ID                 uuid.UUID       `json:"id"`
-	WorkspaceID        uuid.UUID       `json:"workspace_id"`
-	Amount             int64           `json:"amount"`
-	Currency           string          `json:"currency"`
-	Status             IntentStatus    `json:"status"`
-	Provider           string          `json:"provider"`
-	Metadata           json.RawMessage `json:"metadata"`
-	SellerCredentialID *uuid.UUID      `json:"seller_credential_id,omitempty"`
-	CreatedAt          time.Time       `json:"created_at"`
-	UpdatedAt          time.Time       `json:"updated_at"`
-
-	// Only one of these will be non-nil, determined by Provider.
-	MercadoPagoData *MercadoPagoIntentData `json:"mercadopago_data,omitempty"`
-}
-
-type MercadoPagoIntentData struct {
-	OrderID                 string `json:"order_id"`
-	OrderStatus             string `json:"order_status"`
-	OrderStatusDetail       string `json:"order_status_detail"`
-	TransactionID           string `json:"transaction_id"`
-	TransactionStatus       string `json:"transaction_status"`
-	TransactionStatusDetail string `json:"transaction_status_detail"`
-	PaymentMethodID         string `json:"payment_method_id"`
-	PaymentMethodType       string `json:"payment_method_type"`
-	PixQRCode               string `json:"pix_qr_code,omitempty"` //FIXME maybe dont send this or the one below
-	PixQRCodeB64            string `json:"pix_qr_code_base64,omitempty"`
+	ID           uuid.UUID           `json:"id"`
+	WalletID     uuid.UUID           `json:"wallet_id"`
+	SellerID     uuid.UUID           `json:"seller_id"`
+	CollectorID  *uuid.UUID          `json:"collector_id"`
+	AmountCents  int64               `json:"amount_cents"`
+	Currency     string              `json:"currency"`
+	Sandbox      bool                `json:"sandbox"`
+	Provider     string              `json:"provider"`
+	Status       IntentStatus        `json:"status"`
+	StatusDetail *IntentStatusDetail `json:"status_detail"`
+	ProviderData json.RawMessage     `json:"provider_data"`
+	Metadata     *json.RawMessage    `json:"metadata"`
+	CreatedAt    time.Time           `json:"created_at"`
+	UpdatedAt    time.Time           `json:"updated_at"`
 }
 
 type IntentStatus string
 
 const (
-	IntentStatusPending   IntentStatus = "pending"
-	IntentStatusSucceeded IntentStatus = "succeeded"
-	IntentStatusCancelled IntentStatus = "cancelled"
-	IntentStatusFailed    IntentStatus = "failed"
+	IntentStatusPending    IntentStatus = "pending"
+	IntentStatusProcessing IntentStatus = "processing"
+	IntentStatusSucceeded  IntentStatus = "succeeded"
+	IntentStatusCancelled  IntentStatus = "cancelled"
+	IntentStatusRejected   IntentStatus = "rejected"
+	IntentStatusFailed     IntentStatus = "failed"
+	IntentStatusRefunded   IntentStatus = "refunded"
 )
 
-func NewIntent(workspaceID uuid.UUID, amount int64, currency, provider string, metadata json.RawMessage) (*Intent, error) {
-	if metadata == nil {
-		metadata = json.RawMessage("{}")
-	}
+type IntentStatusDetail string
 
-	id, err := uuid.NewV7()
-	if err != nil {
-		return nil, errx.Internal("product").SetMessage("error generating uuid").SetCause(err)
-	}
+const (
+	StatusDetailInsufficientFunds   IntentStatusDetail = "insufficient_funds"
+	StatusDetailHighRisk            IntentStatusDetail = "high_risk"
+	StatusDetailInvalidCard         IntentStatusDetail = "invalid_card"
+	StatusDetailCardDisabled        IntentStatusDetail = "card_disabled"
+	StatusDetailExpiredCard         IntentStatusDetail = "expired_card"
+	StatusDetailInvalidSecurityCode IntentStatusDetail = "invalid_security_code"
+	StatusDetailPendingReview       IntentStatusDetail = "pending_review"
+	StatusDetailOther               IntentStatusDetail = "other"
+)
 
-	i := &Intent{
-		ID:          id,
-		WorkspaceID: workspaceID,
-		Amount:      amount,
-		Currency:    currency,
-		Status:      IntentStatusPending,
-		Provider:    provider,
-		Metadata:    metadata,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	if err := i.validate(); err != nil {
-		return nil, err
-	}
-
-	return i, nil
+type CreateIntentRequest struct {
+	SellerID             uuid.UUID        `json:"seller_id"`
+	Currency             string           `json:"currency"`
+	AmountCents          int64            `json:"amount_cents"`
+	CheckoutProviderData json.RawMessage  `json:"checkout_provider_data"`
+	Metadata             *json.RawMessage `json:"metadata"`
 }
 
-func (i *Intent) validate() error {
-	return validation.Run(
-		validation.RequireUUID("intent", "workspace_id", i.WorkspaceID),
-		validation.RequireString("intent", "currency", i.Currency),
-		validation.RequireString("intent", "provider", i.Provider),
-		validation.Assert("intent", i.Amount > 0, "amount must be greater than zero"),
-		validation.Assert("intent", len(i.Currency) == 3, "currency must be a 3-letter ISO code"),
-	)
+func (r CreateIntentRequest) ToInput(walletID uuid.UUID) CreateIntentInput {
+	return CreateIntentInput{
+		WalletID:     walletID,
+		SellerID:     r.SellerID,
+		Currency:     r.Currency,
+		AmountCents:  r.AmountCents,
+		CheckoutData: r.CheckoutProviderData,
+		Metadata:     r.Metadata,
+	}
+}
+
+type CreateIntentInput struct {
+	WalletID     uuid.UUID
+	SellerID     uuid.UUID
+	Currency     string
+	AmountCents  int64
+	CheckoutData json.RawMessage
+	Metadata     *json.RawMessage
+}
+
+type HardCreateIntentRequest struct {
+	WalletID     uuid.UUID        `json:"wallet_id"`
+	SellerID     uuid.UUID        `json:"seller_id"`
+	CollectorID  *uuid.UUID       `json:"collector_id"`
+	AmountCents  int64            `json:"amount_cents"`
+	Currency     string           `json:"currency"`
+	Sandbox      bool             `json:"sandbox"`
+	Provider     string           `json:"provider"`
+	Status       IntentStatus     `json:"status"`
+	ProviderData json.RawMessage  `json:"provider_data"`
+	Metadata     *json.RawMessage `json:"metadata"`
 }

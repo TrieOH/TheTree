@@ -30,3 +30,14 @@ UPDATE wallets
 SET
     fee_bps = @fee_bps
 WHERE id = @id;
+
+-- name: BindCollector :exec
+UPDATE wallets
+SET collector_id = @collector_id
+WHERE id = @id
+  AND collector_id IS NULL;
+
+-- name: UnbindCollector :exec
+UPDATE wallets
+SET collector_id = NULL
+WHERE id = @id;

@@ -19,6 +19,7 @@ func (CreateCryptoKeyArgs) Kind() string { return "crypto_key.create" }
 
 type CreateCryptoKeyWorker struct {
 	river.WorkerDefaults[CreateCryptoKeyArgs]
+
 	queries *sqlc.Queries
 }
 

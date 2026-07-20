@@ -5,6 +5,7 @@ import (
 	"lib/database"
 	libriver "lib/river"
 	"lib/telemetry"
+	"payssage/internal/config"
 
 	idx "sdk/identityx"
 
@@ -15,7 +16,7 @@ type Payssage struct {
 	db        *pgxpool.Pool
 	idxClient *idx.Client
 
-	cfg Config
+	cfg config.Config
 }
 
 var app Payssage
@@ -24,7 +25,7 @@ func Start() {
 	ctx := context.Background()
 	SetupConstraintMessages()
 
-	app.cfg = LoadConfig()
+	app.cfg = config.LoadConfig()
 
 	SetupFUN(app.cfg.AppName)
 

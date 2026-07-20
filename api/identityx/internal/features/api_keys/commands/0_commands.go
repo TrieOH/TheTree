@@ -11,7 +11,7 @@ import (
 type Commands struct {
 	hmacSecret   []byte
 	actors       ports.ActorRepo
-	apiKeys      ports.ApiKeysRepo
+	apiKeys      ports.APIKeysRepo
 	capabilities ports.CapabilityRepo
 	projects     ports.ProjectRepo
 	logger       *zap.Logger
@@ -22,7 +22,7 @@ type Commands struct {
 func NewCommands(
 	hmacSecret []byte,
 	actors ports.ActorRepo,
-	apiKeys ports.ApiKeysRepo,
+	apiKeys ports.APIKeysRepo,
 	capabilities ports.CapabilityRepo,
 	projects ports.ProjectRepo,
 	logger *zap.Logger,

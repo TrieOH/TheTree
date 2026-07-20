@@ -1,0 +1,594 @@
+openapi: 3.1.0
+
+info:
+  title: IdentityX API
+  summary: Identity and authentication service for TrieOH
+  description: |
+    API responsible for authentication, authorization, cryptographic
+    key management, and multi-tenancy across the TrieOH ecosystem.
+
+    Supports OAuth (Google/GitHub), Ed25519-based JWT issuance,
+    a JWKS endpoint, and multi-tenant project scoping.
+  termsOfService: https://identityx.com.br/terms
+  version: 0.21.1
+
+  contact:
+    name: TrieOH
+    url: https://trieoh.com/support
+    email: contact@trieoh.com
+
+  license:
+    name: TSAL
+    url: https://git.trieoh.com/TrieOH/TheTree/src/branch/main/api/identityx/LICENSE
+
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+
+servers:
+  - url: https://api.identityx.com.br
+    description: Production
+  #- url: https://staging-api.trieoh.com/identityx/v1
+  #  description: Staging
+  - url: http://localhost:8080
+    description: Local development
+    variables:
+      port:
+        default: "8080"
+        enum: ["8080"]
+
+tags:
+  - name: system
+    description: Reserved for system level operations such as /health
+
+  - name: authn
+    description: Authentication - login, token issuance, and session management
+
+  - name: organizations
+    description: Organization creation, membership, and settings management
+
+  - name: projects
+    description: Project creation and multi-tenant project scoping
+
+  - name: apikeys
+    description: API key issuance, rotation, and revocation
+
+  - name: capabilities
+    description: Capability and permission grants for actors and projects
+
+  - name: actors
+    description: Actor lifecycle management (creation, lookup, deactivation)
+
+  - name: profiles
+    description: Actor profile data management
+
+  - name: profile_schemas
+    description: Schema definitions for validating actor profile data
+
+externalDocs:
+  description: Full TrieOH documentation
+  url: https://docs.trieoh.com
+
+# either bearer token OR api key satisfies auth
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: "ok"
+                  service:
+                    type: string
+                    const: "IdentityX"
+  /auth/setup:
+    get:
+      tags: [authn]
+      operationId: getSetup
+      summary: Check if idx is set up
+      security: []
+      responses:
+        '204':
+          description: system is set up
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      tags: [authn]
+      operationId: postSetup
+      summary: sets up IDX
+      description: Creates the first account in the system as a super admin and enables authn
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '201':
+          $ref: '#/components/schemas/UserTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/register:
+    post:
+      tags: [authn]
+      operationId: postRegister
+      summary: registers a user
+      description: registers the credential pair either as an IDX client or a client of a project that consumes IDX for authn
+      security: []
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '201':
+          description: User registered successfully.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/login:
+    post:
+      tags: [authn]
+      operationId: postLogin
+      summary: logs in a user
+      description: logs in the specified credentials if they exist on the requested target
+      security: []
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '200':
+          $ref: '#/components/schemas/UserTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/logout:
+    post:
+      tags: [authn]
+      operationId: postLogout
+      summary: logs out a user
+      description: logs out the passed in tokens, blacklisting them
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/refresh:
+    post:
+      tags: [authn]
+      operationId: postRefresh
+      summary: refreshes a user session
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/schemas/UserTokensResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/{provider}/connect:
+    post:
+      tags: [ authn ]
+      operationId: postOAuthConnect
+      summary: start a social login
+      description: starts the social login process, returns the redirectURI
+      security: [ ]
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SupportedOAuthProviders'
+      responses:
+        '200':
+          $ref: '#/components/schemas/OAuthConnectResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/{provider}/callback:
+    get:
+      tags: [ authn ]
+      operationId: getOAuthCallback
+      summary: conclude a social login
+      description: receives the callback from the social login redirect and finishes user authentication
+      security: [ ]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/SupportedOAuthProviders'
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/schemas/UserTokensResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /auth/introspect:
+    get:
+      tags: [authn]
+      operationId: getIntrospect
+      summary: Introspect the current identity
+      description: Returns the identity associated with the current access token.
+      responses:
+        '200':
+          $ref: '#/components/schemas/Identity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /.well-known/jwks.json:
+    get:
+      tags: [authn]
+      operationId: getJWKS
+      summary: Get a JWKS
+      description: Provides the JSON Web Key Set (JWKS) from the desired target for verifying JWTs issued by the authentication service.
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          $ref: '#/components/schemas/Identity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT issued by IdentityX, signed with Ed25519
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: Static API key for server-to-server / project-scoped access
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Forbidden:
+      description: Insufficient Permissions
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Conflict:
+      description: Conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    ServiceUnavailable:
+      description: Service temporarily unavailable
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Identity:
+      type: object
+      description: Identity resolved from the current credential (session or API key).
+      required: [ sub, cred ]
+      properties:
+        sub:
+          $ref: '#/components/schemas/Subject'
+        cred:
+          $ref: '#/components/schemas/Credential'
+
+    Subject:
+      type: object
+      description: The actor this identity resolves to.
+      required: [ id, project_id, email, type, capabilities, metadata ]
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+          description: Unique identifier of the actor.
+        project_id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: Project this actor is scoped to, if any.
+        email:
+          type: [ string, "null" ]
+          format: email
+          description: Actor's email address, if applicable for this actor type.
+        type:
+          $ref: '#/components/schemas/ActorType'
+        capabilities:
+          description: |
+            Opaque, actor-specific capability grants. Shape depends on
+            the capability schema in effect for this project.
+          type: object
+          additionalProperties: true
+        metadata:
+          type: [ object, "null" ]
+          description: Arbitrary actor metadata, opaque to the API contract.
+          additionalProperties: true
+
+    Credential:
+      type: object
+      description: The credential used to authenticate this request.
+      required: [ id, type ]
+      properties:
+        id:
+          $ref: '#/components/schemas/NullableUUID'
+          description: |
+            Identifier of the credential, present for stateful credentials
+            (e.g. API keys). Null for stateless credentials (e.g. JWTs).
+        type:
+          $ref: '#/components/schemas/CredentialType'
+
+    ActorType:
+      type: string
+      description: The kind of actor this identity represents.
+      enum: [ human, service, machine ]
+
+    CredentialType:
+      type: string
+      description: The mechanism used to authenticate this identity.
+      enum: [ token, api_key ]
+
+    Problem:
+      type: object
+      title: Problem Details
+      description: |
+        RFC 9457 Problem Details object, returned for every non-2xx response.
+        Delivered with content-type `application/problem+json`.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+          description: |
+            A URI reference identifying the problem type. Dereferencing it
+            should yield human-readable documentation for that error type.
+            Defaults to "about:blank" when no specific type applies, in
+            which case `title` should be treated as the primary error signal.
+          examples:
+            - "https://api.trieoh.com/errors/validation"
+            - "https://api.trieoh.com/errors/not-found"
+            - "about:blank"
+
+        title:
+          type: string
+          description: |
+            A short, human-readable summary of the problem type. Should be
+            the same across occurrences of the same `type`, i.e. it
+            describes the class of error, not this specific instance.
+          examples:
+            - "Validation failed"
+            - "Unauthorized"
+            - "Resource not found"
+
+        status:
+          type: integer
+          format: int32
+          minimum: 100
+          maximum: 599
+          description: |
+            The HTTP status code for this occurrence of the problem, duplicated
+            here for convenience so consumers don't have to inspect the
+            transport layer to branch on it.
+          examples: [400, 401, 404, 500, 503]
+
+        detail:
+          type: string
+          description: |
+            A human-readable explanation specific to this occurrence of the
+            problem. Unlike `title`, this can vary between occurrences of
+            the same `type` and may include specific values, IDs, or context.
+          examples:
+            - "Field 'email' must be a valid email address"
+            - "Organization with id '3fa85f64' does not exist"
+
+        instance:
+          type: string
+          format: uri
+          description: |
+            A URI reference identifying this specific occurrence of the
+            problem. Typically the request path, optionally combined with
+            a request/trace ID for correlation with logs.
+          examples:
+            - "/organizations/3fa85f64"
+            - "/auth/introspect?requestId=9c7f9e5a"
+
+        errors:
+          type: array
+          description: |
+            Extension member (non-standard in RFC 9457) providing granular,
+            per-field validation errors. Only present for `400` responses
+            arising from request body or parameter validation failures.
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                description: |
+                  Name of the offending field, using dot notation for nested
+                  properties (e.g. "address.zipCode").
+                examples: ["email", "address.zipCode"]
+              message:
+                type: string
+                description: Human-readable explanation of why this field is invalid.
+                examples: ["invalid format", "must not be empty"]
+
+    UUID:
+      type: string
+      format: uuid
+      x-go-type: uuid.UUID
+      x-go-type-import:
+        path: github.com/google/uuid
+
+    NullableUUID:
+      type: [ string, "null" ]
+      format: uuid
+      x-go-type: '*uuid.UUID'
+      x-go-type-skip-optional-pointer: true
+      x-go-type-import:
+        path: github.com/google/uuid
+        
+    SupportedOAuthProviders:
+      type: string
+      enum: [ "google", "github" ]
+
+    CredentialRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address.
+          minLength: 3
+          maxLength: 254
+          x-oapi-codegen-extra-tags:
+            validate: "required,email"
+        password:
+          type: string
+          minLength: 8
+          description: User's password.
+          x-oapi-codegen-extra-tags:
+            validate: "required,passwd,min=8"
+
+    UserTokensResponse:
+      type: object
+      required: [access_token, refresh_token, access_expires_at, refresh_expires_at, domain]
+      properties:
+        access_token:
+          type: string
+          description: A JWT token containing the users access information
+        refresh_token:
+          type: string
+          description: A JWT token for refreshing the user's session
+        access_expires_at:
+          type: string
+          format: date-time
+          description: Expiration timestamp of the access token.
+        refresh_expires_at:
+          type: string
+          format: date-time
+          description: Expiration timestamp of the refresh token.
+
+    OAuthConnectResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL the client should redirect to in order to complete the OAuth flow.

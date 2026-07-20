@@ -39,9 +39,7 @@ func SetupFUN() {
 
 	v := validator.SetupValidator()
 	bind.SetValidator(v)
-	fun.SetPathParamFunc(func(r *http.Request, key string) string {
-		return chi.URLParam(r, key)
-	})
+	fun.SetPathParamFunc(chi.URLParam)
 }
 
 func SetupConstraintMessages() {
@@ -105,7 +103,8 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 			errx.Exit(err, "failed to check global "+keyType+" key")
 		}
 		if !exists {
-			if _, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{KeyType: keyType}, nil); err != nil {
+			_, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{KeyType: keyType}, nil)
+			if err != nil {
 				errx.Exit(err, "failed to enqueue global "+keyType+" key creation")
 			}
 		}
@@ -127,10 +126,11 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 				errx.Exit(err, "failed to check "+keyType+" key for project "+pid.String())
 			}
 			if !exists {
-				if _, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{
+				_, err = riverClient.Insert(ctx, jobs.CreateCryptoKeyArgs{
 					ProjectID: &pid,
 					KeyType:   keyType,
-				}, nil); err != nil {
+				}, nil)
+				if err != nil {
 					errx.Exit(err, "failed to enqueue "+keyType+" key creation for project "+pid.String())
 				}
 			}
@@ -138,7 +138,8 @@ func EnsureKeysExist(ctx context.Context, db *pgxpool.Pool, riverClient *river.C
 	}
 }
 
-func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports.ApiKeysRepo, actorsRepo ports.ActorRepo, capabilitiesRepo ports.CapabilityRepo, logger *zap.Logger) *mws.Middleware[*models.AccessClaims] {
+//nolint:funlen
+func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, apiKeysRepo ports.APIKeysRepo, actorsRepo ports.ActorRepo, capabilitiesRepo ports.CapabilityRepo, logger *zap.Logger) *mws.Middleware[*models.AccessClaims] {
 	keyFunc := func(ctx context.Context, tokenStr string) (*models.AccessClaims, error) {
 		claims := &models.AccessClaims{}
 		token, err := crypto.OpenUnverified(tokenStr, claims)
@@ -172,7 +173,7 @@ func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, 
 
 	jwtHook := func(ctx context.Context, claims *models.AccessClaims) (context.Context, error) {
 		identity := &models.Identity{
-			Sub: models.SubjectFromAccessSub(claims.Sub),
+			Sub: models.SubjectFromAccessSub(&claims.Sub),
 			Cred: models.Credential{
 				Type: models.TokenCredentialType,
 			},
@@ -209,7 +210,7 @@ func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, 
 			return nil, fun.ErrForbidden("invalid api key")
 		}
 
-		caps, err := capabilitiesRepo.ListByApiKeyPrefix(ctx, key.DisplayPrefix)
+		caps, err := capabilitiesRepo.ListByAPIKeyPrefix(ctx, key.DisplayPrefix)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +231,7 @@ func (app *IdentityX) SetupAuthMiddlewares(cryptoKeysRepo ports.CryptoKeysRepo, 
 			},
 			Cred: models.Credential{
 				ID:   &apiKey.ID,
-				Type: models.ApiKeyCredentialType,
+				Type: models.APIKeyCredentialType,
 				Raw:  rawKey,
 			},
 		})

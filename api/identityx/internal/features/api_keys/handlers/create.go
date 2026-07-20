@@ -16,8 +16,8 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Param project_id path uuid.UUID true "Project ID"
-// @Param request body models.CreateApiKeyRequest true "Api key creation data"
-// @Success 200 {object} fun.Response{data=models.CreateApiKeyResponse} "Api key data"
+// @Param request body models.CreateAPIKeyRequest true "Api key creation data"
+// @Success 200 {object} fun.Response{data=models.CreateAPIKeyResponse} "Api key data"
 // @Failure 401 {object} fun.Response "Unauthorized"
 // @Failure 404 {object} fun.Response "Bad Request"
 // @Failure 500 {object} fun.Response "Internal Server Error"
@@ -33,7 +33,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload models.CreateApiKeyRequest
+	var payload models.CreateAPIKeyRequest
 	if fun.BailInto(w, req, &payload) {
 		return
 	}
@@ -41,7 +41,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	fun.Respond(w, models.CreateApiKeyResponse{
+	fun.Respond(w, models.CreateAPIKeyResponse{
 		Key:    key,
 		RawKey: rawKey,
 	}, http.StatusCreated)

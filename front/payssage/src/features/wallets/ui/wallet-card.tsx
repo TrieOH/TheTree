@@ -1,152 +1,123 @@
-import { Check, Copy, Pencil, Sparkles, User, Wallet } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useState } from "react"
+import type { MouseEvent } from "react"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { timeAgo, truncateString } from "@trieoh/shared-utils"
+import { Check, Copy, Ellipsis, ExternalLink, Pencil, Sparkles, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import { bpsToPercentage, cn } from "#/shared/lib/utils"
 import type { WalletI, WalletSetSandboxI } from "../model"
 import { Button } from "#/shared/ui/shadcn/button"
-import { truncateString } from "@trieoh/shared-utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "#/shared/ui/shadcn/dropdown-menu"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "#/shared/ui/shadcn/context-menu"
 
-interface PropsI {
+interface Props {
   data: WalletI
   onEditFee: (wallet: WalletI) => void
   onSetSandbox: (walletId: string, data: WalletSetSandboxI) => void
   isSettingSandbox?: boolean
 }
 
-export default function WalletCard({
-  data,
-  onEditFee,
-  onSetSandbox,
-  isSettingSandbox = false,
-}: PropsI) {
+export default function WalletCard({ data, onEditFee, onSetSandbox, isSettingSandbox = false }: Props) {
+  const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
-
-  const owner = useMemo(() => {
-    return data.organization_id ? "Organization" : "Personal"
-  }, [data.organization_id])
-
+  const openWallet = () => navigate({ to: "/admin/wallets/$walletID", params: { walletID: data.id } })
   const copyId = async () => {
     await navigator.clipboard.writeText(data.id)
     setCopied(true)
     toast.success("Wallet ID copied")
     setTimeout(() => setCopied(false), 1500)
   }
+  const runMenuAction = (event: MouseEvent, action: () => void) => {
+    event.preventDefault()
+    event.stopPropagation()
+    action()
+  }
+
+  const menuItems = (context = false) => {
+    const Item = context ? ContextMenuItem : DropdownMenuItem
+    const Separator = context ? ContextMenuSeparator : DropdownMenuSeparator
+    return (
+      <>
+        <Item onClick={(event) => runMenuAction(event, openWallet)}><ExternalLink /> Open wallet</Item>
+        <Item onClick={(event) => runMenuAction(event, () => onEditFee(data))}><Pencil /> Edit fee</Item>
+        <Item
+          disabled={isSettingSandbox}
+          aria-label={`Switch environment to ${data.sandbox ? "production" : "sandbox"}`}
+          onClick={(event) => runMenuAction(event, () => onSetSandbox(data.id, {
+            sandbox: !data.sandbox,
+            organization_id: data.organization_id,
+          }))}
+        >
+          <Sparkles /> Switch to {data.sandbox ? "production" : "sandbox"}
+        </Item>
+        <Separator />
+        <Item onClick={(event) => runMenuAction(event, () => void copyId())}>{copied ? <Check /> : <Copy />} Copy wallet ID</Item>
+      </>
+    )
+  }
 
   return (
-    <>
-      <div
-        className={cn(
-          "w-full overflow-hidden rounded-sm border border-border/70 bg-card transition-all",
-          "hover:border-primary hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.08)]",
+    <ContextMenu>
+      <ContextMenuTrigger
+        render={(
+          <Link
+            to="/admin/wallets/$walletID"
+            params={{ walletID: data.id }}
+            className={cn(
+              "relative w-full cursor-pointer rounded-sm bg-card py-4 ring-1 ring-foreground/10 shadow-xs duration-150",
+              "hover:ring-primary hover:shadow-primary",
+            )}
+          />
         )}
       >
-        <div className="px-4 pt-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
-                <Wallet className="size-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold leading-tight text-foreground">
-                  {data.name}
-                </div>
-                <div className="mt-0.5 flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
-                  {data.organization_id ? (
-                    <span className="inline-flex min-w-0 items-center gap-1 truncate">
-                      <User className="size-3.5 shrink-0" />
-                      {owner}
-                    </span>
-                  ) : (
-                    <span className="inline-flex min-w-0 items-center gap-1 truncate">
-                      <User className="size-3.5 shrink-0" />
-                      {owner}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              className={cn("shrink-0 rounded-sm", copied && "text-emerald-600")}
-              onClick={copyId}
-            >
-              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-            </Button>
+        <div className="space-y-2 px-4 pr-12">
+          <Wallet className="size-8 rounded-sm bg-primary/80 p-1.5 text-primary-foreground" />
+          <div className="space-y-0.5">
+            <span className="block truncate text-sm font-bold">{data.name}</span>
+            <span className="block truncate font-mono text-xs text-muted-foreground">{truncateString(data.id, 8, 4)}</span>
           </div>
         </div>
-
-        <div className="mx-4 mt-3 border-t border-border/60" />
-
-        <div className="grid gap-3 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Wallet ID
-            </span>
-            <span className="max-w-48 truncate font-mono text-[11px] text-foreground">
-              {truncateString(data.id, 8, 4)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Fee
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm text-foreground">
-                {bpsToPercentage(data.fee_bps).toFixed(2)}%
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                className="rounded-sm text-muted-foreground hover:text-foreground"
-                onClick={() => onEditFee(data)}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Environment
-            </span>
+        <hr className="mt-2 border-muted-foreground/40" />
+        <div className="mt-2 flex flex-col gap-1 px-4 text-sm">
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">Owner</span><span>{data.organization_id ? "Organization" : "Personal"}</span></div>
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">Fee</span><span>{bpsToPercentage(data.fee_bps).toFixed(2)}%</span></div>
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">Collector</span><span>{data.collector_id ? "Connected" : "Not connected"}</span></div>
+          <div className="flex justify-between gap-3">
+            <span className="text-muted-foreground">Environment</span>
             <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
-                data.sandbox ? "bg-amber-500/10 text-amber-600" : "bg-emerald-500/10 text-emerald-600",
-              )}
+              className={cn("inline-flex items-center gap-1.5 font-medium", data.sandbox ? "text-amber-600" : "text-emerald-600")}
+              aria-label={`Environment: ${data.sandbox ? "Sandbox" : "Production"}`}
             >
-              <Sparkles className="size-3" />
+              <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
               {data.sandbox ? "Sandbox" : "Production"}
             </span>
           </div>
+          <div className="flex justify-between gap-3"><span className="text-muted-foreground">Created</span><span>{timeAgo(data.created_at)}</span></div>
         </div>
-
-        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-4 py-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            Sandbox Mode
-          </span>
-          <Button
-            type="button"
-            variant={data.sandbox ? "secondary" : "outline"}
-            size="sm"
-            className="rounded-sm"
-            disabled={isSettingSandbox}
-            onClick={() =>
-              onSetSandbox(data.id, {
-                sandbox: !data.sandbox,
-                organization_id: data.organization_id,
-              })
-            }
-          >
-            {data.sandbox ? "Disable" : "Enable"}
-          </Button>
+        <div className="absolute right-3 top-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="icon-sm" onClick={(event) => { event.preventDefault(); event.stopPropagation() }} />}
+            >
+              <Ellipsis />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">{menuItems()}</DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-    </>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-52">{menuItems(true)}</ContextMenuContent>
+    </ContextMenu>
   )
 }

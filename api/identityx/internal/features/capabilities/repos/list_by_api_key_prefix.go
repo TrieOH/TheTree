@@ -7,7 +7,7 @@ import (
 	"lib/xslices"
 )
 
-func (repo *repo) ListByApiKeyPrefix(ctx context.Context, prefix string) ([]models.Capability, error) {
+func (repo *Repo) ListByAPIKeyPrefix(ctx context.Context, prefix string) ([]models.Capability, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "ListByApiKeyPrefix")
 	defer span.End()
 	capabilities, err := database.Queries(ctx, repo.q).ListCapabilitiesByApiKeyPrefix(ctx, prefix)

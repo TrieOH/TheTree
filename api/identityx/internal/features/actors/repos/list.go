@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) List(ctx context.Context, projectID uuid.UUID) ([]models.Actor, error) {
+func (repo *Repo) List(ctx context.Context, projectID uuid.UUID) ([]models.Actor, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "List")
 	defer span.End()
 	sqlcActors, err := database.Queries(ctx, repo.q).ListActorsFromProject(ctx, &projectID)

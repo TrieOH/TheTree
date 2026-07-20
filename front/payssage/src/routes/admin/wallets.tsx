@@ -2,7 +2,7 @@ import { allWalletsQueryOptions, createWalletFn, setWalletFeeBPSFn, setWalletSan
 import type { WalletI, WalletSetFeeBpsI, WalletSetSandboxI } from '#/features/wallets/model'
 import { WalletsView } from '#/features/wallets/ui/wallets-view'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { LayoutContext } from '@trieoh/ui-base'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ export const Route = createFileRoute('/admin/wallets')({
 
 function RouteComponent() {
   const { organizationID } = Route.useSearch()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const queryClient = useQueryClient()
 
   const [headerSlot, setHeaderSlot] = useState<React.ReactNode>(null)
@@ -71,6 +72,19 @@ function RouteComponent() {
     },
     onError: (error: Error) => toast.error(error.message),
   })
+
+  if (pathname !== '/admin/wallets') {
+    return (
+      <LayoutContext.Provider value={{ setHeader: setHeaderSlot }}>
+        {headerSlot && (
+          <div className="border-b border-border/40 bg-background px-6 py-4">
+            {headerSlot}
+          </div>
+        )}
+        <div className="flex-1 p-6"><Outlet /></div>
+      </LayoutContext.Provider>
+    )
+  }
 
 
   return (

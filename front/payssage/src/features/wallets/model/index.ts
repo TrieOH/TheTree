@@ -14,7 +14,13 @@ export const walletCreateSchema = z.object({
 }) satisfies z.ZodType<CreateWalletRequest>
 
 export type WalletCreateI = CreateWalletRequest
-export type WalletI = Wallet
+export interface WalletI extends Wallet {
+  collector_id?: string
+}
+
+export interface WalletBindCollectorI {
+  collector_id: string
+}
 
 export const walletSetFeeBpsSchema = z.object({
   fee_bps: z

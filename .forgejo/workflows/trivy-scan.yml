@@ -22,8 +22,8 @@ jobs:
           HEAD=${{ github.event.pull_request.head.sha }}
 
           ALL_PROJECTS=(
-            "docs" "infra"
-            "front/identityx" "front/informd" "front/payssage" "front/spicedb" "front/univents"
+            "infra"
+            "front/identityx" "front/informd" "front/payssage" "front/univents"
             "api/identityx" "api/informd" "api/payssage" "api/univents"
             "lib/go"
             "sdk/ts/identityx" "sdk/ts/Payssage"

@@ -7,4 +7,4 @@ const { authFetcher, authQueryFetcher, publicFetcher } = createAppFetchers({
   timeout: 10_000,
 })
 
-export { authFetcher, publicFetcher, authQueryFetcher as tanstackQueryFetcher }
+export { authFetcher, publicFetcher, authQueryFetcher as tanstackQueryFetcher, authQueryFetcher }

@@ -12,7 +12,8 @@ func (q *Queries) GetPlatformProfile(ctx context.Context, actorID uuid.UUID) (*m
 	ctx, span := q.tracer.Start(ctx, "ProfileService.GetPlatformProfile")
 	defer span.End()
 
-	if _, err := models.RequireIdentity(ctx); err != nil {
+	_, err := models.RequireIdentity(ctx)
+	if err != nil {
 		return nil, err
 	}
 

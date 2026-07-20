@@ -62,7 +62,7 @@ function RouteComponent() {
   const introspectResponse = data?.success ? data.data : undefined
   const introspectError = data && !data.success ? data : undefined
 
-  const capabilities = Object.values(introspectResponse?.sub.capabilities ?? {}).map(String)
+  const capabilities = Object.values(introspectResponse?.subject.capabilities ?? {}).map(String)
 
   return (
     <div className="min-w-75 w-full max-w-5xl mx-auto flex flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
@@ -229,13 +229,13 @@ function RouteComponent() {
                       id: introspectResponse.cred.id,
                       type: introspectResponse.cred.type,
                     },
-                    sub: {
-                      id: introspectResponse.sub.id,
-                      project_id: introspectResponse.sub.project_id,
-                      email: introspectResponse.sub.email,
-                      type: introspectResponse.sub.type,
+                    subject: {
+                      id: introspectResponse.subject.id,
+                      project_id: introspectResponse.subject.project_id,
+                      email: introspectResponse.subject.email,
+                      type: introspectResponse.subject.type,
                       capabilities: capabilities,
-                      metadata: Object.values(introspectResponse.sub.metadata ?? {}).map(String),
+                      metadata: Object.values(introspectResponse.subject.metadata ?? {}).map(String),
                     },
                   }}
                 />

@@ -11,9 +11,9 @@ type Project struct {
 	ID               uuid.UUID       `json:"id"`
 	OrganizationID   *uuid.UUID      `json:"organization_id"`
 	OwnerID          uuid.UUID       `json:"owner_id"`
-	BrandSlug        string          `json:"brand_slug" validate:"required,min=3,max=32"`
-	Name             string          `json:"name" validate:"required,min=3"`
-	Domain           *string         `json:"domain" validate:"omitempty,url"`
+	BrandSlug        string          `json:"brand_slug"         validate:"required,min=3,max=32"`
+	Name             string          `json:"name"               validate:"required,min=3"`
+	Domain           *string         `json:"domain"             validate:"omitempty,url"`
 	DomainVerifiedAt *time.Time      `json:"domain_verified_at"`
 	Metadata         json.RawMessage `json:"metadata"`
 	CreatedAt        time.Time       `json:"created_at"`

@@ -6,7 +6,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) GetByTarget(ctx context.Context, target string) (*models.BlacklistEntry, error) {
+func (repo *Repo) GetByTarget(ctx context.Context, target string) (*models.BlacklistEntry, error) {
 	ctx, span := repo.tracer.Start(ctx, "Register")
 	defer span.End()
 	sqlcEntry, err := database.Queries(ctx, repo.q).GetBlacklistEntryByTarget(ctx, target)

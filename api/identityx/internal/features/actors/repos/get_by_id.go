@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Actor, error) {
+func (repo *Repo) GetByID(ctx context.Context, id uuid.UUID) (*models.Actor, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "GetByID")
 	defer span.End()
 	sqlcActor, err := database.Queries(ctx, repo.q).GetActorByID(ctx, id)

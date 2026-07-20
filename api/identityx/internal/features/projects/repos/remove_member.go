@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) RemoveMember(ctx context.Context, actorID, projectID uuid.UUID) error {
+func (repo *Repo) RemoveMember(ctx context.Context, actorID, projectID uuid.UUID) error {
 	ctx, span := repo.tracer.Start(ctx, "RemoveMember")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).RemoveProjectMember(ctx, sqlc.RemoveProjectMemberParams{

@@ -1,4 +1,4 @@
-name: Build & Publish
+name: Build, Publish & Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - '*/v*'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: debian
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
@@ -40,6 +40,7 @@ jobs:
 
       - name: Build & push
         if: ${{ steps.tag.outputs.skip == 'false' }}
+        id: build
         run: |
           docker build \
             -f api/${{ steps.tag.outputs.svc }}/Dockerfile \
@@ -48,3 +49,16 @@ jobs:
             .
           docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }}
           docker push git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:latest
+
+      - name: Deploy to production
+        if: ${{ steps.tag.outputs.skip == 'false' }}
+        uses: https://github.com/appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            docker service update \
+              --detach=false \
+              --image git.trieoh.com/trieoh/${{ steps.tag.outputs.svc }}:${{ steps.tag.outputs.version }} \
+              trieoh_${{ steps.tag.outputs.svc }}
