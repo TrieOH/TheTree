@@ -1,6 +1,6 @@
 import { authFetcher, tanstackQueryFetcher } from "#/shared/lib/api/fetch";
 import { createClientOnlyFn } from "@tanstack/react-start";
-import type { WalletCreateI, WalletI, WalletSetFeeBpsI, WalletSetSandboxI } from "../model";
+import type { WalletBindCollectorI, WalletCreateI, WalletI, WalletSetFeeBpsI, WalletSetSandboxI } from "../model";
 import { queryOptions } from "@tanstack/react-query";
 
 /**
@@ -56,6 +56,19 @@ export const getWalletByIdFn = createClientOnlyFn((walletId: string) => {
   return tanstackQueryFetcher<WalletI>(`/wallets/${walletId}`);
 });
 
+export const walletByIdQueryOptions = (walletId: string) => queryOptions({
+  queryKey: ["wallets", walletId],
+  queryFn: () => getWalletByIdFn(walletId),
+});
+
+export const bindCollectorToWalletFn = createClientOnlyFn((walletId: string, payload: WalletBindCollectorI) =>
+  authFetcher.post<void>(`/wallets/${walletId}/collector`, payload),
+);
+
+export const unbindCollectorFromWalletFn = createClientOnlyFn((walletId: string) =>
+  authFetcher.delete<void>(`/wallets/${walletId}/collector`),
+);
+
 
 /**
  * Fetches all wallets from the server.
@@ -63,9 +76,10 @@ export const getWalletByIdFn = createClientOnlyFn((walletId: string) => {
  * @returns A promise that resolves to an array of WalletI objects.
  */
 export const getWalletsFn = createClientOnlyFn(async (orgId?: string) => {
-  if (orgId)
-    return await tanstackQueryFetcher<WalletI[]>(`/organizations/${orgId}/wallets`);
-  return await tanstackQueryFetcher<WalletI[]>("/wallets");
+  const wallets = await tanstackQueryFetcher<WalletI[]>(
+    orgId ? `/organizations/${orgId}/wallets` : "/wallets",
+  );
+  return Array.isArray(wallets) ? wallets : [];
 });
 
 /**

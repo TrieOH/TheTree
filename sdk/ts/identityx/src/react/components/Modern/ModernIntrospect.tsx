@@ -10,7 +10,7 @@ export interface IntrospectData {
     id?: string;
     type?: CredentialType;
   };
-  sub: {
+  subject: {
     capabilities?: string[];
     email?: string;
     id?: string;
@@ -127,10 +127,10 @@ function FieldRow({
 }
 
 export function ModernIntrospect({ data }: IdentityCardProps) {
-  const { sub, cred } = data;
-  const actorType: ActorType = sub.type ?? "human";
+  const { subject, cred } = data;
+  const actorType: ActorType = subject.type ?? "human";
   const theme = ACTOR_THEME[actorType];
-  const caps = sub.capabilities ?? [];
+  const caps = subject.capabilities ?? [];
   const capLabels = caps.map((c) => String(c));
 
   return (
@@ -143,10 +143,10 @@ export function ModernIntrospect({ data }: IdentityCardProps) {
       {/* Header */}
       <div className="px-5 pt-2.5 pb-3.5 border-b border-border/60">
         <p className="text-base font-semibold text-foreground truncate">
-          {sub.id ?? "unknown_actor"}
+          {subject.id ?? "unknown_actor"}
         </p>
         <p className="text-[12px] text-muted-foreground mb-2 truncate">
-          {sub.email ?? "—"}
+          {subject.email ?? "—"}
         </p>
         <div className="flex gap-1.5 flex-wrap">
           <span
@@ -169,8 +169,8 @@ export function ModernIntrospect({ data }: IdentityCardProps) {
       <div className="grid grid-cols-3 border-b border-border/60 divide-x divide-border/60">
         {[
           { label: "Capabilities", value: caps.length },
-          { label: "Metadata", value: (sub.metadata ?? []).length },
-          { label: "Project", value: sub.project_id?.split("_")[1]?.slice(0, 4) ?? "—" },
+          { label: "Metadata", value: (subject.metadata ?? []).length },
+          { label: "Project", value: subject.project_id?.split("_")[1]?.slice(0, 4) ?? "—" },
         ].map((s) => (
           <div key={s.label} className="py-3 text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{s.label}</p>
@@ -181,10 +181,10 @@ export function ModernIntrospect({ data }: IdentityCardProps) {
 
       {/* Fields */}
       <div className="py-1.5 border-b border-border/60">
-        <FieldRow icon={User} label="sub id" value={sub.id} />
-        <FieldRow icon={FolderOpen} label="project" value={sub.project_id} />
+        <FieldRow icon={User} label="sub id" value={subject.id} />
+        <FieldRow icon={FolderOpen} label="project" value={subject.project_id} />
         <FieldRow icon={Key} label="cred id" value={cred.id} />
-        <FieldRow icon={Mail} label="email" value={sub.email} />
+        <FieldRow icon={Mail} label="email" value={subject.email} />
       </div>
 
       {/* Capabilities */}
