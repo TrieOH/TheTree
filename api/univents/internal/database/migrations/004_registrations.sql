@@ -12,8 +12,9 @@ CREATE TABLE registrations (
         status IN ('pending', 'confirmed', 'cancelled', 'expired')
     ),
     status_reason    TEXT,
+    payssage_intent_id UUID,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ,
     deleted_at       TIMESTAMPTZ
 );
 -- +goose Down
