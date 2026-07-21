@@ -40,7 +40,24 @@ CREATE INDEX idx_events_slug ON events(slug)
 CREATE UNIQUE INDEX idx_events_slug_unique ON events(slug)
     WHERE deleted_at IS NULL;
 
+CREATE TABLE event_members (
+    id         UUID PRIMARY KEY DEFAULT uuidv7(),
+    event_id   UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id    UUID NOT NULL,
+    role       TEXT NOT NULL DEFAULT 'staff',
+    CONSTRAINT chk_event_members_role_valid CHECK (
+        role IN ('owner', 'admin', 'staff')
+    ),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE UNIQUE INDEX idx_one_event_member_per_event
+    ON event_members(event_id, user_id) WHERE deleted_at IS NULL;
+
 -- +goose Down
+DROP INDEX IF EXISTS idx_one_event_member_per_event;
+DROP TABLE IF EXISTS event_members;
 DROP INDEX IF EXISTS idx_events_slug_unique;
 DROP INDEX IF EXISTS idx_events_slug;
 DROP TABLE IF EXISTS events;

@@ -1,5 +1,4 @@
 -- +goose Up
-
 CREATE TABLE editions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,

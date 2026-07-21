@@ -8,27 +8,29 @@ CREATE TABLE programs (
     description      TEXT,
     min_access_level INT,
     staff_only       BOOLEAN NOT NULL DEFAULT FALSE,
-    price            INT NOT NULL DEFAULT 0,
+    price            INT NOT NULL DEFAULT 0, -- cents
     token_cost       INT NOT NULL DEFAULT 0,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at       TIMESTAMPTZ,
     deleted_at       TIMESTAMPTZ
 );
 
 CREATE TABLE program_occurrences (
     id           UUID PRIMARY KEY DEFAULT uuidv7(),
     program_id   UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+    edition_id   UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
     starts_at    TIMESTAMPTZ NOT NULL,
     ends_at      TIMESTAMPTZ NOT NULL,
     CONSTRAINT chk_program_occurrences_dates_valid CHECK (ends_at > starts_at),
     max_capacity INT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ,
     deleted_at   TIMESTAMPTZ
 );
 
 CREATE TABLE program_participations (
     id              UUID PRIMARY KEY DEFAULT uuidv7(),
+    edition_id      UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
     occurrence_id   UUID NOT NULL REFERENCES program_occurrences(id) ON DELETE CASCADE,
     registration_id UUID NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
     status          TEXT NOT NULL DEFAULT 'registered',
@@ -36,7 +38,7 @@ CREATE TABLE program_participations (
     status IN ('registered', 'attended', 'no_show', 'cancelled')
     ),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at      TIMESTAMPTZ
 );
 -- +goose Down
 DROP TABLE IF EXISTS program_participations;
