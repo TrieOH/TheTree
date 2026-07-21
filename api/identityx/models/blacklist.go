@@ -12,7 +12,7 @@ type BlacklistEntryType string
 const (
 	BlacklistEntryTypeActor  BlacklistEntryType = "actor"
 	BlacklistEntryTypeToken  BlacklistEntryType = "token"
-	BlacklistEntryTypeApiKey BlacklistEntryType = "api_key"
+	BlacklistEntryTypeAPIKey BlacklistEntryType = "api_key"
 	BlacklistEntryTypeEmail  BlacklistEntryType = "email"
 	BlacklistEntryTypeIP     BlacklistEntryType = "ip"
 )

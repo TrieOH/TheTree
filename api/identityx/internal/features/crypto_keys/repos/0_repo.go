@@ -10,17 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type repo struct {
+type Repo struct {
 	q      *sqlc.Queries
 	log    *zap.Logger
 	tracer trace.Tracer
 	dbe    database.ErrorHandler
 }
 
-var _ ports.CryptoKeysRepo = (*repo)(nil)
+var _ ports.CryptoKeysRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.CryptoKeysRepo {
-	return &repo{
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) *Repo {
+	return &Repo{
 		q:      q,
 		log:    log,
 		tracer: tracer,

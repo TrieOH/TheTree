@@ -20,7 +20,7 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 	}
 
 	var created *models.Project
-	if err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		created, err = c.projects.Create(ctx, *project)
 		if err != nil {
 			return err
@@ -32,9 +32,9 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 		}
 
 		return c.projects.AddMember(ctx, *member)
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
-
 	return created, nil
 }

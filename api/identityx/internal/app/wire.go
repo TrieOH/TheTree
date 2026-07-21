@@ -30,7 +30,7 @@ import (
 
 type repos struct {
 	actors             ports.ActorRepo
-	apiKeys            ports.ApiKeysRepo
+	apiKeys            ports.APIKeysRepo
 	capabilities       ports.CapabilityRepo
 	platformRoles      ports.PlatformRolesRepo
 	cryptoKeys         ports.CryptoKeysRepo
@@ -76,7 +76,7 @@ type middlewares struct {
 
 type handlers struct {
 	Actors         *actors.Handlers
-	ApiKeys        *apikeys.Handlers
+	APIKeys        *apikeys.Handlers
 	Authn          *authn.Handlers
 	Orgs           *organizations.Handlers
 	Projects       *projects.Handlers
@@ -87,8 +87,8 @@ type handlers struct {
 
 // ── Init functions ────────────────────────────────────────────────────────
 
-func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) repos {
-	return repos{
+func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trace.Tracer) *repos {
+	return &repos{
 		actors:             actors.NewRepo(q, logger, tracer),
 		apiKeys:            apikeys.NewRepo(q, logger, tracer),
 		capabilities:       capabilities.NewRepos(q, logger, tracer),
@@ -103,10 +103,10 @@ func (app *IdentityX) initRepos(q *sqlc.Queries, logger *zap.Logger, tracer trac
 	}
 }
 
-func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
+func (app *IdentityX) initQueries(r *repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
 		actors:         actors.NewQueries(r.projects, r.actors, logger, tracer, tx),
-		authn:          authn.NewQueries(r.cryptoKeys, logger, tracer, tx),
+		authn:          authn.NewQueries(r.projects, r.cryptoKeys, logger, tracer, tx),
 		orgs:           organizations.NewQueries(r.projects, r.actors, r.orgs, logger, tracer, tx),
 		projects:       projects.NewQueries(r.projects, logger, tracer, tx),
 		capabilities:   capabilities.NewQueries(r.capabilities, r.projects, logger, tracer, tx),
@@ -115,7 +115,7 @@ func (app *IdentityX) initQueries(r repos, tx database.TxRunner, logger *zap.Log
 	}
 }
 
-func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
+func (app *IdentityX) initCommands(r *repos, tx database.TxRunner, logger *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
 		authn:          authn.NewCommands(r.actors, r.projects, r.platformRoles, r.cryptoKeys, r.blacklist, r.externalIdentities, logger, tracer, tx),
 		actors:         actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
@@ -128,14 +128,14 @@ func (app *IdentityX) initCommands(r repos, tx database.TxRunner, logger *zap.Lo
 	}
 }
 
-func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) middlewares {
+func (app *IdentityX) initMiddlewares(r *repos, logger *zap.Logger, cfg Config) middlewares {
 	var mw middlewares
 	authMW := app.SetupAuthMiddlewares(r.cryptoKeys, r.apiKeys, r.actors, r.capabilities, logger)
 	mw.jwtAuth = authMW.JWT()
 	mw.apiKeyAuth = authMW.APIKey()
 	mw.anyAuth = authMW.AnyAuth()
-	//mw.bodySize = mws.MaxBodySize(1 << 20)
-	//mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
+	// mw.bodySize = mws.MaxBodySize(1 << 20)
+	// mw.requestID = mws.RequestID(mws.RequestIDConfig{Header: "X-Request-ID"})
 	mw.logger = mws.Logs(mws.Config{Logger: logger, SkipPrefixes: []string{"/metrics", "/health"}, RequestIDHeader: "X-Request-ID"})
 	collectors, err := mws.NewCollectors(prometheus.DefaultRegisterer)
 	if err != nil {
@@ -147,12 +147,12 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 		AllowedHeaders:   xslices.Clean(strings.Split(cfg.CorsAllowedHeaders, ",")),
 		AllowCredentials: true,
 	})
-	//mw.realIP = mws.RealIP()
-	//mw.recover = mws.Recover(logger)
-	//mw.timeout = mws.Timeout(60 * time.Second)
-	//mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
-	//	KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
-	//})
+	// mw.realIP = mws.RealIP()
+	// mw.recover = mws.Recover(logger)
+	// mw.timeout = mws.Timeout(60 * time.Second)
+	// mw.ratelimit = mws.RateLimit(mws.RateLimitConfig{RPS: 400, Burst: 20,
+	//	 KeyExtractor: func(r *http.Request) string { return r.RemoteAddr },
+	// })
 	mw.clientOnly = ClientOnly()
 	mw.projectClientOnly = ProjectClientOnly()
 	return mw
@@ -161,7 +161,7 @@ func (app *IdentityX) initMiddlewares(r repos, logger *zap.Logger, cfg Config) m
 func (app *IdentityX) initHandlers(q queries, c commands) handlers {
 	return handlers{
 		Actors:         actors.NewHandlers(q.actors, c.actors),
-		ApiKeys:        apikeys.NewHandlers(c.apiKeys),
+		APIKeys:        apikeys.NewHandlers(c.apiKeys),
 		Authn:          authn.NewHandlers(c.authn, q.authn),
 		Orgs:           organizations.NewHandlers(c.orgs, q.orgs),
 		Projects:       projects.NewHandlers(c.projects, q.projects),

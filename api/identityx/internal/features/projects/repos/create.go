@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) Create(ctx context.Context, project models.Project) (*models.Project, error) {
+func (repo *Repo) Create(ctx context.Context, project models.Project) (*models.Project, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "Create")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateProject(ctx, sqlc.CreateProjectParams{

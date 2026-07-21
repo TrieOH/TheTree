@@ -25,11 +25,12 @@ func (c *Commands) Login(ctx context.Context, in models.IDXLoginInput) (tokens *
 	if actor.PasswordHash == nil {
 		return nil, fun.ErrUnauthorized("invalid email or password")
 	}
-	if err = crypto.Verify(in.Password, *actor.PasswordHash); err != nil {
+	err = crypto.Verify(in.Password, *actor.PasswordHash)
+	if err != nil {
 		return nil, fun.ErrUnauthorized("invalid email or password")
 	}
-
-	if err = c.actors.UpdateLastLoginAt(ctx, actor.ID); err != nil {
+	err = c.actors.UpdateLastLoginAt(ctx, actor.ID)
+	if err != nil {
 		return nil, err
 	}
 	return c.issueTokens(ctx, actor)

@@ -22,11 +22,9 @@ func (q *Queries) ListFromOrg(ctx context.Context, orgID uuid.UUID) ([]models.Wa
 		return nil, err
 	}
 
-	if org.OwnerID != ident.Sub.ID {
-		_, err = q.orgs.GetMember(ctx, ident.Sub.ID, orgID)
-		if err != nil {
-			return nil, err
-		}
+	err = q.checkRole(ctx, org, ident.Sub.ID, models.OrganizationRoleMember)
+	if err != nil {
+		return nil, err
 	}
 
 	return q.wallets.ListFromOrg(ctx, org.ID)

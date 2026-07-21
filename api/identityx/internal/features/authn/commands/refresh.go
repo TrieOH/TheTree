@@ -18,9 +18,6 @@ func (c *Commands) Refresh(ctx context.Context, refreshToken string) (*models.Us
 	if err != nil {
 		return nil, err
 	}
-	if refreshClaims == nil {
-		return nil, fun.ErrBadRequest("empty refresh claims")
-	}
 	cryptoKey, err := c.cryptoKeyFromToken(ctx, token)
 	if err != nil {
 		return nil, err
@@ -32,11 +29,13 @@ func (c *Commands) Refresh(ctx context.Context, refreshToken string) (*models.Us
 		return nil, fun.ErrUnauthorized("invalid access token")
 	}
 
-	if err = c.blacklist.Append(ctx, refreshClaims.ToRefreshBlacklistEntry()); err != nil {
+	err = c.blacklist.Append(ctx, refreshClaims.ToRefreshBlacklistEntry())
+	if err != nil {
 		c.logger.Error("error appending refresh token to blacklist", zap.Error(err))
 	}
 
-	if err = c.blacklist.Append(ctx, refreshClaims.ToAccessBlacklistEntry()); err != nil {
+	err = c.blacklist.Append(ctx, refreshClaims.ToAccessBlacklistEntry())
+	if err != nil {
 		c.logger.Error("error appending access token to blacklist", zap.Error(err))
 	}
 

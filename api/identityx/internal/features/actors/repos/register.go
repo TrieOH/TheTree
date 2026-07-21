@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) Register(ctx context.Context, toRegister models.Actor) (*models.Actor, error) {
+func (repo *Repo) Register(ctx context.Context, toRegister models.Actor) (*models.Actor, error) {
 	ctx, span := repo.tracer.Start(ctx, "Register")
 	defer span.End()
 	sqlcActor, err := database.Queries(ctx, repo.q).RegisterActor(ctx, sqlc.RegisterActorParams{

@@ -16,7 +16,7 @@ func (c *Commands) Setup(ctx context.Context, in models.SetupInput) error {
 	}
 
 	var actor *models.Actor
-	if err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		actor, err = c.actors.Register(ctx, models.Actor{
 			AuthMethod:   models.PasswordAuthMethod,
 			PasswordHash: &hashedPassword,
@@ -32,9 +32,9 @@ func (c *Commands) Setup(ctx context.Context, in models.SetupInput) error {
 			return err
 		}
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
-
 	return nil
 }

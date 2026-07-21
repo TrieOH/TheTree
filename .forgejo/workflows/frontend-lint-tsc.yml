@@ -10,16 +10,19 @@ on:
       - 'package.json'
       - 'pnpm-workspace.yaml'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   changes:
-    runs-on: debian
+    runs-on: ubuntu-latest
     outputs:
       identityx: ${{ steps.filter.outputs.identityx }}
       informd: ${{ steps.filter.outputs.informd }}
       payssage: ${{ steps.filter.outputs.payssage }}
-      spicedb: ${{ steps.filter.outputs.spicedb }}
       univents: ${{ steps.filter.outputs.univents }}
-      any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.spicedb == 'true' || steps.filter.outputs.univents == 'true' }}
+      any: ${{ steps.filter.outputs.identityx == 'true' || steps.filter.outputs.informd == 'true' || steps.filter.outputs.payssage == 'true' || steps.filter.outputs.univents == 'true' }}
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
@@ -33,15 +36,13 @@ jobs:
               - 'front/informd/**'
             payssage:
               - 'front/payssage/**'
-            spicedb:
-              - 'front/spicedb/**'
             univents:
               - 'front/univents/**'
 
   lint-tsc:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: debian
+    runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
@@ -81,14 +82,6 @@ jobs:
       - name: TypeScript Payssage
         if: ${{ needs.changes.outputs.payssage == 'true' }}
         run: pnpm -F payssage tsc
-
-      - name: Lint Spicedb
-        if: ${{ needs.changes.outputs.spicedb == 'true' }}
-        run: pnpm -F spicedb-ui lint
-
-      - name: TypeScript Spicedb
-        if: ${{ needs.changes.outputs.spicedb == 'true' }}
-        run: pnpm -F spicedb-ui tsc
 
       - name: Lint Univents
         if: ${{ needs.changes.outputs.univents == 'true' }}

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Project, error) {
+func (repo *Repo) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Project, error) {
 	ctx, span := repo.tracer.Start(ctx, "ListByOrganization")
 	defer span.End()
 	sqlcProjects, err := database.Queries(ctx, repo.q).ListProjectsByOrganizationID(ctx, &orgID)

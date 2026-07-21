@@ -18,7 +18,7 @@ type Subject struct {
 	Metadata     *json.RawMessage `json:"metadata"`
 }
 
-func SubjectFromAccessSub(sub AccessSub) Subject {
+func SubjectFromAccessSub(sub *AccessSub) Subject {
 	return Subject{
 		ID:           sub.ID,
 		ProjectID:    sub.ProjectID,
@@ -36,7 +36,7 @@ type Credential struct {
 }
 
 type Identity struct {
-	Sub  Subject    `json:"sub"`
+	Sub  Subject    `json:"subject"`
 	Cred Credential `json:"cred"`
 }
 

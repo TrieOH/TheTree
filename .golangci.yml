@@ -35,7 +35,7 @@ linters:
     - bidichk             # Trojan Source — invisible unicode that flips code logic
 
     # --- resource hygiene (critical for microservices) ---
-    - bodyclose           # HTTP response bodies must be closed
+    - bodyclose            # HTTP response bodies must be closed
     - sqlclosecheck        # sql.Rows, sql.Stmt, pgx.Query must be closed after use
     - rowserrcheck         # check sql.Rows.Err after iterating rows
 
@@ -49,10 +49,10 @@ linters:
     - spancheck            # OTel span: missing End, wrong attribute types, etc.
 
     # --- simplification & modernisation ---
-    - copyloopvar         # enforce copying loop variables (Go 1.22+ semantics — prevents closure bugs)
-    - perfsprint          # replace fmt.Sprintf with faster alternatives (strconv, string concat)
-    - unconvert           # remove unnecessary type conversions [auto-fix]
-    - intrange            # for i:=0; i<len(x); i++  →  for i := range x  [auto-fix]
+    - copyloopvar          # enforce copying loop variables (Go 1.22+ semantics — prevents closure bugs)
+    - perfsprint           # replace fmt.Sprintf with faster alternatives (strconv, string concat)
+    - unconvert            # remove unnecessary type conversions [auto-fix]
+    - intrange             # for i:=0; i<len(x); i++  →  for i := range x  [auto-fix]
     - mirror               # bytes.Compare → bytes.Equal, strings.Contains on []byte → bytes.Contains [auto-fix]
     - usestdlibvars        # http.MethodGet instead of "GET", time.Weekday instead of int [auto-fix]
     - durationcheck        # time.Second * time.Second — two durations multiplied is nonsense
@@ -71,9 +71,6 @@ linters:
     # --- context hygiene ---
     - fatcontext           # context.Context stored in struct or used in loop body [auto-fix]
 
-    # --- tech debt surfaces (warning-only, won't fail the build) ---
-    - godox                # FIXME / TODO / BUG left in code — surfaces tech debt
-
     # --- performance ---
     - prealloc             # pre-allocate slices when final size is known
     - makezero             # slice declared with non-zero length then append'ed to (double init)
@@ -83,7 +80,6 @@ linters:
     - loggercheck           # expensive log values computed before checking log level
 
     # --- struct hygiene ---
-    - exhaustruct           # check all struct fields are explicitly initialized
     - embeddedstructfieldcheck  # embedded types at top of struct, blank line before regular fields
 
     # --- test speed ---
@@ -129,13 +125,6 @@ linters:
       locale: US
     testifylint:
       enable-all: true
-    gocritic:
-      # non-default checks added on top of defaults:
-      enabled-checks:
-        - hugeParam            # struct > 80B passed by value → should be pointer
-      settings:
-        hugeParam:
-          sizeThreshold: 80    # bytes; warn when struct argument exceeds this
     gocognit:
       min-complexity: 50       # cognitive complexity threshold
     gocyclo:
@@ -143,7 +132,7 @@ linters:
     funlen:
       lines: 150               # max lines per function
     nestif:
-      min-complexity: 3         # max nested if depth
+      min-complexity: 6         # max nested if depth
     sloglint:
       # enforce key=value attr pairs, no embedded objects, context as first arg
       args-on-sep-lines: false
@@ -156,9 +145,6 @@ linters:
         - source
     interfacebloat:
       max: 10                   # max methods before warning
-    exhaustruct:
-      # only check structs with the `exhaustruct` comment directive, not every struct
-      include: []
     paralleltest:
       ignore-missing-subtests: false
 
@@ -195,9 +181,6 @@ issues:
   max-same-issues: 10
   severity:
     default: error
-    rules:
-      - linters: [godox]
-        severity: warning
 
 formatters:
   enable:

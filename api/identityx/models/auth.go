@@ -6,11 +6,11 @@ type CredentialType string
 
 const (
 	TokenCredentialType  CredentialType = "token"
-	ApiKeyCredentialType CredentialType = "api_key"
+	APIKeyCredentialType CredentialType = "api_key"
 )
 
 type IDXRegisterRequest struct {
-	Email    string `json:"email" validate:"required,email,max=255"`
+	Email    string `json:"email"    validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,passwd,min=8,max=72"`
 }
 
@@ -29,7 +29,7 @@ func (r IDXRegisterRequest) ToInput(projectID *uuid.UUID) IDXRegisterInput {
 }
 
 type IDXLoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
+	Email    string `json:"email"    validate:"required,email"`
 	Password string `json:"password" validate:"required,passwd,min=8"`
 }
 
@@ -53,10 +53,7 @@ type SetupInput struct {
 }
 
 func (r IDXLoginRequest) ToSetupInput() SetupInput {
-	return SetupInput{
-		Email:    r.Email,
-		Password: r.Password,
-	}
+	return SetupInput(r)
 }
 
 type LogoutInput struct {

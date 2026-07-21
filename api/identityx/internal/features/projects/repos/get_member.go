@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetMember(ctx context.Context, actorID, projectID uuid.UUID) (*models.ProjectMember, error) {
+func (repo *Repo) GetMember(ctx context.Context, actorID, projectID uuid.UUID) (*models.ProjectMember, error) {
 	ctx, span := repo.tracer.Start(ctx, "GetMember")
 	defer span.End()
 	sqlcMember, err := database.Queries(ctx, repo.q).GetProjectMemberByID(ctx, sqlc.GetProjectMemberByIDParams{

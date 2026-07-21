@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) GetByTargetAndType(ctx context.Context, target string, entryType models.BlacklistEntryType) (*models.BlacklistEntry, error) {
+func (repo *Repo) GetByTargetAndType(ctx context.Context, target string, entryType models.BlacklistEntryType) (*models.BlacklistEntry, error) {
 	ctx, span := repo.tracer.Start(ctx, "Register")
 	defer span.End()
 	sqlcEntry, err := database.Queries(ctx, repo.q).GetBlacklistEntryByTargetAndType(ctx, sqlc.GetBlacklistEntryByTargetAndTypeParams{

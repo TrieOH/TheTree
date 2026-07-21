@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (repo *repo) AssignToApiKey(ctx context.Context, apiKeyID uuid.UUID, capabilityIDs []uuid.UUID, assignedBy uuid.UUID) error {
+func (repo *Repo) AssignToAPIKey(ctx context.Context, apiKeyID uuid.UUID, capabilityIDs []uuid.UUID, assignedBy uuid.UUID) error {
 	ctx, span := database.Span(ctx, repo.tracer, "AssignToApiKey")
 	defer span.End()
 	err := database.Queries(ctx, repo.q).AssignCapabilitiesToApiKey(ctx, sqlc.AssignCapabilitiesToApiKeyParams{

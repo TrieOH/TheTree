@@ -7,7 +7,7 @@ import (
 	"github.com/MintzyG/fun"
 )
 
-func (c *Commands) OAuthConnect(ctx context.Context, provider string) (string, error) {
+func (c *Commands) OAuthConnect(_ context.Context, provider string) (string, error) {
 	p, ok := oauth.Registry[provider]
 	if !ok {
 		return "", fun.ErrBadRequest("unsupported provider: " + provider)

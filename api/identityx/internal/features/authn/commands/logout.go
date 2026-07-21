@@ -19,9 +19,6 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 		c.logger.Error("access token verification failed", zap.Error(err))
 		return fun.ErrUnauthorized("invalid access token")
 	}
-	if accessClaims == nil {
-		return fun.ErrBadRequest("empty access claims")
-	}
 	cryptoKey, err := c.cryptoKeyFromToken(ctx, token)
 	if err != nil {
 		return err
@@ -41,7 +38,8 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 		Metadata:         nil,
 		ExpiresAt:        &accessClaims.ExpiresAt.Time,
 	}
-	if err = c.blacklist.Append(ctx, accessEntry); err != nil {
+	err = c.blacklist.Append(ctx, accessEntry)
+	if err != nil {
 		c.logger.Error("error appending access token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
 	}
 
@@ -61,7 +59,8 @@ func (c *Commands) Logout(ctx context.Context, in models.LogoutInput) error {
 		Metadata:         nil,
 		ExpiresAt:        &refreshClaims.ExpiresAt.Time,
 	}
-	if err = c.blacklist.Append(ctx, refreshEntry); err != nil {
+	err = c.blacklist.Append(ctx, refreshEntry)
+	if err != nil {
 		c.logger.Error("error appending refresh token to blacklist for "+accessClaims.Sub.ID.String(), zap.Error(err))
 	}
 

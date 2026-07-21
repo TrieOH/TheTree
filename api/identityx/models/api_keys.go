@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ApiKey struct {
+type APIKey struct {
 	ID            uuid.UUID       `json:"id"`
 	SubjectID     uuid.UUID       `json:"subject_id"`
 	Name          string          `json:"name"`
@@ -21,7 +21,7 @@ type ApiKey struct {
 	CreatedAt     time.Time       `json:"created_at"`
 }
 
-type CreateApiKeyRequest struct {
+type CreateAPIKeyRequest struct {
 	SubjectID    *uuid.UUID  `json:"subject_id"`
 	Capabilities []uuid.UUID `json:"capabilities"`
 	Name         string      `json:"name"`
@@ -29,8 +29,8 @@ type CreateApiKeyRequest struct {
 	ExpiresAt    *time.Time  `json:"expires_at"`
 }
 
-func (r CreateApiKeyRequest) ToInput(projectID *uuid.UUID) CreateApiKeyInput {
-	return CreateApiKeyInput{
+func (r CreateAPIKeyRequest) ToInput(projectID *uuid.UUID) CreateAPIKeyInput {
+	return CreateAPIKeyInput{
 		SubjectID:    r.SubjectID,
 		Capabilities: r.Capabilities,
 		Name:         r.Name,
@@ -40,7 +40,7 @@ func (r CreateApiKeyRequest) ToInput(projectID *uuid.UUID) CreateApiKeyInput {
 	}
 }
 
-type CreateApiKeyInput struct {
+type CreateAPIKeyInput struct {
 	SubjectID    *uuid.UUID  `json:"subject_id"`
 	Capabilities []uuid.UUID `json:"capabilities"`
 	Name         string      `json:"name"`
@@ -49,7 +49,7 @@ type CreateApiKeyInput struct {
 	ProjectID    *uuid.UUID
 }
 
-type CreateApiKeyResponse struct {
-	Key    *ApiKey `json:"key"`
+type CreateAPIKeyResponse struct {
+	Key    *APIKey `json:"key"`
 	RawKey string  `json:"raw_key"`
 }

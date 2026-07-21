@@ -1,0 +1,39 @@
+package commands
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"payssage/models"
+	idx "sdk/identityx"
+)
+
+func (c *Commands) Create(ctx context.Context, input models.CreateWebhookEndpointInput) (*models.WebhookEndpoint, error) {
+	ctx, span := c.tracer.Start(ctx, "CreateWebhookEndpoint")
+	defer span.End()
+
+	ident, err := idx.RequireIdentity(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.checkWalletAccess(ctx, input.WalletID, ident.Sub.ID); err != nil {
+		return nil, err
+	}
+
+	secretBytes := make([]byte, 32)
+	if _, err := rand.Read(secretBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate secret: %w", err)
+	}
+	secret := hex.EncodeToString(secretBytes)
+
+	endpoint := models.WebhookEndpoint{
+		WalletID: input.WalletID,
+		Name:     input.Name,
+		URL:      input.URL,
+		Secret:   secret,
+	}
+
+	return c.endpoints.Create(ctx, endpoint)
+}

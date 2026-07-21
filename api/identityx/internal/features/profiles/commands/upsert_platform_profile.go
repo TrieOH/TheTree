@@ -26,7 +26,8 @@ func (c *Commands) UpsertPlatformProfile(ctx context.Context, payload models.Ups
 	// only platform schema applies
 	s, err := c.schemas.Get(ctx, nil)
 	if err == nil && s.Active {
-		if err := jsonschema.Validate(s.Schema, payload.Profile); err != nil {
+		err := jsonschema.Validate(s.Schema, payload.Profile)
+		if err != nil {
 			return nil, fun.ErrValidation(err.Error())
 		}
 	}

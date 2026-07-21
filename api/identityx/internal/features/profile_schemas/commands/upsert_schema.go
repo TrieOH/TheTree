@@ -14,7 +14,8 @@ func (c *Commands) UpsertSchema(ctx context.Context, payload models.UpsertProfil
 	// fixme: platform schema: any authenticated actor can set it for now
 	// (in the future, restrict to platform admins)
 	if payload.ProjectID == nil {
-		if _, err := models.RequireIdentity(ctx); err != nil {
+		_, err := models.RequireIdentity(ctx)
+		if err != nil {
 			return nil, err
 		}
 		return c.schemas.Upsert(ctx, models.ProjectProfileSchema{

@@ -7,7 +7,7 @@ import (
 	"lib/database"
 )
 
-func (repo *repo) Create(ctx context.Context, toCreate models.ApiKey) (*models.ApiKey, error) {
+func (repo *Repo) Create(ctx context.Context, toCreate models.APIKey) (*models.APIKey, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "Create")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateApiKey(ctx, sqlc.CreateApiKeyParams{
@@ -18,5 +18,5 @@ func (repo *repo) Create(ctx context.Context, toCreate models.ApiKey) (*models.A
 		CreatedBy:     toCreate.CreatedBy,
 		ExpiresAt:     toCreate.ExpiresAt,
 	})
-	return new(mapApiKey(row)), repo.dbe(err)
+	return new(mapAPIKey(row)), repo.dbe(err)
 }

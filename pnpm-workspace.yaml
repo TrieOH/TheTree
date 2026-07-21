@@ -2,11 +2,10 @@ packages:
   - 'front/*'
   - 'lib/ts/*'
   - 'sdk/ts/identityx-access'
-  - 'docs'
 
 catalog:
   # === @trieoh ===
-  '@trieoh/identityx-sdk-ts': ^0.12.10
+  '@trieoh/identityx-sdk-ts': ^0.12.12
   '@trieoh/identityx-access-sdk-ts': ^0.1.0
   '@trieoh/envoy-fetch-ts': ^0.1.5
   '@hookform/resolvers': ^5.4.0
@@ -47,7 +46,7 @@ catalog:
   react-hook-form: ^7.72.0
 
   # === Build / Tooling ===
-  typescript: ^5.7.2
+  typescript: ^7.0.2
   vite: ^8.0.16
   '@vitejs/plugin-react': ^6.0.2
   '@cloudflare/vite-plugin': ^1.39.2

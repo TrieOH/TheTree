@@ -16,8 +16,9 @@ export const createOrganizationFn = createClientOnlyFn((orgData: OrganizationCre
  * Fetches all organizations from the server.
  * @returns A promise that resolves to an array of organizations objects.
  */
-export const getAllOrganizationsFn = createClientOnlyFn(() => {
-  return tanstackQueryFetcher<OrganizationI[]>("/organizations");
+export const getAllOrganizationsFn = createClientOnlyFn(async () => {
+  const organizations = await tanstackQueryFetcher<OrganizationI[]>("/organizations");
+  return Array.isArray(organizations) ? organizations : [];
 });
 
 /**
@@ -61,7 +62,8 @@ export const removeMemberFromOrganizationFn = createClientOnlyFn((organization_i
 export const getAllOrganizationsMemberFn = createClientOnlyFn((
   organization_id: string
 ) => {
-  return tanstackQueryFetcher<OrganizationMemberI[]>(`/organizations/${organization_id}/members`);
+  return tanstackQueryFetcher<OrganizationMemberI[]>(`/organizations/${organization_id}/members`)
+    .then((members) => Array.isArray(members) ? members : []);
 });
 
 /**

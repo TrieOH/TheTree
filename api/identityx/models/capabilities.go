@@ -17,7 +17,7 @@ type Capability struct {
 
 type CreateCapabilityRequest struct {
 	Resource string `json:"resource" validate:"required,min=3"`
-	Action   string `json:"action" validate:"required,min=3"`
+	Action   string `json:"action"   validate:"required,min=3"`
 }
 
 func (r *CreateCapabilityRequest) ToInput(projectID uuid.UUID) CreateCapabilityInput {
