@@ -30,7 +30,19 @@ export const env = createEnv({
     VITE_TRIEOH_AUTH_PROJECT_ID: z.string(),
 
     VITE_MERCADO_PAGO_CALLBACK_URL: z.url(),
-    VITE_MERCADO_PAGO_PUBLIC_KEY: z.string()
+    VITE_MERCADO_PAGO_PUBLIC_KEY: z.string(),
+
+    VITE_UPLOAD_MAX_RETRIES: z.coerce.number().int().min(0).default(5),
+    VITE_UPLOAD_RETRY_BASE_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(1000),
+    VITE_UPLOAD_RETRY_MAX_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30000),
   },
 
   runtimeEnv: {
@@ -40,14 +52,16 @@ export const env = createEnv({
     TRIEOH_PAY_BASE_URL: process.env.TRIEOH_PAY_BASE_URL,
     STORAGE_IMAGE_ALLOWED_TYPES: process.env.STORAGE_IMAGE_ALLOWED_TYPES,
     STORAGE_IMAGE_MAX_SIZE_BYTES: process.env.STORAGE_IMAGE_MAX_SIZE_BYTES,
-    STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS: process.env.STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS,
+    STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS:
+      process.env.STORAGE_IMAGE_UPLOAD_EXPIRES_SECONDS,
     STORAGE_IMAGE_MODERATION_MODEL: process.env.STORAGE_IMAGE_MODERATION_MODEL,
-    STORAGE_IMAGE_MODERATION_PROMPT: process.env.STORAGE_IMAGE_MODERATION_PROMPT
+    STORAGE_IMAGE_MODERATION_PROMPT:
+      process.env.STORAGE_IMAGE_MODERATION_PROMPT,
   },
   onValidationError: (issues) => {
-    console.error("Invalid or missing environment variables:")
+    console.error('Invalid or missing environment variables:')
     issues.forEach((issue) => {
-      const path = issue.path?.map(String).join(".")
+      const path = issue.path?.map(String).join('.')
       console.error(`  → ${path}: ${issue.message}`)
     })
     process.exit(1)

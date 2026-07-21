@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   PenLine,
+  UploadCloud,
   Ticket,
   type LucideIcon,
 } from 'lucide-react'
@@ -132,12 +133,27 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
           icon: LayoutDashboard,
           exact: true,
         },
+        {
+          id: 'uploads',
+          label: 'Uploads',
+          to: '/admin/uploads',
+          icon: UploadCloud,
+          exact: true,
+        },
       ],
     },
   ]
 }
 
 export function getAdminShellLabel(pathname: string) {
+  if (pathname.startsWith('/admin/uploads')) {
+    return {
+      eyebrow: 'Admin Univents',
+      title: 'Uploads',
+      subtitle: 'Processamento de mídia',
+    }
+  }
+
   const { eventId, editionId } = getAdminRouteContext(pathname)
 
   if (editionId) {

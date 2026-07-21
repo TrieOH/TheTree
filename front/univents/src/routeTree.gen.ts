@@ -21,6 +21,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as VerifyHashRouteImport } from './routes/verify/$hash'
+import { Route as AdminUploadsRouteImport } from './routes/admin/uploads'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
 import { Route as AdminEventsIndexRouteImport } from './routes/admin/events/index'
 import { Route as EventsEventIdProfileRouteImport } from './routes/events/$eventId/profile'
@@ -93,6 +94,11 @@ const VerifyHashRoute = VerifyHashRouteImport.update({
   id: '/verify/$hash',
   path: '/verify/$hash',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUploadsRoute = AdminUploadsRouteImport.update({
+  id: '/uploads',
+  path: '/uploads',
+  getParentRoute: () => AdminRoute,
 } as any)
 const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
   id: '/events/$eventId/',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
@@ -310,6 +318,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/terms': typeof TermsRoute
+  '/admin/uploads': typeof AdminUploadsRoute
   '/verify/$hash': typeof VerifyHashRoute
   '/events/': typeof EventsIndexRoute
   '/events/$eventId/profile': typeof EventsEventIdProfileRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
     | '/verify/$hash'
     | '/events/'
     | '/events/$eventId/profile'
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
     | '/verify/$hash'
     | '/events'
     | '/events/$eventId/profile'
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/terms'
+    | '/admin/uploads'
     | '/verify/$hash'
     | '/events/'
     | '/events/$eventId/profile'
@@ -520,6 +532,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify/$hash'
       preLoaderRoute: typeof VerifyHashRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/uploads': {
+      id: '/admin/uploads'
+      path: '/uploads'
+      fullPath: '/admin/uploads'
+      preLoaderRoute: typeof AdminUploadsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/events/$eventId/': {
       id: '/events/$eventId/'
@@ -658,6 +677,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminUploadsRoute: typeof AdminUploadsRoute
   AdminEventsIndexRoute: typeof AdminEventsIndexRoute
   AdminEventsEventIdIndexLazyRoute: typeof AdminEventsEventIdIndexLazyRoute
   AdminEventsEventIdEditionsIndexRoute: typeof AdminEventsEventIdEditionsIndexRoute
@@ -672,6 +692,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminUploadsRoute: AdminUploadsRoute,
   AdminEventsIndexRoute: AdminEventsIndexRoute,
   AdminEventsEventIdIndexLazyRoute: AdminEventsEventIdIndexLazyRoute,
   AdminEventsEventIdEditionsIndexRoute: AdminEventsEventIdEditionsIndexRoute,

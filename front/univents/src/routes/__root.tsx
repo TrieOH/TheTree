@@ -15,7 +15,7 @@ import { Provider as TanStackQueryProvider } from '../integrations/tanstack-quer
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
-import type { useAuth } from '@trieoh/identityx-sdk-ts/react';
+import type { useAuth } from '@trieoh/identityx-sdk-ts/react'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { env } from '@/env'
@@ -24,6 +24,7 @@ import { NavigationDock } from '@/widgets/ui/navigation-dock'
 import NotFound from '@/widgets/feedback/ui/NotFound'
 import { Toaster } from '@trieoh/ui-base/shadcn/sonner'
 import WaveSpinnerLoading from '@/shared/ui/loader/WaveSpinnerLoading'
+import { UploadQueueProvider } from '@/features/upload-queue/ui/upload-queue-provider'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -37,21 +38,33 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: env.VITE_APP_TITLE ?? "Univents" },
-      { name: 'apple-mobile-web-app-title', content: env.VITE_APP_TITLE ?? 'Univents' },
+      { title: env.VITE_APP_TITLE ?? 'Univents' },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: env.VITE_APP_TITLE ?? 'Univents',
+      },
       { name: 'mobile-web-app-capable', content: 'yes' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
       { rel: 'manifest', href: '/site.webmanifest' },
-      { rel: 'icon', type: 'image/png', href: '/favicon-96x96.png', sizes: '96x96' },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        href: '/favicon-96x96.png',
+        sizes: '96x96',
+      },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
       { rel: 'shortcut icon', href: '/favicon.ico' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon.png',
+        sizes: '180x180',
+      },
     ],
   }),
   shellComponent: RootDocument,
-  notFoundComponent: NotFound
+  notFoundComponent: NotFound,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -72,14 +85,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               <AuthProvider
                 baseURL={env.VITE_AUTH_API_URL}
                 fallback={
-                  <div className='h-screen w-screen flex items-center justify-center'>
-                    <WaveSpinnerLoading text='Carregando...' />
+                  <div className="h-screen w-screen flex items-center justify-center">
+                    <WaveSpinnerLoading text="Carregando..." />
                   </div>
                 }
               >
                 <AuthContextUpdater>
-                  {children}
-                  <NavigationDock />
+                  <UploadQueueProvider>
+                    {children}
+                    <NavigationDock />
+                  </UploadQueueProvider>
                   <TanStackDevtools
                     config={{
                       position: 'bottom-right',
@@ -92,7 +107,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                       TanStackQueryDevtools,
                     ]}
                   />
-
                 </AuthContextUpdater>
               </AuthProvider>
             </ThemeProvider>
