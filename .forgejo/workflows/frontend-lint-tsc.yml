@@ -12,7 +12,7 @@ on:
 
 jobs:
   changes:
-    runs-on: debian
+    runs-on: ubuntu-latest
     outputs:
       identityx: ${{ steps.filter.outputs.identityx }}
       informd: ${{ steps.filter.outputs.informd }}
@@ -38,7 +38,7 @@ jobs:
   lint-tsc:
     needs: changes
     if: ${{ needs.changes.outputs.any == 'true' }}
-    runs-on: debian
+    runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v7
 
