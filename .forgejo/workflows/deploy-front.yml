@@ -10,6 +10,10 @@ on:
       - 'front/payssage/**'
       - 'front/univents/**'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
