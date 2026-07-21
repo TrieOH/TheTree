@@ -50,7 +50,7 @@ const getNavItems = (
   [
     { id: 'home', label: 'Home', icon: Home, href: '/' },
     { id: 'events', label: 'Evento', icon: Calendar, href: '/events' },
-    { id: 'admin', label: 'Admin', icon: LayoutGrid, href: '/admin/events' },
+    { id: 'admin', label: 'Admin', icon: LayoutGrid, href: '/admin/events', authRequired: true },
     {
       id: 'profile',
       label: 'Perfil',

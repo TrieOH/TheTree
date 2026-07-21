@@ -1,9 +1,14 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { requireAuth } from '@/features/auths/lib/route-guard'
 import { AdminLayout } from '@/features/admin/ui/admin-layout'
 
 export const Route = createFileRoute('/admin')({
-  beforeLoad: requireAuth,
+  beforeLoad: (args) =>
+    requireAuth(args, {
+      onRedirect: () => {
+        throw redirect({ to: '/' })
+      },
+    }),
   component: AdminLayoutWrapper,
 })
 
