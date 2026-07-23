@@ -5,9 +5,13 @@ on:
     tags:
       - '*/v*'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build-and-deploy:
-    runs-on: debian
+    runs-on: ubuntu-latest
     steps:
       - uses: https://code.forgejo.org/actions/checkout@v4
 
