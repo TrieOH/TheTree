@@ -7,9 +7,11 @@ import type { SortState } from '@trieoh/ui-base'
 import {
   allEventMembersQueryOptions,
   type EventMemberI,
+} from '@/features/events/api/members'
+import {
   useAddEventMemberMutation,
   useRemoveEventMemberMutation,
-} from '@/features/events/api/members'
+} from '@/features/events/api/mutations'
 import type {
   EventMemberCreateOutput,
   EventMemberRole,

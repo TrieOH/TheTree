@@ -1,10 +1,5 @@
 import { createClientOnlyFn } from '@tanstack/react-start'
-import {
-  queryOptions,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { queryOptions } from '@tanstack/react-query'
 import { authFetcher, authQueryFetcher } from '@/shared/lib/api/fetch'
 import { eventKeys } from './query-keys'
 import type { EventMemberRole } from '../model/member'
@@ -61,48 +56,3 @@ export const removeEventMemberFn = createClientOnlyFn(
     })
   },
 )
-
-export function useAddEventMemberMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: addEventMemberFn,
-    onSuccess: (res, input) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao adicionar membro')
-        return
-      }
-
-      queryClient.setQueryData<EventMemberI[]>(
-        eventKeys.members(input.eventId),
-        (old = []) => [
-          ...old.filter((member) => member.id !== res.data.id),
-          { ...res.data, email: input.email },
-        ],
-      )
-      toast.success('Membro adicionado com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-}
-
-export function useRemoveEventMemberMutation() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: removeEventMemberFn,
-    onSuccess: (res, input) => {
-      if (!res.success) {
-        toast.error(res.message || 'Erro ao remover membro')
-        return
-      }
-
-      queryClient.setQueryData<EventMemberI[]>(
-        eventKeys.members(input.eventId),
-        (old = []) => old.filter((member) => member.user_id !== input.userId),
-      )
-      toast.success('Membro removido com sucesso!')
-    },
-    onError: () => toast.error('Erro ao conectar com o servidor'),
-  })
-}
