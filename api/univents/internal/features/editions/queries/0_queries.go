@@ -9,7 +9,7 @@ import (
 )
 
 type Queries struct {
-	events   ports.EventsRepository
+	events   ports.EventRepo
 	editions ports.EditionsRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
@@ -17,7 +17,7 @@ type Queries struct {
 }
 
 func NewQueries(
-	events ports.EventsRepository,
+	events ports.EventRepo,
 	editions ports.EditionsRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,

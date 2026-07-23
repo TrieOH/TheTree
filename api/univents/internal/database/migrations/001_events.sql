@@ -9,7 +9,9 @@ CREATE TABLE events (
     full_name VARCHAR(256) NOT NULL,
     acronym VARCHAR(32),
     slug VARCHAR(32) NOT NULL,
-    description TEXT NULL,
+    description TEXT,
+
+    style JSONB,
 
     status TEXT NOT NULL DEFAULT 'draft',
     CONSTRAINT chk_event_status_valid CHECK (
@@ -26,9 +28,9 @@ CREATE TABLE events (
         (payssage_seller_id IS NULL) = (payssage_wallet_id IS NULL)
     ),
 
-    logo_url TEXT NULL,
-    banner_url TEXT NULL,
-    contact_email VARCHAR(256) NULL,
+    logo_url TEXT,
+    banner_url TEXT,
+    contact_email VARCHAR(256),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
@@ -49,6 +51,7 @@ CREATE TABLE event_members (
         role IN ('owner', 'admin', 'staff')
     ),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ,
     deleted_at TIMESTAMPTZ
 );
 
