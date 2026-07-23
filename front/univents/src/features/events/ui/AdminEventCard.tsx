@@ -8,7 +8,6 @@ import {
   Eye,
   MoreVertical,
   Pencil,
-  Sparkles,
   Users,
 } from 'lucide-react'
 import type { EventI, EventStatusI } from '@/features/events/model'
@@ -29,11 +28,14 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { toast } from 'sonner'
 
-const statusConfig: Record<EventStatusI, {
-  label: string
-  dot: string
-  pill: string
-}> = {
+const statusConfig: Record<
+  EventStatusI,
+  {
+    label: string
+    dot: string
+    pill: string
+  }
+> = {
   draft: {
     label: 'Rascunho',
     dot: 'bg-amber-500',
@@ -43,11 +45,6 @@ const statusConfig: Record<EventStatusI, {
     label: 'Ativo',
     dot: 'bg-emerald-500',
     pill: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
-  },
-  archived: {
-    label: 'Arquivado',
-    dot: 'bg-slate-500',
-    pill: 'bg-slate-500/10 text-slate-700 border-slate-500/20',
   },
   discontinued: {
     label: 'Descontinuado',
@@ -59,7 +56,7 @@ const statusConfig: Record<EventStatusI, {
 interface AdminEventCardProps {
   event: EventI
   index?: number
-  onEdit: (event: EventI) => void
+  onEdit?: (event: EventI) => void
   onPublish: (event: EventI) => void
 }
 
@@ -73,30 +70,33 @@ function MenuItems({
 }: {
   event: EventI
   isContext?: boolean
-  onEdit: () => void
+  onEdit?: () => void
   onPublish: () => void
   onOpenEditions: () => void
   onOpenDashboard: () => void
 }) {
   const Item = isContext ? ContextMenuItem : DropdownMenuItem
   const Separator = isContext ? ContextMenuSeparator : DropdownMenuSeparator
-  const stop = (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    action()
-  }
+  const stop =
+    (action: () => void) => (e: React.MouseEvent | React.KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      action()
+    }
   const copyLink = () => {
     const url = `${window.location.origin}/events/${event.id}`
     void navigator.clipboard.writeText(url)
-    toast.success("Link copied to clipboard");
+    toast.success('Link copied to clipboard')
   }
 
   return (
     <>
-      <Item onClick={stop(onEdit)}>
-        <Pencil className="size-4" />
-        <span>Editar</span>
-      </Item>
+      {onEdit ? (
+        <Item onClick={stop(onEdit)}>
+          <Pencil className="size-4" />
+          <span>Editar</span>
+        </Item>
+      ) : null}
       <Item onClick={stop(onOpenDashboard)}>
         <ArrowUpRight className="size-4" />
         <span>Ver dashboard</span>
@@ -130,7 +130,7 @@ export default function AdminEventCard({
   const navigate = useNavigate()
   const status = statusConfig[event.status]
   const hasVisual = Boolean(event.banner_url ?? event.logo_url)
-  const handleEdit = () => onEdit(event)
+  const handleEdit = () => onEdit?.(event)
   const handlePublish = () => onPublish(event)
   const handleOpenDashboard = () => {
     void navigate({
@@ -152,7 +152,11 @@ export default function AdminEventCard({
           <motion.article
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+            transition={{
+              delay: index * 0.05,
+              duration: 0.35,
+              ease: [0.25, 0.1, 0.25, 1],
+            }}
             className={cn(
               'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left',
               'ring-1 ring-foreground/10 shadow-xs',
@@ -163,11 +167,12 @@ export default function AdminEventCard({
             )}
             role="button"
             tabIndex={0}
-            onClick={handleEdit}
+            onClick={onEdit ? handleEdit : handleOpenDashboard}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                handleEdit()
+                if (onEdit) handleEdit()
+                else handleOpenDashboard()
               }
             }}
           >
@@ -177,8 +182,8 @@ export default function AdminEventCard({
                   src={event.banner_url ?? event.logo_url ?? ''}
                   alt="Representação Visual do Evento"
                   className={cn(
-                    "h-full w-full object-cover transition-transform",
-                    "duration-700 ease-out group-hover:scale-105",
+                    'h-full w-full object-cover transition-transform',
+                    'duration-700 ease-out group-hover:scale-105',
                   )}
                   loading={index < 4 ? 'eager' : 'lazy'}
                 />
@@ -186,27 +191,22 @@ export default function AdminEventCard({
                 <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted via-background to-muted/40">
                   <div className="flex size-20 items-center justify-center rounded-full border border-border/70 bg-background/80 shadow-sm backdrop-blur-sm">
                     <span className="text-2xl font-semibold text-muted-foreground/40">
-                      {event.acronym ?? event.name.charAt(0)}
+                      {event.acronym ?? event.full_name.charAt(0)}
                     </span>
                   </div>
                 </div>
               )}
 
               <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-                <span className={cn(
-                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
-                  status.pill,
-                )}>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-sm',
+                    status.pill,
+                  )}
+                >
                   <span className={cn('size-1.5 rounded-full', status.dot)} />
                   {status.label}
                 </span>
-
-                {event.is_series && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium text-foreground backdrop-blur-sm">
-                    <Sparkles className="size-3.5 text-primary" />
-                    Série
-                  </span>
-                )}
               </div>
 
               <div className="absolute right-4 top-4">
@@ -221,7 +221,7 @@ export default function AdminEventCard({
                           'bg-background/85 text-foreground shadow-sm backdrop-blur-sm',
                           'transition-colors hover:bg-background',
                         )}
-                        aria-label={`Abrir ações de ${event.name}`}
+                        aria-label={`Abrir ações de ${event.full_name}`}
                       >
                         <MoreVertical className="size-4" />
                       </button>
@@ -230,7 +230,7 @@ export default function AdminEventCard({
                   <DropdownMenuContent align="end" className="w-56">
                     <MenuItems
                       event={event}
-                      onEdit={handleEdit}
+                      onEdit={onEdit ? handleEdit : undefined}
                       onPublish={handlePublish}
                       onOpenDashboard={handleOpenDashboard}
                       onOpenEditions={handleOpenEditions}
@@ -242,11 +242,11 @@ export default function AdminEventCard({
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                 <div className="min-w-0 space-y-1">
                   <h3 className="line-clamp-2 text-balance text-lg font-semibold leading-snug text-foreground transition-colors duration-300 group-hover:text-primary sm:text-xl">
-                    {event.name}
+                    {event.full_name}
                   </h3>
-                  {event.tagline && (
+                  {event.description && (
                     <p className="line-clamp-2 max-w-2xl text-xs text-muted-foreground">
-                      {event.tagline}
+                      {event.description}
                     </p>
                   )}
                 </div>
@@ -258,11 +258,16 @@ export default function AdminEventCard({
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <CalendarDays className="size-3.5" />
-                    {event.editions_count} {event.editions_count === 1 ? 'edição' : 'edições'}
+                    Ver edições
                   </span>
-                  <span className="inline-flex items-center gap-1.5 truncate">
-                    <Users className="size-3.5" />
-                    {event.contact_email}
+                  <span
+                    className="inline-flex min-w-0 items-center gap-1.5"
+                    title={event.contact_email ?? 'Sem contato cadastrado'}
+                  >
+                    <Users className="size-3.5 shrink-0" />
+                    <span className="truncate">
+                      {event.contact_email ?? 'Sem contato'}
+                    </span>
                   </span>
                 </div>
                 <code className="block truncate text-[11px] font-mono text-muted-foreground/80">
@@ -285,20 +290,18 @@ export default function AdminEventCard({
             </div>
           </motion.article>
         }
-      >
-      </ContextMenuTrigger>
+      ></ContextMenuTrigger>
 
       <ContextMenuContent align="end" className="w-56">
         <MenuItems
           event={event}
           isContext
-          onEdit={handleEdit}
+          onEdit={onEdit ? handleEdit : undefined}
           onPublish={handlePublish}
           onOpenDashboard={handleOpenDashboard}
           onOpenEditions={handleOpenEditions}
         />
       </ContextMenuContent>
-
     </ContextMenu>
   )
 }

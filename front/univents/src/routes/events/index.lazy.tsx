@@ -5,7 +5,10 @@ import { motion } from 'motion/react'
 import { useQuery } from '@tanstack/react-query'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { CreateEventCard } from '@/features/events/ui/CreateEventCard'
-import { allOwnEventsQueryOptions, allPublicEventsQueryOptions } from '@/features/events/api'
+import {
+  allOwnEventsQueryOptions,
+  allPublicEventsQueryOptions,
+} from '@/features/events/api'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/shadcn/button'
 import {
@@ -17,8 +20,10 @@ import {
 } from '@/shared/ui/shadcn/drawer'
 import { FABMenu } from '@/widgets/ui/fab-menu'
 import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
-import type { EventI } from '@/features/events/model'
-import { useCreateEventMutation, usePatchEventMutation, usePublishEventMutation } from '@/features/events/api/mutations'
+import {
+  useCreateEventMutation,
+  usePublishEventMutation,
+} from '@/features/events/api/mutations'
 
 export const Route = createLazyFileRoute('/events/')({
   component: EventsPage,
@@ -34,21 +39,22 @@ const editFilterOptions = [
   { value: 'draft', label: 'Rascunhos' },
 ] as const
 
-type FilterValue = (typeof filterOptions)[number]['value'] | (typeof editFilterOptions)[number]['value']
+type FilterValue =
+  | (typeof filterOptions)[number]['value']
+  | (typeof editFilterOptions)[number]['value']
 
 function EventsPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [inplaceEditEnabled, _setInplaceEditEnabled] = useState(true)
   const [filter, setFilter] = useState<FilterValue>('all')
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [modalState, setModalState] = useState<{ open: boolean; event?: EventI }>({ open: false });
+  const [modalOpen, setModalOpen] = useState(false)
   const createMutation = useCreateEventMutation()
-  const patchMutation = usePatchEventMutation()
   const publishMutation = usePublishEventMutation()
 
   const { data: publicEvents = [] } = useQuery({
     ...allPublicEventsQueryOptions(),
-    enabled: !isEditMode
+    enabled: !isEditMode,
   })
 
   const { data: ownEvents, isFetching: isFetchingOwnEvents } = useQuery({
@@ -57,19 +63,22 @@ function EventsPage() {
   })
 
   const events = isEditMode
-    ? (isFetchingOwnEvents ? publicEvents : (ownEvents ?? publicEvents))
+    ? isFetchingOwnEvents
+      ? publicEvents
+      : (ownEvents ?? publicEvents)
     : publicEvents
 
-  const sortedEvents = [...events].sort((a, b) => (
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ))
+  const sortedEvents = [...events].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  )
 
   const visibleFilters = isEditMode
     ? [...filterOptions, ...editFilterOptions]
     : filterOptions
 
   const filteredEvents = sortedEvents.filter((event) => {
-    if (filter === 'series') return event.is_series
+    if (filter === 'series') return false
     if (filter === 'active') return event.status === 'active'
     if (filter === 'draft') return event.status === 'draft'
     return true
@@ -87,9 +96,11 @@ function EventsPage() {
       const next = !current
 
       if (!next) {
-        setFilter((currentFilter) => (
-          currentFilter === 'active' || currentFilter === 'draft' ? 'all' : currentFilter
-        ))
+        setFilter((currentFilter) =>
+          currentFilter === 'active' || currentFilter === 'draft'
+            ? 'all'
+            : currentFilter,
+        )
       }
 
       return next
@@ -115,16 +126,22 @@ function EventsPage() {
                 <Button
                   key={option.value}
                   type="button"
-                  onClick={() => { setFilter(option.value) }}
+                  onClick={() => {
+                    setFilter(option.value)
+                  }}
                   className={cn(
-                    "px-3 py-1.5 text-sm rounded-md transition-all whitespace-nowrap",
+                    'px-3 py-1.5 text-sm rounded-md transition-all whitespace-nowrap',
                     filter === option.value
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
                   )}
                   variant="ghost"
                 >
-                  {option.label === 'Todos os eventos' ? 'Todos' : option.label === 'Apenas séries' ? 'Séries' : option.label}
+                  {option.label === 'Todos os eventos'
+                    ? 'Todos'
+                    : option.label === 'Apenas séries'
+                      ? 'Séries'
+                      : option.label}
                 </Button>
               ))}
             </nav>
@@ -137,9 +154,9 @@ function EventsPage() {
                     <Button
                       type="button"
                       className={cn(
-                        "flex items-center justify-center w-9 h-9 rounded-lg transition-colors",
-                        "hover:bg-muted active:bg-muted/60",
-                        isFilterOpen && "bg-muted"
+                        'flex items-center justify-center w-9 h-9 rounded-lg transition-colors',
+                        'hover:bg-muted active:bg-muted/60',
+                        isFilterOpen && 'bg-muted',
                       )}
                       aria-label="Filtrar eventos"
                       variant="ghost"
@@ -160,12 +177,14 @@ function EventsPage() {
                       <Button
                         key={option.value}
                         type="button"
-                        onClick={() => { handleFilterSelect(option.value) }}
+                        onClick={() => {
+                          handleFilterSelect(option.value)
+                        }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors",
+                          'w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm transition-colors',
                           filter === option.value
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-foreground hover:bg-muted"
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-foreground hover:bg-muted',
                         )}
                         variant="ghost"
                       >
@@ -191,17 +210,17 @@ function EventsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 md:gap-8">
-          {isEditMode && (
-            <CreateEventCard onClick={() => setModalState({ open: true, event: undefined })} />
-          )}
+          {isEditMode && <CreateEventCard onClick={() => setModalOpen(true)} />}
           {filteredEvents.map((eventItem, idx) => (
             <EventCard
               key={eventItem.id}
               event={eventItem}
               index={idx}
-              showEditAction={isEditMode}
-              onPublish={isEditMode ? (selectedEvent) => publishMutation.mutate(selectedEvent.id) : undefined}
-              onEdit={() => { setModalState({ open: true, event: eventItem }) }}
+              onPublish={
+                isEditMode
+                  ? (selectedEvent) => publishMutation.mutate(selectedEvent.id)
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -222,25 +241,10 @@ function EventsPage() {
           </div>
         )}
         <ManageEventModal
-          key={modalState.event?.id ?? "event-create"}
-          open={modalState.open}
-          onOpenChange={(open) => {
-            if (open) {
-              setModalState((prev) => ({ ...prev, open }))
-              return
-            }
-
-            setModalState({ open: false, event: undefined })
-          }}
-          event={modalState.event}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
           onCreate={(values) =>
             createMutation.mutateAsync(values).then(
-              (res) => (res.success ? res.data : false),
-              () => false,
-            )
-          }
-          onUpdate={(id, values) =>
-            patchMutation.mutateAsync({ id, data: values }).then(
               (res) => (res.success ? res.data : false),
               () => false,
             )
@@ -254,7 +258,9 @@ function EventsPage() {
           icon={Settings}
           onClick={handleEditToggle}
           active={isEditMode}
-          ariaLabel={isEditMode ? 'Sair do modo de edição' : 'Ativar modo de edição'}
+          ariaLabel={
+            isEditMode ? 'Sair do modo de edição' : 'Ativar modo de edição'
+          }
         />
       )}
     </div>

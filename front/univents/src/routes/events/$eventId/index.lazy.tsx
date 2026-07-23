@@ -1,7 +1,13 @@
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import {
-  Share2, ArrowRight,
-  Calendar, Mail, Link2, Globe, X as XIcon, Camera
+  Share2,
+  ArrowRight,
+  Calendar,
+  Mail,
+  Link2,
+  Globe,
+  X as XIcon,
+  Camera,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
@@ -10,7 +16,11 @@ import { Badge } from '@/shared/ui/shadcn/badge'
 import { cn } from '@/shared/lib/utils'
 import { parseDatetimeLocal } from '@/shared/lib/date'
 import { publicEventQueryOptions } from '@/features/events/api'
-import { InfoRow, SectionCard, SocialChip } from '@/features/events/ui/EventDetailComponents'
+import {
+  InfoRow,
+  SectionCard,
+  SocialChip,
+} from '@/features/events/ui/EventDetailComponents'
 
 export const Route = createLazyFileRoute('/events/$eventId/')({
   component: RouteComponent,
@@ -35,14 +45,18 @@ const statusLabels = {
 function RouteComponent() {
   const { eventId } = Route.useParams()
 
-  const { data: event, isLoading, error } = useQuery(publicEventQueryOptions(eventId))
+  const {
+    data: event,
+    isLoading,
+    error,
+  } = useQuery(publicEventQueryOptions(eventId))
 
   const handleShare = async () => {
     if (!event) return
     const url = window.location.href
     try {
       if (typeof navigator.share === 'function') {
-        await navigator.share({ title: event.name, url })
+        await navigator.share({ title: event.full_name, url })
         return
       }
       await navigator.clipboard.writeText(url)
@@ -64,20 +78,30 @@ function RouteComponent() {
     return (
       <div className="flex h-[80vh] w-full flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Erro ao carregar evento</p>
-        <Link to="/events" className="text-primary hover:underline">Voltar para eventos</Link>
+        <Link to="/events" className="text-primary hover:underline">
+          Voltar para eventos
+        </Link>
       </div>
     )
   }
 
   const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
 
-  const logoFallbackText = event.acronym
-    ?? (event.name ? getInitials(event.name) : '')
+  const logoFallbackText =
+    event.acronym ?? (event.full_name ? getInitials(event.full_name) : '')
 
   const logoFontSize =
-    logoFallbackText.length <= 2 ? 'text-lg' :
-      logoFallbackText.length === 3 ? 'text-sm' : 'text-xs'
+    logoFallbackText.length <= 2
+      ? 'text-lg'
+      : logoFallbackText.length === 3
+        ? 'text-sm'
+        : 'text-xs'
 
   const hasSocialLinks = !!(
     event.social_links?.website ??
@@ -93,7 +117,7 @@ function RouteComponent() {
           {event.banner_url ? (
             <img
               src={event.banner_url}
-              alt={event.name}
+              alt={event.full_name}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -113,14 +137,16 @@ function RouteComponent() {
                 {event.logo_url ? (
                   <img
                     src={event.logo_url}
-                    alt={event.acronym ?? event.name}
+                    alt={event.acronym ?? event.full_name}
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className={cn(
-                    'text-primary-foreground font-bold leading-none tracking-tight px-1 text-center break-all',
-                    logoFontSize
-                  )}>
+                  <span
+                    className={cn(
+                      'text-primary-foreground font-bold leading-none tracking-tight px-1 text-center break-all',
+                      logoFontSize,
+                    )}
+                  >
                     {logoFallbackText}
                   </span>
                 )}
@@ -139,7 +165,10 @@ function RouteComponent() {
                   </Button>
                   <Badge
                     variant="outline"
-                    className={cn('text-xs font-medium whitespace-nowrap', statusColors[event.status])}
+                    className={cn(
+                      'text-xs font-medium whitespace-nowrap',
+                      statusColors[event.status],
+                    )}
                   >
                     {statusLabels[event.status]}
                   </Badge>
@@ -154,7 +183,7 @@ function RouteComponent() {
 
             <div className="px-4 pt-2 pb-4 space-y-1">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
-                {event.name}
+                {event.full_name}
               </h1>
 
               {/* Acronym + Tagline */}
@@ -166,7 +195,9 @@ function RouteComponent() {
                     </span>
                   )}
                   {event.acronym && event.tagline && (
-                    <span className="text-muted-foreground/40 select-none">·</span>
+                    <span className="text-muted-foreground/40 select-none">
+                      ·
+                    </span>
                   )}
                   {event.tagline && (
                     <span className="text-muted-foreground italic">
@@ -178,7 +209,11 @@ function RouteComponent() {
 
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5 shrink-0" />
-                <span>{parseDatetimeLocal(event.created_at).toLocaleDateString('pt-BR')}</span>
+                <span>
+                  {parseDatetimeLocal(event.created_at).toLocaleDateString(
+                    'pt-BR',
+                  )}
+                </span>
               </div>
 
               <div className="pt-2">
@@ -253,20 +288,38 @@ function RouteComponent() {
                     )}
                   >
                     <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate max-w-50">{event.contact_email}</span>
+                    <span className="truncate max-w-50">
+                      {event.contact_email}
+                    </span>
                   </a>
                 )}
                 {event.social_links?.website && (
-                  <SocialChip href={event.social_links.website} label="Website" icon={<Globe className="h-3.5 w-3.5" />} />
+                  <SocialChip
+                    href={event.social_links.website}
+                    label="Website"
+                    icon={<Globe className="h-3.5 w-3.5" />}
+                  />
                 )}
                 {event.social_links?.twitter && (
-                  <SocialChip href={event.social_links.twitter} label="Twitter" icon={<XIcon className="h-3.5 w-3.5" />} />
+                  <SocialChip
+                    href={event.social_links.twitter}
+                    label="Twitter"
+                    icon={<XIcon className="h-3.5 w-3.5" />}
+                  />
                 )}
                 {event.social_links?.instagram && (
-                  <SocialChip href={event.social_links.instagram} label="Instagram" icon={<Camera className="h-3.5 w-3.5" />} />
+                  <SocialChip
+                    href={event.social_links.instagram}
+                    label="Instagram"
+                    icon={<Camera className="h-3.5 w-3.5" />}
+                  />
                 )}
                 {event.social_links?.linkedin && (
-                  <SocialChip href={event.social_links.linkedin} label="LinkedIn" icon={<Link2 className="h-3.5 w-3.5" />} />
+                  <SocialChip
+                    href={event.social_links.linkedin}
+                    label="LinkedIn"
+                    icon={<Link2 className="h-3.5 w-3.5" />}
+                  />
                 )}
               </div>
             </SectionCard>

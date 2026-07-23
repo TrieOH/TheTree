@@ -9,7 +9,6 @@ import {
   CircleAlert,
   Eye,
   LayoutGrid,
-  Sparkles,
   ChevronRight,
   CalendarClock,
   CalendarX,
@@ -28,13 +27,9 @@ import {
   CardTitle,
 } from '@/shared/ui/shadcn/card'
 import { EmptyState } from '@trieoh/ui-base'
-import { ManageEventModal } from '@/features/events/ui/ManageEventModal'
 import { AlertModal } from '@/widgets/ui/alert-modal'
 import { allOwnEventsQueryOptions } from '@/features/events/api'
-import {
-  usePatchEventMutation,
-  usePublishEventMutation,
-} from '@/features/events/api/mutations'
+import { usePublishEventMutation } from '@/features/events/api/mutations'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import { cn } from '@/shared/lib/utils'
 
@@ -48,13 +43,18 @@ function QuickAction({
   children: ReactNode
   disabled?: boolean
 } & (
-    | { to: '/events/$eventId' | '/admin/events/$eventId/editions'; params: { eventId: string }; onClick?: never }
-    | { to?: never; params?: never; onClick: () => void }
-  )) {
+  | {
+      to: '/events/$eventId' | '/admin/events/$eventId/editions'
+      params: { eventId: string }
+      onClick?: never
+    }
+  | { to?: never; params?: never; onClick: () => void }
+)) {
   const baseClassName = cn(
     'flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-muted/15 px-4 py-4 text-left',
     'transition-colors hover:border-border hover:bg-muted/30',
-    disabled && 'cursor-not-allowed opacity-60 hover:border-border/70 hover:bg-muted/15',
+    disabled &&
+      'cursor-not-allowed opacity-60 hover:border-border/70 hover:bg-muted/15',
   )
 
   if (to) {
@@ -66,7 +66,12 @@ function QuickAction({
   }
 
   return (
-    <button type="button" className={baseClassName} onClick={onClick} disabled={disabled}>
+    <button
+      type="button"
+      className={baseClassName}
+      onClick={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   )
@@ -123,8 +128,9 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/')({
 function EventOverviewRoute() {
   const { eventId } = Route.useParams()
   const { data: events = [] } = useQuery(allOwnEventsQueryOptions())
-  const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
-  const [editModalOpen, setEditModalOpen] = useState(false)
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  )
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
   const event = events.find((item) => item.id === eventId) ?? null
   const latestEdition = editions[0] ?? null
@@ -132,11 +138,12 @@ function EventOverviewRoute() {
   const status = event ? statusConfig[event.status] : statusConfig.draft
 
   const publishEventMutation = usePublishEventMutation()
-  const patchMutation = usePatchEventMutation()
 
   const copyLink = () => {
     if (!event) return
-    void navigator.clipboard.writeText(`${window.location.origin}/events/${event.id}`)
+    void navigator.clipboard.writeText(
+      `${window.location.origin}/events/${event.id}`,
+    )
     toast.success('Link copiado')
   }
 
@@ -148,12 +155,16 @@ function EventOverviewRoute() {
   const metrics = [
     {
       label: 'Criado em',
-      value: event ? format(new Date(event.created_at), 'dd MMM yyyy', { locale: ptBR }) : '—',
+      value: event
+        ? format(new Date(event.created_at), 'dd MMM yyyy', { locale: ptBR })
+        : '—',
       hint: 'Data de criação do evento',
     },
     {
       label: 'Atualizado em',
-      value: event ? format(new Date(event.updated_at), 'dd MMM yyyy', { locale: ptBR }) : '—',
+      value: event?.updated_at
+        ? format(new Date(event.updated_at), 'dd MMM yyyy', { locale: ptBR })
+        : '—',
       hint: 'Última alteração registrada',
     },
     {
@@ -162,7 +173,8 @@ function EventOverviewRoute() {
       hint: 'E-mail principal do evento',
     },
   ]
-  const heroDescription = event?.tagline ?? event?.description ?? 'Sem descrição cadastrada para este evento.'
+  const heroDescription =
+    event?.description ?? 'Sem descrição cadastrada para este evento.'
   const recentEditionDate = latestEdition
     ? format(new Date(latestEdition.starts_at), 'dd MMM yyyy', { locale: ptBR })
     : 'Sem edição recente'
@@ -172,8 +184,8 @@ function EventOverviewRoute() {
       done: Boolean(event?.banner_url || event?.logo_url),
     },
     {
-      label: 'Descrição ou tagline preenchida',
-      done: Boolean(event?.tagline || event?.description),
+      label: 'Descrição preenchida',
+      done: Boolean(event?.description),
     },
     {
       label: 'Slug público disponível',
@@ -204,17 +216,11 @@ function EventOverviewRoute() {
                   <LayoutGrid className="size-3.5" />
                   Overview
                 </Badge>
-                {event?.is_series && (
-                  <Badge variant="outline" className="rounded-full px-3">
-                    <Sparkles className="size-3.5" />
-                    Série
-                  </Badge>
-                )}
               </div>
 
               <div className="space-y-3">
                 <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  {event?.name ?? 'Evento'}
+                  {event?.full_name ?? 'Evento'}
                 </h1>
                 <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
                   {heroDescription}
@@ -230,19 +236,14 @@ function EventOverviewRoute() {
                   <Eye className="size-3.5" />
                   Link público
                 </span>
-                <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1', status.className)}>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+                    status.className,
+                  )}
+                >
                   <span className={cn('size-1.5 rounded-full', status.dot)} />
                   {status.label}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                  <LayoutGrid className="size-3.5" />
-                  {event?.editions_count ?? '—'} edições
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                  {event?.is_series ? 'Série' : 'Único'}
                 </span>
               </div>
             </div>
@@ -251,13 +252,18 @@ function EventOverviewRoute() {
 
         <section className="grid gap-4 md:grid-cols-3">
           {metrics.map((metric) => (
-            <Card key={metric.label} className="border-border/60 bg-card/95 shadow-sm transition-shadow hover:shadow-md">
+            <Card
+              key={metric.label}
+              className="border-border/60 bg-card/95 shadow-sm transition-shadow hover:shadow-md"
+            >
               <CardHeader className="pb-2">
                 <CardDescription className="flex items-center gap-2 text-xs uppercase tracking-[0.22em]">
                   <span className="size-1.5 rounded-full bg-primary/60" />
                   {metric.label}
                 </CardDescription>
-                <CardTitle className="text-2xl font-semibold tracking-tight">{metric.value}</CardTitle>
+                <CardTitle className="text-2xl font-semibold tracking-tight">
+                  {metric.value}
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-xs text-muted-foreground">{metric.hint}</p>
@@ -281,8 +287,15 @@ function EventOverviewRoute() {
                   className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/15 px-4 py-3.5"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={cn('size-2 rounded-full', item.done ? 'bg-emerald-500' : 'bg-amber-500')} />
-                    <span className="text-sm text-foreground">{item.label}</span>
+                    <div
+                      className={cn(
+                        'size-2 rounded-full',
+                        item.done ? 'bg-emerald-500' : 'bg-amber-500',
+                      )}
+                    />
+                    <span className="text-sm text-foreground">
+                      {item.label}
+                    </span>
                   </div>
                   {item.done ? (
                     <CheckCircle2 className="size-4 text-emerald-500/70" />
@@ -308,7 +321,10 @@ function EventOverviewRoute() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className="rounded-full px-2.5">
+                          <Badge
+                            variant="outline"
+                            className="rounded-full px-2.5"
+                          >
                             <CalendarClock className="size-3.5" />
                             Última edição
                           </Badge>
@@ -317,7 +333,8 @@ function EventOverviewRoute() {
                             {editionMonetaryLabel[latestEdition.monetary_type]}
                           </span>
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                            {editionStatusHint[latestEdition.status] ?? 'Status interno da edição'}
+                            {editionStatusHint[latestEdition.status] ??
+                              'Status interno da edição'}
                           </span>
                         </div>
 
@@ -326,7 +343,9 @@ function EventOverviewRoute() {
                             {latestEdition.edition_name}
                           </h3>
                           <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-                            {latestEdition.tagline ?? latestEdition.description ?? latestEdition.location_name}
+                            {latestEdition.tagline ??
+                              latestEdition.description ??
+                              latestEdition.location_name}
                           </p>
                         </div>
                       </div>
@@ -355,7 +374,8 @@ function EventOverviewRoute() {
                         Frequência
                       </p>
                       <p className="mt-1.5 text-sm font-semibold text-foreground">
-                        {editionTypeLabel[latestEdition.type] ?? latestEdition.type}
+                        {editionTypeLabel[latestEdition.type] ??
+                          latestEdition.type}
                       </p>
                     </div>
                   </div>
@@ -365,7 +385,8 @@ function EventOverviewRoute() {
                       <span className="size-1.5 rounded-full bg-primary/70" />
                       {latestEdition.timezone}
                     </span>
-                    {latestEdition.organizer_name || latestEdition.contact_email ? (
+                    {latestEdition.organizer_name ||
+                    latestEdition.contact_email ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
                         <span className="size-1.5 rounded-full bg-primary/70" />
                         {latestEdition.organizer_name
@@ -401,11 +422,6 @@ function EventOverviewRoute() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-3">
-            <QuickAction onClick={() => setEditModalOpen(true)}>
-              <span className="text-sm font-medium text-foreground">Editar evento</span>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </QuickAction>
-
             {!isPublished && (
               <Button
                 type="button"
@@ -414,43 +430,43 @@ function EventOverviewRoute() {
                 onClick={() => setPublishConfirmOpen(true)}
                 disabled={publishEventMutation.isPending || !event}
               >
-                <span className="text-sm font-medium text-foreground">Publicar evento</span>
+                <span className="text-sm font-medium text-foreground">
+                  Publicar evento
+                </span>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </Button>
             )}
 
-            <QuickAction to="/admin/events/$eventId/editions" params={{ eventId }}>
-              <span className="text-sm font-medium text-foreground">Criar edição</span>
+            <QuickAction
+              to="/admin/events/$eventId/editions"
+              params={{ eventId }}
+            >
+              <span className="text-sm font-medium text-foreground">
+                Criar edição
+              </span>
               <ChevronRight className="size-4 text-muted-foreground" />
             </QuickAction>
 
             {isPublished && (
               <QuickAction onClick={copyLink} disabled={!event}>
-                <span className="text-sm font-medium text-foreground">Copiar link</span>
+                <span className="text-sm font-medium text-foreground">
+                  Copiar link
+                </span>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </QuickAction>
             )}
 
             {isPublished && (
               <QuickAction to="/events/$eventId" params={{ eventId }}>
-                <span className="text-sm font-medium text-foreground">Abrir painel público</span>
+                <span className="text-sm font-medium text-foreground">
+                  Abrir painel público
+                </span>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </QuickAction>
             )}
           </CardContent>
         </Card>
       </div>
-
-      <ManageEventModal
-        key={event?.id ?? 'event-overview-edit'}
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        event={event ?? undefined}
-        onUpdate={async (id, values) => {
-          const res = await patchMutation.mutateAsync({ id, data: values })
-          return res.success ? res.data : null
-        }}
-      />
 
       <AlertModal
         open={publishConfirmOpen}

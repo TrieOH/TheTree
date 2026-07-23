@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { useNavigate } from '@tanstack/react-router'
-import { ArrowUpRight, Eye, Pencil } from 'lucide-react'
+import { ArrowUpRight, Eye } from 'lucide-react'
 import type { EventI } from '../model'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/shadcn/button'
@@ -9,83 +9,76 @@ interface EventCardProps {
   event: EventI
   index?: number
   className?: string
-  onEdit?: (event: EventI) => void
   onPublish?: (event: EventI) => void
-  showEditAction?: boolean
 }
 
 export function EventCard({
   event,
   index = 0,
   className,
-  onEdit,
   onPublish,
-  showEditAction = false,
 }: EventCardProps) {
   const navigate = useNavigate()
 
   const handleClick = () => {
     void navigate({
       to: '/events/$eventId',
-      params: { eventId: event.id }
+      params: { eventId: event.id },
     })
   }
 
   const hasVisual = Boolean(event.banner_url ?? event.logo_url)
 
-  const createdDate = new Date(event.created_at).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).replace('.', '')
+  const createdDate = new Date(event.created_at)
+    .toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    .replace('.', '')
 
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{
+        delay: index * 0.06,
+        duration: 0.4,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
       onClick={handleClick}
       className={cn(
-        "group relative cursor-pointer min-w-0",
-        "bg-card rounded-2xl overflow-hidden",
-        "border border-transparent hover:border-border",
-        "transition-all duration-300 ease-out",
-        "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
-        showEditAction && "hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 hover:rotate-[0.35deg]",
-        !showEditAction && "hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1",
-        className
+        'group relative cursor-pointer min-w-0',
+        'bg-card rounded-2xl overflow-hidden',
+        'border border-transparent hover:border-border',
+        'transition-all duration-300 ease-out',
+        'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
+        'hover:shadow-lg hover:shadow-foreground/5 hover:-translate-y-1',
+        className,
       )}
       role="link"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          handleClick();
+        if (e.key === 'Enter') {
+          handleClick()
         }
       }}
     >
       <div className="overflow-hidden relative bg-muted aspect-4/3">
         {hasVisual ? (
           <img
-            src={event.banner_url ?? event.logo_url ?? ""}
+            src={event.banner_url ?? event.logo_url ?? ''}
             alt=""
             className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            loading={index < 4 ? "eager" : "lazy"}
+            loading={index < 4 ? 'eager' : 'lazy'}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-muted to-muted/50">
             <div className="w-20 h-20 rounded-full border-2 border-dashed border-border/50 flex items-center justify-center">
               <span className="text-2xl font-semibold text-muted-foreground/30">
-                {event.acronym ?? event.name.charAt(0)}
+                {event.acronym ?? event.full_name.charAt(0)}
               </span>
             </div>
-          </div>
-        )}
-
-        {event.is_series && (
-          <div className="absolute top-3 left-3 md:top-4 md:left-4">
-            <span className="bg-background/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-medium text-foreground">
-              Série · {event.editions_count} edições
-            </span>
           </div>
         )}
 
@@ -94,28 +87,6 @@ export function EventCard({
             <ArrowUpRight className="w-4 h-4 text-foreground" />
           </div>
         </div>
-
-        {showEditAction && onEdit && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit(event)
-            }}
-            className={cn(
-              'absolute inset-0 flex items-center justify-center',
-              'bg-foreground/0 opacity-0 transition-all duration-300',
-              'group-hover:bg-foreground/20 group-hover:opacity-100',
-              'focus:outline-none focus-visible:outline-none focus-visible:ring-0',
-              'focus-visible:bg-foreground/20 focus-visible:opacity-100',
-            )}
-            aria-label={`Editar ${event.name}`}
-          >
-            <span className="flex size-14 items-center justify-center rounded-full border border-white/20 bg-background/80 text-foreground shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:scale-100 scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0">
-              <Pencil className="size-6" />
-            </span>
-          </button>
-        )}
       </div>
 
       <div className="p-4 md:p-5 space-y-2.5">
@@ -123,7 +94,7 @@ export function EventCard({
           <div className="text-xs text-muted-foreground">
             Criado em {createdDate}
           </div>
-          {event.status === "draft" && onPublish ? (
+          {event.status === 'draft' && onPublish ? (
             <Button
               type="button"
               size="sm"
@@ -141,12 +112,12 @@ export function EventCard({
         </div>
 
         <h3 className="font-medium text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-300 text-base md:text-lg">
-          {event.name}
+          {event.full_name}
         </h3>
 
-        {event.tagline && (
+        {event.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {event.tagline}
+            {event.description}
           </p>
         )}
       </div>
