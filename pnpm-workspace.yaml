@@ -62,7 +62,7 @@ catalog:
   '@base-ui/react': ^1.6.0
 
 overrides:
-  dompurify: ">=3.4.11"
+  dompurify: ">=3.4.12"
   esbuild: ">=0.28.1"
   "@opentelemetry/core": ">=2.8.0"
 
@@ -85,6 +85,7 @@ onlyBuiltDependencies:
   - sharp
   - unrs-resolver
 allowBuilds:
+  canvas: true
   core-js: true
   esbuild: true
   msw: true

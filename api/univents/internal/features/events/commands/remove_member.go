@@ -3,15 +3,14 @@ package commands
 import (
 	"context"
 	idx "sdk/identityx"
-	"univents/internal/shared/errx"
 	"univents/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/google/uuid"
 )
 
-func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "EventService.Publish")
+func (c *Commands) RemoveMember(ctx context.Context, eventID uuid.UUID, payload models.RemoveMemberRequest) error {
+	ctx, span := c.tracer.Start(ctx, "RemoveMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -24,10 +23,6 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 		return err
 	}
 
-	if event.Status != models.EventStatusDraft {
-		return errx.Invalid("event").SetMessage("cannot publish non draft event")
-	}
-
 	if event.OwnerID != ident.Sub.ID {
 		member, err := c.events.GetMember(ctx, event.ID, ident.Sub.ID)
 		if err != nil {
@@ -38,5 +33,10 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 		}
 	}
 
-	return c.events.Publish(ctx, eventID)
+	actor, err := c.idx.Actors.GetByEmail(ctx, payload.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.events.RemoveEventMember(ctx, eventID, actor.ID)
 }

@@ -16,12 +16,16 @@ identityx:
     docker compose up --build identityx
 
 univents:
+    docker compose up --build identityx -d
+    docker compose up --build payssage -d
     docker compose up --build univents
 
 payssage:
+    docker compose up --build identityx -d
     docker compose up --build payssage
 
 informd:
+    docker compose up --build identityx -d
     docker compose up --build informd
 
 generate +SERVICES="identityx informd payssage univents":
