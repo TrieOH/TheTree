@@ -29,17 +29,18 @@ func RegisterRoutes(
 	jwt func(http.Handler) http.Handler,
 ) {
 	r.Route("/events", func(r chi.Router) {
-		r.Get("/", h.List)
+		r.Get("/", h.ListPublic)
 		r.With(jwt).Post("/", h.Create)
-		r.With(jwt).Get("/own", h.ListOwn)
+		r.With(jwt).Get("/owned", h.ListOwned)
+		r.With(jwt).Get("/joined", h.ListJoined)
 		r.With(jwt).Route("/{event_id}", func(r chi.Router) {
 			r.Post("/publish", h.Publish)
-			r.Post("/gallery", h.AddGalleryImage)
-			r.Delete("/gallery", h.RemoveGalleryImage)
-			r.Put("/logo", h.SetLogo)
-			r.Delete("/logo", h.UnsetLogo)
-			r.Put("/banner", h.SetBanner)
-			r.Delete("/banner", h.UnsetBanner)
+			r.Post("/discontinue", h.Discontinue)
+
+			// Members
+			r.Get("/members", h.ListMembers)
+			r.Post("/members", h.AddMember)
+			r.Delete("/members/{user_id}", h.RemoveMember)
 		})
 	})
 }

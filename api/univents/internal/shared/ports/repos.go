@@ -3,26 +3,10 @@ package ports
 import (
 	"context"
 	"time"
-
 	"univents/contracts"
 
 	"github.com/google/uuid"
 )
-
-type EventsRepository interface {
-	CreateEvent(ctx context.Context, toCreate *contracts.Event) (*contracts.Event, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Event, error)
-	List(ctx context.Context) ([]contracts.Event, error)
-	ListOwn(ctx context.Context, ownerID uuid.UUID) ([]contracts.Event, error)
-	Publish(ctx context.Context, id uuid.UUID) error
-	AddEdition(ctx context.Context, eventID uuid.UUID) error
-	AddGalleryImage(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)
-	RemoveGalleryImage(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)
-	SetLogo(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)
-	UnsetLogo(ctx context.Context, id uuid.UUID) (*contracts.Event, error)
-	SetBanner(ctx context.Context, id uuid.UUID, url string) (*contracts.Event, error)
-	UnsetBanner(ctx context.Context, id uuid.UUID) (*contracts.Event, error)
-}
 
 type EditionsRepository interface {
 	Create(ctx context.Context, toCreate *contracts.Edition) (*contracts.Edition, error)

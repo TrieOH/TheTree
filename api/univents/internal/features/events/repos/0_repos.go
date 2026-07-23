@@ -2,10 +2,10 @@ package repos
 
 import (
 	"univents/internal/database/sqlc"
+	"univents/models"
 
 	"lib/database"
-	"univents/contracts"
-	"univents/internal/shared/ports"
+	"univents/ports"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -18,9 +18,9 @@ type repo struct {
 	dbe    database.ErrorHandler
 }
 
-var _ ports.EventsRepository = (*repo)(nil)
+var _ ports.EventRepo = (*repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.EventsRepository {
+func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.EventRepo {
 	return &repo{
 		q:      q,
 		log:    log,
@@ -29,29 +29,35 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Events
 	}
 }
 
-func mapEventFromDB(src *sqlc.Event) *contracts.Event {
-	return &contracts.Event{
-		ID:             src.ID,
-		OwnerID:        src.OwnerID,
-		OrganizationID: src.OrganizationID,
-		GoauthScopeID:  src.GoauthScopeID,
-		Name:           src.Name,
-		Acronym:        src.Acronym,
-		Slug:           src.Slug,
-		Tagline:        src.Tagline,
-		Description:    src.Description,
-		IsSeries:       src.IsSeries,
-		EditionsCount:  src.EditionsCount,
-		LogoUrl:        src.LogoUrl,
-		BannerUrl:      src.BannerUrl,
-		HasGallery:     src.HasGallery,
-		GalleryUrls:    src.GalleryUrls,
-		ContactEmail:   src.ContactEmail,
-		SocialLinks:    src.SocialLinks,
-		Status:         src.Status,
-		CreatedBy:      src.CreatedBy,
-		CreatedAt:      src.CreatedAt,
-		UpdatedAt:      src.UpdatedAt,
-		DeletedAt:      src.DeletedAt,
+func mapEventMember(src sqlc.EventMember) models.EventMember {
+	return models.EventMember{
+		ID:        src.ID,
+		EventID:   src.EventID,
+		UserID:    src.UserID,
+		Role:      models.EventMemberRole(src.Role),
+		CreatedAt: src.CreatedAt,
+		UpdatedAt: src.UpdatedAt,
+		DeletedAt: src.DeletedAt,
+	}
+}
+
+func mapEvent(src sqlc.Event) models.Event {
+	return models.Event{
+		ID:               src.ID,
+		OwnerID:          src.OwnerID,
+		FullName:         src.FullName,
+		Acronym:          src.Acronym,
+		Slug:             src.Slug,
+		Description:      src.Description,
+		Style:            src.Style,
+		Status:           models.EventStatus(src.Status),
+		PayssageSellerID: src.PayssageSellerID,
+		PayssageWalletID: src.PayssageWalletID,
+		LogoURL:          src.LogoUrl,
+		BannerURL:        src.BannerUrl,
+		ContactEmail:     src.ContactEmail,
+		CreatedAt:        src.CreatedAt,
+		UpdatedAt:        src.UpdatedAt,
+		DeletedAt:        src.DeletedAt,
 	}
 }

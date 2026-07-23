@@ -9,7 +9,7 @@ import (
 )
 
 type Commands struct {
-	events   ports.EventsRepository
+	events   ports.EventRepo
 	editions ports.EditionsRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
@@ -17,7 +17,7 @@ type Commands struct {
 }
 
 func NewCommands(
-	events ports.EventsRepository,
+	events ports.EventRepo,
 	editions ports.EditionsRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,

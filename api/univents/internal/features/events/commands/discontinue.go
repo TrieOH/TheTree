@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "EventService.Publish")
+func (c *Commands) Discontinue(ctx context.Context, eventID uuid.UUID) error {
+	ctx, span := c.tracer.Start(ctx, "EventService.Discontinue")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -24,8 +24,8 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 		return err
 	}
 
-	if event.Status != models.EventStatusDraft {
-		return errx.Invalid("event").SetMessage("cannot publish non draft event")
+	if event.Status != models.EventStatusActive {
+		return errx.Invalid("event").SetMessage("cannot discontinue non active event")
 	}
 
 	if event.OwnerID != ident.Sub.ID {
@@ -38,5 +38,5 @@ func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
 		}
 	}
 
-	return c.events.Publish(ctx, eventID)
+	return c.events.Discontinue(ctx, eventID)
 }
