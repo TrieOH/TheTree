@@ -4,12 +4,11 @@ import { motion } from 'motion/react'
 import {
   ArrowUpRight,
   Ban,
-  CalendarDays,
   Copy,
   Eye,
+  Mail,
   MoreVertical,
   Pencil,
-  Users,
 } from 'lucide-react'
 import type { EventI, EventStatusI } from '@/features/events/model'
 import {
@@ -170,7 +169,7 @@ export default function AdminEventCard({
               ease: [0.25, 0.1, 0.25, 1],
             }}
             className={cn(
-              'group relative flex min-w-0 flex-col overflow-hidden rounded-2xl bg-card text-left',
+              'group relative flex w-full min-w-60 max-w-full flex-col overflow-hidden rounded-2xl bg-card text-left',
               'ring-1 ring-foreground/10 shadow-xs',
               'transform-gpu will-change-transform',
               'transition-all duration-300 ease-out',
@@ -268,16 +267,12 @@ export default function AdminEventCard({
 
             <div className="flex items-center justify-between gap-3 p-4 pt-3 sm:p-5 sm:pt-4">
               <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" />
-                    Ver edições
-                  </span>
+                <div className="flex min-w-0 items-center text-xs text-muted-foreground">
                   <span
-                    className="inline-flex min-w-0 items-center gap-1.5"
+                    className="inline-flex min-w-0 max-w-full items-center gap-1.5"
                     title={event.contact_email ?? 'Sem contato cadastrado'}
                   >
-                    <Users className="size-3.5 shrink-0" />
+                    <Mail className="size-3.5 shrink-0" />
                     <span className="truncate">
                       {event.contact_email ?? 'Sem contato'}
                     </span>

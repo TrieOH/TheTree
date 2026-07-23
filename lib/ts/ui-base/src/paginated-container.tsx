@@ -146,7 +146,12 @@ interface ItemsWrapperProps {
   children: ReactNode;
 }
 
-function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps) {
+function ItemsWrapper({
+  layout,
+  gap,
+  minItemWidth,
+  children,
+}: ItemsWrapperProps) {
   const gapClass = GAP_CLASS[gap];
 
   if (layout === "custom") return <>{children}</>;
@@ -171,7 +176,7 @@ function ItemsWrapper({ layout, gap, minItemWidth, children }: ItemsWrapperProps
 function buildPageNumbers(
   current: number,
   total: number,
-  maxVisible: number
+  maxVisible: number,
 ): (number | "…")[] {
   const visible = Math.max(3, Math.min(maxVisible, total));
   if (total <= visible) return Array.from({ length: total }, (_, i) => i + 1);
@@ -213,7 +218,7 @@ function defaultComparator<T>(a: T, b: T, key: keyof T): number {
 function applySorting<T>(
   items: T[],
   sort: SortState<T>,
-  fields: SortField<T>[]
+  fields: SortField<T>[],
 ): T[] {
   const field = fields.find((f) => f.key === sort.field);
   const dir = sort.direction === "desc" ? -1 : 1;
@@ -253,7 +258,7 @@ function SortPanel<T>({ fields, sort, onChange, onClose }: SortPanelProps<T>) {
 
   const handleFieldKeyDown = (
     e: KeyboardEvent<HTMLDivElement>,
-    key: keyof T
+    key: keyof T,
   ) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -378,26 +383,26 @@ function PaginationButton({
 }
 
 function useElementWidth<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null)
-  const [width, setWidth] = useState(0)
+  const ref = useRef<T | null>(null);
+  const [width, setWidth] = useState(0);
 
   useEffect(() => {
-    const element = ref.current
-    if (!element) return
+    const element = ref.current;
+    if (!element) return;
 
     const update = () => {
-      setWidth(element.getBoundingClientRect().width)
-    }
+      setWidth(element.getBoundingClientRect().width);
+    };
 
-    update()
+    update();
 
-    const observer = new ResizeObserver(() => update())
-    observer.observe(element)
+    const observer = new ResizeObserver(() => update());
+    observer.observe(element);
 
-    return () => observer.disconnect()
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
-  return [ref, width] as const
+  return [ref, width] as const;
 }
 
 export function PaginatedContainer<T>({
@@ -421,10 +426,10 @@ export function PaginatedContainer<T>({
 }: PaginatedContainerProps<T>) {
   const [page, setPage] = useState(defaultPage);
   const [internalSort, setInternalSort] = useState<SortState<T> | null>(
-    sortFields ? { field: sortFields[0].key, direction: "asc" } : null
+    sortFields ? { field: sortFields[0].key, direction: "asc" } : null,
   );
   const [sortOpen, setSortOpen] = useState(false);
-  const [paginationRef, paginationWidth] = useElementWidth<HTMLDivElement>()
+  const [paginationRef, paginationWidth] = useElementWidth<HTMLDivElement>();
 
   const activeSort = controlledSort ?? internalSort;
 
@@ -443,15 +448,19 @@ export function PaginatedContainer<T>({
   const start = (safePage - 1) * pageSize;
   const slice = processedItems.slice(start, start + pageSize);
   const responsivePageCount = useMemo(() => {
-    if (paginationWidth < 300) return 3
-    if (paginationWidth < 360) return 5
-    if (paginationWidth < 520) return 5
-    if (paginationWidth < 720) return 7
-    return 9
-  }, [paginationWidth])
-  const responsivePageNums = buildPageNumbers(safePage, totalPages, responsivePageCount)
-  const showBoundaryButtons = paginationWidth >= 320
-  const compactPagination = paginationWidth < 320
+    if (paginationWidth < 300) return 3;
+    if (paginationWidth < 360) return 5;
+    if (paginationWidth < 520) return 5;
+    if (paginationWidth < 720) return 7;
+    return 9;
+  }, [paginationWidth]);
+  const responsivePageNums = buildPageNumbers(
+    safePage,
+    totalPages,
+    responsivePageCount,
+  );
+  const showBoundaryButtons = paginationWidth >= 320;
+  const compactPagination = paginationWidth < 320;
 
   const go = (p: number) => setPage(Math.max(1, Math.min(totalPages, p)));
 
@@ -460,8 +469,7 @@ export function PaginatedContainer<T>({
       ? sortFields.find((f) => f.key === activeSort.field)?.label
       : null;
 
-  const hasHeader =
-    onFilterChange !== undefined || sortFields || headerActions;
+  const hasHeader = onFilterChange !== undefined || sortFields || headerActions;
 
   return (
     <div
@@ -474,7 +482,7 @@ export function PaginatedContainer<T>({
       {hasHeader && (
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border px-4 py-3">
           {onFilterChange !== undefined && (
-            <div className="relative w-full sm:flex-1 sm:max-w-sm">
+            <div className="relative min-w-[220px] w-full sm:flex-1 sm:max-w-sm">
               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground flex items-center">
                 <Search size={13} />
               </span>
@@ -488,7 +496,7 @@ export function PaginatedContainer<T>({
                 }}
                 placeholder={filterPlaceholder}
                 aria-label={filterPlaceholder}
-                className="h-9 w-full rounded-md border border-border bg-muted/50 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
+                className="h-9 min-w-[220px] w-full rounded-md border border-border bg-muted/50 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring focus:bg-background"
               />
             </div>
           )}
@@ -540,11 +548,11 @@ export function PaginatedContainer<T>({
       {/* Content */}
       <div className="p-4">
         {slice.length === 0 ? (
-          emptyState ?? (
+          (emptyState ?? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               No {itemLabel} found.
             </p>
-          )
+          ))
         ) : (
           <ItemsWrapper layout={layout} gap={gap} minItemWidth={minItemWidth}>
             {renderItems(slice)}
@@ -575,7 +583,10 @@ export function PaginatedContainer<T>({
           )}
         </span>
 
-        <nav aria-label="Pagination" className="flex max-w-full flex-nowrap items-center gap-0.5 overflow-hidden sm:justify-end">
+        <nav
+          aria-label="Pagination"
+          className="flex max-w-full flex-nowrap items-center gap-0.5 overflow-hidden sm:justify-end"
+        >
           {showBoundaryButtons && (
             <PaginationButton
               onClick={() => go(1)}
@@ -597,7 +608,11 @@ export function PaginatedContainer<T>({
             p === "…" ? (
               <span
                 key={`ellipsis-${i}`}
-                className={compactPagination ? "flex h-7 w-4 items-center justify-center text-xs text-muted-foreground" : "flex h-7 w-6 items-center justify-center text-xs text-muted-foreground"}
+                className={
+                  compactPagination
+                    ? "flex h-7 w-4 items-center justify-center text-xs text-muted-foreground"
+                    : "flex h-7 w-6 items-center justify-center text-xs text-muted-foreground"
+                }
               >
                 …
               </span>
@@ -611,7 +626,7 @@ export function PaginatedContainer<T>({
               >
                 {p}
               </PaginationButton>
-            )
+            ),
           )}
 
           <PaginationButton
