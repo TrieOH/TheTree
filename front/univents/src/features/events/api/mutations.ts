@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { EventI } from '../model'
-import { createEventFn, publishEventFn } from './index'
+import { createEventFn, discontinueEventFn, publishEventFn } from './index'
 import { eventKeys } from './query-keys'
 
 function upsertById(events: EventI[] | undefined, event: EventI) {
@@ -44,17 +44,32 @@ function syncEventStatusInCaches(
   const ownEvent = queryClient
     .getQueryData<EventI[]>(eventKeys.ownLists())
     ?.find((event) => event.id === eventId)
+  const joinedEvent = queryClient
+    .getQueryData<EventI[]>(eventKeys.joinedLists())
+    ?.find((event) => event.id === eventId)
+  const publicEvent = queryClient
+    .getQueryData<EventI[]>(eventKeys.publicLists())
+    ?.find((event) => event.id === eventId)
+  const cachedEvent = ownEvent ?? joinedEvent ?? publicEvent
 
-  if (!ownEvent) return
+  if (!cachedEvent) return
 
-  const nextEvent = { ...ownEvent, status, updated_at: updatedAt }
+  const nextEvent = { ...cachedEvent, status, updated_at: updatedAt }
 
   queryClient.setQueryData<EventI[]>(eventKeys.ownLists(), (old) =>
-    upsertById(old, nextEvent),
+    old?.some((event) => event.id === eventId)
+      ? upsertById(old, nextEvent)
+      : old,
   )
 
   queryClient.setQueryData<EventI[]>(eventKeys.publicLists(), (old) =>
     upsertById(old, nextEvent),
+  )
+
+  queryClient.setQueryData<EventI[]>(eventKeys.joinedLists(), (old) =>
+    old?.some((event) => event.id === eventId)
+      ? upsertById(old, nextEvent)
+      : old,
   )
 }
 
@@ -94,6 +109,29 @@ export function usePublishEventMutation() {
         new Date().toISOString(),
       )
       toast.success('Evento publicado com sucesso!')
+    },
+    onError: () => toast.error('Erro ao conectar com o servidor'),
+  })
+}
+
+export function useDiscontinueEventMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (eventId: string) => discontinueEventFn(eventId),
+    onSuccess: (res, eventId) => {
+      if (!res.success) {
+        toast.error(res.message || 'Erro ao descontinuar evento')
+        return
+      }
+
+      syncEventStatusInCaches(
+        queryClient,
+        eventId,
+        'discontinued',
+        new Date().toISOString(),
+      )
+      toast.success('Evento descontinuado com sucesso!')
     },
     onError: () => toast.error('Erro ao conectar com o servidor'),
   })

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EventCard } from '@/features/events/ui/EventCard'
 import { CreateEventCard } from '@/features/events/ui/CreateEventCard'
 import {
+  allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
   allPublicEventsQueryOptions,
 } from '@/features/events/api'
@@ -62,10 +63,23 @@ function EventsPage() {
     enabled: isEditMode,
   })
 
+  const { data: joinedEvents, isFetching: isFetchingJoinedEvents } = useQuery({
+    ...allJoinedEventsQueryOptions(),
+    enabled: isEditMode,
+  })
+
+  const manageableEvents = [
+    ...(ownEvents ?? []),
+    ...(joinedEvents ?? []),
+  ].filter(
+    (event, index, events) =>
+      events.findIndex((candidate) => candidate.id === event.id) === index,
+  )
+
   const events = isEditMode
-    ? isFetchingOwnEvents
+    ? isFetchingOwnEvents || isFetchingJoinedEvents
       ? publicEvents
-      : (ownEvents ?? publicEvents)
+      : manageableEvents
     : publicEvents
 
   const sortedEvents = [...events].sort(

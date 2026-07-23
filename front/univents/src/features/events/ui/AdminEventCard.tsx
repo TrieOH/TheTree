@@ -3,6 +3,7 @@ import type React from 'react'
 import { motion } from 'motion/react'
 import {
   ArrowUpRight,
+  Ban,
   CalendarDays,
   Copy,
   Eye,
@@ -58,6 +59,7 @@ interface AdminEventCardProps {
   index?: number
   onEdit?: (event: EventI) => void
   onPublish: (event: EventI) => void
+  onDiscontinue: (event: EventI) => void
 }
 
 function MenuItems({
@@ -65,6 +67,7 @@ function MenuItems({
   isContext = false,
   onEdit,
   onPublish,
+  onDiscontinue,
   onOpenEditions,
   onOpenDashboard,
 }: {
@@ -72,6 +75,7 @@ function MenuItems({
   isContext?: boolean
   onEdit?: () => void
   onPublish: () => void
+  onDiscontinue: () => void
   onOpenEditions: () => void
   onOpenDashboard: () => void
 }) {
@@ -108,6 +112,12 @@ function MenuItems({
           <span>Publicar</span>
         </Item>
       )}
+      {event.status === 'active' && (
+        <Item onClick={stop(onDiscontinue)}>
+          <Ban className="size-4" />
+          <span>Descontinuar</span>
+        </Item>
+      )}
       <Item onClick={stop(copyLink)}>
         <Copy className="size-4" />
         <span>Copiar link</span>
@@ -126,12 +136,14 @@ export default function AdminEventCard({
   index = 0,
   onEdit,
   onPublish,
+  onDiscontinue,
 }: AdminEventCardProps) {
   const navigate = useNavigate()
   const status = statusConfig[event.status]
   const hasVisual = Boolean(event.banner_url ?? event.logo_url)
   const handleEdit = () => onEdit?.(event)
   const handlePublish = () => onPublish(event)
+  const handleDiscontinue = () => onDiscontinue(event)
   const handleOpenDashboard = () => {
     void navigate({
       to: '/admin/events/$eventId',
@@ -232,6 +244,7 @@ export default function AdminEventCard({
                       event={event}
                       onEdit={onEdit ? handleEdit : undefined}
                       onPublish={handlePublish}
+                      onDiscontinue={handleDiscontinue}
                       onOpenDashboard={handleOpenDashboard}
                       onOpenEditions={handleOpenEditions}
                     />
@@ -298,6 +311,7 @@ export default function AdminEventCard({
           isContext
           onEdit={onEdit ? handleEdit : undefined}
           onPublish={handlePublish}
+          onDiscontinue={handleDiscontinue}
           onOpenDashboard={handleOpenDashboard}
           onOpenEditions={handleOpenEditions}
         />

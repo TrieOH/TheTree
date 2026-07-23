@@ -5,9 +5,13 @@ import { Calendar, Plus } from 'lucide-react'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import type { EventI } from '@/features/events/model'
-import { allOwnEventsQueryOptions } from '@/features/events/api'
+import {
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from '@/features/events/api'
 import {
   useCreateEventMutation,
+  useDiscontinueEventMutation,
   usePublishEventMutation,
 } from '@/features/events/api/mutations'
 import AdminEventCard from '@/features/events/ui/AdminEventCard'
@@ -33,10 +37,19 @@ function RouteComponent() {
   })
   const [modalOpen, setModalOpen] = useState(false)
   const [publishingEvent, setPublishingEvent] = useState<EventI | null>(null)
+  const [discontinuingEvent, setDiscontinuingEvent] = useState<EventI | null>(
+    null,
+  )
 
-  const { data: events = [] } = useQuery(allOwnEventsQueryOptions())
+  const { data: ownEvents = [] } = useQuery(allOwnEventsQueryOptions())
+  const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions())
+  const events = [...ownEvents, ...joinedEvents].filter(
+    (event, index, list) =>
+      list.findIndex((candidate) => candidate.id === event.id) === index,
+  )
   const createMutation = useCreateEventMutation()
   const publishEventMutation = usePublishEventMutation()
+  const discontinueEventMutation = useDiscontinueEventMutation()
 
   const filteredEvents = [...events]
     .filter((event) => {
@@ -143,6 +156,7 @@ function RouteComponent() {
               event={event}
               index={idx}
               onPublish={setPublishingEvent}
+              onDiscontinue={setDiscontinuingEvent}
             />
           ))
         }
@@ -171,6 +185,20 @@ function RouteComponent() {
         }}
         variant="success"
         loading={publishEventMutation.isPending}
+      />
+
+      <AlertModal
+        open={!!discontinuingEvent}
+        onOpenChange={() => setDiscontinuingEvent(null)}
+        title="Descontinuar evento?"
+        description={`Ao descontinuar "${discontinuingEvent?.full_name}", ele deixará de ser um evento ativo.`}
+        confirmLabel="Descontinuar"
+        onConfirm={() => {
+          if (!discontinuingEvent) return
+          discontinueEventMutation.mutate(discontinuingEvent.id)
+        }}
+        variant="destructive"
+        loading={discontinueEventMutation.isPending}
       />
     </div>
   )

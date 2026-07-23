@@ -28,8 +28,14 @@ import {
 } from '@/shared/ui/shadcn/card'
 import { EmptyState } from '@trieoh/ui-base'
 import { AlertModal } from '@/widgets/ui/alert-modal'
-import { allOwnEventsQueryOptions } from '@/features/events/api'
-import { usePublishEventMutation } from '@/features/events/api/mutations'
+import {
+  allJoinedEventsQueryOptions,
+  allOwnEventsQueryOptions,
+} from '@/features/events/api'
+import {
+  useDiscontinueEventMutation,
+  usePublishEventMutation,
+} from '@/features/events/api/mutations'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import { cn } from '@/shared/lib/utils'
 
@@ -44,7 +50,10 @@ function QuickAction({
   disabled?: boolean
 } & (
   | {
-      to: '/events/$eventId' | '/admin/events/$eventId/editions'
+      to:
+        | '/events/$eventId'
+        | '/admin/events/$eventId/editions'
+        | '/admin/events/$eventId/members'
       params: { eventId: string }
       onClick?: never
     }
@@ -127,17 +136,22 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/')({
 
 function EventOverviewRoute() {
   const { eventId } = Route.useParams()
-  const { data: events = [] } = useQuery(allOwnEventsQueryOptions())
+  const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions())
+  const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions())
   const { data: editions = [] } = useQuery(
     allAdminEditionsQueryOptions(eventId),
   )
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
-  const event = events.find((item) => item.id === eventId) ?? null
+  const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false)
+  const event =
+    [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
+    null
   const latestEdition = editions[0] ?? null
   const isPublished = event?.status === 'active'
   const status = event ? statusConfig[event.status] : statusConfig.draft
 
   const publishEventMutation = usePublishEventMutation()
+  const discontinueEventMutation = useDiscontinueEventMutation()
 
   const copyLink = () => {
     if (!event) return
@@ -150,6 +164,11 @@ function EventOverviewRoute() {
   const handlePublishEvent = () => {
     if (!event || isPublished) return
     publishEventMutation.mutate(eventId)
+  }
+
+  const handleDiscontinueEvent = () => {
+    if (!event || event.status !== 'active') return
+    discontinueEventMutation.mutate(eventId)
   }
 
   const metrics = [
@@ -422,7 +441,7 @@ function EventOverviewRoute() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-3">
-            {!isPublished && (
+            {event?.status === 'draft' && (
               <Button
                 type="button"
                 variant="outline"
@@ -446,6 +465,29 @@ function EventOverviewRoute() {
               </span>
               <ChevronRight className="size-4 text-muted-foreground" />
             </QuickAction>
+
+            <QuickAction
+              to="/admin/events/$eventId/members"
+              params={{ eventId }}
+            >
+              <span className="text-sm font-medium text-foreground">
+                Gerenciar membros
+              </span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </QuickAction>
+
+            {isPublished && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto justify-between rounded-2xl border-dashed border-destructive/30 bg-destructive/5 px-4 py-4 text-left text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setDiscontinueConfirmOpen(true)}
+                disabled={discontinueEventMutation.isPending}
+              >
+                <span className="text-sm font-medium">Descontinuar evento</span>
+                <ChevronRight className="size-4" />
+              </Button>
+            )}
 
             {isPublished && (
               <QuickAction onClick={copyLink} disabled={!event}>
@@ -479,6 +521,20 @@ function EventOverviewRoute() {
         onConfirm={async () => {
           handlePublishEvent()
           setPublishConfirmOpen(false)
+        }}
+      />
+
+      <AlertModal
+        open={discontinueConfirmOpen}
+        onOpenChange={setDiscontinueConfirmOpen}
+        title="Descontinuar evento?"
+        description="O evento deixará de ser ativo e a data de atualização será atualizada."
+        confirmLabel="Descontinuar evento"
+        variant="destructive"
+        loading={discontinueEventMutation.isPending}
+        onConfirm={async () => {
+          handleDiscontinueEvent()
+          setDiscontinueConfirmOpen(false)
         }}
       />
     </>

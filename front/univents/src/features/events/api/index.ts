@@ -28,6 +28,10 @@ export const publishEventFn = createClientOnlyFn((eventId: string) => {
   return authFetcher.post<null>(`/events/${eventId}/publish`)
 })
 
+export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
+  return authFetcher.post<null>(`/events/${eventId}/discontinue`)
+})
+
 /**
  * Fetches all public events from the server.
  * @returns A promise that resolves to an array of Event objects.
@@ -63,6 +67,17 @@ export const allOwnEventsQueryOptions = () => {
   return queryOptions({
     queryKey: eventKeys.ownLists(),
     queryFn: getOwnEventsFn,
+  })
+}
+
+export const getJoinedEventsFn = createClientOnlyFn(async () => {
+  return authQueryFetcher<EventI[]>('/events/joined')
+})
+
+export const allJoinedEventsQueryOptions = () => {
+  return queryOptions({
+    queryKey: eventKeys.joinedLists(),
+    queryFn: getJoinedEventsFn,
   })
 }
 

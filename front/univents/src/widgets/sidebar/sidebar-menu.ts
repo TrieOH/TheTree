@@ -7,6 +7,7 @@ import {
   PenLine,
   UploadCloud,
   Ticket,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -115,6 +116,14 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             to: '/admin/events/$eventId/editions',
             params: { eventId },
             icon: CalendarDays,
+            exact: false,
+          },
+          {
+            id: 'event-members',
+            label: 'Membros',
+            to: '/admin/events/$eventId/members',
+            params: { eventId },
+            icon: Users,
             exact: false,
           },
         ],
