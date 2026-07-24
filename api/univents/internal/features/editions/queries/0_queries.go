@@ -2,7 +2,7 @@ package queries
 
 import (
 	"lib/database"
-	"univents/internal/shared/ports"
+	"univents/ports"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -10,7 +10,7 @@ import (
 
 type Queries struct {
 	events   ports.EventRepo
-	editions ports.EditionsRepository
+	editions ports.EditionRepo
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	tx       database.TxRunner
@@ -18,7 +18,7 @@ type Queries struct {
 
 func NewQueries(
 	events ports.EventRepo,
-	editions ports.EditionsRepository,
+	editions ports.EditionRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,

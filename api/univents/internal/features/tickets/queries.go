@@ -2,6 +2,7 @@ package tickets
 
 import (
 	"context"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"univents/internal/shared/contracts"
@@ -14,7 +15,7 @@ import (
 
 type QueryService struct {
 	tickets  ports.TicketsRepository
-	editions ports.EditionsRepository
+	editions ports2.EditionRepo
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	tx       database.TxRunner
@@ -22,7 +23,7 @@ type QueryService struct {
 
 func NewQueryService(
 	tickets ports.TicketsRepository,
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,
