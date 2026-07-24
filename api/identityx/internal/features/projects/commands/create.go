@@ -3,6 +3,7 @@ package commands
 import (
 	"IdentityX/models"
 	"context"
+	"lib/crypto"
 )
 
 func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*models.Project, error) {
@@ -26,7 +27,30 @@ func (c *Commands) Create(ctx context.Context, in models.CreateProjectInput) (*m
 			return err
 		}
 
-		member, err := models.NewProjectMember(created.ID, ident.Sub.ID, models.ProjectRoleOwner)
+		var signKey *crypto.KeyPair
+		signKey, err = crypto.GenerateKeyPair("signing")
+		if err != nil {
+			return err
+		}
+
+		_, err = c.keys.Create(ctx, &created.ID, signKey, "signing")
+		if err != nil {
+			return err
+		}
+
+		var encKey *crypto.KeyPair
+		encKey, err = crypto.GenerateKeyPair("encryption")
+		if err != nil {
+			return err
+		}
+
+		_, err = c.keys.Create(ctx, &created.ID, encKey, "encryption")
+		if err != nil {
+			return err
+		}
+
+		var member *models.ProjectMember
+		member, err = models.NewProjectMember(created.ID, ident.Sub.ID, models.ProjectRoleOwner)
 		if err != nil {
 			return err
 		}

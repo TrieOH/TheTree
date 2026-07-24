@@ -121,7 +121,7 @@ func (app *IdentityX) initCommands(r *repos, tx database.TxRunner, logger *zap.L
 		actors:         actors.NewCommands(r.actors, r.projects, logger, tracer, tx),
 		apiKeys:        apikeys.NewCommands([]byte(app.cfg.HmacSecret), r.actors, r.apiKeys, r.capabilities, r.projects, logger, tracer, tx),
 		orgs:           organizations.NewCommands(r.projects, r.actors, r.orgs, logger, tracer, tx),
-		projects:       projects.NewCommands(r.projects, r.actors, logger, tracer, tx),
+		projects:       projects.NewCommands(r.cryptoKeys, r.projects, r.actors, logger, tracer, tx),
 		capabilities:   capabilities.NewCommands(r.actors, r.capabilities, r.projects, logger, tracer, tx),
 		profiles:       profiles.NewCommands(r.profiles, r.profileSchemas, r.projects, logger, tracer, tx),
 		profileSchemas: profile_schemas.NewCommands(r.profileSchemas, r.projects, logger, tracer, tx),

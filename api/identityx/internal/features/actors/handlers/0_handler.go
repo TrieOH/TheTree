@@ -26,11 +26,11 @@ func NewHandlers(
 func RegisterRoutes(
 	r *chi.Mux,
 	h *Handlers,
-	jwtAuth func(http.Handler) http.Handler,
+	anyAuth func(http.Handler) http.Handler,
 	clientOnly func(http.Handler) http.Handler,
 ) {
 	r.Group(func(r chi.Router) {
-		r.Use(jwtAuth, clientOnly)
+		r.Use(anyAuth, clientOnly)
 		r.Get("/projects/{project_id}/actors/{actor_id}", h.GetByID)
 		r.Get("/projects/{project_id}/actors/{actor_email}:by_email", h.GetByEmail)
 		r.Post("/projects/{project_id}/actors", h.Create)

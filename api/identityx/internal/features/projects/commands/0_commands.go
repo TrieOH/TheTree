@@ -10,6 +10,7 @@ import (
 )
 
 type Commands struct {
+	keys     ports.CryptoKeysRepo
 	projects ports.ProjectRepo
 	actors   ports.ActorRepo
 	logger   *zap.Logger
@@ -18,6 +19,7 @@ type Commands struct {
 }
 
 func NewCommands(
+	keys ports.CryptoKeysRepo,
 	projects ports.ProjectRepo,
 	actors ports.ActorRepo,
 	logger *zap.Logger,
@@ -25,6 +27,7 @@ func NewCommands(
 	tx database.TxRunner,
 ) *Commands {
 	return errx.MustProvide(&Commands{
+		keys:     keys,
 		projects: projects,
 		actors:   actors,
 		logger:   logger,
