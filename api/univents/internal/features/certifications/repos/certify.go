@@ -4,13 +4,13 @@ import (
 	"context"
 	"lib/crypto"
 	"lib/database"
-	"univents/contracts"
 	"univents/internal/database/sqlc"
+	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) Certify(ctx context.Context, input contracts.CertifyInput) (*contracts.Certification, error) {
+func (repo *repo) Certify(ctx context.Context, input models.CertifyInput) (*models.Certification, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "Certify")
 	defer span.End()
 

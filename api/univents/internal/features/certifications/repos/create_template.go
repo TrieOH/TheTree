@@ -3,11 +3,11 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/contracts"
 	"univents/internal/database/sqlc"
+	"univents/models"
 )
 
-func (repo *repo) CreateTemplate(ctx context.Context, input contracts.CreateCertificationTemplateInput) (*contracts.CertificationTemplate, error) {
+func (repo *repo) CreateTemplate(ctx context.Context, input models.CreateCertificationTemplateInput) (*models.CertificationTemplate, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "CreateTemplate")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).CreateCertificationTemplate(ctx, sqlc.CreateCertificationTemplateParams{

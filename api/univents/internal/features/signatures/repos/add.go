@@ -3,11 +3,11 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/contracts"
 	"univents/internal/database/sqlc"
+	"univents/models"
 )
 
-func (repo *repo) Add(ctx context.Context, toAdd contracts.Signature) (*contracts.Signature, error) {
+func (repo *repo) Add(ctx context.Context, toAdd models.Signature) (*models.Signature, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "Add")
 	defer span.End()
 	row, err := database.Queries(ctx, repo.q).AddSignatureToEdition(ctx, sqlc.AddSignatureToEditionParams{

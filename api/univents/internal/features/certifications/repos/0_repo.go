@@ -2,8 +2,8 @@ package repos
 
 import (
 	"lib/database"
-	"univents/contracts"
 	"univents/internal/database/sqlc"
+	"univents/models"
 	"univents/ports"
 
 	"go.opentelemetry.io/otel/trace"
@@ -28,8 +28,8 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Certif
 	}
 }
 
-func mapCertificationTemplate(src sqlc.CertificationTemplate) contracts.CertificationTemplate {
-	return contracts.CertificationTemplate{
+func mapCertificationTemplate(src sqlc.CertificationTemplate) models.CertificationTemplate {
+	return models.CertificationTemplate{
 		ID:        src.ID,
 		EditionID: src.EditionID,
 		Title:     src.Title,
@@ -39,8 +39,8 @@ func mapCertificationTemplate(src sqlc.CertificationTemplate) contracts.Certific
 	}
 }
 
-func mapCertification(src sqlc.Certification) contracts.Certification {
-	return contracts.Certification{
+func mapCertification(src sqlc.Certification) models.Certification {
+	return models.Certification{
 		ID:          src.ID,
 		UserID:      src.UserID,
 		TargetID:    src.TargetID,

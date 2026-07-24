@@ -2,10 +2,10 @@ package commands
 
 import (
 	"context"
-	"univents/contracts"
+	"univents/models"
 )
 
-func (c *Commands) Certify(ctx context.Context, input contracts.CertifyInput) (*contracts.Certification, error) {
+func (c *Commands) Certify(ctx context.Context, input models.CertifyInput) (*models.Certification, error) {
 	ctx, span := c.tracer.Start(ctx, "Certify")
 	defer span.End()
 	return c.certs.Certify(ctx, input)

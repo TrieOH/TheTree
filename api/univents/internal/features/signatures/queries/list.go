@@ -2,12 +2,12 @@ package queries
 
 import (
 	"context"
-	"univents/contracts"
+	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (q *Queries) List(ctx context.Context, editionID uuid.UUID) ([]contracts.Signature, error) {
+func (q *Queries) List(ctx context.Context, editionID uuid.UUID) ([]models.Signature, error) {
 	ctx, span := q.tracer.Start(ctx, "List")
 	defer span.End()
 

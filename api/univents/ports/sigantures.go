@@ -2,14 +2,14 @@ package ports
 
 import (
 	"context"
-	"univents/contracts"
+	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 type SignatureRepo interface {
-	Add(ctx context.Context, toAdd contracts.Signature) (*contracts.Signature, error)
+	Add(ctx context.Context, toAdd models.Signature) (*models.Signature, error)
 	Remove(ctx context.Context, id, editionID uuid.UUID) error
-	List(ctx context.Context, editionID uuid.UUID) ([]contracts.Signature, error)
-	GetByID(ctx context.Context, id, editionID uuid.UUID) (*contracts.Signature, error)
+	List(ctx context.Context, editionID uuid.UUID) ([]models.Signature, error)
+	GetByID(ctx context.Context, id, editionID uuid.UUID) (*models.Signature, error)
 }

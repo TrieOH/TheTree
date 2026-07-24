@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"univents/contracts"
+	"univents/models"
 
 	"github.com/MintzyG/fun"
 )
@@ -16,7 +16,7 @@ func (h *Handlers) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fun.Respond(w, contracts.VerifyCertificationResponse{
+	fun.Respond(w, models.VerifyCertificationResponse{
 		IsVerified:  true,
 		ID:          cert.ID,
 		UserID:      cert.UserID,

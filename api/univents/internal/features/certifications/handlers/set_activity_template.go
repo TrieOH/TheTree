@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"univents/contracts"
+	"univents/models"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
@@ -14,7 +14,7 @@ func (h *Handlers) SetActivityTemplate(w http.ResponseWriter, r *http.Request) {
 	if fun.Bail(w, err) {
 		return
 	}
-	var payload contracts.SetCertificationTemplateRequest
+	var payload models.SetCertificationTemplateRequest
 	if bind.BailInto(w, req, &payload) {
 		return
 	}

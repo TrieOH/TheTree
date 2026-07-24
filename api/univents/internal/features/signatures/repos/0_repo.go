@@ -2,8 +2,8 @@ package repos
 
 import (
 	"lib/database"
-	"univents/contracts"
 	"univents/internal/database/sqlc"
+	"univents/models"
 	"univents/ports"
 
 	"go.opentelemetry.io/otel/trace"
@@ -28,8 +28,8 @@ func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.Signat
 	}
 }
 
-func mapSignature(src sqlc.Signature) contracts.Signature {
-	return contracts.Signature{
+func mapSignature(src sqlc.Signature) models.Signature {
+	return models.Signature{
 		ID:        src.ID,
 		EditionID: src.EditionID,
 		Title:     src.Title,
