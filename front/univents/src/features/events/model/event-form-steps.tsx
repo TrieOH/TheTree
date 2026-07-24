@@ -36,34 +36,6 @@ export function createEventFormSteps(): StepConfig<EventCreateInputI>[] {
       ],
     },
     {
-      id: 'midia',
-      label: 'Mídia',
-      fields: [
-        {
-          kind: 'image',
-          name: 'logo_url',
-          label: 'Logo do evento',
-          hint: 'PNG/JPEG (Máx. 2MB)',
-          accept: 'image/png,image/jpeg',
-          maxSizeMB: 2,
-          optional: true,
-          layout: 'half',
-          disabled: true,
-        },
-        {
-          kind: 'image',
-          name: 'banner_url',
-          label: 'Banner principal',
-          hint: 'JPG/PNG (1920x1080)',
-          accept: 'image/jpeg,image/png',
-          maxSizeMB: 5,
-          optional: true,
-          layout: 'half',
-          disabled: true,
-        },
-      ],
-    },
-    {
       id: 'conexao',
       label: 'Conexão',
       fields: [

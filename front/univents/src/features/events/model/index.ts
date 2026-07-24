@@ -17,17 +17,6 @@ export const eventCreateSchema = z.object({
     .optional()
     .nullable()
     .transform((val) => (val === '' ? null : val)),
-  // Kept only as UI state until event media routes are available.
-  logo_url: z
-    .string()
-    .optional()
-    .nullable()
-    .transform((val) => (val === '' ? null : val)),
-  banner_url: z
-    .string()
-    .optional()
-    .nullable()
-    .transform((val) => (val === '' ? null : val)),
   contact_email: z
     .email('Informe um e-mail válido')
     .optional()

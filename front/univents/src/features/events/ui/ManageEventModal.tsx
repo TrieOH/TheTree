@@ -52,10 +52,7 @@ export function ManageEventModal({
     defaultValues: emptyDefaultValues,
     resetOnSuccessValues: emptyDefaultValues,
     onSubmit: async (values): Promise<boolean> => {
-      // Media fields remain visible, but are intentionally excluded until
-      // the API exposes routes for associating images with an event.
-      const { logo_url: _logoUrl, banner_url: _bannerUrl, ...payload } = values
-      return Boolean(await onCreate(payload))
+      return Boolean(await onCreate(values))
     },
     onSubmitSuccess: () => onOpenChange(false),
   })
