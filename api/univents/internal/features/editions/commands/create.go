@@ -3,58 +3,45 @@ package commands
 import (
 	"context"
 	idx "sdk/identityx"
-	"univents/contracts"
+	"univents/models"
 
-	"go.opentelemetry.io/otel/attribute"
+	"github.com/MintzyG/fun"
 )
 
-func (uc *Commands) Create(ctx context.Context, in contracts.CreateEditionSpec) (out *contracts.Edition, err error) {
-	ctx, span := uc.tracer.Start(ctx, "EditionService.Create")
+func (c *Commands) Create(ctx context.Context, payload models.CreateEditionInput) (*models.Edition, error) {
+	ctx, span := c.tracer.Start(ctx, "EditionService.Create")
 	defer span.End()
-
-	if err = uc.tx.WithinTx(ctx, func(ctx context.Context) error {
-		out, err = uc.createInternal(ctx, in)
-		return err
-	}); err != nil {
-		return &contracts.Edition{}, err
-	}
-
-	return out, nil
-}
-
-func (uc *Commands) createInternal(ctx context.Context, in contracts.CreateEditionSpec) (out *contracts.Edition, err error) {
-	ctx, span := uc.tracer.Start(ctx, "EditionService.createInternal")
-	defer span.End()
-	defer func() {
-		span.SetAttributes(attribute.Bool("create.success", err == nil))
-	}()
 
 	ident, err := idx.RequireIdentity(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var validEdition *contracts.Edition
-	validEdition, err = contracts.NewEdition(ident.Sub.ID, in)
+	event, err := c.events.GetByID(ctx, payload.EventID)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = uc.events.GetByID(ctx, in.EventID)
+	member, err := c.events.GetMember(ctx, event.ID, ident.Sub.ID)
+	if fun.Is(err, fun.CodeNotFound) {
+		return nil, fun.ErrForbidden("insufficient permissions")
+	}
 	if err != nil {
 		return nil, err
 	}
-
-	var created *contracts.Edition
-	created, err = uc.editions.Create(ctx, validEdition) // FIXME if this fails the scope must be undone (SAGA PATTERN)
-	if err != nil {
-		return nil, err
+	if !member.Role.Minimum(models.EventMemberRoleAdmin) {
+		return nil, fun.ErrForbidden("insufficient permissions")
 	}
 
-	err = uc.events.AddEdition(ctx, validEdition.EventID)
-	if err != nil {
-		return nil, err
+	edition := &models.Edition{
+		EventID:   payload.EventID,
+		Name:      payload.Name,
+		Slug:      payload.Slug,
+		IsDraft:   true,
+		StartsAt:  payload.StartsAt,
+		EndsAt:    payload.EndsAt,
+		CreatedBy: ident.Sub.ID,
 	}
 
-	return created, nil
+	return c.editions.Create(ctx, edition)
 }

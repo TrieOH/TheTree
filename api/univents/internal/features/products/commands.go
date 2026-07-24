@@ -3,6 +3,7 @@ package products
 import (
 	"context"
 	"errors"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"lib/objectstorage"
@@ -18,7 +19,7 @@ import (
 )
 
 type CommandService struct {
-	editions  ports.EditionsRepository
+	editions  ports2.EditionRepo
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
 	obj       *objectstorage.Client
@@ -28,7 +29,7 @@ type CommandService struct {
 }
 
 func NewCommandService(
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
 	obj *objectstorage.Client,

@@ -2,6 +2,7 @@ package checkpoints
 
 import (
 	"context"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"univents/contracts"
@@ -14,7 +15,7 @@ import (
 
 type QueryService struct {
 	checkpoints ports.CheckpointsRepository
-	editions    ports.EditionsRepository
+	editions    ports2.EditionRepo
 	logger      *zap.Logger
 	tracer      trace.Tracer
 	tx          database.TxRunner
@@ -22,7 +23,7 @@ type QueryService struct {
 
 func NewQueryService(
 	checkpoints ports.CheckpointsRepository,
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,

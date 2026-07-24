@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
+	"univents/internal/features/editions"
 	"univents/internal/features/events"
 
 	fh "github.com/MintzyG/fun/handlers"
@@ -30,7 +31,7 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 
 	//r.With(middlewares.jwt).Get("/ws/token", deps.Security.WSAuth)
 	events.RegisterRoutes(r, handlers.Events, middlewares.jwt)
-	//editions.RegisterRoutes(r, handlers.Editions, middlewares.jwt)
+	editions.RegisterRoutes(r, handlers.Editions, middlewares.jwt)
 	//activities.RegisterRoutes(r, handlers.Activities, middlewares.jwt)
 	//signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
 	//certifications.RegisterRoutes(r, handlers.certs, middlewares.jwt)

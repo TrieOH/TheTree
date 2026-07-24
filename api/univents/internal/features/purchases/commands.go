@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"univents/internal/platform/telemetry"
@@ -24,7 +25,7 @@ import (
 )
 
 type CommandService struct {
-	editions  ports.EditionsRepository
+	editions  ports2.EditionRepo
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
 	logger    *zap.Logger
@@ -33,7 +34,7 @@ type CommandService struct {
 }
 
 func NewCommandService(
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
 	logger *zap.Logger,

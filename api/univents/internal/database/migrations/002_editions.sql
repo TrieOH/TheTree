@@ -1,4 +1,6 @@
 -- +goose Up
+CREATE EXTENSION IF NOT EXISTS "btree_gist";
+
 CREATE TABLE editions (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -29,7 +31,12 @@ CREATE TABLE editions (
     created_by UUID NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ,
-    deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ,
+
+    CONSTRAINT excl_editions_no_overlap EXCLUDE USING gist (
+        event_id WITH =,
+        tstzrange(starts_at, ends_at) WITH &&
+    ) WHERE (deleted_at IS NULL)
 );
 
 CREATE UNIQUE INDEX idx_edition_slug_unique
@@ -38,3 +45,4 @@ CREATE UNIQUE INDEX idx_edition_slug_unique
 -- +goose Down
 DROP INDEX IF EXISTS idx_edition_slug_unique;
 DROP TABLE IF EXISTS editions;
+DROP EXTENSION IF EXISTS "btree_gist";

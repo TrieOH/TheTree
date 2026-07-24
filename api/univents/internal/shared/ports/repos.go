@@ -8,19 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type EditionsRepository interface {
-	Create(ctx context.Context, toCreate *contracts.Edition) (*contracts.Edition, error)
-	GetByID(ctx context.Context, editionID uuid.UUID) (*contracts.Edition, error)
-	List(ctx context.Context, editionID uuid.UUID) ([]contracts.Edition, error)
-	ListAdmin(ctx context.Context, editionID uuid.UUID) ([]contracts.Edition, error)
-	Announce(ctx context.Context, editionID uuid.UUID) error
-	Open(ctx context.Context, editionID uuid.UUID) error
-	Start(ctx context.Context, editionID uuid.UUID) error
-	Finish(ctx context.Context, editionID uuid.UUID) error
-	ConnectPaymentsAccount(ctx context.Context, editionID, triePaymentsCredentialID uuid.UUID, triePaymentsProvider, publicKey string) error
-	DisconnectPaymentsAccount(ctx context.Context, editionID uuid.UUID) error
-}
-
 type ActivitiesRepository interface {
 	Create(ctx context.Context, toCreate *contracts.Activity) (*contracts.Activity, error)
 	Publish(ctx context.Context, id uuid.UUID) error

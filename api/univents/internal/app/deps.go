@@ -67,6 +67,7 @@ func SetupConstraintMessages() {
 		// editions
 		"chk_editions_dates_valid":               "Edition end date must be after the start date.",
 		"chk_editions_registration_before_start": "Registration opening date must be before or equal to the edition start date.",
+		"excl_editions_no_overlap":               "This edition's dates overlap with another edition of the same event.",
 
 		// registrations
 		"chk_registrations_status_valid": "Registration status must be one of: pending, confirmed, cancelled, expired.",
