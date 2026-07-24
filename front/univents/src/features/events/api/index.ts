@@ -36,7 +36,7 @@ export const discontinueEventFn = createClientOnlyFn((eventId: string) => {
  * Fetches all public events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
-export const getPublicEventsFn = async () => {
+const getPublicEventsFn = async () => {
   return publicQueryFetcher<EventI[]>('/events')
 }
 
@@ -55,7 +55,7 @@ export const allPublicEventsQueryOptions = () => {
  * Fetches all own events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
-export const getOwnEventsFn = createClientOnlyFn(async () => {
+const getOwnEventsFn = createClientOnlyFn(async () => {
   return authQueryFetcher<EventI[]>('/events/owned')
 })
 
@@ -74,7 +74,7 @@ export const allOwnEventsQueryOptions = () => {
  * Fetches all joined events from the server.
  * @returns A promise that resolves to an array of Event objects.
  */
-export const getJoinedEventsFn = createClientOnlyFn(async () => {
+const getJoinedEventsFn = createClientOnlyFn(async () => {
   return authQueryFetcher<EventI[]>('/events/joined')
 })
 
@@ -90,11 +90,11 @@ export const allJoinedEventsQueryOptions = () => {
 }
 
 /**
- * Fetches all public events from the server.
+ * Fetches a public events from the server.
  * @param slug - the event slug
  * @returns A promise that resolves to an Event object.
  */
-export const getPublicEventBySlugFn = async (slug: string) => {
+const getPublicEventBySlugFn = async (slug: string) => {
   return publicQueryFetcher<EventI | null>(`/events/${slug}:by-slug`).catch(() => null)
 }
 

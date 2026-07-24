@@ -180,6 +180,11 @@ function AdminEditionDetailRoute() {
       to: '/admin/events/$eventId/editions/$editionId/signatures',
       icon: Ticket,
     },
+    {
+      label: 'Tickets',
+      to: '/admin/events/$eventId/editions/$editionId/tickets',
+      icon: Ticket,
+    },
   ]
 
   const actions = [

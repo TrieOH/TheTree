@@ -6,9 +6,10 @@ import {
   LayoutGrid,
   PenLine,
   UploadCloud,
-  Ticket,
   Users,
   type LucideIcon,
+  Boxes,
+  Tickets,
 } from 'lucide-react'
 
 export interface SidebarMenuItem {
@@ -73,7 +74,7 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             label: 'Produtos',
             to: '/admin/events/$eventId/editions/$editionId/products',
             params: { eventId, editionId },
-            icon: Ticket,
+            icon: Boxes,
             exact: false,
           },
           {
@@ -90,6 +91,14 @@ export function getAdminSidebarSections(pathname: string): SidebarSection[] {
             to: '/admin/events/$eventId/editions/$editionId/signatures',
             params: { eventId, editionId },
             icon: PenLine,
+            exact: false,
+          },
+          {
+            id: 'edition-tickets',
+            label: 'Tickets',
+            to: '/admin/events/$eventId/editions/$editionId/tickets',
+            params: { eventId, editionId },
+            icon: Tickets,
             exact: false,
           },
         ],
