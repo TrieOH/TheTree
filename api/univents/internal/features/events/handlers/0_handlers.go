@@ -30,6 +30,7 @@ func RegisterRoutes(
 ) {
 	r.Route("/events", func(r chi.Router) {
 		r.Get("/", h.ListPublic)
+		r.Get("/{event_slug}:by-slug", h.GetBySlug)
 		r.With(jwt).Post("/", h.Create)
 		r.With(jwt).Get("/owned", h.ListOwned)
 		r.With(jwt).Get("/joined", h.ListJoined)

@@ -13,6 +13,12 @@ SELECT *
 FROM events
 WHERE status != 'draft';
 
+-- name: GetEventBySlug :one
+SELECT *
+FROM events
+WHERE slug = @slug
+  AND status != 'draft';
+
 -- name: ListOwnedEvents :many
 SELECT *
 FROM events

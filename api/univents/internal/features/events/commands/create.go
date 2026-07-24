@@ -25,5 +25,21 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateEventRequest
 		ContactEmail: payload.ContactEmail,
 	}
 
-	return c.events.Create(ctx, event)
+	var created *models.Event
+	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+		created, err = c.events.Create(ctx, event)
+		if err != nil {
+			return err
+		}
+
+		_, err = c.events.AddEventMember(ctx, created.ID, ident.Sub.ID, models.EventMemberRoleOwner)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
 }
