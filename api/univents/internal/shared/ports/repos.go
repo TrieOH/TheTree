@@ -32,15 +32,6 @@ type CheckpointsRepository interface {
 	List(ctx context.Context, editionID uuid.UUID) ([]contracts.Checkpoint, error)
 }
 
-type TicketsRepository interface {
-	Create(ctx context.Context, toCreate contracts.Ticket) (*contracts.Ticket, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*contracts.Ticket, error)
-	AddPermission(ctx context.Context, toCreate contracts.TicketPermission) (*contracts.TicketPermission, error)
-	RemovePermission(ctx context.Context, id, ticketID uuid.UUID) error
-	List(ctx context.Context, editionID uuid.UUID) ([]contracts.Ticket, error)
-	GetPermissions(ctx context.Context, ticketID uuid.UUID) ([]contracts.TicketPermission, error)
-}
-
 type ProductsRepository interface {
 	Create(ctx context.Context, toCreate contracts.Product) (*contracts.Product, error)
 	Publish(ctx context.Context, id uuid.UUID) error
