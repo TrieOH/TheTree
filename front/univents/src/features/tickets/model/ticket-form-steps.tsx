@@ -36,11 +36,14 @@ export function createTicketFormSteps(): StepConfig<TicketCreateInputI>[] {
       label: 'Comercial',
       fields: [
         {
-          kind: 'text',
+          kind: 'money',
           name: 'price_cents',
           label: 'Preço (em centavos)',
-          placeholder: 'Ex: 5000 para R$50,00',
-          inputType: 'number',
+          currency: "BRL",
+          valueType: "number",
+          maxCents: 99999999999,
+          // placeholder: 'Ex: 5000 para R$50,00',
+          // inputType: 'number',
         },
         {
           kind: 'text',

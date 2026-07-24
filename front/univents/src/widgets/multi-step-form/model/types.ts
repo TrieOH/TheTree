@@ -86,6 +86,25 @@ export interface ToggleFieldConfig<
   disabled?: boolean
 }
 
+export interface MoneyFieldConfig<TFieldValues extends FieldValues> extends BaseFieldConfig<TFieldValues> {
+  kind: "money";
+  name: FieldPath<TFieldValues>;
+  label: string;
+  description?: string;
+  optional?: boolean;
+  disabled?: boolean;
+  /** ISO 4217 currency code used only for formatting/display. Defaults to "BRL". */
+  currency?: string;
+  /** BCP 47 locale used only for formatting/display. Defaults to "pt-BR". */
+  locale?: string;
+  /** Whether the field it's bound to holds a JS `number` or a
+   * `bigint` of cents. Defaults to "number" — use "bigint" if your
+   * column (and zod schema) is `bigint`. */
+  valueType?: "number" | "bigint";
+  minCents?: number;
+  maxCents?: number;
+}
+
 export interface DateTimeFieldConfig<
   TFieldValues extends FieldValues,
 > extends BaseFieldConfig<TFieldValues> {
@@ -180,6 +199,7 @@ export type FieldConfig<TFieldValues extends FieldValues> =
   | TextFieldConfig<TFieldValues>
   | UrlFieldConfig<TFieldValues>
   | ToggleFieldConfig<TFieldValues>
+  | MoneyFieldConfig<TFieldValues>
   | DateTimeFieldConfig<TFieldValues>
   | ComboboxFieldConfig<TFieldValues>
   | CustomFieldConfig<TFieldValues>

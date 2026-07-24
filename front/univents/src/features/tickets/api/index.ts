@@ -15,7 +15,7 @@ export const createTicketFn = createClientOnlyFn((
   editionId: string
 ) => {
   return authFetcher.post<TicketI>(
-    `/editions/${editionId}/ticket-types/`,
+    `/editions/${editionId}/ticket-types`,
     ticketData
   );
 });
@@ -39,7 +39,7 @@ export const patchTicketFn = createClientOnlyFn((
  * @returns A promise that resolves to an array of Ticket objects.
  */
 const getAllTicketsFn = async (editionId: string) => {
-  return publicQueryFetcher<TicketI[]>(`/editions/${editionId}/ticket-types/`)
+  return publicQueryFetcher<TicketI[]>(`/editions/${editionId}/ticket-types`)
 };
 
 /**

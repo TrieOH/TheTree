@@ -115,7 +115,10 @@ export default function AdminTicketCard({
 
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 backdrop-blur-sm">
                 <Coins className="size-3" />
-                <span className="max-w-28 truncate">R$ {(ticket.price_cents / 100).toFixed(2)}</span>
+
+                <span className="max-w-28 truncate">
+                  {ticket.price_cents > 0 ? `R$ ${(ticket.price_cents / 100).toFixed(2)}` : "Gratuito"}
+                </span>
               </span>
             </div>
 
