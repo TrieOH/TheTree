@@ -46,7 +46,7 @@ type ActorService struct {
 func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, error) {
 	var res Actor
 	path := fmt.Sprintf("/projects/%s/actors/%s:by_email", s.client.projectID, email)
-	if err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res); err != nil {
+	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
 		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
 	}
 	return &res, nil
@@ -55,7 +55,7 @@ func (s *ActorService) GetByEmail(ctx context.Context, email string) (*Actor, er
 func (s *ActorService) GetByID(ctx context.Context, id uuid.UUID) (*Actor, error) {
 	var res Actor
 	path := fmt.Sprintf("/projects/%s/actors/%s", s.client.projectID, id.String())
-	if err := s.client.DoRequestRaw(ctx, "GET", path, nil, &res); err != nil {
+	if err := s.client.DoRequest(ctx, "GET", path, nil, &res); err != nil {
 		return nil, err // *sdkkit.SDKError or *sdkkit.APIError — both appropriate here
 	}
 	return &res, nil
