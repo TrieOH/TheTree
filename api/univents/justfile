@@ -17,11 +17,3 @@ gen-mocks:
 
 test:
     @echo "no tests for univents"
-
-#testf:
-#    mockery
-#    mkdir -p generated/coverage
-#    gotestsum --format testdox --format-icons nerdfonts \
-#        -- -coverprofile=generated/coverage/coverage.out ./...
-#    ~/go/bin/gcov2lcov -infile=generated/coverage/coverage.out -outfile=generated/coverage/coverage.lcov -use-absolute-source-path
-#    genhtml generated/coverage/coverage.lcov -o generated/coverage/html

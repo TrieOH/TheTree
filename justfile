@@ -28,6 +28,12 @@ informd:
     docker compose up --build identityx -d
     docker compose up --build informd
 
+test:
+    cd api/identityx && just test
+    cd api/informd && just test
+    cd api/payssage && just test
+    cd api/univents && just test
+
 generate +SERVICES="identityx informd payssage univents":
     #!/usr/bin/env bash
     for svc in {{SERVICES}}; do
