@@ -1,8 +1,9 @@
 import { motion } from 'motion/react'
-import { CalendarDays, ShieldCheck, UserRound } from 'lucide-react'
+import { ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import type { EventMemberI } from '../api/members'
 import type { EventMemberRole } from '../model/member'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/shadcn/button'
 
 const roleConfig: Record<
   EventMemberRole,
@@ -28,19 +29,18 @@ const roleConfig: Record<
 export interface AdminEventMemberCardProps {
   member: EventMemberI
   index?: number
+  onRemove: (member: EventMemberI) => void
 }
 
 export function AdminEventMemberCard({
   member,
   index = 0,
+  onRemove,
 }: AdminEventMemberCardProps) {
   const role = roleConfig[member.role]
   const RoleIcon = role.icon
-  const createdAt = new Date(member.created_at).toLocaleDateString('pt-BR')
-  const displayName = member.email ?? `Usuário ${member.user_id.slice(0, 8)}`
-  const initials = member.email
-    ? member.email.slice(0, 2).toUpperCase()
-    : member.user_id.slice(0, 2).toUpperCase()
+  const displayName = `Usuário ${member.user_id.slice(0, 8)}`
+  const initials = member.user_id.slice(0, 2).toUpperCase()
 
   return (
     <motion.article
@@ -91,16 +91,21 @@ export function AdminEventMemberCard({
       </div>
 
       <div className="flex min-w-0 items-center justify-between gap-3 p-3 pt-2.5 sm:p-4 sm:pt-3">
-        <div className="min-w-0 flex-1 space-y-1">
-          <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
-            <UserRound className="size-3 shrink-0" />
-            <span className="truncate font-mono">{member.user_id}</span>
-          </span>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <CalendarDays className="size-3 shrink-0" />
-            Adicionado em {createdAt}
-          </span>
-        </div>
+        <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+          <UserRound className="size-3 shrink-0" />
+          <span className="truncate font-mono">{member.user_id}</span>
+        </span>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 text-destructive hover:text-destructive"
+          onClick={() => onRemove(member)}
+        >
+          <Trash2 className="size-3.5" />
+          Remover
+        </Button>
       </div>
     </motion.article>
   )

@@ -14,8 +14,6 @@ export interface EventMemberI {
   created_at: string
   updated_at: string | null
   deleted_at: string | null
-  /** Available locally for members added during the current session. */
-  email?: string
 }
 
 export interface AddEventMemberInput {

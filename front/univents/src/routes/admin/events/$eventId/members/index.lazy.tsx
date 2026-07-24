@@ -1,7 +1,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { UserMinus, UserPlus, Users } from 'lucide-react'
+import { UserPlus, Users } from 'lucide-react'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import {
@@ -44,7 +44,7 @@ function EventMembersRoute() {
   const removeMutation = useRemoveEventMemberMutation()
 
   const [addModalOpen, setAddModalOpen] = useState(false)
-  const [removeModalOpen, setRemoveModalOpen] = useState(false)
+  const [memberToRemove, setMemberToRemove] = useState<EventMemberI | null>(null)
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortState<EventMemberI>>({
     field: 'created_at',
@@ -56,12 +56,9 @@ function EventMembersRoute() {
       const search = filter.trim().toLowerCase()
       if (!search) return true
 
-      return [
-        member.email ?? '',
-        member.user_id,
-        roleLabels[member.role],
-        member.role,
-      ].some((value) => value.toLowerCase().includes(search))
+      return [member.user_id, roleLabels[member.role], member.role].some(
+        (value) => value.toLowerCase().includes(search),
+      )
     })
     .sort((a, b) => {
       const direction = sort.direction === 'asc' ? 1 : -1
@@ -89,7 +86,7 @@ function EventMembersRoute() {
       <PaginatedContainer<EventMemberI>
         items={visibleMembers}
         layout="grid"
-        minItemWidth="20rem"
+        minItemWidth="16rem"
         pageSize={8}
         gap="4"
         sort={sort}
@@ -111,31 +108,18 @@ function EventMembersRoute() {
         ]}
         filterValue={filter}
         onFilterChange={setFilter}
-        filterPlaceholder="Buscar por usuário, e-mail ou função..."
+        filterPlaceholder="Buscar por usuário ou função..."
         itemLabel="membros"
         headerActions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-9 gap-2 text-destructive hover:text-destructive"
-              onClick={() => setRemoveModalOpen(true)}
-              disabled={members.length === 0}
-            >
-              <UserMinus className="size-4" />
-              Remover membro
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="h-9 gap-2"
-              onClick={() => setAddModalOpen(true)}
-            >
-              <UserPlus className="size-4" />
-              Adicionar membro
-            </Button>
-          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={() => setAddModalOpen(true)}
+          >
+            <UserPlus className="size-4" />
+            Adicionar membro
+          </Button>
         }
         emptyState={
           <EmptyState
@@ -156,6 +140,7 @@ function EventMembersRoute() {
               key={member.id}
               member={member}
               index={index}
+              onRemove={setMemberToRemove}
             />
           ))
         }
@@ -179,9 +164,11 @@ function EventMembersRoute() {
       />
 
       <RemoveEventMemberModal
-        open={removeModalOpen}
-        onOpenChange={setRemoveModalOpen}
-        members={members}
+        open={memberToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setMemberToRemove(null)
+        }}
+        member={memberToRemove}
         onRemove={(userId, email) =>
           removeMutation.mutateAsync({ eventId, userId, email }).then(
             (res) => res.success,

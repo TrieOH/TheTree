@@ -157,7 +157,7 @@ export function useAddEventMemberMutation() {
         eventKeys.members(input.eventId),
         (old = []) => [
           ...old.filter((member) => member.id !== res.data.id),
-          { ...res.data, email: input.email },
+          res.data,
         ],
       )
       toast.success('Membro adicionado com sucesso!')
