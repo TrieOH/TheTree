@@ -13,6 +13,7 @@ import (
 
 	idx "sdk/identityx"
 	"univents/internal/features/events"
+	"univents/internal/features/ticket_types"
 	"univents/ports"
 
 	mws "github.com/MintzyG/fun/middlewares"
@@ -24,8 +25,9 @@ import (
 // ── Wire types ────────────────────────────────────────────────────────────
 
 type repos struct {
-	events   ports.EventRepo
-	editions ports.EditionRepo
+	events      ports.EventRepo
+	editions    ports.EditionRepo
+	ticketTypes ports.TicketTypeRepo
 	//activities ports.ActivitiesRepository
 	//signatures ports2.SignatureRepo
 	//certs      ports2.CertificationRepo
@@ -36,8 +38,9 @@ type repos struct {
 }
 
 type queries struct {
-	events   *events.Queries
-	editions *editions.Queries
+	events      *events.Queries
+	editions    *editions.Queries
+	ticketTypes *ticket_types.Queries
 	//activities *activities.Queries
 	//signatures *signatures.Queries
 	//certs      *certifications.Queries
@@ -48,8 +51,9 @@ type queries struct {
 }
 
 type commands struct {
-	events   *events.Commands
-	editions *editions.Commands
+	events      *events.Commands
+	editions    *editions.Commands
+	ticketTypes *ticket_types.Commands
 	//activities *activities.Commands
 	//signatures *signatures.Commands
 	//certs      *certifications.Commands
@@ -75,8 +79,9 @@ type middlewares struct {
 }
 
 type handlers struct {
-	Events   *events.Handlers
-	Editions *editions.Handlers
+	Events      *events.Handlers
+	Editions    *editions.Handlers
+	TicketTypes *ticket_types.Handlers
 	//Activities *activities.Handlers
 	//signatures *signatures.Handlers
 	//certs      *certifications.Handlers
@@ -91,8 +96,9 @@ type handlers struct {
 
 func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 	return repos{
-		events:   events.NewRepos(q, loggr, tracer),
-		editions: editions.NewRepos(q, loggr, tracer),
+		events:      events.NewRepos(q, loggr, tracer),
+		editions:    editions.NewRepos(q, loggr, tracer),
+		ticketTypes: ticket_types.NewRepos(q, loggr, tracer),
 		//activities: activities.NewRepos(q, loggr, tracer),
 		//signatures: signatures.NewRepos(q, loggr, tracer),
 		//certs:      certifications.NewRepos(q, loggr, tracer),
@@ -105,8 +111,9 @@ func initRepos(q *sqlc.Queries, loggr *zap.Logger, tracer trace.Tracer) repos {
 
 func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) queries {
 	return queries{
-		events:   events.NewQueries(r.events, loggr, tracer, tx),
-		editions: editions.NewQueries(r.events, r.editions, loggr, tracer, tx),
+		events:      events.NewQueries(r.events, loggr, tracer, tx),
+		editions:    editions.NewQueries(r.events, r.editions, loggr, tracer, tx),
+		ticketTypes: ticket_types.NewQueries(r.editions, r.ticketTypes, loggr, tracer, tx),
 		//activities: activities.NewQueries(r.activities, r.editions, loggr, tracer, tx),
 		//signatures: signatures.NewQueries(r.signatures, r.editions, loggr, tracer, tx),
 		//certs:      certifications.NewQueries(r.certs, r.editions, loggr, tracer, tx),
@@ -119,8 +126,9 @@ func initQueries(r repos, tx database.TxRunner, loggr *zap.Logger, tracer trace.
 
 func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client, tx database.TxRunner, loggr *zap.Logger, tracer trace.Tracer) commands {
 	return commands{
-		events:   events.NewCommands(r.events, obj, idx, loggr, tracer, tx),
-		editions: editions.NewCommands(r.events, r.editions, loggr, tracer, tx),
+		events:      events.NewCommands(r.events, obj, idx, loggr, tracer, tx),
+		editions:    editions.NewCommands(r.events, r.editions, loggr, tracer, tx),
+		ticketTypes: ticket_types.NewCommands(r.events, r.editions, r.ticketTypes, loggr, tracer, tx),
 		//activities: activities.NewCommands(r.activities, r.editions, r.certs, loggr, tracer, tx),
 		//signatures: signatures.NewCommands(r.signatures, r.editions, obj, loggr, tracer, tx),
 		//certs:      certifications.NewCommands(r.certs, r.editions, loggr, tracer, tx),
@@ -134,8 +142,9 @@ func initCommands(r repos, obj *objectstorage.Client, idx *idx.Client, tx databa
 func initHandlers(q queries, c commands) handlers {
 	return handlers{
 		//Security: security.NewHandler(rt.wsRegistry)
-		Events:   events.NewHandlers(c.events, q.events),
-		Editions: editions.NewHandlers(c.editions, q.editions),
+		Events:      events.NewHandlers(c.events, q.events),
+		Editions:    editions.NewHandlers(c.editions, q.editions),
+		TicketTypes: ticket_types.NewHandlers(c.ticketTypes, q.ticketTypes),
 		//Activities: activities.NewHandlers(c.activities, q.activities),
 		//signatures: signatures.NewHandlers(c.signatures, q.signatures),
 		//certs:      certifications.NewHandlers(c.certs, q.certs),
