@@ -58,46 +58,37 @@ func SetupFUN(module string) {
 func SetupConstraintMessages() {
 	database.SetConstraintErrorRegistry(database.ConstraintRegistry{
 		// events
-		"chk_series_requires_single_edition": "a non-series event can only have a single edition",
+		"chk_event_status_valid":             "Event status must be one of: draft, active, discontinued.",
+		"chk_event_payments_config_complete": "Both Payssage seller ID and wallet ID must be set together, or neither.",
+
+		// event_members
+		"chk_event_members_role_valid": "Member role must be one of: owner, admin, staff.",
 
 		// editions
-		"editions_check":  "registration close date must be after the registration open date",
-		"editions_check1": "edition end date must be after the start date",
+		"chk_editions_dates_valid":               "Edition end date must be after the start date.",
+		"chk_editions_registration_before_start": "Registration opening date must be before or equal to the edition start date.",
 
-		// tickets
-		"tickets_name_edition_id_key": "a ticket with this name already exists for this edition",
+		// registrations
+		"chk_registrations_status_valid": "Registration status must be one of: pending, confirmed, cancelled, expired.",
 
-		// activities
-		"activities_check":  "activity end date must be after the start date",
-		"activities_check1": "capacity must be greater than zero when capacity is enabled",
-		"activities_check2": "capacity cannot be lower than the remaining capacity",
-		"activity_interest_list_activity_id_user_id_key": "user is already on the interest list for this activity",
+		// product_purchases
+		"chk_product_purchases_status_valid": "Product purchase status must be one of: pending, confirmed, cancelled, expired.",
 
-		// products
-		"chk_product_status": "invalid product status",
-		"products_check":     "a ticket-type product must reference a ticket",
-		"products_check1":    "inventory quantity must be greater than zero when inventory is enabled",
-		"products_check2":    "inventory quantity cannot be lower than the remaining inventory",
-		"product_bundle_components_component_type_check":                  "component type must be either 'ticket' or 'product'",
-		"product_bundle_components_bundle_product_id_component_type__key": "this component is already part of the bundle",
-		"product_reservations_session_id_product_id_key":                  "a reservation for this product already exists for this session",
+		// programs
+		"chk_programs_kind_valid": "Program kind must be one of: activity, checkpoint.",
 
-		// purchases
-		"uq_purchases_session_id": "a purchase already exists for this session",
+		// program_occurrences
+		"chk_program_occurrences_dates_valid": "Program occurrence end time must be after the start time.",
 
-		// ticket permissions
-		"chk_type_matches_target": "the permission target does not match the selected permission type",
+		// program_participations
+		"chk_program_participations_status_valid": "Participation status must be one of: registered, attended, no_show, cancelled.",
 
-		// tokens
-		"user_token_balances_user_id_edition_id_key": "a token balance already exists for this user in this edition",
+		// signatures
+		"chk_signatures_status_valid":    "Signature status must be one of: requested, ready, declined, expired.",
+		"chk_signatures_ready_has_image": "A signature marked as ready must have an image URL set.",
 
-		// edition registrations / interest
-		"edition_interest_list_edition_id_user_id_key": "user is already on the interest list for this edition",
-		"edition_registrations_edition_id_user_id_key": "user is already registered for this edition",
-
-		// certifications
-		"chk_target_type_valid":       "the target type must be either 'activity' or 'edition'",
-		"uniq_hash_per_certification": "a certification hash needs to be unique",
+		// certification_templates
+		"chk_certification_templates_kind_valid": "Certification template kind must be one of: edition_attendance, program_attendance.",
 	})
 }
 

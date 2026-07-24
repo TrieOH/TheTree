@@ -107,7 +107,7 @@ func (app *IdentityX) CreateRouter(middlewares middlewares, handlers handlers) h
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	actors.RegisterRoutes(r, handlers.Actors, middlewares.jwtAuth, middlewares.clientOnly)
+	actors.RegisterRoutes(r, handlers.Actors, middlewares.anyAuth, middlewares.clientOnly)
 	api_keys.RegisterRoutes(r, handlers.APIKeys, middlewares.anyAuth, middlewares.clientOnly)
 	authn.RegisterRoutes(r, handlers.Authn, middlewares.jwtAuth, middlewares.anyAuth)
 	organizations.RegisterRoutes(r, handlers.Orgs, middlewares.jwtAuth, middlewares.clientOnly)
