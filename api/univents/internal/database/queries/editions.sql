@@ -54,3 +54,27 @@ SET
 WHERE id = @id
   AND is_draft = TRUE
 RETURNING *;
+
+-- name: GetActiveEdition :one
+SELECT *
+FROM editions
+WHERE event_id = @event_id
+  AND is_draft = FALSE
+  AND starts_at <= now()
+  AND ends_at > now();
+
+-- name: GetPastEditions :many
+SELECT *
+FROM editions
+WHERE event_id = @event_id
+  AND is_draft = FALSE
+  AND ends_at <= now()
+ORDER BY ends_at DESC;
+
+-- name: GetUpcomingEditions :many
+SELECT *
+FROM editions
+WHERE event_id = @event_id
+  AND is_draft = FALSE
+  AND starts_at > now()
+ORDER BY starts_at ASC;
