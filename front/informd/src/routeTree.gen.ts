@@ -9,28 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as ViewFormIDRouteImport } from './routes/view/$formID'
-import { Route as AdminKeysRouteImport } from './routes/admin/keys'
 import { Route as AdminNamespaceIDRouteImport } from './routes/admin/$namespaceID'
-import { Route as AdminFormIndexRouteImport } from './routes/admin/form/index'
+import { Route as AdminKeysRouteImport } from './routes/admin/keys'
+import { Route as ViewFormIDRouteImport } from './routes/view/$formID'
 import { Route as AdminNamespaceIDIndexRouteImport } from './routes/admin/$namespaceID/index'
-import { Route as AdminFormFormIDRouteImport } from './routes/admin/form/$formID'
 import { Route as AdminNamespaceIDMembersRouteImport } from './routes/admin/$namespaceID/members'
+import { Route as AdminFormIndexRouteImport } from './routes/admin/form/index'
+import { Route as AdminFormFormIDRouteImport } from './routes/admin/form/$formID'
 import { Route as AdminFormFormIDIndexRouteImport } from './routes/admin/form/$formID/index'
-import { Route as AdminFormFormIDSubmissionsRouteImport } from './routes/admin/form/$formID/submissions'
 import { Route as AdminFormFormIDMembersRouteImport } from './routes/admin/form/$formID/members'
+import { Route as AdminFormFormIDSubmissionsRouteImport } from './routes/admin/form/$formID/submissions'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -38,44 +38,49 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const ViewFormIDRoute = ViewFormIDRouteImport.update({
-  id: '/view/$formID',
-  path: '/view/$formID',
-  getParentRoute: () => rootRouteImport,
+const AdminNamespaceIDRoute = AdminNamespaceIDRouteImport.update({
+  id: '/$namespaceID',
+  path: '/$namespaceID',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminKeysRoute = AdminKeysRouteImport.update({
   id: '/keys',
   path: '/keys',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminNamespaceIDRoute = AdminNamespaceIDRouteImport.update({
-  id: '/$namespaceID',
-  path: '/$namespaceID',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFormIndexRoute = AdminFormIndexRouteImport.update({
-  id: '/form/',
-  path: '/form/',
-  getParentRoute: () => AdminRoute,
+const ViewFormIDRoute = ViewFormIDRouteImport.update({
+  id: '/view/$formID',
+  path: '/view/$formID',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminNamespaceIDIndexRoute = AdminNamespaceIDIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
-const AdminFormFormIDRoute = AdminFormFormIDRouteImport.update({
-  id: '/form/$formID',
-  path: '/form/$formID',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminNamespaceIDMembersRoute = AdminNamespaceIDMembersRouteImport.update({
   id: '/members',
   path: '/members',
   getParentRoute: () => AdminNamespaceIDRoute,
 } as any)
+const AdminFormIndexRoute = AdminFormIndexRouteImport.update({
+  id: '/form/',
+  path: '/form/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFormFormIDRoute = AdminFormFormIDRouteImport.update({
+  id: '/form/$formID',
+  path: '/form/$formID',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFormFormIDIndexRoute = AdminFormFormIDIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminFormFormIDRoute,
+} as any)
+const AdminFormFormIDMembersRoute = AdminFormFormIDMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => AdminFormFormIDRoute,
 } as any)
 const AdminFormFormIDSubmissionsRoute =
@@ -84,11 +89,6 @@ const AdminFormFormIDSubmissionsRoute =
     path: '/submissions',
     getParentRoute: () => AdminFormFormIDRoute,
   } as any)
-const AdminFormFormIDMembersRoute = AdminFormFormIDMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => AdminFormFormIDRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -186,18 +186,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -207,12 +207,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/view/$formID': {
-      id: '/view/$formID'
-      path: '/view/$formID'
-      fullPath: '/view/$formID'
-      preLoaderRoute: typeof ViewFormIDRouteImport
-      parentRoute: typeof rootRouteImport
+    '/admin/$namespaceID': {
+      id: '/admin/$namespaceID'
+      path: '/$namespaceID'
+      fullPath: '/admin/$namespaceID'
+      preLoaderRoute: typeof AdminNamespaceIDRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/keys': {
       id: '/admin/keys'
@@ -221,19 +221,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKeysRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/$namespaceID': {
-      id: '/admin/$namespaceID'
-      path: '/$namespaceID'
-      fullPath: '/admin/$namespaceID'
-      preLoaderRoute: typeof AdminNamespaceIDRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/form/': {
-      id: '/admin/form/'
-      path: '/form'
-      fullPath: '/admin/form/'
-      preLoaderRoute: typeof AdminFormIndexRouteImport
-      parentRoute: typeof AdminRoute
+    '/view/$formID': {
+      id: '/view/$formID'
+      path: '/view/$formID'
+      fullPath: '/view/$formID'
+      preLoaderRoute: typeof ViewFormIDRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/$namespaceID/': {
       id: '/admin/$namespaceID/'
@@ -242,19 +235,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNamespaceIDIndexRouteImport
       parentRoute: typeof AdminNamespaceIDRoute
     }
-    '/admin/form/$formID': {
-      id: '/admin/form/$formID'
-      path: '/form/$formID'
-      fullPath: '/admin/form/$formID'
-      preLoaderRoute: typeof AdminFormFormIDRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/$namespaceID/members': {
       id: '/admin/$namespaceID/members'
       path: '/members'
       fullPath: '/admin/$namespaceID/members'
       preLoaderRoute: typeof AdminNamespaceIDMembersRouteImport
       parentRoute: typeof AdminNamespaceIDRoute
+    }
+    '/admin/form/': {
+      id: '/admin/form/'
+      path: '/form'
+      fullPath: '/admin/form/'
+      preLoaderRoute: typeof AdminFormIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/form/$formID': {
+      id: '/admin/form/$formID'
+      path: '/form/$formID'
+      fullPath: '/admin/form/$formID'
+      preLoaderRoute: typeof AdminFormFormIDRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/form/$formID/': {
       id: '/admin/form/$formID/'
@@ -263,18 +263,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFormFormIDIndexRouteImport
       parentRoute: typeof AdminFormFormIDRoute
     }
-    '/admin/form/$formID/submissions': {
-      id: '/admin/form/$formID/submissions'
-      path: '/submissions'
-      fullPath: '/admin/form/$formID/submissions'
-      preLoaderRoute: typeof AdminFormFormIDSubmissionsRouteImport
-      parentRoute: typeof AdminFormFormIDRoute
-    }
     '/admin/form/$formID/members': {
       id: '/admin/form/$formID/members'
       path: '/members'
       fullPath: '/admin/form/$formID/members'
       preLoaderRoute: typeof AdminFormFormIDMembersRouteImport
+      parentRoute: typeof AdminFormFormIDRoute
+    }
+    '/admin/form/$formID/submissions': {
+      id: '/admin/form/$formID/submissions'
+      path: '/submissions'
+      fullPath: '/admin/form/$formID/submissions'
+      preLoaderRoute: typeof AdminFormFormIDSubmissionsRouteImport
       parentRoute: typeof AdminFormFormIDRoute
     }
   }
