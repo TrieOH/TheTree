@@ -2,29 +2,28 @@ import { createLazyFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Calendar, Plus } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { SortState } from '@trieoh/ui-base'
 import { Button } from '@/shared/ui/shadcn/button'
-import { AlertModal } from '@/widgets/ui/alert-modal'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import {
   useCreateEditionMutation,
+  usePatchEditionMutation,
   usePublishEditionMutation,
-  useUpdateEditionMutation,
 } from '@/features/editions/api/mutations'
+import { editionRangesOverlap } from '@/features/editions/model'
 import type { EditionI } from '@/features/editions/model'
 import { AdminEditionCard } from '@/features/editions/ui/AdminEditionCard'
 import { ManageEditionModal } from '@/features/editions/ui/ManageEditionModal'
+import { EditEditionModal } from '@/features/editions/ui/EditEditionModal'
+import { AlertModal } from '@/widgets/ui/alert-modal'
 
 const STATUS_SORT_ORDER: Record<EditionI['status'], number> = {
-  draft: 0,
-  announced: 1,
-  open: 2,
-  ongoing: 3,
-  finished: 4,
-  completed: 5,
-  cancelled: 6,
-  postponed: 7,
+  active: 0,
+  future: 1,
+  draft: 2,
+  past: 3,
 }
 
 export const Route = createLazyFileRoute('/admin/events/$eventId/editions/')({
@@ -33,19 +32,22 @@ export const Route = createLazyFileRoute('/admin/events/$eventId/editions/')({
 
 function EditionsRoute() {
   const { eventId } = Route.useParams()
-  const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  )
   const createEditionMutation = useCreateEditionMutation()
-  const updateEditionMutation = useUpdateEditionMutation()
+  const patchEditionMutation = usePatchEditionMutation()
   const publishEditionMutation = usePublishEditionMutation()
   const [filter, setFilter] = useState('')
   const [sort, setSort] = useState<SortState<EditionI>>({
     field: 'starts_at',
     direction: 'desc',
   })
-  const [modalState, setModalState] = useState<{ open: boolean; edition?: EditionI }>({
-    open: false,
-  })
-  const [publishingEdition, setPublishingEdition] = useState<EditionI | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editionToEdit, setEditionToEdit] = useState<EditionI | null>(null)
+  const [editionToPublish, setEditionToPublish] = useState<EditionI | null>(
+    null,
+  )
 
   const filteredEditions = [...editions]
     .filter((edition) => {
@@ -53,11 +55,10 @@ function EditionsRoute() {
       if (!search) return true
 
       return [
-        edition.edition_name,
+        edition.name,
+        edition.slug,
         edition.tagline ?? '',
-        edition.location_name,
-        edition.location_address,
-        edition.type,
+        edition.location_name ?? '',
         edition.status,
       ].some((value) => value.toLowerCase().includes(search))
     })
@@ -65,18 +66,23 @@ function EditionsRoute() {
       const direction = sort.direction === 'asc' ? 1 : -1
 
       if (sort.field === 'starts_at') {
-        return (new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()) * direction
+        return (
+          (new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()) *
+          direction
+        )
       }
 
       if (sort.field === 'status') {
-        return (STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status]) * direction
+        return (
+          (STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status]) *
+          direction
+        )
       }
 
-      if (sort.field === 'type') {
-        return String(a.type).localeCompare(String(b.type)) * direction
-      }
-
-      return String(a[sort.field]).localeCompare(String(b[sort.field])) * direction
+      return (
+        String(a[sort.field] ?? '').localeCompare(String(b[sort.field] ?? '')) *
+        direction
+      )
     })
 
   return (
@@ -93,14 +99,15 @@ function EditionsRoute() {
           {
             key: 'starts_at',
             label: 'Início',
-            comparator: (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+            comparator: (a, b) =>
+              new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
           },
-          { key: 'edition_name', label: 'Nome' },
-          { key: 'type', label: 'Frequência' },
+          { key: 'name', label: 'Nome' },
           {
             key: 'status',
             label: 'Status',
-            comparator: (a, b) => STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
+            comparator: (a, b) =>
+              STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status],
           },
         ]}
         filterValue={filter}
@@ -110,7 +117,7 @@ function EditionsRoute() {
         headerActions={
           <Button
             type="button"
-            onClick={() => setModalState({ open: true, edition: undefined })}
+            onClick={() => setModalOpen(true)}
             className="h-9 gap-2"
           >
             <Plus className="size-4" />
@@ -133,63 +140,89 @@ function EditionsRoute() {
               edition={edition}
               eventId={eventId}
               index={idx}
-              onEdit={(currentEdition) => setModalState({ open: true, edition: currentEdition })}
-              onPublish={edition.status === 'draft' ? () => setPublishingEdition(edition) : undefined}
+              onEdit={setEditionToEdit}
+              onPublish={edition.is_draft ? setEditionToPublish : undefined}
             />
           ))
         }
       />
 
       <ManageEditionModal
-        key={modalState.edition?.id ?? 'edition-create'}
-        open={modalState.open}
-        edition={modalState.edition}
-        onOpenChange={(open) => {
-          if (open) {
-            setModalState((prev) => ({ ...prev, open }))
-            return
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCreate={async (values) => {
+          const overlaps = editions.some((edition) =>
+            editionRangesOverlap(edition, values),
+          )
+
+          if (overlaps) {
+            toast.error(
+              'Já existe uma edição nesse período. Apenas uma edição pode estar ativa por vez.',
+            )
+            return false
           }
 
-          setModalState({ open: false, edition: undefined })
-        }}
-        onCreate={async (values) => {
           const res = await createEditionMutation.mutateAsync({
             eventId,
             data: values,
           })
-
-          return res.success ? res.data : false
-        }}
-        onUpdate={async (editionId, values) => {
-          const res = await updateEditionMutation.mutateAsync({
-            eventId,
-            editionId,
-            data: values,
-          })
-
           return res.success ? res.data : false
         }}
       />
 
+      {editionToEdit ? (
+        <EditEditionModal
+          key={editionToEdit.id}
+          open
+          edition={editionToEdit}
+          onOpenChange={(open) => {
+            if (!open) setEditionToEdit(null)
+          }}
+          onUpdate={async (values) => {
+            const overlaps = editions.some(
+              (edition) =>
+                edition.id !== editionToEdit.id &&
+                editionRangesOverlap(edition, values),
+            )
+            if (overlaps) {
+              toast.error(
+                'Já existe uma edição nesse período. Apenas uma edição pode estar ativa por vez.',
+              )
+              return false
+            }
+
+            const res = await patchEditionMutation.mutateAsync({
+              eventId,
+              editionId: editionToEdit.id,
+              data: values,
+            })
+            return res.success ? res.data : false
+          }}
+        />
+      ) : null}
+
       <AlertModal
-        open={Boolean(publishingEdition)}
-        onOpenChange={() => setPublishingEdition(null)}
+        open={Boolean(editionToPublish)}
+        onOpenChange={(open) => {
+          if (!open && !publishEditionMutation.isPending) {
+            setEditionToPublish(null)
+          }
+        }}
         title="Publicar edição?"
         description={
-          publishingEdition
-            ? `Ao publicar "${publishingEdition.edition_name}", ela ficará disponível como anunciada.`
+          editionToPublish
+            ? `A edição "${editionToPublish.name}" ficará disponível publicamente.`
             : undefined
         }
         confirmLabel="Publicar edição"
-        variant="default"
         loading={publishEditionMutation.isPending}
         onConfirm={async () => {
-          if (!publishingEdition) return
-          publishEditionMutation.mutate({
+          if (!editionToPublish) return
+          const res = await publishEditionMutation.mutateAsync({
             eventId,
-            editionId: publishingEdition.id,
+            editionId: editionToPublish.id,
           })
-          setPublishingEdition(null)
+          if (res.success) setEditionToPublish(null)
         }}
       />
     </div>

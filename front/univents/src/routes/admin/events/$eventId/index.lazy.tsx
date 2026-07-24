@@ -1,24 +1,21 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   CalendarDays,
+  CalendarPlus,
   CheckCircle2,
   CircleAlert,
   Eye,
   LayoutGrid,
   ChevronRight,
-  CalendarClock,
-  CalendarX,
+  Users,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/shared/ui/shadcn/badge'
-import { Button } from '@/shared/ui/shadcn/button'
 import {
   Card,
   CardContent,
@@ -26,8 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/ui/shadcn/card'
-import { EmptyState } from '@trieoh/ui-base'
 import { AlertModal } from '@/widgets/ui/alert-modal'
+import { QuickAction } from '@/widgets/ui/quick-action'
 import {
   allJoinedEventsQueryOptions,
   allOwnEventsQueryOptions,
@@ -36,55 +33,7 @@ import {
   useDiscontinueEventMutation,
   usePublishEventMutation,
 } from '@/features/events/api/mutations'
-import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import { cn } from '@/shared/lib/utils'
-
-function QuickAction({
-  children,
-  disabled = false,
-  to,
-  params,
-  onClick,
-}: {
-  children: ReactNode
-  disabled?: boolean
-} & (
-  | {
-      to:
-        | '/events/$eventId'
-        | '/admin/events/$eventId/editions'
-        | '/admin/events/$eventId/members'
-      params: { eventId: string }
-      onClick?: never
-    }
-  | { to?: never; params?: never; onClick: () => void }
-)) {
-  const baseClassName = cn(
-    'flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-muted/15 px-4 py-4 text-left',
-    'transition-colors hover:border-border hover:bg-muted/30',
-    disabled &&
-      'cursor-not-allowed opacity-60 hover:border-border/70 hover:bg-muted/15',
-  )
-
-  if (to) {
-    return (
-      <Link to={to} params={params} className={baseClassName}>
-        {children}
-      </Link>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      className={baseClassName}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  )
-}
 
 const statusConfig = {
   draft: {
@@ -109,27 +58,6 @@ const statusConfig = {
   },
 } as const
 
-const editionStatusHint: Record<string, string> = {
-  draft: 'Ainda em edição',
-  announced: 'Pronta para divulgação',
-  published: 'Visível ao público',
-  canceled: 'Cancelada',
-}
-
-const editionTypeLabel: Record<string, string> = {
-  year: 'Anual',
-  season: 'Por temporada',
-  number: 'Numerada',
-  ordinal: 'Ordinal',
-  custom: 'Personalizada',
-}
-
-const editionMonetaryLabel: Record<string, string> = {
-  free: 'Gratuita',
-  paid: 'Paga',
-  mixed: 'Inscrições gratuitas e pagas',
-}
-
 export const Route = createLazyFileRoute('/admin/events/$eventId/')({
   component: EventOverviewRoute,
 })
@@ -138,15 +66,11 @@ function EventOverviewRoute() {
   const { eventId } = Route.useParams()
   const { data: ownedEvents = [] } = useQuery(allOwnEventsQueryOptions())
   const { data: joinedEvents = [] } = useQuery(allJoinedEventsQueryOptions())
-  const { data: editions = [] } = useQuery(
-    allAdminEditionsQueryOptions(eventId),
-  )
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false)
   const [discontinueConfirmOpen, setDiscontinueConfirmOpen] = useState(false)
   const event =
     [...ownedEvents, ...joinedEvents].find((item) => item.id === eventId) ??
     null
-  const latestEdition = editions[0] ?? null
   const isPublished = event?.status === 'active'
   const status = event ? statusConfig[event.status] : statusConfig.draft
 
@@ -156,7 +80,7 @@ function EventOverviewRoute() {
   const copyLink = () => {
     if (!event) return
     void navigator.clipboard.writeText(
-      `${window.location.origin}/events/${event.id}`,
+      `${window.location.origin}/events/${event.slug}`,
     )
     toast.success('Link copiado')
   }
@@ -194,9 +118,7 @@ function EventOverviewRoute() {
   ]
   const heroDescription =
     event?.description ?? 'Sem descrição cadastrada para este evento.'
-  const recentEditionDate = latestEdition
-    ? format(new Date(latestEdition.starts_at), 'dd MMM yyyy', { locale: ptBR })
-    : 'Sem edição recente'
+
   const checklist = [
     {
       label: 'Banner e logo cadastrados',
@@ -208,12 +130,56 @@ function EventOverviewRoute() {
     },
     {
       label: 'Slug público disponível',
-      done: Boolean(event?.id),
+      done: Boolean(event?.slug),
+    },
+  ]
+
+  const sections = [
+    {
+      label: 'Edições',
+      to: '/admin/events/$eventId/editions',
+      icon: CalendarPlus,
     },
     {
-      label: 'Última edição cadastrada',
-      done: Boolean(latestEdition),
+      label: 'Membros',
+      to: '/admin/events/$eventId/members',
+      icon: Users,
     },
+  ]
+
+  const actions = [
+    ...(event?.status === 'draft'
+      ? [
+        {
+          label: 'Publicar evento',
+          onClick: () => setPublishConfirmOpen(true),
+          disabled: publishEventMutation.isPending,
+          variant: 'default' as const,
+        },
+      ]
+      : []),
+    {
+      label: 'Copiar link público',
+      onClick: copyLink,
+      disabled: !event,
+      variant: 'default' as const,
+    },
+    ...(isPublished
+      ? [
+        {
+          label: 'Descontinuar evento',
+          onClick: () => setDiscontinueConfirmOpen(true),
+          disabled: discontinueEventMutation.isPending,
+          variant: 'destructive' as const,
+        },
+        {
+          label: 'Abrir painel público',
+          to: '/events/$slug' as const,
+          params: { slug: event?.slug ?? '' },
+          variant: 'default' as const,
+        },
+      ]
+      : []),
   ]
 
   return (
@@ -291,147 +257,68 @@ function EventOverviewRoute() {
           ))}
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.95fr]">
-          <Card className="border-border/60 bg-card/95 shadow-sm">
-            <CardHeader className="border-b border-border/60">
-              <CardTitle>Checklist do evento</CardTitle>
-              <CardDescription>
-                Itens derivados dos dados já cadastrados no evento.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 py-5">
-              {checklist.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/15 px-4 py-3.5"
+        <Card className="border-border/60 bg-card/95 shadow-sm">
+          <CardHeader className="border-b border-border/60">
+            <CardTitle>Checklist do evento</CardTitle>
+            <CardDescription>
+              Itens derivados dos dados já cadastrados no evento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 py-5">
+            {checklist.map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/15 px-4 py-3.5"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      'size-2 rounded-full',
+                      item.done ? 'bg-emerald-500' : 'bg-amber-500',
+                    )}
+                  />
+                  <span className="text-sm text-foreground">
+                    {item.label}
+                  </span>
+                </div>
+                {item.done ? (
+                  <CheckCircle2 className="size-4 text-emerald-500/70" />
+                ) : (
+                  <CircleAlert className="size-4 text-amber-500/70" />
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 bg-card/95 shadow-sm">
+          <CardHeader className="border-b border-border/60">
+            <CardTitle>Seções do evento</CardTitle>
+            <CardDescription>
+              Gerencie os recursos vinculados a este evento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
+            {sections.map((section) => {
+              const Icon = section.icon
+              return (
+                <QuickAction
+                  key={section.to}
+                  to={section.to}
+                  params={{ eventId }}
                 >
                   <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        'size-2 rounded-full',
-                        item.done ? 'bg-emerald-500' : 'bg-amber-500',
-                      )}
-                    />
-                    <span className="text-sm text-foreground">
-                      {item.label}
+                    <Icon className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
+                      {section.label}
                     </span>
                   </div>
-                  {item.done ? (
-                    <CheckCircle2 className="size-4 text-emerald-500/70" />
-                  ) : (
-                    <CircleAlert className="size-4 text-amber-500/70" />
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60 bg-card/95 shadow-sm">
-            <CardHeader className="border-b border-border/60 pb-3">
-              <CardTitle>Edição recente</CardTitle>
-              <CardDescription>
-                Última edição cadastrada no admin.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 py-4">
-              {latestEdition ? (
-                <>
-                  <div className="rounded-2xl border border-border/60 bg-muted/10 px-4 py-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 space-y-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className="rounded-full px-2.5"
-                          >
-                            <CalendarClock className="size-3.5" />
-                            Última edição
-                          </Badge>
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                            <span className="size-1.5 rounded-full bg-primary/70" />
-                            {editionMonetaryLabel[latestEdition.monetary_type]}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                            {editionStatusHint[latestEdition.status] ??
-                              'Status interno da edição'}
-                          </span>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
-                            {latestEdition.edition_name}
-                          </h3>
-                          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-                            {latestEdition.tagline ??
-                              latestEdition.description ??
-                              latestEdition.location_name}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2.5 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Data
-                      </p>
-                      <p className="mt-1.5 text-sm font-semibold text-foreground">
-                        {recentEditionDate}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Local
-                      </p>
-                      <p className="mt-1.5 truncate text-sm font-semibold text-foreground">
-                        {latestEdition.location_name}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/60 bg-muted/10 px-3 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        Frequência
-                      </p>
-                      <p className="mt-1.5 text-sm font-semibold text-foreground">
-                        {editionTypeLabel[latestEdition.type] ??
-                          latestEdition.type}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                      <span className="size-1.5 rounded-full bg-primary/70" />
-                      {latestEdition.timezone}
-                    </span>
-                    {latestEdition.organizer_name ||
-                    latestEdition.contact_email ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground">
-                        <span className="size-1.5 rounded-full bg-primary/70" />
-                        {latestEdition.organizer_name
-                          ? `Organizador: ${latestEdition.organizer_name}`
-                          : `Contato: ${latestEdition.contact_email}`}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700">
-                        <span className="size-1.5 rounded-full bg-amber-500" />
-                        Organizador e contato não definidos
-                      </span>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <EmptyState
-                  icon={CalendarX}
-                  eyebrow="Edição recente"
-                  title="Nenhuma edição cadastrada ainda"
-                  description="Quando a primeira edição for criada, ela aparece aqui com os detalhes principais e o link direto."
-                  className="border-0 bg-transparent px-0 py-2 shadow-none"
-                />
-              )}
-            </CardContent>
-          </Card>
-        </section>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </QuickAction>
+              )
+            })}
+          </CardContent>
+        </Card>
 
         <Card className="border-border/60 bg-card/95 shadow-sm">
           <CardHeader className="border-b border-border/60">
@@ -441,71 +328,38 @@ function EventOverviewRoute() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-3">
-            {event?.status === 'draft' && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-auto justify-between rounded-2xl border-dashed bg-muted/15 px-4 py-4 text-left hover:bg-muted/30"
-                onClick={() => setPublishConfirmOpen(true)}
-                disabled={publishEventMutation.isPending || !event}
-              >
-                <span className="text-sm font-medium text-foreground">
-                  Publicar evento
-                </span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </Button>
-            )}
+            {actions.map((action) => {
+              if ('to' in action && action.to) {
+                return (
+                  <QuickAction
+                    key={action.label}
+                    to={action.to}
+                    params={action.params}
+                    disabled={action.disabled}
+                    variant={action.variant}
+                  >
+                    <span className="text-sm font-medium text-foreground">
+                      {action.label}
+                    </span>
+                    <ChevronRight className="size-4 text-muted-foreground" />
+                  </QuickAction>
+                )
+              }
 
-            <QuickAction
-              to="/admin/events/$eventId/editions"
-              params={{ eventId }}
-            >
-              <span className="text-sm font-medium text-foreground">
-                Criar edição
-              </span>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </QuickAction>
-
-            <QuickAction
-              to="/admin/events/$eventId/members"
-              params={{ eventId }}
-            >
-              <span className="text-sm font-medium text-foreground">
-                Gerenciar membros
-              </span>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </QuickAction>
-
-            {isPublished && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-auto justify-between rounded-2xl border-dashed border-destructive/30 bg-destructive/5 px-4 py-4 text-left text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => setDiscontinueConfirmOpen(true)}
-                disabled={discontinueEventMutation.isPending}
-              >
-                <span className="text-sm font-medium">Descontinuar evento</span>
-                <ChevronRight className="size-4" />
-              </Button>
-            )}
-
-            {isPublished && (
-              <QuickAction onClick={copyLink} disabled={!event}>
-                <span className="text-sm font-medium text-foreground">
-                  Copiar link
-                </span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </QuickAction>
-            )}
-
-            {isPublished && (
-              <QuickAction to="/events/$eventId" params={{ eventId }}>
-                <span className="text-sm font-medium text-foreground">
-                  Abrir painel público
-                </span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </QuickAction>
-            )}
+              return (
+                <QuickAction
+                  key={action.label}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  variant={action.variant}
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {action.label}
+                  </span>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </QuickAction>
+              )
+            })}
           </CardContent>
         </Card>
       </div>

@@ -22,8 +22,8 @@ export function EventCard({
 
   const handleClick = () => {
     void navigate({
-      to: '/events/$eventId',
-      params: { eventId: event.id },
+      to: '/events/$slug',
+      params: { slug: event.slug },
     })
   }
 

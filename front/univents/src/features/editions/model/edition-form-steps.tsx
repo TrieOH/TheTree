@@ -1,109 +1,108 @@
-import type { ComboboxOption, StepConfig } from '@/widgets/multi-step-form/model/types'
-import type { EditionCreateInputI } from '.'
-
-const timezones = typeof Intl.supportedValuesOf === 'function'
-  ? Intl.supportedValuesOf('timeZone')
-  : ['UTC']
-
-const editionTypeOptions: ComboboxOption[] = [
-  { value: 'year', label: 'Ano' },
-  { value: 'season', label: 'Temporada' },
-  { value: 'number', label: 'Número' },
-  { value: 'ordinal', label: 'Ordinal' },
-  { value: 'custom', label: 'Personalizado' },
-]
-
-const timezoneOptions: ComboboxOption[] = timezones.map((tz) => ({ value: tz, label: tz }))
+import type { StepConfig } from '@/widgets/multi-step-form/model/types'
+import type { EditionCreateInputI, EditionPatchInputI } from '.'
 
 export function createEditionFormSteps(): StepConfig<EditionCreateInputI>[] {
   return [
     {
-      id: 'identidade',
-      label: 'Identidade',
+      id: 'edicao',
+      label: 'Edição',
       fields: [
         {
-          kind: 'combobox',
-          name: 'type',
-          label: 'Tipo',
-          placeholder: 'Selecione o tipo',
-          options: editionTypeOptions,
-        },
-        {
           kind: 'text',
-          name: 'edition_name',
+          name: 'name',
           label: 'Nome da edição',
-          placeholder: 'Ex: 2025',
+          placeholder: 'Ex: Edição 2026',
         },
         {
           kind: 'text',
-          name: 'tagline',
-          label: 'Tagline',
-          placeholder: 'Uma descrição curta da edição',
-          optional: true,
-        },
-        {
-          kind: 'text',
-          name: 'organizer_name',
-          label: 'Organizador',
-          placeholder: 'Nome do organizador',
-          optional: true,
+          name: 'slug',
+          label: 'Slug',
+          placeholder: 'edicao-2026',
         },
       ],
     },
     {
-      id: 'midia',
-      label: 'Mídia',
-      fields: [
-        {
-          kind: 'image',
-          name: 'logo_url',
-          label: 'Logo da edição',
-          hint: 'PNG ou JPEG, até 2MB',
-          accept: 'image/png,image/jpeg',
-          maxSizeMB: 2,
-          optional: true,
-          layout: 'half',
-        },
-        {
-          kind: 'image',
-          name: 'banner_url',
-          label: 'Banner da edição',
-          hint: 'PNG ou JPEG, até 5MB',
-          accept: 'image/png,image/jpeg',
-          maxSizeMB: 5,
-          optional: true,
-          layout: 'half',
-        },
-      ],
-    },
-    {
-      id: 'periodo',
-      label: 'Período',
+      id: 'cronograma',
+      label: 'Cronograma',
       fields: [
         {
           kind: 'datetime',
           name: 'starts_at',
           label: 'Início',
-          placeholder: 'Selecione a data de início',
         },
         {
           kind: 'datetime',
           name: 'ends_at',
-          label: 'Fim',
-          placeholder: 'Selecione a data de término',
+          label: 'Término',
+        },
+      ],
+    },
+  ]
+}
+
+export function createEditionPatchFormSteps(): StepConfig<EditionPatchInputI>[] {
+  return [
+    {
+      id: 'edicao',
+      label: 'Edição',
+      fields: [
+        {
+          kind: 'text',
+          name: 'name',
+          label: 'Nome da edição',
+          placeholder: 'Ex: Edição 2026',
+        },
+        {
+          kind: 'text',
+          name: 'slug',
+          label: 'Slug',
+          placeholder: 'edicao-2026',
+        },
+      ],
+    },
+    {
+      id: 'cronograma',
+      label: 'Cronograma',
+      fields: [
+        {
+          kind: 'datetime',
+          name: 'starts_at',
+          label: 'Início',
         },
         {
           kind: 'datetime',
-          name: 'registration_opens_at',
-          label: 'Abertura de inscrições',
-          placeholder: 'Opcional',
+          name: 'ends_at',
+          label: 'Término',
+        },
+      ],
+    },
+    {
+      id: 'detalhes',
+      label: 'Detalhes',
+      fields: [
+        {
+          kind: 'text',
+          name: 'tagline',
+          label: 'Tagline',
+          optional: true,
+        },
+        {
+          kind: 'text',
+          name: 'description',
+          label: 'Descrição',
           optional: true,
         },
         {
           kind: 'datetime',
-          name: 'registration_closes_at',
-          label: 'Fechamento de inscrições',
-          placeholder: 'Opcional',
+          name: 'registration_opens_at',
+          label: 'Abertura das inscrições',
+          optional: true,
+        },
+        {
+          kind: 'text',
+          name: 'contact_email',
+          label: 'E-mail de contato',
+          inputType: 'email',
           optional: true,
         },
       ],
@@ -116,41 +115,12 @@ export function createEditionFormSteps(): StepConfig<EditionCreateInputI>[] {
           kind: 'text',
           name: 'location_name',
           label: 'Nome do local',
-          placeholder: 'Ex: Centro de Convenções',
-        },
-        {
-          kind: 'text',
-          name: 'location_address',
-          label: 'Endereço',
-          placeholder: 'Rua, número, cidade',
-        },
-        {
-          kind: 'combobox',
-          name: 'timezone',
-          label: 'Fuso horário',
-          placeholder: 'Selecione o fuso',
-          options: timezoneOptions,
-        },
-      ],
-    },
-    {
-      id: 'contato',
-      label: 'Contato',
-      fields: [
-        {
-          kind: 'text',
-          name: 'contact_email',
-          label: 'E-mail de contato',
-          placeholder: 'contato@evento.com',
-          inputType: 'email',
           optional: true,
         },
         {
           kind: 'text',
-          name: 'contact_phone',
-          label: 'Telefone de contato',
-          placeholder: '(00) 00000-0000',
-          inputType: 'tel',
+          name: 'location_description',
+          label: 'Descrição do local',
           optional: true,
         },
       ],

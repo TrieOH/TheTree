@@ -1,6 +1,6 @@
 import { createClientOnlyFn } from '@tanstack/react-start'
 import { queryOptions } from '@tanstack/react-query'
-import type { EventCreateSubmitI, EventI } from '../model'
+import type { EventCreateOutputI, EventI } from '../model'
 import {
   authFetcher,
   publicQueryFetcher,
@@ -14,7 +14,7 @@ import { eventKeys } from './query-keys'
  * @returns A promise that resolves to the API response containing the newly created event.
  */
 export const createEventFn = createClientOnlyFn(
-  (eventData: EventCreateSubmitI) => {
+  (eventData: EventCreateOutputI) => {
     return authFetcher.post<EventI>('/events', eventData)
   },
 )
@@ -70,10 +70,18 @@ export const allOwnEventsQueryOptions = () => {
   })
 }
 
+/**
+ * Fetches all joined events from the server.
+ * @returns A promise that resolves to an array of Event objects.
+ */
 export const getJoinedEventsFn = createClientOnlyFn(async () => {
   return authQueryFetcher<EventI[]>('/events/joined')
 })
 
+/**
+ * Query options for fetching joined events, using TanStack Query.
+ * @returns An object containing the query key and query function for fetching joined events.
+ */
 export const allJoinedEventsQueryOptions = () => {
   return queryOptions({
     queryKey: eventKeys.joinedLists(),
@@ -82,24 +90,22 @@ export const allJoinedEventsQueryOptions = () => {
 }
 
 /**
- * Fetches a single public event from the server by filtering the list.
- * @param id - The event id
- * @returns A promise that resolves to the Event object.
- * @throws Error if not found.
+ * Fetches all public events from the server.
+ * @param slug - the event slug
+ * @returns A promise that resolves to an Event object.
  */
-export const getPublicEventFn = async (id: string) => {
-  const events = await getPublicEventsFn()
-  const event = events.find((e) => e.id === id)
-  if (event) return event
-  throw new Error('Failed to find event in list')
+export const getPublicEventBySlugFn = async (slug: string) => {
+  return publicQueryFetcher<EventI | null>(`/events/${slug}:by-slug`).catch(() => null)
 }
 
 /**
- * Query options for fetching a single public event.
+ * Query options for fetching event, using TanStack Query.
+ * @param slug - the event slug
+ * @returns An object containing the query key and query function for fetching the event.
  */
-export const publicEventQueryOptions = (id: string) => {
+export const publicEventBySlugQueryOptions = (slug: string) => {
   return queryOptions({
-    queryKey: ['events', 'public', id],
-    queryFn: () => getPublicEventFn(id),
+    queryKey: eventKeys.detail.publicBySlug(slug),
+    queryFn: () => getPublicEventBySlugFn(slug),
   })
 }

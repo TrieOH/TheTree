@@ -87,7 +87,7 @@ function MenuItems({
       action()
     }
   const copyLink = () => {
-    const url = `${window.location.origin}/events/${event.id}`
+    const url = `${window.location.origin}/events/${event.slug}`
     void navigator.clipboard.writeText(url)
     toast.success('Link copied to clipboard')
   }

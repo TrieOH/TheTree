@@ -1,55 +1,64 @@
-import { Link } from "@tanstack/react-router";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard } from "lucide-react";
-import { useRef } from "react";
-import { useCart } from "../hooks/use-cart";
-import type { CartItem as CartItemType } from "../model/cart";
-import { Button } from "@/shared/ui/shadcn/button";
-import { cn } from "@/shared/lib/utils";
+import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react'
+import { useRef } from 'react'
+import { useCart } from '../hooks/use-cart'
+import type { CartItem as CartItemType } from '../model/cart'
+import { Button } from '@/shared/ui/shadcn/button'
+import { cn } from '@/shared/lib/utils'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetFooter,
   SheetTitle,
-} from "@/shared/ui/shadcn/sheet";
+} from '@/shared/ui/shadcn/sheet'
 
 interface CartProps {
-  isOpen: boolean;
-  eventId: string;
-  editionId: string;
-  onClose: () => void;
+  isOpen: boolean
+  eventId: string
+  editionId: string
+  onClose: () => void
 }
 
 interface CartItemProps {
-  item: CartItemType;
-  onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
-  priceFormatted: (cents: number) => string;
+  item: CartItemType
+  onRemove: (id: string) => void
+  onUpdateQuantity: (id: string, quantity: number) => void
+  priceFormatted: (cents: number) => string
 }
 
-function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuantity }: CartItemProps & { getMaxQuantity: (p: Pick<CartItemType, "has_inventory" | "inventory_remaining">) => number }) {
-  const max = getMaxQuantity(item);
-  const maxReached = item.quantity >= max;
-  const itemTotal = item.price_cents * item.quantity;
-  const inputRef = useRef<HTMLInputElement>(null);
+function CartItem({
+  item,
+  onRemove,
+  onUpdateQuantity,
+  priceFormatted,
+  getMaxQuantity,
+}: CartItemProps & {
+  getMaxQuantity: (
+    p: Pick<CartItemType, 'has_inventory' | 'inventory_remaining'>,
+  ) => number
+}) {
+  const max = getMaxQuantity(item)
+  const maxReached = item.quantity >= max
+  const itemTotal = item.price_cents * item.quantity
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseInt(e.target.value, 10);
+    let value = parseInt(e.target.value, 10)
     if (!isNaN(value)) {
-      if (value < 1) value = 1;
-      if (value > max) value = max;
-      onUpdateQuantity(item.id, value);
+      if (value < 1) value = 1
+      if (value > max) value = max
+      onUpdateQuantity(item.id, value)
     }
-  };
+  }
 
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
+    const value = parseInt(e.target.value, 10)
     if (isNaN(value) || value < 1) {
-      onUpdateQuantity(item.id, 1);
+      onUpdateQuantity(item.id, 1)
     } else if (value > max) {
-      onUpdateQuantity(item.id, max);
+      onUpdateQuantity(item.id, max)
     }
-  };
+  }
 
   return (
     <div className="group flex gap-3 p-3 bg-secondary/30 hover:bg-secondary/50 transition-colors border-b border-border/50 last:border-b-0">
@@ -65,14 +74,14 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
           <button
             onClick={() => {
               if (item.quantity > 1) {
-                onUpdateQuantity(item.id, item.quantity - 1);
+                onUpdateQuantity(item.id, item.quantity - 1)
               }
             }}
             className={cn(
-              "h-8 w-8 flex items-center justify-center bg-background border border-border",
-              "hover:bg-accent hover:text-accent-foreground hover:border-accent",
-              "active:bg-accent/80 transition-colors select-none",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              'h-8 w-8 flex items-center justify-center bg-background border border-border',
+              'hover:bg-accent hover:text-accent-foreground hover:border-accent',
+              'active:bg-accent/80 transition-colors select-none',
+              'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
             disabled={item.quantity <= 1}
             aria-label="Diminuir quantidade"
@@ -89,24 +98,25 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             className={cn(
-              "w-12 h-8 text-center text-sm font-semibold tabular-nums bg-background border border-border",
-              "focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent",
-              "hover:border-accent/50 transition-colors",
-              "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              'w-12 h-8 text-center text-sm font-semibold tabular-nums bg-background border border-border',
+              'focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent',
+              'hover:border-accent/50 transition-colors',
+              '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
             )}
           />
 
           <button
             onClick={() => {
               if (!maxReached) {
-                onUpdateQuantity(item.id, item.quantity + 1);
+                onUpdateQuantity(item.id, item.quantity + 1)
               }
             }}
             className={cn(
-              "h-8 w-8 flex items-center justify-center bg-background border border-border",
-              "hover:bg-accent hover:text-accent-foreground hover:border-accent",
-              "active:bg-accent/80 transition-colors select-none",
-              maxReached && "opacity-50 cursor-not-allowed hover:bg-background hover:border-border"
+              'h-8 w-8 flex items-center justify-center bg-background border border-border',
+              'hover:bg-accent hover:text-accent-foreground hover:border-accent',
+              'active:bg-accent/80 transition-colors select-none',
+              maxReached &&
+                'opacity-50 cursor-not-allowed hover:bg-background hover:border-border',
             )}
             disabled={maxReached}
             aria-label="Aumentar quantidade"
@@ -127,7 +137,9 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
           variant="ghost"
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          onClick={() => { onRemove(item.id); }}
+          onClick={() => {
+            onRemove(item.id)
+          }}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -136,27 +148,39 @@ function CartItem({ item, onRemove, onUpdateQuantity, priceFormatted, getMaxQuan
         </p>
       </div>
     </div>
-  );
+  )
 }
 
-export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
-  const { items, totalCents, removeItem, updateQuantity, clearCart, getMaxQuantity } = useCart(editionId);
+export function Cart({
+  isOpen,
+  eventId: _eventId,
+  editionId,
+  onClose,
+}: CartProps) {
+  const {
+    items,
+    totalCents,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    getMaxQuantity,
+  } = useCart(editionId)
 
   const handleClose = () => {
-    onClose();
-  };
+    onClose()
+  }
 
   const priceFormatted = (cents: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(cents / 100);
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(cents / 100)
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      onClose();
+      onClose()
     }
-  };
+  }
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
@@ -181,8 +205,12 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground px-6 py-12">
               <ShoppingCart className="h-16 w-16 opacity-20 mb-4" />
-              <p className="font-medium text-foreground text-sm uppercase tracking-wide">Carrinho vazio</p>
-              <p className="text-xs text-muted-foreground mt-1 mb-6">Adicione produtos para começar</p>
+              <p className="font-medium text-foreground text-sm uppercase tracking-wide">
+                Carrinho vazio
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 mb-6">
+                Adicione produtos para começar
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -212,11 +240,15 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
           <SheetFooter className="border-t bg-secondary/20 p-4 space-y-4 flex-col">
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground uppercase tracking-wide">
-                <span>{items.reduce((acc, i) => acc + i.quantity, 0)} itens</span>
+                <span>
+                  {items.reduce((acc, i) => acc + i.quantity, 0)} itens
+                </span>
                 <span>Subtotal {priceFormatted(totalCents)}</span>
               </div>
               <div className="flex justify-between items-center border-t border-border pt-2">
-                <span className="text-sm font-semibold text-foreground uppercase tracking-wide">Total</span>
+                <span className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  Total
+                </span>
                 <span className="text-2xl font-bold text-primary tabular-nums">
                   {priceFormatted(totalCents)}
                 </span>
@@ -224,30 +256,15 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
             </div>
 
             <div className="space-y-2">
-              <Link
-                to="/events/$eventId/editions/$editionId/checkout"
-                params={{ eventId, editionId }}
-                onClick={handleClose}
-                className={cn(
-                  "flex items-center justify-center gap-2 w-full py-3 px-4",
-                  "bg-primary text-primary-foreground! font-semibold",
-                  "text-sm uppercase rounded-sm transition-colors duration-300",
-                  "hover:text-accent-foreground hover:bg-accent"
-                )}
-              >
-                <CreditCard className="h-4 w-4" />
-                Finalizar Compra
-              </Link>
-
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "flex-1 text-xs font-medium uppercase tracking-wide border-2",
-                    "border-muted-foreground/30 hover:border-accent",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "transition-colors duration-300 rounded-sm"
+                    'flex-1 text-xs font-medium uppercase tracking-wide border-2',
+                    'border-muted-foreground/30 hover:border-accent',
+                    'hover:bg-accent hover:text-accent-foreground',
+                    'transition-colors duration-300 rounded-sm',
                   )}
                   onClick={handleClose}
                 >
@@ -257,14 +274,14 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "flex-1 text-xs font-medium uppercase tracking-wide border-2",
-                    "border-muted-foreground/30 hover:border-destructive",
-                    "hover:bg-destructive hover:text-destructive-foreground",
-                    "transition-colors duration-300 rounded-sm"
+                    'flex-1 text-xs font-medium uppercase tracking-wide border-2',
+                    'border-muted-foreground/30 hover:border-destructive',
+                    'hover:bg-destructive hover:text-destructive-foreground',
+                    'transition-colors duration-300 rounded-sm',
                   )}
                   onClick={() => {
-                    clearCart();
-                    handleClose();
+                    clearCart()
+                    handleClose()
                   }}
                 >
                   Limpar
@@ -275,5 +292,5 @@ export function Cart({ isOpen, eventId, editionId, onClose }: CartProps) {
         )}
       </SheetContent>
     </Sheet>
-  );
+  )
 }

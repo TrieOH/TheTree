@@ -86,8 +86,8 @@ function VerifiedTemplateSection({
     return {
       activity_name:
         payload.target_type === 'edition'
-          ? (edition?.edition_name ?? '')
-          : (activity?.title ?? edition?.edition_name ?? ''),
+          ? (edition?.name ?? '')
+          : (activity?.title ?? edition?.name ?? ''),
       certified_at: formatCertifiedAt(payload.certified_at),
       cert_hash: hash,
       verify_url: `${getOrigin()}/verify/${hash}`,
@@ -179,10 +179,7 @@ function VerifyCertificationPage() {
         ? payload.target_id
         : (activity?.edition_id ?? null)
     const edition = editionId ? (editionLookup.get(editionId) ?? null) : null
-    const templateId =
-      activity?.certification_template_id ??
-      edition?.certification_template_id ??
-      null
+    const templateId = activity?.certification_template_id ?? null
 
     if (!templateId || !edition?.event_id || !edition?.id) return null
 

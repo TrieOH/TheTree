@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMultiStepForm } from '@/widgets/multi-step-form/hooks/use-multi-step-form'
 import { eventCreateSchema } from '../model'
-import type { EventCreateInputI, EventCreateSubmitI, EventI } from '../model'
+import type { EventCreateInputI, EventCreateOutputI, EventI } from '../model'
 import { MultiStepFormModal } from '@/widgets/multi-step-form/ui/multi-step-form-modal'
 import { createEventFormSteps } from '../model/event-form-steps'
 
@@ -9,7 +9,7 @@ export interface ManageEventModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreate: (
-    values: EventCreateSubmitI,
+    values: EventCreateOutputI,
   ) => Promise<EventI | null | boolean> | EventI | null | boolean
 }
 

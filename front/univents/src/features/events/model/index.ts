@@ -27,10 +27,6 @@ export const eventCreateSchema = z.object({
 
 export type EventCreateInputI = z.input<typeof eventCreateSchema>
 export type EventCreateOutputI = z.output<typeof eventCreateSchema>
-export type EventCreateSubmitI = Omit<
-  EventCreateOutputI,
-  'logo_url' | 'banner_url'
->
 
 export type EventStatusI = 'draft' | 'active' | 'discontinued'
 
@@ -51,15 +47,4 @@ export interface EventI {
   created_at: string
   updated_at: string | null
   deleted_at: string | null
-  /** Legacy presentation fields; absent from the current events API. */
-  tagline?: string | null
-  is_series?: boolean
-  editions_count: number
-  gallery_urls?: string[] | null
-  social_links?: {
-    website?: string | null
-    twitter?: string | null
-    instagram?: string | null
-    linkedin?: string | null
-  } | null
 }

@@ -1,6 +1,13 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronsUpDown, FileText, Link2, Plus, Search } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  FileText,
+  Link2,
+  Plus,
+  Search,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState, PaginatedContainer } from '@trieoh/ui-base'
 import type { CertificationTemplateI } from '@/features/certifications/model'
@@ -13,7 +20,13 @@ import { allAdminActivitiesQueryOptions } from '@/features/activities/api'
 import { allAdminEditionsQueryOptions } from '@/features/editions/api'
 import { AdminCertificationTemplateCard } from '@/features/certifications/ui/AdminCertificationTemplateCard'
 import { Button } from '@/shared/ui/shadcn/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/shadcn/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/ui/shadcn/card'
 import { Label } from '@/shared/ui/shadcn/label'
 import { cn } from '@/shared/lib/utils'
 import type { ComboboxOption } from '@/widgets/multi-step-form/model/types'
@@ -49,7 +62,9 @@ function SelectionCombobox({
   const visibleOptions = useMemo(
     () =>
       options.filter((option) =>
-        `${option.label} ${option.description ?? ''}`.toLowerCase().includes(normalizedQuery),
+        `${option.label} ${option.description ?? ''}`
+          .toLowerCase()
+          .includes(normalizedQuery),
       ),
     [normalizedQuery, options],
   )
@@ -92,7 +107,12 @@ function SelectionCombobox({
         )}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className={cn('min-w-0 truncate', !selectedOption && 'text-muted-foreground')}>
+        <span
+          className={cn(
+            'min-w-0 truncate',
+            !selectedOption && 'text-muted-foreground',
+          )}
+        >
           {selectedOption?.label ?? placeholder}
         </span>
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
@@ -111,7 +131,9 @@ function SelectionCombobox({
               onKeyDown={(event) => {
                 if (event.key === 'ArrowDown') {
                   event.preventDefault()
-                  setHighlightedIndex((index) => Math.min(index + 1, Math.max(visibleOptions.length - 1, 0)))
+                  setHighlightedIndex((index) =>
+                    Math.min(index + 1, Math.max(visibleOptions.length - 1, 0)),
+                  )
                 } else if (event.key === 'ArrowUp') {
                   event.preventDefault()
                   setHighlightedIndex((index) => Math.max(index - 1, 0))
@@ -139,7 +161,9 @@ function SelectionCombobox({
                     aria-selected={option.value === value}
                     className={cn(
                       'flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors',
-                      index === highlightedIndex ? 'bg-primary/10' : 'hover:bg-muted/70',
+                      index === highlightedIndex
+                        ? 'bg-primary/10'
+                        : 'hover:bg-muted/70',
                     )}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => select(option)}
@@ -152,7 +176,9 @@ function SelectionCombobox({
                         </span>
                       ) : null}
                     </span>
-                    {option.value === value ? <Check className="size-4 shrink-0" /> : null}
+                    {option.value === value ? (
+                      <Check className="size-4 shrink-0" />
+                    ) : null}
                   </button>
                 </li>
               ))
@@ -171,9 +197,15 @@ function RouteComponent() {
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [selectedActivityId, setSelectedActivityId] = useState('')
 
-  const { data: editions = [] } = useQuery(allAdminEditionsQueryOptions(eventId))
-  const { data: templates = [] } = useQuery(allCertificationTemplatesQueryOptions(eventId, editionId))
-  const { data: activities = [] } = useQuery(allAdminActivitiesQueryOptions(eventId, editionId))
+  const { data: editions = [] } = useQuery(
+    allAdminEditionsQueryOptions(eventId),
+  )
+  const { data: templates = [] } = useQuery(
+    allCertificationTemplatesQueryOptions(eventId, editionId),
+  )
+  const { data: activities = [] } = useQuery(
+    allAdminActivitiesQueryOptions(eventId, editionId),
+  )
 
   const edition = editions.find((item) => item.id === editionId) ?? null
 
@@ -182,12 +214,16 @@ function RouteComponent() {
     if (!search) return templates
 
     return templates.filter((template) =>
-      [template.title, template.url ?? ''].some((value) => value.toLowerCase().includes(search)),
+      [template.title, template.url ?? ''].some((value) =>
+        value.toLowerCase().includes(search),
+      ),
     )
   }, [filter, templates])
 
   let selectedTemplate: CertificationTemplateI | null = null
-  const matchedTemplate = filteredTemplates.find((template) => template.id === selectedTemplateId)
+  const matchedTemplate = filteredTemplates.find(
+    (template) => template.id === selectedTemplateId,
+  )
   if (matchedTemplate) {
     selectedTemplate = matchedTemplate
   } else if (filteredTemplates.length > 0) {
@@ -199,18 +235,23 @@ function RouteComponent() {
   const editionTemplateMutation = useSetEditionCertificationTemplateMutation()
   const activityTemplateMutation = useSetActivityCertificationTemplateMutation()
 
-  const activityOptions = activities.filter((activity) => activity.status !== 'canceled')
+  const activityOptions = activities.filter(
+    (activity) => activity.status !== 'canceled',
+  )
   const templateOptions = templates.map((template) => ({
     value: template.id,
     label: template.title,
-    description: template.url ? 'Com fundo configurado' : 'Sem fundo configurado',
+    description: template.url
+      ? 'Com fundo configurado'
+      : 'Sem fundo configurado',
   }))
   const activitySelectOptions = activityOptions.map((activity) => ({
     value: activity.id,
     label: activity.title,
     description: activity.location,
   }))
-  const isPending = editionTemplateMutation.isPending || activityTemplateMutation.isPending
+  const isPending =
+    editionTemplateMutation.isPending || activityTemplateMutation.isPending
 
   return (
     <div className="flex flex-wrap p-6 pb-28!">
@@ -249,7 +290,9 @@ function RouteComponent() {
         }
         renderItems={(slice) =>
           slice.map((template, index) => {
-            const isSelected = Boolean(selectedTemplate && selectedTemplate.id === template.id)
+            const isSelected = Boolean(
+              selectedTemplate && selectedTemplate.id === template.id,
+            )
 
             return (
               <AdminCertificationTemplateCard
@@ -265,7 +308,7 @@ function RouteComponent() {
                   })
                 }}
                 verifyUrl={window.location.href}
-                editionName={edition?.edition_name ?? 'Nome da edição'}
+                editionName={edition?.name ?? 'Nome da edição'}
               />
             )
           })
@@ -284,12 +327,15 @@ function RouteComponent() {
                   </CardTitle>
                 </div>
                 <CardDescription className="max-w-2xl text-xs">
-                  Escolha um template na grade e aplique na edição inteira ou em uma atividade específica.
+                  Escolha um template na grade e aplique na edição inteira ou em
+                  uma atividade específica.
                 </CardDescription>
               </div>
 
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-[11px] font-medium text-muted-foreground">
-                {selectedTemplate ? 'Template pronto para aplicar' : 'Selecione um template'}
+                {selectedTemplate
+                  ? 'Template pronto para aplicar'
+                  : 'Selecione um template'}
               </span>
             </div>
           </CardHeader>
@@ -297,7 +343,9 @@ function RouteComponent() {
           <CardContent className="space-y-4 pt-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Template</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Template
+                </Label>
                 <SelectionCombobox
                   value={selectedTemplate ? selectedTemplate.id : ''}
                   options={templateOptions}
@@ -308,7 +356,9 @@ function RouteComponent() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Atividade</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Atividade
+                </Label>
                 <SelectionCombobox
                   value={selectedActivityId}
                   options={activitySelectOptions}
@@ -334,7 +384,9 @@ function RouteComponent() {
                 </p>
                 <p className="truncate text-sm font-medium text-foreground">
                   {selectedActivityId
-                    ? activityOptions.find((activity) => activity.id === selectedActivityId)?.title ?? 'Atividade selecionada'
+                    ? (activityOptions.find(
+                        (activity) => activity.id === selectedActivityId,
+                      )?.title ?? 'Atividade selecionada')
                     : 'Aplicação na edição inteira'}
                 </p>
               </div>
@@ -362,7 +414,9 @@ function RouteComponent() {
                 type="button"
                 variant="outline"
                 className="h-9 gap-2 md:min-w-44"
-                disabled={selectedTemplate === null || !selectedActivityId || isPending}
+                disabled={
+                  selectedTemplate === null || !selectedActivityId || isPending
+                }
                 onClick={() => {
                   if (selectedTemplate === null || !selectedActivityId) return
                   activityTemplateMutation.mutate({
