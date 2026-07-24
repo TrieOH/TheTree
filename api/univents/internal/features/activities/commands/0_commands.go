@@ -11,7 +11,7 @@ import (
 
 type Commands struct {
 	activities ports.ActivitiesRepository
-	editions   ports.EditionsRepository
+	editions   ports2.EditionRepo
 	certs      ports2.CertificationRepo
 	logger     *zap.Logger
 	tracer     trace.Tracer
@@ -20,7 +20,7 @@ type Commands struct {
 
 func NewCommands(
 	activities ports.ActivitiesRepository,
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	certs ports2.CertificationRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,

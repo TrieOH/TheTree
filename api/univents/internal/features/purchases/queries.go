@@ -2,6 +2,7 @@ package purchases
 
 import (
 	"context"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"univents/internal/shared/authz"
@@ -16,7 +17,7 @@ import (
 type QueryService struct {
 	products  ports.ProductsRepository
 	purchases ports.PurchaseRepository
-	editions  ports.EditionsRepository
+	editions  ports2.EditionRepo
 	logger    *zap.Logger
 	tracer    trace.Tracer
 	tx        database.TxRunner
@@ -25,7 +26,7 @@ type QueryService struct {
 func NewQueryService(
 	products ports.ProductsRepository,
 	purchases ports.PurchaseRepository,
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,

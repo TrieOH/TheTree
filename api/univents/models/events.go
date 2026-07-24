@@ -42,6 +42,20 @@ const (
 	EventMemberRoleStaff EventMemberRole = "staff"
 )
 
+var eventMemberRoleRank = map[EventMemberRole]int{
+	EventMemberRoleStaff: 0,
+	EventMemberRoleAdmin: 1,
+	EventMemberRoleOwner: 2,
+}
+
+func (r EventMemberRole) Rank() int {
+	return eventMemberRoleRank[r]
+}
+
+func (r EventMemberRole) Minimum(min EventMemberRole) bool {
+	return r.Rank() >= min.Rank()
+}
+
 type EventMember struct {
 	ID        uuid.UUID       `json:"id"`
 	EventID   uuid.UUID       `json:"event_id"`

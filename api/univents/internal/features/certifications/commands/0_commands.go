@@ -2,7 +2,6 @@ package commands
 
 import (
 	"lib/database"
-	ports2 "univents/internal/shared/ports"
 	"univents/ports"
 
 	"go.opentelemetry.io/otel/trace"
@@ -11,7 +10,7 @@ import (
 
 type Commands struct {
 	certs    ports.CertificationRepo
-	editions ports2.EditionsRepository
+	editions ports.EditionRepo
 	logger   *zap.Logger
 	tracer   trace.Tracer
 	tx       database.TxRunner
@@ -19,7 +18,7 @@ type Commands struct {
 
 func NewCommands(
 	certs ports.CertificationRepo,
-	editions ports2.EditionsRepository,
+	editions ports.EditionRepo,
 	logger *zap.Logger,
 	tracer trace.Tracer,
 	tx database.TxRunner,

@@ -144,7 +144,7 @@ func validateConstraints(ctx context.Context, db *pgxpool.Pool) {
 		WHERE nsp.nspname = 'public'
 		AND rel.relname NOT LIKE 'river_%'
 		AND rel.relname != 'goose_db_version'
-		AND con.contype IN ('u', 'c')
+		AND con.contype IN ('u', 'c', 'x')
 		UNION
 		SELECT indexname
 		FROM pg_indexes

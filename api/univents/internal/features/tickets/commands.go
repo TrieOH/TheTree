@@ -2,6 +2,7 @@ package tickets
 
 import (
 	"context"
+	ports2 "univents/ports"
 
 	"lib/database"
 	"univents/internal/shared/authz"
@@ -15,7 +16,7 @@ import (
 )
 
 type CommandService struct {
-	editions ports.EditionsRepository
+	editions ports2.EditionRepo
 	tickets  ports.TicketsRepository
 	logger   *zap.Logger
 	tracer   trace.Tracer
@@ -23,7 +24,7 @@ type CommandService struct {
 }
 
 func NewCommandService(
-	editions ports.EditionsRepository,
+	editions ports2.EditionRepo,
 	tickets ports.TicketsRepository,
 	logger *zap.Logger,
 	tracer trace.Tracer,
