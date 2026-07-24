@@ -28,8 +28,8 @@ func RegisterRoutes(
 	h *Handlers,
 	jwt func(http.Handler) http.Handler,
 ) {
-	r.Get("/editions/{edition_id}/ticket-types/", h.List)
+	r.Get("/editions/{edition_id}/ticket-types", h.List)
 	r.Get("/ticket-types/{ticket_type_id}", h.GetByID)
 	r.With(jwt).Patch("/ticket-types/{ticket_type_id}", h.Patch)
-	r.With(jwt).Post("/editions/{edition_id}/ticket-types/", h.Create)
+	r.With(jwt).Post("/editions/{edition_id}/ticket-types", h.Create)
 }
