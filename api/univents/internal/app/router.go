@@ -6,6 +6,7 @@ import (
 	"net/http/pprof"
 	"univents/internal/features/editions"
 	"univents/internal/features/events"
+	"univents/internal/features/ticket_types"
 
 	fh "github.com/MintzyG/fun/handlers"
 	"github.com/go-chi/chi/v5"
@@ -32,10 +33,10 @@ func (app *Univents) CreateRouter(middlewares middlewares, handlers handlers) ht
 	//r.With(middlewares.jwt).Get("/ws/token", deps.Security.WSAuth)
 	events.RegisterRoutes(r, handlers.Events, middlewares.jwt)
 	editions.RegisterRoutes(r, handlers.Editions, middlewares.jwt)
+	ticket_types.RegisterRoutes(r, handlers.TicketTypes, middlewares.jwt)
 	//activities.RegisterRoutes(r, handlers.Activities, middlewares.jwt)
 	//signatures.RegisterRoutes(r, handlers.signatures, middlewares.jwt)
 	//certifications.RegisterRoutes(r, handlers.certs, middlewares.jwt)
-	//tickets.Routes(r, handlers.Tickets, middlewares.jwt)
 	//checkpoints.Routes(r, handlers.Checkpoints, middlewares.jwt)
 	//products.Routes(r, handlers.Products, middlewares.jwt)
 	//purchases.Routes(r, handlers.Purchases, middlewares.jwt)

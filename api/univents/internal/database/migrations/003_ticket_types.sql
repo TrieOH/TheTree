@@ -6,7 +6,7 @@ CREATE TABLE ticket_types (
     description  TEXT,
     access_level INT NOT NULL DEFAULT 0,
     -- cents, 0 = free
-    price        INT NOT NULL DEFAULT 0,
+    price        BIGINT NOT NULL DEFAULT 0,
     -- null = unlimited
     max_quantity INT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
