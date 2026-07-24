@@ -4,12 +4,12 @@ import (
 	"context"
 	"lib/database"
 	"lib/xslices"
-	"univents/contracts"
+	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) ListTemplates(ctx context.Context, editionID uuid.UUID) ([]contracts.CertificationTemplate, error) {
+func (repo *repo) ListTemplates(ctx context.Context, editionID uuid.UUID) ([]models.CertificationTemplate, error) {
 	ctx, span := database.Span(ctx, repo.tracer, "ListTemplates")
 	defer span.End()
 	templates, err := database.Queries(ctx, repo.q).ListCertificationTemplates(ctx, editionID)

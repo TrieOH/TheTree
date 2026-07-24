@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"univents/contracts"
+	"univents/models"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
@@ -35,7 +36,7 @@ func (uc *Commands) Complete(ctx context.Context, id uuid.UUID) (err error) {
 		}
 		certified[record.UserID] = true
 
-		_, certErr := uc.certs.Certify(ctx, contracts.CertifyInput{
+		_, certErr := uc.certs.Certify(ctx, models.CertifyInput{
 			UserID:     record.UserID,
 			TargetID:   id,
 			TargetType: "activity",

@@ -2,14 +2,14 @@ package commands
 
 import (
 	"context"
-	"univents/contracts"
+	"univents/models"
 )
 
-func (c *Commands) Add(ctx context.Context, payload contracts.AddSignatureInput) (*contracts.Signature, error) {
+func (c *Commands) Add(ctx context.Context, payload models.AddSignatureInput) (*models.Signature, error) {
 	ctx, span := c.tracer.Start(ctx, "Add")
 	defer span.End()
 
-	sig := contracts.Signature{
+	sig := models.Signature{
 		EditionID: payload.EditionID,
 		Title:     payload.Title,
 		URL:       payload.URL,

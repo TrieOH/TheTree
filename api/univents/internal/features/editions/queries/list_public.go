@@ -14,5 +14,5 @@ func (q *Queries) ListPublic(ctx context.Context, eventID uuid.UUID) ([]models.E
 	if err != nil {
 		return nil, err
 	}
-	return q.editions.ListDraft(ctx, event.ID)
+	return q.editions.ListPublic(ctx, event.ID)
 }

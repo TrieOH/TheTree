@@ -72,6 +72,10 @@ func SetupConstraintMessages() {
 		// registrations
 		"chk_registrations_status_valid": "Registration status must be one of: pending, confirmed, cancelled, expired.",
 
+		// products
+		"uniq_products_edition_vendor_code":         "A product with this vendor code already exists in this edition.",
+		"uniq_product_variants_edition_vendor_code": "A product variant with this vendor code already exists in this edition.",
+
 		// product_purchases
 		"chk_product_purchases_status_valid": "Product purchase status must be one of: pending, confirmed, cancelled, expired.",
 

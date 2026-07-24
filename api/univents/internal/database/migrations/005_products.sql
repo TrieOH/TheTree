@@ -2,24 +2,27 @@
 CREATE TABLE products (
     id                    UUID PRIMARY KEY DEFAULT uuidv7(),
     edition_id            UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
-    name                  VARCHAR(256) NOT NULL,
-    description           TEXT,
+    vendor_code           VARCHAR(256) NOT NULL,
     requires_registration BOOLEAN NOT NULL DEFAULT TRUE,
     created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at            TIMESTAMPTZ,
-    deleted_at            TIMESTAMPTZ
+    deleted_at            TIMESTAMPTZ,
+    CONSTRAINT uniq_products_edition_vendor_code UNIQUE(edition_id, vendor_code)
 );
 
 CREATE TABLE product_variants (
     id           UUID PRIMARY KEY DEFAULT uuidv7(),
     edition_id   UUID NOT NULL REFERENCES editions(id) ON DELETE CASCADE,
     product_id   UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    vendor_code  VARCHAR(256) NOT NULL,
     name         VARCHAR(128) NOT NULL,
-    price        INT NOT NULL DEFAULT 0, -- cents
+    description  TEXT,
+    price        BIGINT NOT NULL DEFAULT 0, -- cents
     stock        INT, -- null = unlimited
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ,
-    deleted_at   TIMESTAMPTZ
+    deleted_at   TIMESTAMPTZ,
+    CONSTRAINT uniq_product_variants_edition_vendor_code UNIQUE(edition_id, vendor_code)
 );
 
 CREATE TABLE product_purchases (

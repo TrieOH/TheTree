@@ -52,7 +52,6 @@ SET
     contact_email          = @contact_email,
     updated_at             = now()
 WHERE id = @id
-  AND is_draft = TRUE
 RETURNING *;
 
 -- name: GetActiveEdition :one

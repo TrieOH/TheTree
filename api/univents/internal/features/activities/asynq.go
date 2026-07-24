@@ -3,6 +3,7 @@ package activities
 import (
 	"context"
 	"encoding/json"
+	"univents/models"
 
 	"lib/database"
 	"lib/telemetry"
@@ -74,7 +75,7 @@ func (uc *AsynqHandlers) HandleFinishActivity(ctx context.Context, t *asynq.Task
 		}
 		certified[record.UserID] = true
 
-		_, certErr := uc.certs.Certify(ctx, contracts.CertifyInput{
+		_, certErr := uc.certs.Certify(ctx, models.CertifyInput{
 			UserID:     record.UserID,
 			TargetID:   payload.ActivityID,
 			TargetType: "activity",
