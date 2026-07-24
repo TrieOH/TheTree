@@ -34,6 +34,9 @@ func RegisterRoutes(
 
 	r.Route("/events/{event_id}/editions", func(r chi.Router) {
 		r.Get("/", h.ListPublic)
+		r.Get("/active", h.GetActive)
+		r.Get("/past", h.GetPast)
+		r.Get("/upcoming", h.GetUpcoming)
 		r.With(jwt).Post("/", h.Create)
 		r.With(jwt).Get("/draft", h.ListDraft)
 		r.With(jwt).Patch("/{edition_id}", h.Patch)
