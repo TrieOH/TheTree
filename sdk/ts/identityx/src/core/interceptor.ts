@@ -44,7 +44,7 @@ export class AuthInterceptor {
 
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
-      let shouldClear = true;
+      let shouldClear = false;
       try {
         const refreshToken = getStoredRefreshToken();
         if (!refreshToken) {
@@ -60,9 +60,9 @@ export class AuthInterceptor {
             headers: { "refresh_token": refreshToken },
           }
         );
-
-        if (res.code !== 200 || !res.data) {
-          shouldClear = res.code !== 503;
+        const isSuccessfulCode = res.code >= 200 && res.code < 300;
+        if (!isSuccessfulCode || !res.data || !res.data.access_token) {
+          shouldClear = res.code >= 400 && res.code < 500;
           throw new Error(res.message || "Failed to refresh token");
         }
 
@@ -135,10 +135,9 @@ export class AuthInterceptor {
 
     if (response.status === 401 && shouldAuth && !isRefreshReq) {
       const hasRefreshToken = !!getStoredRefreshToken();
-      const isExpiring = isTokenExpiringSoon(30);
 
-      if (hasRefreshToken && isExpiring) {
-        logger.log("401 detected and token is expiring/expired, attempting refresh...");
+      if (hasRefreshToken) {
+        logger.log("401 detected, attempting token refresh...");
         try {
           await this.refreshToken();
           response = await executeFetch();
