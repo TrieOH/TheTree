@@ -134,7 +134,7 @@ jobs:
           if [ -f api/identityx/sqlc.yaml ]; then cd api/identityx && sqlc generate; fi
       - name: lint identityx
         if: ${{ needs.changes.outputs.identityx == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v6
+        uses: https://github.com/golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           working-directory: api/identityx
@@ -145,7 +145,7 @@ jobs:
           if [ -f api/informd/sqlc.yaml ]; then cd api/informd && sqlc generate; fi
       - name: lint informd
         if: ${{ needs.changes.outputs.informd == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v6
+        uses: https://github.com/golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           working-directory: api/informd
@@ -156,7 +156,7 @@ jobs:
           if [ -f api/payssage/sqlc.yaml ]; then cd api/payssage && sqlc generate; fi
       - name: lint payssage
         if: ${{ needs.changes.outputs.payssage == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v6
+        uses: https://github.com/golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           working-directory: api/payssage
@@ -167,7 +167,7 @@ jobs:
           if [ -f api/univents/sqlc.yaml ]; then cd api/univents && sqlc generate; fi
       - name: lint univents
         if: ${{ needs.changes.outputs.univents == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v6
+        uses: https://github.com/golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
           working-directory: api/univents
