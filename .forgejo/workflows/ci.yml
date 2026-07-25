@@ -86,6 +86,20 @@ jobs:
           name: ci-tools
           path: /tmp/gobin
       - run: chmod +x /tmp/gobin/* && echo "/tmp/gobin" >> "$GITHUB_PATH"
+      - name: debug workspace
+        run: |
+          echo "--- pwd ---"
+          pwd
+          echo "--- GOWORK env var ---"
+          echo "$GOWORK"
+          echo "--- go env GOWORK ---"
+          go env GOWORK
+          echo "--- go.work content ---"
+          cat go.work
+          echo "--- go version ---"
+          go version
+          echo "--- ls api/ ---"
+          ls -la api/
       - run: |
           if [ -f api/${{ matrix.service }}/sqlc.yaml ]; then
             cd api/${{ matrix.service }} && sqlc generate
