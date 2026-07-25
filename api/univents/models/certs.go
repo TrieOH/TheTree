@@ -25,7 +25,7 @@ type Certification struct {
 	Hash        *string   `json:"hash"`
 }
 
-// ── Verify ────────────────────────────────────────────────────────────────
+// ── Verify ───────────────────────────────────────────────────────────────
 
 type VerifyCertificationResponse struct {
 	IsVerified  bool      `json:"is_verified"`
@@ -36,7 +36,7 @@ type VerifyCertificationResponse struct {
 	CertifiedAt time.Time `json:"certified_at"`
 }
 
-// ── Create Certification Template ─────────────────────────────────────────
+// ── Create Certification Template ────────────────────────────────────────
 
 type CreateCertificationTemplateRequest struct {
 	Title string          `json:"title"`
@@ -60,7 +60,7 @@ func (r CreateCertificationTemplateRequest) ToInput(editionID uuid.UUID) CreateC
 	}
 }
 
-// ── Certify ───────────────────────────────────────────────────────────────
+// ── Certify ──────────────────────────────────────────────────────────────
 
 type CertifyRequest struct {
 	TargetID   uuid.UUID `json:"target_id"`
@@ -81,7 +81,7 @@ func (r CertifyRequest) ToInput(userID uuid.UUID) CertifyInput {
 	}
 }
 
-// ── Set Certification Template on target ──────────────────────────────────
+// ── Set Certification Template on target ─────────────────────────────────
 
 type SetCertificationTemplateRequest struct {
 	CertificationTemplateID *uuid.UUID `json:"certification_template_id"`
