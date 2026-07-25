@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) GetMember(ctx context.Context, eventID, userID uuid.UUID) (*models.EventMember, error) {
-	ctx, span := repo.tracer.Start(ctx, "EventsRepo.GetEventMember")
+func (repo *Repo) GetMember(ctx context.Context, eventID, userID uuid.UUID) (*models.EventMember, error) {
+	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.GetEventMember")
 	defer span.End()
 
 	member, err := database.Queries(ctx, repo.q).GetEventMember(ctx, sqlc.GetEventMemberParams{

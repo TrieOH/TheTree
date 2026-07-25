@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) Patch(ctx context.Context, payload models.PatchTicketTypeInput) (*models.TicketType, error) {
-	ctx, span := c.tracer.Start(ctx, "TicketTypesService.Patch")
+	ctx, span := telemetry.StartSpan(ctx, "TicketTypesService.Patch")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
+	"lib/telemetry"
 	"lib/xslices"
 	"univents/models"
 )
 
-func (repo *repo) ListPublic(ctx context.Context) ([]models.Event, error) {
-	ctx, span := repo.tracer.Start(ctx, "EventsRepo.List")
+func (repo *Repo) ListPublic(ctx context.Context) ([]models.Event, error) {
+	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.List")
 	defer span.End()
 
 	sqlcEvents, err := database.Queries(ctx, repo.q).ListPublicEvents(ctx)

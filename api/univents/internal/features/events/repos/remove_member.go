@@ -3,13 +3,14 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) RemoveEventMember(ctx context.Context, eventID, userID uuid.UUID) error {
-	ctx, span := repo.tracer.Start(ctx, "EventsRepo.RemoveEventMember")
+func (repo *Repo) RemoveEventMember(ctx context.Context, eventID, userID uuid.UUID) error {
+	ctx, span := telemetry.StartSpan(ctx, "EventsRepo.RemoveEventMember")
 	defer span.End()
 
 	err := database.Queries(ctx, repo.q).RemoveEventMember(ctx, sqlc.RemoveEventMemberParams{

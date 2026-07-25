@@ -2,12 +2,14 @@ package commands
 
 import (
 	"context"
+	"lib/database"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 )
 
 func (c *Commands) Create(ctx context.Context, payload models.CreateEventRequest) (*models.Event, error) {
-	ctx, span := c.tracer.Start(ctx, "Create")
+	ctx, span := telemetry.StartSpan(ctx, "Create")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)
@@ -26,7 +28,7 @@ func (c *Commands) Create(ctx context.Context, payload models.CreateEventRequest
 	}
 
 	var created *models.Event
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	err = database.RunTx(ctx, func(ctx context.Context) error {
 		created, err = c.events.Create(ctx, event)
 		if err != nil {
 			return err

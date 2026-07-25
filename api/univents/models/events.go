@@ -52,8 +52,8 @@ func (r EventMemberRole) Rank() int {
 	return eventMemberRoleRank[r]
 }
 
-func (r EventMemberRole) Minimum(min EventMemberRole) bool {
-	return r.Rank() >= min.Rank()
+func (r EventMemberRole) Minimum(minimum EventMemberRole) bool {
+	return r.Rank() >= minimum.Rank()
 }
 
 type EventMember struct {

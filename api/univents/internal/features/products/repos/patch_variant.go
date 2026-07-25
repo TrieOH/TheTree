@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) PatchVariant(ctx context.Context, id uuid.UUID, variant *models.ProductVariant) (*models.ProductVariant, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.PatchVariant")
+func (repo *Repo) PatchVariant(ctx context.Context, id uuid.UUID, variant *models.ProductVariant) (*models.ProductVariant, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.PatchVariant")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchProductVariant(ctx, sqlc.PatchProductVariantParams{
 		VendorCode:  variant.VendorCode,

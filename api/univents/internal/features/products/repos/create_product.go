@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 )
 
-func (repo *repo) CreateProduct(ctx context.Context, toCreate *models.Product) (*models.Product, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.CreateProduct")
+func (repo *Repo) CreateProduct(ctx context.Context, toCreate *models.Product) (*models.Product, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.CreateProduct")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateProduct(ctx, sqlc.CreateProductParams{
 		EditionID:            toCreate.EditionID,

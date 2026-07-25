@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"os"
 	"sync"
 
 	"lib/errx"
@@ -32,12 +33,8 @@ func Log() *zap.Logger {
 	if logger == nil {
 		Init()
 	}
-	return logger
-}
-
-func DLog() *zap.Logger {
-	if debugLogger == nil {
-		Init()
+	if os.Getenv("TEST_MODE") == "TRUE" {
+		return debugLogger
 	}
-	return debugLogger
+	return logger
 }

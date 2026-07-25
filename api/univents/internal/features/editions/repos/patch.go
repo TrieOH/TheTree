@@ -3,14 +3,15 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
-func (repo *repo) Patch(ctx context.Context, id uuid.UUID, edition *models.Edition) (*models.Edition, error) {
-	ctx, span := repo.tracer.Start(ctx, "EditionsRepo.Patch")
+func (repo *Repo) Patch(ctx context.Context, id uuid.UUID, edition *models.Edition) (*models.Edition, error) {
+	ctx, span := telemetry.StartSpan(ctx, "EditionsRepo.Patch")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).PatchEdition(ctx, sqlc.PatchEditionParams{
 		EditionName:         edition.Name,

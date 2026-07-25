@@ -1,35 +1,28 @@
 package repos
 
 import (
-	"univents/internal/database/sqlc"
+	sqlc2 "univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
 
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
-type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+type Repo struct {
+	q   *sqlc2.Queries
+	dbe database.ErrorHandler
 }
 
-var _ ports.EditionRepo = (*repo)(nil)
+var _ ports.EditionRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.EditionRepo {
-	return &repo{
-		q:      q,
-		log:    log,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("edition"),
+func NewRepo(q *sqlc2.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler("edition"),
 	}
 }
 
-func mapEdition(src sqlc.Edition) models.Edition {
+func mapEdition(src sqlc2.Edition) models.Edition {
 	return models.Edition{
 		ID:                  src.ID,
 		EventID:             src.EventID,

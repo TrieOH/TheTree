@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Commands) DeleteProduct(ctx context.Context, id uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "ProductsService.DeleteProduct")
+	ctx, span := telemetry.StartSpan(ctx, "ProductsService.DeleteProduct")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

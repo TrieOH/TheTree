@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (q *Queries) ListDraft(ctx context.Context, eventID uuid.UUID) ([]models.Edition, error) {
-	ctx, span := q.tracer.Start(ctx, "EditionService.ListDraft")
+	ctx, span := telemetry.StartSpan(ctx, "EditionService.ListDraft")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

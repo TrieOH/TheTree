@@ -1,35 +1,28 @@
 package repos
 
 import (
-	"univents/internal/database/sqlc"
+	sqlc2 "univents/internal/sqlc"
 	"univents/models"
 	"univents/ports"
 
 	"lib/database"
-
-	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
-type repo struct {
-	q      *sqlc.Queries
-	log    *zap.Logger
-	tracer trace.Tracer
-	dbe    database.ErrorHandler
+type Repo struct {
+	q   *sqlc2.Queries
+	dbe database.ErrorHandler
 }
 
-var _ ports.ProductRepo = (*repo)(nil)
+var _ ports.ProductRepo = (*Repo)(nil)
 
-func NewRepo(q *sqlc.Queries, log *zap.Logger, tracer trace.Tracer) ports.ProductRepo {
-	return &repo{
-		q:      q,
-		log:    log,
-		tracer: tracer,
-		dbe:    database.NewErrorHandler("product"),
+func NewRepo(q *sqlc2.Queries) *Repo {
+	return &Repo{
+		q:   q,
+		dbe: database.NewErrorHandler("product"),
 	}
 }
 
-func mapProduct(src sqlc.Product) models.Product {
+func mapProduct(src sqlc2.Product) models.Product {
 	return models.Product{
 		ID:                   src.ID,
 		EditionID:            src.EditionID,
@@ -41,7 +34,7 @@ func mapProduct(src sqlc.Product) models.Product {
 	}
 }
 
-func mapVariant(src sqlc.ProductVariant) models.ProductVariant {
+func mapVariant(src sqlc2.ProductVariant) models.ProductVariant {
 	return models.ProductVariant{
 		ID:          src.ID,
 		EditionID:   src.EditionID,
