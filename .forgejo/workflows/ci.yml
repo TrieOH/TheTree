@@ -50,6 +50,7 @@ jobs:
     env:
       SQLC_VERSION: "1.31.1"
       GOTESTSUM_VERSION: "1.13.0"
+      GOLANGCI_LINT_VERSION: "2.12.2"
     steps:
       - run: |
           mkdir -p /tmp/gobin
@@ -59,7 +60,10 @@ jobs:
           curl -sSL "https://github.com/gotestyourself/gotestsum/releases/download/v${GOTESTSUM_VERSION}/gotestsum_${GOTESTSUM_VERSION}_linux_amd64.tar.gz" \
             -o /tmp/gotestsum.tar.gz
           tar -xzf /tmp/gotestsum.tar.gz -C /tmp/gobin gotestsum
-          chmod +x /tmp/gobin/sqlc /tmp/gobin/gotestsum
+          curl -sSL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64.tar.gz" \
+            -o /tmp/golangci.tar.gz
+          tar -xzf /tmp/golangci.tar.gz --strip-components=1 -C /tmp/gobin golangci-lint-${GOLANGCI_LINT_VERSION}-linux-amd64/golangci-lint
+          chmod +x /tmp/gobin/sqlc /tmp/gobin/gotestsum /tmp/gobin/golangci-lint
       - uses: https://code.forgejo.org/actions/upload-artifact@v3
         with:
           name: ci-tools
@@ -134,44 +138,28 @@ jobs:
           if [ -f api/identityx/sqlc.yaml ]; then cd api/identityx && sqlc generate; fi
       - name: lint identityx
         if: ${{ needs.changes.outputs.identityx == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          working-directory: api/identityx
-          args: --config=${{ github.workspace }}/.golangci.yml
+        run: cd api/identityx && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
       - name: sqlc informd
         if: ${{ needs.changes.outputs.informd == 'true' }}
         run: |
           if [ -f api/informd/sqlc.yaml ]; then cd api/informd && sqlc generate; fi
       - name: lint informd
         if: ${{ needs.changes.outputs.informd == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          working-directory: api/informd
-          args: --config=${{ github.workspace }}/.golangci.yml
+        run: cd api/informd && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
       - name: sqlc payssage
         if: ${{ needs.changes.outputs.payssage == 'true' }}
         run: |
           if [ -f api/payssage/sqlc.yaml ]; then cd api/payssage && sqlc generate; fi
       - name: lint payssage
         if: ${{ needs.changes.outputs.payssage == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          working-directory: api/payssage
-          args: --config=${{ github.workspace }}/.golangci.yml
+        run: cd api/payssage && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
       - name: sqlc univents
         if: ${{ needs.changes.outputs.univents == 'true' }}
         run: |
           if [ -f api/univents/sqlc.yaml ]; then cd api/univents && sqlc generate; fi
       - name: lint univents
         if: ${{ needs.changes.outputs.univents == 'true' }}
-        uses: https://github.com/golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          working-directory: api/univents
-          args: --config=${{ github.workspace }}/.golangci.yml
+        run: cd api/univents && golangci-lint run ./... --config=${{ github.workspace }}/.golangci.yml
 
   test:
     needs: [changes, lint]
