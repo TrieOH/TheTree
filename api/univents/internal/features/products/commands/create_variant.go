@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (c *Commands) CreateVariant(ctx context.Context, payload models.CreateProductVariantInput) (*models.ProductVariant, error) {
-	ctx, span := c.tracer.Start(ctx, "ProductsService.CreateVariant")
+	ctx, span := telemetry.StartSpan(ctx, "ProductsService.CreateVariant")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

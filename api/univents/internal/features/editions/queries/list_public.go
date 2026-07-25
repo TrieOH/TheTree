@@ -2,13 +2,14 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"univents/models"
 
 	"github.com/google/uuid"
 )
 
 func (q *Queries) ListPublic(ctx context.Context, eventID uuid.UUID) ([]models.Edition, error) {
-	ctx, span := q.tracer.Start(ctx, "EditionService.ListPublic")
+	ctx, span := telemetry.StartSpan(ctx, "EditionService.ListPublic")
 	defer span.End()
 	event, err := q.events.GetByID(ctx, eventID)
 	if err != nil {

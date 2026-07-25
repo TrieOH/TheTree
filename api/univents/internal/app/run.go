@@ -2,34 +2,21 @@ package app
 
 import (
 	"lib/database"
-	"lib/telemetry"
-	"log"
-	"net/http"
-	"univents/internal/database/sqlc"
-
-	"go.opentelemetry.io/otel"
+	"univents/internal/sqlc"
 )
 
 func (app *Univents) run() {
 	q := sqlc.New(app.db)
-	loggr := telemetry.Log()
-	tx := database.NewPGXTxRunner(app.db, loggr)
-	tracer := otel.Tracer(app.cfg.AppName)
+	tx := database.NewPGXTxRunner(app.db)
+	database.SetDefaultRunner(tx)
 
-	//rt.wsRegistry = sockets.New()
-
-	repos := initRepos(q, loggr, tracer)
-	queries := initQueries(repos, tx, loggr, tracer)
-	commands := initCommands(repos, app.objStorage, app.idxClient, tx, loggr, tracer)
-	middlewares := initMiddlewares(loggr)
+	repos := initRepos(q)
+	queries := initQueries(repos)
+	commands := initCommands(repos, app.objStorage, app.idxClient)
+	middlewares := initMiddlewares()
 	handlers := initHandlers(queries, commands)
 
-	if app.cfg.ProfilePort != "" {
-		go servePprof(app.cfg.ProfilePort)
-	}
-
+	go servePprof(app.cfg.ProfilePort)
 	mux := app.CreateRouter(middlewares, handlers)
-
-	log.Printf("IdentityX listening on :%s", app.cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+app.cfg.Port, mux))
+	app.startServer(mux)
 }

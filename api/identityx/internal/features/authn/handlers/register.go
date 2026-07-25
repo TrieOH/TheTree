@@ -3,13 +3,11 @@ package handlers
 import (
 	"IdentityX/models"
 	"lib/globals"
-	"lib/telemetry"
 	"net/http"
 
 	"github.com/MintzyG/fun"
 	"github.com/MintzyG/fun/bind"
 	"github.com/MintzyG/fun/middlewares"
-	"go.uber.org/zap"
 )
 
 // Register godoc
@@ -34,7 +32,6 @@ func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	req := fun.From(r)
 	projectID := middlewares.QueryParams[models.ProjectIDQueryParam](r)
-	telemetry.DLog().Info("Login", zap.Any("projectID", projectID.ProjectID))
 	var payload models.IDXRegisterRequest
 	if bind.BailInto(w, req, &payload) {
 		return

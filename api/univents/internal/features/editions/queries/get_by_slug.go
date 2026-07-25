@@ -2,11 +2,12 @@ package queries
 
 import (
 	"context"
+	"lib/telemetry"
 	"univents/models"
 )
 
 func (q *Queries) GetByEventAndEditionSlug(ctx context.Context, eventSlug, editionSlug string) (*models.Edition, error) {
-	ctx, span := q.tracer.Start(ctx, "EditionService.GetByEventAndEditionSlug")
+	ctx, span := telemetry.StartSpan(ctx, "EditionService.GetByEventAndEditionSlug")
 	defer span.End()
 
 	event, err := q.events.GetBySlug(ctx, eventSlug)

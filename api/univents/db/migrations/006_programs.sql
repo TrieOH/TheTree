@@ -8,8 +8,7 @@ CREATE TABLE programs (
     description      TEXT,
     min_access_level INT,
     staff_only       BOOLEAN NOT NULL DEFAULT FALSE,
-    price            INT NOT NULL DEFAULT 0, -- cents
-    token_cost       INT NOT NULL DEFAULT 0,
+    price            BIGINT NOT NULL DEFAULT 0, -- cents
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ,
     deleted_at       TIMESTAMPTZ
@@ -35,7 +34,7 @@ CREATE TABLE program_participations (
     registration_id UUID NOT NULL REFERENCES registrations(id) ON DELETE CASCADE,
     status          TEXT NOT NULL DEFAULT 'registered',
     CONSTRAINT chk_program_participations_status_valid CHECK (
-    status IN ('registered', 'attended', 'no_show', 'cancelled')
+        status IN ('registered', 'attended', 'no_show', 'cancelled')
     ),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ
