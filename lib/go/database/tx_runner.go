@@ -27,3 +27,18 @@ type TxRunner interface {
 	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
 	WithinTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error
 }
+
+var defaultRunner TxRunner
+
+// SetDefaultRunner sets the package-level transaction runner. Call once at startup.
+func SetDefaultRunner(r TxRunner) { defaultRunner = r }
+
+// RunTx executes fn within a transaction using the default runner.
+func RunTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	return defaultRunner.WithinTx(ctx, fn)
+}
+
+// RunTxWithOptions executes fn within a transaction with the given options.
+func RunTxWithOptions(ctx context.Context, opts TxOptions, fn func(ctx context.Context) error) error {
+	return defaultRunner.WithinTxWithOptions(ctx, opts, fn)
+}

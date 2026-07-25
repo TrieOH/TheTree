@@ -1,8 +1,0 @@
-set shell := ["bash", "-cu"]
-
-# Generate all
-gen:
-    just gen-sqlc
-
-test:
-    @echo "no tests for univents"

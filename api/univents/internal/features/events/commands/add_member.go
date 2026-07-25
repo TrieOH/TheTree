@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Commands) AddMember(ctx context.Context, eventID uuid.UUID, payload models.AddEventMemberRequest) (*models.EventMember, error) {
-	ctx, span := c.tracer.Start(ctx, "AddMember")
+	ctx, span := telemetry.StartSpan(ctx, "AddMember")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

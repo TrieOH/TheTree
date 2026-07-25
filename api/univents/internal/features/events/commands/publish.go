@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"lib/telemetry"
 	idx "sdk/identityx"
 	"univents/models"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Commands) Publish(ctx context.Context, eventID uuid.UUID) error {
-	ctx, span := c.tracer.Start(ctx, "EventService.Publish")
+	ctx, span := telemetry.StartSpan(ctx, "EventService.Publish")
 	defer span.End()
 
 	ident, err := idx.RequireIdentity(ctx)

@@ -3,12 +3,13 @@ package repos
 import (
 	"context"
 	"lib/database"
-	"univents/internal/database/sqlc"
+	"lib/telemetry"
+	"univents/internal/sqlc"
 	"univents/models"
 )
 
-func (repo *repo) CreateVariant(ctx context.Context, toCreate *models.ProductVariant) (*models.ProductVariant, error) {
-	ctx, span := repo.tracer.Start(ctx, "ProductsRepo.CreateVariant")
+func (repo *Repo) CreateVariant(ctx context.Context, toCreate *models.ProductVariant) (*models.ProductVariant, error) {
+	ctx, span := telemetry.StartSpan(ctx, "ProductsRepo.CreateVariant")
 	defer span.End()
 	result, err := database.Queries(ctx, repo.q).CreateProductVariant(ctx, sqlc.CreateProductVariantParams{
 		EditionID:   toCreate.EditionID,
